@@ -69,12 +69,12 @@ public:
    * @return Intersection vertices when the plane cuts the box, plus the model-space plane equation.
    */
   std::pair<std::optional<intersection::IntersectionVertices>, glm::vec4> computePlaneIntersections(
-    const glm::mat4& model_T_camera,
-    const glm::mat4& model_T_frame,
+    const glm::mat4& model_O_camera,
+    const glm::mat4& model_O_frame,
     const std::array<glm::vec3, 8>& modelBoxCorners);
 
 private:
-  void updatePlaneEquation(const glm::mat4& model_O_camera, const glm::mat4& model_O_frame);
+  void updatePlaneEquation(const glm::mat4& model_T_camera, const glm::mat4& model_T_frame);
 
   intersection::PositioningMethod m_positioningMethod;
   intersection::AlignmentMethod m_alignmentMethod;

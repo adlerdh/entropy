@@ -436,7 +436,7 @@ void EntropyInstanceSync::broadcastChangedState(const std::vector<Peer>& peers)
   }
 }
 
-bool EntropyInstanceSync::sendMessage(const Peer& peer, const std::string& message)
+bool EntropyInstanceSync::sendMessage(const Peer& peer, const std::string& message) const
 {
   sockaddr_in address{};
   address.sin_family = AF_INET;

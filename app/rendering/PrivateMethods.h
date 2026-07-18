@@ -239,17 +239,17 @@ void setRaycastIsoUniforms(
 /**
  * @brief Bind scalar image textures and associated color-map textures for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& imageSegPair);
+std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind multi-component color image textures for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& imageSegPair);
+std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind the segmentation texture for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& imageSegPair);
+std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind a deformation field with the default deformation shader sampler slots.
@@ -312,7 +312,7 @@ std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(
 /**
  * @brief Bind buffer textures such as segmentation label color tables.
  */
-std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& imageSegPair);
+std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& p);
 
 /**
  * @brief Unbind every buffer texture returned by a buffer texture binding helper.

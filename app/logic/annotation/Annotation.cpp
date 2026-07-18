@@ -401,10 +401,10 @@ const std::pair<glm::vec3, glm::vec3>& Annotation::getSubjectPlaneAxes() const
   return m_subjectPlaneAxes;
 }
 
-glm::vec2 Annotation::projectSubjectPointToAnnotationPlane(const glm::vec3& point3d) const
+glm::vec2 Annotation::projectSubjectPointToAnnotationPlane(const glm::vec3& subjectPoint) const
 {
   return math::projectPointToPlaneLocal2dCoords(
-    point3d,
+    subjectPoint,
     m_subjectPlaneEquation,
     m_subjectPlaneOrigin,
     m_subjectPlaneAxes);

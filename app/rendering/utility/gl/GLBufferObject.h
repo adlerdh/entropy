@@ -92,7 +92,7 @@ public:
   void* mapRange(GLintptr offset, GLsizeiptr length, const std::set<BufferMapRangeAccessFlag>& accessFlags);
 
   /// Unmap a previously mapped buffer range.
-  bool unmap();
+  bool unmap() const;
 
   /// @todo Change GLsizeiptr and GLintptr to std::size_t
   /// Copy bytes between two buffer objects using OpenGL's copy buffer targets.

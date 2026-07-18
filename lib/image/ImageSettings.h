@@ -372,7 +372,7 @@ public:
   bool isosurfacesVisible() const;
 
   /// @brief Set whether isosurfaces should use the image colormap instead of per-surface colors.
-  void setApplyImageColormapToIsosurfaces(bool visible);
+  void setApplyImageColormapToIsosurfaces(bool apply);
 
   /// @brief Return whether isosurfaces use the image colormap instead of per-surface colors.
   bool applyImageColormapToIsosurfaces() const;
@@ -396,121 +396,121 @@ public:
   float isosurfaceOpacityModulator() const;
 
   /// @brief Get the observed native intensity range for a component.
-  std::pair<double, double> minMaxImageRange(uint32_t component) const;
+  std::pair<double, double> minMaxImageRange(uint32_t i) const;
   /// @brief Get the observed native intensity range for the active component.
   std::pair<double, double> minMaxImageRange() const;
 
   /// @brief Get the allowed window-width range in native intensity units for a component.
-  std::pair<double, double> minMaxWindowWidthRange(uint32_t component) const;
+  std::pair<double, double> minMaxWindowWidthRange(uint32_t i) const;
   /// @brief Get the allowed window-width range for the active component.
   std::pair<double, double> minMaxWindowWidthRange() const;
 
   /// @brief Get the allowed window-center range in native intensity units for a component.
-  std::pair<double, double> minMaxWindowCenterRange(uint32_t component) const;
+  std::pair<double, double> minMaxWindowCenterRange(uint32_t i) const;
   /// @brief Get the allowed window-center range for the active component.
   std::pair<double, double> minMaxWindowCenterRange() const;
 
   /// @brief Get the allowed low/high window-value range in native intensity units for a component.
-  std::pair<double, double> minMaxWindowRange(uint32_t component) const;
+  std::pair<double, double> minMaxWindowRange(uint32_t i) const;
   /// @brief Get the allowed low/high window-value range for the active component.
   std::pair<double, double> minMaxWindowRange() const;
 
   /// @brief Get the allowed threshold range in native intensity units for a component.
-  std::pair<double, double> minMaxThresholdRange(uint32_t component) const;
+  std::pair<double, double> minMaxThresholdRange(uint32_t i) const;
   /// @brief Get the allowed threshold range for the active component.
   std::pair<double, double> minMaxThresholdRange() const;
 
   /// @brief Set the low window value in native intensity units for a component.
   /// @param clampValues When true, clamp to minMaxWindowRange(component).
-  void setWindowValueLow(uint32_t component, double wLow, bool clampValues = true);
+  void setWindowValueLow(uint32_t i, double wLow, bool clampValues = true);
   /// @brief Set the low window value for the active component.
   void setWindowValueLow(double wLow, bool clampValues = false);
 
   /// @brief Set the high window value in native intensity units for a component.
   /// @param clampValues When true, clamp to minMaxWindowRange(component).
-  void setWindowValueHigh(uint32_t component, double wHigh, bool clampValues = true);
+  void setWindowValueHigh(uint32_t i, double wHigh, bool clampValues = true);
   /// @brief Set the high window value for the active component.
   void setWindowValueHigh(double wHigh, bool clampValues = false);
 
   /// @brief Get low/high window values in native intensity units for a component.
-  std::pair<double, double> windowValuesLowHigh(uint32_t component) const;
+  std::pair<double, double> windowValuesLowHigh(uint32_t i) const;
   /// @brief Get low/high window values for the active component.
   std::pair<double, double> windowValuesLowHigh() const;
 
   /// @brief Set the lower window quantile in [0, 1] for a component.
   /// @param clampValues When true, clamp to [0, 1].
-  void setWindowQuantileLow(uint32_t component, double pLow, bool clampValues = true);
+  void setWindowQuantileLow(uint32_t i, double pLow, bool clampValues = true);
   /// @brief Set the lower window quantile for the active component.
   void setWindowQuantileLow(double pLow, bool clampValues = false);
 
   /// @brief Set the upper window quantile in [0, 1] for a component.
   /// @param clampValues When true, clamp to [0, 1].
-  void setWindowQuantileHigh(uint32_t component, double pHigh, bool clampValues = true);
+  void setWindowQuantileHigh(uint32_t i, double pHigh, bool clampValues = true);
   /// @brief Set the upper window quantile for the active component.
   void setWindowQuantileHigh(double pHigh, bool clampValues = false);
 
   /// @brief Get lower/upper window quantiles in [0, 1] for a component.
-  std::pair<double, double> windowQuantilesLowHigh(uint32_t component) const;
+  std::pair<double, double> windowQuantilesLowHigh(uint32_t i) const;
   /// @brief Get lower/upper window quantiles for the active component.
   std::pair<double, double> windowQuantilesLowHigh() const;
 
   /// @brief Get window width in native intensity units for a component.
-  double windowWidth(uint32_t component) const;
+  double windowWidth(uint32_t i) const;
   /// @brief Get window width for the active component.
   double windowWidth() const;
 
   /// @brief Get window center, also called level, in native intensity units for a component.
-  double windowCenter(uint32_t component) const;
+  double windowCenter(uint32_t i) const;
   /// @brief Get window center for the active component.
   double windowCenter() const;
 
   /// @brief Set window width in native intensity units for a component, clamped to the valid range.
-  void setWindowWidth(uint32_t component, double width);
+  void setWindowWidth(uint32_t i, double width);
   /// @brief Set window width for the active component.
   void setWindowWidth(double width);
 
   /// @brief Set window center in native intensity units for a component, clamped to the valid range.
-  void setWindowCenter(uint32_t component, double center);
+  void setWindowCenter(uint32_t i, double center);
   /// @brief Set window center for the active component.
   void setWindowCenter(double center);
 
   /// @brief Set low threshold in native intensity units for a component.
-  void setThresholdLow(uint32_t component, double thresh);
+  void setThresholdLow(uint32_t i, double tLow);
   /// @brief Set low threshold for the active component.
-  void setThresholdLow(double thresh);
+  void setThresholdLow(double tLow);
 
   /// @brief Set high threshold in native intensity units for a component.
-  void setThresholdHigh(uint32_t component, double thresh);
+  void setThresholdHigh(uint32_t i, double tHigh);
   /// @brief Set high threshold for the active component.
-  void setThresholdHigh(double thresh);
+  void setThresholdHigh(double tHigh);
 
   /// @brief Get low/high thresholds in native intensity units for a component.
-  std::pair<double, double> thresholds(uint32_t component) const;
+  std::pair<double, double> thresholds(uint32_t i) const;
   /// @brief Get low/high thresholds for the active component.
   std::pair<double, double> thresholds() const;
 
   /// @brief Return whether thresholds restrict the full native intensity range for a component.
-  bool thresholdsActive(uint32_t component) const;
+  bool thresholdsActive(uint32_t i) const;
   /// @brief Return whether thresholds are active for the active component.
   bool thresholdsActive() const;
 
   /// @brief Set component opacity in [0, 1].
-  void setOpacity(uint32_t component, double opacity);
+  void setOpacity(uint32_t i, double opacity);
   /// @brief Set opacity for the active component.
   void setOpacity(double opacity);
 
   /// @brief Get component opacity in [0, 1].
-  double opacity(uint32_t component) const;
+  double opacity(uint32_t i) const;
   /// @brief Get opacity for the active component.
   double opacity() const;
 
   /// @brief Set component visibility.
-  void setVisibility(uint32_t component, bool visible);
+  void setVisibility(uint32_t i, bool visible);
   /// @brief Set visibility for the active component.
   void setVisibility(bool visible);
 
   /// @brief Get component visibility.
-  bool visibility(uint32_t component) const;
+  bool visibility(uint32_t i) const;
   /// @brief Get visibility for the active component.
   bool visibility() const;
 
@@ -527,221 +527,221 @@ public:
   double globalOpacity() const;
 
   /// @brief Enable or disable edge visualization for a component using edgeDetectionMethod(component).
-  void setShowAnyEdges(uint32_t component, bool show);
+  void setShowAnyEdges(uint32_t i, bool show);
   /// @brief Enable or disable edge visualization for the active component.
   void setShowAnyEdges(bool show);
 
   /// @brief Return whether either edge-rendering method is enabled for a component.
-  bool showAnyEdges(uint32_t component) const;
+  bool showAnyEdges(uint32_t i) const;
   /// @brief Return whether either edge-rendering method is enabled for the active component.
   bool showAnyEdges() const;
 
   /// @brief Set the edge-rendering method for a component.
-  void setEdgeDetectionMethod(uint32_t component, EdgeDetectionMethod method);
+  void setEdgeDetectionMethod(uint32_t i, EdgeDetectionMethod method);
   /// @brief Set the edge-rendering method for the active component.
   void setEdgeDetectionMethod(EdgeDetectionMethod method);
 
   /// @brief Get the edge-rendering method for a component.
-  EdgeDetectionMethod edgeDetectionMethod(uint32_t component) const;
+  EdgeDetectionMethod edgeDetectionMethod(uint32_t i) const;
   /// @brief Get the edge-rendering method for the active component.
   EdgeDetectionMethod edgeDetectionMethod() const;
 
   /// @brief Set whether edge visualization is enabled for a component.
-  void setShowEdges(uint32_t component, bool show);
+  void setShowEdges(uint32_t i, bool show);
   /// @brief Set edge visualization for the active component.
   void setShowEdges(bool show);
 
   /// @brief Return whether edge visualization is enabled for a component.
-  bool showEdges(uint32_t component) const;
+  bool showEdges(uint32_t i) const;
   /// @brief Return whether edge visualization is enabled for the active component.
   bool showEdges() const;
 
   /// @brief Set whether pixel-space edge visualization is enabled for a component.
-  void setShowPixelEdges(uint32_t component, bool show);
+  void setShowPixelEdges(uint32_t i, bool show);
   /// @brief Set pixel-space edge visualization for the active component.
   void setShowPixelEdges(bool show);
 
   /// @brief Return whether pixel-space edge visualization is enabled for a component.
-  bool showPixelEdges(uint32_t component) const;
+  bool showPixelEdges(uint32_t i) const;
   /// @brief Return whether pixel-space edge visualization is enabled for the active component.
   bool showPixelEdges() const;
 
   /// @brief Set whether edge magnitudes are thresholded for a component.
-  void setThresholdEdges(uint32_t component, bool threshold);
+  void setThresholdEdges(uint32_t i, bool threshold);
   /// @brief Set edge thresholding for the active component.
   void setThresholdEdges(bool threshold);
 
   /// @brief Return whether edge magnitudes are thresholded for a component.
-  bool thresholdEdges(uint32_t component) const;
+  bool thresholdEdges(uint32_t i) const;
   /// @brief Return whether edge magnitudes are thresholded for the active component.
   bool thresholdEdges() const;
 
   /// @brief Set whether pixel-space edge magnitudes are thresholded for a component.
-  void setThresholdPixelEdges(uint32_t component, bool threshold);
+  void setThresholdPixelEdges(uint32_t i, bool threshold);
   /// @brief Set pixel-space edge thresholding for the active component.
   void setThresholdPixelEdges(bool threshold);
 
   /// @brief Return whether pixel-space edge magnitudes are thresholded for a component.
-  bool thresholdPixelEdges(uint32_t component) const;
+  bool thresholdPixelEdges(uint32_t i) const;
   /// @brief Return whether pixel-space edge magnitudes are thresholded for the active component.
   bool thresholdPixelEdges() const;
 
   /// @brief Set whether pixel-space edges are thinned using non-maximum suppression.
-  void setThinPixelEdges(uint32_t component, bool thin);
+  void setThinPixelEdges(uint32_t i, bool thin);
   /// @brief Set pixel-space edge thinning for the active component.
   void setThinPixelEdges(bool thin);
 
   /// @brief Return whether pixel-space edges are thinned for a component.
-  bool thinPixelEdges(uint32_t component) const;
+  bool thinPixelEdges(uint32_t i) const;
   /// @brief Return whether pixel-space edges are thinned for the active component.
   bool thinPixelEdges() const;
 
   /// @brief Set whether Frei-Chen filters are used for edge computation for a component.
-  void setUseFreiChen(uint32_t component, bool use);
+  void setUseFreiChen(uint32_t i, bool use);
   /// @brief Set Frei-Chen edge computation for the active component.
   void setUseFreiChen(bool use);
 
   /// @brief Return whether Frei-Chen filters are used for a component.
-  bool useFreiChen(uint32_t component) const;
+  bool useFreiChen(uint32_t i) const;
   /// @brief Return whether Frei-Chen filters are used for the active component.
   bool useFreiChen() const;
 
   /// @brief Set edge magnitude threshold for a component.
-  void setEdgeMagnitude(uint32_t component, double mag);
+  void setEdgeMagnitude(uint32_t i, double mag);
   /// @brief Set edge magnitude threshold for the active component.
   void setEdgeMagnitude(double mag);
 
   /// @brief Get edge magnitude threshold for a component.
-  double edgeMagnitude(uint32_t component) const;
+  double edgeMagnitude(uint32_t i) const;
   /// @brief Get edge magnitude threshold for the active component.
   double edgeMagnitude() const;
 
   /// @brief Set pixel-space edge scale for a component.
-  void setPixelEdgeScale(uint32_t component, double scale);
+  void setPixelEdgeScale(uint32_t i, double scale);
   /// @brief Set pixel-space edge scale for the active component.
   void setPixelEdgeScale(double scale);
 
   /// @brief Get pixel-space edge scale for a component.
-  double pixelEdgeScale(uint32_t component) const;
+  double pixelEdgeScale(uint32_t i) const;
   /// @brief Get pixel-space edge scale for the active component.
   double pixelEdgeScale() const;
 
   /// @brief Set pixel-space edge threshold for a component.
-  void setPixelEdgeThreshold(uint32_t component, double threshold);
+  void setPixelEdgeThreshold(uint32_t i, double threshold);
   /// @brief Set pixel-space edge threshold for the active component.
   void setPixelEdgeThreshold(double threshold);
 
   /// @brief Get pixel-space edge threshold for a component.
-  double pixelEdgeThreshold(uint32_t component) const;
+  double pixelEdgeThreshold(uint32_t i) const;
   /// @brief Get pixel-space edge threshold for the active component.
   double pixelEdgeThreshold() const;
 
   /// @brief Set whether edges are computed after applying window/level for a component.
-  void setWindowedEdges(uint32_t component, bool windowed);
+  void setWindowedEdges(uint32_t i, bool windowed);
   /// @brief Set windowed edge computation for the active component.
-  void setWindowedEdges(bool overlay);
+  void setWindowedEdges(bool windowed);
 
   /// @brief Return whether edges are computed after window/level for a component.
-  bool windowedEdges(uint32_t component) const;
+  bool windowedEdges(uint32_t i) const;
   /// @brief Return whether edges are computed after window/level for the active component.
   bool windowedEdges() const;
 
   /// @brief Set whether edges are drawn as an overlay rather than as a standalone image.
-  void setOverlayEdges(uint32_t component, bool overlay);
+  void setOverlayEdges(uint32_t i, bool overlay);
   /// @brief Set edge overlay mode for the active component.
   void setOverlayEdges(bool overlay);
 
   /// @brief Return whether edges are drawn as an overlay for a component.
-  bool overlayEdges(uint32_t component) const;
+  bool overlayEdges(uint32_t i) const;
   /// @brief Return whether edges are drawn as an overlay for the active component.
   bool overlayEdges() const;
 
   /// @brief Set whether pixel-space edges are drawn as an overlay rather than as a standalone image.
-  void setOverlayPixelEdges(uint32_t component, bool overlay);
+  void setOverlayPixelEdges(uint32_t i, bool overlay);
   /// @brief Set pixel-space edge overlay mode for the active component.
   void setOverlayPixelEdges(bool overlay);
 
   /// @brief Return whether pixel-space edges are drawn as an overlay for a component.
-  bool overlayPixelEdges(uint32_t component) const;
+  bool overlayPixelEdges(uint32_t i) const;
   /// @brief Return whether pixel-space edges are drawn as an overlay for the active component.
   bool overlayPixelEdges() const;
 
   /// @brief Set whether edges use the component colormap instead of edgeColor().
-  void setColormapEdges(uint32_t component, bool showEdges);
+  void setColormapEdges(uint32_t i, bool showEdges);
   /// @brief Set edge colormap mode for the active component.
   void setColormapEdges(bool showEdges);
 
   /// @brief Return whether edges use the component colormap for a component.
-  bool colormapEdges(uint32_t component) const;
+  bool colormapEdges(uint32_t i) const;
   /// @brief Return whether edges use the component colormap for the active component.
   bool colormapEdges() const;
 
   /// @brief Set solid RGB edge color for a component.
-  void setEdgeColor(uint32_t component, glm::vec3 color);
+  void setEdgeColor(uint32_t i, glm::vec3 color);
   /// @brief Set solid RGB edge color for the active component.
   void setEdgeColor(glm::vec3 color);
 
   /// @brief Get solid RGB edge color for a component.
-  glm::vec3 edgeColor(uint32_t component) const;
+  glm::vec3 edgeColor(uint32_t i) const;
   /// @brief Get solid RGB edge color for the active component.
   glm::vec3 edgeColor() const;
 
   /// @brief Set edge opacity in [0, 1] for a component.
-  void setEdgeOpacity(uint32_t component, double opacity);
+  void setEdgeOpacity(uint32_t i, double opacity);
   /// @brief Set edge opacity for the active component.
   void setEdgeOpacity(double opacity);
 
   /// @brief Get edge opacity in [0, 1] for a component.
-  double edgeOpacity(uint32_t component) const;
+  double edgeOpacity(uint32_t i) const;
   /// @brief Get edge opacity for the active component.
   double edgeOpacity() const;
 
   /// @brief Set the selected color-map index for a component.
-  void setColorMapIndex(uint32_t component, std::size_t index);
+  void setColorMapIndex(uint32_t i, std::size_t index);
   /// @brief Set the selected color-map index for the active component.
   void setColorMapIndex(std::size_t index);
 
   /// @brief Get the selected color-map index for a component.
-  std::size_t colorMapIndex(uint32_t component) const;
+  std::size_t colorMapIndex(uint32_t i) const;
   /// @brief Get the selected color-map index for the active component.
   std::size_t colorMapIndex() const;
 
   /// @brief Set whether the color map is sampled in reverse for a component.
-  void setColorMapInverted(uint32_t component, bool inverted);
+  void setColorMapInverted(uint32_t i, bool inverted);
   /// @brief Set colormap inversion for the active component.
   void setColorMapInverted(bool inverted);
 
   /// @brief Return whether the color map is sampled in reverse for a component.
-  bool isColorMapInverted(uint32_t component) const;
+  bool isColorMapInverted(uint32_t i) const;
   /// @brief Return whether the active component color map is sampled in reverse.
   bool isColorMapInverted() const;
 
   /// @brief Set the number of quantization levels used when the component colormap is discrete.
-  void setColorMapQuantization(uint32_t component, uint32_t levels);
+  void setColorMapQuantization(uint32_t i, uint32_t levels);
   /// @brief Set the number of quantization levels for the active component.
   void setColorMapQuantizationLevels(uint32_t levels);
 
   /// @brief Get the number of quantization levels for a component colormap.
-  std::size_t colorMapQuantizationLevels(uint32_t component) const;
+  std::size_t colorMapQuantizationLevels(uint32_t i) const;
   /// @brief Get the number of quantization levels for the active component.
   std::size_t colorMapQuantizationLevels() const;
 
   /// @brief Set whether a component colormap is sampled continuously.
-  void setColorMapContinuous(uint32_t component, bool continuous);
+  void setColorMapContinuous(uint32_t i, bool continuous);
   /// @brief Set continuous/discrete colormap sampling for the active component.
   void setColorMapContinuous(bool continuous);
 
   /// @brief Return whether a component colormap is sampled continuously.
-  bool colorMapContinuous(uint32_t component) const;
+  bool colorMapContinuous(uint32_t i) const;
   /// @brief Return whether the active component colormap is sampled continuously.
   bool colorMapContinuous() const;
 
   /// @brief Set the hue modification factor for a component colormap.
-  void setColorMapHueModFactor(uint32_t component, double hueMod);
+  void setColorMapHueModFactor(uint32_t i, double hueMod);
   /// @brief Set the saturation modification factor for a component colormap.
-  void setColorMapSatModFactor(uint32_t component, double satMod);
+  void setColorMapSatModFactor(uint32_t i, double satMod);
   /// @brief Set the value/brightness modification factor for a component colormap.
-  void setColorMapValModFactor(uint32_t component, double valMod);
+  void setColorMapValModFactor(uint32_t i, double valMod);
 
   /// @brief Set the hue modification factor for the active component.
   void setColorMapHueModFactor(double hueMod);
@@ -751,32 +751,32 @@ public:
   void setColorMapValModFactor(double valMod);
 
   /// @brief Set hue, saturation, and value modification factors for a component colormap.
-  void setColormapHsvModfactors(uint32_t component, const glm::vec3& hsvMods);
+  void setColormapHsvModfactors(uint32_t i, const glm::vec3& hsvMods);
   /// @brief Set hue, saturation, and value modification factors for the active component.
   void setColormapHsvModfactors(const glm::vec3& hsvMods);
 
   /// @brief Get hue, saturation, and value modification factors for a component colormap.
-  const glm::vec3& colorMapHsvModFactors(uint32_t component) const;
+  const glm::vec3& colorMapHsvModFactors(uint32_t i) const;
   /// @brief Get hue, saturation, and value modification factors for the active component.
   const glm::vec3& colorMapHsvModFactors() const;
 
   /// @brief Set selected label-table index for a segmentation component.
-  void setLabelTableIndex(uint32_t component, std::size_t index);
+  void setLabelTableIndex(uint32_t i, std::size_t index);
   /// @brief Set selected label-table index for the active component.
   void setLabelTableIndex(std::size_t index);
 
   /// @brief Get selected label-table index for a segmentation component.
-  std::size_t labelTableIndex(uint32_t component) const;
+  std::size_t labelTableIndex(uint32_t i) const;
   /// @brief Get selected label-table index for the active component.
   std::size_t labelTableIndex() const;
 
   /// @brief Set scalar interpolation mode for a component.
-  void setInterpolationMode(uint32_t component, InterpolationMode mode);
+  void setInterpolationMode(uint32_t i, InterpolationMode mode);
   /// @brief Set scalar interpolation mode for the active component.
   void setInterpolationMode(InterpolationMode mode);
 
   /// @brief Get scalar interpolation mode for a component.
-  InterpolationMode interpolationMode(uint32_t component) const;
+  InterpolationMode interpolationMode(uint32_t i) const;
   /// @brief Get scalar interpolation mode for the active component.
   InterpolationMode interpolationMode() const;
 
@@ -784,7 +784,7 @@ public:
   /// These are used to map NATIVE (raw) image intensity units 'x' to NORMALIZED units 'y' in the
   /// range [0, 1]: y = m*x + b
   /// after window/level have been applied
-  std::pair<double, double> slopeIntercept_normalized_T_native(uint32_t component) const;
+  std::pair<double, double> slopeIntercept_normalized_T_native(uint32_t i) const;
   std::pair<double, double> slopeIntercept_normalized_T_native() const;
 
   /// Get the slope/intercept mapping from native intensity to render-buffer intensity.
@@ -794,37 +794,37 @@ public:
   /// These are used to map render-buffer intensity units 'x' to normalized units 'y' in the
   /// normalized range [0, 1]: y = m*x + b
   /// after window/level have been applied
-  std::pair<double, double> slopeIntercept_normalized_T_texture(uint32_t component) const;
+  std::pair<double, double> slopeIntercept_normalized_T_texture(uint32_t i) const;
   std::pair<double, double> slopeIntercept_normalized_T_texture() const;
 
   /// @brief Get slope mapping render-buffer intensity to native intensity without window/level.
   float slope_native_T_texture() const;
 
   /// @brief Get normalized_T_texture slope/intercept as a glm::dvec2 for a component.
-  glm::dvec2 slopeInterceptVec2_normalized_T_texture(uint32_t component) const;
+  glm::dvec2 slopeInterceptVec2_normalized_T_texture(uint32_t i) const;
   /// @brief Get normalized_T_texture slope/intercept as a glm::dvec2 for the active component.
   glm::dvec2 slopeInterceptVec2_normalized_T_texture() const;
 
   /// @brief Get slope/intercept for the widest possible texture-space window for a component.
-  glm::dvec2 largestSlopeInterceptTextureVec2(uint32_t component) const;
+  glm::dvec2 largestSlopeInterceptTextureVec2(uint32_t i) const;
   /// @brief Get slope/intercept for the widest possible texture-space window for the active component.
   glm::dvec2 largestSlopeInterceptTextureVec2() const;
 
   /// @brief Get foreground threshold range in native intensity units for a component.
-  std::pair<double, double> thresholdRange(uint32_t component) const;
+  std::pair<double, double> thresholdRange(uint32_t i) const;
   /// @brief Get foreground threshold range for the active component.
   std::pair<double, double> thresholdRange() const;
 
   /// Set foreground low threshold (in native image intensity units) for a given component.
-  void setForegroundThresholdLow(uint32_t component, double background);
-  void setForegroundThresholdLow(double background);
+  void setForegroundThresholdLow(uint32_t i, double fgThreshLow);
+  void setForegroundThresholdLow(double fgThreshLow);
 
   /// Set foreground high threshold (in native image intensity units) for a given component.
-  void setForegroundThresholdHigh(uint32_t component, double background);
-  void setForegroundThresholdHigh(double background);
+  void setForegroundThresholdHigh(uint32_t i, double fgThreshHigh);
+  void setForegroundThresholdHigh(double fgThreshHigh);
 
   /// Get foreground thresholds (in native image intensity units) for a given component
-  std::pair<double, double> foregroundThresholds(uint32_t component) const;
+  std::pair<double, double> foregroundThresholds(uint32_t i) const;
   std::pair<double, double> foregroundThresholds() const;
 
   /// @brief Get the number of components per pixel tracked by these settings.
@@ -832,7 +832,7 @@ public:
 
   /// @brief Get statistics for an image component.
   /// @pre The component must be in [0, numComponents()).
-  const ComponentStats& componentStatistics(uint32_t component) const;
+  const ComponentStats& componentStatistics(uint32_t i) const;
   /// @brief Get statistics for the active component.
   const ComponentStats& componentStatistics() const;
 

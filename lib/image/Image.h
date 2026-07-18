@@ -462,7 +462,7 @@ public:
   bool getUseZeroPixelOrigin() const;
 
   /// @brief Override header directions with identity directions when computing effective geometry.
-  void setUseIdentityPixelDirections(bool identityDirections);
+  void setUseIdentityPixelDirections(bool useIdentity);
 
   /// @brief Return whether effective geometry uses identity pixel directions.
   bool getUseIdentityPixelDirections() const;

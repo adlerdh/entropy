@@ -141,8 +141,8 @@ void setWorldTarget(Camera&, const glm::vec3& worldPos, const std::optional<floa
 void rotateAboutOrigin(Camera&, const glm::vec3& cameraVec, float angle);
 void rotateAboutOrigin(Camera&, const Directions::View& dir, float angle);
 
-void rotate(Camera&, const Directions::View& dir, float angle, const glm::vec3& cameraCenter);
-void rotate(Camera&, const glm::vec3& cameraVec, float angle, const glm::vec3& cameraCenter);
+void rotate(Camera&, const Directions::View& eyeAxis, float angle, const glm::vec3& cameraCenter);
+void rotate(Camera&, const glm::vec3& cameraAxis, float angle, const glm::vec3& cameraCenter);
 
 void translateAboutCamera(Camera&, const Directions::View& dir, float distance);
 void translateAboutCamera(Camera&, const glm::vec3& cameraVec);
@@ -178,7 +178,7 @@ void zoomNdcDelta(Camera&, float delta, const glm::vec2& ndcCenterPos);
 
 float ndcZofWorldPoint(const Camera&, const glm::vec3& worldPos);
 
-float ndcZofWorldPoint_v2(const Camera&, const glm::vec3& worldPos);
+float ndcZofWorldPoint_v2(const Camera&, const glm::vec3& worldPoint);
 
 float ndcZOfCameraDistance(const Camera&, const float cameraDistance);
 
@@ -371,10 +371,10 @@ glm::quat computeCameraRotationRelativeToWorld(const Camera& camera);
  * @param windowViewport Viewport of the window
  * @return Min and max coordinates of the frame in window space
  */
-FrameBounds computeMiewportFrameBounds(const glm::vec4& winClipFrameViewport, const glm::vec4& windowViewport);
+FrameBounds computeMiewportFrameBounds(const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport);
 
 FrameBounds computeMindowFrameBounds(
-  const glm::vec4& winClipFrameViewport,
+  const glm::vec4& windowClipFrameViewport,
   const glm::vec4& windowViewport,
   float wholeWindowHeight);
 

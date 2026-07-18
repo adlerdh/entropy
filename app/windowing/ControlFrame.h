@@ -47,7 +47,7 @@ public:
   virtual void setViewType(const ViewType& viewType);
 
   ViewRenderMode renderMode() const;
-  virtual void setRenderMode(const ViewRenderMode& renderMode);
+  virtual void setRenderMode(const ViewRenderMode& shaderType);
 
   IntensityProjectionMode intensityProjectionMode() const;
   virtual void setIntensityProjectionMode(const IntensityProjectionMode& ipMode);

@@ -32,7 +32,7 @@ public:
   glm::mat4 camera_T_clip() const;
 
   /// Set/get the view aspect ratio (width/height)
-  void setAspectRatio(float ratio);
+  void setAspectRatio(float aspect);
   float aspectRatio() const;
 
   /// Set/get the near clipping plane distance from the Camera origin

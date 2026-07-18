@@ -36,7 +36,7 @@ void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight);
 /**
  * @brief Dispatch cursor movement to the active interaction state.
  */
-void cursorPosCallback(GLFWwindow* window, double windowCursorPosX, double windowCursorPosY);
+void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindowCursorPosY);
 
 /**
  * @brief Dispatch mouse button presses and releases.

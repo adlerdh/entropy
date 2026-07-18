@@ -87,7 +87,7 @@ private:
   void broadcastChangedState(const std::vector<Peer>& peers);
 
   /** @brief Send a serialized sync message to one peer. */
-  bool sendMessage(const Peer& peer, const std::string& message);
+  bool sendMessage(const Peer& peer, const std::string& message) const;
 
   /** @brief Serialize the current cursor state into the Entropy-instance sync JSON message. */
   std::string encodeMessage();

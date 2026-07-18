@@ -180,7 +180,7 @@ public:
   bool removeImage(const uuid& imageUid);
   bool removeSeg(const uuid& segUid);
   bool removeDef(const uuid& defUid);
-  bool removeAnnotation(const uuid& defUid);
+  bool removeAnnotation(const uuid& annotUid);
 
   /**
    * @brief Remove an isosurface from an image component.

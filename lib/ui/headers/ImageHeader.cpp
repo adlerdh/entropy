@@ -328,7 +328,7 @@ void renderInlineWarpFieldWarnings(const std::vector<std::string>& warnings)
   const ImVec4 warningColor{1.0f, 0.72f, 0.28f, 1.0f};
   for (std::size_t i = 0; i < warnings.size(); ++i) {
     const std::string text =
-      (i > 0 && warnings.front().rfind("Warning!", 0) == 0u) ? "- " + warnings.at(i) : warnings.at(i);
+      (i > 0 && warnings.front().starts_with("Warning!")) ? "- " + warnings.at(i) : warnings.at(i);
     ImGui::TextColored(warningColor, "%s", text.c_str());
   }
 }

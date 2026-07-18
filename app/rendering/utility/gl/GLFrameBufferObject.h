@@ -37,7 +37,7 @@ public:
   void destroy();
 
   /// Bind the framebuffer to the requested draw, read, or draw/read target.
-  void bind(const fbo::TargetType& target);
+  void bind(const fbo::TargetType& target) const;
 
   /// Attach a 2D texture image to a framebuffer attachment point.
   void attach2DTexture(

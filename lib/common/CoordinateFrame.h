@@ -35,7 +35,7 @@ public:
    * @param[in] angleDegrees Angle of rotation defined in degrees, counter-clockwise about the axis
    * @param[in] axis Axis of rotation in World space
    */
-  CoordinateFrame(glm::vec3 worldOrigin, float angleDegrees, const glm::vec3& worldAxis);
+  CoordinateFrame(glm::vec3 worldOrigin, float angleDegress, const glm::vec3& worldAxis);
 
   /**
    * @brief Construct the frame with given origin in World space and rotation from Frame to

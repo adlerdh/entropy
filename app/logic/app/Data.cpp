@@ -1305,16 +1305,16 @@ ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid)
   return const_cast<ImageColorMap*>(const_cast<const AppData*>(this)->imageColorMap(colorMapUid));
 }
 
-const ParcellationLabelTable* AppData::labelTable(const uuid& labelUid) const
+const ParcellationLabelTable* AppData::labelTable(const uuid& tableUid) const
 {
-  auto it = m_labelTables.find(labelUid);
+  auto it = m_labelTables.find(tableUid);
   if (std::end(m_labelTables) != it) return &it->second;
   return nullptr;
 }
 
-ParcellationLabelTable* AppData::labelTable(const uuid& labelUid)
+ParcellationLabelTable* AppData::labelTable(const uuid& tableUid)
 {
-  return const_cast<ParcellationLabelTable*>(const_cast<const AppData*>(this)->labelTable(labelUid));
+  return const_cast<ParcellationLabelTable*>(const_cast<const AppData*>(this)->labelTable(tableUid));
 }
 
 const LandmarkGroup* AppData::landmarkGroup(const uuid& lmGroupUid) const

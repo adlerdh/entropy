@@ -133,7 +133,7 @@ public:
   void release(std::optional<uint32_t> textureUnit = std::nullopt);
 
   /// Bind the texture to the current context or to a specific texture unit.
-  void bind(std::optional<uint32_t> textureUnit = std::nullopt);
+  void bind(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Return whether this texture is currently bound, optionally on the supplied texture unit.
   bool isBound(std::optional<uint32_t> textureUnit = std::nullopt);
@@ -144,7 +144,7 @@ public:
   /// @todo Place Sampler Object in separate class.
   /// @todo Store Sampler Object as member of GPU image record
   /// Bind this texture's sampler object to a texture unit.
-  void bindSampler(uint32_t textureUnit);
+  void bindSampler(uint32_t textureUnit) const;
 
   /// Unbind this texture's sampler object from a texture unit.
   void unbindSampler(uint32_t textureUnit);

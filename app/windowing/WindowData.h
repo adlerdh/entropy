@@ -164,7 +164,7 @@ public:
   void setViewport(float left, float bottom, float width, float height);
 
   /** @brief Set/get the GLFW content scale ratio. */
-  void setContentScaleRatios(const glm::vec2& ratio);
+  void setContentScaleRatios(const glm::vec2& scale);
   const glm::vec2& getContentScaleRatios() const;
   float getContentScaleRatio() const;
 

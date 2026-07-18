@@ -46,7 +46,7 @@ public:
 
   void setViewType(const ViewType& viewType) override;
   void setRenderMode(const ViewRenderMode& renderMode) override;
-  void setIntensityProjectionMode(const IntensityProjectionMode& renderMode) override;
+  void setIntensityProjectionMode(const IntensityProjectionMode& ipMode) override;
 
   const uuid& uid() const;
   bool isLightbox() const;

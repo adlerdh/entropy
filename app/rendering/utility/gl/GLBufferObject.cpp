@@ -138,7 +138,7 @@ void* GLBufferObject::mapRange(
   return buffer;
 }
 
-bool GLBufferObject::unmap()
+bool GLBufferObject::unmap() const
 {
   return glUnmapBuffer(m_typeEnum);
 }

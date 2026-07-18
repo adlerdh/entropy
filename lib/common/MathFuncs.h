@@ -75,7 +75,7 @@ glm::dmat4 computeImagePixelToTextureTransformation(const glm::u64vec3& pixelDim
  */
 glm::vec3 computeInvPixelDimensions(const glm::u64vec3& pixelDimensions);
 
-std::array<glm::vec3, 8> computeImagePixelAABBoxCorners(const glm::u64vec3& pixelDimensions);
+std::array<glm::vec3, 8> computeImagePixelAABBoxCorners(const glm::u64vec3& pixelDims);
 
 /**
  * @brief Compute the bounding box of the image in physical Subject space.
@@ -88,7 +88,7 @@ std::array<glm::vec3, 8> computeImagePixelAABBoxCorners(const glm::u64vec3& pixe
  * @return Array of corners of the image bounding box in Subject space
  */
 std::array<glm::vec3, 8> computeImageSubjectBoundingBoxCorners(
-  const glm::u64vec3& pixelDimensions,
+  const glm::u64vec3& pixelDims,
   const glm::mat3& directions,
   const glm::vec3& pixelSpacing,
   const glm::vec3& origin);
@@ -167,7 +167,7 @@ std::optional<float> computeRayLineSegmentIntersection(
   const glm::vec2& lineB);
 
 std::vector<glm::vec2> computeRayAABoxIntersections(
-  const glm::vec2& rayOrigin,
+  const glm::vec2& rayStart,
   const glm::vec2& rayDir,
   const glm::vec2& boxMin,
   const glm::vec2& boxSize,

@@ -106,12 +106,12 @@ public:
   const glm::vec3& get_worldDef_T_affine_translation() const;
 
   /// @brief Set manual rotation from affine subject space to deformed world space.
-  void set_worldDef_T_affine_rotation(glm::quat world_T_subject_rotation);
+  void set_worldDef_T_affine_rotation(glm::quat worldDef_T_affine_rotation);
   /// @brief Get manual rotation from affine subject space to deformed world space.
   const glm::quat& get_worldDef_T_affine_rotation() const;
 
   /// @brief Set manual scale from affine subject space to deformed world space.
-  void set_worldDef_T_affine_scale(glm::vec3 world_T_subject_scale);
+  void set_worldDef_T_affine_scale(glm::vec3 worldDef_T_affine_scale);
   /// @brief Get manual scale from affine subject space to deformed world space.
   const glm::vec3& get_worldDef_T_affine_scale() const;
 

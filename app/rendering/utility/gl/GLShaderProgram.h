@@ -58,7 +58,7 @@ public:
   void stopUse();
 
   void bindAttribLocation(const std::string& name, GLuint location);
-  void bindFragDataLocation(const std::string& name, GLuint location);
+  void bindFragDataLocation(const std::string& name, GLuint location) const;
 
   bool setUniform(const std::string& name, GLboolean val);
   bool setUniform(const std::string& name, GLint val);
@@ -108,14 +108,14 @@ public:
   const Uniforms& getRegisteredUniforms() const;
 
   /// Query an attribute location from the linked program.
-  GLint getAttribLocation(const std::string& name);
+  GLint getAttribLocation(const std::string& name) const;
 
   /// Query a uniform location from the linked program.
   GLint getUniformLocation(const std::string& name);
 
-  void printActiveUniforms();
-  void printActiveUniformBlocks();
-  void printActiveAttribs();
+  void printActiveUniforms() const;
+  void printActiveUniformBlocks() const;
+  void printActiveAttribs() const;
 
 private:
   std::string m_name;
@@ -135,30 +135,30 @@ private:
 
     void setLocation(GLint loc);
 
-    void operator()(bool v);
-    void operator()(int v);
-    void operator()(unsigned int v);
-    void operator()(float v);
-    void operator()(const glm::vec2& v);
-    void operator()(const glm::vec3& v);
-    void operator()(const glm::vec4& v);
-    void operator()(const glm::mat2& v);
-    void operator()(const glm::mat3& v);
-    void operator()(const glm::mat4& v);
+    void operator()(bool v) const;
+    void operator()(int v) const;
+    void operator()(unsigned int v) const;
+    void operator()(float v) const;
+    void operator()(const glm::vec2& v) const;
+    void operator()(const glm::vec3& v) const;
+    void operator()(const glm::vec4& v) const;
+    void operator()(const glm::mat2& mat) const;
+    void operator()(const glm::mat3& mat) const;
+    void operator()(const glm::mat4& mat) const;
 
-    void operator()(const Uniforms::SamplerIndexType& v);
-    void operator()(const Uniforms::SamplerIndexVectorType& samplers);
-    void operator()(const std::vector<float>& floats);
-    void operator()(const std::vector<glm::vec2>& vectors);
-    void operator()(const std::vector<glm::vec3>& vectors);
-    void operator()(const std::vector<glm::mat4>& matrices);
+    void operator()(const Uniforms::SamplerIndexType& v) const;
+    void operator()(const Uniforms::SamplerIndexVectorType& samplers) const;
+    void operator()(const std::vector<float>& floats) const;
+    void operator()(const std::vector<glm::vec2>& vectors) const;
+    void operator()(const std::vector<glm::vec3>& vectors) const;
+    void operator()(const std::vector<glm::mat4>& matrices) const;
 
-    void operator()(const std::array<float, 2>& a);
-    void operator()(const std::array<float, 3>& a);
-    void operator()(const std::array<float, 4>& a);
-    void operator()(const std::array<float, 5>& a);
-    void operator()(const std::array<uint32_t, 5>& a);
-    void operator()(const std::array<glm::vec3, 8>& a);
+    void operator()(const std::array<float, 2>& a) const;
+    void operator()(const std::array<float, 3>& a) const;
+    void operator()(const std::array<float, 4>& a) const;
+    void operator()(const std::array<float, 5>& a) const;
+    void operator()(const std::array<uint32_t, 5>& a) const;
+    void operator()(const std::array<glm::vec3, 8>& a) const;
 
   private:
     GLint m_loc = -1;

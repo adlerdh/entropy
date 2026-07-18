@@ -126,31 +126,32 @@ bool Camera::isLinkedToStartFrame() const
   return (static_cast<bool>(m_anatomy_T_start_provider));
 }
 
-void Camera::set_camera_T_anatomy(glm::mat4 M)
+void Camera::set_camera_T_anatomy(glm::mat4 camera_T_anatomy)
 {
   static constexpr float EPS = 1.0e-3f;
 
   // Check that this is a rigid-body transformation that preserves the
   // right-handed coordinate system (i.e. determinant must equal 1):
-  const float det = glm::determinant(glm::mat3{M});
+  const float det = glm::determinant(glm::mat3{camera_T_anatomy});
 
   if (det <= 0.0f || std::abs(det - 1.0f) > EPS) {
     spdlog::debug(
       "Cannot set camera_T_anatomy to {} because it is non-rigid; 3x3 determinant = {}",
-      glm::to_string(M),
+      glm::to_string(camera_T_anatomy),
       det);
     return;
   }
 
   if (
-    glm::epsilonNotEqual(M[0][3], 0.0f, EPS) || glm::epsilonNotEqual(M[1][3], 0.0f, EPS) ||
-    glm::epsilonNotEqual(M[2][3], 0.0f, EPS) || glm::epsilonNotEqual(M[3][3], 1.0f, EPS))
+    glm::epsilonNotEqual(camera_T_anatomy[0][3], 0.0f, EPS) ||
+    glm::epsilonNotEqual(camera_T_anatomy[1][3], 0.0f, EPS) ||
+    glm::epsilonNotEqual(camera_T_anatomy[2][3], 0.0f, EPS) || glm::epsilonNotEqual(camera_T_anatomy[3][3], 1.0f, EPS))
   {
-    spdlog::debug("Cannot set camera_T_anatomy to {} because it is not affine", glm::to_string(M));
+    spdlog::debug("Cannot set camera_T_anatomy to {} because it is not affine", glm::to_string(camera_T_anatomy));
     return;
   }
 
-  m_camera_T_anatomy = M;
+  m_camera_T_anatomy = camera_T_anatomy;
 }
 
 const glm::mat4& Camera::camera_T_anatomy() const
@@ -163,9 +164,9 @@ glm::mat4 Camera::anatomy_T_start() const
   return (m_anatomy_T_start_provider ? m_anatomy_T_start_provider().frame_T_world() : sk_ident);
 }
 
-void Camera::set_start_T_world(glm::mat4 frameA_T_world)
+void Camera::set_start_T_world(glm::mat4 start_T_world)
 {
-  m_start_T_world = frameA_T_world;
+  m_start_T_world = start_T_world;
 }
 
 const glm::mat4& Camera::start_T_world() const

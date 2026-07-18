@@ -46,7 +46,7 @@ void GLFrameBufferObject::destroy()
   glDeleteFramebuffers(1, &m_id);
 }
 
-void GLFrameBufferObject::bind(const fbo::TargetType& target)
+void GLFrameBufferObject::bind(const fbo::TargetType& target) const
 {
   glBindFramebuffer(underlyingType(target), m_id);
 }

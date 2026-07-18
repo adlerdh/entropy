@@ -97,7 +97,7 @@ void drawImageViewIntersections(
 void drawAnatomicalLabels(
   NVGcontext* nvg,
   const FrameBounds& miewportViewBounds,
-  bool isObliqueView,
+  bool isViewOblique,
   const glm::vec4& color,
   const AnatomicalLabelType& anatLabelType,
   float labelScale,

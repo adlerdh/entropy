@@ -154,12 +154,12 @@ void GLShaderProgram::bindAttribLocation(const std::string& name, GLuint locatio
   m_linked = false;
 }
 
-void GLShaderProgram::bindFragDataLocation(const std::string& name, GLuint location)
+void GLShaderProgram::bindFragDataLocation(const std::string& name, GLuint location) const
 {
   glBindFragDataLocation(m_handle, location, name.c_str());
 }
 
-GLint GLShaderProgram::getAttribLocation(const std::string& name)
+GLint GLShaderProgram::getAttribLocation(const std::string& name) const
 {
   return glGetAttribLocation(m_handle, name.c_str());
 }
@@ -405,7 +405,7 @@ const Uniforms& GLShaderProgram::getRegisteredUniforms() const
   return m_registeredUniforms;
 }
 
-void GLShaderProgram::printActiveUniforms()
+void GLShaderProgram::printActiveUniforms() const
 {
   GLint maxUniformNameLength = 0;
   GLint numActiveUniforms = 0;
@@ -457,7 +457,7 @@ void GLShaderProgram::printActiveUniforms()
 #endif
 }
 
-void GLShaderProgram::printActiveUniformBlocks()
+void GLShaderProgram::printActiveUniformBlocks() const
 {
   GLint maxUniformBlockNameLength = 0;
   GLint numUniformBlocks = 0;
@@ -551,7 +551,7 @@ void GLShaderProgram::printActiveUniformBlocks()
 #endif
 }
 
-void GLShaderProgram::printActiveAttribs()
+void GLShaderProgram::printActiveAttribs() const
 {
   GLint maxAttribNameLength = 0;
   GLint numActiveAttribs = 0;
@@ -651,122 +651,122 @@ void GLShaderProgram::UniformSetter::setLocation(GLint loc)
   m_loc = loc;
 }
 
-void GLShaderProgram::UniformSetter::operator()(const Uniforms::SamplerIndexType& v)
+void GLShaderProgram::UniformSetter::operator()(const Uniforms::SamplerIndexType& v) const
 {
   glUniform1i(m_loc, v.index);
 }
 
-void GLShaderProgram::UniformSetter::operator()(bool v)
+void GLShaderProgram::UniformSetter::operator()(bool v) const
 {
   glUniform1i(m_loc, v);
 }
 
-void GLShaderProgram::UniformSetter::operator()(int v)
+void GLShaderProgram::UniformSetter::operator()(int v) const
 {
   glUniform1i(m_loc, v);
 }
 
-void GLShaderProgram::UniformSetter::operator()(unsigned int v)
+void GLShaderProgram::UniformSetter::operator()(unsigned int v) const
 {
   glUniform1ui(m_loc, v);
 }
 
-void GLShaderProgram::UniformSetter::operator()(float v)
+void GLShaderProgram::UniformSetter::operator()(float v) const
 {
   glUniform1f(m_loc, v);
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::vec2& vec)
+void GLShaderProgram::UniformSetter::operator()(const glm::vec2& vec) const
 {
   glUniform2fv(m_loc, 1, glm::value_ptr(vec));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::vec3& vec)
+void GLShaderProgram::UniformSetter::operator()(const glm::vec3& vec) const
 {
   glUniform3fv(m_loc, 1, glm::value_ptr(vec));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::vec4& vec)
+void GLShaderProgram::UniformSetter::operator()(const glm::vec4& vec) const
 {
   glUniform4fv(m_loc, 1, glm::value_ptr(vec));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::mat2& mat)
+void GLShaderProgram::UniformSetter::operator()(const glm::mat2& mat) const
 {
   glUniformMatrix2fv(m_loc, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::mat3& mat)
+void GLShaderProgram::UniformSetter::operator()(const glm::mat3& mat) const
 {
   glUniformMatrix3fv(m_loc, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::mat4& mat)
+void GLShaderProgram::UniformSetter::operator()(const glm::mat4& mat) const
 {
   glUniformMatrix4fv(m_loc, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const Uniforms::SamplerIndexVectorType& samplers)
+void GLShaderProgram::UniformSetter::operator()(const Uniforms::SamplerIndexVectorType& samplers) const
 {
   if (!samplers.indices.empty()) {
     glUniform1iv(m_loc, static_cast<GLint>(samplers.indices.size()), samplers.indices.data());
   }
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::vector<float>& floats)
+void GLShaderProgram::UniformSetter::operator()(const std::vector<float>& floats) const
 {
   if (!floats.empty()) {
     glUniform1fv(m_loc, static_cast<GLint>(floats.size()), floats.data());
   }
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec2>& vectors)
+void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec2>& vectors) const
 {
   if (!vectors.empty()) {
     glUniform2fv(m_loc, static_cast<GLint>(vectors.size()), glm::value_ptr(vectors.at(0)));
   }
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec3>& vectors)
+void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec3>& vectors) const
 {
   if (!vectors.empty()) {
     glUniform3fv(m_loc, static_cast<GLint>(vectors.size()), glm::value_ptr(vectors.at(0)));
   }
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::mat4>& matrices)
+void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::mat4>& matrices) const
 {
   if (!matrices.empty()) {
     glUniformMatrix4fv(m_loc, static_cast<GLint>(matrices.size()), GL_FALSE, glm::value_ptr(matrices.at(0)));
   }
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::array<float, 2>& a)
+void GLShaderProgram::UniformSetter::operator()(const std::array<float, 2>& a) const
 {
   glUniform1fv(m_loc, 2, a.data());
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::array<float, 3>& a)
+void GLShaderProgram::UniformSetter::operator()(const std::array<float, 3>& a) const
 {
   glUniform1fv(m_loc, 3, a.data());
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::array<float, 4>& a)
+void GLShaderProgram::UniformSetter::operator()(const std::array<float, 4>& a) const
 {
   glUniform1fv(m_loc, 4, a.data());
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::array<float, 5>& a)
+void GLShaderProgram::UniformSetter::operator()(const std::array<float, 5>& a) const
 {
   glUniform1fv(m_loc, 5, a.data());
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::array<uint32_t, 5>& a)
+void GLShaderProgram::UniformSetter::operator()(const std::array<uint32_t, 5>& a) const
 {
   glUniform1uiv(m_loc, 5, a.data());
 }
 
-void GLShaderProgram::UniformSetter::operator()(const std::array<glm::vec3, 8>& a)
+void GLShaderProgram::UniformSetter::operator()(const std::array<glm::vec3, 8>& a) const
 {
   glUniform3fv(m_loc, 8, glm::value_ptr(a.at(0)));
 }

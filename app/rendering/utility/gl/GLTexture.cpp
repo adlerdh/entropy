@@ -510,7 +510,7 @@ void GLTexture::release(std::optional<uint32_t> textureUnit)
   m_pixelUnpackSettings = std::nullopt;
 }
 
-void GLTexture::bind(std::optional<uint32_t> textureUnit)
+void GLTexture::bind(std::optional<uint32_t> textureUnit) const
 {
   static constexpr bool rebind = false;
 
@@ -577,7 +577,7 @@ void GLTexture::unbind()
   glActiveTexture(static_cast<GLenum>(previousTextureUnit));
 }
 
-void GLTexture::bindSampler(uint32_t textureUnit)
+void GLTexture::bindSampler(uint32_t textureUnit) const
 {
   /// When a sampler object is bound to a texture image unit, the internal sampling
   /// parameters for a texture bound to the same image unit are all ignored.

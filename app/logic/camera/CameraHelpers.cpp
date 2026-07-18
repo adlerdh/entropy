@@ -634,11 +634,9 @@ glm::vec2 window_T_windowClip(const Viewport& viewport, const glm::vec2& ndcPos)
     (ndcPos.y + 1.0f) * viewport.height() / 2.0f + viewport.bottom()};
 }
 
-glm::vec2 viewport_T_windowClip(const Viewport& windowViewport, const glm::vec2& windowClipPos)
+glm::vec2 viewport_T_windowClip(const Viewport& windowViewport, const glm::vec2& ndcPos)
 {
-  return {
-    (windowClipPos.x + 1.0f) * windowViewport.width() / 2.0f,
-    (windowClipPos.y + 1.0f) * windowViewport.height() / 2.0f};
+  return {(ndcPos.x + 1.0f) * windowViewport.width() / 2.0f, (ndcPos.y + 1.0f) * windowViewport.height() / 2.0f};
 }
 
 glm::vec2 windowClip_T_viewport(const Viewport& windowViewport, const glm::vec2& viewportPos)
