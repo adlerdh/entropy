@@ -1,6 +1,10 @@
 name: Text Hygiene
 
 on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "42 10 * * 1"
   workflow_dispatch:
 
 permissions:
