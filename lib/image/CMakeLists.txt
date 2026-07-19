@@ -27,6 +27,15 @@ target_sources(EntropyImage PRIVATE
   WarpInversion.cpp
 )
 
+if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
+  # Analyzer Clang frontends do not understand GCC 13's std::expected setup here
+  set_source_files_properties(
+    ImageDerivedData.cpp
+    WarpInversion.cpp
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_include_directories(EntropyImage
   PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/.."

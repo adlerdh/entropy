@@ -95,6 +95,13 @@ set_source_files_properties(${entropy_UI_VENDOR_SOURCES}
     COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:/W0;/WX->$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-w>"
 )
 
+if(Entropy_ENABLE_IWYU)
+  set_target_properties(EntropyUI PROPERTIES CXX_INCLUDE_WHAT_YOU_USE "")
+endif()
+if(Entropy_ENABLE_CLANG_TIDY)
+  set_target_properties(EntropyUI PROPERTIES CXX_CLANG_TIDY "")
+endif()
+
 if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   set_source_files_properties(${entropy_UI_VENDOR_SOURCES}
     PROPERTIES SKIP_LINTING ON

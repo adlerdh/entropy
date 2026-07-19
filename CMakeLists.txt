@@ -185,10 +185,12 @@ target_compile_options(entropy_warnings INTERFACE
     -Wno-error=array-bounds
     -Wno-error=empty-body
     -Wno-error=float-conversion
-    -Wno-error=maybe-uninitialized
     -Wno-error=missing-field-initializers
-    -Wno-error=stringop-overflow
     -ftrapv
+  >
+  $<$<AND:$<CXX_COMPILER_ID:GNU>,$<NOT:$<OR:$<BOOL:${Entropy_ENABLE_IWYU}>,$<BOOL:${Entropy_ENABLE_CLANG_TIDY}>>>>:
+    -Wno-error=maybe-uninitialized
+    -Wno-error=stringop-overflow
   >
   $<$<CXX_COMPILER_ID:AppleClang>:
     -Werror
@@ -980,6 +982,13 @@ if(APPLE)
   add_executable(entropy MACOSX_BUNDLE)
 else()
   add_executable(entropy)
+endif()
+
+if(Entropy_ENABLE_IWYU)
+  set_target_properties(entropy PROPERTIES CXX_INCLUDE_WHAT_YOU_USE "")
+endif()
+if(Entropy_ENABLE_CLANG_TIDY)
+  set_target_properties(entropy PROPERTIES CXX_CLANG_TIDY "")
 endif()
 
 if(APPLE)

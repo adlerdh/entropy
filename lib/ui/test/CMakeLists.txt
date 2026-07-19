@@ -17,6 +17,13 @@ add_executable(TestUi
   ViewOverlayModelTests.cpp
 )
 
+if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
+  set_source_files_properties(
+    UiHeaderIncludeTests.cpp
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_sources(TestUi PRIVATE
   "${entropy_UI_DIR}/GuiData.cpp"
   "${entropy_UI_DIR}/IsosurfaceRangeModel.cpp"

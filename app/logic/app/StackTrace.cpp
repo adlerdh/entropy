@@ -146,7 +146,7 @@ std::string current(unsigned int skipFrames)
     out << "  [" << (i - firstFrame) << "] " << symbols[i] << '\n';
   }
 
-  std::free(static_cast<void*>(symbols));
+  std::free(reinterpret_cast<void*>(symbols));
   return out.str();
 #endif
 }

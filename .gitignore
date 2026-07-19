@@ -1,8 +1,12 @@
 **/.DS_Store
-.vs/**
-.vscode/**
+**/*.autosave
+**/__pycache__/**
 .cache/**
 .pre-commit-cache/**
+*.py[cod]
+.tools/**
+.vs/**
+.vscode/**
 build*/**
 out/**
 log*/**
@@ -10,9 +14,6 @@ log*/**
 /Testing/
 /*.dmg
 /*.deb
-**/*.autosave
-**/__pycache__/**
-*.py[cod]
 CMakeFiles/**
 CMakeCache.txt
 CMakeLists.txt.user*

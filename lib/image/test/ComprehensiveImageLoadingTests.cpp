@@ -33,10 +33,10 @@ struct LoadingCase
   PixelKind pixelKind = PixelKind::Scalar;
   std::string componentType = "float";
   std::size_t components = 1;
-  std::vector<std::size_t> size{};
-  std::vector<double> spacing{};
-  std::vector<double> origin{};
-  std::vector<double> direction{};
+  std::vector<std::size_t> size{}; // NOLINT(readability-redundant-member-init)
+  std::vector<double> spacing{};   // NOLINT(readability-redundant-member-init)
+  std::vector<double> origin{};    // NOLINT(readability-redundant-member-init)
+  std::vector<double> direction{}; // NOLINT(readability-redundant-member-init)
   Pattern pattern = Pattern::Ramp;
   double amplitude = 10.0;
   double offset = 0.0;

@@ -77,7 +77,7 @@ int main(int argc, char** argv)
       spec.output = outputFileName;
     }
     if (!pixelKind.empty()) {
-      spec.pixelKind = image_generator::parseSpecJson("{\"pixel_kind\":\"" + pixelKind + "\"}").pixelKind;
+      spec.pixelKind = image_generator::parseSpecJson(R"({"pixel_kind":")" + pixelKind + R"("})").pixelKind;
     }
     if (!componentType.empty()) {
       spec.componentType = componentType;
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
       spec.direction = direction;
     }
     if (!pattern.empty()) {
-      spec.pattern = image_generator::parseSpecJson("{\"pattern\":\"" + pattern + "\"}").pattern;
+      spec.pattern = image_generator::parseSpecJson(R"({"pattern":")" + pattern + R"("})").pattern;
     }
 
     image_generator::writeImage(spec);

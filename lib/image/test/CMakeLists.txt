@@ -13,6 +13,15 @@ add_executable(TestImage
   ../../../test/image_generator/ImageGenerator.cpp
 )
 
+if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
+  set_source_files_properties(
+    ImageCoreTests.cpp
+    SegmentationDerivedDataTests.cpp
+    WarpInversionTests.cpp
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_link_libraries(TestImage PRIVATE
   Catch2::Catch2WithMain
   Entropy::Image
