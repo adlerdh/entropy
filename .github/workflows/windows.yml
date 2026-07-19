@@ -194,9 +194,17 @@ jobs:
       - name: Show Debug sccache stats
         if: always()
         working-directory: 'S:\'
+        continue-on-error: true
         run: |
           sccache --show-stats
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "sccache stats were unavailable; continuing"
+          }
           sccache --stop-server
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "sccache server could not be stopped; continuing"
+          }
+          exit 0
 
   coverage:
     name: Windows Coverage Report (x86_64)
