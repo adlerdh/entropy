@@ -109,7 +109,7 @@ jobs:
           arch: x64
 
       - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Validate runner tools
         working-directory: 'S:\'
