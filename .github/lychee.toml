@@ -10,5 +10,6 @@ exclude = [
   "localhost",
   "127\\.0\\.0\\.1",
   "^https://en\\.cppreference\\.com/",
+  "^https://wrf\\.ecse\\.rpi\\.edu/Research/Short_Notes/pnpoly\\.html$",
   "^https://www\\.shadertoy\\.com/user/Yusef28$",
 ]
