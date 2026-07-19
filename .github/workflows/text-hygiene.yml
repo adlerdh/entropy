@@ -34,7 +34,7 @@ jobs:
 
   markdown-links:
     name: Markdown Links
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out source
