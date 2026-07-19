@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -214,7 +214,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -341,7 +341,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -430,7 +430,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
