@@ -15,10 +15,10 @@ namespace layout
  */
 struct LayoutPreset
 {
-  std::string m_type;                      //!< Preset family, such as `fourUp`, `oneUp`, or `grid`
-  std::string m_view;                      //!< Optional view selector
-  std::string m_images;                    //!< Optional symbolic image selector, such as `all`
-  std::vector<std::size_t> m_imageIndices; //!< Explicit image indices when no symbolic selector is used
+  std::string m_type{};                      //!< Preset family, such as `fourUp`, `oneUp`, or `grid`
+  std::string m_view{};                      //!< Optional view selector
+  std::string m_images{};                    //!< Optional symbolic image selector, such as `all`
+  std::vector<std::size_t> m_imageIndices{}; //!< Explicit image indices when no symbolic selector is used
 };
 
 } // namespace layout

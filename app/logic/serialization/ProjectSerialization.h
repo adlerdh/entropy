@@ -253,18 +253,18 @@ struct ProjectAnnotationDisplaySettings
  */
 struct RegistrationResult
 {
-  std::string m_backend;                                     //!< Backend that produced the result
-  std::string m_fixedImageUid;                               //!< Fixed/reference image UID at registration time
-  std::string m_movingImageUid;                              //!< Moving image UID at registration time
-  std::optional<std::filesystem::path> m_manifestFileName;   //!< Result manifest JSON path, when available
-  std::optional<std::filesystem::path> m_warpedImage;        //!< Warped moving image output
-  std::optional<std::filesystem::path> m_inverseWarp;        //!< Fixed-to-moving sampling warp output
-  std::optional<std::filesystem::path> m_forwardWarp;        //!< Moving-to-fixed point warp output
-  std::optional<std::filesystem::path> m_affineTransform;    //!< Affine/composite transform output
-  std::vector<std::filesystem::path> m_warpedSegmentations;  //!< Warped segmentation outputs
-  std::vector<std::filesystem::path> m_transformedSurfaces;  //!< Transformed surface outputs
-  std::vector<std::filesystem::path> m_transformedLandmarks; //!< Transformed landmark outputs
-  std::vector<std::string> m_warnings;                       //!< Non-fatal warnings reported by backend/import
+  std::string m_backend{};                                     //!< Backend that produced the result
+  std::string m_fixedImageUid{};                               //!< Fixed/reference image UID at registration time
+  std::string m_movingImageUid{};                              //!< Moving image UID at registration time
+  std::optional<std::filesystem::path> m_manifestFileName{};   //!< Result manifest JSON path, when available
+  std::optional<std::filesystem::path> m_warpedImage{};        //!< Warped moving image output
+  std::optional<std::filesystem::path> m_inverseWarp{};        //!< Fixed-to-moving sampling warp output
+  std::optional<std::filesystem::path> m_forwardWarp{};        //!< Moving-to-fixed point warp output
+  std::optional<std::filesystem::path> m_affineTransform{};    //!< Affine/composite transform output
+  std::vector<std::filesystem::path> m_warpedSegmentations{};  //!< Warped segmentation outputs
+  std::vector<std::filesystem::path> m_transformedSurfaces{};  //!< Transformed surface outputs
+  std::vector<std::filesystem::path> m_transformedLandmarks{}; //!< Transformed landmark outputs
+  std::vector<std::string> m_warnings{};                       //!< Non-fatal warnings reported by backend/import
 };
 
 /**
