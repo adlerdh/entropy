@@ -206,9 +206,8 @@ double patternValue(const ImageSpec& spec, const std::vector<std::size_t>& index
     case Pattern::TimeRamp:
       return spec.offset + spec.amplitude * (10.0 * t + x + 0.5 * y + 0.25 * z + static_cast<double>(component));
     case Pattern::TemporalSine:
-      return spec.offset +
-             spec.amplitude * (1.0 + 0.1 * static_cast<double>(component)) *
-               std::sin(k_twoPi * (t + 0.15 * x + 0.10 * y + 0.05 * z));
+      return spec.offset + spec.amplitude * (1.0 + 0.1 * static_cast<double>(component)) *
+                             std::sin(k_twoPi * (t + 0.15 * x + 0.10 * y + 0.05 * z));
     case Pattern::MovingGaussian: {
       const double centerX = 0.25 + 0.5 * t;
       const double centerY = 0.5 + 0.2 * std::sin(k_twoPi * t);
@@ -247,8 +246,7 @@ double patternValue(const ImageSpec& spec, const std::vector<std::size_t>& index
       const double angle = std::atan2(centeredY, centeredX);
       const double radius = std::sqrt(centeredX * centeredX + centeredY * centeredY);
       const double axialEnvelope = std::exp(-5.0 * (z - 0.5) * (z - 0.5));
-      return spec.offset +
-             spec.amplitude * axialEnvelope * std::sin(10.0 * radius + 3.0 * angle - k_twoPi * t);
+      return spec.offset + spec.amplitude * axialEnvelope * std::sin(10.0 * radius + 3.0 * angle - k_twoPi * t);
     }
     case Pattern::TimeVaryingWarpField: {
       const double px = (2.0 * x) - 1.0;
@@ -289,9 +287,10 @@ std::complex<double> complexValue(const ImageSpec& spec, const std::vector<std::
   const double z = coordinate(index, spec.size, 2);
   const double t = coordinate(index, spec.size, 3);
   const double phase = 6.283185307179586 * (x + 0.5 * y + 0.25 * z + t);
-  const double magnitude =
-    std::max(1.0, spec.amplitude * (1.0 + 0.35 * std::sin(6.283185307179586 * t)) *
-                     std::exp(-4.0 * ((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5))));
+  const double magnitude = std::max(
+    1.0,
+    spec.amplitude * (1.0 + 0.35 * std::sin(6.283185307179586 * t)) *
+      std::exp(-4.0 * ((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5))));
   return {spec.offset + magnitude * std::cos(phase), magnitude * std::sin(phase)};
 }
 
@@ -492,7 +491,12 @@ void writeTypedImage(const ImageSpec& spec)
       writeVectorImage<T, Dimension>(spec);
       return;
     case PixelKind::Complex:
-      writeComplexImage<T, Dimension>(spec);
+      if constexpr (std::is_floating_point_v<T>) {
+        writeComplexImage<T, Dimension>(spec);
+      }
+      else {
+        throw std::runtime_error("Complex images require a floating-point component type");
+      }
       return;
     case PixelKind::RGB:
       writeRgbImage<T, Dimension>(spec);

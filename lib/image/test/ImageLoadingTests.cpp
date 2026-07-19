@@ -60,8 +60,8 @@ fs::path writeScalarImage(
 
   typename ImageType::IndexType start;
   typename ImageType::SizeType size;
-  typename ImageType::PointType itkOrigin;
-  typename ImageType::SpacingType itkSpacing;
+  typename ImageType::PointType itkOrigin{};
+  typename ImageType::SpacingType itkSpacing{};
   start.Fill(0);
 
   std::size_t numPixels = 1;
@@ -109,8 +109,8 @@ fs::path writeVectorImage(
 
   typename ImageType::IndexType start;
   typename ImageType::SizeType size;
-  typename ImageType::PointType itkOrigin;
-  typename ImageType::SpacingType itkSpacing;
+  typename ImageType::PointType itkOrigin{};
+  typename ImageType::SpacingType itkSpacing{};
   start.Fill(0);
 
   std::size_t numPixels = 1;
@@ -161,8 +161,8 @@ fs::path writeVectorImage(
 
   typename ImageType::IndexType start;
   typename ImageType::SizeType size;
-  typename ImageType::PointType itkOrigin;
-  typename ImageType::SpacingType itkSpacing;
+  typename ImageType::PointType itkOrigin{};
+  typename ImageType::SpacingType itkSpacing{};
   start.Fill(0);
 
   std::size_t numPixels = 1;

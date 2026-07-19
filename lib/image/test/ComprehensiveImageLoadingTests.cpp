@@ -139,7 +139,7 @@ glm::uvec3 expectedPixelDimensions(const ImageSpec& spec)
   glm::uvec3 dims{1u};
   const std::size_t spatialDims = spatialDimensionCount(spec);
   for (std::size_t axis = 0; axis < spatialDims && axis < 3; ++axis) {
-    dims[axis] = static_cast<uint32_t>(spec.size.at(axis));
+    dims[static_cast<glm::length_t>(axis)] = static_cast<uint32_t>(spec.size.at(axis));
   }
   return dims;
 }
@@ -149,7 +149,7 @@ glm::vec3 expectedSpacing(const ImageSpec& spec)
   glm::vec3 spacing{1.0f};
   const std::size_t spatialDims = spatialDimensionCount(spec);
   for (std::size_t axis = 0; axis < spatialDims && axis < 3; ++axis) {
-    spacing[axis] = static_cast<float>(spec.spacing.at(axis));
+    spacing[static_cast<glm::length_t>(axis)] = static_cast<float>(spec.spacing.at(axis));
   }
   return spacing;
 }
@@ -159,7 +159,7 @@ glm::vec3 expectedOrigin(const ImageSpec& spec)
   glm::vec3 origin{0.0f};
   const std::size_t spatialDims = spatialDimensionCount(spec);
   for (std::size_t axis = 0; axis < spatialDims && axis < 3; ++axis) {
-    origin[axis] = static_cast<float>(spec.origin.at(axis));
+    origin[static_cast<glm::length_t>(axis)] = static_cast<float>(spec.origin.at(axis));
   }
   return origin;
 }
@@ -237,7 +237,7 @@ std::vector<std::size_t> expectedIndex(const ImageSpec& spec, const glm::uvec3& 
   std::vector<std::size_t> index(spec.size.size(), 0u);
   const std::size_t spatialDims = spatialDimensionCount(spec);
   for (std::size_t axis = 0; axis < spatialDims && axis < 3; ++axis) {
-    index[axis] = spatialIndex[axis];
+    index[axis] = spatialIndex[static_cast<glm::length_t>(axis)];
   }
   if (hasTimeAxis(spec)) {
     index.back() = timePoint;

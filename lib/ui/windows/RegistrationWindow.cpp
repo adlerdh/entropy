@@ -385,7 +385,7 @@ std::vector<int> integerDefaultsForSchedule(std::string_view key, int levelCount
 {
   levelCount = std::clamp(levelCount, k_minResolutionLevels, k_maxResolutionLevels);
   if (key == "shrinkFactors" || key == "scales") {
-    const auto* const begin = k_defaultShrinkFactorsByLevel.end() - levelCount;
+    const auto begin = k_defaultShrinkFactorsByLevel.end() - levelCount;
     return {begin, k_defaultShrinkFactorsByLevel.end()};
   }
   return {
@@ -397,7 +397,7 @@ std::vector<double> doubleDefaultsForSchedule(std::string_view key, int levelCou
 {
   levelCount = std::clamp(levelCount, k_minResolutionLevels, k_maxResolutionLevels);
   if (key == "smoothingSigmas") {
-    const auto* const begin = k_defaultSmoothingSigmasByLevel.end() - levelCount;
+    const auto begin = k_defaultSmoothingSigmasByLevel.end() - levelCount;
     return {begin, k_defaultSmoothingSigmasByLevel.end()};
   }
   return std::vector<double>(static_cast<std::size_t>(levelCount), 0.0);

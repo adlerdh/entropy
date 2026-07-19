@@ -84,11 +84,19 @@ endif()
 add_library(EntropyUI STATIC ${entropy_UI_SOURCES})
 add_library(Entropy::UI ALIAS EntropyUI)
 
+set(entropy_UI_VENDOR_SOURCES
+  "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
+  "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
+  "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
+)
+
+set_source_files_properties(${entropy_UI_VENDOR_SOURCES}
+  PROPERTIES
+    COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:/W0;/WX->$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-w>"
+)
+
 if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
-  set_source_files_properties(
-    "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
-    "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
-    "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
+  set_source_files_properties(${entropy_UI_VENDOR_SOURCES}
     PROPERTIES SKIP_LINTING ON
   )
 endif()

@@ -176,8 +176,17 @@ TEST_CASE("DICOM loading rejects synthetic non-loadable and vector series record
 
 TEST_CASE("DICOM discovery preview and load work on an external fixture", "[image][dicom][integration]")
 {
-  const char* root = std::getenv("ENTROPY_DICOM_TEST_ROOT");
-  if (!root || std::string(root).empty()) {
+#ifdef _WIN32
+  char* rootBuffer = nullptr;
+  std::size_t rootLength = 0;
+  _dupenv_s(&rootBuffer, &rootLength, "ENTROPY_DICOM_TEST_ROOT");
+  const std::string root = rootBuffer ? rootBuffer : "";
+  std::free(rootBuffer);
+#else
+  const char* rootValue = std::getenv("ENTROPY_DICOM_TEST_ROOT");
+  const std::string root = rootValue ? rootValue : "";
+#endif
+  if (root.empty()) {
     return;
   }
 
