@@ -120,7 +120,7 @@ jobs:
           "${CXX}" --version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-debug-ccache-v1-${{ github.run_id }}
@@ -137,7 +137,7 @@ jobs:
           fi
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*
@@ -235,7 +235,7 @@ jobs:
           gcovr --version
 
       - name: Restore Coverage ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-coverage-ccache-v1-${{ github.run_id }}
@@ -252,7 +252,7 @@ jobs:
           fi
 
       - name: Restore Coverage Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-coverage/external/catch2-*
@@ -390,7 +390,7 @@ jobs:
           dpkg-deb --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-release-ccache-v1-${{ github.run_id }}
@@ -407,7 +407,7 @@ jobs:
           fi
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*

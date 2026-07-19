@@ -106,7 +106,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos14-arm64-appleclang-debug-ccache-v1-${{ github.run_id }}
@@ -123,7 +123,7 @@ jobs:
           fi
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*
@@ -208,7 +208,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos15-intel-x86_64-appleclang-debug-ccache-v1-${{ github.run_id }}
@@ -225,7 +225,7 @@ jobs:
           fi
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*
@@ -307,7 +307,7 @@ jobs:
           xcrun --find llvm-profdata
 
       - name: Restore Coverage ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos14-arm64-appleclang-coverage-ccache-v1-${{ github.run_id }}
@@ -324,7 +324,7 @@ jobs:
           fi
 
       - name: Restore Coverage Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-coverage/external/catch2-*
@@ -427,7 +427,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos14-arm64-appleclang-release-ccache-v1-${{ github.run_id }}
@@ -444,7 +444,7 @@ jobs:
           fi
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -549,7 +549,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos15-intel-x86_64-appleclang-release-ccache-v1-${{ github.run_id }}
@@ -566,7 +566,7 @@ jobs:
           fi
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -670,7 +670,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos26-arm64-appleclang-debug-ccache-v1-${{ github.run_id }}
@@ -687,7 +687,7 @@ jobs:
           fi
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*

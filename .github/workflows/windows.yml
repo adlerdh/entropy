@@ -121,7 +121,7 @@ jobs:
           sccache --version
 
       - name: Restore Debug sccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .sccache
           key: windows-msvc2022-ninja-debug-sccache-${{ env.SCCACHE_CACHE_VERSION }}-${{ github.run_id }}
@@ -133,7 +133,7 @@ jobs:
         run: sccache --zero-stats
 
       - name: Restore Debug Ninja Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*
@@ -242,7 +242,7 @@ jobs:
           Get-Command OpenCppCoverage -ErrorAction Stop
 
       - name: Restore Coverage Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-coverage/external/catch2-*
@@ -356,7 +356,7 @@ jobs:
           Get-Command light.exe -ErrorAction Stop
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -444,7 +444,7 @@ jobs:
           vswhere -latest -products * -version "[18.0,19.0)" -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*

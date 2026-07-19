@@ -115,7 +115,7 @@ jobs:
           "${CXX}" --version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: fedora43-gcc-debug-ccache-v1-${{ github.run_id }}
@@ -128,7 +128,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*
@@ -225,7 +225,7 @@ jobs:
           rpmbuild --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: fedora43-gcc-release-ccache-v1-${{ github.run_id }}
@@ -238,7 +238,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*

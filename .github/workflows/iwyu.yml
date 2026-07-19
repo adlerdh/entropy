@@ -62,7 +62,7 @@ jobs:
           "${CXX}" --version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-iwyu-ccache-v1-${{ github.run_id }}
@@ -70,7 +70,7 @@ jobs:
             ubuntu2204-gcc13-iwyu-ccache-v1-
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-iwyu/external/catch2-*
