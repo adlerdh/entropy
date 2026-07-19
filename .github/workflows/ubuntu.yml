@@ -50,7 +50,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -120,7 +120,7 @@ jobs:
           "${CXX}" --version
 
       - name: Restore Debug ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-debug-ccache-v1-${{ github.run_id }}
@@ -137,7 +137,7 @@ jobs:
           fi
 
       - name: Restore Debug Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-debug/external/catch2-*
@@ -200,7 +200,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build and coverage dependencies
         run: |
@@ -235,7 +235,7 @@ jobs:
           gcovr --version
 
       - name: Restore Coverage ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-coverage-ccache-v1-${{ github.run_id }}
@@ -252,7 +252,7 @@ jobs:
           fi
 
       - name: Restore Coverage Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-coverage/external/catch2-*
@@ -324,18 +324,18 @@ jobs:
 
       - name: Configure GitHub Pages
         if: github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload coverage Pages artifact
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: coverage-pages
 
       - name: Deploy coverage Pages
         id: deployment
         if: github.ref == 'refs/heads/main'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Show Coverage ccache stats
         if: always()
@@ -354,7 +354,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build and packaging dependencies
         run: |
@@ -390,7 +390,7 @@ jobs:
           dpkg-deb --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: ubuntu2204-gcc13-release-ccache-v1-${{ github.run_id }}
@@ -407,7 +407,7 @@ jobs:
           fi
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*

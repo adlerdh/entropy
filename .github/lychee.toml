@@ -9,5 +9,6 @@ exclude = [
   "^mailto:",
   "localhost",
   "127\\.0\\.0\\.1",
+  "^https://en\\.cppreference\\.com/",
   "^https://www\\.shadertoy\\.com/user/Yusef28$",
 ]

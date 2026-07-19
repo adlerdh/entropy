@@ -124,6 +124,26 @@ $N = [Math]::Max(1, [Environment]::ProcessorCount - 2) # Windows
 
 The `deps-*` presets configure with `Entropy_SUPERBUILD=ON`. The `app-*` presets configure the same build directory with `Entropy_SUPERBUILD=OFF`.
 
+## Windows Path Length
+
+ITK may stop early on Windows if the source or build directory path is too long. The simplest fix is to keep the checkout near the root of a drive, e.g.: `C:\entropy`.
+
+Entropy's Windows CI also maps the checkout to a short temporary drive letter before building:
+
+```powershell
+subst S: C:\path\to\entropy
+S:
+```
+
+Build from the mapped drive, then remove the mapping when finished:
+
+```powershell
+C:
+subst S: /D
+```
+
+If Windows long paths are enabled on the system, then ITK's path length check can also be disabled by passing `ITK_SKIP_PATH_LENGTH_CHECKS:BOOL=ON` to ITK during the dependency build. Prefer the shorter path approach unless the system is already configured for long paths.
+
 ## Run Entropy
 
 Run the app from the build tree:

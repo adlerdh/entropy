@@ -207,15 +207,16 @@ Application settings store personal UI preferences and backend configuration. Pr
 
 ## Quick Start
 
-One typical workflow is to load a reference image and one image to compare against it:
+One typical workflow is to load a reference image and other images to compare against it:
 
-1. Open one or more images from the File menu, the opening screen, or the command line
-2. Set the image that you want to compare against as the reference image
-3. Choose a layout and view types for the review or analysis task
-4. Use image visibility, opacity, comparison modes, and the opacity mixer to compare images
-5. Use the voxel inspector to verify coordinates and sampled values
-6. Add segmentations, annotations, landmarks, affine transformations, or warp fields as needed
-7. Save the work as an Entropy project
+1. Open one or more images from the menus (*File -> Open Image(s) / Project / DICOM Series*), the opening screen, or the command line. Multiple images will be loaded in a list that appears across all window panels (menu: *Window -> Images / Segmentations / Registration / Landmarks, Annotations / Isosurfaces*).
+2. By convention, the first image (number 0) is the **Reference** image. It defines the reference/common coordinate space in which all images are displayed. Any other image can be designed as Reference (menu: *Image -> Set as Reference*).
+3. By default, the last image in the list is the **Active** image. View and transformation interactions are applied to the Active image using the mouse and keyboard controls. Set the Active image using menu *Image -> Select Active Image*, the drop-down list in the Images panel, or the [keyboard shortcuts](#keyboard-shortcuts).
+4. Choose a layout and view types for the review or analysis task.
+5. Use image visibility, opacity, comparison modes, and the opacity mixer to compare images.
+6. Use the voxel inspector to verify coordinates and sampled values.
+7. Add segmentations, annotations, landmarks, affine transformations, or warp fields as needed.
+8. Save the work as an Entropy JSON project file. This file will persist all project images, properties, and settings.
 
 ### Command Line
 
@@ -306,24 +307,27 @@ The complete list is available under menu *Help > Keyboard Shortcuts*.
 
 | Shortcut | Action |
 | --- | --- |
-| `V` | Pointer and crosshairs mode |
-| `L` | Window/level mode |
+| `V` | Pointer (crosshairs) mode |
+| `L` | Window width/level adjustment mode |
 | `Z` | Zoom mode |
 | `P` | Pan mode |
-| `R` | Image rotation mode |
-| `T` | Image translation mode |
 | `B` | Segmentation brush mode |
-| `[` / `]` | Previous or next layout |
-| `Shift + [` / `Shift + ]` | Previous/next active image |
+| `R` | Active image rotation mode |
+| `T` | Active image translation mode |
+| `Y` | Active image scaling mode |
 | `Left` / `Right` / `Down` / `Up` | Move crosshairs |
 | `Page Down` / `Page Up` | Previous/next slice |
-| `W` | Toggle image visibility |
-| `S` | Toggle segmentation visibility |
+| `[` / `]` | Previous/next view layout |
+| `Shift + [` / `Shift + ]` | Set previous/next image as active |
+| `W` | Toggle active image visibility |
+| `Q` / `E` | Reduce/increase active image opacity |
+| `S` | Toggle active segmentation visibility |
+| `A` / `D` | Reduce/increase active segmentation opacity |
 | `C` | Recenter views on crosshairs |
 | `Shift + C` | Reset view orientation, zoom, and centering |
-| `X` | Show/hide crosshairs |
-| `U` | Show/hide user interface |
-| `I` | Show/hide voxel inspector |
+| `X` | Toggle crosshairs visibility |
+| `U` | Toggle user interface |
+| `I` | Toggle voxel inspector |
 | `O` | Cycle view overlays |
 
 ## Runtime Files

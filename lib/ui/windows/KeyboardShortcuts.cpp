@@ -132,8 +132,8 @@ const std::vector<KeyboardShortcutRow>& keyboardShortcutRows()
     {"Images", "Shift + E", "Show image edges", "Toggle image edge rendering"},
     {"Images", "Q", "Decrease image opacity", "Decrease active image opacity"},
     {"Images", "E", "Increase image opacity", "Increase active image opacity"},
-    {"Images", "Shift + [", "Previous active image", "Select the previous loaded image"},
-    {"Images", "Shift + ]", "Next active image", "Select the next loaded image"},
+    {"Images", "Shift + [", "Activate previous image", "Select the previous loaded image"},
+    {"Images", "Shift + ]", "Activate next image", "Select the next loaded image"},
     {"Images", "Shift + Page Down", "Previous component", "Select the previous image component"},
     {"Images", "Shift + Page Up", "Next component", "Select the next image component"},
 

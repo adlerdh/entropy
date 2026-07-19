@@ -558,12 +558,13 @@ void addImageMenu(NSMenu* mainMenu) {
     MainMenuAction::ExportActiveImage,
     @"square.and.arrow.up");
   [menu addItem:[NSMenuItem separatorItem]];
-  NSMenuItem* activeImageItem = [[NSMenuItem alloc] initWithTitle:@"Active Image" action:nil keyEquivalent:@""];
+  NSMenuItem* activeImageItem = [[NSMenuItem alloc] initWithTitle:@"Select Active Image" action:nil keyEquivalent:@""];
   setMenuItemSymbol(activeImageItem, @"photo.stack");
-  g_activeImagesMenu = [[NSMenu alloc] initWithTitle:@"Active Image"];
+  g_activeImagesMenu = [[NSMenu alloc] initWithTitle:@"Select Active Image"];
   [activeImageItem setSubmenu:g_activeImagesMenu];
   [menu addItem:activeImageItem];
   addSymbolActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage, @"xmark");
+  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference, @"scope");
   addSymbolActionMenuItem(
     menu,
@@ -1049,6 +1050,23 @@ void rebuildActiveImagesMenu() {
     [item setTag:static_cast<NSInteger>(i)];
     [item setState:(i == activeIndex) ? NSControlStateValueOn : NSControlStateValueOff];
   }
+  if (!names.empty()) {
+    [g_activeImagesMenu addItem:[NSMenuItem separatorItem]];
+  }
+  addSymbolActionMenuItem(
+    g_activeImagesMenu,
+    @"Activate Previous Image",
+    MainMenuAction::ActivatePreviousImage,
+    @"arrow.left.square",
+    @"[",
+    NSEventModifierFlagShift);
+  addSymbolActionMenuItem(
+    g_activeImagesMenu,
+    @"Activate Next Image",
+    MainMenuAction::ActivateNextImage,
+    @"arrow.right.square",
+    @"]",
+    NSEventModifierFlagShift);
 }
 }  // namespace
 

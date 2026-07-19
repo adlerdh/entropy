@@ -438,7 +438,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   }
   actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   ImGui::Separator();
-  if (ImGui::BeginMenu("Active Image", callbacks.canAddImage)) {
+  if (ImGui::BeginMenu("Select Active Image", callbacks.canAddImage)) {
     const auto names = callbacks.imageNames ? callbacks.imageNames() : std::vector<std::string>{};
     const std::size_t activeIndex = callbacks.activeImageIndex ? callbacks.activeImageIndex() : 0;
     for (std::size_t i = 0; i < names.size(); ++i) {
@@ -446,9 +446,15 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
         callbacks.setActiveImageIndex(i);
       }
     }
+    if (!names.empty()) {
+      ImGui::Separator();
+    }
+    actionMenuItem(callbacks, "Activate Previous Image", MainMenuAction::ActivatePreviousImage, "Shift+[");
+    actionMenuItem(callbacks, "Activate Next Image", MainMenuAction::ActivateNextImage, "Shift+]");
     ImGui::EndMenu();
   }
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
+  ImGui::Separator();
   actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
   actionMenuItem(callbacks, "Lock Manual Affine Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
   ImGui::Separator();

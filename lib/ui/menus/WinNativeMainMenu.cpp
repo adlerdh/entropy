@@ -821,8 +821,9 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertSeparator(menu, position++) && insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
     insertMenuItem(menu, position++, k_addDicomSeriesCommand, L"Add &DICOM Series...") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ExportActiveImage, L"&Export DICOM Series as Image...") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Select Active Image") &&
     insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
+    insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::SetActiveImageAsReference, L"Set Image as &Reference") &&
     insertActionMenuItem(
       menu,
@@ -1080,7 +1081,19 @@ bool populateActiveImagesMenu(HMENU activeImagesMenu, const MainMenuBarCallbacks
     }
     CheckMenuItem(activeImagesMenu, command, MF_BYCOMMAND | (i == activeIndex ? MF_CHECKED : MF_UNCHECKED));
   }
-  return true;
+  if (!imageNames.empty() && !insertSeparator(activeImagesMenu, position++)) {
+    return false;
+  }
+  return insertActionMenuItem(
+           activeImagesMenu,
+           position++,
+           MainMenuAction::ActivatePreviousImage,
+           L"Activate &Previous Image\tShift+[") &&
+         insertActionMenuItem(
+           activeImagesMenu,
+           position++,
+           MainMenuAction::ActivateNextImage,
+           L"Activate &Next Image\tShift+]");
 }
 
 bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callbacks)

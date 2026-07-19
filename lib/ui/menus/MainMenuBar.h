@@ -48,6 +48,8 @@ enum class MainMenuAction
   ToggleSyncSendPan,
   ToggleSyncReceivePan,
   SetActiveImageAsReference,
+  ActivatePreviousImage,
+  ActivateNextImage,
   ExportActiveImage,
   RemoveActiveImage,
   MoveActiveImageBackward,

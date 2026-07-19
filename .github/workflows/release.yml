@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Verify release tag matches project version
         id: version
@@ -71,7 +71,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -88,7 +88,7 @@ jobs:
           Get-Command light.exe -ErrorAction Stop
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -183,7 +183,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -223,7 +223,7 @@ jobs:
           dpkg-deb --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: linux-ubuntu2204-gcc13-release-publish-ccache-v1-${{ github.run_id }}
@@ -236,7 +236,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -338,7 +338,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -357,7 +357,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos14-arm64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
@@ -370,7 +370,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -476,7 +476,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -495,7 +495,7 @@ jobs:
           xcrun --show-sdk-version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: macos15-intel-x86_64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
@@ -508,7 +508,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -643,7 +643,7 @@ jobs:
             wayland-devel
 
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -663,7 +663,7 @@ jobs:
           rpmbuild --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .ccache
           key: linux-fedora43-gcc-release-publish-ccache-v1-${{ github.run_id }}
@@ -676,7 +676,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             build-release/external/catch2-*
@@ -783,12 +783,12 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: release-assets
           merge-multiple: true

@@ -3444,6 +3444,12 @@ void ImGuiWrapper::render()
           m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
         }
         break;
+      case MainMenuAction::ActivatePreviousImage:
+        m_callbackHandler.cycleActiveImage(-1);
+        break;
+      case MainMenuAction::ActivateNextImage:
+        m_callbackHandler.cycleActiveImage(1);
+        break;
       case MainMenuAction::ExportActiveImage:
         if (const auto imageUid = activeImageUid()) {
           image_export::exportDicomImage(m_appData, *imageUid);
@@ -3843,6 +3849,9 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleLayoutTabs:
         case MainMenuAction::ResetProjectSettings:
           return canUseProjectActions;
+        case MainMenuAction::ActivatePreviousImage:
+        case MainMenuAction::ActivateNextImage:
+          return canUseProjectActions && hasActiveImage && m_appData.numImages() > 1;
         case MainMenuAction::PreviousForegroundLabel:
         case MainMenuAction::NextForegroundLabel:
         case MainMenuAction::PreviousBackgroundLabel:
