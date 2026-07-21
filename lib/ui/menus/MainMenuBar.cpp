@@ -541,7 +541,8 @@ void renderAnnotationMenu(const MainMenuBarCallbacks& callbacks)
 {
   actionMenuItem(callbacks, "Annotations Panel", MainMenuAction::ToggleAnnotationsWindow);
   ImGui::Separator();
-  actionMenuItem(callbacks, "Save All Annotations...", MainMenuAction::SaveAnnotations);
+  actionMenuItem(callbacks, "Import Annotations...", MainMenuAction::ImportAnnotations);
+  actionMenuItem(callbacks, "Export Annotations...", MainMenuAction::ExportAnnotations);
   actionMenuItem(callbacks, "Remove Active Annotation", MainMenuAction::RemoveAnnotation);
   ImGui::Separator();
   actionMenuItem(callbacks, "Move Annotation Backward", MainMenuAction::MoveAnnotationBackward);

@@ -1,5 +1,6 @@
 #include "image/Image.h"
 #include "internal/ImageCastHelper.tpp"
+#include "image/ImageWindowDefaults.h"
 #include "image/ImageUtility.h"
 #include "internal/ImageUtilityItk.h"
 #include "internal/ImageUtility.tpp"
@@ -15,6 +16,7 @@
 #include <cstddef>
 #include <cstring>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -79,14 +81,21 @@ std::vector<std::byte> compactInterleavedComponents(
 void setDefaultComponentRendering(
   ImageSettings& settings,
   const ImageHeader& header,
-  Image::ImageRepresentation imageRep)
+  Image::ImageRepresentation imageRep,
+  const std::vector<ComponentStats>& componentStats)
 {
   if (Image::ImageRepresentation::Image == imageRep && header.numComponentsPerPixel() > 1u) {
     const bool standardRasterColorImage = isStandardRasterColorImage(header);
     settings.setComponentRenderMode(
       standardRasterColorImage ? ComponentRenderMode::Color : ComponentRenderMode::Magnitude);
-    if (standardRasterColorImage && ComponentType::UInt8 == header.memoryComponentType()) {
-      settings.setFullUInt8WindowForAllComponents();
+    if (standardRasterColorImage && !componentStats.empty()) {
+      // RGB/RGBA raster images are display data. Unsigned integer color channels should open with
+      // their full channel range, while float or signed color data uses the measured data range.
+      const std::optional<image_window_defaults::WindowRange> range =
+        image_window_defaults::rasterColorComponentWindow(header.memoryComponentType(), componentStats.front());
+      if (range) {
+        settings.setWindowRangeForAllComponents({range->low, range->high});
+      }
     }
     if (standardRasterColorImage && PixelType::RGBA == header.pixelType()) {
       settings.setIgnoreAlpha(true);
@@ -345,7 +354,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     componentStats);
-  setDefaultComponentRendering(m_settings, m_header, m_imageRep);
+  setDefaultComponentRendering(m_settings, m_header, m_imageRep, componentStats);
   setDefaultVectorFieldRendering(m_settings, m_header);
   setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));
 
@@ -376,7 +385,7 @@ Image::Image(
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     std::move(componentStats));
-  setDefaultComponentRendering(m_settings, m_header, m_imageRep);
+  setDefaultComponentRendering(m_settings, m_header, m_imageRep, componentStats);
   setDefaultVectorFieldRendering(m_settings, m_header);
   setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));
 }
@@ -572,8 +581,8 @@ Image::Image(
     m_header.numPixels(),
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
-    std::move(componentStats));
-  setDefaultComponentRendering(m_settings, m_header, m_imageRep);
+    componentStats);
+  setDefaultComponentRendering(m_settings, m_header, m_imageRep, componentStats);
   setDefaultVectorFieldRendering(m_settings, m_header);
   setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));
 

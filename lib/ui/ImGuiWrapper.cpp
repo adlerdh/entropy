@@ -3161,42 +3161,70 @@ void ImGuiWrapper::render()
     }
   };
 
-  auto projectHasAnnotations = [this]() {
-    return std::ranges::any_of(m_appData.imageUidsOrdered(), [this](const auto& imageUid) {
-      return !m_appData.annotationsForImage(imageUid).empty();
-    });
+  auto importAnnotationsToActiveImage = [activeImageUid, this]() {
+    const auto imageUid = activeImageUid();
+    if (!imageUid) {
+      return;
+    }
+
+    if (const auto selectedFile = native_dialog::openFile(native_dialog::annotationFilters())) {
+      std::vector<Annotation> annotations;
+      if (!serialize::openAnnotationsFromJsonFile(annotations, *selectedFile)) {
+        spdlog::error("Error importing annotations from JSON file {}", *selectedFile);
+        return;
+      }
+
+      std::size_t numImportedAnnotations = 0;
+      for (auto& annotation : annotations) {
+        annotation.setFileName(*selectedFile);
+        if (const auto annotationUid = m_appData.addAnnotation(*imageUid, annotation)) {
+          m_appData.assignActiveAnnotationUidToImage(*imageUid, annotationUid);
+          ++numImportedAnnotations;
+        }
+      }
+      ASM::synchronizeAnnotationHighlights();
+      spdlog::info("Imported {} annotations from JSON file {}", numImportedAnnotations, *selectedFile);
+    }
   };
 
-  auto saveAllAnnotations = [projectHasAnnotations, this]() {
-    if (!projectHasAnnotations()) {
+  auto activeImageHasAnnotations = [activeImageUid, this]() {
+    const auto imageUid = activeImageUid();
+    return imageUid && !m_appData.annotationsForImage(*imageUid).empty();
+  };
+
+  auto exportAnnotationsForActiveImage = [activeImageHasAnnotations, activeImageUid, this]() {
+    const auto imageUid = activeImageUid();
+    if (!imageUid || !activeImageHasAnnotations()) {
       return;
     }
 
     if (const auto selectedFile = native_dialog::saveFile(native_dialog::annotationFilters())) {
-      nlohmann::json annotationsJson;
-      std::size_t numSavedAnnotations = 0;
-      for (const auto& imageUid : m_appData.imageUidsOrdered()) {
-        for (const auto& annotUid : m_appData.annotationsForImage(imageUid)) {
-          if (const Annotation* annot = m_appData.annotation(annotUid)) {
-            serialize::appendAnnotationToJson(*annot, annotationsJson);
-            ++numSavedAnnotations;
-          }
+      std::vector<Annotation> annotations;
+      std::size_t numExportedAnnotations = 0;
+      for (const auto& annotUid : m_appData.annotationsForImage(*imageUid)) {
+        if (const Annotation* annot = m_appData.annotation(annotUid)) {
+          annotations.push_back(*annot);
+          ++numExportedAnnotations;
         }
       }
 
+      const nlohmann::json annotationsJson = annotationsToJson(annotations);
+
       if (serialize::saveToJsonFile(annotationsJson, *selectedFile)) {
-        spdlog::info("Saved {} annotations to JSON file {}", numSavedAnnotations, *selectedFile);
-        for (const auto& imageUid : m_appData.imageUidsOrdered()) {
-          for (const auto& annotUid : m_appData.annotationsForImage(imageUid)) {
-            if (Annotation* annot = m_appData.annotation(annotUid)) {
-              annot->setFileName(*selectedFile);
-              annot->markClean();
-            }
+        spdlog::info(
+          "Exported {} annotations for image {} to JSON file {}",
+          numExportedAnnotations,
+          *imageUid,
+          *selectedFile);
+        for (const auto& annotUid : m_appData.annotationsForImage(*imageUid)) {
+          if (Annotation* annot = m_appData.annotation(annotUid)) {
+            annot->setFileName(*selectedFile);
+            annot->markClean();
           }
         }
       }
       else {
-        spdlog::error("Error saving annotations to JSON file {}", *selectedFile);
+        spdlog::error("Error exporting annotations to JSON file {}", *selectedFile);
       }
     }
   };
@@ -3289,7 +3317,8 @@ void ImGuiWrapper::render()
                             activeAnnotation,
                             createActiveSegmentation,
                             saveActiveSegmentation,
-                            saveAllAnnotations,
+                            importAnnotationsToActiveImage,
+                            exportAnnotationsForActiveImage,
                             createActiveLandmarkGroup,
                             saveActiveLandmarkGroup,
                             addLandmarkAtCrosshairs,
@@ -3672,8 +3701,11 @@ void ImGuiWrapper::render()
       case MainMenuAction::PaintSegmentationFromAnnotation:
         if (m_paintActiveSegmentationWithActivePolygon) m_paintActiveSegmentationWithActivePolygon();
         break;
-      case MainMenuAction::SaveAnnotations:
-        saveAllAnnotations();
+      case MainMenuAction::ImportAnnotations:
+        importAnnotationsToActiveImage();
+        break;
+      case MainMenuAction::ExportAnnotations:
+        exportAnnotationsForActiveImage();
         break;
       case MainMenuAction::RemoveAnnotation:
         if (const auto [imageUid, annotUid] = activeAnnotation(); imageUid && annotUid) {
@@ -3782,7 +3814,7 @@ void ImGuiWrapper::render()
   };
 
   auto isMenuActionEnabled =
-    [activeImageUid, activeSegUid, activeAnnotation, activeLandmarkGroupUid, projectHasAnnotations, this](
+    [activeImageUid, activeSegUid, activeAnnotation, activeLandmarkGroupUid, activeImageHasAnnotations, this](
       MainMenuAction action) {
       const bool loaded = ProjectLoadState::Loaded == m_appData.state().projectLoadState();
       const bool backgroundTaskRunning = m_appData.state().animating();
@@ -3920,8 +3952,10 @@ void ImGuiWrapper::render()
           return canUseProjectActions;
         case MainMenuAction::PaintSegmentationFromAnnotation:
           return canUseProjectActions && hasActiveSeg && hasActiveAnnotation;
-        case MainMenuAction::SaveAnnotations:
-          return canUseProjectActions && projectHasAnnotations();
+        case MainMenuAction::ImportAnnotations:
+          return canUseProjectActions && activeImageUid().has_value();
+        case MainMenuAction::ExportAnnotations:
+          return canUseProjectActions && activeImageHasAnnotations();
         case MainMenuAction::RemoveAnnotation:
         case MainMenuAction::MoveAnnotationBackward:
         case MainMenuAction::MoveAnnotationForward:

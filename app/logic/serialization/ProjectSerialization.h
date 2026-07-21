@@ -451,7 +451,7 @@ struct Image
   std::optional<serialize::DicomSource> m_dicomSource = std::nullopt;
 
   /**
-   * Optional 4x4 affine transformation text file name
+   * Optional initial/imported affine transformation text file name.
    */
   std::optional<std::filesystem::path> m_affineTxFileName = std::nullopt;
 
@@ -477,14 +477,19 @@ struct Image
   std::optional<std::filesystem::path> m_forwardWarpFileName = std::nullopt;
 
   /**
-   * Optional manual transformation matrix from affine-registered subject space to world space
+   * Optional manual affine matrix from affine-registered subject space to world space.
    */
   std::optional<glm::mat4> m_worldDefTx = std::nullopt;
 
   /**
-   * Optional annotations JSON file name
+   * Optional external annotations JSON file name.
    */
   std::optional<std::filesystem::path> m_annotationsFileName = std::nullopt;
+
+  /**
+   * Embedded annotations saved directly in the project file.
+   */
+  std::vector<Annotation> m_annotations;
 
   /**
    * Segmentation image file names (each image can have multiple segmentations)
@@ -748,13 +753,6 @@ bool saveLandmarkGroupCsvFile(
  * @return True iff annotations were loaded from JSON file
  */
 bool openAnnotationsFromJsonFile(std::vector<Annotation>& annots, const std::filesystem::path& jsonFileName);
-
-/**
- * @brief Append an annotation to a JSON structure
- * @param[in] annot Annotation to append
- * @param[out] j JSON structure holding annotation(s)
- */
-void appendAnnotationToJson(const Annotation& annot, nlohmann::json& j);
 
 /**
  * @brief Save a JSON object to disk

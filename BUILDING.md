@@ -1,6 +1,8 @@
 # Building Entropy
 
-This guide explains how to configure, build, and test Entropy from source. Entropy uses CMake and a two-stage dependency build, following the CMake "superbuild" pattern: first build the pinned third-party dependencies, then configure and build the Entropy app against those dependencies.
+This guide explains how to configure, build, and test Entropy from source. Entropy uses CMake and a two-stage dependency
+build, following the CMake "superbuild" pattern: first build the pinned third-party dependencies, then configure and
+build the Entropy app against those dependencies.
 
 For installer, archive, signing, and GitHub release details, see [PACKAGING.md](PACKAGING.md).
 
@@ -11,7 +13,8 @@ For installer, archive, signing, and GitHub release details, see [PACKAGING.md](
 - Git and network access for the dependency build
 - Disk space for dependencies and build products
 
-A completed release build tree is roughly 2-3 GB. A clean build needs more temporary space because source archives, extracted sources, build trees, and install trees coexist during the dependency build. Allow at least 8-10 GB.
+A completed release build tree is roughly 2-3 GB. A clean build needs more temporary space because source archives,
+extracted sources, build trees, and install trees coexist during the dependency build. Allow at least 8-10 GB.
 
 Entropy is developed and tested on:
 
@@ -26,7 +29,8 @@ Other systems may work if they provide a C++23 compiler and the required OpenGL/
 
 ## Linux Packages
 
-On Debian or Ubuntu, install the development packages needed for OpenGL, windowing, native file dialogs, OpenSSL, and the dependency build:
+On Debian or Ubuntu, install the development packages needed for OpenGL, windowing, native file dialogs, OpenSSL, and
+the dependency build:
 
 ```sh
 sudo apt-get update
@@ -77,7 +81,8 @@ sudo dnf install -y \
 
 ## Build with Presets
 
-The supported local build path is through [CMakePresets.json](CMakePresets.json). Configure and build dependencies first, then configure and build the app in the same build directory.
+The supported local build path is through [CMakePresets.json](CMakePresets.json). Configure and build dependencies
+first, then configure and build the app in the same build directory.
 
 Debug build:
 
@@ -99,9 +104,11 @@ cmake --preset app-release
 cmake --build --preset app-release --parallel
 ```
 
-The presets enable `Entropy_USE_CCACHE=ON`. If `ccache` is installed, CMake uses it as the compiler launcher to speed up repeated local builds. If `ccache` is not installed, the build continues normally without caching.
+The presets enable `Entropy_USE_CCACHE=ON`. If `ccache` is installed, CMake uses it as the compiler launcher to speed up
+repeated local builds. If `ccache` is not installed, the build continues normally without caching.
 
-If the dependency build runs out of memory, pass a smaller number to `--parallel` (`-j`), e.g. the number of logical CPUs minus two, with a minimum of one:
+If the dependency build runs out of memory, pass a smaller number to `--parallel` (`-j`), e.g. the number of logical
+CPUs minus two, with a minimum of one:
 
 ```sh
 N=$(( $(nproc) - 2 )); [ "$N" -lt 1 ] && N=1 # Linux
@@ -122,11 +129,13 @@ $N = [Math]::Max(1, [Environment]::ProcessorCount - 2) # Windows
 | `app-release` | `build-release` | Configure/build the Release app and tests after `deps-release` |
 | `package-release` | `build-release` | Build the Release package target after `app-release` |
 
-The `deps-*` presets configure with `Entropy_SUPERBUILD=ON`. The `app-*` presets configure the same build directory with `Entropy_SUPERBUILD=OFF`.
+The `deps-*` presets configure with `Entropy_SUPERBUILD=ON`. The `app-*` presets configure the same build directory with
+`Entropy_SUPERBUILD=OFF`.
 
 ## Windows Path Length
 
-ITK may stop early on Windows if the source or build directory path is too long. The simplest fix is to keep the checkout near the root of a drive, e.g.: `C:\entropy`.
+ITK may stop early on Windows if the source or build directory path is too long. The simplest fix is to keep the
+checkout near the root of a drive, e.g.: `C:\entropy`.
 
 Entropy's Windows CI also maps the checkout to a short temporary drive letter before building:
 
@@ -142,7 +151,9 @@ C:
 subst S: /D
 ```
 
-If Windows long paths are enabled on the system, then ITK's path length check can also be disabled by passing `ITK_SKIP_PATH_LENGTH_CHECKS:BOOL=ON` to ITK during the dependency build. Prefer the shorter path approach unless the system is already configured for long paths.
+If Windows long paths are enabled on the system, then ITK's path length check can also be disabled by passing
+`ITK_SKIP_PATH_LENGTH_CHECKS:BOOL=ON` to ITK during the dependency build. Prefer the shorter path approach unless the
+system is already configured for long paths.
 
 ## Run Entropy
 
@@ -189,7 +200,8 @@ cmake --preset app-release
 cmake --build --preset package-release --parallel
 ```
 
-See [PACKAGING.md](PACKAGING.md) for package formats, release artifact names, signing notes, and GitHub release behavior.
+See [PACKAGING.md](PACKAGING.md) for package formats, release artifact names, signing notes, and GitHub release
+behavior.
 
 ## Coverage
 
@@ -219,13 +231,14 @@ Coverage backend selection is automatic by default:
 | GCC | [gcov-compatible coverage](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html) |
 | MSVC | [OpenCppCoverage](https://github.com/OpenCppCoverage/OpenCppCoverage) |
 
-The `coverage` target writes machine-readable output under `build-coverage/coverage/`. The `coverage-html` target writes an HTML report under `build-coverage/coverage/html/`.
+The `coverage` target writes machine-readable output under `build-coverage/coverage/`. The `coverage-html` target writes
+an HTML report under `build-coverage/coverage/html/`.
 
 ## Local Hygiene Checks
 
 Entropy uses [pre-commit](https://pre-commit.com/) for lightweight local checks before committing.
-The default hooks run `codespell` and `clang-format`; the Markdown link check is manual because it uses
-the network and can fail when external sites are temporarily unavailable.
+The default hooks run `codespell` and `clang-format`; the Markdown link check is manual because it uses the network and
+can fail when external sites are temporarily unavailable.
 
 Install and enable it:
 
@@ -246,7 +259,8 @@ Run the Markdown link check when editing documentation:
 pre-commit run lychee-doc-links --hook-stage manual
 ```
 
-The manual link hook expects `lychee` to be installed and available on `PATH`. (The GitHub Actions text hygiene workflow is manual.)
+The manual link hook expects `lychee` to be installed and available on `PATH`. (The GitHub Actions text hygiene workflow
+is manual.)
 
 ## CMake Options
 
@@ -274,13 +288,18 @@ Pass options at configure time with `-DNAME=value`, or put local overrides in `C
 | `Entropy_GLAD_GL_VERSION` | `3.3` | Application | Selects the vendored GLAD OpenGL Core loader version: `3.3`, `4.1`, or `4.6` |
 | `Entropy_GLAD_GL_DEBUG` | `false` | Application | Uses the debug GLAD loader variant |
 
-Standard CMake variables such as `CMAKE_INSTALL_PREFIX`, `CMAKE_OSX_DEPLOYMENT_TARGET`, `CMAKE_PREFIX_PATH`, and generator selection also work normally. Packaging options are documented in [PACKAGING.md](PACKAGING.md).
+Standard CMake variables such as `CMAKE_INSTALL_PREFIX`, `CMAKE_OSX_DEPLOYMENT_TARGET`, `CMAKE_PREFIX_PATH`, and
+generator selection also work normally. Packaging options are documented in [PACKAGING.md](PACKAGING.md).
 
 ## Continuous Integration
 
-CI workflows are under [.github/workflows](.github/workflows). They build and test Entropy on macOS, Windows, Ubuntu, and Fedora.
+CI workflows are under [.github/workflows](.github/workflows). They build and test Entropy on macOS, Windows, Ubuntu,
+and Fedora.
 
-Pull requests and pushes to `main` run formatting checks, debug builds, and unit tests on the primary CI platforms. Additional coverage, release-package validation, static analysis, text hygiene, and compatibility jobs are available through scheduled or manual workflow runs. Official tag-driven release builds are handled by the release workflow described in [PACKAGING.md](PACKAGING.md).
+Pull requests and pushes to `main` run formatting checks, debug builds, and unit tests on the primary CI platforms.
+Additional coverage, release-package validation, static analysis, text hygiene, and compatibility jobs are available
+through scheduled or manual workflow runs. Official tag-driven release builds are handled by the release workflow
+described in [PACKAGING.md](PACKAGING.md).
 
 The main CI build matrix is:
 
@@ -294,12 +313,16 @@ The main CI build matrix is:
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | `gcc-13` / `g++-13` | Debug build and tests, release packages, and primary coverage |
 | Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15.2.1 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
 
-The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA, which currently resolves to GCC 13.3.0. Ubuntu 24.04 is used as the host runner for Fedora container jobs, not as a separate Ubuntu application build.
+The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA, which currently resolves to GCC
+13.3.0. Ubuntu 24.04 is used as the host runner for Fedora container jobs, not as a separate Ubuntu application build.
 
-macOS release artifacts are built separately for `arm64` and `x86_64`. Entropy does not publish a universal macOS binary.
+macOS release artifacts are built separately for `arm64` and `x86_64`. Entropy does not publish a universal macOS
+binary.
 
-> The workflow files are the source of truth for exact runner images, package installation commands, cache keys, and artifact upload names.
+> The workflow files are the source of truth for exact runner images, package installation commands, cache keys, and
+> artifact upload names.
 
 ## Third-Party Dependencies
 
-Entropy builds pinned third-party dependencies from source during the dependency stage. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Entropy builds pinned third-party dependencies from source during the dependency stage. Versions, source URLs, and
+license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

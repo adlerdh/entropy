@@ -884,7 +884,8 @@ bool populateAnnotationsMenu(HMENU menu)
   UINT position = 0;
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations Panel") &&
          insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SaveAnnotations, L"&Save All Annotations...") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ImportAnnotations, L"&Import Annotations...") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ExportAnnotations, L"&Export Annotations...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::RemoveAnnotation, L"&Remove Active Annotation") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationBackward, L"Move Annotation &Backward") &&

@@ -14,6 +14,8 @@ namespace fs = std::filesystem;
 
 using json = nlohmann::json;
 
+Annotation::Annotation() {}
+
 void to_json(json& j, const Annotation&)
 {
   j = json::object();
@@ -22,6 +24,20 @@ void to_json(json& j, const Annotation&)
 void from_json(const json&, std::vector<Annotation>& annotations)
 {
   annotations.clear();
+}
+
+json annotationsToJson(const std::vector<Annotation>& annotations)
+{
+  json annotationArray = json::array();
+  for (std::size_t i = 0; i < annotations.size(); ++i) {
+    annotationArray.emplace_back(json::object());
+  }
+  return json{{"version", 1}, {"annotations", std::move(annotationArray)}};
+}
+
+std::vector<Annotation> annotationsFromJson(const json&)
+{
+  return {};
 }
 
 namespace
@@ -430,8 +446,10 @@ TEST_CASE(
   REQUIRE(root.at("additional").size() == 1);
 
   const json& serializedImage = root.at("additional").at(0);
-  CHECK(serializedImage.at("affine") == "moving-affine.txt");
-  REQUIRE(serializedImage.contains("manualTransformation"));
+  CHECK(serializedImage.at("initialAffine") == "moving-affine.txt");
+  REQUIRE(serializedImage.contains("manualAffine"));
+  CHECK_FALSE(serializedImage.contains("affine"));
+  CHECK_FALSE(serializedImage.contains("manualTransformation"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_additionalImages.size() == 1);
@@ -468,8 +486,10 @@ TEST_CASE(
 
   const json saved = json::parse(std::ifstream{projectFile});
   REQUIRE(saved.contains("additional"));
-  CHECK(saved.at("additional").at(0).at("affine") == "moving-affine.txt");
-  REQUIRE(saved.at("additional").at(0).contains("manualTransformation"));
+  CHECK(saved.at("additional").at(0).at("initialAffine") == "moving-affine.txt");
+  REQUIRE(saved.at("additional").at(0).contains("manualAffine"));
+  CHECK_FALSE(saved.at("additional").at(0).contains("affine"));
+  CHECK_FALSE(saved.at("additional").at(0).contains("manualTransformation"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -478,6 +498,36 @@ TEST_CASE(
   CHECK(*loaded.m_additionalImages.at(0).m_affineTxFileName == fs::canonical(affineFile));
   REQUIRE(loaded.m_additionalImages.at(0).m_worldDefTx.has_value());
   checkMat4(*loaded.m_additionalImages.at(0).m_worldDefTx, *image.m_worldDefTx);
+}
+
+TEST_CASE("Project serialization supports embedded and external annotations", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "reference.nii.gz";
+  project.m_referenceImage.m_annotationsFileName = "reference-annotations.json";
+  project.m_referenceImage.m_annotations.assign(2, Annotation{});
+
+  const json root = project;
+  const json& reference = root.at("reference");
+  CHECK(reference.at("annotationsFile") == "reference-annotations.json");
+  REQUIRE(reference.at("annotations").is_object());
+  CHECK(reference.at("annotations").at("version") == 1);
+  REQUIRE(reference.at("annotations").at("annotations").is_array());
+  CHECK(reference.at("annotations").at("annotations").size() == 2);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_annotationsFileName);
+  CHECK(*parsed.m_referenceImage.m_annotationsFileName == fs::path{"reference-annotations.json"});
+}
+
+TEST_CASE("Project serialization accepts old annotation path spelling", "[project][serialization]")
+{
+  const json root = {{"reference", {{"image", "reference.nii.gz"}, {"annotations", "reference-annotations.json"}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_annotationsFileName);
+  CHECK(*parsed.m_referenceImage.m_annotationsFileName == fs::path{"reference-annotations.json"});
+  CHECK(parsed.m_referenceImage.m_annotations.empty());
 }
 
 TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")
@@ -925,6 +975,8 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   CHECK(savedResult.at("warpedImage") == "registration/warped.nii.gz");
   CHECK(savedResult.at("inverseWarp") == "registration/inverse.nrrd");
   CHECK(savedResult.at("forwardWarp") == "registration/forward.nrrd");
+  CHECK(savedResult.at("affine") == "registration/affine.mat");
+  CHECK_FALSE(savedResult.contains("affineTransform"));
   CHECK(savedResult.at("warpedSegmentations").at(0) == "registration/seg.nii.gz");
 
   serialize::EntropyProject loaded;
@@ -934,9 +986,13 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   REQUIRE(loadedResult.m_manifestFileName);
   REQUIRE(loadedResult.m_warpedImage);
   REQUIRE(loadedResult.m_inverseWarp);
+  REQUIRE(loadedResult.m_forwardWarp);
+  REQUIRE(loadedResult.m_affineTransform);
   CHECK(*loadedResult.m_manifestFileName == fs::canonical(manifestFile));
   CHECK(*loadedResult.m_warpedImage == fs::canonical(warpedFile));
   CHECK(*loadedResult.m_inverseWarp == fs::canonical(inverseFile));
+  CHECK(*loadedResult.m_forwardWarp == fs::canonical(forwardFile));
+  CHECK(*loadedResult.m_affineTransform == fs::canonical(affineFile));
   REQUIRE(loadedResult.m_warpedSegmentations.size() == 1);
   CHECK(loadedResult.m_warpedSegmentations.front() == fs::canonical(segFile));
   REQUIRE(loadedResult.m_warnings.size() == 1);

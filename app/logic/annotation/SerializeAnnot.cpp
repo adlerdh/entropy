@@ -1,37 +1,121 @@
 #include "logic/annotation/SerializeAnnot.h"
 #include "common/Exception.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <cmath>
 #include <limits>
+#include <string>
 #include <vector>
+
+using json = nlohmann::json;
 
 namespace
 {
 static constexpr size_t OUTER_BOUNDARY = 0;
+static constexpr int ANNOTATION_JSON_VERSION = 1;
+static constexpr const char* POLYGON_ANNOTATION_TYPE = "polygon";
+
+json colorToJson(const glm::vec4& color)
+{
+  return json{{"r", color.r}, {"g", color.g}, {"b", color.b}, {"a", color.a}};
 }
 
-using json = nlohmann::json;
+glm::vec4 colorFromJson(const json& value, const glm::vec4& fallback)
+{
+  if (value.is_object()) {
+    return glm::vec4{
+      value.value("r", fallback.r),
+      value.value("g", fallback.g),
+      value.value("b", fallback.b),
+      value.value("a", fallback.a)};
+  }
+
+  if (value.is_array() && value.size() == 4) {
+    return glm::vec4{
+      value.at(0).get<float>(),
+      value.at(1).get<float>(),
+      value.at(2).get<float>(),
+      value.at(3).get<float>()};
+  }
+
+  throw_debug("JSON structure contains invalid color")
+}
+
+json boundaryToJson(const std::vector<glm::vec2>& vertices)
+{
+  json boundary = json::array();
+  for (const auto& vertex : vertices) {
+    boundary.emplace_back(std::vector<float>{vertex.x, vertex.y});
+  }
+  return boundary;
+}
+
+std::vector<glm::vec2> boundaryFromJson(const json& boundaryJson)
+{
+  std::vector<glm::vec2> vertices;
+  for (const auto& vertex : boundaryJson) {
+    if (!vertex.is_array() || vertex.size() != 2) {
+      throw_debug("JSON structure contains invalid vertex")
+    }
+    vertices.emplace_back(vertex.at(0).get<float>(), vertex.at(1).get<float>());
+  }
+  return vertices;
+}
+
+json boundariesToJson(const Annotation& annot)
+{
+  json boundaries = json::array();
+
+  // The annotation model currently edits the first boundary. The array shape is intentional so holes or multiple
+  // contours can be added later without renaming the key again.
+  if (annot.numBoundaries() > 0) {
+    boundaries.emplace_back(boundaryToJson(annot.getBoundaryVertices(OUTER_BOUNDARY)));
+  }
+
+  return boundaries;
+}
+
+AnnotPolygon<float, 2> polygonFromBoundariesJson(const json& boundariesJson)
+{
+  AnnotPolygon<float, 2> polygon;
+  if (!boundariesJson.is_array() || boundariesJson.empty()) {
+    return polygon;
+  }
+
+  polygon.setOuterBoundary(boundaryFromJson(boundariesJson.at(OUTER_BOUNDARY)));
+  if (boundariesJson.size() > 1) {
+    spdlog::warn(
+      "Annotation JSON contains {} boundaries; only the outer boundary is currently loaded",
+      boundariesJson.size());
+  }
+
+  return polygon;
+}
+
+void appendAnnotationsFromArray(const json& annotationArrayJson, std::vector<Annotation>& annotations)
+{
+  if (!annotationArrayJson.is_array()) {
+    throw_debug("Annotation JSON must contain an annotation array")
+  }
+
+  annotations.reserve(annotations.size() + annotationArrayJson.size());
+  for (const auto& annotJson : annotationArrayJson) {
+    annotations.emplace_back(annotJson);
+  }
+}
+} // namespace
 
 void to_json(json& j, const AnnotPolygon<float, 2>& poly)
 {
   j.clear();
-
-  for (const auto& vertices : poly.getBoundaryVertices(OUTER_BOUNDARY)) {
-    j.emplace_back(std::vector<float>{vertices.x, vertices.y});
-  }
+  j = boundaryToJson(poly.getBoundaryVertices(OUTER_BOUNDARY));
 }
 
 void from_json(const json& j, AnnotPolygon<float, 2>& poly)
 {
   AnnotPolygon<float, 2> newPoly;
-
-  for (const auto& vertex : j) {
-    if (2 != vertex.size()) {
-      throw_debug("JSON structure contains invalid vertex")
-    }
-
-    newPoly.addVertexToOuterBoundary(AnnotPolygon<float, 2>::PointType{vertex[0], vertex[1]});
-  }
+  newPoly.setOuterBoundary(boundaryFromJson(j));
 
   poly = newPoly;
 }
@@ -44,16 +128,15 @@ void to_json(json& j, const Annotation& annot)
   const glm::vec4& fillCol = annot.getFillColor();
 
   const glm::vec4& planeEq = annot.getSubjectPlaneEquation();
-  const glm::vec3& planeOr = annot.getSubjectPlaneOrigin();
-  const std::pair<glm::vec3, glm::vec3>& planeAxes = annot.getSubjectPlaneAxes();
 
   j = json{
+    {"type", POLYGON_ANNOTATION_TYPE},
     {"name", annot.getDisplayName()},
     {"visible", annot.isVisible()},
     {"opacity", annot.getOpacity()},
     {"lineThickness", annot.getLineThickness()},
-    {"lineColor", {lineCol.r, lineCol.g, lineCol.b, lineCol.a}},
-    {"fillColor", {fillCol.r, fillCol.g, fillCol.b, fillCol.a}},
+    {"lineColor", colorToJson(lineCol)},
+    {"fillColor", colorToJson(fillCol)},
     {"verticesVisible", annot.getVertexVisibility()},
     {"closed", annot.isClosed()},
     {"filled", annot.isFilled()},
@@ -61,16 +144,17 @@ void to_json(json& j, const Annotation& annot)
     {"smoothingFactor", annot.getSmoothingFactor()},
     {"subjectPlaneNormal", {planeEq.x, planeEq.y, planeEq.z}},
     {"subjectPlaneOffset", planeEq[3]},
-    {"subjectPlaneOrigin", {planeOr.x, planeOr.y, planeOr.z}},
-    {"subjectPlaneAxes",
-     {{planeAxes.first.x, planeAxes.first.y, planeAxes.first.z},
-      {planeAxes.second.x, planeAxes.second.y, planeAxes.second.z}}},
-    {"polygon", annot.polygon()}};
+    {"boundaries", boundariesToJson(annot)}};
 }
 
 void from_json(const json& j, Annotation& annot)
 {
   // All of these parameters are optional in the JSON:
+
+  const std::string annotationType = j.value("type", POLYGON_ANNOTATION_TYPE);
+  if (annotationType != POLYGON_ANNOTATION_TYPE) {
+    throw_debug("Unsupported annotation type in JSON")
+  }
 
   std::string displayName;
   if (j.count("name")) {
@@ -92,17 +176,15 @@ void from_json(const json& j, Annotation& annot)
     lineThickness = j.at("lineThickness").get<float>();
   }
 
-  std::array<float, 4> lineColor{1.0f, 0.0f, 0.0f, 1.0f};
+  glm::vec4 lineColorVec4{1.0f, 0.0f, 0.0f, 1.0f};
   if (j.count("lineColor")) {
-    lineColor = j.at("lineColor").get<std::array<float, 4>>();
+    lineColorVec4 = colorFromJson(j.at("lineColor"), lineColorVec4);
   }
-  const glm::vec4 lineColorVec4{lineColor[0], lineColor[1], lineColor[2], lineColor[3]};
 
-  std::array<float, 4> fillColor{1.0f, 0.0f, 0.0f, 0.5f};
+  glm::vec4 fillColorVec4{1.0f, 0.0f, 0.0f, 0.5f};
   if (j.count("fillColor")) {
-    fillColor = j.at("fillColor").get<std::array<float, 4>>();
+    fillColorVec4 = colorFromJson(j.at("fillColor"), fillColorVec4);
   }
-  const glm::vec4 fillColorVec4{fillColor[0], fillColor[1], fillColor[2], fillColor[3]};
 
   bool verticesVisible = true;
   if (j.count("verticesVisible")) {
@@ -140,7 +222,12 @@ void from_json(const json& j, Annotation& annot)
 
   // The polygon vertices are required in the JSON:
   AnnotPolygon<float, 2> polygon;
-  j.at("polygon").get_to(polygon);
+  if (j.count("boundaries")) {
+    polygon = polygonFromBoundariesJson(j.at("boundaries"));
+  }
+  else {
+    j.at("polygon").get_to(polygon);
+  }
 
   if (polygon.getAllVertices().empty()) {
     spdlog::warn("Polygon read from JSON has no vertices");
@@ -170,7 +257,36 @@ void from_json(const json& j, Annotation& annot)
 
 void from_json(const json& j, std::vector<Annotation>& annots)
 {
-  for (const auto& annotJson : j) {
-    annots.emplace_back(annotJson);
+  annots = annotationsFromJson(j);
+}
+
+json annotationsToJson(const std::vector<Annotation>& annotations)
+{
+  json annotationArray = json::array();
+  for (const Annotation& annotation : annotations) {
+    annotationArray.emplace_back(annotation);
   }
+
+  return json{{"version", ANNOTATION_JSON_VERSION}, {"annotations", std::move(annotationArray)}};
+}
+
+std::vector<Annotation> annotationsFromJson(const json& j)
+{
+  std::vector<Annotation> annotations;
+  if (j.is_array()) {
+    appendAnnotationsFromArray(j, annotations);
+    return annotations;
+  }
+
+  if (!j.is_object()) {
+    throw_debug("Annotation JSON must be an object or legacy annotation array")
+  }
+
+  const int version = j.value("version", ANNOTATION_JSON_VERSION);
+  if (version > ANNOTATION_JSON_VERSION) {
+    throw_debug("Annotation JSON version is newer than this Entropy build supports")
+  }
+
+  appendAnnotationsFromArray(j.at("annotations"), annotations);
+  return annotations;
 }

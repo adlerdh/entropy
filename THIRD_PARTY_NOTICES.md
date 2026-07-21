@@ -1,10 +1,12 @@
 # Third-Party Notices for Entropy
 
-This document lists third-party dependencies, vendored sources, and vendored resources used by Entropy. It is an attribution and license inventory, not legal advice. For redistribution, verify the upstream license text and any project-specific packaging requirements.
+This document lists third-party dependencies, vendored sources, and vendored resources used by Entropy. It is an
+attribution and license inventory, not legal advice. For redistribution, verify the upstream license text and any
+project-specific packaging requirements.
 
 ## Superbuild dependencies
-The following dependencies are added as external projects during CMake superbuild generation.
-License information is taken from the upstream license files for the pinned source versions.
+The following dependencies are added as external projects during CMake superbuild generation. License information is
+taken from the upstream license files for the pinned source versions.
 
 | Dependency | Version | Source | License |
 | --- | --- | --- | --- |
@@ -25,13 +27,16 @@ License information is taken from the upstream license files for the pinned sour
 | [stduuid](https://github.com/mariusbancila/stduuid) | v1.2.3 | https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz | MIT |
 | [TinyFSM](https://github.com/digint/tinyfsm) | v1.15.1 | https://github.com/digint/tinyfsm/archive/01908cab0397fcdadb0a14e9a3187c308e2708ca.tar.gz | MIT |
 
-Qt Base is available upstream under multiple license options. Entropy uses the open-source LGPL-3.0-only option for Qt Core and configures Qt as a shared-library build so QtCore is dynamically linked.
+Qt Base is available upstream under multiple license options. Entropy uses the open-source LGPL-3.0-only option for Qt
+Core and configures Qt as a shared-library build so QtCore is dynamically linked.
 
-Entropy uses libcurl for HTTPS update checks. Windows and Linux builds use the SuperBuild-pinned libcurl where available; macOS builds use the operating-system libcurl from the Apple SDK.
+Entropy uses libcurl for HTTPS update checks. Windows and Linux builds use the SuperBuild-pinned libcurl where
+available; macOS builds use the operating-system libcurl from the Apple SDK.
 
 ## Vendored sources and libraries
-The following external sources and libraries have been committed directly to the Entropy repository.
-Some entries have local modifications; for those entries, the table records the upstream project and the version information available in this repository.
+The following external sources and libraries have been committed directly to the Entropy repository. Some entries have
+local modifications; for those entries, the table records the upstream project and the version information available in
+this repository.
 
 | Project | Version | Source | License |
 | --- | --- | --- | --- |

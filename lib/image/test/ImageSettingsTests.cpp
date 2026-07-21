@@ -285,6 +285,29 @@ TEST_CASE("ImageSettings falls back to min/max window for sparse binary images",
   CHECK(settings.windowQuantilesLowHigh(0) == std::pair<double, double>{0.0, 1.0});
 }
 
+TEST_CASE("ImageSettings can set a display-color window wider than the measured data range", "[image][settings]")
+{
+  ImageSettings settings(
+    "uint16-rgb",
+    4,
+    3,
+    ComponentType::UInt16,
+    {makeStats(100.0, 120.0, 200.0, 240.0, 255.0),
+     makeStats(50.0, 70.0, 120.0, 160.0, 180.0),
+     makeStats(1000.0, 1100.0, 1200.0, 1300.0, 1400.0)});
+
+  settings.setWindowRangeForAllComponents({0.0, 65535.0});
+
+  for (uint32_t component = 0; component < settings.numComponents(); ++component) {
+    CHECK(settings.windowValuesLowHigh(component) == std::pair<double, double>{0.0, 65535.0});
+    CHECK(settings.windowCenter(component) == Catch::Approx(32767.5));
+    CHECK(settings.windowWidth(component) == Catch::Approx(65535.0));
+    CHECK(settings.minMaxWindowCenterRange(component) == std::pair<double, double>{0.0, 65535.0});
+    CHECK(settings.minMaxWindowWidthRange(component) == std::pair<double, double>{0.0, 65535.0});
+    CHECK(settings.windowQuantilesLowHigh(component) == std::pair<double, double>{0.0, 1.0});
+  }
+}
+
 TEST_CASE("ImageSettings maps native component values to texture values", "[image][settings]")
 {
   ImageSettings uint8Settings("uint8", 2, 1, ComponentType::UInt8, {makeStats(0.0, 0.0, 128.0, 255.0, 255.0)});

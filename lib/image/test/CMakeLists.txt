@@ -10,6 +10,7 @@ add_executable(TestImage
   ComprehensiveImageLoadingTests.cpp
   ImageLoadingTests.cpp
   SegmentationDerivedDataTests.cpp
+  ImageWindowDefaultsTests.cpp
   ../../../test/image_generator/ImageGenerator.cpp
 )
 

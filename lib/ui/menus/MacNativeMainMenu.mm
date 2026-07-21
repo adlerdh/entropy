@@ -742,7 +742,8 @@ void addAnnotationMenu(NSMenu* mainMenu) {
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Annotation"];
   addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
   [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(menu, @"Save All Annotations...", MainMenuAction::SaveAnnotations, @"square.and.arrow.down");
+  addSymbolActionMenuItem(menu, @"Import Annotations...", MainMenuAction::ImportAnnotations, @"square.and.arrow.down");
+  addSymbolActionMenuItem(menu, @"Export Annotations...", MainMenuAction::ExportAnnotations, @"square.and.arrow.up");
   addSymbolActionMenuItem(menu, @"Remove Active Annotation", MainMenuAction::RemoveAnnotation, @"trash");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Move Annotation Backward", MainMenuAction::MoveAnnotationBackward, @"backward");

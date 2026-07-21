@@ -10,6 +10,7 @@
 #include "logic/app/WindowTitleStatus.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
+#include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
 #include "registration/Artifacts.h"
 #include "ui/NativeFileDialogs.h"
@@ -296,20 +297,20 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
       continue;
     }
 
-    if (annotation->getFileName().empty()) {
-      spdlog::warn("Skipping unsaved annotation {} for image {}; it has no file name", annotationUid, imageUid);
-      continue;
-    }
-
-    if (serializedImage.m_annotationsFileName && *serializedImage.m_annotationsFileName != annotation->getFileName()) {
+    if (
+      !annotation->getFileName().empty() && serializedImage.m_annotationsFileName &&
+      *serializedImage.m_annotationsFileName != annotation->getFileName())
+    {
       spdlog::warn(
-        "Image {} has annotations from multiple files; project files currently save only {}",
+        "Image {} has annotations from multiple files; project files currently reference only {}",
         imageUid,
         *serializedImage.m_annotationsFileName);
-      continue;
     }
 
-    serializedImage.m_annotationsFileName = annotation->getFileName();
+    if (!annotation->getFileName().empty() && !serializedImage.m_annotationsFileName) {
+      serializedImage.m_annotationsFileName = annotation->getFileName();
+    }
+    serializedImage.m_annotations.push_back(*annotation);
   }
 
   for (uint32_t component = 0; component < image->header().numComponentsPerPixel(); ++component) {
@@ -367,14 +368,16 @@ bool EntropyApp::projectHasUnsavedChanges() const
 
 bool EntropyApp::saveAnnotationsForImage(const uuids::uuid& imageUid, const fs::path& fileName)
 {
-  nlohmann::json annotationsJson;
+  std::vector<Annotation> annotations;
 
   for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
     const Annotation* annotation = m_data.annotation(annotationUid);
     if (annotation) {
-      serialize::appendAnnotationToJson(*annotation, annotationsJson);
+      annotations.push_back(*annotation);
     }
   }
+
+  const nlohmann::json annotationsJson = annotationsToJson(annotations);
 
   if (!serialize::saveToJsonFile(annotationsJson, fileName)) {
     spdlog::error("Could not save annotations for image {} to {}", imageUid, fileName);
@@ -507,10 +510,6 @@ void EntropyApp::recordRecentProjectFile(const fs::path& fileName)
 
 bool EntropyApp::saveProject()
 {
-  if (!saveDirtyAnnotationsWithDialogs()) {
-    return false;
-  }
-
   if (!m_data.projectFileName()) {
     spdlog::warn("Cannot save project because it has not been saved to a file yet");
     return false;
@@ -521,10 +520,6 @@ bool EntropyApp::saveProject()
 
 bool EntropyApp::saveProjectAs(const fs::path& fileName)
 {
-  if (!saveDirtyAnnotationsWithDialogs()) {
-    return false;
-  }
-
   const fs::path normalizedFileName = projectSavePath(fileName);
   serialize::EntropyProject project = createProjectSnapshot();
 
@@ -547,6 +542,14 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   if (!serialize::save(project, normalizedFileName)) {
     spdlog::error("Could not save project file {}", normalizedFileName);
     return false;
+  }
+
+  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+    for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
+      if (Annotation* annotation = m_data.annotation(annotationUid)) {
+        annotation->markClean();
+      }
+    }
   }
 
   m_data.setProject(project);

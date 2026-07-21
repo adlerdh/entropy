@@ -473,8 +473,8 @@ public:
   void setWindowCenter(uint32_t i, double center);
   /// @brief Set window center for the active component.
   void setWindowCenter(double center);
-  /// @brief Set every component window to the full unsigned 8-bit display range.
-  void setFullUInt8WindowForAllComponents();
+  /// @brief Set every component window to the supplied native intensity range.
+  void setWindowRangeForAllComponents(std::pair<double, double> range);
 
   /// @brief Set low threshold in native intensity units for a component.
   void setThresholdLow(uint32_t i, double tLow);

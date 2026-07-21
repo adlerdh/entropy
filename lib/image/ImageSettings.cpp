@@ -767,20 +767,21 @@ void ImageSettings::setWindowCenter(double center)
   setWindowCenter(m_activeComponent, center);
 }
 
-void ImageSettings::setFullUInt8WindowForAllComponents()
+void ImageSettings::setWindowRangeForAllComponents(std::pair<double, double> range)
 {
-  if (ComponentType::UInt8 != m_componentType) {
-    return;
-  }
+  const auto [low, high] = range;
 
-  constexpr double low = 0.0;
-  constexpr double high = static_cast<double>(std::numeric_limits<std::uint8_t>::max());
-  constexpr double center = 0.5 * (low + high);
-  constexpr double width = high - low;
+  const bool constantRange = high <= low;
+  const double center = constantRange ? low : 0.5 * (low + high);
+  const double width = constantRange ? constantImageWindowWidth(low) : high - low;
+  const std::pair<double, double> centerRange =
+    constantRange ? std::make_pair(low - width, low + width) : std::make_pair(low, high);
+  const std::pair<double, double> widthRange =
+    constantRange ? std::make_pair(k_minConstantImageWindowWidth, 10.0 * width) : std::make_pair(0.0, width);
 
   for (ComponentSettings& setting : m_componentSettings) {
-    setting.m_minMaxWindowCenterRange = {low, high};
-    setting.m_minMaxWindowWidthRange = {0.0, width};
+    setting.m_minMaxWindowCenterRange = centerRange;
+    setting.m_minMaxWindowWidthRange = widthRange;
     setting.m_windowCenter = center;
     setting.m_windowWidth = width;
     setting.m_windowQuantilesLowHigh = {0.0, 1.0};

@@ -40,3 +40,17 @@ void from_json(const nlohmann::json& j, Annotation& annot);
  * @param[out] Vector of annotations
  */
 void from_json(const nlohmann::json& j, std::vector<Annotation>& annots);
+
+/**
+ * @brief Create the versioned JSON object used for embedded and exported annotations
+ * @param annotations Annotations to serialize
+ * @return JSON object with schema version and annotation array
+ */
+nlohmann::json annotationsToJson(const std::vector<Annotation>& annotations);
+
+/**
+ * @brief Read annotations from a versioned JSON object or a legacy bare annotation array
+ * @param j JSON object or legacy array
+ * @return Parsed annotations
+ */
+std::vector<Annotation> annotationsFromJson(const nlohmann::json& j);

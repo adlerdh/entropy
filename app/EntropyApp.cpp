@@ -46,6 +46,7 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <vector>
 
 // Without undefining min and max, there are some errors compiling in Visual Studio
 #undef min
@@ -881,8 +882,35 @@ bool EntropyApp::loadSerializedImage(
     } while (true);
   }
 
-  // Set annotations from file:
-  if (serializedImage.m_annotationsFileName) {
+  auto addAnnotationsToImage = [this,
+                                &imageUid](std::vector<Annotation> annots, const std::optional<fs::path>& fileName) {
+    for (auto& annot : annots) {
+      if (fileName) {
+        annot.setFileName(*fileName);
+      }
+
+      if (const auto annotUid = m_data.addAnnotation(*imageUid, annot)) {
+        m_data.assignActiveAnnotationUidToImage(*imageUid, annotUid);
+        spdlog::debug("Added annotation {} for image {}", *annotUid, *imageUid);
+      }
+      else {
+        spdlog::error("Unable to add annotation to image {}", *imageUid);
+      }
+    }
+  };
+
+  if (!serializedImage.m_annotations.empty()) {
+    if (serializedImage.m_annotationsFileName) {
+      spdlog::warn(
+        "Image {} has embedded annotations and annotationsFile {}; using embedded annotations",
+        *imageUid,
+        *serializedImage.m_annotationsFileName);
+    }
+
+    spdlog::info("Loaded {} embedded annotation(s) for image {}", serializedImage.m_annotations.size(), *imageUid);
+    addAnnotationsToImage(serializedImage.m_annotations, serializedImage.m_annotationsFileName);
+  }
+  else if (serializedImage.m_annotationsFileName) {
     std::vector<Annotation> annots;
 
     if (serialize::openAnnotationsFromJsonFile(annots, *serializedImage.m_annotationsFileName)) {
@@ -891,18 +919,7 @@ bool EntropyApp::loadSerializedImage(
         *serializedImage.m_annotationsFileName,
         *imageUid);
 
-      for (auto& annot : annots) {
-        // Assign the annotation the file name from which it was read:
-        annot.setFileName(*serializedImage.m_annotationsFileName);
-
-        if (const auto annotUid = m_data.addAnnotation(*imageUid, annot)) {
-          m_data.assignActiveAnnotationUidToImage(*imageUid, annotUid);
-          spdlog::debug("Added annotation {} for image {}", *annotUid, *imageUid);
-        }
-        else {
-          spdlog::error("Unable to add annotation to image {}", *imageUid);
-        }
-      }
+      addAnnotationsToImage(std::move(annots), serializedImage.m_annotationsFileName);
     }
     else {
       spdlog::error(

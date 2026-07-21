@@ -1,14 +1,18 @@
 # Packaging Entropy
 
-This guide covers local release packaging and GitHub release behavior. For compiler requirements, dependency builds, tests, and general source build instructions, see [BUILDING.md](BUILDING.md).
+This guide covers local release packaging and GitHub release behavior. For compiler requirements, dependency builds,
+tests, and general source build instructions, see [BUILDING.md](BUILDING.md).
 
 Entropy packages are created with [CPack](https://cmake.org/cmake/help/latest/module/CPack.html) from the release app build and written to `build-release/packages/`.
 
-All packages include the runtime application plus `README.md`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_NOTICES.md`.
+All packages include the runtime application plus `README.md`, `LICENSE.txt`, `NOTICE.txt`, and
+`THIRD_PARTY_NOTICES.md`.
 
-Release package builds link bundled third-party libraries statically where practical. Qt and platform system libraries remain dynamic and are bundled or referenced according to the platform package format.
+Release package builds link bundled third-party libraries statically where practical. Qt and platform system libraries
+remain dynamic and are bundled or referenced according to the platform package format.
 
-Portable ZIP/TAR.GZ archives contain the same runtime application as installable packages, without installer metadata or shortcuts.
+Portable ZIP/TAR.GZ archives contain the same runtime application as installable packages, without installer metadata or
+shortcuts.
 
 ## Release Package Flow
 
@@ -51,20 +55,24 @@ Pass these when configuring the app stage with `cmake --preset app-release -DNAM
 | `Entropy_STRIP_PACKAGED_APP` | `ON` | Strips local symbols from the installed macOS app bundle before signing |
 | `Entropy_WIX_ROOT` | empty | Optional explicit path to [WiX Toolset](https://wixtoolset.org/) v3 tools; normally discovered from the build tree, `PATH`, or `WIX` |
 
-Changing dependency linkage options such as `Entropy_STATIC_BUNDLED_DEPENDENCIES` requires rebuilding the dependency stage. Do not reuse a dependency tree built with different linkage settings.
+Changing dependency linkage options such as `Entropy_STATIC_BUNDLED_DEPENDENCIES` requires rebuilding the dependency
+stage. Do not reuse a dependency tree built with different linkage settings.
 
 ## Linux Packages
 
-Linux packages should be built on the oldest supported target distribution. A binary built on a newer Linux host may require newer `glibc`, `libstdc++`, or compiler runtime packages than older distributions provide.
+Linux packages should be built on the oldest supported target distribution. A binary built on a newer Linux host may
+require newer `glibc`, `libstdc++`, or compiler runtime packages than older distributions provide.
 
-Official Linux CI release builds currently produce Ubuntu 22.04 DEB/TAR.GZ packages and Fedora 43 RPM/TAR.GZ packages. CI sets explicit labels for release artifacts so public download names stay stable.
+Official Linux CI release builds currently produce Ubuntu 22.04 DEB/TAR.GZ packages and Fedora 43 RPM/TAR.GZ packages.
+CI sets explicit labels for release artifacts so public download names stay stable.
 
 Required tools:
 
 - Ubuntu DEB packages: `dpkg-dev`, `fakeroot`, and `file`
 - Fedora RPM packages: `rpm-build` and `file`
 
-By default, CMake derives the Linux platform label from `/etc/os-release`, such as `Ubuntu-22.04` or `Fedora-43`. Override `Entropy_LINUX_PACKAGE_PLATFORM_LABEL` when a specific release label is needed.
+By default, CMake derives the Linux platform label from `/etc/os-release`, such as `Ubuntu-22.04` or `Fedora-43`.
+Override `Entropy_LINUX_PACKAGE_PLATFORM_LABEL` when a specific release label is needed.
 
 The default Linux generators are `DEB;TGZ`. On an Ubuntu 22.04 host, the default local package names are:
 
@@ -149,7 +157,8 @@ By default, local macOS packages use ad-hoc signing:
 Entropy_MACOS_CODESIGN_IDENTITY=-
 ```
 
-*TODO:* For public distribution, we will configure the app stage with a Developer ID Application identity and notarize the final DMG or app outside the CMake package step:
+*TODO:* For public distribution, we will configure the app stage with a Developer ID Application identity and notarize
+the final DMG or app outside the CMake package step:
 
 ```sh
 cmake --preset app-release -DEntropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: <developer-name> (<team-id>)"
@@ -222,13 +231,16 @@ cmake --install build-release --config Release --prefix build-release\windows-pa
 build-release\windows-package-install\entropy.exe
 ```
 
-Also install the MSI on a clean Windows system, launch Entropy from the Start Menu, verify open/save dialogs, uninstall it, and test the portable ZIP from an extracted folder.
+Also install the MSI on a clean Windows system, launch Entropy from the Start Menu, verify open/save dialogs, uninstall
+it, and test the portable ZIP from an extracted folder.
 
-*TODO:* The current MSI is unsigned. For public distribution, we will sign the MSI with a trusted code-signing certificate after CPack creates it.
+*TODO:* The current MSI is unsigned. For public distribution, we will sign the MSI with a trusted code-signing
+certificate after CPack creates it.
 
 ## GitHub Releases
 
-Public GitHub Releases are created by [.github/workflows/release.yml](.github/workflows/release.yml). The workflow runs when a tag matching `v*.*.*.*` is pushed.
+Public GitHub Releases are created by [.github/workflows/release.yml](.github/workflows/release.yml). The workflow runs
+when a tag matching `v*.*.*.*` is pushed.
 
 Before tagging a release, update the versions in `CMakeLists.txt`:
 

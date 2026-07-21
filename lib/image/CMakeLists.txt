@@ -22,6 +22,7 @@ target_sources(EntropyImage PRIVATE
   ImageTimeAxis.cpp
   ImageTransformations.cpp
   ImageUtility.cpp
+  ImageWindowDefaults.cpp
   SegUtil.cpp
   TimePlaybackController.cpp
   WarpInversion.cpp

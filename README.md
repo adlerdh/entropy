@@ -11,17 +11,22 @@
 
 <img src="res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png" alt="Entropy icon" align="left" width="128" hspace="16" vspace="4">
 
-Entropy is a cross-platform tool for visualizing, comparing, registering, segmenting, annotating, and inspecting medical images.
+Entropy is a cross-platform tool for visualizing, comparing, registering, segmenting, annotating, and inspecting medical
+images.
 
-It is built to handle projects with multiple images in a common reference space. It can load any number of images, arrange them in flexible layouts, render them with shader-based MPR views, and display their values, coordinates, and transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
+It is built to handle projects with multiple images in a common reference space. It can load any number of images,
+arrange them in flexible layouts, render them with shader-based MPR views, and display their values, coordinates, and
+transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
 
 Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor [James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656)
 
-Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania. All rights reserved.
+Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of
+Pennsylvania. All rights reserved.
 
 ## Building
 
-Entropy uses CMake and C++23. Build the pinned third-party libraries first, then configure and build Entropy against them following the "superbuild" pattern:
+Entropy uses CMake and C++23. Build the pinned third-party libraries first, then configure and build Entropy against
+them following the "superbuild" pattern:
 
 ```sh
 BUILD_TYPE=release # or debug
@@ -53,15 +58,21 @@ Release packages are generated with preset `package-release` for:
 - Ubuntu Linux, x86_64
 - Fedora Linux, x86_64
 
-See [BUILDING.md](BUILDING.md) for detailed platform and build requirements, compiler versions, Linux development packages, build options, tests, and coverage instructions. Packaging commands and artifact layouts are detailed in [PACKAGING.md](PACKAGING.md).
+See [BUILDING.md](BUILDING.md) for detailed platform and build requirements, compiler versions, Linux development
+packages, build options, tests, and coverage instructions. Packaging commands and artifact layouts are detailed in
+[PACKAGING.md](PACKAGING.md).
 
 ## Overview
 
-Entropy is useful for reviewing multiple images in relation to one another in a common reference space. It handles multimodal scalar and multi-component images in 2D, 3D, and 4D (time series), as well as segmentations, vector annotations, and registration transformations (affine matrices and deformation fields).
+Entropy is useful for reviewing multiple images in relation to one another in a common reference space. It handles
+multimodal scalar and multi-component images in 2D, 3D, and 4D (time series), as well as segmentations, vector
+annotations, and registration transformations (affine matrices and deformation fields).
 
 ### Image Visualization and Comparison
 
-Entropy is designed for crisp, responsive rendering. It uses GPU 3D texturing and preserves native voxel component types instead of casting to a fixed display type. A project contains a reference image that defines the common coordinate space, plus any number of additional images.
+Entropy is designed for crisp, responsive rendering. It uses GPU 3D texturing and preserves native voxel component types
+instead of casting to a fixed display type. A project contains a reference image that defines the common coordinate
+space, plus any number of additional images.
 
 - Flexible layouts with per-view image visibility
   - Axial, coronal, sagittal, and oblique multi-planar reconstruction (MPR)
@@ -104,17 +115,22 @@ Entropy has advanced support for image transformations:
 
 ### Registration Backends
 
-Entropy does not implement its own full registration engine. Instead, it can launch external registration tools, monitor them, and import their results into the project where the images are already loaded. Current registration backends are:
+Entropy does not implement its own full registration engine. Instead, it can launch external registration tools, monitor
+them, and import their results into the project where the images are already loaded. Current registration backends are:
 
 - [ANTs](https://github.com/ANTsX/ANTs)
 - [FireANTs](https://fireants.readthedocs.io/en/latest/)
 - [Greedy](https://greedy.readthedocs.io/en/latest/)
 
-The Image Registration workflow lets users select fixed and moving images, choose parameters for each backend, inspect the command preview, monitor progress and logs, and import generated outputs. Imported outputs can include transformed moving images, affine matrices, inverse warp fields, and forward warp fields. Backend executables are configured in Application Settings.
+The Image Registration workflow lets users select fixed and moving images, choose parameters for each backend, inspect
+the command preview, monitor progress and logs, and import generated outputs. Imported outputs can include transformed
+moving images, affine matrices, inverse warp fields, and forward warp fields. Backend executables are configured in
+Application Settings.
 
 ### Segmentation, Annotations, and Landmarks
 
-The same views used for image comparison can be used to paint segmentation overlays, draw vector-based annotations, and place point landmarks:
+The same views used for image comparison can be used to paint segmentation overlays, draw vector-based annotations, and
+place point landmarks:
 
 - Save, clear, remove, and inspect segmentation layers
   - Multiple segmentations per image
@@ -133,9 +149,11 @@ Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image
 - [Nearly Raw Raster Data (NRRD)](https://teem.sourceforge.net/nrrd/format.html) (`.nrrd`, `.nhdr`)
 - [MetaImage](https://insightsoftwareconsortium.github.io/ITKWikiArchive/Wiki/ITK/MetaIO/Documentation/) (`.mha`, `.mhd`, with companion raw data `.raw`, `.zraw`, or `.raw.gz`)
 - [DICOM](https://www.dicomstandard.org/current/) via [GDCM](https://gdcm.sourceforge.net/) (`.dcm` and DICOM series)
-- Standard 2D raster formats: JPEG (`.jpg`, `.jpeg`, `.jpe`), PNG (`.png`), TIFF (`.tif`, `.tiff`), and BMP (`.bmp`, `.dib`)
+- Standard 2D image formats: JPEG (`.jpg`, `.jpeg`), PNG (`.png`), TIFF (`.tif`, `.tiff`), and BMP (`.bmp`, `.dib`)
 
-Entropy also displays complete image header information, DICOM metadata, and editable spatial geometry for standard 2D raster images that do not carry medical image headers. It loads the supporting files needed to make a review complete: segmentations, landmarks, annotations, affine transforms, deformation warp fields, layouts, and project files.
+Entropy also displays complete image header information, DICOM metadata, and editable spatial geometry for standard 2D
+raster images that do not carry medical image headers. It loads the supporting files needed to make a review complete:
+segmentations, landmarks, annotations, affine transforms, deformation warp fields, layouts, and project files.
 
 ### Multi-Component and Time Series Images
 
@@ -152,11 +170,14 @@ Pixel/voxel types:
 - Vector fields (e.g. representing deformable registration warps)
 - General multi-component images
 
-Images with multiple components can be viewed by individual component, magnitude, RGB/RGBA color, and as various derived maps (divergence, curl, and Jacobian determinant). Time series images can be reviewed with per-image and global time controls.
+Images with multiple components can be viewed by individual component, magnitude, RGB/RGBA color, and as various derived
+maps (divergence, curl, and Jacobian determinant). Time series images can be reviewed with per-image and global time
+controls.
 
 ## Technical Notes
 
-Entropy is a native C++ application built for interactive desktop performance across multiple platforms. Third-party dependencies are pinned from source.
+Entropy is a native C++ application built for interactive desktop performance across multiple platforms. Third-party
+dependencies are pinned from source.
 
 |  |  |
 | --- | --- |
@@ -169,17 +190,22 @@ Entropy is a native C++ application built for interactive desktop performance ac
 | Image I/O | Medical image loading through [ITK](https://itk.org/) and [GDCM](https://gdcm.sourceforge.net/) |
 | UI | [Dear ImGui](https://github.com/ocornut/imgui) with [Docking support](https://github.com/ocornut/imgui/wiki/Docking) and native platform menus and dialog integration |
 
-Entropy targets OpenGL 3.3 Core with GLSL 3.30 shaders to maximize compatibility across platforms and operating systems. Detailed compiler versions, operating system versions, development packages, and coverage workflows are documented in [BUILDING.md](BUILDING.md).
+Entropy targets OpenGL 3.3 Core with GLSL 3.30 shaders to maximize compatibility across platforms and operating systems.
+Detailed compiler versions, operating system versions, development packages, and coverage workflows are documented in
+[BUILDING.md](BUILDING.md).
 
 ### Continuous Integration
 
-GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu, and Fedora. Current CI coverage includes macOS 14.6.1, 15.3.1, 15.6.1, and 26.0.1; Windows 10 and 11; Ubuntu 22.04 and 24.04; and Fedora 43. The CI toolchains are Apple Clang 15.0.0+, MSVC/Visual Studio 2022 17.3.4+, and GCC 13.3.0+.
+GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu, and Fedora. Current CI coverage includes macOS
+14.6.1, 15.3.1, 15.6.1, and 26.0.1; Windows 10 and 11; Ubuntu 22.04 and 24.04; and Fedora 43. The CI toolchains are
+Apple Clang 15.0.0+, MSVC/Visual Studio 2022 17.3.4+, and GCC 13.3.0+.
 
 ## Core Concepts
 
 ### Reference Image
 
-The reference image defines the main project space. Additional images are compared against it and may have affine transformations or deformable warps that relate them to the reference and each other.
+The reference image defines the main project space. Additional images are compared against it and may have affine
+transformations or deformable warps that relate them to the reference and each other.
 
 ### Active Image
 
@@ -193,25 +219,36 @@ Entropy separates image geometry from affine transformations loaded or edited by
 2. The initial/imported affine transformation is used for a loaded alignment or an alignment computed by registration
 3. The manual affine transformation is intended for interactive adjustment
 
-For standard 2D raster images such as JPEG, PNG, TIFF, and BMP, Entropy asks for spacing, origin, and direction information when the image is loaded and saves that geometry in the project file.
+For standard 2D raster images such as JPEG, PNG, TIFF, and BMP, Entropy asks for spacing, origin, and direction
+information when the image is loaded and saves that geometry in the project file.
 
 This separation makes it possible to inspect and revise alignment without losing the original image geometry.
 
 ### Deformable Warp Fields
 
-Entropy uses inverse warp fields for image sampling and forward warp fields for moving spatial objects, such as landmarks and annotations. A project with one image can still apply a warp to that image, treating the image as its own reference space.
+Entropy uses inverse warp fields for image sampling and forward warp fields for moving spatial objects, such as
+landmarks and annotations. A project with one image can still apply a warp to that image, treating the image as its own
+reference space.
 
 ### Application Settings and Project Settings
 
-Application settings store personal UI preferences and backend configuration. Project settings store presentation and review state that is packaged with a project, such as layouts, comparison settings, raycasting settings, segmentation display defaults, and transformation assignments.
+Application settings store personal UI preferences and backend configuration. Project settings store presentation and
+review state that is packaged with a project, such as layouts, comparison settings, raycasting settings, segmentation
+display defaults, and transformation assignments.
 
 ## Quick Start
 
 One typical workflow is to load a reference image and other images to compare against it:
 
-1. Open one or more images from the menus (*File -> Open Image(s) / Project / DICOM Series*), the opening screen, or the command line. Multiple images will be loaded in a list that appears across all window panels (menu: *Window -> Images / Segmentations / Registration / Landmarks, Annotations / Isosurfaces*).
-2. By convention, the first image (number 0) is the **Reference** image. It defines the reference/common coordinate space in which all images are displayed. Any other image can be designed as Reference (menu: *Image -> Set as Reference*).
-3. By default, the last image in the list is the **Active** image. View and transformation interactions are applied to the Active image using the mouse and keyboard controls. Set the Active image using menu *Image -> Select Active Image*, the drop-down list in the Images panel, or the [keyboard shortcuts](#keyboard-shortcuts).
+1. Open one or more images from the menus (*File -> Open Image(s) / Project / DICOM Series*), the opening screen, or
+   the command line. Multiple images will be loaded in a list that appears across all window panels (menu:
+   *Window -> Images / Segmentations / Registration / Landmarks, Annotations / Isosurfaces*).
+2. By convention, the first image (number 0) is the **Reference** image. It defines the reference/common coordinate
+   space in which all images are displayed. Any other image can be designated as Reference (menu:
+   *Image -> Set as Reference*).
+3. By default, the last image in the list is the **Active** image. View and transformation interactions are applied to
+   the Active image using the mouse and keyboard controls. Set the Active image using menu *Image -> Select Active
+   Image*, the drop-down list in the Images panel, or the [keyboard shortcuts](#keyboard-shortcuts).
 4. Choose a layout and view types for the review or analysis task.
 5. Use image visibility, opacity, comparison modes, and the opacity mixer to compare images.
 6. Use the voxel inspector to verify coordinates and sampled values.
@@ -237,11 +274,13 @@ entropy -i ref.nii.gz -s ref_seg.nii.gz -i moving.nii.gz
 entropy -p project.json
 ```
 
-Image inputs, DICOM inputs, and `--project` are mutually exclusive. Use `entropy --help` for the complete command-line reference.
+Image inputs, DICOM inputs, and `--project` are mutually exclusive. Use `entropy --help` for the complete command-line
+reference.
 
 ### Project Files
 
-Entropy project files preserve all state needed to reopen a review. They include a reference image, additional images, segmentations, landmarks, annotations, transformations, layouts, and presentation settings. Minimal example:
+Entropy project files preserve all state needed to reopen a review. They include a reference image, additional images,
+segmentations, landmarks, annotations, transformations, layouts, and presentation settings. Minimal example:
 
 ```json
 {
@@ -346,7 +385,8 @@ Settings owned by a project are saved in project JSON files instead of the appli
 
 ### Logging
 
-Entropy writes logs to the console and to daily log files. Log verbosity can be changed from Application Settings or with `--log-level`. Default log locations:
+Entropy writes logs to the console and to daily log files. Log verbosity can be changed from Application Settings or
+with `--log-level`. Default log locations:
 
 - macOS: `~/Library/Logs/Entropy/`
 - Windows: `%APPDATA%\Entropy\Logs\`
@@ -354,4 +394,6 @@ Entropy writes logs to the console and to daily log files. Log verbosity can be 
 
 ## License
 
-Entropy source code and official release packages are distributed under the Apache License 2.0 ([LICENSE.txt](LICENSE.txt)). Required project notices are in [NOTICE.txt](NOTICE.txt). Third-party dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Entropy source code and official release packages are distributed under the Apache License 2.0
+([LICENSE.txt](LICENSE.txt)). Required project notices are in [NOTICE.txt](NOTICE.txt). Third-party dependency notices
+are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

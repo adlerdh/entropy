@@ -1099,7 +1099,7 @@ void to_json(json& j, const serialize::Image& image)
   }
 
   if (image.m_affineTxFileName) {
-    j["affine"] = image.m_affineTxFileName->string();
+    j["initialAffine"] = image.m_affineTxFileName->string();
   }
 
   if (image.m_inverseWarpFileName) {
@@ -1115,11 +1115,15 @@ void to_json(json& j, const serialize::Image& image)
   }
 
   if (image.m_worldDefTx) {
-    j["manualTransformation"] = matrixToJson(*image.m_worldDefTx);
+    j["manualAffine"] = matrixToJson(*image.m_worldDefTx);
   }
 
   if (image.m_annotationsFileName) {
-    j["annotations"] = image.m_annotationsFileName->string();
+    j["annotationsFile"] = image.m_annotationsFileName->string();
+  }
+
+  if (!image.m_annotations.empty()) {
+    j["annotations"] = annotationsToJson(image.m_annotations);
   }
 
   if (!image.m_segmentations.empty()) {
@@ -1157,8 +1161,8 @@ void from_json(const json& j, serialize::Image& image)
     image.m_dicomSource = j.at("dicomSource").get<serialize::DicomSource>();
   }
 
-  if (j.count("affine")) {
-    image.m_affineTxFileName = j.at("affine").get<std::string>();
+  if (j.count("initialAffine")) {
+    image.m_affineTxFileName = j.at("initialAffine").get<std::string>();
   }
 
   if (j.count("inverseWarp")) {
@@ -1173,12 +1177,22 @@ void from_json(const json& j, serialize::Image& image)
     image.m_forwardWarpFileName = j.at("forwardWarp").get<std::string>();
   }
 
-  if (j.count("manualTransformation")) {
-    image.m_worldDefTx = matrixFromJson(j.at("manualTransformation"));
+  if (j.count("manualAffine")) {
+    image.m_worldDefTx = matrixFromJson(j.at("manualAffine"));
   }
 
-  if (j.count("annotations")) {
-    image.m_annotationsFileName = j.at("annotations").get<std::string>();
+  if (j.count("annotationsFile")) {
+    image.m_annotationsFileName = j.at("annotationsFile").get<std::string>();
+  }
+
+  if (const auto annotations = j.find("annotations"); annotations != j.end()) {
+    if (annotations->is_array() || annotations->is_object()) {
+      image.m_annotations = annotationsFromJson(*annotations);
+    }
+    else if (annotations->is_string()) {
+      // Older project files used "annotations" for an external annotation JSON file path.
+      image.m_annotationsFileName = annotations->get<std::string>();
+    }
   }
 
   if (j.count("segmentations")) {
@@ -1651,7 +1665,7 @@ void to_json(json& j, const RegistrationResult& result)
     j["forwardWarp"] = optionalPathToString(result.m_forwardWarp);
   }
   if (result.m_affineTransform) {
-    j["affineTransform"] = optionalPathToString(result.m_affineTransform);
+    j["affine"] = optionalPathToString(result.m_affineTransform);
   }
 }
 
@@ -1670,7 +1684,7 @@ void from_json(const json& j, RegistrationResult& result)
   optionalPathFromJson(j, "warpedImage", result.m_warpedImage);
   optionalPathFromJson(j, "inverseWarp", result.m_inverseWarp);
   optionalPathFromJson(j, "forwardWarp", result.m_forwardWarp);
-  optionalPathFromJson(j, "affineTransform", result.m_affineTransform);
+  optionalPathFromJson(j, "affine", result.m_affineTransform);
   if (const auto value = j.find("warpedSegmentations"); value != j.end()) {
     result.m_warpedSegmentations = pathVectorFromJson(*value);
   }
@@ -2476,7 +2490,7 @@ bool openAnnotationsFromJsonFile(std::vector<Annotation>& annots, const fs::path
     json j;
     inFile >> j;
 
-    annots = j.get<std::vector<Annotation>>();
+    annots = annotationsFromJson(j);
     spdlog::debug("Parsed {} annotation(s) from JSON:\n{}", annots.size(), j.dump(2));
     return true;
   }
@@ -2507,11 +2521,6 @@ bool openAnnotationsFromJsonFile(std::vector<Annotation>& annots, const fs::path
     spdlog::error("Invalid annotations JSON file {}: {}", jsonFileName, e.what());
     return false;
   }
-}
-
-void appendAnnotationToJson(const Annotation& annot, json& j)
-{
-  j.emplace_back(annot);
 }
 
 bool saveToJsonFile(const nlohmann::json& j, const fs::path& jsonFileName)

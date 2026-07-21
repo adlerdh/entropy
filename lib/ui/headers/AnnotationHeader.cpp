@@ -22,6 +22,7 @@
 #include "image/ImageUtility.h"
 
 #include "logic/app/Data.h"
+#include "logic/annotation/SerializeAnnot.h"
 #include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include <IconsForkAwesome.h>
@@ -77,12 +78,13 @@ void renderAnnotationsHeader(
     ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_Uint8 |
     ImGuiColorEditFlags_InputRGB;
 
-  static const std::string saveAnnotButtonText = std::string(ICON_FK_FLOPPY_O) + " Save all...";
+  static const std::string importAnnotButtonText = std::string(ICON_FK_FOLDER_OPEN_O) + " Import...";
+  static const std::string exportAnnotButtonText = std::string(ICON_FK_FLOPPY_O) + " Export...";
   static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O) + " Remove";
   static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Fill segmentation";
 
-  static const char* saveAnnotDialogTitle("Save Annotations to JSON");
-  static const auto saveAnnotDialogFilters = native_dialog::annotationFilters();
+  static const char* exportAnnotDialogTitle("Export Annotations to JSON");
+  static const auto annotDialogFilters = native_dialog::annotationFilters();
 
   Image* image = appData.image(imageUid);
   if (!image) {
@@ -164,11 +166,47 @@ void renderAnnotationsHeader(
   ImGui::Spacing();
 
   const auto& annotUids = appData.annotationsForImage(imageUid);
+  auto importAnnotations = [&appData, &imageUid]() {
+    const auto selectedFile = native_dialog::openFile(annotDialogFilters);
+    if (!selectedFile) {
+      return;
+    }
+
+    std::vector<Annotation> importedAnnotations;
+    if (!serialize::openAnnotationsFromJsonFile(importedAnnotations, *selectedFile)) {
+      spdlog::error("Error importing annotations from JSON file {}", *selectedFile);
+      return;
+    }
+
+    std::size_t numImportedAnnotations = 0;
+    for (auto& annotation : importedAnnotations) {
+      annotation.setFileName(*selectedFile);
+      if (const auto annotationUid = appData.addAnnotation(imageUid, annotation)) {
+        appData.assignActiveAnnotationUidToImage(imageUid, annotationUid);
+        ++numImportedAnnotations;
+      }
+    }
+    ASM::synchronizeAnnotationHighlights();
+    spdlog::info("Imported {} annotations from JSON file {}", numImportedAnnotations, *selectedFile);
+  };
+
+  auto renderImportAnnotationsButton = [&importAnnotations]() {
+    if (ImGui::Button(importAnnotButtonText.c_str())) {
+      importAnnotations();
+    }
+
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Import annotations from a JSON file");
+    }
+  };
+
   if (annotUids.empty()) {
     ImGui::Text("This image has no annotations.");
     ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     ImGui::TextWrapped("%s", "Switch to Annotate mode and select a view in which to create annotations.");
     ImGui::PopStyleColor();
+    ImGui::Spacing();
+    renderImportAnnotationsButton();
     if (hasFollowingHeader) {
       ImGui::Spacing();
       ImGui::Separator();
@@ -548,28 +586,34 @@ void renderAnnotationsHeader(
   ImGui::SameLine();
   helpMarker("File storing the annotation");
 
+  renderImportAnnotationsButton();
+
   if (!annotUids.empty()) {
-    // Save annotations to disk:
+    ImGui::SameLine();
+
+    // Export annotations to disk:
     const auto selectedFile =
-      ImGui::renderFileButtonDialogAndWindow(saveAnnotButtonText.c_str(), saveAnnotDialogTitle, saveAnnotDialogFilters);
+      ImGui::renderFileButtonDialogAndWindow(exportAnnotButtonText.c_str(), exportAnnotDialogTitle, annotDialogFilters);
 
     if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Save annotations to disk");
+      ImGui::SetTooltip("Export annotations for this image to a JSON file");
     }
 
     if (selectedFile) {
       // Add all annotations belonging to this image to a json structure,
       // then save the json to disk.
-      nlohmann::json j;
+      std::vector<Annotation> annotations;
 
       for (const auto& annotUid : appData.annotationsForImage(imageUid)) {
         if (const Annotation* annot = appData.annotation(annotUid)) {
-          serialize::appendAnnotationToJson(*annot, j);
+          annotations.push_back(*annot);
         }
       }
 
+      const nlohmann::json j = annotationsToJson(annotations);
+
       if (serialize::saveToJsonFile(j, *selectedFile)) {
-        spdlog::info("Saved annotations for image {} to JSON file {}", imageUid, *selectedFile);
+        spdlog::info("Exported annotations for image {} to JSON file {}", imageUid, *selectedFile);
         for (const auto& annotUid : appData.annotationsForImage(imageUid)) {
           if (Annotation* annot = appData.annotation(annotUid)) {
             annot->setFileName(*selectedFile);
@@ -578,7 +622,7 @@ void renderAnnotationsHeader(
         }
       }
       else {
-        spdlog::error("Error saving annotation to SVG file {}", *selectedFile);
+        spdlog::error("Error exporting annotations to JSON file {}", *selectedFile);
       }
     }
   }
