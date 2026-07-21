@@ -115,10 +115,10 @@ serialize::RegistrationResult registrationResultSnapshot(const registration::Job
     result.m_warpedImage = manifest.warpedImage;
   }
   if (!manifest.inverseWarp.empty()) {
-    result.m_inverseWarp = manifest.inverseWarp;
+    result.m_inverseWarpField = manifest.inverseWarp;
   }
   if (!manifest.forwardWarp.empty()) {
-    result.m_forwardWarp = manifest.forwardWarp;
+    result.m_forwardWarpField = manifest.forwardWarp;
   }
   if (!manifest.affineTransform.empty()) {
     result.m_affineTransform = manifest.affineTransform;
@@ -211,12 +211,18 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
   if (const auto sourceIt = m_dicomSourcesByImageUid.find(imageUid); sourceIt != m_dicomSourcesByImageUid.end()) {
     serializedImage.m_dicomSource = sourceIt->second;
   }
-  serializedImage.m_affineTxFileName = image->transformations().get_affine_T_subject_fileName();
+  const auto& transformations = image->transformations();
   if (
-    image->transformations().get_enable_worldDef_T_affine() &&
-    !isApproximatelyIdentity(image->transformations().get_worldDef_T_affine()))
+    transformations.get_affine_T_subject_fileName() ||
+    (transformations.get_enable_affine_T_subject() && !isApproximatelyIdentity(transformations.get_affine_T_subject())))
   {
-    serializedImage.m_worldDefTx = image->transformations().get_worldDef_T_affine();
+    serializedImage.m_initialAffineMatrix = transformations.get_affine_T_subject();
+  }
+
+  if (
+    transformations.get_enable_worldDef_T_affine() && !isApproximatelyIdentity(transformations.get_worldDef_T_affine()))
+  {
+    serializedImage.m_manualAffineMatrix = transformations.get_worldDef_T_affine();
   }
   serializedImage.m_settings = project_snapshot::imageSettings(*image);
 
@@ -226,7 +232,7 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
     const Image* inverseWarp =
       activeInverseWarpUid ? m_data.warpField(*activeInverseWarpUid) : m_data.warpField(defUids.front());
     if (inverseWarp && inverseWarp->header().existsOnDisk() && !inverseWarp->header().fileName().empty()) {
-      serializedImage.m_inverseWarpFileName = inverseWarp->header().fileName();
+      serializedImage.m_inverseWarpFieldPath = inverseWarp->header().fileName();
     }
 
     if (const auto inverseWarpReferenceUid = m_data.imageToActiveInverseWarpReferenceImageUid(imageUid)) {
@@ -235,14 +241,14 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
         inverseWarpReferenceImage && inverseWarpReferenceImage->header().existsOnDisk() &&
         !inverseWarpReferenceImage->header().fileName().empty())
       {
-        serializedImage.m_inverseWarpReferenceImageFileName = inverseWarpReferenceImage->header().fileName();
+        serializedImage.m_inverseWarpReferenceImagePath = inverseWarpReferenceImage->header().fileName();
       }
     }
 
     if (const auto activeForwardWarpUid = m_data.imageToActiveForwardWarpUid(imageUid)) {
       const Image* forwardWarp = m_data.warpField(*activeForwardWarpUid);
       if (forwardWarp && forwardWarp->header().existsOnDisk() && !forwardWarp->header().fileName().empty()) {
-        serializedImage.m_forwardWarpFileName = forwardWarp->header().fileName();
+        serializedImage.m_forwardWarpFieldPath = forwardWarp->header().fileName();
       }
     }
 
@@ -279,14 +285,24 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
       continue;
     }
 
-    if (lmGroup->getFileName().empty()) {
-      spdlog::warn("Skipping unsaved landmark group {} for image {}; it has no file name", lmUid, imageUid);
-      continue;
-    }
-
     serialize::LandmarkGroup serializedLandmarks;
-    serializedLandmarks.m_csvFileName = lmGroup->getFileName().string();
+    if (!lmGroup->getFileName().empty()) {
+      serializedLandmarks.m_csvFileName = lmGroup->getFileName();
+    }
     serializedLandmarks.m_inVoxelSpace = lmGroup->getInVoxelSpace();
+    serializedLandmarks.m_name = lmGroup->getName();
+    serializedLandmarks.m_visible = lmGroup->getVisibility();
+    serializedLandmarks.m_opacity = lmGroup->getOpacity();
+    serializedLandmarks.m_color = lmGroup->getColor();
+    serializedLandmarks.m_colorOverride = lmGroup->getColorOverride();
+    serializedLandmarks.m_textColor = lmGroup->getTextColor();
+    serializedLandmarks.m_renderLandmarkIndices = lmGroup->getRenderLandmarkIndices();
+    serializedLandmarks.m_renderLandmarkNames = lmGroup->getRenderLandmarkNames();
+    serializedLandmarks.m_radiusFactor = lmGroup->getRadiusFactor();
+    for (const auto& [index, point] : lmGroup->getPoints()) {
+      serializedLandmarks.m_points.push_back(
+        serialize::LandmarkPoint{.m_index = index, .m_position = point.getPosition(), .m_name = point.getName()});
+    }
     serializedImage.m_landmarkGroups.emplace_back(std::move(serializedLandmarks));
   }
 

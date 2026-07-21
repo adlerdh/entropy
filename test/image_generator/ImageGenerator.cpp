@@ -348,7 +348,7 @@ std::vector<std::size_t> vectorIndex(const typename itk::ImageRegion<Dimension>:
 }
 
 template<typename ImageType>
-void applyMetadata(typename ImageType::Pointer image, const ImageSpec& spec)
+void applyMetadata(const typename ImageType::Pointer& image, const ImageSpec& spec)
 {
   for (const auto& [key, value] : spec.metadata) {
     itk::EncapsulateMetaData<std::string>(image->GetMetaDataDictionary(), key, value);

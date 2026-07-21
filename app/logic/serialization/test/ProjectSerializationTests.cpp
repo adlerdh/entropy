@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 
 using json = nlohmann::json;
 
-Annotation::Annotation() {}
+Annotation::Annotation() = default;
 
 void to_json(json& j, const Annotation&)
 {
@@ -85,6 +85,7 @@ void checkMat4(const glm::mat4& actual, const glm::mat4& expected)
     }
   }
 }
+
 } // namespace
 
 TEST_CASE("Project serialization preserves DICOM source metadata", "[project][dicom][serialization]")
@@ -107,6 +108,13 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
     .m_files = {slice1, slice2}};
 
   REQUIRE(serialize::save(project, projectFile));
+
+  const json savedJson = json::parse(std::ifstream(projectFile));
+  CHECK(savedJson.at("version") == 1);
+  CHECK(
+    savedJson.at("reference").at("dicomSource").at("paths") ==
+    json::array({"dicom/slice-001.dcm", "dicom/slice-002.dcm"}));
+  CHECK_FALSE(savedJson.at("reference").at("dicomSource").contains("files"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -353,7 +361,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")
 {
   const json root = {
-    {"reference", {{"image", "image.nii.gz"}}},
+    {"version", 1},
+    {"reference", {{"path", "image.nii.gz"}}},
     {"raycasting",
      {{"samplingFactor", 0.0f},
       {"segmentationMasking", "bad"},
@@ -413,13 +422,16 @@ TEST_CASE("Project serialization supports an external layouts file reference", "
   project.m_layouts.push_back(layout::LayoutSpec{});
 
   const json inlineJson = project;
-  CHECK(inlineJson.at("layoutsFile") == layoutsFile.string());
+  CHECK(inlineJson.at("version") == 1);
+  CHECK(inlineJson.at("layoutsPath") == layoutsFile.generic_string());
+  CHECK_FALSE(inlineJson.contains("layoutsFile"));
   CHECK_FALSE(inlineJson.contains("layouts"));
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
-  CHECK(savedJson.at("layoutsFile") == "layouts.json");
+  CHECK(savedJson.at("layoutsPath") == "layouts.json");
+  CHECK_FALSE(savedJson.contains("layoutsFile"));
   CHECK_FALSE(savedJson.contains("layouts"));
 
   serialize::EntropyProject loaded;
@@ -437,8 +449,9 @@ TEST_CASE(
 
   serialize::Image image;
   image.m_imageFileName = "moving.nii.gz";
-  image.m_affineTxFileName = "moving-affine.txt";
-  image.m_worldDefTx = testManualTransformation();
+  image.m_initialAffineMatrix = testManualTransformation();
+  image.m_manualAffineMatrix = testManualTransformation();
+  image.m_manualAffineMatrix->operator[](3).x = 7.0f;
   project.m_additionalImages.push_back(image);
 
   const json root = project;
@@ -446,17 +459,49 @@ TEST_CASE(
   REQUIRE(root.at("additional").size() == 1);
 
   const json& serializedImage = root.at("additional").at(0);
-  CHECK(serializedImage.at("initialAffine") == "moving-affine.txt");
+  CHECK(serializedImage.at("path") == "moving.nii.gz");
+  CHECK_FALSE(serializedImage.contains("image"));
+  REQUIRE(serializedImage.at("initialAffine").is_object());
+  REQUIRE(serializedImage.at("initialAffine").contains("matrix"));
+  CHECK_FALSE(serializedImage.at("initialAffine").contains("file"));
+  CHECK_FALSE(serializedImage.at("initialAffine").contains("path"));
   REQUIRE(serializedImage.contains("manualAffine"));
+  REQUIRE(serializedImage.at("manualAffine").is_object());
+  REQUIRE(serializedImage.at("manualAffine").contains("matrix"));
+  CHECK_FALSE(serializedImage.at("manualAffine").contains("file"));
+  CHECK_FALSE(serializedImage.at("manualAffine").contains("path"));
   CHECK_FALSE(serializedImage.contains("affine"));
   CHECK_FALSE(serializedImage.contains("manualTransformation"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_additionalImages.size() == 1);
-  REQUIRE(parsed.m_additionalImages.at(0).m_affineTxFileName.has_value());
-  CHECK(*parsed.m_additionalImages.at(0).m_affineTxFileName == fs::path{"moving-affine.txt"});
-  REQUIRE(parsed.m_additionalImages.at(0).m_worldDefTx.has_value());
-  checkMat4(*parsed.m_additionalImages.at(0).m_worldDefTx, *image.m_worldDefTx);
+  CHECK_FALSE(parsed.m_additionalImages.at(0).m_initialAffineFileName.has_value());
+  REQUIRE(parsed.m_additionalImages.at(0).m_initialAffineMatrix.has_value());
+  checkMat4(*parsed.m_additionalImages.at(0).m_initialAffineMatrix, *image.m_initialAffineMatrix);
+  CHECK_FALSE(parsed.m_additionalImages.at(0).m_manualAffineFileName.has_value());
+  REQUIRE(parsed.m_additionalImages.at(0).m_manualAffineMatrix.has_value());
+  checkMat4(*parsed.m_additionalImages.at(0).m_manualAffineMatrix, *image.m_manualAffineMatrix);
+}
+
+TEST_CASE("Project serialization accepts path-backed image affine transforms", "[project][serialization]")
+{
+  const json root = {
+    {"version", 1},
+    {"reference", {{"path", "reference.nii.gz"}}},
+    {"additional",
+     json::array(
+       {{{"path", "moving.nii.gz"},
+         {"initialAffine", {{"path", "moving-initial.txt"}}},
+         {"manualAffine", {{"path", "moving-manual.txt"}}}}})}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_additionalImages.size() == 1);
+  REQUIRE(parsed.m_additionalImages.at(0).m_initialAffineFileName);
+  CHECK(*parsed.m_additionalImages.at(0).m_initialAffineFileName == fs::path{"moving-initial.txt"});
+  CHECK_FALSE(parsed.m_additionalImages.at(0).m_initialAffineMatrix);
+  REQUIRE(parsed.m_additionalImages.at(0).m_manualAffineFileName);
+  CHECK(*parsed.m_additionalImages.at(0).m_manualAffineFileName == fs::path{"moving-manual.txt"});
+  CHECK_FALSE(parsed.m_additionalImages.at(0).m_manualAffineMatrix);
 }
 
 TEST_CASE(
@@ -478,26 +523,31 @@ TEST_CASE(
 
   serialize::Image image;
   image.m_imageFileName = movingFile;
-  image.m_affineTxFileName = affineFile;
-  image.m_worldDefTx = testManualTransformation();
+  image.m_initialAffineFileName = affineFile;
+  image.m_manualAffineMatrix = testManualTransformation();
   project.m_additionalImages.push_back(image);
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json saved = json::parse(std::ifstream{projectFile});
+  CHECK(saved.at("version") == 1);
   REQUIRE(saved.contains("additional"));
-  CHECK(saved.at("additional").at(0).at("initialAffine") == "moving-affine.txt");
-  REQUIRE(saved.at("additional").at(0).contains("manualAffine"));
+  REQUIRE(saved.at("additional").at(0).at("initialAffine").is_object());
+  CHECK(saved.at("additional").at(0).at("initialAffine").at("path") == "moving-affine.txt");
+  CHECK_FALSE(saved.at("additional").at(0).at("initialAffine").contains("file"));
+  REQUIRE(saved.at("additional").at(0).at("manualAffine").is_object());
+  REQUIRE(saved.at("additional").at(0).at("manualAffine").contains("matrix"));
   CHECK_FALSE(saved.at("additional").at(0).contains("affine"));
   CHECK_FALSE(saved.at("additional").at(0).contains("manualTransformation"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
   REQUIRE(loaded.m_additionalImages.size() == 1);
-  REQUIRE(loaded.m_additionalImages.at(0).m_affineTxFileName.has_value());
-  CHECK(*loaded.m_additionalImages.at(0).m_affineTxFileName == fs::canonical(affineFile));
-  REQUIRE(loaded.m_additionalImages.at(0).m_worldDefTx.has_value());
-  checkMat4(*loaded.m_additionalImages.at(0).m_worldDefTx, *image.m_worldDefTx);
+  REQUIRE(loaded.m_additionalImages.at(0).m_initialAffineFileName.has_value());
+  CHECK(*loaded.m_additionalImages.at(0).m_initialAffineFileName == fs::canonical(affineFile));
+  CHECK_FALSE(loaded.m_additionalImages.at(0).m_manualAffineFileName);
+  REQUIRE(loaded.m_additionalImages.at(0).m_manualAffineMatrix.has_value());
+  checkMat4(*loaded.m_additionalImages.at(0).m_manualAffineMatrix, *image.m_manualAffineMatrix);
 }
 
 TEST_CASE("Project serialization supports embedded and external annotations", "[project][serialization]")
@@ -509,7 +559,8 @@ TEST_CASE("Project serialization supports embedded and external annotations", "[
 
   const json root = project;
   const json& reference = root.at("reference");
-  CHECK(reference.at("annotationsFile") == "reference-annotations.json");
+  CHECK(reference.at("annotationsPath") == "reference-annotations.json");
+  CHECK_FALSE(reference.contains("annotationsFile"));
   REQUIRE(reference.at("annotations").is_object());
   CHECK(reference.at("annotations").at("version") == 1);
   REQUIRE(reference.at("annotations").at("annotations").is_array());
@@ -520,14 +571,61 @@ TEST_CASE("Project serialization supports embedded and external annotations", "[
   CHECK(*parsed.m_referenceImage.m_annotationsFileName == fs::path{"reference-annotations.json"});
 }
 
-TEST_CASE("Project serialization accepts old annotation path spelling", "[project][serialization]")
+TEST_CASE("Project serialization preserves embedded and path-backed landmark groups", "[project][serialization]")
 {
-  const json root = {{"reference", {{"image", "reference.nii.gz"}, {"annotations", "reference-annotations.json"}}}};
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "reference.nii.gz";
+
+  serialize::LandmarkGroup embedded;
+  embedded.m_name = "Reference landmarks";
+  embedded.m_inVoxelSpace = false;
+  embedded.m_points = {
+    serialize::LandmarkPoint{.m_index = 1, .m_position = glm::vec3{1.0f, 2.0f, 3.0f}, .m_name = "AC"},
+    serialize::LandmarkPoint{.m_index = 2, .m_position = glm::vec3{4.0f, 5.0f, 6.0f}, .m_name = "PC"}};
+  embedded.m_visible = false;
+  embedded.m_opacity = 0.5f;
+  embedded.m_color = glm::vec3{0.2f, 0.3f, 0.4f};
+  embedded.m_colorOverride = true;
+  embedded.m_textColor = glm::vec3{0.9f, 0.8f, 0.7f};
+  embedded.m_renderLandmarkIndices = false;
+  embedded.m_renderLandmarkNames = true;
+  embedded.m_radiusFactor = 1.25f;
+  project.m_referenceImage.m_landmarkGroups.push_back(embedded);
+
+  serialize::LandmarkGroup fileBacked;
+  fileBacked.m_csvFileName = "moving-landmarks.csv";
+  fileBacked.m_inVoxelSpace = true;
+  project.m_referenceImage.m_landmarkGroups.push_back(fileBacked);
+
+  const json root = project;
+  const json& savedLandmarks = root.at("reference").at("landmarks");
+  REQUIRE(savedLandmarks.size() == 2);
+  CHECK_FALSE(savedLandmarks.at(0).contains("path"));
+  CHECK(savedLandmarks.at(0).at("name") == "Reference landmarks");
+  CHECK(savedLandmarks.at(0).at("points").size() == 2);
+  CHECK(savedLandmarks.at(0).at("points").at(0).at("index") == 1);
+  CHECK(savedLandmarks.at(0).at("points").at(0).at("position") == json::array({1.0f, 2.0f, 3.0f}));
+  CHECK(savedLandmarks.at(0).at("points").at(0).at("name") == "AC");
+  CHECK(savedLandmarks.at(0).at("display").at("visible") == false);
+  CHECK(savedLandmarks.at(0).at("display").at("opacity") == 0.5f);
+  CHECK(savedLandmarks.at(0).at("display").at("color") == json::array({0.2f, 0.3f, 0.4f}));
+  CHECK(savedLandmarks.at(0).at("display").at("colorOverride") == true);
+  CHECK(savedLandmarks.at(0).at("display").at("textColor") == json::array({0.9f, 0.8f, 0.7f}));
+  CHECK(savedLandmarks.at(0).at("display").at("showIndices") == false);
+  CHECK(savedLandmarks.at(0).at("display").at("showNames") == true);
+  CHECK(savedLandmarks.at(0).at("display").at("radiusFactor") == 1.25f);
+  CHECK(savedLandmarks.at(1).at("path") == "moving-landmarks.csv");
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  REQUIRE(parsed.m_referenceImage.m_annotationsFileName);
-  CHECK(*parsed.m_referenceImage.m_annotationsFileName == fs::path{"reference-annotations.json"});
-  CHECK(parsed.m_referenceImage.m_annotations.empty());
+  REQUIRE(parsed.m_referenceImage.m_landmarkGroups.size() == 2);
+  const serialize::LandmarkGroup& parsedEmbedded = parsed.m_referenceImage.m_landmarkGroups.at(0);
+  CHECK_FALSE(parsedEmbedded.m_csvFileName);
+  CHECK(parsedEmbedded.m_name == embedded.m_name);
+  CHECK(parsedEmbedded.m_points.size() == 2);
+  CHECK(parsedEmbedded.m_points.at(1).m_name == "PC");
+  CHECK(parsedEmbedded.m_textColor == embedded.m_textColor);
+  REQUIRE(parsed.m_referenceImage.m_landmarkGroups.at(1).m_csvFileName);
+  CHECK(*parsed.m_referenceImage.m_landmarkGroups.at(1).m_csvFileName == fs::path{"moving-landmarks.csv"});
 }
 
 TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")
@@ -895,30 +993,36 @@ TEST_CASE("Project serialization preserves inverse and forward warp paths", "[pr
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = imageFile;
-  project.m_referenceImage.m_inverseWarpFileName = inverseFile;
-  project.m_referenceImage.m_inverseWarpReferenceImageFileName = referenceImageFile;
-  project.m_referenceImage.m_forwardWarpFileName = forwardFile;
+  project.m_referenceImage.m_inverseWarpFieldPath = inverseFile;
+  project.m_referenceImage.m_inverseWarpReferenceImagePath = referenceImageFile;
+  project.m_referenceImage.m_forwardWarpFieldPath = forwardFile;
 
   const json inlineJson = project;
-  CHECK(inlineJson.at("reference").at("inverseWarp") == inverseFile.string());
-  CHECK(inlineJson.at("reference").at("inverseWarpReferenceImage") == referenceImageFile.string());
-  CHECK(inlineJson.at("reference").at("forwardWarp") == forwardFile.string());
+  CHECK(inlineJson.at("reference").at("inverseWarpField") == inverseFile.generic_string());
+  CHECK_FALSE(inlineJson.at("reference").contains("inverseWarp"));
+  CHECK(inlineJson.at("reference").at("inverseWarpReferenceImagePath") == referenceImageFile.generic_string());
+  CHECK_FALSE(inlineJson.at("reference").contains("inverseWarpReferenceImage"));
+  CHECK(inlineJson.at("reference").at("forwardWarpField") == forwardFile.generic_string());
+  CHECK_FALSE(inlineJson.at("reference").contains("forwardWarp"));
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
-  CHECK(savedJson.at("reference").at("inverseWarp") == "inverse.nrrd");
-  CHECK(savedJson.at("reference").at("inverseWarpReferenceImage") == "fixed.nii.gz");
-  CHECK(savedJson.at("reference").at("forwardWarp") == "forward.nrrd");
+  CHECK(savedJson.at("reference").at("inverseWarpField") == "inverse.nrrd");
+  CHECK_FALSE(savedJson.at("reference").contains("inverseWarp"));
+  CHECK(savedJson.at("reference").at("inverseWarpReferenceImagePath") == "fixed.nii.gz");
+  CHECK_FALSE(savedJson.at("reference").contains("inverseWarpReferenceImage"));
+  CHECK(savedJson.at("reference").at("forwardWarpField") == "forward.nrrd");
+  CHECK_FALSE(savedJson.at("reference").contains("forwardWarp"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
-  REQUIRE(loaded.m_referenceImage.m_inverseWarpFileName);
-  REQUIRE(loaded.m_referenceImage.m_inverseWarpReferenceImageFileName);
-  REQUIRE(loaded.m_referenceImage.m_forwardWarpFileName);
-  CHECK(*loaded.m_referenceImage.m_inverseWarpFileName == fs::canonical(inverseFile));
-  CHECK(*loaded.m_referenceImage.m_inverseWarpReferenceImageFileName == fs::canonical(referenceImageFile));
-  CHECK(*loaded.m_referenceImage.m_forwardWarpFileName == fs::canonical(forwardFile));
+  REQUIRE(loaded.m_referenceImage.m_inverseWarpFieldPath);
+  REQUIRE(loaded.m_referenceImage.m_inverseWarpReferenceImagePath);
+  REQUIRE(loaded.m_referenceImage.m_forwardWarpFieldPath);
+  CHECK(*loaded.m_referenceImage.m_inverseWarpFieldPath == fs::canonical(inverseFile));
+  CHECK(*loaded.m_referenceImage.m_inverseWarpReferenceImagePath == fs::canonical(referenceImageFile));
+  CHECK(*loaded.m_referenceImage.m_forwardWarpFieldPath == fs::canonical(forwardFile));
 }
 
 TEST_CASE("Project serialization preserves registration result artifacts", "[project][serialization]")
@@ -953,8 +1057,8 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
     .m_movingImageUid = "moving",
     .m_manifestFileName = manifestFile,
     .m_warpedImage = warpedFile,
-    .m_inverseWarp = inverseFile,
-    .m_forwardWarp = forwardFile,
+    .m_inverseWarpField = inverseFile,
+    .m_forwardWarpField = forwardFile,
     .m_affineTransform = affineFile,
     .m_warpedSegmentations = {segFile},
     .m_transformedSurfaces = {surfaceFile},
@@ -973,8 +1077,10 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   const json& savedResult = savedJson.at("registrationResults").at(0);
   CHECK(savedResult.at("manifest") == "registration/result.json");
   CHECK(savedResult.at("warpedImage") == "registration/warped.nii.gz");
-  CHECK(savedResult.at("inverseWarp") == "registration/inverse.nrrd");
-  CHECK(savedResult.at("forwardWarp") == "registration/forward.nrrd");
+  CHECK(savedResult.at("inverseWarpField") == "registration/inverse.nrrd");
+  CHECK_FALSE(savedResult.contains("inverseWarp"));
+  CHECK(savedResult.at("forwardWarpField") == "registration/forward.nrrd");
+  CHECK_FALSE(savedResult.contains("forwardWarp"));
   CHECK(savedResult.at("affine") == "registration/affine.mat");
   CHECK_FALSE(savedResult.contains("affineTransform"));
   CHECK(savedResult.at("warpedSegmentations").at(0) == "registration/seg.nii.gz");
@@ -985,13 +1091,13 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   const serialize::RegistrationResult& loadedResult = loaded.m_registrationResults.front();
   REQUIRE(loadedResult.m_manifestFileName);
   REQUIRE(loadedResult.m_warpedImage);
-  REQUIRE(loadedResult.m_inverseWarp);
-  REQUIRE(loadedResult.m_forwardWarp);
+  REQUIRE(loadedResult.m_inverseWarpField);
+  REQUIRE(loadedResult.m_forwardWarpField);
   REQUIRE(loadedResult.m_affineTransform);
   CHECK(*loadedResult.m_manifestFileName == fs::canonical(manifestFile));
   CHECK(*loadedResult.m_warpedImage == fs::canonical(warpedFile));
-  CHECK(*loadedResult.m_inverseWarp == fs::canonical(inverseFile));
-  CHECK(*loadedResult.m_forwardWarp == fs::canonical(forwardFile));
+  CHECK(*loadedResult.m_inverseWarpField == fs::canonical(inverseFile));
+  CHECK(*loadedResult.m_forwardWarpField == fs::canonical(forwardFile));
   CHECK(*loadedResult.m_affineTransform == fs::canonical(affineFile));
   REQUIRE(loadedResult.m_warpedSegmentations.size() == 1);
   CHECK(loadedResult.m_warpedSegmentations.front() == fs::canonical(segFile));

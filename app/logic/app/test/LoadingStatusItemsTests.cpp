@@ -34,8 +34,8 @@ TEST_CASE("Loading status project items include images and segmentations", "[Loa
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "reference.nii.gz";
-  project.m_referenceImage.m_inverseWarpFileName = "inverse-warp.nrrd";
-  project.m_referenceImage.m_forwardWarpFileName = "forward-warp.nrrd";
+  project.m_referenceImage.m_inverseWarpFieldPath = "inverse-warp.nrrd";
+  project.m_referenceImage.m_forwardWarpFieldPath = "forward-warp.nrrd";
 
   serialize::Segmentation segmentation;
   segmentation.m_segFileName = "reference-seg.nrrd";

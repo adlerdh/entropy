@@ -558,7 +558,11 @@ void renderLandmarkMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Landmarks Panel", MainMenuAction::ToggleLandmarksWindow);
   ImGui::Separator();
   actionMenuItem(callbacks, "Create Landmark Group", MainMenuAction::CreateLandmarkGroup);
-  actionMenuItem(callbacks, "Save Active Landmark Group...", MainMenuAction::SaveLandmarkGroup);
+  actionMenuItem(callbacks, "Remove Active Group", MainMenuAction::RemoveLandmarkGroup);
+  ImGui::Separator();
+  actionMenuItem(callbacks, "Import Landmarks...", MainMenuAction::ImportLandmarkGroup);
+  actionMenuItem(callbacks, "Export Landmarks...", MainMenuAction::SaveLandmarkGroup);
+  ImGui::Separator();
   actionMenuItem(callbacks, "Add Landmark at Crosshairs", MainMenuAction::AddLandmark);
 }
 

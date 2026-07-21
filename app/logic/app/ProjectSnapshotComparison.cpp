@@ -112,9 +112,24 @@ bool segmentationsEqual(const serialize::Segmentation& a, const serialize::Segme
   return a.m_segFileName == b.m_segFileName && segSettingsEqual(a.m_settings, b.m_settings);
 }
 
+template<typename T, typename Equal>
+bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
+{
+  return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), equal);
+}
+
+bool landmarkPointsEqual(const serialize::LandmarkPoint& a, const serialize::LandmarkPoint& b)
+{
+  return a.m_index == b.m_index && a.m_position == b.m_position && a.m_name == b.m_name;
+}
+
 bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::LandmarkGroup& b)
 {
-  return a.m_csvFileName == b.m_csvFileName && a.m_inVoxelSpace == b.m_inVoxelSpace;
+  return a.m_csvFileName == b.m_csvFileName && a.m_inVoxelSpace == b.m_inVoxelSpace && a.m_name == b.m_name &&
+         vectorsEqual(a.m_points, b.m_points, landmarkPointsEqual) && a.m_visible == b.m_visible &&
+         a.m_opacity == b.m_opacity && a.m_color == b.m_color && a.m_colorOverride == b.m_colorOverride &&
+         a.m_textColor == b.m_textColor && a.m_renderLandmarkIndices == b.m_renderLandmarkIndices &&
+         a.m_renderLandmarkNames == b.m_renderLandmarkNames && a.m_radiusFactor == b.m_radiusFactor;
 }
 
 bool surfaceMaterialsEqual(const SurfaceMaterial& a, const SurfaceMaterial& b)
@@ -134,12 +149,6 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)
 {
   return a.m_component == b.m_component && isosurfacesEqual(a.m_surface, b.m_surface);
-}
-
-template<typename T, typename Equal>
-bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
-{
-  return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), equal);
 }
 
 bool imageSelectionsEqual(const layout::ImageSelectionSpec& a, const layout::ImageSelectionSpec& b)
@@ -203,9 +212,12 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 {
   return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
          spatialMetadataEqual(a.m_spatialMetadata, b.m_spatialMetadata) &&
-         a.m_affineTxFileName == b.m_affineTxFileName && a.m_inverseWarpFileName == b.m_inverseWarpFileName &&
-         a.m_inverseWarpReferenceImageFileName == b.m_inverseWarpReferenceImageFileName &&
-         a.m_forwardWarpFileName == b.m_forwardWarpFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&
+         a.m_initialAffineFileName == b.m_initialAffineFileName &&
+         matricesEqual(a.m_initialAffineMatrix, b.m_initialAffineMatrix) &&
+         a.m_inverseWarpFieldPath == b.m_inverseWarpFieldPath &&
+         a.m_inverseWarpReferenceImagePath == b.m_inverseWarpReferenceImagePath &&
+         a.m_forwardWarpFieldPath == b.m_forwardWarpFieldPath && a.m_manualAffineFileName == b.m_manualAffineFileName &&
+         matricesEqual(a.m_manualAffineMatrix, b.m_manualAffineMatrix) &&
          a.m_annotationsFileName == b.m_annotationsFileName && annotationsEqual(a.m_annotations, b.m_annotations) &&
          imageSettingsEqual(a.m_settings, b.m_settings) &&
          vectorsEqual(a.m_segmentations, b.m_segmentations, segmentationsEqual) &&
@@ -320,8 +332,8 @@ bool registrationResultsEqual(const serialize::RegistrationResult& a, const seri
 {
   return a.m_backend == b.m_backend && a.m_fixedImageUid == b.m_fixedImageUid &&
          a.m_movingImageUid == b.m_movingImageUid && a.m_manifestFileName == b.m_manifestFileName &&
-         a.m_warpedImage == b.m_warpedImage && a.m_inverseWarp == b.m_inverseWarp &&
-         a.m_forwardWarp == b.m_forwardWarp && a.m_affineTransform == b.m_affineTransform &&
+         a.m_warpedImage == b.m_warpedImage && a.m_inverseWarpField == b.m_inverseWarpField &&
+         a.m_forwardWarpField == b.m_forwardWarpField && a.m_affineTransform == b.m_affineTransform &&
          a.m_warpedSegmentations == b.m_warpedSegmentations && a.m_transformedSurfaces == b.m_transformedSurfaces &&
          a.m_transformedLandmarks == b.m_transformedLandmarks && a.m_warnings == b.m_warnings;
 }

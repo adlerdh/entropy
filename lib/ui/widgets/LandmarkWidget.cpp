@@ -227,7 +227,8 @@ void renderLandmarkChildWindow(
     if (ImGui::Button(ICON_FK_TIMES)) {
       if (activeLmGroup->removePoint(pointIndex)) {
         // The point was removed, so skip rendering it
-        ImGui::PopID(); // pointIndex
+        ImGui::PopStyleVar(); // ImGuiStyleVar_ItemSpacing
+        ImGui::PopID();       // pointIndex
         ImGui::EndTable();
         ImGui::EndChild();
         return;

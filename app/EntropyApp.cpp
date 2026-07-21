@@ -715,30 +715,45 @@ bool EntropyApp::loadSerializedImage(
   // Lock all affine transformations to the reference image, which defines the World space:
   image->transformations().set_worldDef_T_affine_locked(true);
 
-  // Load and set affine transformation from file (for non-reference images only):
-  if (serializedImage.m_affineTxFileName) {
+  // Load and set the initial/imported affine transformation for non-reference images.
+  if (serializedImage.m_initialAffineMatrix || serializedImage.m_initialAffineFileName) {
     glm::dmat4 affine_T_subject(1.0);
 
     if (isReferenceImage) {
-      spdlog::warn(
-        "An affine transformation file ({}) was provided for the reference image. "
-        "It will be ignored, since the reference image defines the World coordinate "
-        "space, which cannot be transformed.",
-        *serializedImage.m_affineTxFileName);
+      if (serializedImage.m_initialAffineFileName) {
+        spdlog::warn(
+          "An affine transformation file ({}) was provided for the reference image. "
+          "It will be ignored, since the reference image defines the World coordinate "
+          "space, which cannot be transformed.",
+          *serializedImage.m_initialAffineFileName);
+      }
+      else {
+        spdlog::warn(
+          "An embedded initial affine transformation was provided for the reference image. It will be ignored, since "
+          "the reference image defines World space.");
+      }
 
       image->transformations().set_affine_T_subject_fileName(std::nullopt);
     }
     else {
-      if (!serialize::openAffineTxFile(affine_T_subject, *serializedImage.m_affineTxFileName)) {
-        spdlog::error(
-          "Unable to read affine transformation from {} for image {}",
-          *serializedImage.m_affineTxFileName,
-          *imageUid);
-
+      if (serializedImage.m_initialAffineMatrix) {
+        affine_T_subject = glm::dmat4{*serializedImage.m_initialAffineMatrix};
         image->transformations().set_affine_T_subject_fileName(std::nullopt);
       }
+      else if (serializedImage.m_initialAffineFileName) {
+        if (!serialize::openAffineTxFile(affine_T_subject, *serializedImage.m_initialAffineFileName)) {
+          spdlog::error(
+            "Unable to read affine transformation from {} for image {}",
+            *serializedImage.m_initialAffineFileName,
+            *imageUid);
 
-      image->transformations().set_affine_T_subject_fileName(serializedImage.m_affineTxFileName);
+          image->transformations().set_affine_T_subject_fileName(std::nullopt);
+        }
+        else {
+          image->transformations().set_affine_T_subject_fileName(serializedImage.m_initialAffineFileName);
+        }
+      }
+
       image->transformations().set_affine_T_subject(glm::mat4{affine_T_subject});
     }
   }
@@ -747,37 +762,55 @@ bool EntropyApp::loadSerializedImage(
     image->transformations().set_affine_T_subject_fileName(std::nullopt);
   }
 
-  if (serializedImage.m_worldDefTx) {
+  if (serializedImage.m_manualAffineMatrix || serializedImage.m_manualAffineFileName) {
     if (isReferenceImage) {
       spdlog::warn(
         "A manual transformation was provided for the reference image. It will be ignored, since the reference "
         "image defines World space.");
     }
     else {
-      image->transformations().set_worldDef_T_affine_locked(false);
-      image->transformations().set_enable_worldDef_T_affine(true);
-      image->transformations().set_worldDef_T_affine(*serializedImage.m_worldDefTx);
-      image->transformations().set_worldDef_T_affine_locked(true);
+      glm::dmat4 worldDef_T_affine(1.0);
+      bool manualAffineAvailable = true;
+      if (serializedImage.m_manualAffineMatrix) {
+        worldDef_T_affine = glm::dmat4{*serializedImage.m_manualAffineMatrix};
+      }
+      else if (
+        serializedImage.m_manualAffineFileName &&
+        !serialize::openAffineTxFile(worldDef_T_affine, *serializedImage.m_manualAffineFileName))
+      {
+        spdlog::error(
+          "Unable to read manual affine transformation from {} for image {}",
+          *serializedImage.m_manualAffineFileName,
+          *imageUid);
+        manualAffineAvailable = false;
+      }
+
+      if (manualAffineAvailable) {
+        image->transformations().set_worldDef_T_affine_locked(false);
+        image->transformations().set_enable_worldDef_T_affine(true);
+        image->transformations().set_worldDef_T_affine(glm::mat4{worldDef_T_affine});
+        image->transformations().set_worldDef_T_affine_locked(true);
+      }
     }
   }
 
-  if (serializedImage.m_inverseWarpFileName) {
+  if (serializedImage.m_inverseWarpFieldPath) {
     std::optional<uuids::uuid> inverseWarpUid;
     bool isInverseWarpNewImage = false;
 
     try {
-      spdlog::debug("Attempting to load inverse warp image from {}", *serializedImage.m_inverseWarpFileName);
-      std::tie(inverseWarpUid, isInverseWarpNewImage) = loadDeformationField(*serializedImage.m_inverseWarpFileName);
+      spdlog::debug("Attempting to load inverse warp image from {}", *serializedImage.m_inverseWarpFieldPath);
+      std::tie(inverseWarpUid, isInverseWarpNewImage) = loadDeformationField(*serializedImage.m_inverseWarpFieldPath);
     }
     catch (const std::exception& e) {
-      spdlog::error("Exception loading inverse warp from {}: {}", *serializedImage.m_inverseWarpFileName, e.what());
+      spdlog::error("Exception loading inverse warp from {}: {}", *serializedImage.m_inverseWarpFieldPath, e.what());
     }
 
     do {
       if (!inverseWarpUid) {
         spdlog::error(
           "Unable to load inverse warp from {} for image {}",
-          *serializedImage.m_inverseWarpFileName,
+          *serializedImage.m_inverseWarpFieldPath,
           *imageUid);
         break;
       }
@@ -785,7 +818,7 @@ bool EntropyApp::loadSerializedImage(
       if (!isInverseWarpNewImage) {
         spdlog::info(
           "Inverse warp from {} already exists in this project as image {}",
-          *serializedImage.m_inverseWarpFileName,
+          *serializedImage.m_inverseWarpFieldPath,
           *inverseWarpUid);
       }
 
@@ -804,9 +837,9 @@ bool EntropyApp::loadSerializedImage(
 
       if (m_data.assignInverseWarpUidToImage(*imageUid, *inverseWarpUid, inverseWarpReferenceImageUid)) {
         spdlog::info("Assigned inverse warp {} to image {}", *inverseWarpUid, *imageUid);
-        if (serializedImage.m_inverseWarpReferenceImageFileName) {
+        if (serializedImage.m_inverseWarpReferenceImagePath) {
           m_pendingInverseWarpReferences.push_back(
-            PendingInverseWarpReference{*imageUid, *serializedImage.m_inverseWarpReferenceImageFileName});
+            PendingInverseWarpReference{*imageUid, *serializedImage.m_inverseWarpReferenceImagePath});
         }
       }
       else {
@@ -828,23 +861,23 @@ bool EntropyApp::loadSerializedImage(
     // separately in a shader that takes in as a uniform the active component
   }
 
-  if (serializedImage.m_forwardWarpFileName) {
+  if (serializedImage.m_forwardWarpFieldPath) {
     std::optional<uuids::uuid> forwardWarpUid;
     bool isForwardWarpNewImage = false;
 
     try {
-      spdlog::debug("Attempting to load forward warp image from {}", *serializedImage.m_forwardWarpFileName);
-      std::tie(forwardWarpUid, isForwardWarpNewImage) = loadDeformationField(*serializedImage.m_forwardWarpFileName);
+      spdlog::debug("Attempting to load forward warp image from {}", *serializedImage.m_forwardWarpFieldPath);
+      std::tie(forwardWarpUid, isForwardWarpNewImage) = loadDeformationField(*serializedImage.m_forwardWarpFieldPath);
     }
     catch (const std::exception& e) {
-      spdlog::error("Exception loading forward warp from {}: {}", *serializedImage.m_forwardWarpFileName, e.what());
+      spdlog::error("Exception loading forward warp from {}: {}", *serializedImage.m_forwardWarpFieldPath, e.what());
     }
 
     do {
       if (!forwardWarpUid) {
         spdlog::error(
           "Unable to load forward warp from {} for image {}",
-          *serializedImage.m_forwardWarpFileName,
+          *serializedImage.m_forwardWarpFieldPath,
           *imageUid);
         break;
       }
@@ -852,7 +885,7 @@ bool EntropyApp::loadSerializedImage(
       if (!isForwardWarpNewImage) {
         spdlog::info(
           "Forward warp from {} already exists in this project as image {}",
-          *serializedImage.m_forwardWarpFileName,
+          *serializedImage.m_forwardWarpFieldPath,
           *forwardWarpUid);
       }
 
@@ -902,7 +935,7 @@ bool EntropyApp::loadSerializedImage(
   if (!serializedImage.m_annotations.empty()) {
     if (serializedImage.m_annotationsFileName) {
       spdlog::warn(
-        "Image {} has embedded annotations and annotationsFile {}; using embedded annotations",
+        "Image {} has embedded annotations and annotationsPath {}; using embedded annotations",
         *imageUid,
         *serializedImage.m_annotationsFileName);
     }
@@ -933,13 +966,24 @@ bool EntropyApp::loadSerializedImage(
   const auto satMinMax = std::make_pair(0.6f, 1.0f);
   const auto valMinMax = std::make_pair(0.6f, 1.0f);
 
-  // Set landmarks from file:
+  // Set embedded landmarks or load path-backed landmark CSV files.
   for (const auto& lm : serializedImage.m_landmarkGroups) {
     std::map<size_t, PointRecord<glm::vec3> > landmarks;
 
-    if (serialize::openLandmarkGroupCsvFile(landmarks, lm.m_csvFileName)) {
-      spdlog::info("Loaded landmarks from CSV file {} for image {}", lm.m_csvFileName, *imageUid);
+    bool loadedLandmarks = false;
+    if (!lm.m_points.empty()) {
+      for (const auto& point : lm.m_points) {
+        landmarks.try_emplace(point.m_index, point.m_position, point.m_name);
+      }
+      loadedLandmarks = true;
+      spdlog::info("Loaded {} embedded landmarks for image {}", landmarks.size(), *imageUid);
+    }
+    else if (lm.m_csvFileName && serialize::openLandmarkGroupCsvFile(landmarks, *lm.m_csvFileName)) {
+      loadedLandmarks = true;
+      spdlog::info("Loaded landmarks from CSV file {} for image {}", *lm.m_csvFileName, *imageUid);
+    }
 
+    if (loadedLandmarks) {
       // Assign random colors to the landmarks. Make sure that landmarks with the same index
       // in different groups have the same color. This is done by seeding the random number
       // generator with the landmark index.
@@ -953,10 +997,20 @@ bool EntropyApp::loadSerializedImage(
       }
 
       LandmarkGroup lmGroup;
-      lmGroup.setFileName(lm.m_csvFileName);
-      lmGroup.setName(getFileName(lm.m_csvFileName, false));
+      if (lm.m_csvFileName) {
+        lmGroup.setFileName(*lm.m_csvFileName);
+      }
+      lmGroup.setName(
+        !lm.m_name.empty() ? lm.m_name : (lm.m_csvFileName ? getFileName(*lm.m_csvFileName, false) : "Landmarks"));
       lmGroup.setPoints(landmarks);
-      lmGroup.setRenderLandmarkNames(false);
+      lmGroup.setVisibility(lm.m_visible);
+      lmGroup.setOpacity(lm.m_opacity);
+      lmGroup.setColor(lm.m_color);
+      lmGroup.setColorOverride(lm.m_colorOverride);
+      lmGroup.setTextColor(lm.m_textColor);
+      lmGroup.setRenderLandmarkIndices(lm.m_renderLandmarkIndices);
+      lmGroup.setRenderLandmarkNames(lm.m_renderLandmarkNames);
+      lmGroup.setRadiusFactor(lm.m_radiusFactor);
 
       if (lm.m_inVoxelSpace) {
         lmGroup.setInVoxelSpace(true);
@@ -980,11 +1034,16 @@ bool EntropyApp::loadSerializedImage(
         spdlog::error("Unable to assigned landmark group {} to image {}", lmGroupUid, *imageUid);
       }
       else {
-        spdlog::info("Added landmark group {} from {} to image {}", lmGroupUid, lm.m_csvFileName, *imageUid);
+        spdlog::info("Added landmark group {} to image {}", lmGroupUid, *imageUid);
       }
     }
     else {
-      spdlog::error("Unable to open landmarks from CSV file {} for image {}", lm.m_csvFileName, *imageUid);
+      if (lm.m_csvFileName) {
+        spdlog::error("Unable to open landmarks from CSV file {} for image {}", *lm.m_csvFileName, *imageUid);
+      }
+      else {
+        spdlog::warn("Skipping empty landmark group for image {}", *imageUid);
+      }
     }
   }
 
@@ -2205,8 +2264,8 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
       }
       std::error_code equivalentError;
       const bool equivalent =
-        fs::equivalent(candidateImage->header().fileName(), pendingReference.referenceImageFileName, equivalentError);
-      if (equivalent || candidateImage->header().fileName() == pendingReference.referenceImageFileName) {
+        fs::equivalent(candidateImage->header().fileName(), pendingReference.referenceImagePath, equivalentError);
+      if (equivalent || candidateImage->header().fileName() == pendingReference.referenceImagePath) {
         resolvedReferenceUid = candidateUid;
         break;
       }
@@ -2216,14 +2275,14 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
       if (!m_data.setActiveInverseWarpReferenceImageUid(pendingReference.imageUid, resolvedReferenceUid)) {
         spdlog::warn(
           "Unable to restore inverse warp reference image {} for image {}",
-          pendingReference.referenceImageFileName,
+          pendingReference.referenceImagePath,
           pendingReference.imageUid);
       }
     }
     else {
       spdlog::warn(
         "Unable to find saved inverse warp reference image {} for image {}; using the moving image",
-        pendingReference.referenceImageFileName,
+        pendingReference.referenceImagePath,
         pendingReference.imageUid);
     }
   }

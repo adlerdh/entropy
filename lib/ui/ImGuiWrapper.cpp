@@ -22,6 +22,8 @@
 #include "ui/menus/WinNativeMainMenu.h"
 #endif
 
+#include "image/ImageUtility.h"
+
 #include "logic/app/AppPaths.h"
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
@@ -3262,6 +3264,50 @@ void ImGuiWrapper::render()
     }
   };
 
+  auto importLandmarkGroupForActiveImage = [activeImageUid, this]() {
+    const std::optional<uuids::uuid> imageUid = activeImageUid();
+    const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+    if (!image) {
+      return;
+    }
+
+    const std::optional<std::filesystem::path> selectedFile = native_dialog::openFile(native_dialog::landmarkFilters());
+    if (!selectedFile) {
+      return;
+    }
+
+    std::map<size_t, PointRecord<glm::vec3>> landmarks;
+    if (!serialize::openLandmarkGroupCsvFile(landmarks, *selectedFile)) {
+      spdlog::error("Error importing landmarks from CSV file {}", *selectedFile);
+      return;
+    }
+
+    LandmarkGroup landmarkGroup;
+    landmarkGroup.setFileName(*selectedFile);
+    landmarkGroup.setName(getFileName(*selectedFile, false));
+    landmarkGroup.setPoints(std::move(landmarks));
+    landmarkGroup.setInVoxelSpace(false);
+    landmarkGroup.setRenderLandmarkNames(false);
+
+    const uuids::uuid landmarkGroupUid = m_appData.addLandmarkGroup(landmarkGroup);
+    m_appData.assignLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
+    m_appData.setRainbowColorsForAllLandmarkGroups();
+    m_appData.assignActiveLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
+    spdlog::info("Imported landmarks from CSV file {} for image {}", *selectedFile, *imageUid);
+  };
+
+  auto removeActiveLandmarkGroup = [activeLandmarkGroupUid, this]() {
+    const std::optional<uuids::uuid> landmarkGroupUid = activeLandmarkGroupUid();
+    if (!landmarkGroupUid) {
+      return;
+    }
+
+    if (m_appData.removeLandmarkGroup(*landmarkGroupUid)) {
+      m_appData.setRainbowColorsForAllLandmarkGroups();
+      spdlog::info("Removed landmark group {}", *landmarkGroupUid);
+    }
+  };
+
   auto addLandmarkAtCrosshairs = [activeImageUid, activeLandmarkGroupUid, this]() {
     const auto imageUid = activeImageUid();
     const auto landmarkGroupUid = activeLandmarkGroupUid();
@@ -3320,7 +3366,9 @@ void ImGuiWrapper::render()
                             importAnnotationsToActiveImage,
                             exportAnnotationsForActiveImage,
                             createActiveLandmarkGroup,
+                            importLandmarkGroupForActiveImage,
                             saveActiveLandmarkGroup,
+                            removeActiveLandmarkGroup,
                             addLandmarkAtCrosshairs,
                             moveImageBackward,
                             moveImageForward,
@@ -3736,8 +3784,14 @@ void ImGuiWrapper::render()
       case MainMenuAction::CreateLandmarkGroup:
         createActiveLandmarkGroup();
         break;
+      case MainMenuAction::ImportLandmarkGroup:
+        importLandmarkGroupForActiveImage();
+        break;
       case MainMenuAction::SaveLandmarkGroup:
         saveActiveLandmarkGroup();
+        break;
+      case MainMenuAction::RemoveLandmarkGroup:
+        removeActiveLandmarkGroup();
         break;
       case MainMenuAction::AddLayout:
         m_appData.guiData().m_showAddLayoutPopup = true;
@@ -3962,7 +4016,10 @@ void ImGuiWrapper::render()
         case MainMenuAction::MoveAnnotationToBack:
         case MainMenuAction::MoveAnnotationToFront:
           return canUseProjectActions && hasActiveAnnotation;
+        case MainMenuAction::ImportLandmarkGroup:
+          return canUseProjectActions && activeImageUid().has_value();
         case MainMenuAction::SaveLandmarkGroup:
+        case MainMenuAction::RemoveLandmarkGroup:
           return canUseProjectActions && activeLandmarkGroupUid().has_value();
         case MainMenuAction::RemoveLayout:
           return canUseProjectActions && m_appData.windowData().numLayouts() >= 2;

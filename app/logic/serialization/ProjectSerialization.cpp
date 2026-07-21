@@ -1,4 +1,5 @@
 #include "logic/serialization/ProjectSerialization.h"
+#include "common/Exception.hpp"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/JsonSerializers.h"
 #include "layout/LayoutSpecJson.h"
@@ -38,6 +39,8 @@ namespace fs = std::filesystem;
 
 namespace
 {
+constexpr int k_projectFormatVersion = 1;
+
 json surfaceVec3ToJson(const glm::vec3& value)
 {
   return json::array({value.x, value.y, value.z});
@@ -268,35 +271,6 @@ std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
   return std::nullopt;
 }
 
-// Convert all project image file names to be relative to the project base path and canonical.
-// void makePathsRelative( json& project, const fs::path& basePath )
-//{
-//     auto makeRelative = [&basePath] ( json& image )
-//     {
-//         fs::path refImagePath = image.at( "imageFileName" ).get<std::string>();
-//         if ( refImagePath.is_relative() )
-//         {
-//             image.at( "imageFileName" ) = fs::relative( refImagePath, basePath ).string();
-//         }
-
-//        if ( image.count( "segFileName" ) > 0 )
-//        {
-//            fs::path refSegPath = image.at( "segFileName" ).get<std::string>();
-//            if ( refSegPath.is_relative() )
-//            {
-//                image.at( "segFileName" ) = fs::relative( refSegPath, basePath ).string();
-//            }
-//        }
-//    };
-
-//    makeRelative( project.at( "referenceImage" ) );
-
-//    for ( auto& image : project.at( "additionalImages" ) )
-//    {
-//        makeRelative( image );
-//    }
-//}
-
 void applyToImagePaths(
   serialize::EntropyProject& project,
   const fs::path& projectBasePath,
@@ -405,6 +379,44 @@ glm::mat4 matrixFromJson(const json& j)
   return matrix;
 }
 
+json affineToJson(const std::optional<fs::path>& path, const std::optional<glm::mat4>& matrix)
+{
+  if (matrix) {
+    return json{{"matrix", matrixToJson(*matrix)}};
+  }
+
+  if (path) {
+    return json{{"path", path->generic_string()}};
+  }
+
+  return json::object();
+}
+
+void affineFromJson(const json& j, std::optional<fs::path>& path, std::optional<glm::mat4>& matrix)
+{
+  path = std::nullopt;
+  matrix = std::nullopt;
+
+  if (!j.is_object()) {
+    throw_debug("Affine transform JSON must be an object")
+  }
+
+  if (j.contains("matrix")) {
+    matrix = matrixFromJson(j.at("matrix"));
+    if (j.contains("path")) {
+      spdlog::warn("Affine transform JSON contains both matrix and path; using embedded matrix");
+    }
+    return;
+  }
+
+  if (j.contains("path")) {
+    path = j.at("path").get<std::string>();
+    return;
+  }
+
+  throw_debug("Affine transform JSON must contain either a matrix or path key")
+}
+
 std::vector<const char*> interpolationModesToJson(const std::vector<InterpolationMode>& modes)
 {
   std::vector<const char*> names;
@@ -453,6 +465,11 @@ std::vector<glm::vec3> vec3ArrayFromJson(const json& j)
 std::string optionalPathToString(const std::optional<fs::path>& path)
 {
   return path ? path->generic_string() : std::string{};
+}
+
+std::string pathToString(const fs::path& path)
+{
+  return path.generic_string();
 }
 
 std::vector<std::string> pathVectorToStrings(const std::vector<fs::path>& paths)
@@ -986,7 +1003,7 @@ void from_json(const json& j, serialize::SegSettings& settings)
 
 void to_json(json& j, const serialize::Segmentation& seg)
 {
-  j = json{{"path", seg.m_segFileName.string()}};
+  j = json{{"path", pathToString(seg.m_segFileName)}};
 
   if (seg.m_settings) {
     j["settings"] = *seg.m_settings;
@@ -1004,14 +1021,61 @@ void from_json(const json& j, serialize::Segmentation& seg)
   }
 }
 
+void to_json(json& j, const serialize::LandmarkPoint& point)
+{
+  j = json{{"index", point.m_index}, {"position", vec3ToJson(point.m_position)}};
+  if (!point.m_name.empty()) {
+    j["name"] = point.m_name;
+  }
+}
+
+void from_json(const json& j, serialize::LandmarkPoint& point)
+{
+  j.at("index").get_to(point.m_index);
+  point.m_position = vec3FromJson(j.at("position"));
+  if (const auto name = j.find("name"); name != j.end() && name->is_string()) {
+    point.m_name = name->get<std::string>();
+  }
+}
+
 void to_json(json& j, const serialize::LandmarkGroup& landmarks)
 {
-  j = json{{"path", landmarks.m_csvFileName}, {"inVoxelSpace", landmarks.m_inVoxelSpace}};
+  j = json{{"inVoxelSpace", landmarks.m_inVoxelSpace}};
+
+  if (landmarks.m_csvFileName) {
+    j["path"] = pathToString(*landmarks.m_csvFileName);
+  }
+
+  if (!landmarks.m_name.empty()) {
+    j["name"] = landmarks.m_name;
+  }
+
+  if (!landmarks.m_points.empty()) {
+    j["points"] = landmarks.m_points;
+  }
+
+  j["display"] = {
+    {"visible", landmarks.m_visible},
+    {"opacity", landmarks.m_opacity},
+    {"color", vec3ToJson(landmarks.m_color)},
+    {"colorOverride", landmarks.m_colorOverride},
+    {"showIndices", landmarks.m_renderLandmarkIndices},
+    {"showNames", landmarks.m_renderLandmarkNames},
+    {"radiusFactor", landmarks.m_radiusFactor}};
+
+  if (landmarks.m_textColor) {
+    j["display"]["textColor"] = vec3ToJson(*landmarks.m_textColor);
+  }
+  else {
+    j["display"]["textColor"] = nullptr;
+  }
 }
 
 void from_json(const json& j, serialize::LandmarkGroup& landmarks)
 {
-  j.at("path").get_to(landmarks.m_csvFileName);
+  if (const auto path = j.find("path"); path != j.end() && path->is_string()) {
+    landmarks.m_csvFileName = path->get<std::string>();
+  }
 
   if (j.count("inVoxelSpace")) {
     landmarks.m_inVoxelSpace = j.at("inVoxelSpace").get<bool>();
@@ -1019,6 +1083,47 @@ void from_json(const json& j, serialize::LandmarkGroup& landmarks)
   else {
     // If not defined, then assume false
     landmarks.m_inVoxelSpace = false;
+  }
+
+  if (const auto name = j.find("name"); name != j.end() && name->is_string()) {
+    landmarks.m_name = name->get<std::string>();
+  }
+
+  if (const auto points = j.find("points"); points != j.end()) {
+    points->get_to(landmarks.m_points);
+  }
+
+  if (const auto display = j.find("display"); display != j.end() && display->is_object()) {
+    if (const auto visible = display->find("visible"); visible != display->end() && visible->is_boolean()) {
+      landmarks.m_visible = visible->get<bool>();
+    }
+    if (const auto opacity = display->find("opacity"); opacity != display->end() && opacity->is_number()) {
+      landmarks.m_opacity = opacity->get<float>();
+    }
+    if (const auto color = display->find("color"); color != display->end()) {
+      landmarks.m_color = vec3FromJson(*color);
+    }
+    if (const auto overrideColor = display->find("colorOverride");
+        overrideColor != display->end() && overrideColor->is_boolean())
+    {
+      landmarks.m_colorOverride = overrideColor->get<bool>();
+    }
+    if (const auto textColor = display->find("textColor"); textColor != display->end() && !textColor->is_null()) {
+      landmarks.m_textColor = vec3FromJson(*textColor);
+    }
+    if (const auto showIndices = display->find("showIndices");
+        showIndices != display->end() && showIndices->is_boolean())
+    {
+      landmarks.m_renderLandmarkIndices = showIndices->get<bool>();
+    }
+    if (const auto showNames = display->find("showNames"); showNames != display->end() && showNames->is_boolean()) {
+      landmarks.m_renderLandmarkNames = showNames->get<bool>();
+    }
+    if (const auto radiusFactor = display->find("radiusFactor");
+        radiusFactor != display->end() && radiusFactor->is_number())
+    {
+      landmarks.m_radiusFactor = radiusFactor->get<float>();
+    }
   }
 }
 
@@ -1045,7 +1150,7 @@ void to_json(json& j, const serialize::DicomSource& source)
   j = json{{"seriesInstanceUid", source.m_seriesInstanceUid}};
 
   if (!source.m_rootPath.empty()) {
-    j["root"] = source.m_rootPath.string();
+    j["root"] = pathToString(source.m_rootPath);
   }
 
   if (!source.m_studyInstanceUid.empty()) {
@@ -1053,12 +1158,12 @@ void to_json(json& j, const serialize::DicomSource& source)
   }
 
   if (!source.m_files.empty()) {
-    std::vector<std::string> files;
-    files.reserve(source.m_files.size());
+    std::vector<std::string> paths;
+    paths.reserve(source.m_files.size());
     for (const auto& file : source.m_files) {
-      files.push_back(file.string());
+      paths.push_back(pathToString(file));
     }
-    j["files"] = files;
+    j["paths"] = paths;
   }
 }
 
@@ -1073,19 +1178,19 @@ void from_json(const json& j, serialize::DicomSource& source)
   if (j.count("seriesInstanceUid")) {
     source.m_seriesInstanceUid = j.at("seriesInstanceUid").get<std::string>();
   }
-  if (j.count("files")) {
-    const auto files = j.at("files").get<std::vector<std::string>>();
+  if (j.count("paths")) {
+    const auto paths = j.at("paths").get<std::vector<std::string>>();
     source.m_files.clear();
-    source.m_files.reserve(files.size());
-    for (const auto& file : files) {
-      source.m_files.emplace_back(file);
+    source.m_files.reserve(paths.size());
+    for (const auto& path : paths) {
+      source.m_files.emplace_back(path);
     }
   }
 }
 
 void to_json(json& j, const serialize::Image& image)
 {
-  j = json{{"image", image.m_imageFileName.string()}};
+  j = json{{"path", pathToString(image.m_imageFileName)}};
 
   if (image.m_spatialMetadata) {
     j["spatialMetadata"] = {
@@ -1098,28 +1203,28 @@ void to_json(json& j, const serialize::Image& image)
     j["dicomSource"] = *image.m_dicomSource;
   }
 
-  if (image.m_affineTxFileName) {
-    j["initialAffine"] = image.m_affineTxFileName->string();
+  if (image.m_initialAffineFileName || image.m_initialAffineMatrix) {
+    j["initialAffine"] = affineToJson(image.m_initialAffineFileName, image.m_initialAffineMatrix);
   }
 
-  if (image.m_inverseWarpFileName) {
-    j["inverseWarp"] = image.m_inverseWarpFileName->string();
+  if (image.m_inverseWarpFieldPath) {
+    j["inverseWarpField"] = pathToString(*image.m_inverseWarpFieldPath);
   }
 
-  if (image.m_inverseWarpReferenceImageFileName) {
-    j["inverseWarpReferenceImage"] = image.m_inverseWarpReferenceImageFileName->string();
+  if (image.m_inverseWarpReferenceImagePath) {
+    j["inverseWarpReferenceImagePath"] = pathToString(*image.m_inverseWarpReferenceImagePath);
   }
 
-  if (image.m_forwardWarpFileName) {
-    j["forwardWarp"] = image.m_forwardWarpFileName->string();
+  if (image.m_forwardWarpFieldPath) {
+    j["forwardWarpField"] = pathToString(*image.m_forwardWarpFieldPath);
   }
 
-  if (image.m_worldDefTx) {
-    j["manualAffine"] = matrixToJson(*image.m_worldDefTx);
+  if (image.m_manualAffineFileName || image.m_manualAffineMatrix) {
+    j["manualAffine"] = affineToJson(image.m_manualAffineFileName, image.m_manualAffineMatrix);
   }
 
   if (image.m_annotationsFileName) {
-    j["annotationsFile"] = image.m_annotationsFileName->string();
+    j["annotationsPath"] = pathToString(*image.m_annotationsFileName);
   }
 
   if (!image.m_annotations.empty()) {
@@ -1146,7 +1251,7 @@ void to_json(json& j, const serialize::Image& image)
 void from_json(const json& j, serialize::Image& image)
 {
   std::string p;
-  j.at("image").get_to(p);
+  j.at("path").get_to(p);
   image.m_imageFileName = p;
 
   if (const auto metadata = j.find("spatialMetadata"); metadata != j.end() && metadata->is_object()) {
@@ -1162,37 +1267,31 @@ void from_json(const json& j, serialize::Image& image)
   }
 
   if (j.count("initialAffine")) {
-    image.m_affineTxFileName = j.at("initialAffine").get<std::string>();
+    affineFromJson(j.at("initialAffine"), image.m_initialAffineFileName, image.m_initialAffineMatrix);
   }
 
-  if (j.count("inverseWarp")) {
-    image.m_inverseWarpFileName = j.at("inverseWarp").get<std::string>();
+  if (j.count("inverseWarpField")) {
+    image.m_inverseWarpFieldPath = j.at("inverseWarpField").get<std::string>();
   }
 
-  if (j.count("inverseWarpReferenceImage")) {
-    image.m_inverseWarpReferenceImageFileName = j.at("inverseWarpReferenceImage").get<std::string>();
+  if (j.count("inverseWarpReferenceImagePath")) {
+    image.m_inverseWarpReferenceImagePath = j.at("inverseWarpReferenceImagePath").get<std::string>();
   }
 
-  if (j.count("forwardWarp")) {
-    image.m_forwardWarpFileName = j.at("forwardWarp").get<std::string>();
+  if (j.count("forwardWarpField")) {
+    image.m_forwardWarpFieldPath = j.at("forwardWarpField").get<std::string>();
   }
 
   if (j.count("manualAffine")) {
-    image.m_worldDefTx = matrixFromJson(j.at("manualAffine"));
+    affineFromJson(j.at("manualAffine"), image.m_manualAffineFileName, image.m_manualAffineMatrix);
   }
 
-  if (j.count("annotationsFile")) {
-    image.m_annotationsFileName = j.at("annotationsFile").get<std::string>();
+  if (j.count("annotationsPath")) {
+    image.m_annotationsFileName = j.at("annotationsPath").get<std::string>();
   }
 
   if (const auto annotations = j.find("annotations"); annotations != j.end()) {
-    if (annotations->is_array() || annotations->is_object()) {
-      image.m_annotations = annotationsFromJson(*annotations);
-    }
-    else if (annotations->is_string()) {
-      // Older project files used "annotations" for an external annotation JSON file path.
-      image.m_annotationsFileName = annotations->get<std::string>();
-    }
+    image.m_annotations = annotationsFromJson(*annotations);
   }
 
   if (j.count("segmentations")) {
@@ -1658,11 +1757,11 @@ void to_json(json& j, const RegistrationResult& result)
   if (result.m_warpedImage) {
     j["warpedImage"] = optionalPathToString(result.m_warpedImage);
   }
-  if (result.m_inverseWarp) {
-    j["inverseWarp"] = optionalPathToString(result.m_inverseWarp);
+  if (result.m_inverseWarpField) {
+    j["inverseWarpField"] = optionalPathToString(result.m_inverseWarpField);
   }
-  if (result.m_forwardWarp) {
-    j["forwardWarp"] = optionalPathToString(result.m_forwardWarp);
+  if (result.m_forwardWarpField) {
+    j["forwardWarpField"] = optionalPathToString(result.m_forwardWarpField);
   }
   if (result.m_affineTransform) {
     j["affine"] = optionalPathToString(result.m_affineTransform);
@@ -1682,8 +1781,8 @@ void from_json(const json& j, RegistrationResult& result)
   }
   optionalPathFromJson(j, "manifest", result.m_manifestFileName);
   optionalPathFromJson(j, "warpedImage", result.m_warpedImage);
-  optionalPathFromJson(j, "inverseWarp", result.m_inverseWarp);
-  optionalPathFromJson(j, "forwardWarp", result.m_forwardWarp);
+  optionalPathFromJson(j, "inverseWarpField", result.m_inverseWarpField);
+  optionalPathFromJson(j, "forwardWarpField", result.m_forwardWarpField);
   optionalPathFromJson(j, "affine", result.m_affineTransform);
   if (const auto value = j.find("warpedSegmentations"); value != j.end()) {
     result.m_warpedSegmentations = pathVectorFromJson(*value);
@@ -1701,13 +1800,13 @@ void from_json(const json& j, RegistrationResult& result)
 
 void to_json(json& j, const EntropyProject& project)
 {
-  j = json{{"reference", project.m_referenceImage}};
+  j = json{{"version", k_projectFormatVersion}, {"reference", project.m_referenceImage}};
 
   if (!project.m_additionalImages.empty()) {
     j["additional"] = project.m_additionalImages;
   }
   if (project.m_layoutsFileName) {
-    j["layoutsFile"] = project.m_layoutsFileName->string();
+    j["layoutsPath"] = pathToString(*project.m_layoutsFileName);
   }
   else if (!project.m_layouts.empty()) {
     j["layouts"] = project.m_layouts;
@@ -1730,13 +1829,18 @@ void to_json(json& j, const EntropyProject& project)
 
 void from_json(const json& j, EntropyProject& project)
 {
+  const int version = j.at("version").get<int>();
+  if (version != k_projectFormatVersion) {
+    throw_debug("Unsupported Entropy project JSON version " + std::to_string(version))
+  }
+
   j.at("reference").get_to(project.m_referenceImage);
 
   if (j.count("additional")) {
     j.at("additional").get_to(project.m_additionalImages);
   }
-  if (j.count("layoutsFile")) {
-    project.m_layoutsFileName = j.at("layoutsFile").get<std::string>();
+  if (j.count("layoutsPath")) {
+    project.m_layoutsFileName = j.at("layoutsPath").get<std::string>();
   }
   if (j.count("layouts")) {
     j.at("layouts").get_to(project.m_layouts);
@@ -1859,8 +1963,8 @@ bool open(EntropyProject& project, const fs::path& fileName)
     [](serialize::RegistrationResult& result, const fs::path& projectBasePath) {
       makePathCanonicalAbsolute(result.m_manifestFileName, projectBasePath, "registration manifest");
       makePathCanonicalAbsolute(result.m_warpedImage, projectBasePath, "registered image");
-      makePathCanonicalAbsolute(result.m_inverseWarp, projectBasePath, "registration inverse warp");
-      makePathCanonicalAbsolute(result.m_forwardWarp, projectBasePath, "registration forward warp");
+      makePathCanonicalAbsolute(result.m_inverseWarpField, projectBasePath, "registration inverse warp");
+      makePathCanonicalAbsolute(result.m_forwardWarpField, projectBasePath, "registration forward warp");
       makePathCanonicalAbsolute(result.m_affineTransform, projectBasePath, "registration affine transform");
       for (fs::path& path : result.m_warpedSegmentations) {
         makePathCanonicalAbsolute(path, projectBasePath, "registered segmentation");
@@ -1889,43 +1993,53 @@ bool open(EntropyProject& project, const fs::path& fileName)
       }
     }
 
-    if (image.m_affineTxFileName) {
-      if (image.m_affineTxFileName->empty()) {
+    if (image.m_initialAffineFileName) {
+      if (image.m_initialAffineFileName->empty()) {
         spdlog::warn("Ignoring empty affine transform path for image {}", image.m_imageFileName);
-        image.m_affineTxFileName = std::nullopt;
+        image.m_initialAffineFileName = std::nullopt;
       }
       else {
-        image.m_affineTxFileName = fs::canonical(*image.m_affineTxFileName);
+        image.m_initialAffineFileName = fs::canonical(*image.m_initialAffineFileName);
       }
     }
 
-    if (image.m_inverseWarpFileName) {
-      if (image.m_inverseWarpFileName->empty()) {
+    if (image.m_manualAffineFileName) {
+      if (image.m_manualAffineFileName->empty()) {
+        spdlog::warn("Ignoring empty manual affine transform path for image {}", image.m_imageFileName);
+        image.m_manualAffineFileName = std::nullopt;
+      }
+      else {
+        image.m_manualAffineFileName = fs::canonical(*image.m_manualAffineFileName);
+      }
+    }
+
+    if (image.m_inverseWarpFieldPath) {
+      if (image.m_inverseWarpFieldPath->empty()) {
         spdlog::warn("Ignoring empty inverse warp path for image {}", image.m_imageFileName);
-        image.m_inverseWarpFileName = std::nullopt;
+        image.m_inverseWarpFieldPath = std::nullopt;
       }
       else {
-        image.m_inverseWarpFileName = fs::canonical(*image.m_inverseWarpFileName);
+        image.m_inverseWarpFieldPath = fs::canonical(*image.m_inverseWarpFieldPath);
       }
     }
 
-    if (image.m_forwardWarpFileName) {
-      if (image.m_forwardWarpFileName->empty()) {
+    if (image.m_forwardWarpFieldPath) {
+      if (image.m_forwardWarpFieldPath->empty()) {
         spdlog::warn("Ignoring empty forward warp path for image {}", image.m_imageFileName);
-        image.m_forwardWarpFileName = std::nullopt;
+        image.m_forwardWarpFieldPath = std::nullopt;
       }
       else {
-        image.m_forwardWarpFileName = fs::canonical(*image.m_forwardWarpFileName);
+        image.m_forwardWarpFieldPath = fs::canonical(*image.m_forwardWarpFieldPath);
       }
     }
 
-    if (image.m_inverseWarpReferenceImageFileName) {
-      if (image.m_inverseWarpReferenceImageFileName->empty()) {
+    if (image.m_inverseWarpReferenceImagePath) {
+      if (image.m_inverseWarpReferenceImagePath->empty()) {
         spdlog::warn("Ignoring empty inverse warp reference image path for image {}", image.m_imageFileName);
-        image.m_inverseWarpReferenceImageFileName = std::nullopt;
+        image.m_inverseWarpReferenceImagePath = std::nullopt;
       }
       else {
-        image.m_inverseWarpReferenceImageFileName = fs::canonical(*image.m_inverseWarpReferenceImageFileName);
+        image.m_inverseWarpReferenceImagePath = fs::canonical(*image.m_inverseWarpReferenceImagePath);
       }
     }
 
@@ -1950,14 +2064,9 @@ bool open(EntropyProject& project, const fs::path& fileName)
       }
     }
 
-    for (auto lmIt = image.m_landmarkGroups.begin(); lmIt != image.m_landmarkGroups.end();) {
-      if (lmIt->m_csvFileName.empty()) {
-        spdlog::warn("Ignoring empty landmark path for image {}", image.m_imageFileName);
-        lmIt = image.m_landmarkGroups.erase(lmIt);
-      }
-      else {
-        lmIt->m_csvFileName = fs::canonical(lmIt->m_csvFileName).string();
-        ++lmIt;
+    for (serialize::LandmarkGroup& landmarks : image.m_landmarkGroups) {
+      if (landmarks.m_csvFileName && !landmarks.m_csvFileName->empty()) {
+        landmarks.m_csvFileName = fs::canonical(*landmarks.m_csvFileName);
       }
     }
 
@@ -2044,21 +2153,24 @@ bool save(const EntropyProject& project, const fs::path& fileName)
       }
     }
 
-    if (image.m_affineTxFileName) {
-      image.m_affineTxFileName = fs::relative(*image.m_affineTxFileName, projectBasePath);
+    if (image.m_initialAffineFileName) {
+      image.m_initialAffineFileName = fs::relative(*image.m_initialAffineFileName, projectBasePath);
     }
 
-    if (image.m_inverseWarpFileName) {
-      image.m_inverseWarpFileName = fs::relative(*image.m_inverseWarpFileName, projectBasePath);
+    if (image.m_manualAffineFileName) {
+      image.m_manualAffineFileName = fs::relative(*image.m_manualAffineFileName, projectBasePath);
     }
 
-    if (image.m_forwardWarpFileName) {
-      image.m_forwardWarpFileName = fs::relative(*image.m_forwardWarpFileName, projectBasePath);
+    if (image.m_inverseWarpFieldPath) {
+      image.m_inverseWarpFieldPath = fs::relative(*image.m_inverseWarpFieldPath, projectBasePath);
     }
 
-    if (image.m_inverseWarpReferenceImageFileName) {
-      image.m_inverseWarpReferenceImageFileName =
-        fs::relative(*image.m_inverseWarpReferenceImageFileName, projectBasePath);
+    if (image.m_forwardWarpFieldPath) {
+      image.m_forwardWarpFieldPath = fs::relative(*image.m_forwardWarpFieldPath, projectBasePath);
+    }
+
+    if (image.m_inverseWarpReferenceImagePath) {
+      image.m_inverseWarpReferenceImagePath = fs::relative(*image.m_inverseWarpReferenceImagePath, projectBasePath);
     }
 
     if (image.m_annotationsFileName) {
@@ -2070,7 +2182,9 @@ bool save(const EntropyProject& project, const fs::path& fileName)
     }
 
     for (serialize::LandmarkGroup& lm : image.m_landmarkGroups) {
-      lm.m_csvFileName = fs::relative(lm.m_csvFileName, projectBasePath).string();
+      if (lm.m_csvFileName && !lm.m_csvFileName->empty()) {
+        lm.m_csvFileName = fs::relative(*lm.m_csvFileName, projectBasePath);
+      }
     }
   };
 
@@ -2084,8 +2198,8 @@ bool save(const EntropyProject& project, const fs::path& fileName)
     [&](serialize::RegistrationResult& result, const fs::path& projectBasePath) {
       makeRelativeIfPresent(result.m_manifestFileName, projectBasePath);
       makeRelativeIfPresent(result.m_warpedImage, projectBasePath);
-      makeRelativeIfPresent(result.m_inverseWarp, projectBasePath);
-      makeRelativeIfPresent(result.m_forwardWarp, projectBasePath);
+      makeRelativeIfPresent(result.m_inverseWarpField, projectBasePath);
+      makeRelativeIfPresent(result.m_forwardWarpField, projectBasePath);
       makeRelativeIfPresent(result.m_affineTransform, projectBasePath);
       for (fs::path& path : result.m_warpedSegmentations) {
         path = fs::relative(path, projectBasePath);

@@ -80,7 +80,7 @@ void renderAnnotationsHeader(
 
   static const std::string importAnnotButtonText = std::string(ICON_FK_FOLDER_OPEN_O) + " Import...";
   static const std::string exportAnnotButtonText = std::string(ICON_FK_FLOPPY_O) + " Export...";
-  static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O) + " Remove";
+  static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O) + " Remove...";
   static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Fill segmentation";
 
   static const char* exportAnnotDialogTitle("Export Annotations to JSON");
@@ -317,7 +317,8 @@ void renderAnnotationsHeader(
   ImGui::SameLine();
   helpMarker("Edit the name of the annotation");
 
-  ImGui::Text("Layer order: ");
+  ImGui::AlignTextToFramePadding();
+  ImGui::TextUnformatted("Layer order: ");
 
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 

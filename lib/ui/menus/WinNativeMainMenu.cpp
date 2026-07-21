@@ -906,7 +906,11 @@ bool populateLandmarksMenu(HMENU menu)
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks Panel") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::CreateLandmarkGroup, L"&Create Landmark Group") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SaveLandmarkGroup, L"&Save Active Landmark Group...") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::RemoveLandmarkGroup, L"&Remove Active Group") &&
+         insertSeparator(menu, position++) &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ImportLandmarkGroup, L"&Import Landmarks...") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SaveLandmarkGroup, L"&Export Landmarks...") &&
+         insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::AddLandmark, L"&Add Landmark at Crosshairs");
 }
 

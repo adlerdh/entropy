@@ -258,8 +258,8 @@ struct RegistrationResult
   std::string m_movingImageUid{};                              //!< Moving image UID at registration time
   std::optional<std::filesystem::path> m_manifestFileName{};   //!< Result manifest JSON path, when available
   std::optional<std::filesystem::path> m_warpedImage{};        //!< Warped moving image output
-  std::optional<std::filesystem::path> m_inverseWarp{};        //!< Fixed-to-moving sampling warp output
-  std::optional<std::filesystem::path> m_forwardWarp{};        //!< Moving-to-fixed point warp output
+  std::optional<std::filesystem::path> m_inverseWarpField{};   //!< Fixed-to-moving sampling warp output
+  std::optional<std::filesystem::path> m_forwardWarpField{};   //!< Moving-to-fixed point warp output
   std::optional<std::filesystem::path> m_affineTransform{};    //!< Affine/composite transform output
   std::vector<std::filesystem::path> m_warpedSegmentations{};  //!< Warped segmentation outputs
   std::vector<std::filesystem::path> m_transformedSurfaces{};  //!< Transformed surface outputs
@@ -398,17 +398,38 @@ struct Segmentation
 };
 
 /**
+ * @brief Serialized landmark point embedded in a project file.
+ */
+struct LandmarkPoint
+{
+  std::size_t m_index = 0;    //!< Landmark index within the group
+  glm::vec3 m_position{0.0f}; //!< Landmark position
+  std::string m_name{};       //!< Landmark name
+};
+
+/**
  * @brief Serialized data for a group of image landmarks
  */
 struct LandmarkGroup
 {
-  std::string m_csvFileName; //!< CSV file holding the landmarks
+  std::optional<std::filesystem::path> m_csvFileName = std::nullopt; //!< External CSV file holding landmarks
 
   /**
    * Flag indicating whether landmarks are defined in image voxel space (true)
    * or in physical/subject space (false)
    */
   bool m_inVoxelSpace = false;
+
+  std::string m_name{};                   //!< Landmark group display name
+  std::vector<LandmarkPoint> m_points{};  //!< Embedded landmark points
+  bool m_visible = true;                  //!< Show the landmark group
+  float m_opacity = 1.0f;                 //!< Landmark group opacity
+  glm::vec3 m_color{1.0f};                //!< Landmark group color
+  bool m_colorOverride = false;           //!< Override individual landmark colors
+  std::optional<glm::vec3> m_textColor{}; //!< Landmark label text color
+  bool m_renderLandmarkIndices = true;    //!< Render landmark indices
+  bool m_renderLandmarkNames = false;     //!< Render landmark names
+  float m_radiusFactor = 1.0f;            //!< Landmark radius factor
 };
 
 /**
@@ -423,16 +444,16 @@ struct ImageIsosurface
 /**
  * @brief Serialized DICOM-series source metadata for an image.
  *
- * `m_imageFileName` remains in `serialize::Image` as a fallback path. This structure records
- * the full source series identity so project reloads do not depend on treating one slice as a
- * normal standalone image.
+ * `serialize::Image::m_imageFileName` stores the representative image path. This structure records
+ * the full source series identity so project reloads do not depend on treating one slice as a normal
+ * standalone image.
  */
 struct DicomSource
 {
   std::filesystem::path m_rootPath;           //!< Root folder used to discover the series
   std::string m_studyInstanceUid;             //!< Study Instance UID used to disambiguate the series
   std::string m_seriesInstanceUid;            //!< Series Instance UID to reload
-  std::vector<std::filesystem::path> m_files; //!< Slice files in series order
+  std::vector<std::filesystem::path> m_files; //!< Slice paths in series order
 };
 
 /**
@@ -451,48 +472,58 @@ struct Image
   std::optional<serialize::DicomSource> m_dicomSource = std::nullopt;
 
   /**
-   * Optional initial/imported affine transformation text file name.
+   * Optional initial/imported affine transformation text path.
    */
-  std::optional<std::filesystem::path> m_affineTxFileName = std::nullopt;
+  std::optional<std::filesystem::path> m_initialAffineFileName = std::nullopt;
 
   /**
-   * Optional inverse warp image file name.
-   *
-   * The inverse warp is used for moving-image sampling in reference/fixed space.
+   * Optional initial/imported affine matrix embedded in the project JSON.
    */
-  std::optional<std::filesystem::path> m_inverseWarpFileName = std::nullopt;
+  std::optional<glm::mat4> m_initialAffineMatrix = std::nullopt;
 
   /**
-   * Optional inverse-warp reference-space image file name.
+   * Optional inverse warp field path.
    *
-   * The inverse warp is sampled on this image domain before sampling the moving image.
+   * The inverse warp field is used for moving-image sampling in reference/fixed space.
    */
-  std::optional<std::filesystem::path> m_inverseWarpReferenceImageFileName = std::nullopt;
+  std::optional<std::filesystem::path> m_inverseWarpFieldPath = std::nullopt;
 
   /**
-   * Optional forward warp image file name.
+   * Optional inverse-warp reference-space image path.
    *
-   * The forward warp maps moving-image positions back to reference/fixed space.
+   * The inverse warp field is sampled on this image domain before sampling the moving image.
    */
-  std::optional<std::filesystem::path> m_forwardWarpFileName = std::nullopt;
+  std::optional<std::filesystem::path> m_inverseWarpReferenceImagePath = std::nullopt;
+
+  /**
+   * Optional forward warp field path.
+   *
+   * The forward warp field maps moving-image positions back to reference/fixed space.
+   */
+  std::optional<std::filesystem::path> m_forwardWarpFieldPath = std::nullopt;
+
+  /**
+   * Optional manual affine transformation text path.
+   */
+  std::optional<std::filesystem::path> m_manualAffineFileName = std::nullopt;
 
   /**
    * Optional manual affine matrix from affine-registered subject space to world space.
    */
-  std::optional<glm::mat4> m_worldDefTx = std::nullopt;
+  std::optional<glm::mat4> m_manualAffineMatrix = std::nullopt;
 
   /**
-   * Optional external annotations JSON file name.
+   * Optional external annotations JSON path.
    */
   std::optional<std::filesystem::path> m_annotationsFileName = std::nullopt;
 
   /**
-   * Embedded annotations saved directly in the project file.
+   * Embedded annotations saved directly in the project JSON.
    */
   std::vector<Annotation> m_annotations;
 
   /**
-   * Segmentation image file names (each image can have multiple segmentations)
+   * Segmentation image paths, one or more per image.
    */
   std::vector<serialize::Segmentation> m_segmentations;
 

@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -61,9 +62,11 @@ void renderLandmarkGroupHeader(
   bool hasFollowingHeader,
   const AllViewsRecenterType& recenterAllViews)
 {
-  static const std::string newLmGroupButtonText = std::string(ICON_FK_FILE_O) + " Create new landmarks group";
-  static const std::string saveLmsButtonText = std::string(ICON_FK_FLOPPY_O) + " Save landmarks...";
-  static const char* saveLmsDialogTitle("Save Landmark Group");
+  static const std::string newLmGroupButtonText = std::string(ICON_FK_FILE_O) + " Create landmark group";
+  static const std::string importLmsButtonText = std::string(ICON_FK_FOLDER_OPEN_O) + " Import...";
+  static const std::string saveLmsButtonText = std::string(ICON_FK_FLOPPY_O) + " Export...";
+  static const std::string removeLmsButtonText = std::string(ICON_FK_TRASH_O) + " Remove";
+  static const char* saveLmsDialogTitle("Export Landmark Group");
   static const auto saveLmsDialogFilters = native_dialog::landmarkFilters();
 
   Image* image = appData.image(imageUid);
@@ -80,6 +83,37 @@ void renderLandmarkGroupHeader(
       appData.assignLandmarkGroupUidToImage(imageUid, newLmGroupUid);
       appData.setRainbowColorsForAllLandmarkGroups();
       appData.assignActiveLandmarkGroupUidToImage(imageUid, newLmGroupUid);
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Create an empty landmark group for this image");
+    }
+  };
+
+  auto importLandmarkGroupButton = [&appData, &imageUid]() {
+    if (ImGui::Button(importLmsButtonText.c_str())) {
+      if (const auto selectedFile = native_dialog::openFile(native_dialog::landmarkFilters())) {
+        std::map<size_t, PointRecord<glm::vec3>> landmarks;
+        if (serialize::openLandmarkGroupCsvFile(landmarks, *selectedFile)) {
+          LandmarkGroup importedGroup;
+          importedGroup.setFileName(*selectedFile);
+          importedGroup.setName(getFileName(*selectedFile, false));
+          importedGroup.setPoints(std::move(landmarks));
+          importedGroup.setInVoxelSpace(false);
+          importedGroup.setRenderLandmarkNames(false);
+
+          const auto importedGroupUid = appData.addLandmarkGroup(importedGroup);
+          appData.assignLandmarkGroupUidToImage(imageUid, importedGroupUid);
+          appData.setRainbowColorsForAllLandmarkGroups();
+          appData.assignActiveLandmarkGroupUidToImage(imageUid, importedGroupUid);
+          spdlog::info("Imported landmarks from CSV file {} for image {}", *selectedFile, imageUid);
+        }
+        else {
+          spdlog::error("Error importing landmarks from CSV file {}", *selectedFile);
+        }
+      }
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Import landmarks from a CSV file into a new group");
     }
   };
 
@@ -121,6 +155,8 @@ void renderLandmarkGroupHeader(
   if (lmGroupUids.empty()) {
     ImGui::Text("This image has no landmarks.");
     addNewLmGroupButton();
+    ImGui::Spacing();
+    importLandmarkGroupButton();
     if (hasFollowingHeader) {
       ImGui::Spacing();
       ImGui::Separator();
@@ -326,12 +362,28 @@ void renderLandmarkGroupHeader(
   addNewLmGroupButton();
   ImGui::SameLine();
 
-  // Save landmarks to CSV and save settings to project file:
+  if (ImGui::Button(removeLmsButtonText.c_str())) {
+    if (appData.removeLandmarkGroup(*activeLmGroupUid)) {
+      appData.setRainbowColorsForAllLandmarkGroups();
+      ImGui::PopID(); // imageUid
+      return;
+    }
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Remove the active landmark group from this image");
+  }
+  ImGui::Spacing();
+
+  importLandmarkGroupButton();
+  ImGui::SameLine();
+
+  // Export landmarks to CSV for interoperability. Project files embed landmarks directly.
   const auto selectedFile =
     ImGui::renderFileButtonDialogAndWindow(saveLmsButtonText.c_str(), saveLmsDialogTitle, saveLmsDialogFilters);
 
-  ImGui::SameLine();
-  helpMarker("Save the landmarks to a CSV file");
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Export the active landmark group to a CSV file");
+  }
 
   if (selectedFile) {
     if (serialize::saveLandmarkGroupCsvFile(activeLmGroup->getPoints(), *selectedFile)) {

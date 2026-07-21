@@ -260,7 +260,7 @@ void renderAnnotationToolbar(
       if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
-        static const std::string sk_remove = std::string(ICON_FK_TRASH_O) + " Remove polygon";
+        static const std::string sk_remove = std::string(ICON_FK_TRASH_O) + " Remove";
 
         if (ImGui::Button(sk_remove.c_str())) {
           send_event(state::annot::RemoveSelectedAnnotationEvent());

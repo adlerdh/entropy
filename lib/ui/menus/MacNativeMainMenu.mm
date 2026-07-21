@@ -766,11 +766,11 @@ void addLandmarkMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Create Landmark Group", MainMenuAction::CreateLandmarkGroup, @"plus");
-  addSymbolActionMenuItem(
-    menu,
-    @"Save Active Landmark Group...",
-    MainMenuAction::SaveLandmarkGroup,
-    @"square.and.arrow.down");
+  addSymbolActionMenuItem(menu, @"Remove Active Group", MainMenuAction::RemoveLandmarkGroup, @"trash");
+  [menu addItem:[NSMenuItem separatorItem]];
+  addSymbolActionMenuItem(menu, @"Import Landmarks...", MainMenuAction::ImportLandmarkGroup, @"square.and.arrow.down");
+  addSymbolActionMenuItem(menu, @"Export Landmarks...", MainMenuAction::SaveLandmarkGroup, @"square.and.arrow.up");
+  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Add Landmark at Crosshairs", MainMenuAction::AddLandmark, @"mappin.and.ellipse");
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];

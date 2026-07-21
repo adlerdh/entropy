@@ -522,6 +522,45 @@ uuid AppData::addLandmarkGroup(const LandmarkGroup& lmGroup)
   return uid;
 }
 
+bool AppData::removeLandmarkGroup(const uuid& lmGroupUid)
+{
+  if (!landmarkGroup(lmGroupUid)) {
+    return false;
+  }
+
+  m_landmarkGroups.erase(lmGroupUid);
+  m_landmarkGroupUidsOrdered.erase(
+    std::remove(std::begin(m_landmarkGroupUidsOrdered), std::end(m_landmarkGroupUidsOrdered), lmGroupUid),
+    std::end(m_landmarkGroupUidsOrdered));
+
+  for (auto imageIt = std::begin(m_imageToLandmarkGroups); imageIt != std::end(m_imageToLandmarkGroups);) {
+    auto& landmarkGroupUids = imageIt->second;
+    landmarkGroupUids.erase(
+      std::remove(std::begin(landmarkGroupUids), std::end(landmarkGroupUids), lmGroupUid),
+      std::end(landmarkGroupUids));
+
+    auto activeIt = m_imageToActiveLandmarkGroup.find(imageIt->first);
+    if (activeIt != std::end(m_imageToActiveLandmarkGroup) && activeIt->second == lmGroupUid) {
+      if (landmarkGroupUids.empty()) {
+        m_imageToActiveLandmarkGroup.erase(activeIt);
+      }
+      else {
+        activeIt->second = landmarkGroupUids.front();
+      }
+    }
+
+    if (landmarkGroupUids.empty()) {
+      m_imageToActiveLandmarkGroup.erase(imageIt->first);
+      imageIt = m_imageToLandmarkGroups.erase(imageIt);
+    }
+    else {
+      ++imageIt;
+    }
+  }
+
+  return true;
+}
+
 std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, const Annotation& annotation)
 {
   if (!image(imageUid)) {
@@ -808,10 +847,7 @@ bool AppData::removeImage(const uuid& imageUid)
     }
 
     if (!stillUsed) {
-      m_landmarkGroups.erase(lmGroupUid);
-      m_landmarkGroupUidsOrdered.erase(
-        std::remove(std::begin(m_landmarkGroupUidsOrdered), std::end(m_landmarkGroupUidsOrdered), lmGroupUid),
-        std::end(m_landmarkGroupUidsOrdered));
+      removeLandmarkGroup(lmGroupUid);
     }
   }
 

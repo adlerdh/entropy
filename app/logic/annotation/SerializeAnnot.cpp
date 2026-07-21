@@ -31,14 +31,6 @@ glm::vec4 colorFromJson(const json& value, const glm::vec4& fallback)
       value.value("a", fallback.a)};
   }
 
-  if (value.is_array() && value.size() == 4) {
-    return glm::vec4{
-      value.at(0).get<float>(),
-      value.at(1).get<float>(),
-      value.at(2).get<float>(),
-      value.at(3).get<float>()};
-  }
-
   throw_debug("JSON structure contains invalid color")
 }
 
@@ -151,7 +143,7 @@ void from_json(const json& j, Annotation& annot)
 {
   // All of these parameters are optional in the JSON:
 
-  const std::string annotationType = j.value("type", POLYGON_ANNOTATION_TYPE);
+  const std::string annotationType = j.at("type").get<std::string>();
   if (annotationType != POLYGON_ANNOTATION_TYPE) {
     throw_debug("Unsupported annotation type in JSON")
   }
@@ -222,12 +214,7 @@ void from_json(const json& j, Annotation& annot)
 
   // The polygon vertices are required in the JSON:
   AnnotPolygon<float, 2> polygon;
-  if (j.count("boundaries")) {
-    polygon = polygonFromBoundariesJson(j.at("boundaries"));
-  }
-  else {
-    j.at("polygon").get_to(polygon);
-  }
+  polygon = polygonFromBoundariesJson(j.at("boundaries"));
 
   if (polygon.getAllVertices().empty()) {
     spdlog::warn("Polygon read from JSON has no vertices");
@@ -273,18 +260,13 @@ json annotationsToJson(const std::vector<Annotation>& annotations)
 std::vector<Annotation> annotationsFromJson(const json& j)
 {
   std::vector<Annotation> annotations;
-  if (j.is_array()) {
-    appendAnnotationsFromArray(j, annotations);
-    return annotations;
-  }
-
   if (!j.is_object()) {
-    throw_debug("Annotation JSON must be an object or legacy annotation array")
+    throw_debug("Annotation JSON must be an object")
   }
 
-  const int version = j.value("version", ANNOTATION_JSON_VERSION);
-  if (version > ANNOTATION_JSON_VERSION) {
-    throw_debug("Annotation JSON version is newer than this Entropy build supports")
+  const int version = j.at("version").get<int>();
+  if (version != ANNOTATION_JSON_VERSION) {
+    throw_debug("Unsupported annotation JSON version")
   }
 
   appendAnnotationsFromArray(j.at("annotations"), annotations);

@@ -1,2 +1,6 @@
 external/** linguist-vendored
-resources/** linguist-vendored
+res/** linguist-vendored
+res/**/*.bmp binary
+res/**/*.icns binary
+res/**/*.ico binary
+res/**/*.ttf binary

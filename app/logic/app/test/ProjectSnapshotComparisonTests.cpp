@@ -23,6 +23,9 @@ serialize::EntropyProject makeProject()
   serialize::LandmarkGroup landmarks;
   landmarks.m_csvFileName = "landmarks.csv";
   landmarks.m_inVoxelSpace = true;
+  landmarks.m_name = "Landmarks";
+  landmarks.m_points.push_back(
+    serialize::LandmarkPoint{.m_index = 1, .m_position = glm::vec3{1.0f, 2.0f, 3.0f}, .m_name = "AC"});
   project.m_referenceImage.m_landmarkGroups.push_back(landmarks);
 
   serialize::ImageIsosurface isosurface;
@@ -37,8 +40,8 @@ serialize::EntropyProject makeProject()
 
   serialize::Image additionalImage;
   additionalImage.m_imageFileName = "moving.nii.gz";
-  additionalImage.m_worldDefTx = glm::mat4{1.0f};
-  additionalImage.m_worldDefTx->operator[](3).x = 2.0f;
+  additionalImage.m_manualAffineMatrix = glm::mat4{1.0f};
+  additionalImage.m_manualAffineMatrix->operator[](3).x = 2.0f;
   project.m_additionalImages.push_back(additionalImage);
 
   project.m_layoutsFileName = "layouts.json";
@@ -85,11 +88,11 @@ TEST_CASE("Project snapshot comparison detects image state changes", "[ProjectSn
   CHECK_FALSE(project_snapshot::equivalent(project, changedImageSettings));
 
   auto changedTransform = project;
-  changedTransform.m_additionalImages.front().m_worldDefTx->operator[](3).x = 3.0f;
+  changedTransform.m_additionalImages.front().m_manualAffineMatrix->operator[](3).x = 3.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedTransform));
 
   auto changedForwardWarp = project;
-  changedForwardWarp.m_additionalImages.front().m_forwardWarpFileName = "forward-warp.nrrd";
+  changedForwardWarp.m_additionalImages.front().m_forwardWarpFieldPath = "forward-warp.nrrd";
   CHECK_FALSE(project_snapshot::equivalent(project, changedForwardWarp));
 }
 
@@ -104,6 +107,10 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   auto changedLandmarks = project;
   changedLandmarks.m_referenceImage.m_landmarkGroups.front().m_inVoxelSpace = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarks));
+
+  auto changedLandmarkPoint = project;
+  changedLandmarkPoint.m_referenceImage.m_landmarkGroups.front().m_points.front().m_position.x = 9.0f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarkPoint));
 
   auto changedIsosurface = project;
   changedIsosurface.m_referenceImage.m_isosurfaces.front().m_surface.rimPower = 4.0f;
@@ -205,13 +212,13 @@ TEST_CASE("Project snapshot comparison detects registration result changes", "[P
     .m_movingImageUid = "moving",
     .m_manifestFileName = "registration/result.json",
     .m_warpedImage = "registration/warped.nii.gz",
-    .m_inverseWarp = "registration/inverse.nrrd",
-    .m_forwardWarp = "registration/forward.nrrd"});
+    .m_inverseWarpField = "registration/inverse.nrrd",
+    .m_forwardWarpField = "registration/forward.nrrd"});
 
   CHECK(project_snapshot::equivalent(project, project));
 
   serialize::EntropyProject changedRegistration = project;
-  changedRegistration.m_registrationResults.front().m_inverseWarp = "registration/other-inverse.nrrd";
+  changedRegistration.m_registrationResults.front().m_inverseWarpField = "registration/other-inverse.nrrd";
   CHECK_FALSE(project_snapshot::equivalent(project, changedRegistration));
 
   serialize::EntropyProject missingRegistration = project;

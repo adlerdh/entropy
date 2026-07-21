@@ -285,14 +285,14 @@ segmentations, landmarks, annotations, transformations, layouts, and presentatio
 ```json
 {
   "reference": {
-    "image": "reference_image.nii.gz"
+    "path": "reference_image.nii.gz"
   },
   "additional": [
     {
-      "image": "moving_image_1.nii.gz"
+      "path": "moving_image_1.nii.gz"
     },
     {
-      "image": "moving_image_2.nii.gz"
+      "path": "moving_image_2.nii.gz"
     }
   ]
 }
@@ -302,8 +302,9 @@ Including segmentations, landmarks, annotations, and an affine transformation:
 
 ```json
 {
+  "version": 1,
   "reference": {
-    "image": "reference_image.nii.gz",
+    "path": "reference_image.nii.gz",
     "segmentations": [
       {
         "path": "reference_seg.nii.gz"
@@ -311,16 +312,25 @@ Including segmentations, landmarks, annotations, and an affine transformation:
     ],
     "landmarks": [
       {
-        "path": "reference_landmarks.csv",
-        "inVoxelSpace": false
+        "name": "Reference landmarks",
+        "inVoxelSpace": false,
+        "points": [
+          {
+            "index": 1,
+            "position": [12.0, 24.0, 36.0],
+            "name": "AC"
+          }
+        ]
       }
     ],
-    "annotations": "reference_annotations.json"
+    "annotationsPath": "reference_annotations.json"
   },
   "additional": [
     {
-      "image": "moving_image.nii.gz",
-      "affine": "moving_image_affine.txt",
+      "path": "moving_image.nii.gz",
+      "initialAffine": {
+        "path": "moving_image_affine.txt"
+      },
       "segmentations": [
         {
           "path": "moving_image_seg.nii.gz"
@@ -332,7 +342,7 @@ Including segmentations, landmarks, annotations, and an affine transformation:
           "inVoxelSpace": false
         }
       ],
-      "annotations": "moving_image_annotations.json"
+      "annotationsPath": "moving_image_annotations.json"
     }
   ]
 }

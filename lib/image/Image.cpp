@@ -384,7 +384,7 @@ Image::Image(
     m_header.numPixels(),
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
-    std::move(componentStats));
+    componentStats);
   setDefaultComponentRendering(m_settings, m_header, m_imageRep, componentStats);
   setDefaultVectorFieldRendering(m_settings, m_header);
   setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));

@@ -473,7 +473,7 @@ private:
   struct PendingInverseWarpReference
   {
     uuids::uuid imageUid;
-    std::filesystem::path referenceImageFileName;
+    std::filesystem::path referenceImagePath;
   };
 
   std::optional<PendingWarpAssignment> m_pendingWarpAssignment = std::nullopt;
