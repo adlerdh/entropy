@@ -95,7 +95,7 @@ std::vector<DstCompType> createBuffer(const void* buffer, std::size_t numElement
     default:
     case ComponentType::Undefined: {
       spdlog::error("Unknown component type when creating buffer");
-      throw_debug("Unknown component type when creating buffer")
+      throwDebug("Unknown component type when creating buffer");
     }
   }
 }

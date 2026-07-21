@@ -127,7 +127,7 @@ bool GLShaderProgram::link()
   const int ret = m_registeredUniforms.queryAndSetAllLocations(locationGetter);
   if (1 == ret) {
     spdlog::error("Setting uniform(s) in program '{}' failed", m_name);
-    throw_debug("Error")
+    throwDebug("Error");
   }
 
   return true;

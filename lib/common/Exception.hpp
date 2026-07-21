@@ -1,21 +1,27 @@
 #pragma once
 
 #include <sstream>
+#include <source_location>
 #include <stdexcept>
+#include <string>
 
 /**
  * @brief A friendly wrapper around \c std::runtime_error that prints the file name,
- * function name, and line number on which the exception occurred to stdout.
- * The C-style definition \c throw_debug is to be used by clients of this class.
+ * function name, and line number on which the exception occurred.
  */
 class Exception : public std::runtime_error
 {
 public:
+  Exception(const char* msg, const std::source_location& location) : std::runtime_error(msg)
+  {
+    m_msg = makeMessage(msg, location.file_name(), location.function_name(), static_cast<int>(location.line()));
+  }
+
+  Exception(const std::string& msg, const std::source_location& location) : Exception(msg.c_str(), location) {}
+
   Exception(const char* msg, const char* file, const char* function, int line) : std::runtime_error(msg)
   {
-    std::ostringstream ss;
-    ss << "[in function '" << function << "'; file '" << file << "' : line " << line << "] " << msg;
-    m_msg = ss.str();
+    m_msg = makeMessage(msg, file, function, line);
   }
 
   Exception(const std::string& msg, const char* file, const char* function, int line)
@@ -31,8 +37,36 @@ public:
   }
 
 private:
+  static std::string makeMessage(const char* msg, const char* file, const char* function, int line)
+  {
+    std::ostringstream ss;
+    ss << "[in function '" << function << "'; file '" << file << "' : line " << line << "] " << msg;
+    return ss.str();
+  }
+
   std::string m_msg;
 };
 
-/// @todo use https://en.cppreference.com/w/cpp/utility/source_location
-#define throw_debug(msg) throw Exception(msg, __FILE__, __FUNCTION__, __LINE__);
+[[noreturn]] inline void throwDebug(
+  const std::string& message,
+  const std::source_location& location = std::source_location::current())
+{
+  throw Exception(message, location);
+}
+
+[[noreturn]] inline void throwDebug(const std::string& message, const char* file, const char* function, int line)
+{
+  throw Exception(message, file, function, line);
+}
+
+[[noreturn]] inline void throwDebug(const char* message, const char* file, const char* function, int line)
+{
+  throw Exception(message, file, function, line);
+}
+
+[[noreturn]] inline void throwDebug(
+  const char* message,
+  const std::source_location& location = std::source_location::current())
+{
+  throw Exception(message, location);
+}

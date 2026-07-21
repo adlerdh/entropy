@@ -38,11 +38,11 @@ ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioI
 {
   if (ComponentType::Undefined == m_memoryComponentType) {
     spdlog::error("Cannot set header for image {} with undefined component type", ioInfoInMemory.m_fileInfo.m_fileName);
-    throw_debug("Undefined component type")
+    throwDebug("Undefined component type");
   }
   else if (PixelType::Undefined == m_pixelType) {
     spdlog::error("Cannot set header for image {} with undefined pixel type", ioInfoInMemory.m_fileInfo.m_fileName);
-    throw_debug("undefined pixel type")
+    throwDebug("undefined pixel type");
   }
 
   m_headerOverrides = ImageHeaderOverrides(m_pixelDimensions, m_spacing, m_origin, m_directions);
@@ -74,7 +74,7 @@ void ImageHeader::setUserSpatialMetadata(const ImageSpatialMetadata& metadata)
 
   if (!validateImageSpatialMetadata(normalizedMetadata, &errorMessage)) {
     spdlog::error("Cannot apply image spatial metadata for {}: {}", m_fileName, errorMessage);
-    throw_debug("Invalid image spatial metadata")
+    throwDebug("Invalid image spatial metadata");
   }
 
   m_userSpatialMetadata = normalizedMetadata;
@@ -162,7 +162,7 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
       dirs = std::move(d3x3);
     }
     else {
-      throw_debug("Image must have dimension of 2 or 3")
+      throwDebug("Image must have dimension of 2 or 3");
     }
   }
 

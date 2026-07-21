@@ -179,7 +179,7 @@ void SlideSlice::setShowOutline(const bool show)
 void SlideSlice::setupChildren()
 {
   if (!m_stack_O_slide_tx || !m_sliceMesh || !m_sliceOutline) {
-    throw_debug("Null child drawable");
+    throwDebug("Null child drawable");
   }
 
   addChild(m_stack_O_slide_tx);
@@ -256,11 +256,11 @@ void SlideSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera
   static const std::array<PositionType, 8> sk_slideCorners = {{p000, p001, p010, p011, p100, p101, p110, p111}};
 
   if (!m_sliceMesh) {
-    throw_debug("Null slice mesh");
+    throwDebug("Null slice mesh");
   }
 
   if (!m_sliceOutline) {
-    throw_debug("Null line");
+    throwDebug("Null line");
   }
 
   auto slideRecord = m_slideRecord.lock();
@@ -272,7 +272,7 @@ void SlideSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera
 
   auto sliceMeshGpuRecord = m_sliceMeshGpuRecord.lock();
   if (!sliceMeshGpuRecord) {
-    throw_debug("Null mesh object record");
+    throwDebug("Null mesh object record");
   }
 
   const glm::mat4 stack_O_slide = slideio::stack_O_slide(*(slideRecord->cpuData()));
@@ -318,7 +318,7 @@ void SlideSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera
   auto& texCoordsObject = sliceMeshGpuRecord->texCoordsObject();
 
   if (!normalsObject || !texCoordsObject) {
-    throw_debug("Null mesh normals and texCoords objects");
+    throwDebug("Null mesh normals and texCoords objects");
   }
 
   positionsObject.write(sk_offset, sk_positionsSize, positions.data());

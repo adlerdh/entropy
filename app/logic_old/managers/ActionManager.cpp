@@ -85,7 +85,7 @@ ActionManager::ActionManager(
   if (!m_globalContext || !m_globalContext->isValid()) {
     std::ostringstream ss;
     ss << "The global, shared OpenGL context is invalid." << std::ends;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 
   // Set the offscreen render surface format to match that of the global context.
@@ -443,7 +443,7 @@ std::optional<UID> ActionManager::loadImage(
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 
   return imageUid;
@@ -470,7 +470,7 @@ std::optional<UID> ActionManager::loadParcellation(
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 
   return parcelUid;
@@ -496,7 +496,7 @@ std::optional<UID> ActionManager::loadSlide(const std::string& filename, bool tr
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 
   return slideUid;
@@ -539,7 +539,7 @@ void ActionManager::generateIsoSurfaceMesh(double isoValue)
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -565,7 +565,7 @@ void ActionManager::generateLabelMeshes()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -577,7 +577,7 @@ void ActionManager::transformFeedback()
   computerWidget.hide();
 
   if (!computerWidget.isValid()) {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 
   computerWidget.makeCurrent();
@@ -657,7 +657,7 @@ void ActionManager::updateImageSliceAssembly()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -677,7 +677,7 @@ void ActionManager::updateIsoMeshAssembly()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -721,7 +721,7 @@ void ActionManager::updateLabelMeshAssembly()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -735,7 +735,7 @@ void ActionManager::updateSlideStackAssembly()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -753,7 +753,7 @@ void ActionManager::updateLandmarkAssemblies()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -765,7 +765,7 @@ void ActionManager::updateAnnotationAssemblies()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 

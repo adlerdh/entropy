@@ -108,13 +108,13 @@ void SlideStackAssembly::initialize()
     sk_meshBufferUsage);
 
   if (!m_coneMeshRecord || !m_cylinderMeshRecord || !m_sphereMeshRecord) {
-    throw_debug("Null Slide Stack Arrow MeshGpuRecord");
+    throwDebug("Null Slide Stack Arrow MeshGpuRecord");
   }
 
   m_boxMeshRecord = gpuhelper::createBoxMeshGpuRecord(BufferUsagePattern::StaticDraw);
 
   if (!m_boxMeshRecord) {
-    throw_debug("Null MeshGPURecord");
+    throwDebug("Null MeshGPURecord");
   }
 
   std::ostringstream baseName;
@@ -195,7 +195,7 @@ void SlideStackAssembly::addSlide(const uuids::uuid& uid, std::weak_ptr<SlideRec
     gpuhelper::createSliceMeshGpuRecord(BufferUsagePattern::DynamicDraw);
 
   if (!sliceMeshGpuRecord) {
-    throw_debug("Null MeshGPURecord");
+    throwDebug("Null MeshGPURecord");
   }
 
   auto getImage3dLayerOpacity = [this](void) {

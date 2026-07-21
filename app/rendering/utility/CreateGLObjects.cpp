@@ -876,7 +876,7 @@ GLTexture createBlankRGBATexture(const ComponentType& componentType, const tex::
   static constexpr GLint sk_alignment = 1;
 
   if (tex::Target::TextureCubeMap == target || tex::Target::TextureBuffer == target) {
-    throw_debug("Invalid texture target type ");
+    throwDebug("Invalid texture target type ");
   }
 
   GLTexture::PixelStoreSettings pixelPackSettings;
@@ -914,20 +914,20 @@ GLTexture createBlankRGBATexture(const ComponentType& componentType, const tex::
       data = sk_data_F32.data();
       break;
     case ComponentType::Long:
-      throw_debug("Int64 texture not supported");
+      throwDebug("Int64 texture not supported");
     case ComponentType::ULong:
-      throw_debug("UInt64 texture not supported");
+      throwDebug("UInt64 texture not supported");
     case ComponentType::Float64:
-      throw_debug("Float64 texture not supported");
+      throwDebug("Float64 texture not supported");
     case ComponentType::LongLong:
-      throw_debug("LongLong texture not supported");
+      throwDebug("LongLong texture not supported");
     case ComponentType::ULongLong:
-      throw_debug("ULongLong texture not supported");
+      throwDebug("ULongLong texture not supported");
     case ComponentType::LongDouble:
-      throw_debug("LongDouble texture not supported");
+      throwDebug("LongDouble texture not supported");
     default:
     case ComponentType::Undefined:
-      throw_debug("Undefined texture not supported");
+      throwDebug("Undefined texture not supported");
   }
 
   texture.setData(

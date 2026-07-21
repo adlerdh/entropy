@@ -22,7 +22,7 @@ GLVersionChecker::GLVersionChecker()
   if (majorVersion < 3 || (majorVersion == 3 && minorVersion < 3)) {
     spdlog::critical("OpenGL version {}.{} is too low and not supported.", majorVersion, minorVersion);
     spdlog::critical("The minimum required OpenGL version is 3.3");
-    throw_debug("Invalid OpenGL version found")
+    throwDebug("Invalid OpenGL version found");
   }
 
   // Profile mask used to create the context:

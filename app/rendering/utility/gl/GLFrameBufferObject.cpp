@@ -59,7 +59,7 @@ void GLFrameBufferObject::attach2DTexture(
 {
   if (fbo::TargetType::DrawAndRead == target) {
     spdlog::error("Invalid FBO target");
-    throw_debug("Invalid FBO target")
+    throwDebug("Invalid FBO target");
   }
 
   if (
@@ -67,7 +67,7 @@ void GLFrameBufferObject::attach2DTexture(
     tex::Target::TextureRectangle != texture.target())
   {
     spdlog::error("Invalid texture target");
-    throw_debug("Invalid texture target")
+    throwDebug("Invalid texture target");
   }
 
   int index = 0;
@@ -80,14 +80,14 @@ void GLFrameBufferObject::attach2DTexture(
 
       if (*colorAttachmentIndex < 0 || maxAttach <= *colorAttachmentIndex) {
         spdlog::error("Invalid color attachment index {}", *colorAttachmentIndex);
-        throw_debug("Invalid color attachment index")
+        throwDebug("Invalid color attachment index");
       }
 
       index = *colorAttachmentIndex;
     }
     else {
       spdlog::error("No color attachment index specified");
-      throw_debug("No color attachment index specified")
+      throwDebug("No color attachment index specified");
     }
   }
 
@@ -113,7 +113,7 @@ void GLFrameBufferObject::attachCubeMapTexture(
   std::optional<int> colorAttachmentIndex)
 {
   if (tex::Target::TextureCubeMap != texture.target()) {
-    throw_debug("Invalid FBO target")
+    throwDebug("Invalid FBO target");
   }
 
   int index = 0;
@@ -125,7 +125,7 @@ void GLFrameBufferObject::attachCubeMapTexture(
 
     if (*colorAttachmentIndex < 0 || maxAttach <= *colorAttachmentIndex) {
       spdlog::error("Invalid color attachment index {}", *colorAttachmentIndex);
-      throw_debug("Invalid color attachment index")
+      throwDebug("Invalid color attachment index");
     }
 
     index = *colorAttachmentIndex;
@@ -152,6 +152,6 @@ void GLFrameBufferObject::checkStatus()
 
   if (GL_FRAMEBUFFER_COMPLETE != status) {
     spdlog::error("Framebuffer object '{}' not complete: {}", m_name, glCheckFramebufferStatus(GL_FRAMEBUFFER));
-    throw_debug("Framebuffer object not complete")
+    throwDebug("Framebuffer object not complete");
   }
 }

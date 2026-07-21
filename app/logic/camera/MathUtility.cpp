@@ -126,7 +126,7 @@ glm::vec3 projectPointToPlane(const glm::vec3& point, const glm::vec4& planeEqua
   const float L = glm::length(planeNormal);
 
   if (L < glm::epsilon<float>()) {
-    throw_debug("Cannot project point to plane: plane normal has zero length")
+    throwDebug("Cannot project point to plane: plane normal has zero length");
   }
 
   // Signed distance of point to plane (positive if on same side of plane as normal vector):

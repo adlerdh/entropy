@@ -34,7 +34,7 @@ DdpBlendPassQuad::DdpBlendPassQuad(
     m_uniforms = m_uniformsProvider(DDPBlendProgram::name);
   }
   else {
-    throw_debug("Unable to access UniformsProvider");
+    throwDebug("Unable to access UniformsProvider");
   }
 }
 
@@ -46,7 +46,7 @@ void DdpBlendPassQuad::setCurrentTextureId(uint32_t i)
 void DdpBlendPassQuad::doRender(const RenderStage& /*stage*/)
 {
   if (!m_shaderProgramActivator) {
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   if (auto program = m_shaderProgramActivator(DDPBlendProgram::name)) {

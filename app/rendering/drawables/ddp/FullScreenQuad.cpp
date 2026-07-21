@@ -24,7 +24,7 @@ FullScreenQuad::FullScreenQuad(const std::string& name)
 
   if (!success) {
     spdlog::error("Error initializing '{}'", m_name);
-    throw_debug("Error initializing FSQ")
+    throwDebug("Error initializing FSQ");
   }
 }
 

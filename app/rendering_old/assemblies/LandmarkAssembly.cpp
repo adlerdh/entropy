@@ -56,7 +56,7 @@ void LandmarkAssembly::initialize()
     m_meshGpuRecord = m_meshGpuRecordProvider();
   }
   else {
-    throw_debug("Unable to obtain mesh GPU record");
+    throwDebug("Unable to obtain mesh GPU record");
   }
 
   std::ostringstream ss;
@@ -103,7 +103,7 @@ void LandmarkAssembly::setLandmarkGroupScalingQuerier(QuerierType<DrawableScalin
 void LandmarkAssembly::addLandmarkGroup(std::weak_ptr<LandmarkGroupRecord> lmGroupRecord)
 {
   if (!m_rootFor2dViews || !m_rootFor3dViews) {
-    throw_debug("Null root drawables in assembly");
+    throwDebug("Null root drawables in assembly");
   }
 
   // Function that provides the tranformation from modeling space of the landmark group to World
@@ -191,7 +191,7 @@ void LandmarkAssembly::clearLandmarkGroups()
 void LandmarkAssembly::detatchLandmarks(const uuids::uuid& lmGroupUid)
 {
   if (!m_rootFor2dViews || !m_rootFor3dViews) {
-    throw_debug("Null root drawables in assembly");
+    throwDebug("Null root drawables in assembly");
   }
 
   // Remove 2D and 3D drawables from roots:

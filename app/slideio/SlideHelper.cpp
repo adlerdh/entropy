@@ -48,7 +48,7 @@ glm::vec2 getTranslationXyInStack(const SlideCpuRecord& record)
 glm::vec3 physicalSlideDims(const SlideCpuRecord& record)
 {
   if (0 == record.numFileLevels()) {
-    throw_debug("No slide data loaded");
+    throwDebug("No slide data loaded");
   }
 
   // Highest resolution level of slide:

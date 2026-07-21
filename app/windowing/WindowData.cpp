@@ -2267,7 +2267,7 @@ uuid WindowData::findLargestCurrentView() const
   const auto viewUids = currentViewUids();
   if (viewUids.empty()) {
     spdlog::error("The current layout has no views");
-    throw_debug("The current layout has no views")
+    throwDebug("The current layout has no views");
   }
 
   uuid largestViewUid = viewUids.front();
@@ -2275,7 +2275,7 @@ uuid WindowData::findLargestCurrentView() const
 
   if (!largestView) {
     spdlog::error("The current layout has no views");
-    throw_debug("The current layout has no views")
+    throwDebug("The current layout has no views");
   }
 
   std::vector<viewer::FrameHitTarget> frames;

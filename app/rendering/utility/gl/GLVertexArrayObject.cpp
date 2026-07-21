@@ -21,7 +21,7 @@ size_t bytesPerIndexType(const IndexType& indexType)
     case IndexType::UInt32:
       return 4;
   }
-  throw_debug("Invalid index type")
+  throwDebug("Invalid index type");
 }
 
 } // namespace
@@ -178,7 +178,7 @@ size_t GLVertexArrayObject::IndexedDrawParams::elementCount() const
 void GLVertexArrayObject::IndexedDrawParams::setElementCount(size_t elementCount)
 {
   if (elementCount > std::numeric_limits<GLsizei>::max()) {
-    throw_debug("Attempting to set more elements than max count")
+    throwDebug("Attempting to set more elements than max count");
   }
 
   m_elementCount = elementCount;

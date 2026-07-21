@@ -45,7 +45,7 @@ Annotation::Annotation(std::string name, const glm::vec4& color, const glm::vec4
   , m_subjectPlaneAxes({1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f})
 {
   if (!setSubjectPlane(subjectPlaneEquation)) {
-    throw_debug("Cannot construct Annotation with invalid plane")
+    throwDebug("Cannot construct Annotation with invalid plane");
   }
 }
 

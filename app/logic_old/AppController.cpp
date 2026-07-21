@@ -144,13 +144,13 @@ AppController::AppController(
     !m_interactionManager || !m_layoutManager || !m_transformationManager || !m_imageDataUiMapper ||
     !m_parcelDataUiMapper || !m_slideStackDataUiMapper || !m_shaderPrograms || !m_blankTextures)
   {
-    throw_debug("Attempting to construct AppController with a null argument.")
+    throwDebug("Attempting to construct AppController with a null argument.");
   }
 
   if (!m_globalContext || !m_globalContext->isValid()) {
     std::ostringstream ss;
     ss << "The global, shared OpenGL context is invalid." << std::ends;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 
   // Set the offscreen render surface format to match that of the global context.
@@ -170,7 +170,7 @@ void AppController::initialize()
     !m_interactionManager || !m_layoutManager || !m_transformationManager || !m_imageDataUiMapper ||
     !m_parcelDataUiMapper || !m_slideStackDataUiMapper || !m_shaderPrograms || !m_blankTextures)
   {
-    throw_debug("Attempting to initialize AppController with a null manager.")
+    throwDebug("Attempting to initialize AppController with a null manager.");
   }
 
   if (m_globalContext && m_globalContext->makeCurrent(&m_surface)) {
@@ -189,7 +189,7 @@ void AppController::initialize()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 
   m_connectionManager->createConnections();
@@ -326,7 +326,7 @@ void AppController::createUiConnections()
 void AppController::showMainWindow()
 {
   if (!m_guiManager) {
-    throw_debug("Unable ot show main window: null GuiManager")
+    throwDebug("Unable ot show main window: null GuiManager");
   }
 
   // Show main window and update its widgets with current property values and rendering
@@ -338,7 +338,7 @@ void AppController::showMainWindow()
 void AppController::loadProject(serialize::HZeeProject project)
 {
   if (!m_dataManager || !m_transformationManager || !m_actionManager) {
-    throw_debug("Unable to set project: null manager")
+    throwDebug("Unable to set project: null manager");
   }
 
   // Load images and set their display settings and transformations
@@ -441,7 +441,7 @@ void AppController::loadProject(serialize::HZeeProject project)
 void AppController::generateIsoSurfaceMesh(double isoValue)
 {
   if (!m_actionManager) {
-    throw_debug("Unable to generate isosurface mesh: null ActionManager")
+    throwDebug("Unable to generate isosurface mesh: null ActionManager");
   }
 
   m_actionManager->generateIsoSurfaceMesh(isoValue);
@@ -450,7 +450,7 @@ void AppController::generateIsoSurfaceMesh(double isoValue)
 void AppController::generateLabelMeshes()
 {
   if (!m_actionManager) {
-    throw_debug("Unable to generate label meshes: null ActionManager")
+    throwDebug("Unable to generate label meshes: null ActionManager");
   }
 
   m_actionManager->generateLabelMeshes();
@@ -459,7 +459,7 @@ void AppController::generateLabelMeshes()
 void AppController::setupCamerasAndCrosshairsForImage()
 {
   if (!m_actionManager) {
-    throw_debug("Unable to set up cameras: null ActionManager")
+    throwDebug("Unable to set up cameras: null ActionManager");
   }
 
   m_actionManager->setupCamerasAndCrosshairsForImage();
@@ -485,7 +485,7 @@ void AppController::loadBuiltInImageColorMaps(const std::vector<std::string>& co
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 }
 
@@ -610,7 +610,7 @@ void AppController::testCreateSlideAnnotation()
     m_globalContext->doneCurrent();
   }
   else {
-    throw_debug(sk_glContextErrorMsg)
+    throwDebug(sk_glContextErrorMsg);
   }
 
   std::unique_ptr<SlideAnnotationCpuRecord> annot1CpuRecord =

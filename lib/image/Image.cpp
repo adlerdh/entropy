@@ -229,12 +229,12 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
 
   if (!imageIo || imageIo.IsNull()) {
     spdlog::error("Error creating itk::ImageIOBase for image from file {}", fileName);
-    throw_debug("Error creating itk::ImageIOBase")
+    throwDebug("Error creating itk::ImageIOBase");
   }
 
   if (!setImageIoInfoFromItk(m_ioInfoOnDisk, imageIo)) {
     spdlog::error("Error setting image IO information for image from file {}", fileName);
-    throw_debug("Error setting image IO information")
+    throwDebug("Error setting image IO information");
   }
   normalizeImageIoAxesForEntropy(m_ioInfoOnDisk, fileName);
 
@@ -275,7 +275,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
 
   if (0 == componentsToLoad) {
     spdlog::error("No components to load for image from file {}", fileName);
-    throw_debug("No components to load for image")
+    throwDebug("No components to load for image");
   }
 
   m_ioInfoInMemory.m_pixelInfo.m_numComponents = componentsToLoad;
@@ -326,7 +326,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
   }
 
   if (!loaded) {
-    throw_debug("Error loading image")
+    throwDebug("Error loading image");
   }
 
   m_header =
@@ -401,7 +401,7 @@ Image::Image(
 {
   if (imageDataComponents.empty()) {
     spdlog::error("No image data buffers provided for constructing Image");
-    throw_debug("No image data buffers provided for constructing Image")
+    throwDebug("No image data buffers provided for constructing Image");
   }
 
   // The image does not exist on disk, but we need to fill this out anyway:
@@ -463,7 +463,7 @@ Image::Image(
 
     case CType::Undefined: {
       spdlog::error("Unknown component type in image from file {}", m_ioInfoOnDisk.m_fileInfo.m_fileName);
-      throw_debug("Unknown component type in image")
+      throwDebug("Unknown component type in image");
     }
   }
 
@@ -484,7 +484,7 @@ Image::Image(
 
     if (0 == componentsToLoad) {
       spdlog::error("No components to create for image from file {}", m_header.fileName());
-      throw_debug("No components to create for image")
+      throwDebug("No components to create for image");
     }
 
     // Adjust the number of components in the image header
@@ -495,20 +495,20 @@ Image::Image(
         // Load each component separately:
         if (imageDataComponents.size() < m_header.numComponentsPerPixel()) {
           spdlog::error("Insufficient number of image data buffers provided: {}", imageDataComponents.size());
-          throw_debug("Insufficient number of image data buffers were provided")
+          throwDebug("Insufficient number of image data buffers were provided");
         }
 
         for (std::size_t c = 0; c < m_header.numComponentsPerPixel(); ++c) {
           switch (m_imageRep) {
             case ImageRepresentation::Segmentation: {
               if (!loadSegBuffer(imageDataComponents[c], numBufferPixels, srcCompType, dstCompType)) {
-                throw_debug("Error loading segmentation image buffer")
+                throwDebug("Error loading segmentation image buffer");
               }
               break;
             }
             case ImageRepresentation::Image: {
               if (!loadImageBuffer(imageDataComponents[c], numBufferPixels, srcCompType, dstCompType)) {
-                throw_debug("Error loading image buffer")
+                throwDebug("Error loading image buffer");
               }
               break;
             }
@@ -531,13 +531,13 @@ Image::Image(
         switch (m_imageRep) {
           case ImageRepresentation::Segmentation: {
             if (!loadSegBuffer(buffer, N, srcCompType, dstCompType)) {
-              throw_debug("Error loading segmentation image buffer")
+              throwDebug("Error loading segmentation image buffer");
             }
             break;
           }
           case ImageRepresentation::Image: {
             if (!loadImageBuffer(buffer, N, srcCompType, dstCompType)) {
-              throw_debug("Error loading image buffer")
+              throwDebug("Error loading image buffer");
             }
             break;
           }
@@ -549,12 +549,12 @@ Image::Image(
   {
     if (ImageRepresentation::Segmentation == m_imageRep) {
       if (!loadSegBuffer(imageDataComponents[0], numBufferPixels, srcCompType, dstCompType)) {
-        throw_debug("Error loading segmentation image buffer")
+        throwDebug("Error loading segmentation image buffer");
       }
     }
     else {
       if (!loadImageBuffer(imageDataComponents[0], numBufferPixels, srcCompType, dstCompType)) {
-        throw_debug("Error loading image buffer")
+        throwDebug("Error loading image buffer");
       }
     }
   }
@@ -751,7 +751,7 @@ void Image::updateComponentStats()
 /// @todo Put this back when using sorted buffers for stats
 // if (!generateSortedBuffers()) {
 //   spdlog::error("Error generating sorted image component buffers");
-//   throw_debug("Error generating sorted image component buffers")
+//   throwDebug("Error generating sorted image component buffers")
 // }
 // m_settings.setUsingExactQuantiles(true);
 // std::vector<ComponentStats> componentStats = computeImageStatisticsOnSortedValues(*this);

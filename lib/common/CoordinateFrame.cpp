@@ -67,14 +67,14 @@ void CoordinateFrame::setFrameToWorldRotation(
   const float worldAngle = glm::angle(worldAxis1, worldAxis2);
 
   if (requireEqualAngles && !glm::epsilonEqual(frameAngle, worldAngle, glm::epsilon<float>())) {
-    throw_debug("Angle between input frame and world axes are not equal.")
+    throwDebug("Angle between input frame and world axes are not equal.");
   }
 
   if (
     glm::epsilonEqual(frameAngle, 0.0f, glm::epsilon<float>()) ||
     glm::epsilonEqual(worldAngle, 0.0f, glm::epsilon<float>()))
   {
-    throw_debug("Input axes are equal.")
+    throwDebug("Input axes are equal.");
   }
 
   const glm::mat3 frame_T_ident{frameAxis1, frameAxis2, glm::cross(frameAxis1, frameAxis2)};

@@ -31,7 +31,7 @@ glm::vec4 colorFromJson(const json& value, const glm::vec4& fallback)
       value.value("a", fallback.a)};
   }
 
-  throw_debug("JSON structure contains invalid color")
+  throwDebug("JSON structure contains invalid color");
 }
 
 json boundaryToJson(const std::vector<glm::vec2>& vertices)
@@ -48,7 +48,7 @@ std::vector<glm::vec2> boundaryFromJson(const json& boundaryJson)
   std::vector<glm::vec2> vertices;
   for (const auto& vertex : boundaryJson) {
     if (!vertex.is_array() || vertex.size() != 2) {
-      throw_debug("JSON structure contains invalid vertex")
+      throwDebug("JSON structure contains invalid vertex");
     }
     vertices.emplace_back(vertex.at(0).get<float>(), vertex.at(1).get<float>());
   }
@@ -88,7 +88,7 @@ AnnotPolygon<float, 2> polygonFromBoundariesJson(const json& boundariesJson)
 void appendAnnotationsFromArray(const json& annotationArrayJson, std::vector<Annotation>& annotations)
 {
   if (!annotationArrayJson.is_array()) {
-    throw_debug("Annotation JSON must contain an annotation array")
+    throwDebug("Annotation JSON must contain an annotation array");
   }
 
   annotations.reserve(annotations.size() + annotationArrayJson.size());
@@ -145,7 +145,7 @@ void from_json(const json& j, Annotation& annot)
 
   const std::string annotationType = j.at("type").get<std::string>();
   if (annotationType != POLYGON_ANNOTATION_TYPE) {
-    throw_debug("Unsupported annotation type in JSON")
+    throwDebug("Unsupported annotation type in JSON");
   }
 
   std::string displayName;
@@ -261,12 +261,12 @@ std::vector<Annotation> annotationsFromJson(const json& j)
 {
   std::vector<Annotation> annotations;
   if (!j.is_object()) {
-    throw_debug("Annotation JSON must be an object")
+    throwDebug("Annotation JSON must be an object");
   }
 
   const int version = j.at("version").get<int>();
   if (version != ANNOTATION_JSON_VERSION) {
-    throw_debug("Unsupported annotation JSON version")
+    throwDebug("Unsupported annotation JSON version");
   }
 
   appendAnnotationsFromArray(j.at("annotations"), annotations);

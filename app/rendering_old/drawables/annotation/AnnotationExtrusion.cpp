@@ -63,7 +63,7 @@ void AnnotationExtrusion::setupChildren()
 {
   auto annotRecord = m_slideAnnotationRecord.lock();
   if (!annotRecord || !annotRecord->gpuData()) {
-    throw_debug("Null slide annotation or GPU record");
+    throwDebug("Null slide annotation or GPU record");
   }
 
   std::ostringstream ss;

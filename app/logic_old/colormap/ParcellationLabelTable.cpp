@@ -76,7 +76,7 @@ ParcellationLabelTable::ParcellationLabelTable(size_t labelCount) : m_colors_RGB
   static const std::vector<float> sk_startAngles{0.0f, 120.0f, 240.0f, 60.0f, 180.0f, 300.0f};
 
   if (labelCount < 7) {
-    throw_debug("Parcellation must have at least 7 labels");
+    throwDebug("Parcellation must have at least 7 labels");
   }
 
   std::vector<glm::vec3> rgbValues;
@@ -246,6 +246,6 @@ void ParcellationLabelTable::checkLabelIndex(size_t index) const
   if (index >= m_properties.size()) {
     std::ostringstream ss;
     ss << "Invalid label index " << index << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 }

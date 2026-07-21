@@ -206,7 +206,7 @@ bool AnnotationSlice::isMeshGpuRecordCurrent() const
 {
   auto annot = m_slideAnnotationRecord.lock();
   if (!annot || !annot->cpuData() || !annot->cpuData()->polygon()) {
-    throw_debug("Null slide annotation record");
+    throwDebug("Null slide annotation record");
   }
 
   const PlanarPolygon* polygon = annot->cpuData()->polygon();
@@ -223,7 +223,7 @@ void AnnotationSlice::updateMeshGpuRecord()
 
   auto annot = m_slideAnnotationRecord.lock();
   if (!annot || !annot->cpuData() || !annot->cpuData()->polygon()) {
-    throw_debug("Null slide annotation record");
+    throwDebug("Null slide annotation record");
   }
 
   PlanarPolygon* polygon = annot->cpuData()->polygon();
@@ -233,7 +233,7 @@ void AnnotationSlice::updateMeshGpuRecord()
 
   m_meshGpuRecord = reallocateMeshGpuRecord(polygon->numTriangles());
   if (!m_meshGpuRecord) {
-    throw_debug("Null mesh GPU record");
+    throwDebug("Null mesh GPU record");
   }
 
   if (m_mesh) {
@@ -247,7 +247,7 @@ void AnnotationSlice::updateMeshGpuRecord()
 void AnnotationSlice::setupChildren()
 {
   if (!m_mesh) {
-    throw_debug("Null mesh");
+    throwDebug("Null mesh");
   }
 
   // Only ambient lighting

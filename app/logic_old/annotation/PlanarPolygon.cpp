@@ -95,7 +95,7 @@ const PlanarPolygon::PointType& PlanarPolygon::getVertex(size_t i) const
     }
   }
 
-  throw_debug("Invalid vertex");
+  throwDebug("Invalid vertex");
 }
 
 void PlanarPolygon::setTriangulation(std::vector<IndexType> indices)

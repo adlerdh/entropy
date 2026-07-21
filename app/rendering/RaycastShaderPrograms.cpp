@@ -58,7 +58,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
   }
   catch (const std::exception& e) {
     spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
+    throwDebug("Unable to load shader");
   }
 
   const std::string shaderPath("app/rendering/shaders/functions/");

@@ -27,7 +27,7 @@ FullScreenDebugQuad::FullScreenDebugQuad(
   }
   else {
     spdlog::error("Unable to access UniformsProvider in '{}'", m_name);
-    throw_debug("Unable to access UniformsProvider");
+    throwDebug("Unable to access UniformsProvider");
   }
 }
 
@@ -40,7 +40,7 @@ void FullScreenDebugQuad::doRender(const RenderStage& /*stage*/)
 {
   if (!m_shaderProgramActivator) {
     spdlog::error("Unable to access ShaderProgramActivator in '{}'", m_name);
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   if (auto program = m_shaderProgramActivator(DebugProgram::name)) {
@@ -52,7 +52,7 @@ void FullScreenDebugQuad::doRender(const RenderStage& /*stage*/)
     }
     else {
       spdlog::error("Null DebugProgram shader program in '{}'", m_name);
-      throw_debug("Null DebugProgram shader program");
+      throwDebug("Null DebugProgram shader program");
     }
   }
 }

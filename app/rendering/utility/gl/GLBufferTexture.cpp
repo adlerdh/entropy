@@ -129,7 +129,7 @@ void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
        << " bytes) in the texel array of a texture buffer object, which is greater than the maximum of " << maxSize
        << " texels" << std::ends;
 
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   m_buffer.allocate(sizeInBytes, data);

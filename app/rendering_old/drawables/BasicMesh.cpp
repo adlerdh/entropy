@@ -129,7 +129,7 @@ BasicMesh::BasicMesh(
     m_initUniforms = m_uniformsProvider(DDPInitProgram::name);
   }
   else {
-    throw_debug("Unable to access UniformsProvider");
+    throwDebug("Unable to access UniformsProvider");
   }
 
   initVao();
@@ -304,7 +304,7 @@ void BasicMesh::initVao()
   if (!gpuRec) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   const auto& positionsInfo = gpuRec->positionsInfo();
@@ -318,7 +318,7 @@ void BasicMesh::initVao()
   auto& colorsObject = gpuRec->colorsObject();
 
   if (!normalsObject || !normalsInfo) {
-    throw_debug("No mesh normals");
+    throwDebug("No mesh normals");
   }
 
   m_vao.generate();
@@ -375,7 +375,7 @@ void BasicMesh::doRender(const RenderStage& stage)
   static const glm::vec3 sk_materialSpecular{1.0f, 1.0f, 1.0f};
 
   if (!m_shaderProgramActivator) {
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   GLShaderProgram* shaderProgram = nullptr;
@@ -402,17 +402,17 @@ void BasicMesh::doRender(const RenderStage& stage)
   }
 
   if (!shaderProgram) {
-    throw_debug("Null shader program");
+    throwDebug("Null shader program");
   }
 
   if (!uniforms) {
-    throw_debug("Null uniforms");
+    throwDebug("Null uniforms");
   }
 
   if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   /// @todo Put these into doSetupState?

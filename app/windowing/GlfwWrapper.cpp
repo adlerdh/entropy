@@ -138,14 +138,14 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 {
   if (!app) {
     spdlog::critical("The application is null on GLFW creation");
-    throw_debug("The application is null")
+    throwDebug("The application is null");
   }
 
   spdlog::debug("OpenGL Core profile version {}.{}", glMajorVersion, glMinorVersion);
 
   if (!glfwInit()) {
     spdlog::critical("Failed to initialize the GLFW windowing library");
-    throw_debug("Failed to initialize the GLFW windowing library")
+    throwDebug("Failed to initialize the GLFW windowing library");
   }
 
   spdlog::debug("Initialized GLFW windowing library");
@@ -155,7 +155,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   m_platform = glfwGetPlatform();
   if (m_platform == GLFW_PLATFORM_NULL) {
     spdlog::critical("GLFW was not initialized");
-    throw_debug("GLFW was not initialized")
+    throwDebug("GLFW was not initialized");
   }
 
   // Set OpenGL version
@@ -262,7 +262,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
   if (!m_window) {
     glfwTerminate();
-    throw_debug("Failed to create GLFW window and context")
+    throwDebug("Failed to create GLFW window and context");
   }
 
   spdlog::debug("Created GLFW window and context");
@@ -370,7 +370,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     glfwTerminate();
     spdlog::critical("Failed to load OpenGL function pointers with GLAD");
-    throw_debug("Failed to load OpenGL function pointers with GLAD")
+    throwDebug("Failed to load OpenGL function pointers with GLAD");
   }
 
   spdlog::debug("Loaded OpenGL function pointers with GLAD");
@@ -454,7 +454,7 @@ void GlfwWrapper::renderLoop(
 
   if (!m_renderScene || !m_renderGui) {
     spdlog::critical("Rendering callbacks not initialized");
-    throw_debug("Rendering callbacks not initialized")
+    throwDebug("Rendering callbacks not initialized");
   }
 
   spdlog::debug("Starting GLFW rendering loop");

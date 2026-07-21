@@ -128,7 +128,7 @@ void GLShader::compileFromString(const char* source)
 
 //    if ( ! checkShaderStatus( handle ) )
 //    {
-//        throw_debug( "Cannot compile shader due to failed status check" );
+//        throwDebug( "Cannot compile shader due to failed status check" );
 //    }
 
 //    m_handle = handle;

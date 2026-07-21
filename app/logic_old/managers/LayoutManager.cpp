@@ -45,7 +45,7 @@ LayoutManager::~LayoutManager() = default;
 uid_range_t LayoutManager::getOrderedLayoutUids() const
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   return m_impl->m_orderedLayoutUids;
@@ -54,14 +54,14 @@ uid_range_t LayoutManager::getOrderedLayoutUids() const
 const gui::LayoutTabData& LayoutManager::getLayoutTabData(const UID& layoutUid)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   const auto it = m_impl->m_layoutData.find(layoutUid);
   if (std::end(m_impl->m_layoutData) == it) {
     std::ostringstream ss;
     ss << "Central Widget not found for requested layout " << layoutUid << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   return it->second;
@@ -70,7 +70,7 @@ const gui::LayoutTabData& LayoutManager::getLayoutTabData(const UID& layoutUid)
 const gui::LayoutTabData& LayoutManager::getLayoutTabData(int layoutIndex)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   auto it = m_impl->m_orderedLayoutUids.begin();
@@ -81,11 +81,11 @@ const gui::LayoutTabData& LayoutManager::getLayoutTabData(int layoutIndex)
 void LayoutManager::setViewWidget(gui::ViewWidget* viewWidget)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   if (!viewWidget) {
-    throw_debug("Null ViewWidget");
+    throwDebug("Null ViewWidget");
   }
 
   // Get the QSplitter to which this widget belongs:
@@ -112,7 +112,7 @@ void LayoutManager::setViewWidget(gui::ViewWidget* viewWidget)
 uid_range_t LayoutManager::getViewUids() const
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   uid_range_t viewUids;
@@ -125,7 +125,7 @@ uid_range_t LayoutManager::getViewUids() const
 std::optional<gui::ViewType> LayoutManager::getViewType(const UID& viewUid) const
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   const auto it = m_impl->m_viewTypes.find(viewUid);
@@ -142,7 +142,7 @@ std::optional<gui::ViewType> LayoutManager::getViewType(const UID& viewUid) cons
 std::list<UID> LayoutManager::getViewUidsOfType(const gui::ViewType& viewType) const
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   std::list<UID> viewUids;
@@ -159,7 +159,7 @@ std::list<UID> LayoutManager::getViewUidsOfType(const gui::ViewType& viewType) c
 view_type_range_t LayoutManager::getViewTypes() const
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   return m_impl->m_viewTypes;
@@ -174,7 +174,7 @@ LayoutManager::Impl::Impl(const std::string& layoutConfig)
   catch (const std::exception& e) {
     std::ostringstream ss;
     ss << "Error parsing layout configuration from JSON:\n" << e.what() << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   std::tie(m_layoutData, m_orderedLayoutUids, m_viewTypes, m_viewSplitters) =

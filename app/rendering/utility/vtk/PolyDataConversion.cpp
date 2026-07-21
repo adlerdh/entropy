@@ -33,7 +33,7 @@ public:
   PointsArrayPacker() : VectorArrayBuffer<ToType>()
   {
     if (!std::is_same<ToType, float>::value) {
-      throw_debug("PointsArrayPacker can only convert to float type.");
+      throwDebug("PointsArrayPacker can only convert to float type.");
     }
   }
 
@@ -85,7 +85,7 @@ public:
   NormalsArrayPacker() : VectorArrayBuffer<ToType>()
   {
     if (!std::is_same<ToType, uint32_t>::value) {
-      throw_debug("NormalsArrayPacker can only convert to uint32_t type.");
+      throwDebug("NormalsArrayPacker can only convert to uint32_t type.");
     }
   }
 
@@ -139,7 +139,7 @@ public:
   TCoordsArrayPacker() : VectorArrayBuffer<ToType>()
   {
     if (!std::is_same<ToType, uint32_t>::value) {
-      throw_debug("TCoordsArrayPacker can only convert to uint32_t type.");
+      throwDebug("TCoordsArrayPacker can only convert to uint32_t type.");
     }
   }
 
@@ -190,7 +190,7 @@ public:
   TCoordsFloatArrayPacker() : VectorArrayBuffer<ToType>()
   {
     if (!std::is_same<ToType, float>::value) {
-      throw_debug("TCoordsFloatArrayPacker can only convert to float type.");
+      throwDebug("TCoordsFloatArrayPacker can only convert to float type.");
     }
   }
 
@@ -241,7 +241,7 @@ public:
   IndicesArrayPacker() : VectorArrayBuffer<ToType>()
   {
     if (!std::is_same<ToType, uint32_t>::value) {
-      throw_debug("IndicesArrayPacker can only convert to float type.");
+      throwDebug("IndicesArrayPacker can only convert to float type.");
     }
   }
 

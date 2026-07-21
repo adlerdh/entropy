@@ -275,6 +275,6 @@ void ParcellationLabelTable::checkLabelIndex(std::size_t index) const
   if (index >= m_properties.size()) {
     std::ostringstream ss;
     ss << "Invalid label index " << index << std::ends;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 }

@@ -128,11 +128,11 @@ GuiManager::GuiManager(
   , m_viewWidgets()
 {
   if (!m_viewUidAndTypeProvider || !m_interactionPackProvider || !m_viewWidgetSetter) {
-    throw_debug("Null providers")
+    throwDebug("Null providers");
   }
 
   if (!m_mainWindow) {
-    throw_debug("MainWindow could not be created")
+    throwDebug("MainWindow could not be created");
   }
 }
 
@@ -159,7 +159,7 @@ void GuiManager::initializeGL()
     m_mainWindow->setViewLayoutTabChangedPublisher(tabChangedHandler);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -180,13 +180,13 @@ void GuiManager::setupMainWindow()
     m_mainWindow.get());
 
   if (!m_actionsContainer) {
-    throw_debug("Actions container is null")
+    throwDebug("Actions container is null");
   }
 
   QToolBar* pointerToolBar = gui::createPointerToolBar(*m_actionsContainer);
 
   if (!pointerToolBar) {
-    throw_debug("Pointer toolbar is null")
+    throwDebug("Pointer toolbar is null");
   }
 
   // Add docks and toolbars to main window:
@@ -200,7 +200,7 @@ void GuiManager::setupMainWindow()
     m_slideStackEditorDock->setVisible(false);
   }
   else {
-    throw_debug("Main window is null")
+    throwDebug("Main window is null");
   }
 }
 
@@ -211,7 +211,7 @@ void GuiManager::showMainWindow()
     //        m_mainWindow->showNormal();
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -321,7 +321,7 @@ void GuiManager::setImageLoader(ImageLoaderType loader)
     m_mainWindow->setImageLoader(loader);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -331,7 +331,7 @@ void GuiManager::setParcellationLoader(ImageLoaderType loader)
     m_mainWindow->setParcellationLoader(loader);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -341,7 +341,7 @@ void GuiManager::setSlideLoader(SlideLoaderType loader)
     m_mainWindow->setSlideLoader(loader);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -695,7 +695,7 @@ void GuiManager::setWorldPositionStatusText(const std::string& status)
     m_mainWindow->setWorldPositionStatusText(status);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -705,7 +705,7 @@ void GuiManager::setImageValueStatusText(const std::string& status)
     m_mainWindow->setImageValueStatusText(status);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -715,7 +715,7 @@ void GuiManager::setLabelValueStatusText(const std::string& status)
     m_mainWindow->setLabelValueStatusText(status);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -725,7 +725,7 @@ void GuiManager::clearTabWidget()
     m_mainWindow->clearViewLayoutTabs();
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -735,7 +735,7 @@ void GuiManager::insertViewLayoutTab(int index, QWidget* tabWidget, const std::s
     m_mainWindow->insertViewLayoutTab(index, tabWidget, name);
   }
   else {
-    throw_debug("MainWindow is null")
+    throwDebug("MainWindow is null");
   }
 }
 
@@ -824,7 +824,7 @@ void GuiManager::createViewWidgets()
     if (!renderer) {
       std::ostringstream ss;
       ss << "Error constructing renderer " << name.str() << std::ends;
-      throw_debug(ss.str());
+      throwDebug(ss.str());
     }
 
     auto cameraProvider = [this, viewUid](void) {

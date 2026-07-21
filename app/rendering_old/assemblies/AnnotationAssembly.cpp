@@ -55,7 +55,7 @@ void AnnotationAssembly::initialize()
   //    }
   //    else
   //    {
-  //        throw_debug( "Unable to obtain mesh GPU record" );
+  //        throwDebug( "Unable to obtain mesh GPU record" );
   //    }
 
   std::ostringstream ss;

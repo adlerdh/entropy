@@ -68,13 +68,13 @@ GLShaderProgram* ShaderProgramContainer::getProgram(const std::string& name)
   if (std::end(m_programs) == itr) {
     std::ostringstream ss;
     ss << "Shader program " << name << " not found" << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   if (!itr->second) {
     std::ostringstream ss;
     ss << "Invalid program " << name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   return itr->second.get();
@@ -89,7 +89,7 @@ GLShaderProgram* ShaderProgramContainer::useProgram(const std::string& name)
       if (m_validateBeforeUse && !program->isValid()) {
         std::ostringstream ss;
         ss << "Invalid program " << name << std::ends;
-        throw_debug(ss.str());
+        throwDebug(ss.str());
       }
 
       program->use();
@@ -98,13 +98,13 @@ GLShaderProgram* ShaderProgramContainer::useProgram(const std::string& name)
     else {
       std::ostringstream ss;
       ss << "Unable to access shader program " << name << std::ends;
-      throw_debug(ss.str());
+      throwDebug(ss.str());
     }
   }
 
   std::ostringstream ss;
   ss << "Unable to find program " << name << std::ends;
-  throw_debug(ss.str());
+  throwDebug(ss.str());
 }
 
 const Uniforms& ShaderProgramContainer::getRegisteredUniforms(const std::string& name) const
@@ -113,13 +113,13 @@ const Uniforms& ShaderProgramContainer::getRegisteredUniforms(const std::string&
   if (std::end(m_programs) == itr) {
     std::ostringstream ss;
     ss << "Unable to find uniforms for shader program " << name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   if (!itr->second) {
     std::ostringstream ss;
     ss << "Invalid shader program " << name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   return itr->second->getRegisteredUniforms();
@@ -423,7 +423,7 @@ void ShaderProgramContainer::generateMeshPrograms()
   if (std::end(m_shaders) == vsIter || std::end(m_shaders) == fsStdIter || std::end(m_shaders) == fsPeelIter) {
     std::ostringstream ss;
     ss << "Required shader was not found" << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   generateProgram(MeshProgram::name, ShaderSet{vsIter->second, fsStdIter->second});
@@ -599,7 +599,7 @@ void ShaderProgramContainer::generateProgram(const std::string& name, const Shad
   if (!linked) {
     std::ostringstream ss;
     ss << "Failed to link program " << name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   m_programs.insert(std::make_pair(name, program));
@@ -625,7 +625,7 @@ void ShaderProgramContainer::generateProgram(const std::string& name, const Shad
   if (!linked) {
     std::ostringstream ss;
     ss << "Failed to link program " << name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   m_programs.insert(std::make_pair(name, program));

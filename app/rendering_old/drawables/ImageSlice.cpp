@@ -113,7 +113,7 @@ ImageSlice::ImageSlice(
 void ImageSlice::setupChildren()
 {
   if (!m_sliceMesh || !m_sliceOutline) {
-    throw_debug("Null child drawable");
+    throwDebug("Null child drawable");
   }
 
   addChild(m_sliceMesh);
@@ -240,16 +240,16 @@ void ImageSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera
   static constexpr GLintptr sk_normalsSize = static_cast<GLintptr>(sk_numVerts * sizeof(NormalType));
 
   if (!m_sliceMesh) {
-    throw_debug("Null slice mesh");
+    throwDebug("Null slice mesh");
   }
 
   auto sliceMeshGpuRecord = m_sliceMeshGpuRecord.lock();
   if (!sliceMeshGpuRecord) {
-    throw_debug("Null mesh object record");
+    throwDebug("Null mesh object record");
   }
 
   if (!m_sliceOutline) {
-    throw_debug("Null line");
+    throwDebug("Null line");
   }
 
   auto image3dRecord = m_image3dRecord.lock();
@@ -320,7 +320,7 @@ void ImageSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera
   auto& normalsObject = sliceMeshGpuRecord->normalsObject();
 
   if (!normalsObject) {
-    throw_debug("Null mesh normals objects");
+    throwDebug("Null mesh normals objects");
   }
 
   positionsObject.write(sk_offset, sk_positionsSize, worldIntersectionPositions.data());

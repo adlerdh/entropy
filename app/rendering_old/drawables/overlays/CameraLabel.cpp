@@ -76,7 +76,7 @@ CameraLabel::CameraLabel(
     m_uniforms = m_uniformsProvider(SimpleProgram::name);
   }
   else {
-    throw_debug("Unable to access UniformsProvider");
+    throwDebug("Unable to access UniformsProvider");
   }
 
   for (uint32_t i = 0; i < m_labels.size(); ++i) {
@@ -195,7 +195,7 @@ void CameraLabel::initVao()
   auto& indicesObject = m_meshGpuRecord->indicesObject();
 
   if (!texCoordsInfo || !texCoordsObject) {
-    throw_debug("No mesh texture data");
+    throwDebug("No mesh texture data");
   }
 
   m_vao.generate();
@@ -220,13 +220,13 @@ void CameraLabel::initVao()
 void CameraLabel::doRender(const RenderStage& stage)
 {
   if (!m_shaderProgramActivator) {
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   if (RenderStage::Overlay != stage) {
@@ -266,7 +266,7 @@ void CameraLabel::doRender(const RenderStage& stage)
     }
   }
   else {
-    throw_debug("Null Simple shader program");
+    throwDebug("Null Simple shader program");
   }
 }
 

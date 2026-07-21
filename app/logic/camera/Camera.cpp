@@ -33,7 +33,7 @@ Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFram
   , m_start_T_world(1.0f)
 {
   if (!m_projection) {
-    throw_debug("Cannot construct Camera with null Projection")
+    throwDebug("Cannot construct Camera with null Projection");
   }
 }
 

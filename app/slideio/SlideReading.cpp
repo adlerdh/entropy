@@ -127,7 +127,7 @@ namespace
 //{
 //     if ( ! srcData )
 //     {
-//         throw_debug( "Null source image data" );
+//         throwDebug( "Null source image data" );
 //     }
 
 //    // no data is copied: external data is not automatically deallocated

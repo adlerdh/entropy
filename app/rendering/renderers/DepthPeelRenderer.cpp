@@ -211,7 +211,7 @@ DepthPeelRenderer::~DepthPeelRenderer() = default;
 void DepthPeelRenderer::initialize()
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   m_impl->initialize();
 
@@ -227,7 +227,7 @@ void DepthPeelRenderer::initialize()
 void DepthPeelRenderer::render()
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   m_impl->render();
 }
@@ -235,7 +235,7 @@ void DepthPeelRenderer::render()
 void DepthPeelRenderer::resize(const Viewport& viewport)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   m_impl->resize(viewport);
 }
@@ -243,7 +243,7 @@ void DepthPeelRenderer::resize(const Viewport& viewport)
 void DepthPeelRenderer::teardown()
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   m_impl->teardown();
 }
@@ -251,7 +251,7 @@ void DepthPeelRenderer::teardown()
 void DepthPeelRenderer::update(const Camera& camera, const CoordinateFrame& crosshairs)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   m_impl->update(camera, crosshairs);
 }
@@ -259,7 +259,7 @@ void DepthPeelRenderer::update(const Camera& camera, const CoordinateFrame& cros
 void DepthPeelRenderer::setMaxNumberOfPeels(uint32_t num)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   if (num > 0) {
     m_impl->m_maxNumPeels = num;
@@ -269,7 +269,7 @@ void DepthPeelRenderer::setMaxNumberOfPeels(uint32_t num)
 void DepthPeelRenderer::setOcclusionRatio(float ratio)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
 
   if (0.0f <= ratio && ratio <= 1.0f) {
@@ -282,7 +282,7 @@ void DepthPeelRenderer::setOcclusionRatio(float ratio)
 void DepthPeelRenderer::setEnablePointPicking(bool enable)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   m_impl->m_enableObjectBuffer = enable;
 }
@@ -290,7 +290,7 @@ void DepthPeelRenderer::setEnablePointPicking(bool enable)
 std::pair<uint16_t, float> DepthPeelRenderer::pickObjectIdAndNdcDepth(const glm::vec2& ndcPos)
 {
   if (!m_impl) {
-    throw_debug("Null implementation");
+    throwDebug("Null implementation");
   }
   return m_impl->pickObjectIdAndNdcDepth(ndcPos);
 }

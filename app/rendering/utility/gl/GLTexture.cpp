@@ -75,7 +75,7 @@ void throwIfOpenGLErrorAfterTextureUpload(
     ss << "OpenGL texture upload failed with error " << error << " (" << openGLErrorMessage(error) << ")"
        << "; target=" << target << ", internalFormat=" << internalFormat << ", size=" << glm::to_string(size)
        << ", format=" << format << ", type=" << type;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 }
 
@@ -130,7 +130,7 @@ void throwIfTextureSizeExceedsLimits(Target target, const glm::ivec3& size)
     std::ostringstream ss;
     ss << "Texture size " << glm::to_string(size) << " exceeds " << limitName << " for target "
        << underlyingType_asInt32(target) << " (limit " << limitValue << ")";
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 }
 
@@ -611,7 +611,7 @@ void GLTexture::setSize(const glm::uvec3& size)
   if (glm::any(glm::lessThan(size, glm::uvec3{1}))) {
     std::ostringstream ss;
     ss << "Invalid texture size " << glm::to_string(size) << std::ends;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 
   m_size = size;
@@ -625,7 +625,7 @@ void GLTexture::setData(
   const GLvoid* data)
 {
   if (Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target) {
-    throw_debug("Invalid texture target type ")
+    throwDebug("Invalid texture target type ");
   }
 
   const GLint _internalFormat = underlyingType_asInt32(internalFormat);
@@ -732,7 +732,7 @@ void GLTexture::setSubData(
     Target::Texture2DMultisampleArray == m_target || Target::TextureCubeMap == m_target ||
     Target::TextureBuffer == m_target)
   {
-    throw_debug("Invalid texture target type ")
+    throwDebug("Invalid texture target type ");
   }
 
   const GLenum _format = underlyingType(format);
@@ -857,7 +857,7 @@ void GLTexture::readData(GLint level, const BufferPixelFormat& format, const Buf
     Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target ||
     Target::TextureCubeMap == m_target)
   {
-    throw_debug("Invalid texture target type ")
+    throwDebug("Invalid texture target type ");
   }
 
   // How slow is this?
@@ -905,7 +905,7 @@ void GLTexture::readCubeMapFaceData(
 void GLTexture::setMinificationFilter(const MinificationFilter& filter)
 {
   if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
-    throw_debug("Invalid texture target type ")
+    throwDebug("Invalid texture target type ");
   }
 
   Binder binder(*this);
@@ -926,7 +926,7 @@ void GLTexture::setMinificationFilter(const MinificationFilter& filter)
 void GLTexture::setMagnificationFilter(const MagnificationFilter& filter)
 {
   if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
-    throw_debug("Invalid texture target type ")
+    throwDebug("Invalid texture target type ");
   }
 
   Binder binder(*this);

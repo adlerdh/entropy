@@ -16,7 +16,7 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t value) const
       comp,
       m_header.numComponentsPerPixel(),
       value);
-    throw_debug("Invalid image component")
+    throwDebug("Invalid image component");
   }
 
   if (m_settings.usingExactQuantiles()) {
@@ -37,7 +37,7 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t value) const
         return convertValueToQuantile<float>(std::span{m_dataSorted_float32[comp]}, static_cast<float>(value));
       default:
         spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
-        throw_debug("Invalid memory component type")
+        throwDebug("Invalid memory component type");
     }
   }
 
@@ -62,7 +62,7 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, double value) const
       comp,
       m_header.numComponentsPerPixel(),
       value);
-    throw_debug("Invalid image component")
+    throwDebug("Invalid image component");
   }
 
   if (m_settings.usingExactQuantiles()) {
@@ -83,7 +83,7 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, double value) const
         return convertValueToQuantile(std::span{m_dataSorted_float32[comp]}, static_cast<float>(value));
       default:
         spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
-        throw_debug("Invalid memory component type")
+        throwDebug("Invalid memory component type");
     }
   }
 
@@ -108,7 +108,7 @@ double Image::quantileToValue(uint32_t comp, double quantile) const
       comp,
       m_header.numComponentsPerPixel(),
       quantile);
-    throw_debug("Invalid image component")
+    throwDebug("Invalid image component");
   }
 
   if (m_settings.usingExactQuantiles()) {
@@ -129,7 +129,7 @@ double Image::quantileToValue(uint32_t comp, double quantile) const
         return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_float32[comp]}, quantile));
       default:
         spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
-        throw_debug("Invalid memory component type")
+        throwDebug("Invalid memory component type");
     }
   }
 

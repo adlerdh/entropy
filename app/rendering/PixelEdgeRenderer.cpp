@@ -91,7 +91,7 @@ void PixelEdgeRenderer::registerShaderPrograms(
   }
   else {
     spdlog::error(prog.error());
-    throw_debug(std::format("Failed to create shader program {}", to_string(ShaderProgramType::PixelEdgePost)))
+    throwDebug(std::format("Failed to create shader program {}", to_string(ShaderProgramType::PixelEdgePost)));
   }
 }
 

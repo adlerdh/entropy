@@ -164,7 +164,7 @@ ConnectionManager::ConnectionManager(
       interactionPackProvider))
 {
   if (!viewWidgetProvider) {
-    throw_debug("viewWidgetProvider NULL");
+    throwDebug("viewWidgetProvider NULL");
   }
 }
 

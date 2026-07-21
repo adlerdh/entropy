@@ -78,7 +78,7 @@ void GLBufferObject::unbind()
 void GLBufferObject::allocate(std::size_t sizeInBytes, const GLvoid* data)
 {
   if (sizeInBytes > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max())) {
-    throw_debug("Attempting to allocate GLBufferObject larger than maximum size");
+    throwDebug("Attempting to allocate GLBufferObject larger than maximum size");
   }
 
   bind();
@@ -98,7 +98,7 @@ void GLBufferObject::write(std::size_t offset, std::size_t sizeInBytes, const GL
     offset > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()) ||
     sizeInBytes > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()))
   {
-    throw_debug("Attempting to wrote GLBufferObject larger than maximum size");
+    throwDebug("Attempting to wrote GLBufferObject larger than maximum size");
   }
 
   bind();

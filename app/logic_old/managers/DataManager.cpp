@@ -292,7 +292,7 @@ DataManager::~DataManager() = default;
 void DataManager::setProject(serialize::HZeeProject project)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_project = std::move(project);
 }
@@ -300,7 +300,7 @@ void DataManager::setProject(serialize::HZeeProject project)
 const serialize::HZeeProject& DataManager::project() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_project;
 }
@@ -308,7 +308,7 @@ const serialize::HZeeProject& DataManager::project() const
 serialize::HZeeProject& DataManager::project()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_project;
 }
@@ -316,7 +316,7 @@ serialize::HZeeProject& DataManager::project()
 void DataManager::updateProject(const std::optional<std::string>& newFileName)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (newFileName) {
@@ -421,7 +421,7 @@ void DataManager::updateProject(const std::optional<std::string>& newFileName)
 std::optional<UID> DataManager::insertImageRecord(std::shared_ptr<ImageRecord> record)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!record) {
@@ -442,7 +442,7 @@ std::optional<UID> DataManager::insertImageRecord(std::shared_ptr<ImageRecord> r
 std::optional<UID> DataManager::insertParcellationRecord(std::shared_ptr<ParcellationRecord> record)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!record) {
@@ -462,7 +462,7 @@ std::optional<UID> DataManager::insertParcellationRecord(std::shared_ptr<Parcell
 std::optional<UID> DataManager::insertSlideRecord(std::shared_ptr<SlideRecord> record)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!record) {
@@ -483,7 +483,7 @@ std::optional<UID> DataManager::insertSlideRecord(std::shared_ptr<SlideRecord> r
 std::optional<UID> DataManager::insertImageColorMapRecord(std::shared_ptr<ImageColorMapRecord> record)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!record) {
@@ -503,7 +503,7 @@ std::optional<UID> DataManager::insertImageColorMapRecord(std::shared_ptr<ImageC
 std::optional<UID> DataManager::insertLabelTableRecord(std::shared_ptr<LabelTableRecord> record)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!record) {
@@ -522,7 +522,7 @@ std::optional<UID> DataManager::insertLabelTableRecord(std::shared_ptr<LabelTabl
 bool DataManager::associateColorMapWithImage(const UID& imageUid, const UID& mapUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto imageIt = m_impl->m_imageRecords.find(imageUid);
@@ -547,7 +547,7 @@ bool DataManager::associateColorMapWithImage(const UID& imageUid, const UID& map
 bool DataManager::associateLabelTableWithParcellation(const UID& parcelUid, const UID& labelsUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto parcelIt = m_impl->m_parcelRecords.find(parcelUid);
@@ -574,7 +574,7 @@ bool DataManager::associateLabelTableWithParcellation(const UID& parcelUid, cons
 bool DataManager::associateDefaultParcellationWithImage(const UID& imageUid, const UID& parcelUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto imageIt = m_impl->m_imageRecords.find(imageUid);
@@ -598,7 +598,7 @@ bool DataManager::associateDefaultParcellationWithImage(const UID& imageUid, con
 std::optional<UID> DataManager::insertIsoMeshRecord(const UID& imageUid, std::shared_ptr<MeshRecord> meshRecord)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!meshRecord) {
@@ -627,7 +627,7 @@ std::optional<UID> DataManager::insertIsoMeshRecord(const UID& imageUid, std::sh
 std::optional<UID> DataManager::insertLabelMeshRecord(const UID& parcelUid, std::shared_ptr<MeshRecord> meshRecord)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!meshRecord) {
@@ -666,7 +666,7 @@ std::optional<UID> DataManager::insertRefImageLandmarkGroupRecord(
   std::shared_ptr<LandmarkGroupRecord> lmGroupRecord)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!lmGroupRecord) {
@@ -699,7 +699,7 @@ std::optional<UID> DataManager::insertSlideLandmarkGroupRecord(
   std::shared_ptr<LandmarkGroupRecord> lmGroupRecord)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!lmGroupRecord) {
@@ -738,7 +738,7 @@ std::optional<UID> DataManager::insertSlideAnnotationRecord(
   std::shared_ptr<SlideAnnotationRecord> annotRecord)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!annotRecord) {
@@ -775,7 +775,7 @@ std::optional<UID> DataManager::insertSlideAnnotationRecord(
 bool DataManager::unloadImage(const UID& imageUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_imageRecords) == m_impl->m_imageRecords.find(imageUid)) {
@@ -811,7 +811,7 @@ bool DataManager::unloadImage(const UID& imageUid)
 bool DataManager::unloadParcellation(const UID& parcelUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_parcelRecords) == m_impl->m_parcelRecords.find(parcelUid)) {
@@ -839,7 +839,7 @@ bool DataManager::unloadParcellation(const UID& parcelUid)
 bool DataManager::unloadSlide(const UID& slideUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_slideRecords) == m_impl->m_slideRecords.find(slideUid)) {
@@ -876,7 +876,7 @@ bool DataManager::unloadSlide(const UID& slideUid)
 bool DataManager::unloadLabelMesh(const UID& meshUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_labelMeshRecords) == m_impl->m_labelMeshRecords.find(meshUid)) {
@@ -913,7 +913,7 @@ bool DataManager::unloadLabelMesh(const UID& meshUid)
 bool DataManager::unloadIsoMesh(const UID& meshUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_isoMeshRecords) == m_impl->m_isoMeshRecords.find(meshUid)) {
@@ -944,7 +944,7 @@ bool DataManager::unloadIsoMesh(const UID& meshUid)
 bool DataManager::unloadLabelTable(const UID& labelsUID)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_labelsRecords) == m_impl->m_labelsRecords.find(labelsUID)) {
@@ -972,7 +972,7 @@ bool DataManager::unloadLabelTable(const UID& labelsUID)
 bool DataManager::unloadRefImageLandmarkGroup(const UID& lmGroupUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_refImageLandmarkGroupRecords) == m_impl->m_refImageLandmarkGroupRecords.find(lmGroupUid)) {
@@ -1005,7 +1005,7 @@ bool DataManager::unloadRefImageLandmarkGroup(const UID& lmGroupUid)
 bool DataManager::unloadSlideLandmarkGroup(const UID& lmGroupUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_slideLandmarkGroupRecords) == m_impl->m_slideLandmarkGroupRecords.find(lmGroupUid)) {
@@ -1038,7 +1038,7 @@ bool DataManager::unloadSlideLandmarkGroup(const UID& lmGroupUid)
 bool DataManager::unloadSlideAnnotation(const UID& annotUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (std::end(m_impl->m_slideAnnotationRecords) == m_impl->m_slideAnnotationRecords.find(annotUid)) {
@@ -1071,7 +1071,7 @@ bool DataManager::unloadSlideAnnotation(const UID& annotUid)
 std::optional<UID> DataManager::activeImageUid() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_activeImageUids;
 }
@@ -1079,7 +1079,7 @@ std::optional<UID> DataManager::activeImageUid() const
 std::optional<UID> DataManager::activeParcellationUid() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_activeParcelUids;
 }
@@ -1087,7 +1087,7 @@ std::optional<UID> DataManager::activeParcellationUid() const
 std::optional<UID> DataManager::activeSlideUid() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_activeSlideUid;
 }
@@ -1095,7 +1095,7 @@ std::optional<UID> DataManager::activeSlideUid() const
 std::optional<size_t> DataManager::activeSlideIndex() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!m_impl->m_activeSlideUid) {
@@ -1108,7 +1108,7 @@ std::optional<size_t> DataManager::activeSlideIndex() const
 std::optional<size_t> DataManager::slideIndex(const UID& slideUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = std::find(std::begin(m_impl->m_orderedSlideUids), std::end(m_impl->m_orderedSlideUids), slideUid);
@@ -1128,7 +1128,7 @@ std::optional<size_t> DataManager::slideIndex(const UID& slideUid) const
 bool DataManager::setActiveImageUid(const std::optional<UID>& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!uid) {
@@ -1152,7 +1152,7 @@ bool DataManager::setActiveImageUid(const std::optional<UID>& uid)
 bool DataManager::setActiveParcellationUid(const std::optional<UID>& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (!uid) {
@@ -1176,7 +1176,7 @@ bool DataManager::setActiveParcellationUid(const std::optional<UID>& uid)
 bool DataManager::setActiveSlideUid(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   // Set active slide UID, if it is valid
@@ -1196,7 +1196,7 @@ bool DataManager::setActiveSlideUid(const UID& uid)
 bool DataManager::setActiveSlideIndex(size_t slideIndex)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (m_impl->m_orderedSlideUids.size() <= slideIndex) {
@@ -1218,7 +1218,7 @@ bool DataManager::setActiveSlideIndex(size_t slideIndex)
 bool DataManager::setDefaultImageColorMapUid(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   // Set default color map UID if it is valid
@@ -1235,7 +1235,7 @@ bool DataManager::setDefaultImageColorMapUid(const UID& uid)
 bool DataManager::setSlideOrder(const std::list<UID>& orderedSlideUids)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (
@@ -1257,7 +1257,7 @@ bool DataManager::setSlideOrder(const std::list<UID>& orderedSlideUids)
 std::optional<UID> DataManager::defaultParcellationUid_of_image(const UID& imageUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_imageUid_to_defaultParcelUid.find(imageUid);
@@ -1271,7 +1271,7 @@ std::optional<UID> DataManager::defaultParcellationUid_of_image(const UID& image
 std::optional<UID> DataManager::parcellationUid_of_labelMesh(const UID& labelMeshUID) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_labelMeshUid_to_parcelUid.find(labelMeshUID);
@@ -1285,7 +1285,7 @@ std::optional<UID> DataManager::parcellationUid_of_labelMesh(const UID& labelMes
 std::optional<UID> DataManager::imageUid_of_isoMesh(const UID& isoMeshUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_isoMeshUid_to_imageUid.find(isoMeshUid);
@@ -1299,7 +1299,7 @@ std::optional<UID> DataManager::imageUid_of_isoMesh(const UID& isoMeshUid) const
 std::optional<UID> DataManager::imageColorMapUid_of_image(const UID& imageUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_imageUid_to_imageColorMapUid.find(imageUid);
@@ -1313,7 +1313,7 @@ std::optional<UID> DataManager::imageColorMapUid_of_image(const UID& imageUid) c
 std::optional<UID> DataManager::labelTableUid_of_parcellation(const UID& parcelUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_parcelUid_to_labelsUid.find(parcelUid);
@@ -1327,7 +1327,7 @@ std::optional<UID> DataManager::labelTableUid_of_parcellation(const UID& parcelU
 std::optional<UID> DataManager::defaultImageColorMapUid() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_defaultImageColorMapUid;
 }
@@ -1335,7 +1335,7 @@ std::optional<UID> DataManager::defaultImageColorMapUid() const
 std::optional<UID> DataManager::imageUid_of_landmarkGroup(const UID& lmGroupUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_refImageLandmarkGroupUid_to_imageUid.find(lmGroupUid);
@@ -1349,7 +1349,7 @@ std::optional<UID> DataManager::imageUid_of_landmarkGroup(const UID& lmGroupUid)
 std::optional<UID> DataManager::slideUid_of_landmarkGroup(const UID& lmGroupUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideLandmarkGroupUid_to_slideUid.find(lmGroupUid);
@@ -1363,7 +1363,7 @@ std::optional<UID> DataManager::slideUid_of_landmarkGroup(const UID& lmGroupUid)
 std::optional<UID> DataManager::slideUid_of_annotation(const UID& annotUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideAnnotationUid_to_slideUid.find(annotUid);
@@ -1377,7 +1377,7 @@ std::optional<UID> DataManager::slideUid_of_annotation(const UID& annotUid) cons
 std::optional<UID> DataManager::orderedImageUid(long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (0 <= index && static_cast<size_t>(index) < m_impl->m_orderedImageUids.size()) {
@@ -1392,7 +1392,7 @@ std::optional<UID> DataManager::orderedImageUid(long index)
 std::optional<UID> DataManager::orderedParcellationUid(long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (0 <= index && static_cast<size_t>(index) < m_impl->m_orderedParcelUids.size()) {
@@ -1407,7 +1407,7 @@ std::optional<UID> DataManager::orderedParcellationUid(long index)
 std::optional<UID> DataManager::orderedSlideUid(long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (0 <= index && static_cast<size_t>(index) < m_impl->m_orderedSlideUids.size()) {
@@ -1422,7 +1422,7 @@ std::optional<UID> DataManager::orderedSlideUid(long index)
 std::optional<UID> DataManager::orderedImageColorMapUid(long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (0 <= index && static_cast<size_t>(index) < m_impl->m_orderedImageColorMapUids.size()) {
@@ -1436,7 +1436,7 @@ std::optional<UID> DataManager::orderedImageColorMapUid(long index)
 std::optional<UID> DataManager::orderedRefImageLandmarkGroupUid(const UID& /*imageUid*/, long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (0 <= index && static_cast<size_t>(index) < m_impl->m_orderedRefImageLandmarkGroupUids.size()) {
@@ -1451,7 +1451,7 @@ std::optional<UID> DataManager::orderedRefImageLandmarkGroupUid(const UID& /*ima
 std::optional<UID> DataManager::orderedSlideLandmarkGroupUid(const UID& slideUid, long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_orderedSlideLandmarkGroupUids.find(slideUid);
@@ -1473,7 +1473,7 @@ std::optional<UID> DataManager::orderedSlideLandmarkGroupUid(const UID& slideUid
 std::optional<UID> DataManager::orderedSlideAnnotationUid(const UID& slideUid, long index)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_orderedSlideAnnotationUids.find(slideUid);
@@ -1495,7 +1495,7 @@ std::optional<UID> DataManager::orderedSlideAnnotationUid(const UID& slideUid, l
 std::optional<long> DataManager::orderedImageIndex(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = std::find(std::begin(m_impl->m_orderedImageUids), std::end(m_impl->m_orderedImageUids), uid);
@@ -1510,7 +1510,7 @@ std::optional<long> DataManager::orderedImageIndex(const UID& uid)
 std::optional<long> DataManager::orderedParcellationIndex(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = std::find(std::begin(m_impl->m_orderedParcelUids), std::end(m_impl->m_orderedParcelUids), uid);
@@ -1525,7 +1525,7 @@ std::optional<long> DataManager::orderedParcellationIndex(const UID& uid)
 std::optional<long> DataManager::orderedSlideIndex(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = std::find(std::begin(m_impl->m_orderedSlideUids), std::end(m_impl->m_orderedSlideUids), uid);
@@ -1540,7 +1540,7 @@ std::optional<long> DataManager::orderedSlideIndex(const UID& uid)
 std::optional<long> DataManager::orderedImageColorMapIndex(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it =
@@ -1557,7 +1557,7 @@ std::optional<long> DataManager::orderedImageColorMapIndex(const UID& uid)
 std::optional<long> DataManager::orderedRefImageLandmarkGroupIndex(const UID& /*imageUid*/, const UID& lmGroupUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = std::find(
@@ -1576,7 +1576,7 @@ std::optional<long> DataManager::orderedRefImageLandmarkGroupIndex(const UID& /*
 std::optional<long> DataManager::orderedSlideLandmarkGroupIndex(const UID& slideUid, const UID& lmGroupUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it2 = m_impl->m_orderedSlideLandmarkGroupUids.find(slideUid);
@@ -1599,7 +1599,7 @@ std::optional<long> DataManager::orderedSlideLandmarkGroupIndex(const UID& slide
 std::optional<long> DataManager::orderedSlideAnnotationIndex(const UID& slideUid, const UID& annotUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it2 = m_impl->m_orderedSlideAnnotationUids.find(slideUid);
@@ -1621,7 +1621,7 @@ std::optional<long> DataManager::orderedSlideAnnotationIndex(const UID& slideUid
 uid_range_t DataManager::orderedImageUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedImageUids;
 }
@@ -1629,7 +1629,7 @@ uid_range_t DataManager::orderedImageUids() const
 uid_range_t DataManager::orderedParcellationUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedParcelUids;
 }
@@ -1637,7 +1637,7 @@ uid_range_t DataManager::orderedParcellationUids() const
 uid_range_t DataManager::orderedSlideUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedSlideUids;
 }
@@ -1645,7 +1645,7 @@ uid_range_t DataManager::orderedSlideUids() const
 uid_range_t DataManager::orderedRefImageLandmarkGroupUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedRefImageLandmarkGroupUids;
 }
@@ -1653,7 +1653,7 @@ uid_range_t DataManager::orderedRefImageLandmarkGroupUids() const
 uid_range_t DataManager::orderedSlideLandmarkGroupUids(const UID& slideUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedSlideLandmarkGroupUids[slideUid];
 }
@@ -1661,7 +1661,7 @@ uid_range_t DataManager::orderedSlideLandmarkGroupUids(const UID& slideUid) cons
 uid_range_t DataManager::orderedSlideAnnotationUids(const UID& slideUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedSlideAnnotationUids[slideUid];
 }
@@ -1669,7 +1669,7 @@ uid_range_t DataManager::orderedSlideAnnotationUids(const UID& slideUid) const
 uid_range_t DataManager::isoMeshUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return mapKeysToUidRange(m_impl->m_isoMeshRecords);
 }
@@ -1677,7 +1677,7 @@ uid_range_t DataManager::isoMeshUids() const
 uid_range_t DataManager::labelMeshUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return mapKeysToUidRange(m_impl->m_labelMeshRecords);
 }
@@ -1685,7 +1685,7 @@ uid_range_t DataManager::labelMeshUids() const
 uid_range_t DataManager::orderedImageColorMapUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return m_impl->m_orderedImageColorMapUids;
 }
@@ -1693,7 +1693,7 @@ uid_range_t DataManager::orderedImageColorMapUids() const
 uid_range_t DataManager::labelTableUids() const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return mapKeysToUidRange(m_impl->m_labelsRecords);
 }
@@ -1701,7 +1701,7 @@ uid_range_t DataManager::labelTableUids() const
 uid_range_t DataManager::isoMeshUids_of_image(const UID& imageUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_imageUid_to_isoMeshUids.find(imageUid);
@@ -1715,7 +1715,7 @@ uid_range_t DataManager::isoMeshUids_of_image(const UID& imageUid) const
 uid_range_t DataManager::landmarkGroupUids_of_image(const UID& imageUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_imageUid_to_landmarkGroupUids.find(imageUid);
@@ -1729,7 +1729,7 @@ uid_range_t DataManager::landmarkGroupUids_of_image(const UID& imageUid) const
 uid_range_t DataManager::landmarkGroupUids_of_slide(const UID& slideUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideUid_to_landmarkGroupUids.find(slideUid);
@@ -1743,7 +1743,7 @@ uid_range_t DataManager::landmarkGroupUids_of_slide(const UID& slideUid) const
 uid_range_t DataManager::annotationUids_of_slide(const UID& slideUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideUid_to_annotationUids.find(slideUid);
@@ -1757,7 +1757,7 @@ uid_range_t DataManager::annotationUids_of_slide(const UID& slideUid) const
 std::map<uint32_t, UID> DataManager::labelMeshUids_of_parcellation(const UID& parcelUid) const
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_parcelUid_to_labelMeshUids.find(parcelUid);
@@ -1771,7 +1771,7 @@ std::map<uint32_t, UID> DataManager::labelMeshUids_of_parcellation(const UID& pa
 std::weak_ptr<ImageRecord> DataManager::activeImageRecord()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (auto uid = activeImageUid()) {
@@ -1783,7 +1783,7 @@ std::weak_ptr<ImageRecord> DataManager::activeImageRecord()
 std::weak_ptr<ParcellationRecord> DataManager::activeParcellationRecord()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (auto uid = activeParcellationUid()) {
@@ -1795,7 +1795,7 @@ std::weak_ptr<ParcellationRecord> DataManager::activeParcellationRecord()
 std::weak_ptr<SlideRecord> DataManager::activeSlideRecord()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   if (auto uid = activeSlideUid()) {
@@ -1807,7 +1807,7 @@ std::weak_ptr<SlideRecord> DataManager::activeSlideRecord()
 std::weak_ptr<ImageRecord> DataManager::imageRecord(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_imageRecords.find(uid);
@@ -1820,7 +1820,7 @@ std::weak_ptr<ImageRecord> DataManager::imageRecord(const UID& uid)
 std::weak_ptr<ParcellationRecord> DataManager::parcellationRecord(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_parcelRecords.find(uid);
@@ -1833,7 +1833,7 @@ std::weak_ptr<ParcellationRecord> DataManager::parcellationRecord(const UID& uid
 std::weak_ptr<MeshRecord> DataManager::isoMeshRecord(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_isoMeshRecords.find(uid);
@@ -1846,7 +1846,7 @@ std::weak_ptr<MeshRecord> DataManager::isoMeshRecord(const UID& uid)
 std::weak_ptr<MeshRecord> DataManager::labelMeshRecord(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_labelMeshRecords.find(uid);
@@ -1859,7 +1859,7 @@ std::weak_ptr<MeshRecord> DataManager::labelMeshRecord(const UID& uid)
 std::weak_ptr<SlideRecord> DataManager::slideRecord(const UID& uid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideRecords.find(uid);
@@ -1872,7 +1872,7 @@ std::weak_ptr<SlideRecord> DataManager::slideRecord(const UID& uid)
 std::weak_ptr<ImageColorMapRecord> DataManager::imageColorMapRecord(const UID& mapUID)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_imageColorMapRecords.find(mapUID);
@@ -1885,7 +1885,7 @@ std::weak_ptr<ImageColorMapRecord> DataManager::imageColorMapRecord(const UID& m
 std::weak_ptr<LabelTableRecord> DataManager::labelTableRecord(const UID& tableUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_labelsRecords.find(tableUid);
@@ -1898,7 +1898,7 @@ std::weak_ptr<LabelTableRecord> DataManager::labelTableRecord(const UID& tableUi
 std::weak_ptr<LandmarkGroupRecord> DataManager::refImageLandmarkGroupRecord(const UID& lmGroupUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_refImageLandmarkGroupRecords.find(lmGroupUid);
@@ -1911,7 +1911,7 @@ std::weak_ptr<LandmarkGroupRecord> DataManager::refImageLandmarkGroupRecord(cons
 std::weak_ptr<LandmarkGroupRecord> DataManager::slideLandmarkGroupRecord(const UID& lmGroupUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideLandmarkGroupRecords.find(lmGroupUid);
@@ -1924,7 +1924,7 @@ std::weak_ptr<LandmarkGroupRecord> DataManager::slideLandmarkGroupRecord(const U
 std::weak_ptr<SlideAnnotationRecord> DataManager::slideAnnotationRecord(const UID& annotUid)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
 
   auto it = m_impl->m_slideAnnotationRecords.find(annotUid);
@@ -1937,7 +1937,7 @@ std::weak_ptr<SlideAnnotationRecord> DataManager::slideAnnotationRecord(const UI
 DataManager::weak_record_range_t<ImageRecord> DataManager::imageRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_imageRecords);
 }
@@ -1945,7 +1945,7 @@ DataManager::weak_record_range_t<ImageRecord> DataManager::imageRecords()
 DataManager::weak_record_range_t<ParcellationRecord> DataManager::parcellationRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_parcelRecords);
 }
@@ -1953,7 +1953,7 @@ DataManager::weak_record_range_t<ParcellationRecord> DataManager::parcellationRe
 DataManager::weak_record_range_t<MeshRecord> DataManager::isoMeshRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_isoMeshRecords);
 }
@@ -1961,7 +1961,7 @@ DataManager::weak_record_range_t<MeshRecord> DataManager::isoMeshRecords()
 DataManager::weak_record_range_t<MeshRecord> DataManager::labelMeshRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_labelMeshRecords);
 }
@@ -1969,7 +1969,7 @@ DataManager::weak_record_range_t<MeshRecord> DataManager::labelMeshRecords()
 DataManager::weak_record_range_t<SlideRecord> DataManager::slideRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_slideRecords);
 }
@@ -1977,7 +1977,7 @@ DataManager::weak_record_range_t<SlideRecord> DataManager::slideRecords()
 DataManager::weak_record_range_t<ImageColorMapRecord> DataManager::imageColorMapRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_imageColorMapRecords);
 }
@@ -1985,7 +1985,7 @@ DataManager::weak_record_range_t<ImageColorMapRecord> DataManager::imageColorMap
 DataManager::weak_record_range_t<LabelTableRecord> DataManager::labelTableRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_labelsRecords);
 }
@@ -1993,7 +1993,7 @@ DataManager::weak_record_range_t<LabelTableRecord> DataManager::labelTableRecord
 DataManager::weak_record_range_t<LandmarkGroupRecord> DataManager::refImageLandmarkGroupRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_refImageLandmarkGroupRecords);
 }
@@ -2001,7 +2001,7 @@ DataManager::weak_record_range_t<LandmarkGroupRecord> DataManager::refImageLandm
 DataManager::weak_record_range_t<LandmarkGroupRecord> DataManager::slideLandmarkGroupRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_slideLandmarkGroupRecords);
 }
@@ -2009,7 +2009,7 @@ DataManager::weak_record_range_t<LandmarkGroupRecord> DataManager::slideLandmark
 DataManager::weak_record_range_t<SlideAnnotationRecord> DataManager::slideAnnotationRecords()
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   return transformSharedToWeakRecords(m_impl->m_slideAnnotationRecords);
 }
@@ -2017,7 +2017,7 @@ DataManager::weak_record_range_t<SlideAnnotationRecord> DataManager::slideAnnota
 void DataManager::connectToImageDataChangedSignal(std::function<void(const UID& imageUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalImageDataChanged.connect(slot);
 }
@@ -2025,7 +2025,7 @@ void DataManager::connectToImageDataChangedSignal(std::function<void(const UID& 
 void DataManager::connectToParcellationDataChangedSignal(std::function<void(const UID& parcelUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalParcellationDataChanged.connect(slot);
 }
@@ -2033,7 +2033,7 @@ void DataManager::connectToParcellationDataChangedSignal(std::function<void(cons
 void DataManager::connectToLabelTableDataChangedSignal(std::function<void(const UID& labelTabelUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalLabelTableDataChanged.connect(slot);
 }
@@ -2041,7 +2041,7 @@ void DataManager::connectToLabelTableDataChangedSignal(std::function<void(const 
 void DataManager::connectToSlideDataChangedSignal(std::function<void(const UID& slideUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalSlideDataChanged.connect(slot);
 }
@@ -2049,7 +2049,7 @@ void DataManager::connectToSlideDataChangedSignal(std::function<void(const UID& 
 void DataManager::connectToSlideStackChangedSignal(std::function<void(void)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalSlideStackChanged.connect(slot);
 }
@@ -2057,7 +2057,7 @@ void DataManager::connectToSlideStackChangedSignal(std::function<void(void)> slo
 void DataManager::connectToActiveSlideChangedSignal(std::function<void(const UID& activeSlideUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalActiveSlideChanged.connect(slot);
 }
@@ -2065,7 +2065,7 @@ void DataManager::connectToActiveSlideChangedSignal(std::function<void(const UID
 void DataManager::connectToRefImageLandmarkGroupChangedSignal(std::function<void(const UID& lmGroupUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalRefImageLandmarkGroupChanged.connect(slot);
 }
@@ -2073,7 +2073,7 @@ void DataManager::connectToRefImageLandmarkGroupChangedSignal(std::function<void
 void DataManager::connectToSlideLandmarkGroupChangedSignal(std::function<void(const UID& lmGroupUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalSlideLandmarkGroupChanged.connect(slot);
 }
@@ -2081,7 +2081,7 @@ void DataManager::connectToSlideLandmarkGroupChangedSignal(std::function<void(co
 void DataManager::connectToSlideAnnotationChangedSignal(std::function<void(const UID& annotUid)> slot)
 {
   if (!m_impl) {
-    throw_debug("Null impl")
+    throwDebug("Null impl");
   }
   m_impl->m_signalSlideAnnotationChanged.connect(slot);
 }

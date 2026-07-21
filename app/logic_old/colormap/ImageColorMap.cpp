@@ -18,7 +18,7 @@ ImageColorMap::ImageColorMap(
   , m_preview(0)
 {
   if (colors.empty()) {
-    throw_debug("Empty color map");
+    throwDebug("Empty color map");
   }
 
   for (const auto& x : colors) {
@@ -38,7 +38,7 @@ ImageColorMap::ImageColorMap(
   , m_preview(0)
 {
   if (m_colors_RGBA_F32.empty()) {
-    throw_debug("Empty color map");
+    throwDebug("Empty color map");
   }
 }
 
@@ -87,7 +87,7 @@ glm::vec4 ImageColorMap::color_RGBA_F32(size_t index) const
   if (index >= m_colors_RGBA_F32.size()) {
     std::ostringstream ss;
     ss << "Invalid color map index " << index << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   return m_colors_RGBA_F32.at(index);

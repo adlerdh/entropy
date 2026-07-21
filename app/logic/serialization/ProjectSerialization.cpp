@@ -398,7 +398,7 @@ void affineFromJson(const json& j, std::optional<fs::path>& path, std::optional<
   matrix = std::nullopt;
 
   if (!j.is_object()) {
-    throw_debug("Affine transform JSON must be an object")
+    throwDebug("Affine transform JSON must be an object");
   }
 
   if (j.contains("matrix")) {
@@ -414,7 +414,7 @@ void affineFromJson(const json& j, std::optional<fs::path>& path, std::optional<
     return;
   }
 
-  throw_debug("Affine transform JSON must contain either a matrix or path key")
+  throwDebug("Affine transform JSON must contain either a matrix or path key");
 }
 
 std::vector<const char*> interpolationModesToJson(const std::vector<InterpolationMode>& modes)
@@ -1831,7 +1831,7 @@ void from_json(const json& j, EntropyProject& project)
 {
   const int version = j.at("version").get<int>();
   if (version != k_projectFormatVersion) {
-    throw_debug("Unsupported Entropy project JSON version " + std::to_string(version))
+    throwDebug("Unsupported Entropy project JSON version " + std::to_string(version));
   }
 
   j.at("reference").get_to(project.m_referenceImage);

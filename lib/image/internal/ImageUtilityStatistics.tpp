@@ -28,7 +28,7 @@ T convertQuantileToValue(const std::span<const T> dataSorted, double quantile)
 
   if (0 == N) {
     spdlog::error("Sorted data has zero elements");
-    throw_debug("Sorted data is empty")
+    throwDebug("Sorted data is empty");
   }
   else if (1 == N) {
     return dataSorted.front();
@@ -61,7 +61,7 @@ QuantileOfValue convertValueToQuantile(const std::span<const T> dataSorted, T va
   const std::size_t N = dataSorted.size();
   if (0 == N) {
     spdlog::error("Sorted data has zero elements");
-    throw_debug("Sorted data is empty")
+    throwDebug("Sorted data is empty");
   }
 
   QuantileOfValue Q{};

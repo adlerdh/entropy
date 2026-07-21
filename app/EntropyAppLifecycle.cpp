@@ -178,7 +178,7 @@ void EntropyApp::init()
   }
   else {
     spdlog::error("Null annotation state machine");
-    throw_debug("Null annotation state machine")
+    throwDebug("Null annotation state machine");
   }
 
   m_data.guiData().m_renderUiWindows = true;
@@ -256,7 +256,7 @@ void EntropyApp::onImagesReady()
     // At a minimum, we need a reference image to do anything.
     // If the reference image is null, then image loading has failed.
     spdlog::critical("The reference image is null");
-    throw_debug("The reference image is null")
+    throwDebug("The reference image is null");
   }
 
   if (pendingWarpAssignment) {

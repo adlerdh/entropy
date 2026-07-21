@@ -61,14 +61,14 @@ Line::Line(
     m_initUniforms = m_uniformsProvider(DDPInitProgram::name);
   }
   else {
-    throw_debug("Unable to access UniformsProvider");
+    throwDebug("Unable to access UniformsProvider");
   }
 
   if (!(PrimitiveMode::Lines == primitiveMode || PrimitiveMode::LineLoop == primitiveMode ||
         PrimitiveMode::LineStrip == primitiveMode || PrimitiveMode::LinesAdjacency == primitiveMode ||
         PrimitiveMode::LineStripAdjacency == primitiveMode))
   {
-    throw_debug("Invalid primitive mode supplied to Line");
+    throwDebug("Invalid primitive mode supplied to Line");
   }
 
   initBuffers();
@@ -112,7 +112,7 @@ void Line::doRender(const RenderStage& stage)
   }
 
   if (!m_shaderProgramActivator) {
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   // Offset the line towards the viewer
@@ -131,7 +131,7 @@ void Line::doRender(const RenderStage& stage)
       auto program = m_shaderProgramActivator(FlatProgram::name);
 
       if (!program) {
-        throw_debug("Unable to access shader program");
+        throwDebug("Unable to access shader program");
       }
 
       const glm::mat4 world_O_this = getAccumulatedRenderingData().m_world_T_object;
@@ -155,7 +155,7 @@ void Line::doRender(const RenderStage& stage)
       auto program = m_shaderProgramActivator(FlatPeelProgram::name);
 
       if (!program) {
-        throw_debug("Unable to access shader program");
+        throwDebug("Unable to access shader program");
       }
 
       const glm::mat4 world_O_this = getAccumulatedRenderingData().m_world_T_object;
@@ -180,7 +180,7 @@ void Line::doRender(const RenderStage& stage)
       auto program = m_shaderProgramActivator(DDPInitProgram::name);
 
       if (!program) {
-        throw_debug("Unable to access shader program");
+        throwDebug("Unable to access shader program");
       }
 
       m_initUniforms.setValue(vert::world_O_model, getAccumulatedRenderingData().m_world_T_object);

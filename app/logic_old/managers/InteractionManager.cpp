@@ -622,7 +622,7 @@ CameraType InteractionManager::getCameraType(const gui::ViewType& viewType) cons
     return it->second;
   }
   else {
-    throw_debug("Unable to find camera for view type");
+    throwDebug("Unable to find camera for view type");
   }
 }
 
@@ -633,6 +633,6 @@ CrosshairsType InteractionManager::getCrosshairsType(const gui::ViewType& viewTy
     return it->second;
   }
   else {
-    throw_debug("Unable to find crosshairs type for view type");
+    throwDebug("Unable to find crosshairs type for view type");
   }
 }

@@ -162,7 +162,7 @@ TexturedMesh::TexturedMesh(
     m_initUniforms = m_uniformsProvider(DDPInitProgram::name);
   }
   else {
-    throw_debug("Unable to access UniformsProvider");
+    throwDebug("Unable to access UniformsProvider");
   }
 
   initVao();
@@ -223,7 +223,7 @@ void TexturedMesh::setImage3dRecord(std::weak_ptr<ImageRecord> imageRecord)
       // Component types Int64, UInt64, and Double64 are not supported
       std::ostringstream ss;
       ss << "Invalid component type " << H.memoryComponentTypeAsString() << " for image " << H.fileName() << std::ends;
-      throw_debug(ss.str());
+      throwDebug(ss.str());
     }
   }
 }
@@ -422,14 +422,14 @@ void TexturedMesh::initVao()
   static constexpr GLuint sk_colorIndex = 3;
 
   if (!m_meshGpuRecordProvider) {
-    throw_debug("Null mesh GPU record");
+    throwDebug("Null mesh GPU record");
   }
 
   auto meshGpuRecord = m_meshGpuRecordProvider();
   if (!meshGpuRecord) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   const auto& positionsInfo = meshGpuRecord->positionsInfo();
@@ -445,7 +445,7 @@ void TexturedMesh::initVao()
   auto& colorsObject = meshGpuRecord->colorsObject();
 
   if (!normalsObject || !normalsInfo) {
-    throw_debug("No mesh normals");
+    throwDebug("No mesh normals");
   }
 
   m_vao.generate();
@@ -519,7 +519,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
   static const glm::vec3 sk_materialSpecular{1.0f, 1.0f, 1.0f};
 
   if (!m_shaderProgramActivator) {
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   GLShaderProgram* shaderProgram = nullptr;
@@ -546,17 +546,17 @@ void TexturedMesh::doRender(const RenderStage& stage)
   }
 
   if (!shaderProgram) {
-    throw_debug("Null shader program");
+    throwDebug("Null shader program");
   }
 
   if (!uniforms) {
-    throw_debug("Null uniforms");
+    throwDebug("Null uniforms");
   }
 
   if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   /// @todo Put these into doSetupState?

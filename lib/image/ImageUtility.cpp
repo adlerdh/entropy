@@ -100,7 +100,7 @@ std::vector<T> copyImageComponentValues(const Image& image, uint32_t component)
       const auto value = image.value<T>(component, i, timePoint);
       if (!value) {
         spdlog::error("Unable to read image component {} value at index {} and time {}", component, i, timePoint);
-        throw_debug("Unable to read image component value")
+        throwDebug("Unable to read image component value");
       }
       values.push_back(*value);
     }

@@ -42,14 +42,14 @@ void Rendering::initTextures()
 
   if (m_appData.renderData().m_labelBufferTextures.empty()) {
     spdlog::critical("No label buffer textures loaded");
-    throw_debug("No label buffer textures loaded")
+    throwDebug("No label buffer textures loaded");
   }
 
   m_appData.renderData().m_colormapTextures = createImageColorMapTextures(m_appData);
 
   if (m_appData.renderData().m_colormapTextures.empty()) {
     spdlog::critical("No image color map textures loaded");
-    throw_debug("No image color map textures loaded")
+    throwDebug("No image color map textures loaded");
   }
 
   const std::vector<uuid> imageUidsOfCreatedTextures = createImageTextures(m_appData, m_appData.imageUidsOrdered());

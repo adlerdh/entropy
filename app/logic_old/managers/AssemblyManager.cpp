@@ -245,7 +245,7 @@ void AssemblyManager::updateImages(
   const UID& labelTableUid)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   auto imageRecord = m_impl->m_dataManager.imageRecord(imageUid);
@@ -284,7 +284,7 @@ void AssemblyManager::updateImages(
 void AssemblyManager::updateIsoSurfaceMeshes(uid_range_t meshUids)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_isoSurfaceMeshAssembly.clearMeshes();
@@ -300,7 +300,7 @@ void AssemblyManager::updateIsoSurfaceMeshes(uid_range_t meshUids)
 void AssemblyManager::updateLabelMeshes(uid_range_t meshUids, const UID& labelTableUid)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_labelMeshAssembly.clearMeshes();
@@ -318,7 +318,7 @@ void AssemblyManager::updateLabelMeshes(uid_range_t meshUids, const UID& labelTa
 void AssemblyManager::updateSlideStack(uid_range_t slideUids)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_slideStackAssembly.clearSlides();
@@ -338,7 +338,7 @@ void AssemblyManager::updateSlideStack(uid_range_t slideUids)
 void AssemblyManager::updatedSlideTransformations(const std::list<UID>& slideUids)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   /// @todo Put in connectionmanager!!
@@ -350,7 +350,7 @@ void AssemblyManager::updatedSlideTransformations(const std::list<UID>& slideUid
 void AssemblyManager::updateImageColorMap(const UID& colorMapUid, bool updateViews)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   auto weakMapRecord = m_impl->m_dataManager.imageColorMapRecord(colorMapUid);
@@ -368,7 +368,7 @@ void AssemblyManager::updateImageColorMap(const UID& colorMapUid, bool updateVie
 void AssemblyManager::updateLabelColorTable(const UID& colorTableUid, bool updateViews)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   auto weakTableRecord = m_impl->m_dataManager.labelTableRecord(colorTableUid);
@@ -386,7 +386,7 @@ void AssemblyManager::updateLabelColorTable(const UID& colorTableUid, bool updat
 void AssemblyManager::updateRefImageLandmarkGroups(const UID& imageUid)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   auto lmGroupUids = m_impl->m_dataManager.landmarkGroupUids_of_image(imageUid);
@@ -402,7 +402,7 @@ void AssemblyManager::updateRefImageLandmarkGroups(const UID& imageUid)
 void AssemblyManager::updateSlideLandmarkGroups(uid_range_t slideUids)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   for (const auto& slideUid : slideUids) {
@@ -420,7 +420,7 @@ void AssemblyManager::updateSlideLandmarkGroups(uid_range_t slideUids)
 void AssemblyManager::updateSlideAnnotations(uid_range_t slideUids)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   // Loop over all slides
@@ -440,7 +440,7 @@ void AssemblyManager::updateSlideAnnotations(uid_range_t slideUids)
 std::weak_ptr<IDrawable> AssemblyManager::getRootDrawable(const gui::ViewType& viewType)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   const SceneType sceneType = getSceneType(viewType);
@@ -460,7 +460,7 @@ std::weak_ptr<IDrawable> AssemblyManager::getRootDrawable(const gui::ViewType& v
 std::weak_ptr<IDrawable> AssemblyManager::getOverlayRootDrawable(const gui::ViewType& viewType)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   const SceneType sceneType = getSceneType(viewType);
@@ -480,7 +480,7 @@ std::weak_ptr<IDrawable> AssemblyManager::getOverlayRootDrawable(const gui::View
 void AssemblyManager::setSlideStackMasterOpacityMultiplier(float opacity)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_slideStackAssembly.setMasterOpacityMultiplier(opacity);
@@ -490,7 +490,7 @@ void AssemblyManager::setSlideStackMasterOpacityMultiplier(float opacity)
 void AssemblyManager::setSlideStackImage3dLayerOpacity(float opacity)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_slideStackAssembly.setImage3dLayerOpacityMultiplier(opacity);
@@ -500,7 +500,7 @@ void AssemblyManager::setSlideStackImage3dLayerOpacity(float opacity)
 void AssemblyManager::setSlideStackVisibleIn2dViews(bool visible)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_slideStackAssembly.setVisibleIn2dViews(visible);
@@ -510,7 +510,7 @@ void AssemblyManager::setSlideStackVisibleIn2dViews(bool visible)
 void AssemblyManager::setSlideStackVisibleIn3dViews(bool visible)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_slideStackAssembly.setVisibleIn3dViews(visible);
@@ -520,7 +520,7 @@ void AssemblyManager::setSlideStackVisibleIn3dViews(bool visible)
 void AssemblyManager::setActiveSlideViewShows2dSlides(bool show2d)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_slideStackAssembly.setActiveSlideViewShows2dSlides(show2d);
@@ -536,7 +536,7 @@ void AssemblyManager::setActiveSlideViewShows2dSlides(bool show2d)
 void AssemblyManager::setLabelMeshMasterOpacity(float opacity)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_labelMeshAssembly.setMasterOpacityMultiplier(opacity);
@@ -546,7 +546,7 @@ void AssemblyManager::setLabelMeshMasterOpacity(float opacity)
 void AssemblyManager::setIsoMeshMasterOpacity(float opacity)
 {
   if (!m_impl) {
-    throw_debug("Null implementation")
+    throwDebug("Null implementation");
   }
 
   m_impl->m_isoSurfaceMeshAssembly.setMasterOpacityMultiplier(opacity);

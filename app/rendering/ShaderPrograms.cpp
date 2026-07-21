@@ -112,7 +112,7 @@ void Rendering::createShaderPrograms()
     }
     else {
       spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(shaderType)))
+      throwDebug(std::format("Failed to create shader program {}", to_string(shaderType)));
     }
 
     auto prog2D = createShaderProgram(
@@ -131,15 +131,15 @@ void Rendering::createShaderPrograms()
     }
     else {
       spdlog::error(prog2D.error());
-      throw_debug(std::format("Failed to create 2D shader program {}", to_string(shaderType)))
+      throwDebug(std::format("Failed to create 2D shader program {}", to_string(shaderType)));
     }
   }
 
   if (!createRaycastIsoProgram(m_raycastIsoProgram, false)) {
-    throw_debug("Failed to create isosurface raycasting program")
+    throwDebug("Failed to create isosurface raycasting program");
   }
   if (!createRaycastIsoProgram(m_raycastIsoWarpedProgram, true)) {
-    throw_debug("Failed to create warped isosurface raycasting program")
+    throwDebug("Failed to create warped isosurface raycasting program");
   }
 
   m_asciiRenderer.registerShaderPrograms(m_shaderPrograms);

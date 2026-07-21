@@ -205,7 +205,7 @@ bool LandmarkSlice::isMeshGpuRecordCurrent() const
 {
   auto annot = m_slideAnnotationRecord.lock();
   if (!annot || !annot->cpuRecord() || !annot->cpuRecord()->polygon()) {
-    throw_debug("Null slide annotation record");
+    throwDebug("Null slide annotation record");
   }
 
   const PlanarPolygon* polygon = annot->cpuRecord()->polygon();
@@ -222,7 +222,7 @@ void LandmarkSlice::updateMeshGpuRecord()
 
   auto annot = m_slideAnnotationRecord.lock();
   if (!annot || !annot->cpuRecord() || !annot->cpuRecord()->polygon()) {
-    throw_debug("Null slide annotation record");
+    throwDebug("Null slide annotation record");
   }
 
   PlanarPolygon* polygon = annot->cpuRecord()->polygon();
@@ -232,7 +232,7 @@ void LandmarkSlice::updateMeshGpuRecord()
 
   m_meshGpuRecord = reallocateMeshGpuRecord(polygon->numTriangles());
   if (!m_meshGpuRecord) {
-    throw_debug("Null mesh GPU record");
+    throwDebug("Null mesh GPU record");
   }
 
   if (m_mesh) {
@@ -246,7 +246,7 @@ void LandmarkSlice::updateMeshGpuRecord()
 void LandmarkSlice::setupChildren()
 {
   if (!m_mesh) {
-    throw_debug("Null mesh");
+    throwDebug("Null mesh");
   }
 
   // Only ambient lighting

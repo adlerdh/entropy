@@ -412,7 +412,7 @@ void Polygonizer::execute()
   }
 
   if (!m_shaderProgramActivator) {
-    throw_debug("Unable to access ShaderProgramActivator");
+    throwDebug("Unable to access ShaderProgramActivator");
   }
 
   if (
@@ -436,13 +436,13 @@ void Polygonizer::execute()
   //    shaderProgram->use();
 
   if (!shaderProgram) {
-    throw_debug("Null shader program");
+    throwDebug("Null shader program");
   }
 
   if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
-    throw_debug(ss.str());
+    throwDebug(ss.str());
   }
 
   // Transformation from image to texture coordinates

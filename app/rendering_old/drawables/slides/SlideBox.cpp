@@ -120,7 +120,7 @@ void SlideBox::setUseIntensityThresolding(bool set)
 void SlideBox::setupChildren()
 {
   if (!m_stack_O_slide_tx || !m_boxMesh) {
-    throw_debug("Null child drawable");
+    throwDebug("Null child drawable");
   }
 
   addChild(m_stack_O_slide_tx);

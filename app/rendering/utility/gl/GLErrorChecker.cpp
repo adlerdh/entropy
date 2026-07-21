@@ -66,7 +66,7 @@ void GLErrorChecker::operator()(const char* file, const char* function, int line
 
     spdlog::error("{}", ss.str());
 
-    throw Exception(ss.str(), file, function, line);
+    throwDebug(ss.str(), file, function, line);
   }
 }
 

@@ -41,12 +41,12 @@ void Logging::setup()
   catch (const spdlog::spdlog_ex& e) {
     std::ostringstream ss;
     ss << "Logging construction failed: " << e.what() << std::ends;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
   catch (const std::exception& e) {
     std::ostringstream ss;
     ss << "Logging construction failed: " << e.what() << std::ends;
-    throw_debug(ss.str())
+    throwDebug(ss.str());
   }
 
   spdlog::debug("Setup the logger");

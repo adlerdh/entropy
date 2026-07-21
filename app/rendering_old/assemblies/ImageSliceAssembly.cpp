@@ -144,7 +144,7 @@ void ImageSliceAssembly::initialize()
   m_meshGpuRecords3d[2] = gpuhelper::createSliceMeshGpuRecord();
 
   if (!m_meshGpuRecord2d || !m_meshGpuRecords3d[0] || !m_meshGpuRecords3d[1] || !m_meshGpuRecords3d[2]) {
-    throw_debug("Null slice MeshGPURecord: Cannot initialize ImageSliceAssembly");
+    throwDebug("Null slice MeshGPURecord: Cannot initialize ImageSliceAssembly");
   }
 
   std::ostringstream name;

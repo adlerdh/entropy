@@ -70,7 +70,7 @@ ImageSettings::ImageSettings(
 {
   if (0 == m_numPixels) {
     spdlog::error("Zero pixels is invalid when constructing settings for image {}", displayName);
-    throw_debug("Invalid number of pixels provided to construct settings for image")
+    throwDebug("Invalid number of pixels provided to construct settings for image");
   }
 
   if (componentStats.size() != m_numComponents) {
@@ -78,7 +78,7 @@ ImageSettings::ImageSettings(
       "Invalid number of components ({}) provided to construct settings for image {}",
       numComponents,
       displayName);
-    throw_debug("Invalid number of components provided to construct settings for image")
+    throwDebug("Invalid number of components provided to construct settings for image");
   }
 
   constexpr bool k_setDefaultVisibilitySettings = true;
@@ -1550,7 +1550,7 @@ const ComponentStats& ImageSettings::componentStatistics(uint32_t i) const
 {
   if (m_componentStats.size() <= i) {
     spdlog::error("Invalid image component {}", i);
-    throw_debug("Invalid image component")
+    throwDebug("Invalid image component");
   }
 
   return m_componentStats.at(i);

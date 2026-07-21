@@ -82,7 +82,7 @@ const SlideLevel& SlideCpuRecord::fileLevel(size_t i) const
 
   std::ostringstream ss;
   ss << "Invalid slide file level " << i << " requested" << std::ends;
-  throw_debug(ss.str());
+  throwDebug(ss.str());
 }
 
 const SlideLevel& SlideCpuRecord::createdLevel(size_t i) const
@@ -93,7 +93,7 @@ const SlideLevel& SlideCpuRecord::createdLevel(size_t i) const
 
   std::ostringstream ss;
   ss << "Invalid slide created level " << i << " requested" << std::ends;
-  throw_debug(ss.str());
+  throwDebug(ss.str());
 }
 
 void SlideCpuRecord::addFileLevel(SlideLevel level)
