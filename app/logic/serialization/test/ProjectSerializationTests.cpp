@@ -441,6 +441,41 @@ TEST_CASE("Project serialization supports an external layouts file reference", "
 }
 
 TEST_CASE(
+  "Project serialization embeds layouts when no external layouts file is referenced",
+  "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path imageFile = root / "image.nii.gz";
+
+  touchFile(imageFile);
+
+  layout::LayoutSpec layout;
+  layout.m_displayName = "Review";
+  layout.m_kind = 3;
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = imageFile;
+  project.m_currentLayoutIndex = 1;
+  project.m_layouts.push_back(layout);
+
+  const json serialized = project;
+  CHECK(serialized.at("version") == 1);
+  CHECK_FALSE(serialized.contains("layoutsPath"));
+  REQUIRE(serialized.contains("layouts"));
+  REQUIRE(serialized.at("layouts").is_array());
+  REQUIRE(serialized.at("layouts").size() == 1);
+  CHECK(serialized.at("layouts").at(0).at("displayName") == "Review");
+  CHECK(serialized.at("currentLayoutIndex") == 1);
+
+  serialize::EntropyProject loaded = serialized.get<serialize::EntropyProject>();
+  CHECK_FALSE(loaded.m_layoutsFileName);
+  REQUIRE(loaded.m_layouts.size() == 1);
+  CHECK(loaded.m_layouts.front().m_displayName == "Review");
+  REQUIRE(loaded.m_currentLayoutIndex);
+  CHECK(*loaded.m_currentLayoutIndex == 1);
+}
+
+TEST_CASE(
   "Project serialization preserves image affine transform references and manual transforms",
   "[project][serialization]")
 {

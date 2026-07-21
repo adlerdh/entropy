@@ -34,13 +34,6 @@ fs::path projectSavePath(fs::path fileName)
   }
   return fileName;
 }
-fs::path resolvePathAgainstBase(const fs::path& path, const fs::path& basePath)
-{
-  if (path.is_absolute()) {
-    return path;
-  }
-  return (basePath / path).lexically_normal();
-}
 bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileName)
 {
   layout::LayoutFile layoutFile{
@@ -182,7 +175,6 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
 
   project.m_layouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
   project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
-  project.m_layoutsFileName = m_data.project().m_layoutsFileName;
   project.m_interface = project_snapshot::interfaceSettings(m_data);
   project.m_view = project_snapshot::viewSettings(m_data);
   project.m_comparison = project_snapshot::comparisonSettings(m_data);
@@ -544,17 +536,6 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
     return false;
   }
 
-  if (project.m_layoutsFileName) {
-    const fs::path projectDirectory =
-      normalizedFileName.parent_path().empty() ? fs::current_path() : normalizedFileName.parent_path();
-    const fs::path layoutsFileName = resolvePathAgainstBase(*project.m_layoutsFileName, projectDirectory);
-    if (!saveCurrentLayoutsForProject(m_data, layoutsFileName)) {
-      spdlog::error("Could not save referenced layouts file {}", layoutsFileName);
-      return false;
-    }
-    project.m_layoutsFileName = layoutsFileName;
-  }
-
   if (!serialize::save(project, normalizedFileName)) {
     spdlog::error("Could not save project file {}", normalizedFileName);
     return false;
@@ -597,17 +578,9 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
     return;
   }
 
-  std::error_code error;
-  fs::path layoutsFileName = fs::canonical(fileName, error);
-  if (error) {
-    layoutsFileName = fs::absolute(fileName);
-  }
-
-  serialize::EntropyProject project = createProjectSnapshot();
-  project.m_layoutsFileName = layoutsFileName;
-  m_data.setProject(std::move(project));
+  m_data.setProject(createProjectSnapshot());
   m_glfw.postEmptyEvent();
-  spdlog::info("Loaded layouts from {}", fileName);
+  spdlog::info("Imported layouts from {}", fileName);
 }
 
 bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
@@ -619,10 +592,7 @@ bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
 
   const bool saved = saveCurrentLayoutsForProject(m_data, fileName);
   if (saved) {
-    serialize::EntropyProject project = createProjectSnapshot();
-    project.m_layoutsFileName = fs::absolute(fileName);
-    m_data.setProject(std::move(project));
-    spdlog::info("Saved layouts to {}", fileName);
+    spdlog::info("Exported layouts to {}", fileName);
   }
   return saved;
 }

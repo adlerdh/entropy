@@ -279,8 +279,9 @@ reference.
 
 ### Project Files
 
-Entropy project files preserve all state needed to reopen a review. They include a reference image, additional images,
-segmentations, landmarks, annotations, transformations, layouts, and presentation settings. Minimal example:
+Entropy project files preserve all state needed to reopen a review, except for the image data referenced on disk.
+They include a reference image, additional images, segmentations, landmarks, annotations, transformations, layouts, and
+presentation settings. Minimal example:
 
 ```json
 {

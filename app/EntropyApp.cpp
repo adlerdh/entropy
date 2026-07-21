@@ -1001,7 +1001,8 @@ bool EntropyApp::loadSerializedImage(
         lmGroup.setFileName(*lm.m_csvFileName);
       }
       lmGroup.setName(
-        !lm.m_name.empty() ? lm.m_name : (lm.m_csvFileName ? getFileName(*lm.m_csvFileName, false) : "Landmarks"));
+        !lm.m_name.empty() ? lm.m_name
+                           : (lm.m_csvFileName ? getFileName(lm.m_csvFileName->string(), false) : "Landmarks"));
       lmGroup.setPoints(landmarks);
       lmGroup.setVisibility(lm.m_visible);
       lmGroup.setOpacity(lm.m_opacity);

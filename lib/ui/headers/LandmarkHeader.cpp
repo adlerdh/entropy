@@ -96,7 +96,7 @@ void renderLandmarkGroupHeader(
         if (serialize::openLandmarkGroupCsvFile(landmarks, *selectedFile)) {
           LandmarkGroup importedGroup;
           importedGroup.setFileName(*selectedFile);
-          importedGroup.setName(getFileName(*selectedFile, false));
+          importedGroup.setName(getFileName(selectedFile->string(), false));
           importedGroup.setPoints(std::move(landmarks));
           importedGroup.setInVoxelSpace(false);
           importedGroup.setRenderLandmarkNames(false);

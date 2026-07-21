@@ -3284,7 +3284,7 @@ void ImGuiWrapper::render()
 
     LandmarkGroup landmarkGroup;
     landmarkGroup.setFileName(*selectedFile);
-    landmarkGroup.setName(getFileName(*selectedFile, false));
+    landmarkGroup.setName(getFileName(selectedFile->string(), false));
     landmarkGroup.setPoints(std::move(landmarks));
     landmarkGroup.setInVoxelSpace(false);
     landmarkGroup.setRenderLandmarkNames(false);
