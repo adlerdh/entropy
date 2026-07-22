@@ -1,7 +1,6 @@
 add_executable(TestLayout
   ImageIndexMappingTests.cpp
   LayoutKindInfoTests.cpp
-  LayoutPresetInfoTests.cpp
   LayoutHeaderIncludeTests.cpp
   LayoutFileSerializationTests.cpp
   LayoutSpecJsonTests.cpp

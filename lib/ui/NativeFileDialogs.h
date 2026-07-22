@@ -112,7 +112,7 @@ std::vector<Filter> medicalImageExportFilters();
 std::vector<Filter> projectFilters();
 
 /**
- * @brief Filters for Entropy layout preset files.
+ * @brief Filters for Entropy layout files.
  */
 std::vector<Filter> layoutFilters();
 

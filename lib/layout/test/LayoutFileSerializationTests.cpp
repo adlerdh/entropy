@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <vector>
 
 namespace
@@ -17,18 +18,18 @@ std::filesystem::path tempLayoutFile(const char* name)
 
 } // namespace
 
-TEST_CASE("Layout files save compact layout presets", "[layout]")
+TEST_CASE("Layout files save layout snapshots", "[layout]")
 {
-  const auto fileName = tempLayoutFile("entropy-layout-presets-save.json");
+  const auto fileName = tempLayoutFile("entropy-layout-snapshots-save.json");
 
-  const layout::LayoutFile file{
-    .m_currentLayoutIndex = 2,
-    .m_layouts = {
-      {.m_type = "fourUp"},
-      {.m_type = "threeUp"},
-      {.m_type = "oneUp", .m_view = "axial", .m_imageIndices = {0}},
-      {.m_type = "grid", .m_view = "axial", .m_images = "all"},
-      {.m_type = "lightbox", .m_view = "coronal", .m_imageIndices = {0, 1, 2, 3}}}};
+  layout::LayoutSpec layout;
+  layout.m_kind = 3;
+  layout.m_displayName = "Review";
+  layout.m_viewType = 1;
+  layout.m_imageSelection.m_renderedImageIndices = {0, 1};
+  layout.m_views.push_back(layout::ViewSpec{});
+
+  const layout::LayoutFile file{.m_currentLayoutIndex = 2, .m_layouts = {layout}};
 
   REQUIRE(layout::save(file, fileName));
 
@@ -36,22 +37,22 @@ TEST_CASE("Layout files save compact layout presets", "[layout]")
     std::ifstream in(fileName);
     REQUIRE(in);
     const std::string json((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    REQUIRE(json.find("\"bounds\"") == std::string::npos);
-    REQUIRE(json.find("\"views\"") == std::string::npos);
-    REQUIRE(json.find("\"type\": \"threeUp\"") != std::string::npos);
-    REQUIRE(json.find("\"type\": \"oneUp\"") != std::string::npos);
-    REQUIRE(json.find("\"type\": \"grid\"") != std::string::npos);
-    REQUIRE(json.find("\"type\": \"lightbox\"") != std::string::npos);
-    REQUIRE(json.find("\"image\":") == std::string::npos);
-    REQUIRE(json.find("\"images\": [0, 1, 2, 3]") != std::string::npos);
+    REQUIRE(json.find("\"format\": \"EntropyLayouts\"") != std::string::npos);
+    REQUIRE(json.find("\"version\": {") != std::string::npos);
+    REQUIRE(json.find("\"currentLayout\": 2") != std::string::npos);
+    REQUIRE(json.find("\"kind\": \"oneUp\"") != std::string::npos);
+    REQUIRE(json.find("\"displayName\": \"Review\"") != std::string::npos);
+    REQUIRE(json.find("\"views\": [") != std::string::npos);
+    REQUIRE(json.find("\"images\": {") != std::string::npos);
+    REQUIRE(json.find("\"type\":") == std::string::npos);
   }
 
   std::filesystem::remove(fileName);
 }
 
-TEST_CASE("Layout files load compact layout presets", "[layout]")
+TEST_CASE("Layout files load layout snapshots", "[layout]")
 {
-  const auto fileName = tempLayoutFile("entropy-layout-presets-open.json");
+  const auto fileName = tempLayoutFile("entropy-layout-snapshots-open.json");
   {
     std::ofstream out(fileName);
     REQUIRE(out);
@@ -60,10 +61,39 @@ TEST_CASE("Layout files load compact layout presets", "[layout]")
   "version": {"major": 1, "minor": 0},
   "currentLayout": 1,
   "layouts": [
-    {"type": "fourUp"},
-    {"type": "oneUp", "view": "axial", "images": [0]},
-    {"type": "grid", "view": "coronal", "images": "all"},
-    {"type": "lightbox", "view": "sagittal", "images": [2]}
+    {
+      "kind": "oneUp",
+      "displayName": "Review",
+      "isLightbox": false,
+      "viewType": "axial",
+      "renderMode": "image",
+      "intensityProjectionMode": "none",
+      "defaultImages": {"preferred": [0], "renderAll": false},
+      "images": {"rendered": [0]},
+      "views": [
+        {
+          "viewport": {"left": -1.0, "bottom": -1.0, "width": 2.0, "height": 2.0},
+          "viewType": "axial",
+          "renderMode": "image",
+          "intensityProjectionMode": "none"
+        }
+      ]
+    },
+    {
+      "kind": "multiImageGrid",
+      "isLightbox": false,
+      "viewType": "coronal",
+      "renderMode": "overlay",
+      "intensityProjectionMode": "maximum",
+      "views": [
+        {
+          "viewport": {"left": -1.0, "bottom": -1.0, "width": 2.0, "height": 2.0},
+          "viewType": "coronal",
+          "renderMode": "overlay",
+          "intensityProjectionMode": "maximum"
+        }
+      ]
+    }
   ]
 })";
   }
@@ -71,17 +101,18 @@ TEST_CASE("Layout files load compact layout presets", "[layout]")
   layout::LayoutFile file;
   REQUIRE(layout::open(file, fileName));
   REQUIRE(file.m_currentLayoutIndex == 1);
-  REQUIRE(file.m_layouts.size() == 4);
-  REQUIRE(file.m_layouts.at(0).m_type == "fourUp");
-  REQUIRE(file.m_layouts.at(1).m_type == "oneUp");
-  REQUIRE(file.m_layouts.at(1).m_view == "axial");
-  REQUIRE(file.m_layouts.at(1).m_imageIndices == std::vector<std::size_t>{0});
-  REQUIRE(file.m_layouts.at(2).m_type == "grid");
-  REQUIRE(file.m_layouts.at(2).m_view == "coronal");
-  REQUIRE(file.m_layouts.at(2).m_images == "all");
-  REQUIRE(file.m_layouts.at(3).m_type == "lightbox");
-  REQUIRE(file.m_layouts.at(3).m_view == "sagittal");
-  REQUIRE(file.m_layouts.at(3).m_imageIndices == std::vector<std::size_t>{2});
+  REQUIRE(file.m_layouts.size() == 2);
+  REQUIRE(file.m_layouts.at(0).m_kind == 3);
+  REQUIRE(file.m_layouts.at(0).m_displayName == "Review");
+  REQUIRE(file.m_layouts.at(0).m_viewType == 0);
+  REQUIRE(file.m_layouts.at(0).m_renderMode == 0);
+  REQUIRE(file.m_layouts.at(0).m_preferredDefaultRenderedImages == std::set<std::size_t>{0});
+  REQUIRE(file.m_layouts.at(0).m_defaultRenderAllImages == false);
+  REQUIRE(file.m_layouts.at(0).m_imageSelection.m_renderedImageIndices == std::vector<std::size_t>{0});
+  REQUIRE(file.m_layouts.at(0).m_views.size() == 1);
+  REQUIRE(file.m_layouts.at(1).m_kind == 4);
+  REQUIRE(file.m_layouts.at(1).m_viewType == 1);
+  REQUIRE(file.m_layouts.at(1).m_renderMode == 4);
 
   std::filesystem::remove(fileName);
 }

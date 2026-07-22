@@ -111,6 +111,8 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
 
   const json savedJson = json::parse(std::ifstream(projectFile));
   CHECK(savedJson.at("version").at("major") == 1);
+  CHECK(savedJson.at("images").at(0).at("dicomSource").at("rootPath") == "dicom");
+  CHECK_FALSE(savedJson.at("images").at(0).at("dicomSource").contains("root"));
   CHECK(
     savedJson.at("images").at(0).at("dicomSource").at("paths") ==
     json::array({"dicom/slice-001.dcm", "dicom/slice-002.dcm"}));
@@ -178,17 +180,28 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   REQUIRE(root.at("settings").contains("view"));
   CHECK_FALSE(root.contains("view"));
   const json& view = root.at("settings").at("view");
-  CHECK(view.at("showImageBorders") == false);
-  CHECK(view.at("showImageBordersInLightboxViews") == false);
-  CHECK(view.at("showCrosshairs") == false);
-  CHECK(view.at("showCrosshairsInLightboxViews") == false);
-  CHECK(view.at("showAnatomicalLabels") == false);
-  CHECK(view.at("showAnatomicalLabelsInLightboxViews") == false);
-  CHECK(view.at("showScaleBars") == true);
-  CHECK(view.at("showScaleBarsInLightboxViews") == true);
-  CHECK(view.at("anatomicalLabelType") == "rodent");
-  CHECK(view.at("lockAnatomicalDirectionsToReferenceImage") == true);
-  CHECK(view.at("crosshairsSnapping") == "activeImage");
+  CHECK(view.at("imageBorders").at("visible") == false);
+  CHECK(view.at("imageBorders").at("visibleInLightboxes") == false);
+  CHECK(view.at("crosshairs").at("visible") == false);
+  CHECK(view.at("crosshairs").at("visibleInLightboxes") == false);
+  CHECK(view.at("crosshairs").at("snapping") == "activeImage");
+  CHECK(view.at("anatomicalLabels").at("visible") == false);
+  CHECK(view.at("anatomicalLabels").at("visibleInLightboxes") == false);
+  CHECK(view.at("anatomicalLabels").at("type") == "rodent");
+  CHECK(view.at("anatomicalLabels").at("lockDirectionsToReferenceImage") == true);
+  CHECK(view.at("scaleBars").at("visible") == true);
+  CHECK(view.at("scaleBars").at("visibleInLightboxes") == true);
+  CHECK_FALSE(view.contains("showImageBorders"));
+  CHECK_FALSE(view.contains("showImageBordersInLightboxViews"));
+  CHECK_FALSE(view.contains("showCrosshairs"));
+  CHECK_FALSE(view.contains("showCrosshairsInLightboxViews"));
+  CHECK_FALSE(view.contains("showAnatomicalLabels"));
+  CHECK_FALSE(view.contains("showAnatomicalLabelsInLightboxViews"));
+  CHECK_FALSE(view.contains("showScaleBars"));
+  CHECK_FALSE(view.contains("showScaleBarsInLightboxViews"));
+  CHECK_FALSE(view.contains("anatomicalLabelType"));
+  CHECK_FALSE(view.contains("lockAnatomicalDirectionsToReferenceImage"));
+  CHECK_FALSE(view.contains("crosshairsSnapping"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -314,27 +327,34 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   REQUIRE(root.at("settings").contains("rendering"));
   const json& settings = root.at("settings");
   const json& rendering = settings.at("rendering");
-  const json& raycasting = rendering.at("raycasting");
+  const json& raycasting = rendering.at("volumeRaycasting");
   CHECK_FALSE(root.contains("raycasting"));
   CHECK_FALSE(root.contains("intensityProjection"));
   CHECK_FALSE(root.contains("segmentationDisplay"));
   CHECK_FALSE(root.contains("isosurfaceDisplay"));
   CHECK_FALSE(root.contains("annotationDisplay"));
+  CHECK_FALSE(rendering.contains("raycasting"));
   CHECK(raycasting.at("samplingFactor") == 1.25f);
   CHECK_FALSE(raycasting.contains("adaptiveSamplingEnabled"));
   CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
   CHECK(raycasting.at("transparentBackgroundWhenNoHit") == false);
-  CHECK(raycasting.at("backgroundEdgeBrighteningEnabled") == false);
-  CHECK(raycasting.at("showCrosshairsIn3D") == true);
-  CHECK(raycasting.at("crosshairs3DGlyphDiameterVoxelDiagonals") == 1.75f);
-  CHECK(raycasting.at("showThreeDCameraFrustumIn2DViews") == true);
-  CHECK(raycasting.at("reverseThreeDRotateAboutEye") == true);
-  CHECK(raycasting.at("threeDCameraFrustumColor").at(0) == 1.0f);
-  CHECK(raycasting.at("threeDCameraFrustumColor").at(1) == 0.25f);
-  CHECK(raycasting.at("threeDCameraFrustumColor").at(2) == 0.75f);
-  CHECK(raycasting.at("threeDCameraFrustumColor").at(3) == 0.8f);
+  CHECK(raycasting.at("showImageBox") == false);
+  CHECK(raycasting.at("showCrosshairsGlyph") == true);
+  CHECK(raycasting.at("crosshairsGlyphDiameterVoxels") == 1.75f);
+  CHECK(raycasting.at("showCameraFrustumIn2DViews") == true);
+  CHECK(raycasting.at("reverseRotateAboutEye") == true);
+  CHECK(raycasting.at("cameraFrustumColor").at(0) == 1.0f);
+  CHECK(raycasting.at("cameraFrustumColor").at(1) == 0.25f);
+  CHECK(raycasting.at("cameraFrustumColor").at(2) == 0.75f);
+  CHECK(raycasting.at("cameraFrustumColor").at(3) == 0.8f);
   CHECK(raycasting.at("renderFrontFaces") == false);
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
+  CHECK_FALSE(raycasting.contains("backgroundEdgeBrighteningEnabled"));
+  CHECK_FALSE(raycasting.contains("showCrosshairsIn3D"));
+  CHECK_FALSE(raycasting.contains("crosshairs3DGlyphDiameterVoxelDiagonals"));
+  CHECK_FALSE(raycasting.contains("showThreeDCameraFrustumIn2DViews"));
+  CHECK_FALSE(raycasting.contains("reverseThreeDRotateAboutEye"));
+  CHECK_FALSE(raycasting.contains("threeDCameraFrustumColor"));
   CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == true);
   CHECK(rendering.at("intensityProjection").at("slabThicknessMm") == 12.5f);
   CHECK(rendering.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
@@ -342,8 +362,12 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(rendering.at("segmentation").at("erosionFactor") == 0.8f);
   CHECK(rendering.at("isosurfaces").at("floatingPointInterpolationPolicy") == "floatingPoint");
   CHECK(rendering.at("isosurfaces").at("modulateOpacityWithImageOpacity") == true);
-  CHECK(settings.at("annotations").at("annotationsOnTop") == true);
-  CHECK(settings.at("annotations").at("hideAnnotationVertices") == true);
+  CHECK(settings.at("annotations").at("rendering").at("annotationsOnTop") == true);
+  CHECK(settings.at("annotations").at("rendering").at("landmarksOnTop") == true);
+  CHECK(settings.at("annotations").at("rendering").at("hideAnnotationVertices") == true);
+  CHECK_FALSE(settings.at("annotations").contains("annotationsOnTop"));
+  CHECK_FALSE(settings.at("annotations").contains("landmarksOnTop"));
+  CHECK_FALSE(settings.at("annotations").contains("hideAnnotationVertices"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -384,26 +408,31 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
     {"version", {{"major", 1}, {"minor", 0}}},
     {"images", json::array({{{"path", "image.nii.gz"}}})},
     {"settings",
-     {{"rendering",
-       {{"raycasting",
-         {{"samplingFactor", 0.0f},
-          {"segmentationMasking", "bad"},
-          {"transparentBackgroundWhenNoHit", false},
-          {"renderFrontFaces", false}}},
-        {"intensityProjection",
-         {{"useMaximumImageExtent", true},
-          {"slabThicknessMm", -1.0f},
-          {"xrayEnergyKeV", 120.0f},
-          {"xrayWindow", 0.0f},
-          {"xrayLevel", 2.0f}}},
-        {"segmentation",
-         {{"modulateOpacityWithImageOpacity", false},
-          {"outlineStyle", "bad"},
-          {"interiorOpacity", 2.0f},
-          {"erosionFactor", 0.0f}}},
-        {"isosurfaces",
-         {{"floatingPointInterpolationPolicy", "floatingPoint"}, {"modulateOpacityWithImageOpacity", true}}}}},
-      {"annotations", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}}}};
+     {
+       {"rendering",
+        {
+          {"volumeRaycasting",
+           {{"samplingFactor", 0.0f},
+            {"segmentationMasking", "bad"},
+            {"transparentBackgroundWhenNoHit", false},
+            {"renderFrontFaces", false}}},
+          {"intensityProjection",
+           {{"useMaximumImageExtent", true},
+            {"slabThicknessMm", -1.0f},
+            {"xrayEnergyKeV", 120.0f},
+            {"xrayWindow", 0.0f},
+            {"xrayLevel", 2.0f}}},
+          {"segmentation",
+           {{"modulateOpacityWithImageOpacity", false},
+            {"outlineStyle", "bad"},
+            {"interiorOpacity", 2.0f},
+            {"erosionFactor", 0.0f}}},
+          {"isosurfaces",
+           {{"floatingPointInterpolationPolicy", "floatingPoint"}, {"modulateOpacityWithImageOpacity", true}}},
+        }},
+       {"annotations",
+        {{"rendering", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}}},
+     }}};
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -448,6 +477,7 @@ TEST_CASE("Project serialization supports an external layouts file reference", "
   CHECK(inlineJson.at("version").at("major") == 1);
   REQUIRE(inlineJson.at("layouts").is_object());
   CHECK(inlineJson.at("layouts").at("path") == layoutsFile.generic_string());
+  CHECK_FALSE(inlineJson.contains("currentLayout"));
   CHECK_FALSE(inlineJson.contains("layoutsPath"));
   CHECK_FALSE(inlineJson.contains("layoutsFile"));
   CHECK_FALSE(inlineJson.at("layouts").contains("embedded"));
@@ -456,6 +486,7 @@ TEST_CASE("Project serialization supports an external layouts file reference", "
 
   const json savedJson = json::parse(std::ifstream(projectFile));
   CHECK(savedJson.at("layouts").at("path") == "layouts.json");
+  CHECK_FALSE(savedJson.contains("currentLayout"));
   CHECK_FALSE(savedJson.contains("layoutsPath"));
   CHECK_FALSE(savedJson.contains("layoutsFile"));
   CHECK_FALSE(savedJson.at("layouts").contains("embedded"));
@@ -492,7 +523,8 @@ TEST_CASE(
   REQUIRE(serialized.at("layouts").at("embedded").is_array());
   REQUIRE(serialized.at("layouts").at("embedded").size() == 1);
   CHECK(serialized.at("layouts").at("embedded").at(0).at("displayName") == "Review");
-  CHECK(serialized.at("currentLayout") == 1);
+  CHECK(serialized.at("layouts").at("current") == 1);
+  CHECK_FALSE(serialized.contains("currentLayout"));
   CHECK_FALSE(serialized.contains("currentLayoutIndex"));
 
   serialize::EntropyProject loaded = serialized.get<serialize::EntropyProject>();

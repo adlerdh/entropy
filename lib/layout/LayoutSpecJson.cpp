@@ -51,66 +51,66 @@ const std::vector<std::pair<int, const char*>>& layoutKindNames()
 {
   // Keep this mapping in sync with LayoutKind without pulling Layout.h into the JSON-only test target.
   static const std::vector<std::pair<int, const char*>> names{
-    {0, "Custom"},
-    {1, "FourUp"},
-    {2, "ThreeUp"},
-    {3, "OneUp"},
-    {4, "MultiImageGrid"},
-    {5, "AxCorSagByImage"},
-    {6, "Lightbox"}};
+    {0, "custom"},
+    {1, "fourUp"},
+    {2, "threeUp"},
+    {3, "oneUp"},
+    {4, "multiImageGrid"},
+    {5, "axCorSagByImage"},
+    {6, "lightbox"}};
   return names;
 }
 
 const std::vector<std::pair<ViewType, const char*>>& viewTypeNames()
 {
   static const std::vector<std::pair<ViewType, const char*>> names{
-    {ViewType::Axial, "Axial"},
-    {ViewType::Coronal, "Coronal"},
-    {ViewType::Sagittal, "Sagittal"},
-    {ViewType::Oblique, "Oblique"},
-    {ViewType::ThreeD, "ThreeD"}};
+    {ViewType::Axial, "axial"},
+    {ViewType::Coronal, "coronal"},
+    {ViewType::Sagittal, "sagittal"},
+    {ViewType::Oblique, "oblique"},
+    {ViewType::ThreeD, "threeD"}};
   return names;
 }
 
 const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
 {
   static const std::vector<std::pair<ViewRenderMode, const char*>> names{
-    {ViewRenderMode::Image, "Image"},
-    {ViewRenderMode::Checkerboard, "Checkerboard"},
-    {ViewRenderMode::Quadrants, "Quadrants"},
-    {ViewRenderMode::Flashlight, "Flashlight"},
-    {ViewRenderMode::Overlay, "Overlay"},
-    {ViewRenderMode::Difference, "Difference"},
-    {ViewRenderMode::JointHistogram, "JointHistogram"},
-    {ViewRenderMode::VolumeRender, "VolumeRender"},
-    {ViewRenderMode::Disabled, "Disabled"},
-    {ViewRenderMode::LocalNcc, "LocalNcc"},
-    {ViewRenderMode::LocalLinearResidual, "LocalLinearResidual"}};
+    {ViewRenderMode::Image, "image"},
+    {ViewRenderMode::Checkerboard, "checkerboard"},
+    {ViewRenderMode::Quadrants, "quadrants"},
+    {ViewRenderMode::Flashlight, "flashlight"},
+    {ViewRenderMode::Overlay, "overlay"},
+    {ViewRenderMode::Difference, "difference"},
+    {ViewRenderMode::JointHistogram, "jointHistogram"},
+    {ViewRenderMode::VolumeRender, "volumeRender"},
+    {ViewRenderMode::Disabled, "disabled"},
+    {ViewRenderMode::LocalNcc, "localNcc"},
+    {ViewRenderMode::LocalLinearResidual, "localLinearResidual"}};
   return names;
 }
 
 const std::vector<std::pair<IntensityProjectionMode, const char*>>& intensityProjectionModeNames()
 {
   static const std::vector<std::pair<IntensityProjectionMode, const char*>> names{
-    {IntensityProjectionMode::None, "None"},
-    {IntensityProjectionMode::Maximum, "Maximum"},
-    {IntensityProjectionMode::Mean, "Mean"},
-    {IntensityProjectionMode::Minimum, "Minimum"},
-    {IntensityProjectionMode::Xray, "Xray"}};
+    {IntensityProjectionMode::None, "none"},
+    {IntensityProjectionMode::Maximum, "maximum"},
+    {IntensityProjectionMode::Mean, "mean"},
+    {IntensityProjectionMode::Minimum, "minimum"},
+    {IntensityProjectionMode::Xray, "xray"}};
   return names;
 }
 
 const std::vector<std::pair<int, const char*>>& threeDProjectionTypeNames()
 {
   // Keep this mapping in sync with ProjectionType without pulling app camera headers into layout JSON.
-  static const std::vector<std::pair<int, const char*>> names{{0, "Orthographic"}, {1, "Perspective"}};
+  static const std::vector<std::pair<int, const char*>> names{{0, "orthographic"}, {1, "perspective"}};
   return names;
 }
 
 const std::vector<std::pair<int, const char*>>& threeDOrbitTargetModeNames()
 {
   // Keep this mapping in sync with camera3d::OrbitTargetMode without pulling app camera headers into layout JSON.
-  static const std::vector<std::pair<int, const char*>> names{{0, "VisibleImages"}, {1, "Crosshairs"}};
+  static const std::vector<std::pair<int, const char*>> names{{0, "imageCenter"}, {1, "crosshairs"}};
   return names;
 }
 
@@ -118,10 +118,10 @@ const std::vector<std::pair<int, const char*>>& offsetModeNames()
 {
   // Keep this mapping in sync with ViewOffsetMode without pulling common runtime headers into this test target.
   static const std::vector<std::pair<int, const char*>> names{
-    {0, "RelativeToRefImageScrolls"},
-    {1, "RelativeToImageScrolls"},
-    {2, "Absolute"},
-    {3, "None"}};
+    {0, "relativeToRefImageScrolls"},
+    {1, "relativeToImageScrolls"},
+    {2, "absolute"},
+    {3, "none"}};
   return names;
 }
 
@@ -184,19 +184,20 @@ void to_json(nlohmann::json& j, const ViewSpec& view)
       {"relativeSteps", view.m_relativeOffsetSteps},
       {"imageIndex", optionalSizeToJson(view.m_offsetImageIndex)}}},
     {"sync",
-     {{"rotation", optionalSizeToJson(view.m_rotationSyncGroup)},
-      {"translation", optionalSizeToJson(view.m_translationSyncGroup)},
-      {"zoom", optionalSizeToJson(view.m_zoomSyncGroup)}}},
-    {"syncMembership",
-     {{"rotation", optionalSizeToJson(view.m_rotationSyncMembershipGroup)},
-      {"translation", optionalSizeToJson(view.m_translationSyncMembershipGroup)},
-      {"zoom", optionalSizeToJson(view.m_zoomSyncMembershipGroup)}}},
-    {"preferredDefaultRenderedImages", view.m_preferredDefaultRenderedImages},
-    {"defaultRenderAllImages", view.m_defaultRenderAllImages},
-    {"imageSelection", view.m_imageSelection},
+     {{"source",
+       {{"rotation", optionalSizeToJson(view.m_rotationSyncGroup)},
+        {"translation", optionalSizeToJson(view.m_translationSyncGroup)},
+        {"zoom", optionalSizeToJson(view.m_zoomSyncGroup)}}},
+      {"membership",
+       {{"rotation", optionalSizeToJson(view.m_rotationSyncMembershipGroup)},
+        {"translation", optionalSizeToJson(view.m_translationSyncMembershipGroup)},
+        {"zoom", optionalSizeToJson(view.m_zoomSyncMembershipGroup)}}}}},
+    {"defaultImages",
+     {{"preferred", view.m_preferredDefaultRenderedImages}, {"renderAll", view.m_defaultRenderAllImages}}},
+    {"images", view.m_imageSelection},
     {"threeD",
-     {{"projectionType", enumValueToJson(view.m_threeDProjectionType, threeDProjectionTypeNames())},
-      {"orbitTargetMode", enumValueToJson(view.m_threeDOrbitTargetMode, threeDOrbitTargetModeNames())},
+     {{"projection", enumValueToJson(view.m_threeDProjectionType, threeDProjectionTypeNames())},
+      {"orbitTarget", enumValueToJson(view.m_threeDOrbitTargetMode, threeDOrbitTargetModeNames())},
       {"cameraFollowsCrosshairs", view.m_threeDCameraFollowsCrosshairs},
       {"perspectiveZoom", view.m_threeDPerspectiveZoom},
       {"orthographicZoom", view.m_threeDOrthographicZoom}}}};
@@ -237,44 +238,50 @@ void from_json(const nlohmann::json& j, ViewSpec& view)
   }
   if (j.count("sync")) {
     const auto& s = j.at("sync");
-    if (s.count("rotation")) {
-      view.m_rotationSyncGroup = optionalSizeFromJson(s.at("rotation"));
+    if (s.count("source")) {
+      const auto& source = s.at("source");
+      if (source.count("rotation")) {
+        view.m_rotationSyncGroup = optionalSizeFromJson(source.at("rotation"));
+      }
+      if (source.count("translation")) {
+        view.m_translationSyncGroup = optionalSizeFromJson(source.at("translation"));
+      }
+      if (source.count("zoom")) {
+        view.m_zoomSyncGroup = optionalSizeFromJson(source.at("zoom"));
+      }
     }
-    if (s.count("translation")) {
-      view.m_translationSyncGroup = optionalSizeFromJson(s.at("translation"));
-    }
-    if (s.count("zoom")) {
-      view.m_zoomSyncGroup = optionalSizeFromJson(s.at("zoom"));
+    if (s.count("membership")) {
+      const auto& membership = s.at("membership");
+      if (membership.count("rotation")) {
+        view.m_rotationSyncMembershipGroup = optionalSizeFromJson(membership.at("rotation"));
+      }
+      if (membership.count("translation")) {
+        view.m_translationSyncMembershipGroup = optionalSizeFromJson(membership.at("translation"));
+      }
+      if (membership.count("zoom")) {
+        view.m_zoomSyncMembershipGroup = optionalSizeFromJson(membership.at("zoom"));
+      }
     }
   }
-  if (j.count("syncMembership")) {
-    const auto& s = j.at("syncMembership");
-    if (s.count("rotation")) {
-      view.m_rotationSyncMembershipGroup = optionalSizeFromJson(s.at("rotation"));
+  if (j.count("defaultImages")) {
+    const auto& defaultImages = j.at("defaultImages");
+    if (defaultImages.count("preferred")) {
+      defaultImages.at("preferred").get_to(view.m_preferredDefaultRenderedImages);
     }
-    if (s.count("translation")) {
-      view.m_translationSyncMembershipGroup = optionalSizeFromJson(s.at("translation"));
-    }
-    if (s.count("zoom")) {
-      view.m_zoomSyncMembershipGroup = optionalSizeFromJson(s.at("zoom"));
+    if (defaultImages.count("renderAll")) {
+      defaultImages.at("renderAll").get_to(view.m_defaultRenderAllImages);
     }
   }
-  if (j.count("preferredDefaultRenderedImages")) {
-    j.at("preferredDefaultRenderedImages").get_to(view.m_preferredDefaultRenderedImages);
-  }
-  if (j.count("defaultRenderAllImages")) {
-    j.at("defaultRenderAllImages").get_to(view.m_defaultRenderAllImages);
-  }
-  if (j.count("imageSelection")) {
-    j.at("imageSelection").get_to(view.m_imageSelection);
+  if (j.count("images")) {
+    j.at("images").get_to(view.m_imageSelection);
   }
   if (j.count("threeD")) {
     const auto& t = j.at("threeD");
-    if (t.count("projectionType")) {
-      view.m_threeDProjectionType = enumValueFromJson(t.at("projectionType"), threeDProjectionTypeNames());
+    if (t.count("projection")) {
+      view.m_threeDProjectionType = enumValueFromJson(t.at("projection"), threeDProjectionTypeNames());
     }
-    if (t.count("orbitTargetMode")) {
-      view.m_threeDOrbitTargetMode = enumValueFromJson(t.at("orbitTargetMode"), threeDOrbitTargetModeNames());
+    if (t.count("orbitTarget")) {
+      view.m_threeDOrbitTargetMode = enumValueFromJson(t.at("orbitTarget"), threeDOrbitTargetModeNames());
     }
     if (t.count("cameraFollowsCrosshairs")) {
       t.at("cameraFollowsCrosshairs").get_to(view.m_threeDCameraFollowsCrosshairs);
@@ -296,9 +303,9 @@ void to_json(nlohmann::json& j, const LayoutSpec& layout)
     {"viewType", enumValueToJson(layout.m_viewType, viewTypeNames())},
     {"renderMode", enumValueToJson(layout.m_renderMode, renderModeNames())},
     {"intensityProjectionMode", enumValueToJson(layout.m_intensityProjectionMode, intensityProjectionModeNames())},
-    {"preferredDefaultRenderedImages", layout.m_preferredDefaultRenderedImages},
-    {"defaultRenderAllImages", layout.m_defaultRenderAllImages},
-    {"imageSelection", layout.m_imageSelection},
+    {"defaultImages",
+     {{"preferred", layout.m_preferredDefaultRenderedImages}, {"renderAll", layout.m_defaultRenderAllImages}}},
+    {"images", layout.m_imageSelection},
     {"views", layout.m_views}};
 
   if (!layout.m_displayName.empty()) {
@@ -327,14 +334,17 @@ void from_json(const nlohmann::json& j, LayoutSpec& layout)
     layout.m_intensityProjectionMode =
       enumValueFromJson(j.at("intensityProjectionMode"), intensityProjectionModeNames());
   }
-  if (j.count("preferredDefaultRenderedImages")) {
-    j.at("preferredDefaultRenderedImages").get_to(layout.m_preferredDefaultRenderedImages);
+  if (j.count("defaultImages")) {
+    const auto& defaultImages = j.at("defaultImages");
+    if (defaultImages.count("preferred")) {
+      defaultImages.at("preferred").get_to(layout.m_preferredDefaultRenderedImages);
+    }
+    if (defaultImages.count("renderAll")) {
+      defaultImages.at("renderAll").get_to(layout.m_defaultRenderAllImages);
+    }
   }
-  if (j.count("defaultRenderAllImages")) {
-    j.at("defaultRenderAllImages").get_to(layout.m_defaultRenderAllImages);
-  }
-  if (j.count("imageSelection")) {
-    j.at("imageSelection").get_to(layout.m_imageSelection);
+  if (j.count("images")) {
+    j.at("images").get_to(layout.m_imageSelection);
   }
   if (j.count("views")) {
     j.at("views").get_to(layout.m_views);

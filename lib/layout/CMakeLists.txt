@@ -5,7 +5,6 @@ target_sources(EntropyLayout PRIVATE
   ImageIndexMapping.cpp
   LayoutFileSerialization.cpp
   LayoutKindInfo.cpp
-  LayoutPresetInfo.cpp
   LayoutSpecJson.cpp
   SyncGroupIndexMap.cpp
 )

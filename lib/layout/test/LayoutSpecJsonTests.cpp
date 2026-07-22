@@ -141,16 +141,16 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
 
   const nlohmann::json json = original;
 
-  CHECK(json.at("kind") == "AxCorSagByImage");
+  CHECK(json.at("kind") == "axCorSagByImage");
   CHECK(json.at("displayName") == "Custom review");
-  CHECK(json.at("viewType") == "Coronal");
-  CHECK(json.at("renderMode") == "Quadrants");
-  CHECK(json.at("intensityProjectionMode") == "Minimum");
-  CHECK(json.at("views").at(0).at("viewType") == "Axial");
-  CHECK(json.at("views").at(0).at("offset").at("mode") == "RelativeToImageScrolls");
-  CHECK(json.at("views").at(0).at("threeD").at("projectionType") == "Orthographic");
-  CHECK(json.at("views").at(0).at("threeD").at("orbitTargetMode") == "Crosshairs");
-  CHECK(json.at("views").at(1).at("offset").at("mode") == "None");
+  CHECK(json.at("viewType") == "coronal");
+  CHECK(json.at("renderMode") == "quadrants");
+  CHECK(json.at("intensityProjectionMode") == "minimum");
+  CHECK(json.at("views").at(0).at("viewType") == "axial");
+  CHECK(json.at("views").at(0).at("offset").at("mode") == "relativeToImageScrolls");
+  CHECK(json.at("views").at(0).at("threeD").at("projection") == "orthographic");
+  CHECK(json.at("views").at(0).at("threeD").at("orbitTarget") == "crosshairs");
+  CHECK(json.at("views").at(1).at("offset").at("mode") == "none");
 }
 
 TEST_CASE("layout spec JSON preserves view order", "[layout][serialization]")
@@ -174,8 +174,8 @@ TEST_CASE("layout spec JSON preserves receiver-only sync membership", "[layout][
   const nlohmann::json json = original;
   const auto& receiverOnlyView = json.at("views").at(1);
 
-  REQUIRE(receiverOnlyView.at("sync").at("zoom").is_null());
-  REQUIRE(receiverOnlyView.at("syncMembership").at("zoom").get<std::size_t>() == 2);
+  REQUIRE(receiverOnlyView.at("sync").at("source").at("zoom").is_null());
+  REQUIRE(receiverOnlyView.at("sync").at("membership").at("zoom").get<std::size_t>() == 2);
 
   const layout::LayoutSpec restored = json.get<layout::LayoutSpec>();
   REQUIRE(restored.m_views.at(1).m_zoomSyncGroup == std::nullopt);
@@ -186,7 +186,7 @@ TEST_CASE("layout spec JSON without sync membership keeps membership defaults", 
 {
   const nlohmann::json json = {
     {"views",
-     {{{"sync", {{"rotation", 0}, {"translation", nullptr}, {"zoom", 2}}},
+     {{{"sync", {{"source", {{"rotation", 0}, {"translation", nullptr}, {"zoom", 2}}}}},
        {"viewport", {{"left", -1.0f}, {"bottom", -1.0f}, {"width", 2.0f}, {"height", 2.0f}}}}}}};
 
   const layout::LayoutSpec restored = json.get<layout::LayoutSpec>();

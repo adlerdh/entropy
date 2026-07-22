@@ -1270,7 +1270,7 @@ void to_json(json& j, const serialize::DicomSource& source)
   j = json{{"seriesInstanceUid", source.m_seriesInstanceUid}};
 
   if (!source.m_rootPath.empty()) {
-    j["root"] = pathToString(source.m_rootPath);
+    j["rootPath"] = pathToString(source.m_rootPath);
   }
 
   if (!source.m_studyInstanceUid.empty()) {
@@ -1289,8 +1289,8 @@ void to_json(json& j, const serialize::DicomSource& source)
 
 void from_json(const json& j, serialize::DicomSource& source)
 {
-  if (j.count("root")) {
-    source.m_rootPath = j.at("root").get<std::string>();
+  if (j.count("rootPath")) {
+    source.m_rootPath = j.at("rootPath").get<std::string>();
   }
   if (j.count("studyInstanceUid")) {
     source.m_studyInstanceUid = j.at("studyInstanceUid").get<std::string>();
@@ -1454,60 +1454,81 @@ void from_json(const json& j, ProjectInterfaceSettings& settings)
 void to_json(json& j, const ProjectViewSettings& settings)
 {
   j = json{
-    {"showImageBorders", settings.m_showImageBorders},
-    {"showImageBordersInLightboxViews", settings.m_showImageBordersInLightboxViews},
-    {"showCrosshairs", settings.m_showCrosshairs},
-    {"showCrosshairsInLightboxViews", settings.m_showCrosshairsInLightboxViews},
-    {"showAnatomicalLabels", settings.m_showAnatomicalLabels},
-    {"showAnatomicalLabelsInLightboxViews", settings.m_showAnatomicalLabelsInLightboxViews},
-    {"showScaleBars", settings.m_showScaleBars},
-    {"showScaleBarsInLightboxViews", settings.m_showScaleBarsInLightboxViews},
-    {"anatomicalLabelType", enumToName(settings.m_anatomicalLabelType, k_anatomicalLabelNames)},
-    {"lockAnatomicalDirectionsToReferenceImage", settings.m_lockAnatomicalDirectionsToReferenceImage},
-    {"crosshairsSnapping", enumToName(settings.m_crosshairsSnapping, k_crosshairsSnappingNames)}};
+    {"imageBorders",
+     {{"visible", settings.m_showImageBorders}, {"visibleInLightboxes", settings.m_showImageBordersInLightboxViews}}},
+    {"crosshairs",
+     {{"visible", settings.m_showCrosshairs},
+      {"visibleInLightboxes", settings.m_showCrosshairsInLightboxViews},
+      {"snapping", enumToName(settings.m_crosshairsSnapping, k_crosshairsSnappingNames)}}},
+    {"anatomicalLabels",
+     {{"visible", settings.m_showAnatomicalLabels},
+      {"visibleInLightboxes", settings.m_showAnatomicalLabelsInLightboxViews},
+      {"type", enumToName(settings.m_anatomicalLabelType, k_anatomicalLabelNames)},
+      {"lockDirectionsToReferenceImage", settings.m_lockAnatomicalDirectionsToReferenceImage}}},
+    {"scaleBars",
+     {{"visible", settings.m_showScaleBars}, {"visibleInLightboxes", settings.m_showScaleBarsInLightboxViews}}}};
 }
 
 void from_json(const json& j, ProjectViewSettings& settings)
 {
-  if (const auto value = j.find("showImageBorders"); value != j.end() && value->is_boolean()) {
-    settings.m_showImageBorders = value->get<bool>();
-  }
-  if (const auto value = j.find("showImageBordersInLightboxViews"); value != j.end() && value->is_boolean()) {
-    settings.m_showImageBordersInLightboxViews = value->get<bool>();
-  }
-  if (const auto value = j.find("showCrosshairs"); value != j.end() && value->is_boolean()) {
-    settings.m_showCrosshairs = value->get<bool>();
-  }
-  if (const auto value = j.find("showCrosshairsInLightboxViews"); value != j.end() && value->is_boolean()) {
-    settings.m_showCrosshairsInLightboxViews = value->get<bool>();
-  }
-  if (const auto value = j.find("showAnatomicalLabels"); value != j.end() && value->is_boolean()) {
-    settings.m_showAnatomicalLabels = value->get<bool>();
-  }
-  if (const auto value = j.find("showAnatomicalLabelsInLightboxViews"); value != j.end() && value->is_boolean()) {
-    settings.m_showAnatomicalLabelsInLightboxViews = value->get<bool>();
-  }
-  if (const auto value = j.find("showScaleBars"); value != j.end() && value->is_boolean()) {
-    settings.m_showScaleBars = value->get<bool>();
-  }
-  if (const auto value = j.find("showScaleBarsInLightboxViews"); value != j.end() && value->is_boolean()) {
-    settings.m_showScaleBarsInLightboxViews = value->get<bool>();
-  }
-  if (const auto parsed = enumFromName<AnatomicalLabelType>(j.value("anatomicalLabelType", ""), k_anatomicalLabelNames))
-  {
-    settings.m_anatomicalLabelType = *parsed;
-    if (AnatomicalLabelType::Disabled == settings.m_anatomicalLabelType) {
-      settings.m_showAnatomicalLabels = false;
-      settings.m_anatomicalLabelType = AnatomicalLabelType::Human;
+  if (const auto imageBorders = j.find("imageBorders"); imageBorders != j.end() && imageBorders->is_object()) {
+    if (const auto value = imageBorders->find("visible"); value != imageBorders->end() && value->is_boolean()) {
+      settings.m_showImageBorders = value->get<bool>();
+    }
+    if (const auto value = imageBorders->find("visibleInLightboxes");
+        value != imageBorders->end() && value->is_boolean())
+    {
+      settings.m_showImageBordersInLightboxViews = value->get<bool>();
     }
   }
-  if (const auto lock = j.find("lockAnatomicalDirectionsToReferenceImage"); lock != j.end() && lock->is_boolean()) {
-    settings.m_lockAnatomicalDirectionsToReferenceImage = lock->get<bool>();
+  if (const auto crosshairs = j.find("crosshairs"); crosshairs != j.end() && crosshairs->is_object()) {
+    if (const auto value = crosshairs->find("visible"); value != crosshairs->end() && value->is_boolean()) {
+      settings.m_showCrosshairs = value->get<bool>();
+    }
+    if (const auto value = crosshairs->find("visibleInLightboxes"); value != crosshairs->end() && value->is_boolean()) {
+      settings.m_showCrosshairsInLightboxViews = value->get<bool>();
+    }
+    if (
+      const auto parsed =
+        enumFromName<CrosshairsSnapping>(crosshairs->value("snapping", ""), k_crosshairsSnappingNames))
+    {
+      settings.m_crosshairsSnapping = *parsed;
+    }
   }
-  if (
-    const auto parsed = enumFromName<CrosshairsSnapping>(j.value("crosshairsSnapping", ""), k_crosshairsSnappingNames))
+  if (const auto anatomicalLabels = j.find("anatomicalLabels");
+      anatomicalLabels != j.end() && anatomicalLabels->is_object())
   {
-    settings.m_crosshairsSnapping = *parsed;
+    if (const auto value = anatomicalLabels->find("visible"); value != anatomicalLabels->end() && value->is_boolean()) {
+      settings.m_showAnatomicalLabels = value->get<bool>();
+    }
+    if (const auto value = anatomicalLabels->find("visibleInLightboxes");
+        value != anatomicalLabels->end() && value->is_boolean())
+    {
+      settings.m_showAnatomicalLabelsInLightboxViews = value->get<bool>();
+    }
+    if (
+      const auto parsed =
+        enumFromName<AnatomicalLabelType>(anatomicalLabels->value("type", ""), k_anatomicalLabelNames))
+    {
+      settings.m_anatomicalLabelType = *parsed;
+      if (AnatomicalLabelType::Disabled == settings.m_anatomicalLabelType) {
+        settings.m_showAnatomicalLabels = false;
+        settings.m_anatomicalLabelType = AnatomicalLabelType::Human;
+      }
+    }
+    if (const auto value = anatomicalLabels->find("lockDirectionsToReferenceImage");
+        value != anatomicalLabels->end() && value->is_boolean())
+    {
+      settings.m_lockAnatomicalDirectionsToReferenceImage = value->get<bool>();
+    }
+  }
+  if (const auto scaleBars = j.find("scaleBars"); scaleBars != j.end() && scaleBars->is_object()) {
+    if (const auto value = scaleBars->find("visible"); value != scaleBars->end() && value->is_boolean()) {
+      settings.m_showScaleBars = value->get<bool>();
+    }
+    if (const auto value = scaleBars->find("visibleInLightboxes"); value != scaleBars->end() && value->is_boolean()) {
+      settings.m_showScaleBarsInLightboxViews = value->get<bool>();
+    }
   }
 
   if (!settings.m_showImageBorders) {
@@ -1713,12 +1734,12 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
   j = json{
     {"samplingFactor", settings.m_samplingFactor},
     {"transparentBackgroundWhenNoHit", settings.m_transparentBackgroundWhenNoHit},
-    {"backgroundEdgeBrighteningEnabled", settings.m_backgroundEdgeBrighteningEnabled},
-    {"showCrosshairsIn3D", settings.m_showCrosshairsIn3D},
-    {"crosshairs3DGlyphDiameterVoxelDiagonals", settings.m_crosshairs3DGlyphDiameterVoxelDiagonals},
-    {"showThreeDCameraFrustumIn2DViews", settings.m_showThreeDCameraFrustumIn2DViews},
-    {"reverseThreeDRotateAboutEye", settings.m_reverseThreeDRotateAboutEye},
-    {"threeDCameraFrustumColor", vec4ToJson(settings.m_threeDCameraFrustumColor)},
+    {"showImageBox", settings.m_backgroundEdgeBrighteningEnabled},
+    {"showCrosshairsGlyph", settings.m_showCrosshairsIn3D},
+    {"crosshairsGlyphDiameterVoxels", settings.m_crosshairs3DGlyphDiameterVoxelDiagonals},
+    {"showCameraFrustumIn2DViews", settings.m_showThreeDCameraFrustumIn2DViews},
+    {"reverseRotateAboutEye", settings.m_reverseThreeDRotateAboutEye},
+    {"cameraFrustumColor", vec4ToJson(settings.m_threeDCameraFrustumColor)},
     {"renderFrontFaces", settings.m_renderFrontFaces},
     {"renderBackFaces", settings.m_renderBackFaces},
     {"segmentationMasking", enumToName(settings.m_segmentationMasking, k_raycastSegmentationMaskingNames)}};
@@ -1732,24 +1753,22 @@ void from_json(const json& j, ProjectRaycastingSettings& settings)
   if (const auto value = j.find("transparentBackgroundWhenNoHit"); value != j.end() && value->is_boolean()) {
     settings.m_transparentBackgroundWhenNoHit = value->get<bool>();
   }
-  if (const auto value = j.find("backgroundEdgeBrighteningEnabled"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("showImageBox"); value != j.end() && value->is_boolean()) {
     settings.m_backgroundEdgeBrighteningEnabled = value->get<bool>();
   }
-  if (const auto value = j.find("showCrosshairsIn3D"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("showCrosshairsGlyph"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();
   }
-  if (const auto value = j.find("crosshairs3DGlyphDiameterVoxelDiagonals"); value != j.end() && value->is_number()) {
+  if (const auto value = j.find("crosshairsGlyphDiameterVoxels"); value != j.end() && value->is_number()) {
     settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
   }
-  if (const auto value = j.find("showThreeDCameraFrustumIn2DViews"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("showCameraFrustumIn2DViews"); value != j.end() && value->is_boolean()) {
     settings.m_showThreeDCameraFrustumIn2DViews = value->get<bool>();
   }
-  if (const auto value = j.find("reverseThreeDRotateAboutEye"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("reverseRotateAboutEye"); value != j.end() && value->is_boolean()) {
     settings.m_reverseThreeDRotateAboutEye = value->get<bool>();
   }
-  if (const auto value = j.find("threeDCameraFrustumColor");
-      value != j.end() && value->is_array() && value->size() == 4)
-  {
+  if (const auto value = j.find("cameraFrustumColor"); value != j.end() && value->is_array() && value->size() == 4) {
     settings.m_threeDCameraFrustumColor = glm::clamp(vec4FromJson(*value), glm::vec4{0.0f}, glm::vec4{1.0f});
   }
   if (const auto value = j.find("renderFrontFaces"); value != j.end() && value->is_boolean()) {
@@ -1850,20 +1869,26 @@ void from_json(const json& j, ProjectIsosurfaceDisplaySettings& settings)
 void to_json(json& j, const ProjectAnnotationDisplaySettings& settings)
 {
   j = json{
-    {"annotationsOnTop", settings.m_annotationsOnTop},
-    {"landmarksOnTop", settings.m_landmarksOnTop},
-    {"hideAnnotationVertices", settings.m_hideAnnotationVertices}};
+    {"rendering",
+     {{"annotationsOnTop", settings.m_annotationsOnTop},
+      {"landmarksOnTop", settings.m_landmarksOnTop},
+      {"hideAnnotationVertices", settings.m_hideAnnotationVertices}}}};
 }
 
 void from_json(const json& j, ProjectAnnotationDisplaySettings& settings)
 {
-  if (const auto value = j.find("annotationsOnTop"); value != j.end() && value->is_boolean()) {
+  const auto rendering = j.find("rendering");
+  if (rendering == j.end() || !rendering->is_object()) {
+    return;
+  }
+
+  if (const auto value = rendering->find("annotationsOnTop"); value != rendering->end() && value->is_boolean()) {
     settings.m_annotationsOnTop = value->get<bool>();
   }
-  if (const auto value = j.find("landmarksOnTop"); value != j.end() && value->is_boolean()) {
+  if (const auto value = rendering->find("landmarksOnTop"); value != rendering->end() && value->is_boolean()) {
     settings.m_landmarksOnTop = value->get<bool>();
   }
-  if (const auto value = j.find("hideAnnotationVertices"); value != j.end() && value->is_boolean()) {
+  if (const auto value = rendering->find("hideAnnotationVertices"); value != rendering->end() && value->is_boolean()) {
     settings.m_hideAnnotationVertices = value->get<bool>();
   }
 }
@@ -1920,21 +1945,25 @@ void to_json(json& j, const EntropyProject& project)
   images.insert(images.end(), project.m_additionalImages.begin(), project.m_additionalImages.end());
 
   j = json{{"version", versionToJson(k_projectFormatMajorVersion, k_projectFormatMinorVersion)}, {"images", images}};
-  if (project.m_layoutsFileName) {
-    j["layouts"] = json{{"path", pathToString(*project.m_layoutsFileName)}};
-  }
-  else if (!project.m_layouts.empty()) {
-    j["layouts"] = json{{"embedded", project.m_layouts}};
-  }
-  if (project.m_currentLayoutIndex) {
-    j["currentLayout"] = *project.m_currentLayoutIndex;
+  if (project.m_layoutsFileName || !project.m_layouts.empty() || project.m_currentLayoutIndex) {
+    json layouts = json::object();
+    if (project.m_layoutsFileName) {
+      layouts["path"] = pathToString(*project.m_layoutsFileName);
+    }
+    else if (!project.m_layouts.empty()) {
+      layouts["embedded"] = project.m_layouts;
+    }
+    if (project.m_currentLayoutIndex) {
+      layouts["current"] = *project.m_currentLayoutIndex;
+    }
+    j["layouts"] = std::move(layouts);
   }
   j["settings"] = {
     {"interface", project.m_interface},
     {"view", project.m_view},
     {"rendering",
      {{"comparison", project.m_comparison},
-      {"raycasting", project.m_raycasting},
+      {"volumeRaycasting", project.m_raycasting},
       {"intensityProjection", project.m_intensityProjection},
       {"segmentation", project.m_segmentationDisplay},
       {"isosurfaces", project.m_isosurfaces}}},
@@ -1974,9 +2003,9 @@ void from_json(const json& j, EntropyProject& project)
     if (const auto embedded = layouts->find("embedded"); embedded != layouts->end()) {
       embedded->get_to(project.m_layouts);
     }
-  }
-  if (j.count("currentLayout")) {
-    project.m_currentLayoutIndex = j.at("currentLayout").get<std::size_t>();
+    if (const auto current = layouts->find("current"); current != layouts->end() && !current->is_null()) {
+      project.m_currentLayoutIndex = current->get<std::size_t>();
+    }
   }
   if (const auto settings = j.find("settings"); settings != j.end() && settings->is_object()) {
     if (const auto interface = settings->find("interface"); interface != settings->end() && interface->is_object()) {
@@ -1991,7 +2020,7 @@ void from_json(const json& j, EntropyProject& project)
       {
         comparison->get_to(project.m_comparison);
       }
-      if (const auto raycasting = rendering->find("raycasting");
+      if (const auto raycasting = rendering->find("volumeRaycasting");
           raycasting != rendering->end() && raycasting->is_object())
       {
         raycasting->get_to(project.m_raycasting);

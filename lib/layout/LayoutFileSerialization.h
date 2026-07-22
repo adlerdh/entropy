@@ -1,6 +1,6 @@
 #pragma once
 
-#include "layout/LayoutPreset.h"
+#include "layout/LayoutSpec.h"
 
 #include <filesystem>
 #include <optional>
@@ -9,11 +9,11 @@
 namespace layout
 {
 
-/** @brief Contents of a standalone layout preset file. */
+/** @brief Contents of a standalone layout file. */
 struct LayoutFile
 {
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt; //!< Selected layout index, when saved
-  std::vector<LayoutPreset> m_layouts;                            //!< Layout presets in display order
+  std::vector<LayoutSpec> m_layouts;                              //!< Layout snapshots in display order
 };
 
 /**

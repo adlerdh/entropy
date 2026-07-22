@@ -1,5 +1,7 @@
 #include "layout/LayoutFileSerialization.h"
 
+#include "layout/LayoutSpecJson.h"
+
 #include <nlohmann/json.hpp>
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
@@ -84,38 +86,6 @@ std::string dumpPretty(const nlohmann::json& json, int indent = 0)
 
 } // namespace
 
-void to_json(nlohmann::json& json, const LayoutPreset& preset)
-{
-  json = nlohmann::json{{"type", preset.m_type}};
-  if (!preset.m_view.empty()) {
-    json["view"] = preset.m_view;
-  }
-  if (!preset.m_images.empty()) {
-    json["images"] = preset.m_images;
-  }
-  else if (!preset.m_imageIndices.empty()) {
-    json["images"] = preset.m_imageIndices;
-  }
-}
-
-void from_json(const nlohmann::json& json, LayoutPreset& preset)
-{
-  json.at("type").get_to(preset.m_type);
-  preset.m_view = json.value("view", std::string{});
-  preset.m_images.clear();
-  preset.m_imageIndices.clear();
-
-  if (json.contains("images")) {
-    const auto& images = json.at("images");
-    if (images.is_string()) {
-      preset.m_images = images.get<std::string>();
-    }
-    else {
-      preset.m_imageIndices = images.get<std::vector<std::size_t>>();
-    }
-  }
-}
-
 bool open(LayoutFile& file, const std::filesystem::path& fileName)
 {
   std::ifstream in(fileName);
@@ -128,14 +98,8 @@ bool open(LayoutFile& file, const std::filesystem::path& fileName)
   try {
     in >> json;
 
-    if (json.is_array()) {
-      file.m_currentLayoutIndex = std::nullopt;
-      file.m_layouts = json.get<std::vector<LayoutPreset>>();
-      return true;
-    }
-
     if (!json.is_object()) {
-      spdlog::error("Layout file {} must contain a JSON object or layout array", fileName);
+      spdlog::error("Layout file {} must contain a JSON object", fileName);
       return false;
     }
 
@@ -165,7 +129,7 @@ bool open(LayoutFile& file, const std::filesystem::path& fileName)
       file.m_currentLayoutIndex = std::nullopt;
     }
 
-    file.m_layouts = json.at("layouts").get<std::vector<LayoutPreset>>();
+    file.m_layouts = json.at("layouts").get<std::vector<LayoutSpec>>();
   }
   catch (const std::exception& e) {
     spdlog::error("Could not parse layout file {}: {}", fileName, e.what());

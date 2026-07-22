@@ -38,7 +38,7 @@ bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileN
 {
   layout::LayoutFile layoutFile{
     .m_currentLayoutIndex = appData.windowData().currentLayoutIndex(),
-    .m_layouts = appData.windowData().createLayoutPresets(appData.imageUidsOrdered())};
+    .m_layouts = appData.windowData().createProjectLayoutSnapshots(appData.imageUidsOrdered())};
   return layout::save(layoutFile, layoutsFileName);
 }
 constexpr uint64_t LargeImageWarningBytes = 2ull * 1024ull * 1024ull * 1024ull;
@@ -581,7 +581,9 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
     spdlog::warn("Layout file {} contains no layouts; using the default layout", fileName);
   }
 
-  if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {
+  if (!m_data.windowData()
+         .applyProjectLayoutSnapshots(layoutFile.m_layouts, m_data.imageUidsOrdered(), layoutFile.m_currentLayoutIndex))
+  {
     spdlog::error("Could not apply layout file {}", fileName);
     return;
   }

@@ -358,7 +358,11 @@ void EntropyApp::onImagesReady()
         if (layoutFile.m_layouts.empty()) {
           spdlog::warn("Referenced layout file {} contains no layouts; using the default layout", *layoutsFileName);
         }
-        if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {
+        if (!m_data.windowData().applyProjectLayoutSnapshots(
+              layoutFile.m_layouts,
+              m_data.imageUidsOrdered(),
+              layoutFile.m_currentLayoutIndex))
+        {
           spdlog::error("Could not apply referenced layout file {}", *layoutsFileName);
         }
       }

@@ -18,7 +18,6 @@
 
 #include "image/ImageUtility.h"
 #include "layout/LayoutKindInfo.h"
-#include "layout/LayoutPresetInfo.h"
 #include "viewer/FrameHitGeometry.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
@@ -622,12 +621,6 @@ Layout createGridLayout(
   return layout;
 }
 
-ViewType firstViewType(const Layout& layout, ViewType fallback)
-{
-  const std::vector<const View*> views = layout.orderedViews();
-  return views.empty() ? fallback : views.front()->viewType();
-}
-
 bool containsApprox(const std::vector<float>& values, float value)
 {
   return std::any_of(values.begin(), values.end(), [value](float existing) {
@@ -672,68 +665,6 @@ std::string tiledLayoutDisplayName(const Layout& layout, const char* fallbackNam
   return stream.str();
 }
 
-std::optional<std::size_t> imageIndexInOrder(uuid_range_t orderedImageUids, const std::optional<uuid>& imageUid)
-{
-  if (!imageUid) {
-    return std::nullopt;
-  }
-
-  const auto imageIt = std::find(orderedImageUids.begin(), orderedImageUids.end(), *imageUid);
-  if (imageIt == orderedImageUids.end()) {
-    return std::nullopt;
-  }
-  return static_cast<std::size_t>(std::distance(orderedImageUids.begin(), imageIt));
-}
-
-std::vector<std::size_t> imageIndicesInOrder(const uuid_range_t& orderedImageUids, const std::list<uuid>& imageUids)
-{
-  std::vector<std::size_t> imageIndices;
-  imageIndices.reserve(imageUids.size());
-
-  for (const auto& imageUid : imageUids) {
-    if (auto imageIndex = imageIndexInOrder(orderedImageUids, imageUid)) {
-      imageIndices.push_back(*imageIndex);
-    }
-  }
-
-  return imageIndices;
-}
-
-std::optional<uuid> presetImageUid(const AppData& appData, const layout::LayoutPreset& preset)
-{
-  const auto imageIndices = layout::presetImageIndicesOrDefault(preset);
-  return appData.imageUid(imageIndices.front());
-}
-
-void applyViewImageIndices(Layout& layout, const std::vector<std::size_t>& imageIndices)
-{
-  const std::vector<View*> views = layout.orderedViews();
-  for (std::size_t i = 0; i < views.size(); ++i) {
-    if (!views.at(i)) {
-      continue;
-    }
-
-    const std::size_t imageIndex = imageIndices.at(std::min(i, imageIndices.size() - 1));
-    views.at(i)->setPreferredDefaultRenderedImages({imageIndex});
-    views.at(i)->setDefaultRenderAllImages(false);
-  }
-}
-
-void applyRowImageIndices(Layout& layout, const std::vector<std::size_t>& imageIndices, std::size_t viewsPerRow)
-{
-  const std::vector<View*> views = layout.orderedViews();
-  for (std::size_t i = 0; i < views.size(); ++i) {
-    if (!views.at(i)) {
-      continue;
-    }
-
-    const std::size_t row = i / viewsPerRow;
-    const std::size_t imageIndex = imageIndices.at(std::min(row, imageIndices.size() - 1));
-    views.at(i)->setPreferredDefaultRenderedImages({imageIndex});
-    views.at(i)->setDefaultRenderAllImages(false);
-  }
-}
-
 void configureOneUpDefaultImageSelection(Layout& layout)
 {
   layout.setPreferredDefaultRenderedImages({});
@@ -772,42 +703,6 @@ Layout createOneUpLayout(
   return layout;
 }
 
-std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, const uuid_range_t& orderedImageUids)
-{
-  switch (layout.kind()) {
-    case LayoutKind::FourUp:
-      return layout::LayoutPreset{.m_type = "fourUp", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
-    case LayoutKind::ThreeUp:
-      return layout::LayoutPreset{.m_type = "threeUp", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
-    case LayoutKind::OneUp:
-      return layout::LayoutPreset{
-        .m_type = "oneUp",
-        .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
-        .m_images = {},
-        .m_imageIndices = imageIndicesInOrder(
-          orderedImageUids,
-          layout.orderedViews().empty() ? std::list<uuid>{} : layout.orderedViews().front()->renderedImages())};
-    case LayoutKind::MultiImageGrid:
-      return layout::LayoutPreset{
-        .m_type = "grid",
-        .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
-        .m_images = "all",
-        .m_imageIndices = {}};
-    case LayoutKind::AxCorSagByImage:
-      return layout::LayoutPreset{.m_type = "orthogonalByImage", .m_view = {}, .m_images = "all", .m_imageIndices = {}};
-    case LayoutKind::Lightbox:
-      return layout::LayoutPreset{
-        .m_type = "lightbox",
-        .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
-        .m_images = {},
-        .m_imageIndices = {imageIndexInOrder(orderedImageUids, layoutImageUid(layout)).value_or(0)}};
-    case LayoutKind::Custom:
-    case LayoutKind::NumElements:
-      break;
-  }
-  return std::nullopt;
-}
-
 std::optional<Layout> createLightboxLayoutForImage(
   const AppData& appData,
   const CrosshairsState& crosshairs,
@@ -815,108 +710,6 @@ std::optional<Layout> createLightboxLayoutForImage(
   const ViewConvention& viewConvention,
   const ViewType& viewType,
   const uuid& imageUid);
-
-std::optional<Layout> instantiateLayoutPreset(
-  const AppData& appData,
-  const layout::LayoutPreset& preset,
-  const CrosshairsState& crosshairs,
-  const ViewAlignmentMode& viewAlignment,
-  const ViewConvention& viewConvention)
-{
-  const auto viewType = layout::layoutPresetViewType(preset.m_view);
-  if (!viewType) {
-    spdlog::warn("Skipping layout preset with unsupported view '{}'", preset.m_view);
-    return std::nullopt;
-  }
-
-  if ("fourUp" == preset.m_type) {
-    return createFourUpLayout(crosshairs, viewAlignment, viewConvention);
-  }
-  if ("threeUp" == preset.m_type) {
-    return createThreeUpLayout(crosshairs, viewAlignment, viewConvention);
-  }
-  if ("oneUp" == preset.m_type) {
-    const auto imageIndices = layout::presetImageIndicesOrDefault(preset);
-    Layout layout = createGridLayout(
-      *viewType,
-      1,
-      1,
-      false,
-      false,
-      crosshairs,
-      viewAlignment,
-      viewConvention,
-      imageIndices.front(),
-      appData.imageUid(imageIndices.front()));
-    applyViewImageIndices(layout, imageIndices);
-    if (ViewType::Axial == *viewType || ViewType::Coronal == *viewType || ViewType::Sagittal == *viewType) {
-      layout.setKind(LayoutKind::OneUp);
-    }
-    else {
-      layout.setKind(LayoutKind::Custom);
-    }
-    return std::optional<Layout>{std::move(layout)};
-  }
-  if ("grid" == preset.m_type) {
-    const auto imageIndices =
-      ("all" == preset.m_images) ? std::vector<std::size_t>{} : layout::presetImageIndicesOrDefault(preset);
-    const std::size_t width = imageIndices.empty() ? appData.numImages() : imageIndices.size();
-    if (0 == width) {
-      return std::nullopt;
-    }
-    Layout layout = createGridLayout(
-      *viewType,
-      width,
-      1,
-      false,
-      false,
-      crosshairs,
-      viewAlignment,
-      viewConvention,
-      0,
-      appData.refImageUid());
-    if (!imageIndices.empty()) {
-      applyViewImageIndices(layout, imageIndices);
-    }
-    if (ViewType::Axial == *viewType || ViewType::Coronal == *viewType || ViewType::Sagittal == *viewType) {
-      layout.setKind(LayoutKind::MultiImageGrid);
-    }
-    else {
-      layout.setKind(LayoutKind::Custom);
-    }
-    return std::optional<Layout>{std::move(layout)};
-  }
-  if ("orthogonalByImage" == preset.m_type) {
-    const auto imageIndices =
-      ("all" == preset.m_images) ? std::vector<std::size_t>{} : layout::presetImageIndicesOrDefault(preset);
-    const std::size_t numRows = imageIndices.empty() ? appData.numImages() : imageIndices.size();
-    if (0 == numRows) {
-      return std::nullopt;
-    }
-    Layout layout = createOrthogonalByImageLayout(numRows, crosshairs, viewAlignment, viewConvention);
-    if (!imageIndices.empty()) {
-      applyRowImageIndices(layout, imageIndices, 3);
-    }
-    return std::optional<Layout>{std::move(layout)};
-  }
-  if ("lightbox" == preset.m_type) {
-    if (preset.m_imageIndices.size() > 1) {
-      spdlog::warn("Skipping lightbox layout preset because lightboxes support exactly one image");
-      return std::nullopt;
-    }
-    const auto imageUid = presetImageUid(appData, preset);
-    if (!imageUid) {
-      spdlog::warn(
-        "Skipping lightbox layout preset for missing image index {}",
-        layout::presetImageIndicesOrDefault(preset).front());
-      return std::nullopt;
-    }
-    return createLightboxLayoutForImage(appData, crosshairs, viewAlignment, viewConvention, *viewType, *imageUid);
-  }
-
-  spdlog::warn("Skipping layout preset with unsupported type '{}'", preset.m_type);
-  return std::nullopt;
-}
 
 std::size_t fixedManagedLayoutPrefixLength(const std::vector<Layout>& layouts)
 {
@@ -1554,69 +1347,6 @@ bool WindowData::applyProjectLayoutSnapshots(
 
   if (restoredLayouts.empty()) {
     return false;
-  }
-
-  m_layouts = std::move(restoredLayouts);
-  m_currentLayout = (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) ? *currentLayoutIndex : 0;
-  m_activeViewUid = std::nullopt;
-  updateAllViews();
-  return true;
-}
-
-std::vector<layout::LayoutPreset> WindowData::createLayoutPresets(const uuid_range_t& orderedImageUids) const
-{
-  std::vector<layout::LayoutPreset> presets;
-  presets.reserve(m_layouts.size());
-
-  for (const auto& layout : m_layouts) {
-    if (auto preset = createLayoutPreset(layout, orderedImageUids)) {
-      presets.push_back(std::move(*preset));
-    }
-    else {
-      spdlog::warn(
-        "Skipping layout of kind {} because it cannot be represented as a compact layout preset",
-        static_cast<int>(layout.kind()));
-    }
-  }
-
-  return presets;
-}
-
-bool WindowData::applyLayoutPresets(
-  const AppData& appData,
-  const std::vector<layout::LayoutPreset>& presets,
-  std::optional<std::size_t> currentLayoutIndex)
-{
-  if (presets.empty()) {
-    clearLayouts();
-    if (shouldDefaultToOneUpLayout(appData)) {
-      m_layouts.emplace_back(createOneUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
-      setCurrentLayoutIndex(0);
-      setWindowSize(m_windowSize.x, m_windowSize.y);
-      setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
-    }
-    else {
-      resetToThreeUpLayout();
-    }
-    setDefaultRenderedImagesForLayout(currentLayout(), appData);
-    return true;
-  }
-
-  std::vector<Layout> restoredLayouts;
-  restoredLayouts.reserve(presets.size());
-
-  for (const auto& preset : presets) {
-    if (auto layout = instantiateLayoutPreset(appData, preset, m_crosshairs, m_viewAlignment, m_viewConvention)) {
-      restoredLayouts.push_back(std::move(*layout));
-    }
-  }
-
-  if (restoredLayouts.empty()) {
-    return false;
-  }
-
-  for (auto& layout : restoredLayouts) {
-    setDefaultRenderedImagesForLayout(layout, appData);
   }
 
   m_layouts = std::move(restoredLayouts);

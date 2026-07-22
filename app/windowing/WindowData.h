@@ -6,7 +6,6 @@
 
 #include "logic/app/CrosshairsState.h"
 
-#include "layout/LayoutPreset.h"
 #include "layout/LayoutSpec.h"
 #include "viewer/LayoutTypes.h"
 #include "viewer/ViewTypes.h"
@@ -142,12 +141,6 @@ public:
     const std::vector<layout::LayoutSpec>& layouts,
     const uuid_range_t& orderedImageUids,
     std::optional<std::size_t> currentLayoutIndex);
-  std::vector<layout::LayoutPreset> createLayoutPresets(const uuid_range_t& orderedImageUids) const;
-  bool applyLayoutPresets(
-    const AppData& appData,
-    const std::vector<layout::LayoutPreset>& presets,
-    std::optional<std::size_t> currentLayoutIndex);
-
   void removeLayout(std::size_t index);
   void clearLayouts();
   void resetDefaultLayouts();
