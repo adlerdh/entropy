@@ -115,6 +115,13 @@ enum class ProjectSegmentationRaycastMasking : std::uint8_t
   MaskOut
 };
 
+/// @brief Serialized coordinate space for landmark point positions.
+enum class ProjectLandmarkCoordinateSpace : std::uint8_t
+{
+  Subject,
+  Voxel
+};
+
 /**
  * @brief Serialized colormap/window parameters for comparison metrics.
  */
@@ -254,8 +261,8 @@ struct ProjectAnnotationDisplaySettings
 struct RegistrationResult
 {
   std::string m_backend{};                                     //!< Backend that produced the result
-  std::string m_fixedImageUid{};                               //!< Fixed/reference image UID at registration time
-  std::string m_movingImageUid{};                              //!< Moving image UID at registration time
+  std::optional<std::filesystem::path> m_fixedImage{};         //!< Fixed/reference image path at registration time
+  std::optional<std::filesystem::path> m_movingImage{};        //!< Moving image path at registration time
   std::optional<std::filesystem::path> m_manifestFileName{};   //!< Result manifest JSON path, when available
   std::optional<std::filesystem::path> m_warpedImage{};        //!< Warped moving image output
   std::optional<std::filesystem::path> m_inverseWarpField{};   //!< Fixed-to-moving sampling warp output
@@ -374,14 +381,11 @@ struct ImageSettings
  */
 struct SegSettings
 {
-  std::string m_displayName;
-  bool m_visibility = true;
-  double m_opacity = 1.0f;
-  uint32_t m_activeComponent = 0;
-  std::vector<bool> m_componentVisibility;
-  std::vector<double> m_componentOpacities;
-  std::vector<std::size_t> m_labelTableIndices;
-  std::vector<InterpolationMode> m_interpolationModes;
+  std::string m_displayName;         //!< Segmentation display name
+  bool m_visible = true;             //!< Global segmentation visibility
+  double m_opacity = 1.0f;           //!< Global segmentation opacity
+  std::size_t m_labelTableIndex = 0; //!< Label table index for segmentation labels
+  InterpolationMode m_interpolationMode = InterpolationMode::NearestNeighbor; //!< Segmentation sampling mode
 };
 
 /**
@@ -414,22 +418,18 @@ struct LandmarkGroup
 {
   std::optional<std::filesystem::path> m_csvFileName = std::nullopt; //!< External CSV file holding landmarks
 
-  /**
-   * Flag indicating whether landmarks are defined in image voxel space (true)
-   * or in physical/subject space (false)
-   */
-  bool m_inVoxelSpace = false;
-
-  std::string m_name{};                   //!< Landmark group display name
-  std::vector<LandmarkPoint> m_points{};  //!< Embedded landmark points
-  bool m_visible = true;                  //!< Show the landmark group
-  float m_opacity = 1.0f;                 //!< Landmark group opacity
-  glm::vec3 m_color{1.0f};                //!< Landmark group color
-  bool m_colorOverride = false;           //!< Override individual landmark colors
-  std::optional<glm::vec3> m_textColor{}; //!< Landmark label text color
-  bool m_renderLandmarkIndices = true;    //!< Render landmark indices
-  bool m_renderLandmarkNames = false;     //!< Render landmark names
-  float m_radiusFactor = 1.0f;            //!< Landmark radius factor
+  std::string m_name{}; //!< Landmark group display name
+  ProjectLandmarkCoordinateSpace m_coordinateSpace =
+    ProjectLandmarkCoordinateSpace::Subject; //!< Coordinate space for landmark point positions
+  std::vector<LandmarkPoint> m_points{};     //!< Embedded landmark points
+  bool m_visible = true;                     //!< Show the landmark group
+  float m_opacity = 1.0f;                    //!< Landmark group opacity
+  glm::vec3 m_color{1.0f};                   //!< Landmark group color
+  bool m_colorOverride = false;              //!< Override individual landmark colors
+  std::optional<glm::vec3> m_textColor{};    //!< Landmark label text color
+  bool m_renderLandmarkIndices = true;       //!< Render landmark indices
+  bool m_renderLandmarkNames = false;        //!< Render landmark names
+  float m_glyphRadiusFactor = 1.0f;          //!< Landmark glyph radius factor
 };
 
 /**
@@ -513,7 +513,7 @@ struct Image
   std::optional<glm::mat4> m_manualAffineMatrix = std::nullopt;
 
   /**
-   * Optional external annotations JSON path.
+   * Optional external annotations JSON path saved under the image annotations object.
    */
   std::optional<std::filesystem::path> m_annotationsFileName = std::nullopt;
 

@@ -13,25 +13,26 @@ using json = nlohmann::json;
 namespace
 {
 static constexpr size_t OUTER_BOUNDARY = 0;
-static constexpr int ANNOTATION_JSON_VERSION = 1;
+static constexpr int ANNOTATION_JSON_MAJOR_VERSION = 1;
+static constexpr int ANNOTATION_JSON_MINOR_VERSION = 0;
 static constexpr const char* POLYGON_ANNOTATION_TYPE = "polygon";
 
-json colorToJson(const glm::vec4& color)
+json annotationVersionToJson()
 {
-  return json{{"r", color.r}, {"g", color.g}, {"b", color.b}, {"a", color.a}};
+  return json{{"major", ANNOTATION_JSON_MAJOR_VERSION}, {"minor", ANNOTATION_JSON_MINOR_VERSION}};
 }
 
-glm::vec4 colorFromJson(const json& value, const glm::vec4& fallback)
+void validateAnnotationVersion(const json& value)
 {
-  if (value.is_object()) {
-    return glm::vec4{
-      value.value("r", fallback.r),
-      value.value("g", fallback.g),
-      value.value("b", fallback.b),
-      value.value("a", fallback.a)};
+  if (!value.is_object()) {
+    throwDebug("Annotation JSON version must be an object");
   }
 
-  throwDebug("JSON structure contains invalid color");
+  const int major = value.at("major").get<int>();
+  const int minor = value.at("minor").get<int>();
+  if (major != ANNOTATION_JSON_MAJOR_VERSION || minor != ANNOTATION_JSON_MINOR_VERSION) {
+    throwDebug("Unsupported annotation JSON version");
+  }
 }
 
 json boundaryToJson(const std::vector<glm::vec2>& vertices)
@@ -127,8 +128,8 @@ void to_json(json& j, const Annotation& annot)
     {"visible", annot.isVisible()},
     {"opacity", annot.getOpacity()},
     {"lineThickness", annot.getLineThickness()},
-    {"lineColor", colorToJson(lineCol)},
-    {"fillColor", colorToJson(fillCol)},
+    {"lineColor", annotation_json::colorToJson(lineCol)},
+    {"fillColor", annotation_json::colorToJson(fillCol)},
     {"verticesVisible", annot.getVertexVisibility()},
     {"closed", annot.isClosed()},
     {"filled", annot.isFilled()},
@@ -170,12 +171,12 @@ void from_json(const json& j, Annotation& annot)
 
   glm::vec4 lineColorVec4{1.0f, 0.0f, 0.0f, 1.0f};
   if (j.count("lineColor")) {
-    lineColorVec4 = colorFromJson(j.at("lineColor"), lineColorVec4);
+    lineColorVec4 = annotation_json::colorFromJson(j.at("lineColor"));
   }
 
   glm::vec4 fillColorVec4{1.0f, 0.0f, 0.0f, 0.5f};
   if (j.count("fillColor")) {
-    fillColorVec4 = colorFromJson(j.at("fillColor"), fillColorVec4);
+    fillColorVec4 = annotation_json::colorFromJson(j.at("fillColor"));
   }
 
   bool verticesVisible = true;
@@ -254,7 +255,7 @@ json annotationsToJson(const std::vector<Annotation>& annotations)
     annotationArray.emplace_back(annotation);
   }
 
-  return json{{"version", ANNOTATION_JSON_VERSION}, {"annotations", std::move(annotationArray)}};
+  return json{{"version", annotationVersionToJson()}, {"annotations", std::move(annotationArray)}};
 }
 
 std::vector<Annotation> annotationsFromJson(const json& j)
@@ -264,10 +265,7 @@ std::vector<Annotation> annotationsFromJson(const json& j)
     throwDebug("Annotation JSON must be an object");
   }
 
-  const int version = j.at("version").get<int>();
-  if (version != ANNOTATION_JSON_VERSION) {
-    throwDebug("Unsupported annotation JSON version");
-  }
+  validateAnnotationVersion(j.at("version"));
 
   appendAnnotationsFromArray(j.at("annotations"), annotations);
   return annotations;

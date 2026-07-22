@@ -95,8 +95,12 @@ serialize::RegistrationResult registrationResultSnapshot(const registration::Job
 {
   serialize::RegistrationResult result;
   result.m_backend = std::string{registration::label(job.spec.backend)};
-  result.m_fixedImageUid = job.spec.fixedImage.uid;
-  result.m_movingImageUid = job.spec.movingImage.uid;
+  if (!job.spec.fixedImage.fileName.empty()) {
+    result.m_fixedImage = job.spec.fixedImage.fileName;
+  }
+  if (!job.spec.movingImage.fileName.empty()) {
+    result.m_movingImage = job.spec.movingImage.fileName;
+  }
 
   if (!job.manifest) {
     return result;
@@ -127,7 +131,9 @@ serialize::RegistrationResult registrationResultSnapshot(const registration::Job
 std::string registrationResultKey(const serialize::RegistrationResult& result)
 {
   const std::string manifest = result.m_manifestFileName ? result.m_manifestFileName->string() : std::string{};
-  return result.m_backend + '\n' + result.m_fixedImageUid + '\n' + result.m_movingImageUid + '\n' + manifest;
+  const std::string fixedImage = result.m_fixedImage ? result.m_fixedImage->string() : std::string{};
+  const std::string movingImage = result.m_movingImage ? result.m_movingImage->string() : std::string{};
+  return result.m_backend + '\n' + fixedImage + '\n' + movingImage + '\n' + manifest;
 }
 
 std::vector<serialize::RegistrationResult> registrationResultSnapshots(const AppData& data)
@@ -281,7 +287,9 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
     if (!lmGroup->getFileName().empty()) {
       serializedLandmarks.m_csvFileName = lmGroup->getFileName();
     }
-    serializedLandmarks.m_inVoxelSpace = lmGroup->getInVoxelSpace();
+    serializedLandmarks.m_coordinateSpace = lmGroup->getInVoxelSpace()
+                                              ? serialize::ProjectLandmarkCoordinateSpace::Voxel
+                                              : serialize::ProjectLandmarkCoordinateSpace::Subject;
     serializedLandmarks.m_name = lmGroup->getName();
     serializedLandmarks.m_visible = lmGroup->getVisibility();
     serializedLandmarks.m_opacity = lmGroup->getOpacity();
@@ -290,7 +298,7 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
     serializedLandmarks.m_textColor = lmGroup->getTextColor();
     serializedLandmarks.m_renderLandmarkIndices = lmGroup->getRenderLandmarkIndices();
     serializedLandmarks.m_renderLandmarkNames = lmGroup->getRenderLandmarkNames();
-    serializedLandmarks.m_radiusFactor = lmGroup->getRadiusFactor();
+    serializedLandmarks.m_glyphRadiusFactor = lmGroup->getRadiusFactor();
     for (const auto& [index, point] : lmGroup->getPoints()) {
       serializedLandmarks.m_points.push_back(
         serialize::LandmarkPoint{.m_index = index, .m_position = point.getPosition(), .m_name = point.getName()});

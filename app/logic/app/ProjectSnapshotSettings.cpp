@@ -490,18 +490,11 @@ serialize::SegSettings segmentationSettings(const Image& seg)
   serialize::SegSettings settings;
   const ImageSettings& segSettings = seg.settings();
   settings.m_displayName = segSettings.displayName();
-  settings.m_visibility = segSettings.visibility();
+  settings.m_visible = segSettings.visibility();
   settings.m_opacity = seg.settings().opacity();
-  settings.m_activeComponent = segSettings.activeComponent();
-  settings.m_componentVisibility.reserve(segSettings.numComponents());
-  settings.m_componentOpacities.reserve(segSettings.numComponents());
-  settings.m_labelTableIndices.reserve(segSettings.numComponents());
-  settings.m_interpolationModes.reserve(segSettings.numComponents());
-  for (uint32_t component = 0; component < segSettings.numComponents(); ++component) {
-    settings.m_componentVisibility.push_back(segSettings.visibility(component));
-    settings.m_componentOpacities.push_back(segSettings.opacity(component));
-    settings.m_labelTableIndices.push_back(segSettings.labelTableIndex(component));
-    settings.m_interpolationModes.push_back(segSettings.interpolationMode(component));
+  if (segSettings.numComponents() > 0) {
+    settings.m_labelTableIndex = segSettings.labelTableIndex(0);
+    settings.m_interpolationMode = segSettings.interpolationMode(0);
   }
   return settings;
 }
@@ -686,30 +679,12 @@ void applySegmentationSettings(Image& seg, const serialize::SegSettings& setting
   if (!settings.m_displayName.empty()) {
     segSettings.setDisplayName(settings.m_displayName);
   }
-  segSettings.setVisibility(settings.m_visibility);
+  segSettings.setVisibility(settings.m_visible);
   segSettings.setOpacity(settings.m_opacity);
-  if (settings.m_activeComponent < segSettings.numComponents()) {
-    segSettings.setActiveComponent(settings.m_activeComponent);
-  }
-  const std::size_t numVisibilityComponents =
-    std::min<std::size_t>(settings.m_componentVisibility.size(), segSettings.numComponents());
-  for (std::size_t component = 0; component < numVisibilityComponents; ++component) {
-    segSettings.setVisibility(static_cast<uint32_t>(component), settings.m_componentVisibility.at(component));
-  }
-  const std::size_t numOpacityComponents =
-    std::min<std::size_t>(settings.m_componentOpacities.size(), segSettings.numComponents());
-  for (std::size_t component = 0; component < numOpacityComponents; ++component) {
-    segSettings.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
-  }
-  const std::size_t numLabelTableComponents =
-    std::min<std::size_t>(settings.m_labelTableIndices.size(), segSettings.numComponents());
-  for (std::size_t component = 0; component < numLabelTableComponents; ++component) {
-    segSettings.setLabelTableIndex(static_cast<uint32_t>(component), settings.m_labelTableIndices.at(component));
-  }
-  const std::size_t numInterpolationComponents =
-    std::min<std::size_t>(settings.m_interpolationModes.size(), segSettings.numComponents());
-  for (std::size_t component = 0; component < numInterpolationComponents; ++component) {
-    segSettings.setInterpolationMode(static_cast<uint32_t>(component), settings.m_interpolationModes.at(component));
+  if (segSettings.numComponents() > 0) {
+    segSettings.setActiveComponent(0);
+    segSettings.setLabelTableIndex(0, settings.m_labelTableIndex);
+    segSettings.setInterpolationMode(0, settings.m_interpolationMode);
   }
 }
 } // namespace project_snapshot

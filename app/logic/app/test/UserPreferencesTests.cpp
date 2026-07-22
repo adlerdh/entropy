@@ -426,7 +426,8 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
 
   const json root = json::parse(text);
   CHECK(root.at("format") == "entropy.userSettings");
-  CHECK(root.at("version") == 1);
+  CHECK(root.at("version").at("major") == 1);
+  CHECK(root.at("version").at("minor") == 0);
   CHECK(root.at("interface").at("precision").at("imageValues") == 4);
   CHECK(root.at("interface").at("precision").at("coordinates") == 5);
   CHECK(root.at("interface").at("precision").at("transformations") == 6);

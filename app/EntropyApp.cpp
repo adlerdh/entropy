@@ -935,7 +935,7 @@ bool EntropyApp::loadSerializedImage(
   if (!serializedImage.m_annotations.empty()) {
     if (serializedImage.m_annotationsFileName) {
       spdlog::warn(
-        "Image {} has embedded annotations and annotationsPath {}; using embedded annotations",
+        "Image {} has embedded annotations and annotations.path {}; using embedded annotations",
         *imageUid,
         *serializedImage.m_annotationsFileName);
     }
@@ -1011,9 +1011,9 @@ bool EntropyApp::loadSerializedImage(
       lmGroup.setTextColor(lm.m_textColor);
       lmGroup.setRenderLandmarkIndices(lm.m_renderLandmarkIndices);
       lmGroup.setRenderLandmarkNames(lm.m_renderLandmarkNames);
-      lmGroup.setRadiusFactor(lm.m_radiusFactor);
+      lmGroup.setRadiusFactor(lm.m_glyphRadiusFactor);
 
-      if (lm.m_inVoxelSpace) {
+      if (serialize::ProjectLandmarkCoordinateSpace::Voxel == lm.m_coordinateSpace) {
         lmGroup.setInVoxelSpace(true);
         spdlog::info("Landmarks are defined in Voxel space");
       }

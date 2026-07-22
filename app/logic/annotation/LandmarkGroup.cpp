@@ -73,6 +73,11 @@ std::map<size_t, PointRecord<LandmarkGroup::PositionType> >& LandmarkGroup::getP
 
 size_t LandmarkGroup::addPoint(const PointRecord<PositionType>& point)
 {
+  if (m_pointMap.empty()) {
+    m_pointMap.emplace(0u, point);
+    return 0u;
+  }
+
   size_t maxIndex = 0;
 
   for (const auto& p : m_pointMap) {
@@ -80,7 +85,7 @@ size_t LandmarkGroup::addPoint(const PointRecord<PositionType>& point)
   }
 
   const size_t newIndex = maxIndex + 1;
-  m_pointMap.emplace(newIndex, std::move(point));
+  m_pointMap.emplace(newIndex, point);
   return newIndex;
 }
 

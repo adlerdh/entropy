@@ -39,7 +39,28 @@ namespace fs = std::filesystem;
 
 namespace
 {
-constexpr int k_projectFormatVersion = 1;
+constexpr int k_projectFormatMajorVersion = 1;
+constexpr int k_projectFormatMinorVersion = 0;
+
+struct JsonVersion
+{
+  int major = 0;
+  int minor = 0;
+};
+
+json versionToJson(const int major, const int minor)
+{
+  return json{{"major", major}, {"minor", minor}};
+}
+
+JsonVersion versionFromJson(const json& value)
+{
+  if (!value.is_object()) {
+    throwDebug("JSON version must be an object");
+  }
+
+  return JsonVersion{.major = value.at("major").get<int>(), .minor = value.at("minor").get<int>()};
+}
 
 json surfaceVec3ToJson(const glm::vec3& value)
 {
@@ -88,13 +109,14 @@ void to_json(json& j, const Isosurface& surface)
     {"color", surfaceVec3ToJson(surface.color)},
     {"material", surface.material},
     {"opacity", surface.opacity},
-    {"fillOpacity", surface.fillOpacity},
+    {"contourFillOpacity", surface.fillOpacity},
     {"visible", surface.visible},
-    {"showIn2d", surface.showIn2d},
-    {"rimLightingEnabled", surface.rimLightingEnabled},
-    {"rimOpacityStrength", surface.rimOpacityStrength},
-    {"rimEmissionStrength", surface.rimEmissionStrength},
-    {"rimPower", surface.rimPower}};
+    {"showContours2D", surface.showIn2d},
+    {"rimLighting",
+     {{"enabled", surface.rimLightingEnabled},
+      {"opacity", surface.rimOpacityStrength},
+      {"glow", surface.rimEmissionStrength},
+      {"falloff", surface.rimPower}}}};
 }
 
 void from_json(const json& j, Isosurface& surface)
@@ -116,33 +138,28 @@ void from_json(const json& j, Isosurface& surface)
   if (const auto value = j.find("opacity"); value != j.end() && value->is_number()) {
     surface.opacity = value->get<float>();
   }
-  if (const auto value = j.find("fillOpacity"); value != j.end() && value->is_number()) {
+  if (const auto value = j.find("contourFillOpacity"); value != j.end() && value->is_number()) {
     surface.fillOpacity = value->get<float>();
   }
   if (const auto value = j.find("visible"); value != j.end() && value->is_boolean()) {
     surface.visible = value->get<bool>();
   }
-  if (const auto value = j.find("showIn2d"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("showContours2D"); value != j.end() && value->is_boolean()) {
     surface.showIn2d = value->get<bool>();
   }
-  if (const auto value = j.find("rimLightingEnabled"); value != j.end() && value->is_boolean()) {
-    surface.rimLightingEnabled = value->get<bool>();
-  }
-  if (const auto value = j.find("rimOpacityStrength"); value != j.end() && value->is_number()) {
-    surface.rimOpacityStrength = value->get<float>();
-  }
-  if (const auto value = j.find("rimEmissionStrength"); value != j.end() && value->is_number()) {
-    surface.rimEmissionStrength = value->get<float>();
-  }
-  if (const auto value = j.find("rimPower"); value != j.end() && value->is_number()) {
-    surface.rimPower = value->get<float>();
-  }
-  else if (const auto legacy = j.find("edgeStrength"); legacy != j.end() && legacy->is_number()) {
-    const float edgeStrength = legacy->get<float>();
-    surface.rimLightingEnabled = edgeStrength > 0.0f;
-    surface.rimOpacityStrength = 1.0f;
-    surface.rimEmissionStrength = 0.0f;
-    surface.rimPower = std::max(edgeStrength, 0.25f);
+  if (const auto rim = j.find("rimLighting"); rim != j.end() && rim->is_object()) {
+    if (const auto value = rim->find("enabled"); value != rim->end() && value->is_boolean()) {
+      surface.rimLightingEnabled = value->get<bool>();
+    }
+    if (const auto value = rim->find("opacity"); value != rim->end() && value->is_number()) {
+      surface.rimOpacityStrength = value->get<float>();
+    }
+    if (const auto value = rim->find("glow"); value != rim->end() && value->is_number()) {
+      surface.rimEmissionStrength = value->get<float>();
+    }
+    if (const auto value = rim->find("falloff"); value != rim->end() && value->is_number()) {
+      surface.rimPower = value->get<float>();
+    }
   }
 }
 
@@ -241,6 +258,10 @@ constexpr std::array k_raycastSegmentationMaskingNames{
   EnumName{serialize::ProjectSegmentationRaycastMasking::Disabled, "disabled"},
   EnumName{serialize::ProjectSegmentationRaycastMasking::MaskIn, "maskIn"},
   EnumName{serialize::ProjectSegmentationRaycastMasking::MaskOut, "maskOut"}};
+
+constexpr std::array k_landmarkCoordinateSpaceNames{
+  EnumName{serialize::ProjectLandmarkCoordinateSpace::Subject, "subject"},
+  EnumName{serialize::ProjectLandmarkCoordinateSpace::Voxel, "voxel"}};
 
 constexpr std::array k_segmentationOutlineNames{
   EnumName{SegmentationOutlineStyle::Disabled, "disabled"},
@@ -417,95 +438,66 @@ void affineFromJson(const json& j, std::optional<fs::path>& path, std::optional<
   throwDebug("Affine transform JSON must contain either a matrix or path key");
 }
 
-std::vector<const char*> interpolationModesToJson(const std::vector<InterpolationMode>& modes)
-{
-  std::vector<const char*> names;
-  names.reserve(modes.size());
-  for (const InterpolationMode mode : modes) {
-    names.push_back(enumToName(mode, k_interpolationModeNames));
-  }
-  return names;
-}
-
-std::vector<InterpolationMode> interpolationModesFromJson(const json& j)
-{
-  std::vector<InterpolationMode> modes;
-  if (!j.is_array()) {
-    return modes;
-  }
-
-  modes.reserve(j.size());
-  for (const auto& value : j) {
-    if (!value.is_string()) {
-      continue;
-    }
-    if (const auto parsed = enumFromName<InterpolationMode>(value.get<std::string>(), k_interpolationModeNames)) {
-      modes.push_back(*parsed);
-    }
-  }
-  return modes;
-}
-
-std::vector<glm::vec3> vec3ArrayFromJson(const json& j)
-{
-  std::vector<glm::vec3> values;
-  if (!j.is_array()) {
-    return values;
-  }
-
-  values.reserve(j.size());
-  for (const auto& value : j) {
-    if (value.is_array() && value.size() == 3) {
-      values.push_back(vec3FromJson(value));
-    }
-  }
-  return values;
-}
-
-std::string optionalPathToString(const std::optional<fs::path>& path)
-{
-  return path ? path->generic_string() : std::string{};
-}
-
 std::string pathToString(const fs::path& path)
 {
   return path.generic_string();
 }
 
-std::vector<std::string> pathVectorToStrings(const std::vector<fs::path>& paths)
+json pathObjectToJson(const fs::path& path)
 {
-  std::vector<std::string> values;
-  values.reserve(paths.size());
+  return json{{"path", pathToString(path)}};
+}
+
+void optionalPathObjectToJson(json& j, const char* key, const std::optional<fs::path>& path)
+{
+  if (path) {
+    j[key] = pathObjectToJson(*path);
+  }
+}
+
+fs::path pathObjectFromJson(const json& value, const char* key)
+{
+  if (!value.is_object()) {
+    throwDebug(std::string{key} + " must be an object");
+  }
+
+  const auto path = value.find("path");
+  if (path == value.end() || !path->is_string()) {
+    throwDebug(std::string{key} + " must contain a path string");
+  }
+
+  return path->get<std::string>();
+}
+
+void optionalPathObjectFromJson(const json& j, const char* key, std::optional<fs::path>& path)
+{
+  path = std::nullopt;
+  if (const auto value = j.find(key); value != j.end()) {
+    path = pathObjectFromJson(*value, key);
+  }
+}
+
+json pathObjectVectorToJson(const std::vector<fs::path>& paths)
+{
+  json values = json::array();
   for (const fs::path& path : paths) {
-    values.push_back(path.generic_string());
+    values.push_back(pathObjectToJson(path));
   }
   return values;
 }
 
-std::vector<fs::path> pathVectorFromJson(const json& j)
+std::vector<fs::path> pathObjectVectorFromJson(const json& j, const char* key)
 {
   std::vector<fs::path> paths;
   if (!j.is_array()) {
-    return paths;
+    throwDebug(std::string{key} + " must be an array");
   }
 
   paths.reserve(j.size());
-  for (const auto& value : j) {
-    if (value.is_string()) {
-      paths.emplace_back(value.get<std::string>());
-    }
+  for (const json& value : j) {
+    paths.push_back(pathObjectFromJson(value, key));
   }
   return paths;
-}
-
-void optionalPathFromJson(const json& j, const char* key, std::optional<fs::path>& path)
-{
-  if (const auto value = j.find(key); value != j.end() && value->is_string()) {
-    const std::string parsed = value->get<std::string>();
-    if (!parsed.empty()) {
-      path = parsed;
-    }
-  }
 }
 
 void makePathCanonicalAbsolute(std::optional<fs::path>& path, const fs::path& projectBasePath, const char* description)
@@ -537,467 +529,595 @@ void makePathCanonicalAbsolute(fs::path& path, const fs::path& projectBasePath, 
   path = optionalPath.value_or(fs::path{});
 }
 
-} // namespace
-
-namespace imageio
+template<typename T>
+std::optional<T> vectorValue(const std::vector<T>& values, const std::size_t index)
 {
+  if (index >= values.size()) {
+    return std::nullopt;
+  }
+  return values.at(index);
+}
 
-// Define serialization of InterpolationMode to JSON as strings.
-// NLOHMANN_JSON_SERIALIZE_ENUM(
-//         ImageSettings::InterpolationMode, {
-//             { ImageSettings::InterpolationMode::Linear, "Linear" },
-//             { ImageSettings::InterpolationMode::NearestNeighbor, "NearestNeighbor" }
-//         } );
+template<typename T>
+void setVectorValue(std::vector<T>& values, const std::size_t index, const T& value)
+{
+  if (index >= values.size()) {
+    values.resize(index + 1);
+  }
+  values.at(index) = value;
+}
 
-} // namespace imageio
+std::size_t imageComponentSettingsCount(const serialize::ImageSettings& settings)
+{
+  return std::max(
+    {std::size_t{1},
+     settings.m_componentLevels.size(),
+     settings.m_componentWindows.size(),
+     settings.m_componentThresholdLows.size(),
+     settings.m_componentThresholdHighs.size(),
+     settings.m_componentVisibility.size(),
+     settings.m_componentOpacities.size(),
+     settings.m_colorMapIndices.size(),
+     settings.m_colorMapInverted.size(),
+     settings.m_colorMapContinuous.size(),
+     settings.m_colorMapLevels.size(),
+     settings.m_colorMapHsvModifiers.size(),
+     settings.m_interpolationModes.size(),
+     settings.m_foregroundThresholdLows.size(),
+     settings.m_foregroundThresholdHighs.size()});
+}
+
+json imageComponentSettingsToJson(const serialize::ImageSettings& settings, const std::size_t index)
+{
+  json value;
+
+  if (const auto componentValue = vectorValue(settings.m_componentLevels, index)) {
+    value["level"] = *componentValue;
+  }
+  else if (index == 0) {
+    value["level"] = settings.m_level;
+  }
+
+  if (const auto componentValue = vectorValue(settings.m_componentWindows, index)) {
+    value["window"] = *componentValue;
+  }
+  else if (index == 0) {
+    value["window"] = settings.m_window;
+  }
+
+  if (const auto componentValue = vectorValue(settings.m_componentThresholdLows, index)) {
+    value["thresholdLow"] = *componentValue;
+  }
+  else if (index == 0) {
+    value["thresholdLow"] = settings.m_thresholdLow;
+  }
+
+  if (const auto componentValue = vectorValue(settings.m_componentThresholdHighs, index)) {
+    value["thresholdHigh"] = *componentValue;
+  }
+  else if (index == 0) {
+    value["thresholdHigh"] = settings.m_thresholdHigh;
+  }
+
+  if (const auto componentValue = vectorValue(settings.m_componentVisibility, index)) {
+    value["visible"] = *componentValue;
+  }
+
+  if (const auto componentValue = vectorValue(settings.m_componentOpacities, index)) {
+    value["opacity"] = *componentValue;
+  }
+  else if (index == 0) {
+    value["opacity"] = settings.m_opacity;
+  }
+
+  if (const auto componentValue = vectorValue(settings.m_colorMapIndices, index)) {
+    value["colorMapIndex"] = *componentValue;
+  }
+  if (const auto componentValue = vectorValue(settings.m_colorMapInverted, index)) {
+    value["colorMapInverted"] = *componentValue;
+  }
+  if (const auto componentValue = vectorValue(settings.m_colorMapContinuous, index)) {
+    value["colorMapContinuous"] = *componentValue;
+  }
+  if (const auto componentValue = vectorValue(settings.m_colorMapLevels, index)) {
+    value["colorMapLevels"] = *componentValue;
+  }
+  if (const auto componentValue = vectorValue(settings.m_colorMapHsvModifiers, index)) {
+    value["colorMapHsvModifier"] = vec3ToJson(*componentValue);
+  }
+  if (const auto componentValue = vectorValue(settings.m_interpolationModes, index)) {
+    value["interpolationMode"] = enumToName(*componentValue, k_interpolationModeNames);
+  }
+  if (const auto componentValue = vectorValue(settings.m_foregroundThresholdLows, index)) {
+    value["foregroundThresholdLow"] = *componentValue;
+  }
+  if (const auto componentValue = vectorValue(settings.m_foregroundThresholdHighs, index)) {
+    value["foregroundThresholdHigh"] = *componentValue;
+  }
+
+  return value;
+}
+
+} // namespace
 
 namespace serialize
 {
 
 void to_json(json& j, const serialize::ImageSettings& settings)
 {
-  j = json{
-    {"displayName", settings.m_displayName},
-    {"globalVisibility", settings.m_globalVisibility},
-    {"globalOpacity", settings.m_globalOpacity},
-    {"borderColor", vec3ToJson(settings.m_borderColor)},
-    {"lockedToReference", settings.m_lockedToReference},
-    {"warpEnabled", settings.m_warpEnabled},
-    {"warpStrength", settings.m_warpStrength},
-    {"allowExaggeratedWarp", settings.m_allowExaggeratedWarp},
-    {"level", settings.m_level},
-    {"window", settings.m_window},
-    {"thresholdLow", settings.m_thresholdLow},
-    {"thresholdHigh", settings.m_thresholdHigh},
-    {"opacity", settings.m_opacity},
-    {"activeComponent", settings.m_activeComponent},
-    {"activeTimePoint", settings.m_activeTimePoint},
-    {"timePlaybackLoop", settings.m_timePlaybackLoop},
-    {"timePlaybackPlaying", settings.m_timePlaybackPlaying},
-    {"timePlaybackSpeed", settings.m_timePlaybackSpeed},
-    {"componentRenderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
-    {"complexPhaseUnit", enumToName(settings.m_complexPhaseUnit, k_complexPhaseUnitNames)},
-    {"complexPhaseRange", enumToName(settings.m_complexPhaseRange, k_complexPhaseRangeNames)},
-    {"vectorArrowOverlayVisible", settings.m_vectorArrowOverlayVisible},
-    {"vectorArrowOverlayOnImage", settings.m_vectorArrowOverlayOnImage},
-    {"vectorArrowOverlayDensity", settings.m_vectorArrowOverlayDensity},
-    {"vectorArrowOverlayVoxelSpacing", settings.m_vectorArrowOverlayVoxelSpacing},
-    {"vectorArrowOverlayMillimeterSpacing", settings.m_vectorArrowOverlayMillimeterSpacing},
-    {"vectorArrowOverlaySpacingMode",
-     enumToName(settings.m_vectorArrowOverlaySpacingMode, k_vectorArrowOverlaySpacingModeNames)},
-    {"vectorArrowOverlayColor", vec3ToJson(settings.m_vectorArrowOverlayColor)},
-    {"vectorArrowOverlayUseDirectionColor", settings.m_vectorArrowOverlayUseDirectionColor},
-    {"vectorArrowOverlayLineThickness", settings.m_vectorArrowOverlayLineThickness},
-    {"vectorArrowOverlayOpacity", settings.m_vectorArrowOverlayOpacity},
-    {"vectorArrowOverlayScaleByMagnitude", settings.m_vectorArrowOverlayScaleByMagnitude},
-    {"vectorArrowOverlayScaleFactor", settings.m_vectorArrowOverlayScaleFactor},
-    {"vectorWarpedGridVisible", settings.m_vectorWarpedGridVisible},
-    {"vectorWarpedGridOverlayOnImage", settings.m_vectorWarpedGridOverlayOnImage},
-    {"vectorWarpedGridConvention",
-     enumToName(settings.m_vectorWarpedGridConvention, k_vectorWarpedGridConventionNames)},
-    {"vectorWarpedGridPixelSpacing", settings.m_vectorWarpedGridPixelSpacing},
-    {"vectorWarpedGridVoxelSpacing", settings.m_vectorWarpedGridVoxelSpacing},
-    {"vectorWarpedGridMillimeterSpacing", settings.m_vectorWarpedGridMillimeterSpacing},
-    {"vectorWarpedGridSpacingMode",
-     enumToName(settings.m_vectorWarpedGridSpacingMode, k_vectorArrowOverlaySpacingModeNames)},
-    {"vectorWarpedGridLineThickness", settings.m_vectorWarpedGridLineThickness},
-    {"vectorWarpedGridScaleFactor", settings.m_vectorWarpedGridScaleFactor},
-    {"vectorWarpedGridForegroundColor", vec4ToJson(settings.m_vectorWarpedGridForegroundColor)},
-    {"vectorWarpedGridBackgroundColor", vec4ToJson(settings.m_vectorWarpedGridBackgroundColor)},
-    {"vectorPlanarProjectionSignedColors", settings.m_vectorPlanarProjectionSignedColors},
-    {"vectorLogJacobianDeterminant", settings.m_vectorLogJacobianDeterminant},
-    {"ignoreAlpha", settings.m_ignoreAlpha},
-    {"colorInterpolationMode", enumToName(settings.m_colorInterpolationMode, k_interpolationModeNames)},
-    {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
-    {"showEdges", settings.m_showEdges},
-    {"hardEdges", settings.m_thresholdEdges},
-    {"thinPixelEdges", settings.m_thinPixelEdges},
-    {"overlayEdges", settings.m_overlayEdges},
-    {"edgeMagnitude", settings.m_edgeMagnitude},
-    {"pixelEdgeScale", settings.m_pixelEdgeScale},
-    {"pixelEdgeThreshold", settings.m_pixelEdgeThreshold},
-    {"edgeColor", {settings.m_edgeColor.r, settings.m_edgeColor.g, settings.m_edgeColor.b}},
-    {"edgeOpacity", settings.m_edgeOpacity},
-    {"useDistanceMapForRaycasting", settings.m_useDistanceMapForRaycasting},
-    {"isosurfacesVisible", settings.m_isosurfacesVisible},
-    {"applyImageColormapToIsosurfaces", settings.m_applyImageColormapToIsosurfaces},
-    {"showIsocontoursIn2D", settings.m_showIsocontoursIn2D},
-    {"isocontourLineWidthIn2D", settings.m_isocontourLineWidthIn2D},
-    {"isosurfaceOpacityModulator", settings.m_isosurfaceOpacityModulator}};
+  json componentValues = json::array();
+  const std::size_t componentCount = imageComponentSettingsCount(settings);
+  for (std::size_t i = 0; i < componentCount; ++i) {
+    componentValues.push_back(imageComponentSettingsToJson(settings, i));
+  }
 
-  if (!settings.m_componentLevels.empty()) {
-    j["componentLevels"] = settings.m_componentLevels;
-  }
-  if (!settings.m_componentWindows.empty()) {
-    j["componentWindows"] = settings.m_componentWindows;
-  }
-  if (!settings.m_componentThresholdLows.empty()) {
-    j["componentThresholdLows"] = settings.m_componentThresholdLows;
-  }
-  if (!settings.m_componentThresholdHighs.empty()) {
-    j["componentThresholdHighs"] = settings.m_componentThresholdHighs;
-  }
-  if (!settings.m_componentVisibility.empty()) {
-    j["componentVisibility"] = settings.m_componentVisibility;
-  }
-  if (!settings.m_componentOpacities.empty()) {
-    j["componentOpacities"] = settings.m_componentOpacities;
-  }
-  if (!settings.m_colorMapIndices.empty()) {
-    j["colorMapIndices"] = settings.m_colorMapIndices;
-  }
-  if (!settings.m_colorMapInverted.empty()) {
-    j["colorMapInverted"] = settings.m_colorMapInverted;
-  }
-  if (!settings.m_colorMapContinuous.empty()) {
-    j["colorMapContinuous"] = settings.m_colorMapContinuous;
-  }
-  if (!settings.m_colorMapLevels.empty()) {
-    j["colorMapLevels"] = settings.m_colorMapLevels;
-  }
-  if (!settings.m_colorMapHsvModifiers.empty()) {
-    j["colorMapHsvModifiers"] = json::array();
-    for (const glm::vec3& value : settings.m_colorMapHsvModifiers) {
-      j["colorMapHsvModifiers"].push_back(vec3ToJson(value));
-    }
-  }
-  if (!settings.m_interpolationModes.empty()) {
-    j["interpolationModes"] = interpolationModesToJson(settings.m_interpolationModes);
-  }
-  if (!settings.m_foregroundThresholdLows.empty()) {
-    j["foregroundThresholdLows"] = settings.m_foregroundThresholdLows;
-  }
-  if (!settings.m_foregroundThresholdHighs.empty()) {
-    j["foregroundThresholdHighs"] = settings.m_foregroundThresholdHighs;
-  }
+  j = json{
+    {"display",
+     {{"name", settings.m_displayName},
+      {"visible", settings.m_globalVisibility},
+      {"opacity", settings.m_globalOpacity},
+      {"borderColor", vec3ToJson(settings.m_borderColor)}}},
+    {"transform",
+     {{"lockedToReference", settings.m_lockedToReference},
+      {"warpEnabled", settings.m_warpEnabled},
+      {"warpStrength", settings.m_warpStrength},
+      {"allowExaggeratedWarp", settings.m_allowExaggeratedWarp}}},
+    {"time",
+     {{"activePoint", settings.m_activeTimePoint},
+      {"playbackLoop", settings.m_timePlaybackLoop},
+      {"playbackPlaying", settings.m_timePlaybackPlaying},
+      {"playbackSpeed", settings.m_timePlaybackSpeed}}},
+    {"components",
+     {{"active", settings.m_activeComponent},
+      {"renderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
+      {"complexPhaseUnit", enumToName(settings.m_complexPhaseUnit, k_complexPhaseUnitNames)},
+      {"complexPhaseRange", enumToName(settings.m_complexPhaseRange, k_complexPhaseRangeNames)},
+      {"ignoreAlpha", settings.m_ignoreAlpha},
+      {"colorInterpolationMode", enumToName(settings.m_colorInterpolationMode, k_interpolationModeNames)},
+      {"values", componentValues}}},
+    {"vectorRendering",
+     {{"planarProjectionSignedColors", settings.m_vectorPlanarProjectionSignedColors},
+      {"logJacobianDeterminant", settings.m_vectorLogJacobianDeterminant}}},
+    {"vectorArrows",
+     {{"visible", settings.m_vectorArrowOverlayVisible},
+      {"onImage", settings.m_vectorArrowOverlayOnImage},
+      {"density", settings.m_vectorArrowOverlayDensity},
+      {"voxelSpacing", settings.m_vectorArrowOverlayVoxelSpacing},
+      {"millimeterSpacing", settings.m_vectorArrowOverlayMillimeterSpacing},
+      {"spacingMode", enumToName(settings.m_vectorArrowOverlaySpacingMode, k_vectorArrowOverlaySpacingModeNames)},
+      {"color", vec3ToJson(settings.m_vectorArrowOverlayColor)},
+      {"useDirectionColor", settings.m_vectorArrowOverlayUseDirectionColor},
+      {"lineThickness", settings.m_vectorArrowOverlayLineThickness},
+      {"opacity", settings.m_vectorArrowOverlayOpacity},
+      {"scaleByMagnitude", settings.m_vectorArrowOverlayScaleByMagnitude},
+      {"scaleFactor", settings.m_vectorArrowOverlayScaleFactor}}},
+    {"warpedGrid",
+     {{"visible", settings.m_vectorWarpedGridVisible},
+      {"onImage", settings.m_vectorWarpedGridOverlayOnImage},
+      {"convention", enumToName(settings.m_vectorWarpedGridConvention, k_vectorWarpedGridConventionNames)},
+      {"pixelSpacing", settings.m_vectorWarpedGridPixelSpacing},
+      {"voxelSpacing", settings.m_vectorWarpedGridVoxelSpacing},
+      {"millimeterSpacing", settings.m_vectorWarpedGridMillimeterSpacing},
+      {"spacingMode", enumToName(settings.m_vectorWarpedGridSpacingMode, k_vectorArrowOverlaySpacingModeNames)},
+      {"lineThickness", settings.m_vectorWarpedGridLineThickness},
+      {"scaleFactor", settings.m_vectorWarpedGridScaleFactor},
+      {"foregroundColor", vec4ToJson(settings.m_vectorWarpedGridForegroundColor)},
+      {"backgroundColor", vec4ToJson(settings.m_vectorWarpedGridBackgroundColor)}}},
+    {"edges",
+     {{"method", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
+      {"visible", settings.m_showEdges},
+      {"hardEdges", settings.m_thresholdEdges},
+      {"thinPixelEdges", settings.m_thinPixelEdges},
+      {"overlay", settings.m_overlayEdges},
+      {"magnitude", settings.m_edgeMagnitude},
+      {"pixelScale", settings.m_pixelEdgeScale},
+      {"pixelThreshold", settings.m_pixelEdgeThreshold},
+      {"color", vec3ToJson(settings.m_edgeColor)},
+      {"opacity", settings.m_edgeOpacity}}},
+    {"raycasting", {{"useDistanceMap", settings.m_useDistanceMapForRaycasting}}},
+    {"isosurfaces",
+     {{"visible", settings.m_isosurfacesVisible},
+      {"applyImageColormap", settings.m_applyImageColormapToIsosurfaces},
+      {"showContours2D", settings.m_showIsocontoursIn2D},
+      {"contourLineWidth2D", settings.m_isocontourLineWidthIn2D},
+      {"opacityModulator", settings.m_isosurfaceOpacityModulator}}}};
 
   if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod) {
-    j["colormapEdges"] = settings.m_colormapEdges;
+    j["edges"]["useColormap"] = settings.m_colormapEdges;
   }
 }
 
 void from_json(const json& j, serialize::ImageSettings& settings)
 {
-  if (j.count("displayName")) {
-    j.at("displayName").get_to(settings.m_displayName);
+  if (const auto display = j.find("display"); display != j.end() && display->is_object()) {
+    if (const auto name = display->find("name"); name != display->end() && name->is_string()) {
+      settings.m_displayName = name->get<std::string>();
+    }
+    if (const auto visible = display->find("visible"); visible != display->end() && visible->is_boolean()) {
+      settings.m_globalVisibility = visible->get<bool>();
+    }
+    if (const auto opacity = display->find("opacity"); opacity != display->end() && opacity->is_number()) {
+      settings.m_globalOpacity = opacity->get<double>();
+    }
+    if (const auto color = display->find("borderColor"); color != display->end() && color->is_array()) {
+      settings.m_borderColor = vec3FromJson(*color);
+    }
   }
-  if (j.count("globalVisibility")) {
-    j.at("globalVisibility").get_to(settings.m_globalVisibility);
+
+  if (const auto transform = j.find("transform"); transform != j.end() && transform->is_object()) {
+    if (const auto locked = transform->find("lockedToReference"); locked != transform->end() && locked->is_boolean()) {
+      settings.m_lockedToReference = locked->get<bool>();
+    }
+    if (const auto enabled = transform->find("warpEnabled"); enabled != transform->end() && enabled->is_boolean()) {
+      settings.m_warpEnabled = enabled->get<bool>();
+    }
+    if (const auto strength = transform->find("warpStrength"); strength != transform->end() && strength->is_number()) {
+      settings.m_warpStrength = strength->get<float>();
+    }
+    if (const auto exaggerated = transform->find("allowExaggeratedWarp");
+        exaggerated != transform->end() && exaggerated->is_boolean())
+    {
+      settings.m_allowExaggeratedWarp = exaggerated->get<bool>();
+    }
   }
-  if (j.count("globalOpacity")) {
-    j.at("globalOpacity").get_to(settings.m_globalOpacity);
+
+  if (const auto time = j.find("time"); time != j.end() && time->is_object()) {
+    if (const auto active = unsignedIntFromJson(time->value("activePoint", json{}))) {
+      settings.m_activeTimePoint = *active;
+    }
+    if (const auto loop = time->find("playbackLoop"); loop != time->end() && loop->is_boolean()) {
+      settings.m_timePlaybackLoop = loop->get<bool>();
+    }
+    if (const auto playing = time->find("playbackPlaying"); playing != time->end() && playing->is_boolean()) {
+      settings.m_timePlaybackPlaying = playing->get<bool>();
+    }
+    if (const auto speed = time->find("playbackSpeed"); speed != time->end() && speed->is_number()) {
+      settings.m_timePlaybackSpeed = speed->get<double>();
+    }
   }
-  if (const auto color = j.find("borderColor"); color != j.end() && color->is_array() && color->size() == 3) {
-    settings.m_borderColor = vec3FromJson(*color);
+
+  if (const auto components = j.find("components"); components != j.end() && components->is_object()) {
+    if (const auto active = unsignedIntFromJson(components->value("active", json{}))) {
+      settings.m_activeComponent = *active;
+    }
+    if (
+      const auto parsed = enumFromName<serialize::ProjectComponentRenderMode>(
+        components->value("renderMode", ""),
+        k_componentRenderModeNames))
+    {
+      settings.m_componentRenderMode = *parsed;
+    }
+    if (
+      const auto parsed = enumFromName<serialize::ProjectComplexPhaseUnit>(
+        components->value("complexPhaseUnit", ""),
+        k_complexPhaseUnitNames))
+    {
+      settings.m_complexPhaseUnit = *parsed;
+    }
+    if (
+      const auto parsed = enumFromName<serialize::ProjectComplexPhaseRange>(
+        components->value("complexPhaseRange", ""),
+        k_complexPhaseRangeNames))
+    {
+      settings.m_complexPhaseRange = *parsed;
+    }
+    if (const auto ignoreAlpha = components->find("ignoreAlpha");
+        ignoreAlpha != components->end() && ignoreAlpha->is_boolean())
+    {
+      settings.m_ignoreAlpha = ignoreAlpha->get<bool>();
+    }
+    if (
+      const auto parsed =
+        enumFromName<InterpolationMode>(components->value("colorInterpolationMode", ""), k_interpolationModeNames))
+    {
+      settings.m_colorInterpolationMode = *parsed;
+    }
+
+    if (const auto values = components->find("values"); values != components->end() && values->is_array()) {
+      for (std::size_t componentIndex = 0; componentIndex < values->size(); ++componentIndex) {
+        const json& value = values->at(componentIndex);
+        if (!value.is_object()) {
+          continue;
+        }
+        if (const auto componentValue = value.find("level");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_componentLevels, componentIndex, componentValue->get<double>());
+        }
+        if (const auto componentValue = value.find("window");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_componentWindows, componentIndex, componentValue->get<double>());
+        }
+        if (const auto componentValue = value.find("thresholdLow");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_componentThresholdLows, componentIndex, componentValue->get<double>());
+        }
+        if (const auto componentValue = value.find("thresholdHigh");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_componentThresholdHighs, componentIndex, componentValue->get<double>());
+        }
+        if (const auto componentValue = value.find("visible");
+            componentValue != value.end() && componentValue->is_boolean())
+        {
+          setVectorValue(settings.m_componentVisibility, componentIndex, componentValue->get<bool>());
+        }
+        if (const auto componentValue = value.find("opacity");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_componentOpacities, componentIndex, componentValue->get<double>());
+        }
+        if (const auto componentValue = unsignedIntFromJson(value.value("colorMapIndex", json{}))) {
+          setVectorValue(settings.m_colorMapIndices, componentIndex, static_cast<std::size_t>(*componentValue));
+        }
+        if (const auto componentValue = value.find("colorMapInverted");
+            componentValue != value.end() && componentValue->is_boolean())
+        {
+          setVectorValue(settings.m_colorMapInverted, componentIndex, componentValue->get<bool>());
+        }
+        if (const auto componentValue = value.find("colorMapContinuous");
+            componentValue != value.end() && componentValue->is_boolean())
+        {
+          setVectorValue(settings.m_colorMapContinuous, componentIndex, componentValue->get<bool>());
+        }
+        if (const auto componentValue = unsignedIntFromJson(value.value("colorMapLevels", json{}))) {
+          setVectorValue(settings.m_colorMapLevels, componentIndex, static_cast<std::size_t>(*componentValue));
+        }
+        if (const auto componentValue = value.find("colorMapHsvModifier");
+            componentValue != value.end() && componentValue->is_array())
+        {
+          setVectorValue(settings.m_colorMapHsvModifiers, componentIndex, vec3FromJson(*componentValue));
+        }
+        if (const auto componentValue = value.find("interpolationMode");
+            componentValue != value.end() && componentValue->is_string())
+        {
+          if (
+            const auto parsed =
+              enumFromName<InterpolationMode>(componentValue->get<std::string>(), k_interpolationModeNames))
+          {
+            setVectorValue(settings.m_interpolationModes, componentIndex, *parsed);
+          }
+        }
+        if (const auto componentValue = value.find("foregroundThresholdLow");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_foregroundThresholdLows, componentIndex, componentValue->get<double>());
+        }
+        if (const auto componentValue = value.find("foregroundThresholdHigh");
+            componentValue != value.end() && componentValue->is_number())
+        {
+          setVectorValue(settings.m_foregroundThresholdHighs, componentIndex, componentValue->get<double>());
+        }
+      }
+
+      const std::size_t activeComponent =
+        std::min<std::size_t>(settings.m_activeComponent, values->empty() ? 0 : values->size() - 1);
+      if (const auto componentValue = vectorValue(settings.m_componentLevels, activeComponent)) {
+        settings.m_level = *componentValue;
+      }
+      if (const auto componentValue = vectorValue(settings.m_componentWindows, activeComponent)) {
+        settings.m_window = *componentValue;
+      }
+      if (const auto componentValue = vectorValue(settings.m_componentThresholdLows, activeComponent)) {
+        settings.m_thresholdLow = *componentValue;
+      }
+      if (const auto componentValue = vectorValue(settings.m_componentThresholdHighs, activeComponent)) {
+        settings.m_thresholdHigh = *componentValue;
+      }
+      if (const auto componentValue = vectorValue(settings.m_componentOpacities, activeComponent)) {
+        settings.m_opacity = *componentValue;
+      }
+    }
   }
-  if (j.count("lockedToReference")) {
-    j.at("lockedToReference").get_to(settings.m_lockedToReference);
-  }
-  if (j.count("warpEnabled")) {
-    j.at("warpEnabled").get_to(settings.m_warpEnabled);
-  }
-  if (j.count("warpStrength")) {
-    j.at("warpStrength").get_to(settings.m_warpStrength);
-  }
-  if (j.count("allowExaggeratedWarp")) {
-    j.at("allowExaggeratedWarp").get_to(settings.m_allowExaggeratedWarp);
-  }
-  if (j.count("level")) {
-    j.at("level").get_to(settings.m_level);
-  }
-  if (j.count("window")) {
-    j.at("window").get_to(settings.m_window);
-  }
-  if (j.count("thresholdLow")) {
-    j.at("thresholdLow").get_to(settings.m_thresholdLow);
-  }
-  if (j.count("thresholdHigh")) {
-    j.at("thresholdHigh").get_to(settings.m_thresholdHigh);
-  }
-  if (j.count("opacity")) {
-    j.at("opacity").get_to(settings.m_opacity);
-  }
-  if (const auto activeComponent = unsignedIntFromJson(j.value("activeComponent", json{}))) {
-    settings.m_activeComponent = *activeComponent;
-  }
-  if (const auto activeTimePoint = unsignedIntFromJson(j.value("activeTimePoint", json{}))) {
-    settings.m_activeTimePoint = *activeTimePoint;
-  }
-  if (j.count("timePlaybackLoop")) {
-    j.at("timePlaybackLoop").get_to(settings.m_timePlaybackLoop);
-  }
-  if (j.count("timePlaybackPlaying")) {
-    j.at("timePlaybackPlaying").get_to(settings.m_timePlaybackPlaying);
-  }
-  if (j.count("timePlaybackSpeed")) {
-    j.at("timePlaybackSpeed").get_to(settings.m_timePlaybackSpeed);
-  }
-  if (
-    const auto parsed = enumFromName<serialize::ProjectComponentRenderMode>(
-      j.value("componentRenderMode", ""),
-      k_componentRenderModeNames))
+
+  if (const auto vectorRendering = j.find("vectorRendering");
+      vectorRendering != j.end() && vectorRendering->is_object())
   {
-    settings.m_componentRenderMode = *parsed;
+    if (const auto signedColors = vectorRendering->find("planarProjectionSignedColors");
+        signedColors != vectorRendering->end() && signedColors->is_boolean())
+    {
+      settings.m_vectorPlanarProjectionSignedColors = signedColors->get<bool>();
+    }
+    if (const auto logJacobian = vectorRendering->find("logJacobianDeterminant");
+        logJacobian != vectorRendering->end() && logJacobian->is_boolean())
+    {
+      settings.m_vectorLogJacobianDeterminant = logJacobian->get<bool>();
+    }
   }
-  if (
-    const auto parsed =
-      enumFromName<serialize::ProjectComplexPhaseUnit>(j.value("complexPhaseUnit", ""), k_complexPhaseUnitNames))
-  {
-    settings.m_complexPhaseUnit = *parsed;
+
+  if (const auto arrows = j.find("vectorArrows"); arrows != j.end() && arrows->is_object()) {
+    if (const auto visible = arrows->find("visible"); visible != arrows->end() && visible->is_boolean()) {
+      settings.m_vectorArrowOverlayVisible = visible->get<bool>();
+    }
+    if (const auto onImage = arrows->find("onImage"); onImage != arrows->end() && onImage->is_boolean()) {
+      settings.m_vectorArrowOverlayOnImage = onImage->get<bool>();
+    }
+    if (const auto density = arrows->find("density"); density != arrows->end() && density->is_number()) {
+      settings.m_vectorArrowOverlayDensity = density->get<float>();
+    }
+    if (const auto spacing = arrows->find("voxelSpacing"); spacing != arrows->end() && spacing->is_number()) {
+      settings.m_vectorArrowOverlayVoxelSpacing = spacing->get<float>();
+    }
+    if (const auto spacing = arrows->find("millimeterSpacing"); spacing != arrows->end() && spacing->is_number()) {
+      settings.m_vectorArrowOverlayMillimeterSpacing = spacing->get<float>();
+    }
+    if (
+      const auto parsed = enumFromName<serialize::ProjectVectorArrowOverlaySpacingMode>(
+        arrows->value("spacingMode", ""),
+        k_vectorArrowOverlaySpacingModeNames))
+    {
+      settings.m_vectorArrowOverlaySpacingMode = *parsed;
+    }
+    if (const auto color = arrows->find("color"); color != arrows->end() && color->is_array()) {
+      settings.m_vectorArrowOverlayColor = vec3FromJson(*color);
+    }
+    if (const auto directionColor = arrows->find("useDirectionColor");
+        directionColor != arrows->end() && directionColor->is_boolean())
+    {
+      settings.m_vectorArrowOverlayUseDirectionColor = directionColor->get<bool>();
+    }
+    if (const auto thickness = arrows->find("lineThickness"); thickness != arrows->end() && thickness->is_number()) {
+      settings.m_vectorArrowOverlayLineThickness = thickness->get<float>();
+    }
+    if (const auto opacity = arrows->find("opacity"); opacity != arrows->end() && opacity->is_number()) {
+      settings.m_vectorArrowOverlayOpacity = opacity->get<float>();
+    }
+    if (const auto scale = arrows->find("scaleByMagnitude"); scale != arrows->end() && scale->is_boolean()) {
+      settings.m_vectorArrowOverlayScaleByMagnitude = scale->get<bool>();
+    }
+    if (const auto scale = arrows->find("scaleFactor"); scale != arrows->end() && scale->is_number()) {
+      settings.m_vectorArrowOverlayScaleFactor = scale->get<float>();
+    }
   }
-  if (
-    const auto parsed =
-      enumFromName<serialize::ProjectComplexPhaseRange>(j.value("complexPhaseRange", ""), k_complexPhaseRangeNames))
-  {
-    settings.m_complexPhaseRange = *parsed;
+
+  if (const auto grid = j.find("warpedGrid"); grid != j.end() && grid->is_object()) {
+    if (const auto visible = grid->find("visible"); visible != grid->end() && visible->is_boolean()) {
+      settings.m_vectorWarpedGridVisible = visible->get<bool>();
+    }
+    if (const auto onImage = grid->find("onImage"); onImage != grid->end() && onImage->is_boolean()) {
+      settings.m_vectorWarpedGridOverlayOnImage = onImage->get<bool>();
+    }
+    if (
+      const auto parsed = enumFromName<serialize::ProjectVectorWarpedGridConvention>(
+        grid->value("convention", ""),
+        k_vectorWarpedGridConventionNames))
+    {
+      settings.m_vectorWarpedGridConvention = *parsed;
+    }
+    if (const auto spacing = grid->find("pixelSpacing"); spacing != grid->end() && spacing->is_number()) {
+      settings.m_vectorWarpedGridPixelSpacing = spacing->get<float>();
+    }
+    if (const auto spacing = grid->find("voxelSpacing"); spacing != grid->end() && spacing->is_number()) {
+      settings.m_vectorWarpedGridVoxelSpacing = spacing->get<float>();
+    }
+    if (const auto spacing = grid->find("millimeterSpacing"); spacing != grid->end() && spacing->is_number()) {
+      settings.m_vectorWarpedGridMillimeterSpacing = spacing->get<float>();
+    }
+    if (
+      const auto parsed = enumFromName<serialize::ProjectVectorArrowOverlaySpacingMode>(
+        grid->value("spacingMode", ""),
+        k_vectorArrowOverlaySpacingModeNames))
+    {
+      settings.m_vectorWarpedGridSpacingMode = *parsed;
+    }
+    if (const auto thickness = grid->find("lineThickness"); thickness != grid->end() && thickness->is_number()) {
+      settings.m_vectorWarpedGridLineThickness = thickness->get<float>();
+    }
+    if (const auto scale = grid->find("scaleFactor"); scale != grid->end() && scale->is_number()) {
+      settings.m_vectorWarpedGridScaleFactor = scale->get<float>();
+    }
+    if (const auto color = grid->find("foregroundColor"); color != grid->end() && color->is_array()) {
+      settings.m_vectorWarpedGridForegroundColor = vec4FromJson(*color);
+    }
+    if (const auto color = grid->find("backgroundColor"); color != grid->end() && color->is_array()) {
+      settings.m_vectorWarpedGridBackgroundColor = vec4FromJson(*color);
+    }
   }
-  if (j.count("vectorArrowOverlayVisible")) {
-    j.at("vectorArrowOverlayVisible").get_to(settings.m_vectorArrowOverlayVisible);
+
+  if (const auto edges = j.find("edges"); edges != j.end() && edges->is_object()) {
+    if (
+      const auto parsed =
+        enumFromName<serialize::ProjectEdgeDetectionMethod>(edges->value("method", ""), k_edgeDetectionMethodNames))
+    {
+      settings.m_edgeDetectionMethod = *parsed;
+    }
+    if (const auto visible = edges->find("visible"); visible != edges->end() && visible->is_boolean()) {
+      settings.m_showEdges = visible->get<bool>();
+    }
+    if (const auto hard = edges->find("hardEdges"); hard != edges->end() && hard->is_boolean()) {
+      settings.m_thresholdEdges = hard->get<bool>();
+    }
+    if (const auto thin = edges->find("thinPixelEdges"); thin != edges->end() && thin->is_boolean()) {
+      settings.m_thinPixelEdges = thin->get<bool>();
+    }
+    if (const auto overlay = edges->find("overlay"); overlay != edges->end() && overlay->is_boolean()) {
+      settings.m_overlayEdges = overlay->get<bool>();
+    }
+    if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod) {
+      if (const auto colormap = edges->find("useColormap"); colormap != edges->end() && colormap->is_boolean()) {
+        settings.m_colormapEdges = colormap->get<bool>();
+      }
+    }
+    if (const auto magnitude = edges->find("magnitude"); magnitude != edges->end() && magnitude->is_number()) {
+      settings.m_edgeMagnitude = magnitude->get<double>();
+    }
+    if (const auto scale = edges->find("pixelScale"); scale != edges->end() && scale->is_number()) {
+      settings.m_pixelEdgeScale = scale->get<double>();
+    }
+    if (const auto threshold = edges->find("pixelThreshold"); threshold != edges->end() && threshold->is_number()) {
+      settings.m_pixelEdgeThreshold = threshold->get<double>();
+    }
+    if (const auto color = edges->find("color"); color != edges->end() && color->is_array()) {
+      settings.m_edgeColor = vec3FromJson(*color);
+    }
+    if (const auto opacity = edges->find("opacity"); opacity != edges->end() && opacity->is_number()) {
+      settings.m_edgeOpacity = opacity->get<double>();
+    }
   }
-  if (j.count("vectorArrowOverlayOnImage")) {
-    j.at("vectorArrowOverlayOnImage").get_to(settings.m_vectorArrowOverlayOnImage);
+
+  if (const auto raycasting = j.find("raycasting"); raycasting != j.end() && raycasting->is_object()) {
+    if (const auto useDistanceMap = raycasting->find("useDistanceMap");
+        useDistanceMap != raycasting->end() && useDistanceMap->is_boolean())
+    {
+      settings.m_useDistanceMapForRaycasting = useDistanceMap->get<bool>();
+    }
   }
-  if (j.count("vectorArrowOverlayDensity")) {
-    j.at("vectorArrowOverlayDensity").get_to(settings.m_vectorArrowOverlayDensity);
-  }
-  if (j.count("vectorArrowOverlayVoxelSpacing")) {
-    j.at("vectorArrowOverlayVoxelSpacing").get_to(settings.m_vectorArrowOverlayVoxelSpacing);
-  }
-  if (j.count("vectorArrowOverlayMillimeterSpacing")) {
-    j.at("vectorArrowOverlayMillimeterSpacing").get_to(settings.m_vectorArrowOverlayMillimeterSpacing);
-  }
-  if (
-    const auto parsed = enumFromName<serialize::ProjectVectorArrowOverlaySpacingMode>(
-      j.value("vectorArrowOverlaySpacingMode", ""),
-      k_vectorArrowOverlaySpacingModeNames))
-  {
-    settings.m_vectorArrowOverlaySpacingMode = *parsed;
-  }
-  if (const auto color = j.find("vectorArrowOverlayColor"); color != j.end() && color->is_array() && color->size() == 3)
-  {
-    settings.m_vectorArrowOverlayColor = vec3FromJson(*color);
-  }
-  if (j.count("vectorArrowOverlayUseDirectionColor")) {
-    j.at("vectorArrowOverlayUseDirectionColor").get_to(settings.m_vectorArrowOverlayUseDirectionColor);
-  }
-  if (j.count("vectorArrowOverlayLineThickness")) {
-    j.at("vectorArrowOverlayLineThickness").get_to(settings.m_vectorArrowOverlayLineThickness);
-  }
-  if (j.count("vectorArrowOverlayOpacity")) {
-    j.at("vectorArrowOverlayOpacity").get_to(settings.m_vectorArrowOverlayOpacity);
-  }
-  if (j.count("vectorArrowOverlayScaleByMagnitude")) {
-    j.at("vectorArrowOverlayScaleByMagnitude").get_to(settings.m_vectorArrowOverlayScaleByMagnitude);
-  }
-  if (j.count("vectorArrowOverlayScaleFactor")) {
-    j.at("vectorArrowOverlayScaleFactor").get_to(settings.m_vectorArrowOverlayScaleFactor);
-  }
-  if (j.count("vectorWarpedGridVisible")) {
-    j.at("vectorWarpedGridVisible").get_to(settings.m_vectorWarpedGridVisible);
-  }
-  if (j.count("vectorWarpedGridOverlayOnImage")) {
-    j.at("vectorWarpedGridOverlayOnImage").get_to(settings.m_vectorWarpedGridOverlayOnImage);
-  }
-  if (
-    const auto parsed = enumFromName<serialize::ProjectVectorWarpedGridConvention>(
-      j.value("vectorWarpedGridConvention", ""),
-      k_vectorWarpedGridConventionNames))
-  {
-    settings.m_vectorWarpedGridConvention = *parsed;
-  }
-  if (j.count("vectorWarpedGridPixelSpacing")) {
-    j.at("vectorWarpedGridPixelSpacing").get_to(settings.m_vectorWarpedGridPixelSpacing);
-  }
-  if (j.count("vectorWarpedGridVoxelSpacing")) {
-    j.at("vectorWarpedGridVoxelSpacing").get_to(settings.m_vectorWarpedGridVoxelSpacing);
-  }
-  if (j.count("vectorWarpedGridMillimeterSpacing")) {
-    j.at("vectorWarpedGridMillimeterSpacing").get_to(settings.m_vectorWarpedGridMillimeterSpacing);
-  }
-  if (
-    const auto parsed = enumFromName<serialize::ProjectVectorArrowOverlaySpacingMode>(
-      j.value("vectorWarpedGridSpacingMode", ""),
-      k_vectorArrowOverlaySpacingModeNames))
-  {
-    settings.m_vectorWarpedGridSpacingMode = *parsed;
-  }
-  if (j.count("vectorWarpedGridLineThickness")) {
-    j.at("vectorWarpedGridLineThickness").get_to(settings.m_vectorWarpedGridLineThickness);
-  }
-  if (j.count("vectorWarpedGridScaleFactor")) {
-    j.at("vectorWarpedGridScaleFactor").get_to(settings.m_vectorWarpedGridScaleFactor);
-  }
-  if (const auto color = j.find("vectorWarpedGridForegroundColor");
-      color != j.end() && color->is_array() && color->size() == 4)
-  {
-    settings.m_vectorWarpedGridForegroundColor = vec4FromJson(*color);
-  }
-  if (const auto color = j.find("vectorWarpedGridBackgroundColor");
-      color != j.end() && color->is_array() && color->size() == 4)
-  {
-    settings.m_vectorWarpedGridBackgroundColor = vec4FromJson(*color);
-  }
-  if (j.count("vectorPlanarProjectionSignedColors")) {
-    j.at("vectorPlanarProjectionSignedColors").get_to(settings.m_vectorPlanarProjectionSignedColors);
-  }
-  if (j.count("vectorLogJacobianDeterminant")) {
-    j.at("vectorLogJacobianDeterminant").get_to(settings.m_vectorLogJacobianDeterminant);
-  }
-  if (j.count("ignoreAlpha")) {
-    j.at("ignoreAlpha").get_to(settings.m_ignoreAlpha);
-  }
-  if (
-    const auto parsed =
-      enumFromName<InterpolationMode>(j.value("colorInterpolationMode", ""), k_interpolationModeNames))
-  {
-    settings.m_colorInterpolationMode = *parsed;
-  }
-  if (j.count("componentLevels")) {
-    j.at("componentLevels").get_to(settings.m_componentLevels);
-  }
-  if (j.count("componentWindows")) {
-    j.at("componentWindows").get_to(settings.m_componentWindows);
-  }
-  if (j.count("componentThresholdLows")) {
-    j.at("componentThresholdLows").get_to(settings.m_componentThresholdLows);
-  }
-  if (j.count("componentThresholdHighs")) {
-    j.at("componentThresholdHighs").get_to(settings.m_componentThresholdHighs);
-  }
-  if (j.count("componentVisibility")) {
-    j.at("componentVisibility").get_to(settings.m_componentVisibility);
-  }
-  if (j.count("componentOpacities")) {
-    j.at("componentOpacities").get_to(settings.m_componentOpacities);
-  }
-  if (j.count("colorMapIndices")) {
-    j.at("colorMapIndices").get_to(settings.m_colorMapIndices);
-  }
-  if (j.count("colorMapInverted")) {
-    j.at("colorMapInverted").get_to(settings.m_colorMapInverted);
-  }
-  if (j.count("colorMapContinuous")) {
-    j.at("colorMapContinuous").get_to(settings.m_colorMapContinuous);
-  }
-  if (j.count("colorMapLevels")) {
-    j.at("colorMapLevels").get_to(settings.m_colorMapLevels);
-  }
-  if (const auto modifiers = j.find("colorMapHsvModifiers"); modifiers != j.end()) {
-    settings.m_colorMapHsvModifiers = vec3ArrayFromJson(*modifiers);
-  }
-  if (const auto modes = j.find("interpolationModes"); modes != j.end()) {
-    settings.m_interpolationModes = interpolationModesFromJson(*modes);
-  }
-  if (j.count("foregroundThresholdLows")) {
-    j.at("foregroundThresholdLows").get_to(settings.m_foregroundThresholdLows);
-  }
-  if (j.count("foregroundThresholdHighs")) {
-    j.at("foregroundThresholdHighs").get_to(settings.m_foregroundThresholdHighs);
-  }
-  if (
-    const auto parsed = enumFromName<serialize::ProjectEdgeDetectionMethod>(
-      j.value("edgeDetectionMethod", ""),
-      k_edgeDetectionMethodNames))
-  {
-    settings.m_edgeDetectionMethod = *parsed;
-  }
-  if (j.count("showEdges")) {
-    j.at("showEdges").get_to(settings.m_showEdges);
-  }
-  if (j.count("hardEdges")) {
-    j.at("hardEdges").get_to(settings.m_thresholdEdges);
-  }
-  if (j.count("thinPixelEdges")) {
-    j.at("thinPixelEdges").get_to(settings.m_thinPixelEdges);
-  }
-  if (j.count("overlayEdges")) {
-    j.at("overlayEdges").get_to(settings.m_overlayEdges);
-  }
-  if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod && j.count("colormapEdges")) {
-    j.at("colormapEdges").get_to(settings.m_colormapEdges);
-  }
-  if (j.count("edgeMagnitude")) {
-    j.at("edgeMagnitude").get_to(settings.m_edgeMagnitude);
-  }
-  if (j.count("pixelEdgeScale")) {
-    j.at("pixelEdgeScale").get_to(settings.m_pixelEdgeScale);
-  }
-  if (j.count("pixelEdgeThreshold")) {
-    j.at("pixelEdgeThreshold").get_to(settings.m_pixelEdgeThreshold);
-  }
-  if (const auto color = j.find("edgeColor"); color != j.end() && color->is_array() && color->size() == 3) {
-    settings.m_edgeColor = glm::vec3{color->at(0).get<float>(), color->at(1).get<float>(), color->at(2).get<float>()};
-  }
-  if (j.count("edgeOpacity")) {
-    j.at("edgeOpacity").get_to(settings.m_edgeOpacity);
-  }
-  if (j.count("useDistanceMapForRaycasting")) {
-    j.at("useDistanceMapForRaycasting").get_to(settings.m_useDistanceMapForRaycasting);
-  }
-  if (j.count("isosurfacesVisible")) {
-    j.at("isosurfacesVisible").get_to(settings.m_isosurfacesVisible);
-  }
-  if (j.count("applyImageColormapToIsosurfaces")) {
-    j.at("applyImageColormapToIsosurfaces").get_to(settings.m_applyImageColormapToIsosurfaces);
-  }
-  if (j.count("showIsocontoursIn2D")) {
-    j.at("showIsocontoursIn2D").get_to(settings.m_showIsocontoursIn2D);
-  }
-  if (j.count("isocontourLineWidthIn2D")) {
-    j.at("isocontourLineWidthIn2D").get_to(settings.m_isocontourLineWidthIn2D);
-  }
-  if (j.count("isosurfaceOpacityModulator")) {
-    j.at("isosurfaceOpacityModulator").get_to(settings.m_isosurfaceOpacityModulator);
+
+  if (const auto isosurfaces = j.find("isosurfaces"); isosurfaces != j.end() && isosurfaces->is_object()) {
+    if (const auto visible = isosurfaces->find("visible"); visible != isosurfaces->end() && visible->is_boolean()) {
+      settings.m_isosurfacesVisible = visible->get<bool>();
+    }
+    if (const auto colormap = isosurfaces->find("applyImageColormap");
+        colormap != isosurfaces->end() && colormap->is_boolean())
+    {
+      settings.m_applyImageColormapToIsosurfaces = colormap->get<bool>();
+    }
+    if (const auto contours = isosurfaces->find("showContours2D");
+        contours != isosurfaces->end() && contours->is_boolean())
+    {
+      settings.m_showIsocontoursIn2D = contours->get<bool>();
+    }
+    if (const auto lineWidth = isosurfaces->find("contourLineWidth2D");
+        lineWidth != isosurfaces->end() && lineWidth->is_number())
+    {
+      settings.m_isocontourLineWidthIn2D = lineWidth->get<double>();
+    }
+    if (const auto opacity = isosurfaces->find("opacityModulator");
+        opacity != isosurfaces->end() && opacity->is_number())
+    {
+      settings.m_isosurfaceOpacityModulator = opacity->get<float>();
+    }
   }
 }
 
 void to_json(json& j, const serialize::SegSettings& settings)
 {
   j = json{
-    {"displayName", settings.m_displayName},
-    {"visibility", settings.m_visibility},
-    {"opacity", settings.m_opacity},
-    {"activeComponent", settings.m_activeComponent}};
-
-  if (!settings.m_componentVisibility.empty()) {
-    j["componentVisibility"] = settings.m_componentVisibility;
-  }
-  if (!settings.m_componentOpacities.empty()) {
-    j["componentOpacities"] = settings.m_componentOpacities;
-  }
-  if (!settings.m_labelTableIndices.empty()) {
-    j["labelTableIndices"] = settings.m_labelTableIndices;
-  }
-  if (!settings.m_interpolationModes.empty()) {
-    j["interpolationModes"] = interpolationModesToJson(settings.m_interpolationModes);
-  }
+    {"display", {{"name", settings.m_displayName}, {"visible", settings.m_visible}, {"opacity", settings.m_opacity}}},
+    {"labelTableIndex", settings.m_labelTableIndex},
+    {"interpolationMode", enumToName(settings.m_interpolationMode, k_interpolationModeNames)}};
 }
 
 void from_json(const json& j, serialize::SegSettings& settings)
 {
-  if (j.count("displayName")) {
-    j.at("displayName").get_to(settings.m_displayName);
+  if (const auto display = j.find("display"); display != j.end() && display->is_object()) {
+    if (const auto name = display->find("name"); name != display->end() && name->is_string()) {
+      settings.m_displayName = name->get<std::string>();
+    }
+    if (const auto visible = display->find("visible"); visible != display->end() && visible->is_boolean()) {
+      settings.m_visible = visible->get<bool>();
+    }
+    if (const auto opacity = display->find("opacity"); opacity != display->end() && opacity->is_number()) {
+      settings.m_opacity = opacity->get<double>();
+    }
   }
-  if (j.count("visibility")) {
-    j.at("visibility").get_to(settings.m_visibility);
+  if (const auto index = unsignedIntFromJson(j.value("labelTableIndex", json{}))) {
+    settings.m_labelTableIndex = *index;
   }
-  if (j.count("opacity")) {
-    j.at("opacity").get_to(settings.m_opacity);
-  }
-  if (const auto activeComponent = unsignedIntFromJson(j.value("activeComponent", json{}))) {
-    settings.m_activeComponent = *activeComponent;
-  }
-  if (j.count("componentVisibility")) {
-    j.at("componentVisibility").get_to(settings.m_componentVisibility);
-  }
-  if (j.count("componentOpacities")) {
-    j.at("componentOpacities").get_to(settings.m_componentOpacities);
-  }
-  if (j.count("labelTableIndices")) {
-    j.at("labelTableIndices").get_to(settings.m_labelTableIndices);
-  }
-  if (const auto modes = j.find("interpolationModes"); modes != j.end()) {
-    settings.m_interpolationModes = interpolationModesFromJson(*modes);
+  if (const auto parsed = enumFromName<InterpolationMode>(j.value("interpolationMode", ""), k_interpolationModeNames)) {
+    settings.m_interpolationMode = *parsed;
   }
 }
 
@@ -1023,7 +1143,7 @@ void from_json(const json& j, serialize::Segmentation& seg)
 
 void to_json(json& j, const serialize::LandmarkPoint& point)
 {
-  j = json{{"index", point.m_index}, {"position", vec3ToJson(point.m_position)}};
+  j = json{{"position", vec3ToJson(point.m_position)}};
   if (!point.m_name.empty()) {
     j["name"] = point.m_name;
   }
@@ -1031,7 +1151,6 @@ void to_json(json& j, const serialize::LandmarkPoint& point)
 
 void from_json(const json& j, serialize::LandmarkPoint& point)
 {
-  j.at("index").get_to(point.m_index);
   point.m_position = vec3FromJson(j.at("position"));
   if (const auto name = j.find("name"); name != j.end() && name->is_string()) {
     point.m_name = name->get<std::string>();
@@ -1040,14 +1159,10 @@ void from_json(const json& j, serialize::LandmarkPoint& point)
 
 void to_json(json& j, const serialize::LandmarkGroup& landmarks)
 {
-  j = json{{"inVoxelSpace", landmarks.m_inVoxelSpace}};
+  j = json{{"coordinateSpace", enumToName(landmarks.m_coordinateSpace, k_landmarkCoordinateSpaceNames)}};
 
   if (landmarks.m_csvFileName) {
     j["path"] = pathToString(*landmarks.m_csvFileName);
-  }
-
-  if (!landmarks.m_name.empty()) {
-    j["name"] = landmarks.m_name;
   }
 
   if (!landmarks.m_points.empty()) {
@@ -1055,19 +1170,19 @@ void to_json(json& j, const serialize::LandmarkGroup& landmarks)
   }
 
   j["display"] = {
+    {"name", landmarks.m_name},
     {"visible", landmarks.m_visible},
     {"opacity", landmarks.m_opacity},
     {"color", vec3ToJson(landmarks.m_color)},
     {"colorOverride", landmarks.m_colorOverride},
-    {"showIndices", landmarks.m_renderLandmarkIndices},
-    {"showNames", landmarks.m_renderLandmarkNames},
-    {"radiusFactor", landmarks.m_radiusFactor}};
+    {"glyphRadiusFactor", landmarks.m_glyphRadiusFactor},
+    {"labels", {{"showIndices", landmarks.m_renderLandmarkIndices}, {"showNames", landmarks.m_renderLandmarkNames}}}};
 
   if (landmarks.m_textColor) {
-    j["display"]["textColor"] = vec3ToJson(*landmarks.m_textColor);
+    j["display"]["labels"]["textColor"] = vec3ToJson(*landmarks.m_textColor);
   }
   else {
-    j["display"]["textColor"] = nullptr;
+    j["display"]["labels"]["textColor"] = nullptr;
   }
 }
 
@@ -1077,23 +1192,25 @@ void from_json(const json& j, serialize::LandmarkGroup& landmarks)
     landmarks.m_csvFileName = path->get<std::string>();
   }
 
-  if (j.count("inVoxelSpace")) {
-    landmarks.m_inVoxelSpace = j.at("inVoxelSpace").get<bool>();
-  }
-  else {
-    // If not defined, then assume false
-    landmarks.m_inVoxelSpace = false;
-  }
-
-  if (const auto name = j.find("name"); name != j.end() && name->is_string()) {
-    landmarks.m_name = name->get<std::string>();
+  if (
+    const auto parsed = enumFromName<serialize::ProjectLandmarkCoordinateSpace>(
+      j.value("coordinateSpace", ""),
+      k_landmarkCoordinateSpaceNames))
+  {
+    landmarks.m_coordinateSpace = *parsed;
   }
 
   if (const auto points = j.find("points"); points != j.end()) {
     points->get_to(landmarks.m_points);
+    for (std::size_t i = 0; i < landmarks.m_points.size(); ++i) {
+      landmarks.m_points.at(i).m_index = i;
+    }
   }
 
   if (const auto display = j.find("display"); display != j.end() && display->is_object()) {
+    if (const auto name = display->find("name"); name != display->end() && name->is_string()) {
+      landmarks.m_name = name->get<std::string>();
+    }
     if (const auto visible = display->find("visible"); visible != display->end() && visible->is_boolean()) {
       landmarks.m_visible = visible->get<bool>();
     }
@@ -1108,21 +1225,24 @@ void from_json(const json& j, serialize::LandmarkGroup& landmarks)
     {
       landmarks.m_colorOverride = overrideColor->get<bool>();
     }
-    if (const auto textColor = display->find("textColor"); textColor != display->end() && !textColor->is_null()) {
-      landmarks.m_textColor = vec3FromJson(*textColor);
-    }
-    if (const auto showIndices = display->find("showIndices");
-        showIndices != display->end() && showIndices->is_boolean())
-    {
-      landmarks.m_renderLandmarkIndices = showIndices->get<bool>();
-    }
-    if (const auto showNames = display->find("showNames"); showNames != display->end() && showNames->is_boolean()) {
-      landmarks.m_renderLandmarkNames = showNames->get<bool>();
-    }
-    if (const auto radiusFactor = display->find("radiusFactor");
+    if (const auto radiusFactor = display->find("glyphRadiusFactor");
         radiusFactor != display->end() && radiusFactor->is_number())
     {
-      landmarks.m_radiusFactor = radiusFactor->get<float>();
+      landmarks.m_glyphRadiusFactor = radiusFactor->get<float>();
+    }
+
+    if (const auto labels = display->find("labels"); labels != display->end() && labels->is_object()) {
+      if (const auto textColor = labels->find("textColor"); textColor != labels->end() && !textColor->is_null()) {
+        landmarks.m_textColor = vec3FromJson(*textColor);
+      }
+      if (const auto showIndices = labels->find("showIndices");
+          showIndices != labels->end() && showIndices->is_boolean())
+      {
+        landmarks.m_renderLandmarkIndices = showIndices->get<bool>();
+      }
+      if (const auto showNames = labels->find("showNames"); showNames != labels->end() && showNames->is_boolean()) {
+        landmarks.m_renderLandmarkNames = showNames->get<bool>();
+      }
     }
   }
 }
@@ -1194,8 +1314,8 @@ void to_json(json& j, const serialize::Image& image)
 
   if (image.m_spatialMetadata) {
     j["spatialMetadata"] = {
-      {"spacingMm", vec3ToJson(image.m_spatialMetadata->spacingMm)},
-      {"originMm", vec3ToJson(image.m_spatialMetadata->originMm)},
+      {"spacing", vec3ToJson(image.m_spatialMetadata->spacingMm)},
+      {"origin", vec3ToJson(image.m_spatialMetadata->originMm)},
       {"directions", mat3ToJson(image.m_spatialMetadata->directions)}};
   }
 
@@ -1208,27 +1328,30 @@ void to_json(json& j, const serialize::Image& image)
   }
 
   if (image.m_inverseWarpFieldPath) {
-    j["inverseWarpField"] = pathToString(*image.m_inverseWarpFieldPath);
+    j["inverseWarpField"] = pathObjectToJson(*image.m_inverseWarpFieldPath);
   }
 
   if (image.m_inverseWarpReferenceImagePath) {
-    j["inverseWarpReferenceImagePath"] = pathToString(*image.m_inverseWarpReferenceImagePath);
+    j["inverseWarpReferenceImage"] = pathObjectToJson(*image.m_inverseWarpReferenceImagePath);
   }
 
   if (image.m_forwardWarpFieldPath) {
-    j["forwardWarpField"] = pathToString(*image.m_forwardWarpFieldPath);
+    j["forwardWarpField"] = pathObjectToJson(*image.m_forwardWarpFieldPath);
   }
 
   if (image.m_manualAffineFileName || image.m_manualAffineMatrix) {
     j["manualAffine"] = affineToJson(image.m_manualAffineFileName, image.m_manualAffineMatrix);
   }
 
-  if (image.m_annotationsFileName) {
-    j["annotationsPath"] = pathToString(*image.m_annotationsFileName);
-  }
-
-  if (!image.m_annotations.empty()) {
-    j["annotations"] = annotationsToJson(image.m_annotations);
+  if (image.m_annotationsFileName || !image.m_annotations.empty()) {
+    json annotations = json::object();
+    if (image.m_annotationsFileName) {
+      annotations["path"] = pathToString(*image.m_annotationsFileName);
+    }
+    if (!image.m_annotations.empty()) {
+      annotations["embedded"] = annotationsToJson(image.m_annotations);
+    }
+    j["annotations"] = std::move(annotations);
   }
 
   if (!image.m_segmentations.empty()) {
@@ -1256,8 +1379,8 @@ void from_json(const json& j, serialize::Image& image)
 
   if (const auto metadata = j.find("spatialMetadata"); metadata != j.end() && metadata->is_object()) {
     ImageSpatialMetadata spatialMetadata;
-    spatialMetadata.spacingMm = vec3FromJson(metadata->at("spacingMm"));
-    spatialMetadata.originMm = vec3FromJson(metadata->at("originMm"));
+    spatialMetadata.spacingMm = vec3FromJson(metadata->at("spacing"));
+    spatialMetadata.originMm = vec3FromJson(metadata->at("origin"));
     spatialMetadata.directions = mat3FromJson(metadata->at("directions"));
     image.m_spatialMetadata = spatialMetadata;
   }
@@ -1271,27 +1394,32 @@ void from_json(const json& j, serialize::Image& image)
   }
 
   if (j.count("inverseWarpField")) {
-    image.m_inverseWarpFieldPath = j.at("inverseWarpField").get<std::string>();
+    image.m_inverseWarpFieldPath = pathObjectFromJson(j.at("inverseWarpField"), "inverseWarpField");
   }
 
-  if (j.count("inverseWarpReferenceImagePath")) {
-    image.m_inverseWarpReferenceImagePath = j.at("inverseWarpReferenceImagePath").get<std::string>();
+  if (j.count("inverseWarpReferenceImage")) {
+    image.m_inverseWarpReferenceImagePath =
+      pathObjectFromJson(j.at("inverseWarpReferenceImage"), "inverseWarpReferenceImage");
   }
 
   if (j.count("forwardWarpField")) {
-    image.m_forwardWarpFieldPath = j.at("forwardWarpField").get<std::string>();
+    image.m_forwardWarpFieldPath = pathObjectFromJson(j.at("forwardWarpField"), "forwardWarpField");
   }
 
   if (j.count("manualAffine")) {
     affineFromJson(j.at("manualAffine"), image.m_manualAffineFileName, image.m_manualAffineMatrix);
   }
 
-  if (j.count("annotationsPath")) {
-    image.m_annotationsFileName = j.at("annotationsPath").get<std::string>();
-  }
-
   if (const auto annotations = j.find("annotations"); annotations != j.end()) {
-    image.m_annotations = annotationsFromJson(*annotations);
+    if (!annotations->is_object()) {
+      throwDebug("Image annotations entry must be an object");
+    }
+    if (const auto path = annotations->find("path"); path != annotations->end() && path->is_string()) {
+      image.m_annotationsFileName = path->get<std::string>();
+    }
+    if (const auto embedded = annotations->find("embedded"); embedded != annotations->end()) {
+      image.m_annotations = annotationsFromJson(*embedded);
+    }
   }
 
   if (j.count("segmentations")) {
@@ -1744,28 +1872,18 @@ void to_json(json& j, const RegistrationResult& result)
 {
   j = json{
     {"backend", result.m_backend},
-    {"fixedImageUid", result.m_fixedImageUid},
-    {"movingImageUid", result.m_movingImageUid},
-    {"warpedSegmentations", pathVectorToStrings(result.m_warpedSegmentations)},
-    {"transformedSurfaces", pathVectorToStrings(result.m_transformedSurfaces)},
-    {"transformedLandmarks", pathVectorToStrings(result.m_transformedLandmarks)},
+    {"warpedSegmentations", pathObjectVectorToJson(result.m_warpedSegmentations)},
+    {"transformedSurfaces", pathObjectVectorToJson(result.m_transformedSurfaces)},
+    {"transformedLandmarks", pathObjectVectorToJson(result.m_transformedLandmarks)},
     {"warnings", result.m_warnings}};
 
-  if (result.m_manifestFileName) {
-    j["manifest"] = optionalPathToString(result.m_manifestFileName);
-  }
-  if (result.m_warpedImage) {
-    j["warpedImage"] = optionalPathToString(result.m_warpedImage);
-  }
-  if (result.m_inverseWarpField) {
-    j["inverseWarpField"] = optionalPathToString(result.m_inverseWarpField);
-  }
-  if (result.m_forwardWarpField) {
-    j["forwardWarpField"] = optionalPathToString(result.m_forwardWarpField);
-  }
-  if (result.m_affineTransform) {
-    j["affine"] = optionalPathToString(result.m_affineTransform);
-  }
+  optionalPathObjectToJson(j, "fixedImage", result.m_fixedImage);
+  optionalPathObjectToJson(j, "movingImage", result.m_movingImage);
+  optionalPathObjectToJson(j, "manifest", result.m_manifestFileName);
+  optionalPathObjectToJson(j, "warpedImage", result.m_warpedImage);
+  optionalPathObjectToJson(j, "inverseWarpField", result.m_inverseWarpField);
+  optionalPathObjectToJson(j, "forwardWarpField", result.m_forwardWarpField);
+  optionalPathObjectToJson(j, "affine", result.m_affineTransform);
 }
 
 void from_json(const json& j, RegistrationResult& result)
@@ -1773,25 +1891,21 @@ void from_json(const json& j, RegistrationResult& result)
   if (const auto value = j.find("backend"); value != j.end() && value->is_string()) {
     result.m_backend = value->get<std::string>();
   }
-  if (const auto value = j.find("fixedImageUid"); value != j.end() && value->is_string()) {
-    result.m_fixedImageUid = value->get<std::string>();
-  }
-  if (const auto value = j.find("movingImageUid"); value != j.end() && value->is_string()) {
-    result.m_movingImageUid = value->get<std::string>();
-  }
-  optionalPathFromJson(j, "manifest", result.m_manifestFileName);
-  optionalPathFromJson(j, "warpedImage", result.m_warpedImage);
-  optionalPathFromJson(j, "inverseWarpField", result.m_inverseWarpField);
-  optionalPathFromJson(j, "forwardWarpField", result.m_forwardWarpField);
-  optionalPathFromJson(j, "affine", result.m_affineTransform);
+  optionalPathObjectFromJson(j, "fixedImage", result.m_fixedImage);
+  optionalPathObjectFromJson(j, "movingImage", result.m_movingImage);
+  optionalPathObjectFromJson(j, "manifest", result.m_manifestFileName);
+  optionalPathObjectFromJson(j, "warpedImage", result.m_warpedImage);
+  optionalPathObjectFromJson(j, "inverseWarpField", result.m_inverseWarpField);
+  optionalPathObjectFromJson(j, "forwardWarpField", result.m_forwardWarpField);
+  optionalPathObjectFromJson(j, "affine", result.m_affineTransform);
   if (const auto value = j.find("warpedSegmentations"); value != j.end()) {
-    result.m_warpedSegmentations = pathVectorFromJson(*value);
+    result.m_warpedSegmentations = pathObjectVectorFromJson(*value, "warpedSegmentations");
   }
   if (const auto value = j.find("transformedSurfaces"); value != j.end()) {
-    result.m_transformedSurfaces = pathVectorFromJson(*value);
+    result.m_transformedSurfaces = pathObjectVectorFromJson(*value, "transformedSurfaces");
   }
   if (const auto value = j.find("transformedLandmarks"); value != j.end()) {
-    result.m_transformedLandmarks = pathVectorFromJson(*value);
+    result.m_transformedLandmarks = pathObjectVectorFromJson(*value, "transformedLandmarks");
   }
   if (const auto value = j.find("warnings"); value != j.end() && value->is_array()) {
     result.m_warnings = value->get<std::vector<std::string>>();
@@ -1800,28 +1914,31 @@ void from_json(const json& j, RegistrationResult& result)
 
 void to_json(json& j, const EntropyProject& project)
 {
-  j = json{{"version", k_projectFormatVersion}, {"reference", project.m_referenceImage}};
+  std::vector<Image> images;
+  images.reserve(project.m_additionalImages.size() + 1);
+  images.push_back(project.m_referenceImage);
+  images.insert(images.end(), project.m_additionalImages.begin(), project.m_additionalImages.end());
 
-  if (!project.m_additionalImages.empty()) {
-    j["additional"] = project.m_additionalImages;
-  }
+  j = json{{"version", versionToJson(k_projectFormatMajorVersion, k_projectFormatMinorVersion)}, {"images", images}};
   if (project.m_layoutsFileName) {
-    j["layoutsPath"] = pathToString(*project.m_layoutsFileName);
+    j["layouts"] = json{{"path", pathToString(*project.m_layoutsFileName)}};
   }
   else if (!project.m_layouts.empty()) {
-    j["layouts"] = project.m_layouts;
+    j["layouts"] = json{{"embedded", project.m_layouts}};
   }
   if (project.m_currentLayoutIndex) {
-    j["currentLayoutIndex"] = *project.m_currentLayoutIndex;
+    j["currentLayout"] = *project.m_currentLayoutIndex;
   }
-  j["interface"] = project.m_interface;
-  j["view"] = project.m_view;
-  j["comparison"] = project.m_comparison;
-  j["raycasting"] = project.m_raycasting;
-  j["intensityProjection"] = project.m_intensityProjection;
-  j["segmentationDisplay"] = project.m_segmentationDisplay;
-  j["isosurfaces"] = project.m_isosurfaces;
-  j["annotationDisplay"] = project.m_annotationDisplay;
+  j["settings"] = {
+    {"interface", project.m_interface},
+    {"view", project.m_view},
+    {"rendering",
+     {{"comparison", project.m_comparison},
+      {"raycasting", project.m_raycasting},
+      {"intensityProjection", project.m_intensityProjection},
+      {"segmentation", project.m_segmentationDisplay},
+      {"isosurfaces", project.m_isosurfaces}}},
+    {"annotations", project.m_annotationDisplay}};
   if (!project.m_registrationResults.empty()) {
     j["registrationResults"] = project.m_registrationResults;
   }
@@ -1829,54 +1946,77 @@ void to_json(json& j, const EntropyProject& project)
 
 void from_json(const json& j, EntropyProject& project)
 {
-  const int version = j.at("version").get<int>();
-  if (version != k_projectFormatVersion) {
-    throwDebug("Unsupported Entropy project JSON version " + std::to_string(version));
+  const JsonVersion version = versionFromJson(j.at("version"));
+  if (version.major != k_projectFormatMajorVersion || version.minor != k_projectFormatMinorVersion) {
+    throwDebug(
+      "Unsupported Entropy project JSON version " + std::to_string(version.major) + "." +
+      std::to_string(version.minor));
   }
 
-  j.at("reference").get_to(project.m_referenceImage);
+  std::vector<Image> images = j.at("images").get<std::vector<Image>>();
+  if (images.empty()) {
+    throwDebug("Entropy project JSON must contain at least one image");
+  }
 
-  if (j.count("additional")) {
-    j.at("additional").get_to(project.m_additionalImages);
+  project.m_referenceImage = std::move(images.front());
+  project.m_additionalImages.clear();
+  project.m_additionalImages.reserve(images.size() - 1);
+  for (std::size_t i = 1; i < images.size(); ++i) {
+    project.m_additionalImages.push_back(std::move(images.at(i)));
   }
-  if (j.count("layoutsPath")) {
-    project.m_layoutsFileName = j.at("layoutsPath").get<std::string>();
+  if (const auto layouts = j.find("layouts"); layouts != j.end()) {
+    if (!layouts->is_object()) {
+      throwDebug("Project layouts entry must be an object");
+    }
+    if (const auto path = layouts->find("path"); path != layouts->end() && path->is_string()) {
+      project.m_layoutsFileName = path->get<std::string>();
+    }
+    if (const auto embedded = layouts->find("embedded"); embedded != layouts->end()) {
+      embedded->get_to(project.m_layouts);
+    }
   }
-  if (j.count("layouts")) {
-    j.at("layouts").get_to(project.m_layouts);
+  if (j.count("currentLayout")) {
+    project.m_currentLayoutIndex = j.at("currentLayout").get<std::size_t>();
   }
-  if (j.count("currentLayoutIndex")) {
-    project.m_currentLayoutIndex = j.at("currentLayoutIndex").get<std::size_t>();
-  }
-  if (const auto interface = j.find("interface"); interface != j.end() && interface->is_object()) {
-    interface->get_to(project.m_interface);
-  }
-  if (const auto view = j.find("view"); view != j.end() && view->is_object()) {
-    view->get_to(project.m_view);
-  }
-  if (const auto comparison = j.find("comparison"); comparison != j.end() && comparison->is_object()) {
-    comparison->get_to(project.m_comparison);
-  }
-  if (const auto raycasting = j.find("raycasting"); raycasting != j.end() && raycasting->is_object()) {
-    raycasting->get_to(project.m_raycasting);
-  }
-  if (const auto intensityProjection = j.find("intensityProjection");
-      intensityProjection != j.end() && intensityProjection->is_object())
-  {
-    intensityProjection->get_to(project.m_intensityProjection);
-  }
-  if (const auto segmentationDisplay = j.find("segmentationDisplay");
-      segmentationDisplay != j.end() && segmentationDisplay->is_object())
-  {
-    segmentationDisplay->get_to(project.m_segmentationDisplay);
-  }
-  if (const auto isosurfaces = j.find("isosurfaces"); isosurfaces != j.end() && isosurfaces->is_object()) {
-    isosurfaces->get_to(project.m_isosurfaces);
-  }
-  if (const auto annotationDisplay = j.find("annotationDisplay");
-      annotationDisplay != j.end() && annotationDisplay->is_object())
-  {
-    annotationDisplay->get_to(project.m_annotationDisplay);
+  if (const auto settings = j.find("settings"); settings != j.end() && settings->is_object()) {
+    if (const auto interface = settings->find("interface"); interface != settings->end() && interface->is_object()) {
+      interface->get_to(project.m_interface);
+    }
+    if (const auto view = settings->find("view"); view != settings->end() && view->is_object()) {
+      view->get_to(project.m_view);
+    }
+    if (const auto rendering = settings->find("rendering"); rendering != settings->end() && rendering->is_object()) {
+      if (const auto comparison = rendering->find("comparison");
+          comparison != rendering->end() && comparison->is_object())
+      {
+        comparison->get_to(project.m_comparison);
+      }
+      if (const auto raycasting = rendering->find("raycasting");
+          raycasting != rendering->end() && raycasting->is_object())
+      {
+        raycasting->get_to(project.m_raycasting);
+      }
+      if (const auto intensityProjection = rendering->find("intensityProjection");
+          intensityProjection != rendering->end() && intensityProjection->is_object())
+      {
+        intensityProjection->get_to(project.m_intensityProjection);
+      }
+      if (const auto segmentation = rendering->find("segmentation");
+          segmentation != rendering->end() && segmentation->is_object())
+      {
+        segmentation->get_to(project.m_segmentationDisplay);
+      }
+      if (const auto isosurfaces = rendering->find("isosurfaces");
+          isosurfaces != rendering->end() && isosurfaces->is_object())
+      {
+        isosurfaces->get_to(project.m_isosurfaces);
+      }
+    }
+    if (const auto annotations = settings->find("annotations");
+        annotations != settings->end() && annotations->is_object())
+    {
+      annotations->get_to(project.m_annotationDisplay);
+    }
   }
   if (const auto registrationResults = j.find("registrationResults");
       registrationResults != j.end() && registrationResults->is_array())
@@ -1961,6 +2101,8 @@ bool open(EntropyProject& project, const fs::path& fileName)
 
   auto makeRegistrationResultPathsCanonicalAbsolute =
     [](serialize::RegistrationResult& result, const fs::path& projectBasePath) {
+      makePathCanonicalAbsolute(result.m_fixedImage, projectBasePath, "registration fixed image");
+      makePathCanonicalAbsolute(result.m_movingImage, projectBasePath, "registration moving image");
       makePathCanonicalAbsolute(result.m_manifestFileName, projectBasePath, "registration manifest");
       makePathCanonicalAbsolute(result.m_warpedImage, projectBasePath, "registered image");
       makePathCanonicalAbsolute(result.m_inverseWarpField, projectBasePath, "registration inverse warp");
@@ -2196,6 +2338,8 @@ bool save(const EntropyProject& project, const fs::path& fileName)
 
   auto makeRegistrationResultPathsRelative =
     [&](serialize::RegistrationResult& result, const fs::path& projectBasePath) {
+      makeRelativeIfPresent(result.m_fixedImage, projectBasePath);
+      makeRelativeIfPresent(result.m_movingImage, projectBasePath);
       makeRelativeIfPresent(result.m_manifestFileName, projectBasePath);
       makeRelativeIfPresent(result.m_warpedImage, projectBasePath);
       makeRelativeIfPresent(result.m_inverseWarpField, projectBasePath);

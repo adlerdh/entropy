@@ -50,6 +50,8 @@ TEST_CASE("registration job specs round-trip through JSON", "[registration][seri
   const nlohmann::json json = original;
   const registration::JobSpec restored = json.get<registration::JobSpec>();
 
+  CHECK(json.at("version").at("major") == 1);
+  CHECK(json.at("version").at("minor") == 0);
   CHECK(json.at("backend") == "ANTs");
   CHECK(json.at("transformModel") == "AffineDeformable");
   CHECK(json.at("metric") == "CC");
@@ -130,6 +132,8 @@ TEST_CASE("registration result manifests round-trip artifact paths", "[registrat
   const nlohmann::json json = manifest;
   const registration::ResultManifest restored = json.get<registration::ResultManifest>();
 
+  CHECK(json.at("version").at("major") == 1);
+  CHECK(json.at("version").at("minor") == 0);
   CHECK(json.at("backend") == "Greedy");
   CHECK(restored.success);
   CHECK(restored.inverseWarp == manifest.inverseWarp);

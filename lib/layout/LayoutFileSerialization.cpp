@@ -145,9 +145,16 @@ bool open(LayoutFile& file, const std::filesystem::path& fileName)
       return false;
     }
 
-    const int version = json.value("version", k_layoutFileVersion);
-    if (version > k_layoutFileVersion) {
-      spdlog::error("Layout file {} has unsupported version {}", fileName, version);
+    const auto version = json.at("version");
+    if (!version.is_object()) {
+      spdlog::error("Layout file {} has an invalid version", fileName);
+      return false;
+    }
+
+    const int majorVersion = version.at("major").get<int>();
+    const int minorVersion = version.at("minor").get<int>();
+    if (majorVersion != k_layoutFileVersion || minorVersion != 0) {
+      spdlog::error("Layout file {} has unsupported version {}.{}", fileName, majorVersion, minorVersion);
       return false;
     }
 
@@ -172,7 +179,7 @@ bool save(const LayoutFile& file, const std::filesystem::path& fileName)
 {
   nlohmann::json json{
     {"format", k_layoutFileFormat},
-    {"version", k_layoutFileVersion},
+    {"version", {{"major", k_layoutFileVersion}, {"minor", 0}}},
     {"currentLayout", file.m_currentLayoutIndex ? nlohmann::json(*file.m_currentLayoutIndex) : nlohmann::json(nullptr)},
     {"layouts", file.m_layouts}};
 

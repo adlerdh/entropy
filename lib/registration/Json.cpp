@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -37,6 +38,29 @@ std::string pathToString(const std::filesystem::path& path)
 std::filesystem::path pathFromJson(const nlohmann::json& json)
 {
   return json.is_null() ? std::filesystem::path{} : std::filesystem::path{json.get<std::string>()};
+}
+
+nlohmann::json schemaVersionToJson(const int major)
+{
+  return nlohmann::json{{"major", major}, {"minor", 0}};
+}
+
+void getSchemaVersion(const nlohmann::json& json, const char* key, int& version)
+{
+  if (!json.contains(key)) {
+    return;
+  }
+
+  const auto& value = json.at(key);
+  if (!value.is_object()) {
+    throw std::runtime_error("schema version must be an object");
+  }
+
+  version = value.at("major").get<int>();
+  const int minor = value.at("minor").get<int>();
+  if (minor != 0) {
+    throw std::runtime_error("unsupported schema minor version");
+  }
 }
 
 std::vector<std::string> pathVectorToStrings(const std::vector<std::filesystem::path>& paths)
@@ -314,7 +338,7 @@ void from_json(const nlohmann::json& j, BackendCapabilities& value)
 void to_json(nlohmann::json& j, const JobSpec& value)
 {
   j = nlohmann::json{
-    {"version", value.version},
+    {"version", schemaVersionToJson(value.version)},
     {"backend", value.backend},
     {"dimension", value.dimension},
     {"fixedImage", value.fixedImage},
@@ -339,7 +363,7 @@ void to_json(nlohmann::json& j, const JobSpec& value)
 
 void from_json(const nlohmann::json& j, JobSpec& value)
 {
-  getOptional(j, "version", value.version);
+  getSchemaVersion(j, "version", value.version);
   if (j.contains("backend")) {
     value.backend = enumFromJson<Backend>(j.at("backend"), backendFromString);
   }
@@ -436,7 +460,7 @@ void from_json(const nlohmann::json& j, ProgressEvent& value)
 void to_json(nlohmann::json& j, const ResultManifest& value)
 {
   j = nlohmann::json{
-    {"version", value.version},
+    {"version", schemaVersionToJson(value.version)},
     {"success", value.success},
     {"backend", value.backend},
     {"fixedImageUid", value.fixedImageUid},
@@ -456,7 +480,7 @@ void to_json(nlohmann::json& j, const ResultManifest& value)
 
 void from_json(const nlohmann::json& j, ResultManifest& value)
 {
-  getOptional(j, "version", value.version);
+  getSchemaVersion(j, "version", value.version);
   getOptional(j, "success", value.success);
   if (j.contains("backend")) {
     value.backend = enumFromJson<Backend>(j.at("backend"), backendFromString);

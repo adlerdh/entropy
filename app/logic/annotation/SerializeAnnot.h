@@ -1,10 +1,41 @@
 #pragma once
 
+#include "common/Exception.hpp"
 #include "logic/annotation/Annotation.h"
 
 #include <nlohmann/json.hpp>
 
 #include <vector>
+
+namespace annotation_json
+{
+/**
+ * @brief Serialize a non-premultiplied RGBA color as normalized `[r,g,b,a]` floats.
+ * @param color Color with components in `[0, 1]`
+ * @return JSON array containing red, green, blue, and alpha
+ */
+inline nlohmann::json colorToJson(const glm::vec4& color)
+{
+  return nlohmann::json::array({color.r, color.g, color.b, color.a});
+}
+
+/**
+ * @brief Parse a normalized `[r,g,b,a]` color array.
+ * @param value JSON array containing red, green, blue, and alpha
+ * @return Parsed non-premultiplied RGBA color
+ */
+inline glm::vec4 colorFromJson(const nlohmann::json& value)
+{
+  if (!value.is_array() || value.size() != 4) {
+    throwDebug("JSON structure contains invalid color");
+  }
+  return glm::vec4{
+    value.at(0).get<float>(),
+    value.at(1).get<float>(),
+    value.at(2).get<float>(),
+    value.at(3).get<float>()};
+}
+} // namespace annotation_json
 
 /**
  * @brief Create a JSON structure with a vector for the outer boundary vertices.

@@ -1,4 +1,4 @@
-# Entropy Medical Image Viewer
+#Entropy Medical Image Viewer
 
 [![macOS CI](https://github.com/adlerdh/entropy/actions/workflows/macos.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/macos.yml)
 [![Windows CI](https://github.com/adlerdh/entropy/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/windows.yml)
@@ -31,23 +31,27 @@ them following the "superbuild" pattern:
 ```sh
 BUILD_TYPE=release # or debug
 
-# Dependencies
+#Dependencies
 cmake --preset deps-${BUILD_TYPE}
-cmake --build --preset deps-${BUILD_TYPE} --parallel
+cmake --build --preset deps-${
+  BUILD_TYPE} --parallel
 
-# Application
+#Application
 cmake --preset app-${BUILD_TYPE}
-cmake --build --preset app-${BUILD_TYPE} --parallel
+cmake --build --preset app-${
+  BUILD_TYPE} --parallel
 
-# Unit tests
-ctest --test-dir build-${BUILD_TYPE} --parallel 8 --output-on-failure
+#Unit tests
+ctest --test-dir build-${
+  BUILD_TYPE} --parallel 8 --output-on-failure
 ```
 
 Adjust the parallel job count for your machine, lowering it if you run out of memory. Run with:
 
 ```sh
 build-${BUILD_TYPE}/bin/entropy # macOS and Linux
-.\build-${BUILD_TYPE}\bin\entropy.exe # Windows
+.\build-${
+  BUILD_TYPE}\bin\entropy.exe # Windows
 ```
 
 Release packages are generated with preset `package-release` for:
@@ -281,21 +285,14 @@ reference.
 
 Entropy project files preserve all state needed to reopen a review, except for the image data referenced on disk.
 They include a reference image, additional images, segmentations, landmarks, annotations, transformations, layouts, and
-presentation settings. Minimal example:
+presentation settings. Image entries are stored in `images`; the first entry is the reference image. Project-wide
+presentation settings are grouped under `settings`. Minimal example:
 
 ```json
 {
-  "reference": {
-    "path": "reference_image.nii.gz"
-  },
-  "additional": [
-    {
-      "path": "moving_image_1.nii.gz"
-    },
-    {
-      "path": "moving_image_2.nii.gz"
-    }
-  ]
+  "version" : {"major": 1, "minor": 0},
+              "images"
+    : [{"path": "reference_image.nii.gz"}, {"path": "moving_image_1.nii.gz"}, {"path": "moving_image_2.nii.gz"}]
 }
 ```
 
@@ -303,47 +300,23 @@ Including segmentations, landmarks, annotations, and an affine transformation:
 
 ```json
 {
-  "version": 1,
-  "reference": {
-    "path": "reference_image.nii.gz",
-    "segmentations": [
-      {
-        "path": "reference_seg.nii.gz"
-      }
-    ],
-    "landmarks": [
-      {
-        "name": "Reference landmarks",
-        "inVoxelSpace": false,
-        "points": [
-          {
-            "index": 1,
-            "position": [12.0, 24.0, 36.0],
-            "name": "AC"
-          }
-        ]
-      }
-    ],
-    "annotationsPath": "reference_annotations.json"
-  },
-  "additional": [
+  "version" : {"major": 1, "minor": 0}, "images" : [
+    {
+      "path": "reference_image.nii.gz",
+      "segmentations": [{"path": "reference_seg.nii.gz"}],
+      "landmarks": [{
+        "coordinateSpace": "subject",
+        "points": [{"position": [12.0, 24.0, 36.0], "name": "AC"}],
+        "display": {"name": "Reference landmarks"}
+      }],
+      "annotations": {"path": "reference_annotations.json"}
+    },
     {
       "path": "moving_image.nii.gz",
-      "initialAffine": {
-        "path": "moving_image_affine.txt"
-      },
-      "segmentations": [
-        {
-          "path": "moving_image_seg.nii.gz"
-        }
-      ],
-      "landmarks": [
-        {
-          "path": "moving_image_landmarks.csv",
-          "inVoxelSpace": false
-        }
-      ],
-      "annotationsPath": "moving_image_annotations.json"
+      "initialAffine": {"path": "moving_image_affine.txt"},
+      "segmentations": [{"path": "moving_image_seg.nii.gz"}],
+      "landmarks": [{"path": "moving_image_landmarks.csv", "coordinateSpace": "subject"}],
+      "annotations": {"path": "moving_image_annotations.json"}
     }
   ]
 }

@@ -9,7 +9,6 @@
 namespace app_sync::instance_protocol
 {
 
-inline constexpr int sk_protocolVersion = 1;
 inline constexpr double sk_cursorEpsilonMm = 1.0e-4;
 inline constexpr std::int64_t sk_peerStaleMs = 5000;
 

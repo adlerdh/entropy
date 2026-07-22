@@ -328,7 +328,7 @@ json toJson(
 
   return {
     {"format", "entropy.userSettings"},
-    {"version", 1},
+    {"version", {{"major", 1}, {"minor", 0}}},
     {"interface",
      {{"uiScale", uiScale},
       {"font", enumToName(settings.uiFontFamily(), sk_uiFontNames)},

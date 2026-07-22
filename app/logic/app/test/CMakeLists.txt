@@ -1,4 +1,5 @@
 add_executable(TestAppSettings
+  AnnotationSerializationTests.cpp
   AppPathsTests.cpp
   ImageScaleInteractionTests.cpp
   ImageSelectionPolicyTests.cpp

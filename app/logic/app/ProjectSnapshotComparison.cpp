@@ -81,11 +81,8 @@ bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std:
   if (a.has_value() != b.has_value()) {
     return false;
   }
-  return !a ||
-         (a->m_displayName == b->m_displayName && a->m_visibility == b->m_visibility && a->m_opacity == b->m_opacity &&
-          a->m_activeComponent == b->m_activeComponent && a->m_componentVisibility == b->m_componentVisibility &&
-          a->m_componentOpacities == b->m_componentOpacities && a->m_labelTableIndices == b->m_labelTableIndices &&
-          a->m_interpolationModes == b->m_interpolationModes);
+  return !a || (a->m_displayName == b->m_displayName && a->m_visible == b->m_visible && a->m_opacity == b->m_opacity &&
+                a->m_labelTableIndex == b->m_labelTableIndex && a->m_interpolationMode == b->m_interpolationMode);
 }
 
 bool matricesEqual(const std::optional<glm::mat4>& a, const std::optional<glm::mat4>& b)
@@ -125,11 +122,11 @@ bool landmarkPointsEqual(const serialize::LandmarkPoint& a, const serialize::Lan
 
 bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::LandmarkGroup& b)
 {
-  return a.m_csvFileName == b.m_csvFileName && a.m_inVoxelSpace == b.m_inVoxelSpace && a.m_name == b.m_name &&
+  return a.m_csvFileName == b.m_csvFileName && a.m_coordinateSpace == b.m_coordinateSpace && a.m_name == b.m_name &&
          vectorsEqual(a.m_points, b.m_points, landmarkPointsEqual) && a.m_visible == b.m_visible &&
          a.m_opacity == b.m_opacity && a.m_color == b.m_color && a.m_colorOverride == b.m_colorOverride &&
          a.m_textColor == b.m_textColor && a.m_renderLandmarkIndices == b.m_renderLandmarkIndices &&
-         a.m_renderLandmarkNames == b.m_renderLandmarkNames && a.m_radiusFactor == b.m_radiusFactor;
+         a.m_renderLandmarkNames == b.m_renderLandmarkNames && a.m_glyphRadiusFactor == b.m_glyphRadiusFactor;
 }
 
 bool surfaceMaterialsEqual(const SurfaceMaterial& a, const SurfaceMaterial& b)
@@ -330,12 +327,12 @@ bool annotationDisplaySettingsEqual(
 
 bool registrationResultsEqual(const serialize::RegistrationResult& a, const serialize::RegistrationResult& b)
 {
-  return a.m_backend == b.m_backend && a.m_fixedImageUid == b.m_fixedImageUid &&
-         a.m_movingImageUid == b.m_movingImageUid && a.m_manifestFileName == b.m_manifestFileName &&
-         a.m_warpedImage == b.m_warpedImage && a.m_inverseWarpField == b.m_inverseWarpField &&
-         a.m_forwardWarpField == b.m_forwardWarpField && a.m_affineTransform == b.m_affineTransform &&
-         a.m_warpedSegmentations == b.m_warpedSegmentations && a.m_transformedSurfaces == b.m_transformedSurfaces &&
-         a.m_transformedLandmarks == b.m_transformedLandmarks && a.m_warnings == b.m_warnings;
+  return a.m_backend == b.m_backend && a.m_fixedImage == b.m_fixedImage && a.m_movingImage == b.m_movingImage &&
+         a.m_manifestFileName == b.m_manifestFileName && a.m_warpedImage == b.m_warpedImage &&
+         a.m_inverseWarpField == b.m_inverseWarpField && a.m_forwardWarpField == b.m_forwardWarpField &&
+         a.m_affineTransform == b.m_affineTransform && a.m_warpedSegmentations == b.m_warpedSegmentations &&
+         a.m_transformedSurfaces == b.m_transformedSurfaces && a.m_transformedLandmarks == b.m_transformedLandmarks &&
+         a.m_warnings == b.m_warnings;
 }
 } // namespace
 

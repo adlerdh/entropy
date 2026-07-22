@@ -57,7 +57,7 @@ TEST_CASE("Layout files load compact layout presets", "[layout]")
     REQUIRE(out);
     out << R"({
   "format": "EntropyLayouts",
-  "version": 1,
+  "version": {"major": 1, "minor": 0},
   "currentLayout": 1,
   "layouts": [
     {"type": "fourUp"},

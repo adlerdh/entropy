@@ -30,7 +30,7 @@ TEST_CASE("Entropy instance sync rejects incompatible peer registry records", "[
   CHECK_FALSE(
     decodePeerRecord(encodeRegistryRecord("peer-a", 1234, 48123, "project-key", 1), "local", "project-key", 10025));
   CHECK_FALSE(decodePeerRecord(
-    R"({"version":1,"instanceId":"peer-a","port":0,"projectKey":"project-key","updatedMs":10000})",
+    R"({"version":{"major":1,"minor":0},"instanceId":"peer-a","port":0,"projectKey":"project-key","updatedMs":10000})",
     "local",
     "project-key",
     10025));
@@ -57,15 +57,15 @@ TEST_CASE("Entropy instance sync rejects incompatible cursor messages", "[sync][
   CHECK_FALSE(
     decodeCursorMessage(encodeCursorMessage("peer-a", 7, "other-project", {1.0, 2.0, 3.0}), "local", "project-key"));
   CHECK_FALSE(decodeCursorMessage(
-    R"({"version":1,"sender":"peer-a","sequence":7,"projectKey":"project-key","cursorLps":[1.0,2.0]})",
+    R"({"version":{"major":1,"minor":0},"sender":"peer-a","sequence":7,"projectKey":"project-key","cursorLps":[1.0,2.0]})",
     "local",
     "project-key"));
   CHECK_FALSE(decodeCursorMessage(
-    R"({"version":1,"sender":"peer-a","sequence":7,"projectKey":"project-key","cursorLps":[1.0,"bad",3.0]})",
+    R"({"version":{"major":1,"minor":0},"sender":"peer-a","sequence":7,"projectKey":"project-key","cursorLps":[1.0,"bad",3.0]})",
     "local",
     "project-key"));
   CHECK_FALSE(decodeCursorMessage(
-    R"({"version":1,"sender":"peer-a","sequence":0,"projectKey":"project-key","cursorLps":[1.0,2.0,3.0]})",
+    R"({"version":{"major":1,"minor":0},"sender":"peer-a","sequence":0,"projectKey":"project-key","cursorLps":[1.0,2.0,3.0]})",
     "local",
     "project-key"));
 }

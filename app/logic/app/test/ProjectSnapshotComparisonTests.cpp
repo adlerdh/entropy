@@ -22,10 +22,10 @@ serialize::EntropyProject makeProject()
 
   serialize::LandmarkGroup landmarks;
   landmarks.m_csvFileName = "landmarks.csv";
-  landmarks.m_inVoxelSpace = true;
+  landmarks.m_coordinateSpace = serialize::ProjectLandmarkCoordinateSpace::Voxel;
   landmarks.m_name = "Landmarks";
   landmarks.m_points.push_back(
-    serialize::LandmarkPoint{.m_index = 1, .m_position = glm::vec3{1.0f, 2.0f, 3.0f}, .m_name = "AC"});
+    serialize::LandmarkPoint{.m_index = 0, .m_position = glm::vec3{1.0f, 2.0f, 3.0f}, .m_name = "AC"});
   project.m_referenceImage.m_landmarkGroups.push_back(landmarks);
 
   serialize::ImageIsosurface isosurface;
@@ -105,7 +105,8 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentation));
 
   auto changedLandmarks = project;
-  changedLandmarks.m_referenceImage.m_landmarkGroups.front().m_inVoxelSpace = false;
+  changedLandmarks.m_referenceImage.m_landmarkGroups.front().m_coordinateSpace =
+    serialize::ProjectLandmarkCoordinateSpace::Subject;
   CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarks));
 
   auto changedLandmarkPoint = project;
@@ -208,8 +209,8 @@ TEST_CASE("Project snapshot comparison detects registration result changes", "[P
   serialize::EntropyProject project = makeProject();
   project.m_registrationResults.push_back(serialize::RegistrationResult{
     .m_backend = "Greedy",
-    .m_fixedImageUid = "fixed",
-    .m_movingImageUid = "moving",
+    .m_fixedImage = "fixed.nii.gz",
+    .m_movingImage = "moving.nii.gz",
     .m_manifestFileName = "registration/result.json",
     .m_warpedImage = "registration/warped.nii.gz",
     .m_inverseWarpField = "registration/inverse.nrrd",

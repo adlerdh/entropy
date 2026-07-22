@@ -7,6 +7,30 @@
 
 namespace app_sync::instance_protocol
 {
+namespace
+{
+constexpr int sk_protocolMajorVersion = 1;
+constexpr int sk_protocolMinorVersion = 0;
+
+nlohmann::json protocolVersionJson()
+{
+  return nlohmann::json{{"major", sk_protocolMajorVersion}, {"minor", sk_protocolMinorVersion}};
+}
+
+bool isSupportedProtocolVersion(const nlohmann::json& root)
+{
+  const auto version = root.find("version");
+  if (version == root.end() || !version->is_object()) {
+    return false;
+  }
+
+  const auto major = version->find("major");
+  const auto minor = version->find("minor");
+  return major != version->end() && minor != version->end() && major->is_number_integer() &&
+         minor->is_number_integer() && major->get<int>() == sk_protocolMajorVersion &&
+         minor->get<int>() == sk_protocolMinorVersion;
+}
+} // namespace
 
 bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b)
 {
@@ -21,7 +45,7 @@ std::string encodeRegistryRecord(
   std::int64_t updatedMs)
 {
   const nlohmann::json record{
-    {"version", sk_protocolVersion},
+    {"version", protocolVersionJson()},
     {"instanceId", instanceId},
     {"pid", processId},
     {"port", port},
@@ -49,7 +73,7 @@ std::optional<PeerRecord> decodePeerRecord(
 
   const std::string instanceId = record.value("instanceId", std::string{});
   if (
-    record.value("version", 0) != sk_protocolVersion || instanceId.empty() || instanceId == localInstanceId ||
+    !isSupportedProtocolVersion(record) || instanceId.empty() || instanceId == localInstanceId ||
     record.value("projectKey", std::string{}) != projectKey)
   {
     return std::nullopt;
@@ -81,7 +105,7 @@ std::string encodeCursorMessage(
   const glm::dvec3& cursorLps)
 {
   nlohmann::json message{
-    {"version", sk_protocolVersion},
+    {"version", protocolVersionJson()},
     {"sender", sender},
     {"sequence", sequence},
     {"projectKey", projectKey},
@@ -100,8 +124,8 @@ decodeCursorMessage(const std::string& messageText, const std::string& localInst
 
   const std::string sender = root.value("sender", std::string{});
   if (
-    root.value("version", 0) != sk_protocolVersion || root.value("projectKey", std::string{}) != projectKey ||
-    sender.empty() || sender == localInstanceId)
+    !isSupportedProtocolVersion(root) || root.value("projectKey", std::string{}) != projectKey || sender.empty() ||
+    sender == localInstanceId)
   {
     return std::nullopt;
   }

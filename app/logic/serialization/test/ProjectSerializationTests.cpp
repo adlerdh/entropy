@@ -32,7 +32,7 @@ json annotationsToJson(const std::vector<Annotation>& annotations)
   for (std::size_t i = 0; i < annotations.size(); ++i) {
     annotationArray.emplace_back(json::object());
   }
-  return json{{"version", 1}, {"annotations", std::move(annotationArray)}};
+  return json{{"version", {{"major", 1}, {"minor", 0}}}, {"annotations", std::move(annotationArray)}};
 }
 
 std::vector<Annotation> annotationsFromJson(const json&)
@@ -110,11 +110,11 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
-  CHECK(savedJson.at("version") == 1);
+  CHECK(savedJson.at("version").at("major") == 1);
   CHECK(
-    savedJson.at("reference").at("dicomSource").at("paths") ==
+    savedJson.at("images").at(0).at("dicomSource").at("paths") ==
     json::array({"dicom/slice-001.dcm", "dicom/slice-002.dcm"}));
-  CHECK_FALSE(savedJson.at("reference").at("dicomSource").contains("files"));
+  CHECK_FALSE(savedJson.at("images").at(0).at("dicomSource").contains("files"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -138,15 +138,18 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
 
   const json root = project;
 
-  REQUIRE(root.contains("interface"));
-  CHECK_FALSE(root.at("interface").contains("showLayoutTabs"));
-  CHECK_FALSE(root.at("interface").contains("layoutTabsPosition"));
-  CHECK_FALSE(root.at("interface").contains("showGlobalTimeControls"));
-  CHECK(root.at("interface").at("synchronizeTimeSeries") == false);
-  CHECK_FALSE(root.at("interface").contains("imageValuePrecision"));
-  CHECK_FALSE(root.at("interface").contains("coordinatesPrecision"));
-  CHECK_FALSE(root.at("interface").contains("transformPrecision"));
-  CHECK_FALSE(root.at("interface").contains("percentilePrecision"));
+  REQUIRE(root.contains("settings"));
+  REQUIRE(root.at("settings").contains("interface"));
+  CHECK_FALSE(root.contains("interface"));
+  const json& interface = root.at("settings").at("interface");
+  CHECK_FALSE(interface.contains("showLayoutTabs"));
+  CHECK_FALSE(interface.contains("layoutTabsPosition"));
+  CHECK_FALSE(interface.contains("showGlobalTimeControls"));
+  CHECK(interface.at("synchronizeTimeSeries") == false);
+  CHECK_FALSE(interface.contains("imageValuePrecision"));
+  CHECK_FALSE(interface.contains("coordinatesPrecision"));
+  CHECK_FALSE(interface.contains("transformPrecision"));
+  CHECK_FALSE(interface.contains("percentilePrecision"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -171,18 +174,21 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
 
   const json root = project;
 
-  REQUIRE(root.contains("view"));
-  CHECK(root.at("view").at("showImageBorders") == false);
-  CHECK(root.at("view").at("showImageBordersInLightboxViews") == false);
-  CHECK(root.at("view").at("showCrosshairs") == false);
-  CHECK(root.at("view").at("showCrosshairsInLightboxViews") == false);
-  CHECK(root.at("view").at("showAnatomicalLabels") == false);
-  CHECK(root.at("view").at("showAnatomicalLabelsInLightboxViews") == false);
-  CHECK(root.at("view").at("showScaleBars") == true);
-  CHECK(root.at("view").at("showScaleBarsInLightboxViews") == true);
-  CHECK(root.at("view").at("anatomicalLabelType") == "rodent");
-  CHECK(root.at("view").at("lockAnatomicalDirectionsToReferenceImage") == true);
-  CHECK(root.at("view").at("crosshairsSnapping") == "activeImage");
+  REQUIRE(root.contains("settings"));
+  REQUIRE(root.at("settings").contains("view"));
+  CHECK_FALSE(root.contains("view"));
+  const json& view = root.at("settings").at("view");
+  CHECK(view.at("showImageBorders") == false);
+  CHECK(view.at("showImageBordersInLightboxViews") == false);
+  CHECK(view.at("showCrosshairs") == false);
+  CHECK(view.at("showCrosshairsInLightboxViews") == false);
+  CHECK(view.at("showAnatomicalLabels") == false);
+  CHECK(view.at("showAnatomicalLabelsInLightboxViews") == false);
+  CHECK(view.at("showScaleBars") == true);
+  CHECK(view.at("showScaleBarsInLightboxViews") == true);
+  CHECK(view.at("anatomicalLabelType") == "rodent");
+  CHECK(view.at("lockAnatomicalDirectionsToReferenceImage") == true);
+  CHECK(view.at("crosshairsSnapping") == "activeImage");
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -229,17 +235,21 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
 
   const json root = project;
 
-  REQUIRE(root.contains("comparison"));
-  CHECK(root.at("comparison").at("difference").at("squared") == false);
-  CHECK(root.at("comparison").at("difference").at("metric").at("colormapIndex") == 9);
-  CHECK(root.at("comparison").at("difference").at("metric").at("windowSlopeIntercept").at(0) == 2.0f);
-  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
-  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
-  CHECK(root.at("comparison").at("localLinearResidual").at("patchRadius") == 4);
-  CHECK(root.at("comparison").at("overlay").at("magentaCyan") == false);
-  CHECK(root.at("comparison").at("quadrants").at("x") == false);
-  CHECK(root.at("comparison").at("checkerboard").at("squares") == 31);
-  CHECK(root.at("comparison").at("flashlight").at("radiusFraction") == 0.55f);
+  REQUIRE(root.contains("settings"));
+  REQUIRE(root.at("settings").contains("rendering"));
+  REQUIRE(root.at("settings").at("rendering").contains("comparison"));
+  CHECK_FALSE(root.contains("comparison"));
+  const json& comparison = root.at("settings").at("rendering").at("comparison");
+  CHECK(comparison.at("difference").at("squared") == false);
+  CHECK(comparison.at("difference").at("metric").at("colormapIndex") == 9);
+  CHECK(comparison.at("difference").at("metric").at("windowSlopeIntercept").at(0) == 2.0f);
+  CHECK(comparison.at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
+  CHECK(comparison.at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
+  CHECK(comparison.at("localLinearResidual").at("patchRadius") == 4);
+  CHECK(comparison.at("overlay").at("magentaCyan") == false);
+  CHECK(comparison.at("quadrants").at("x") == false);
+  CHECK(comparison.at("checkerboard").at("squares") == 31);
+  CHECK(comparison.at("flashlight").at("radiusFraction") == 0.55f);
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -300,30 +310,40 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 
   const json root = project;
 
-  CHECK(root.at("raycasting").at("samplingFactor") == 1.25f);
-  CHECK_FALSE(root.at("raycasting").contains("adaptiveSamplingEnabled"));
-  CHECK_FALSE(root.at("raycasting").contains("adaptiveSamplingTargetFrameRate"));
-  CHECK(root.at("raycasting").at("transparentBackgroundWhenNoHit") == false);
-  CHECK(root.at("raycasting").at("backgroundEdgeBrighteningEnabled") == false);
-  CHECK(root.at("raycasting").at("showCrosshairsIn3D") == true);
-  CHECK(root.at("raycasting").at("crosshairs3DGlyphDiameterVoxelDiagonals") == 1.75f);
-  CHECK(root.at("raycasting").at("showThreeDCameraFrustumIn2DViews") == true);
-  CHECK(root.at("raycasting").at("reverseThreeDRotateAboutEye") == true);
-  CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(0) == 1.0f);
-  CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(1) == 0.25f);
-  CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(2) == 0.75f);
-  CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(3) == 0.8f);
-  CHECK(root.at("raycasting").at("renderFrontFaces") == false);
-  CHECK(root.at("raycasting").at("segmentationMasking") == "maskOut");
-  CHECK(root.at("intensityProjection").at("useMaximumImageExtent") == true);
-  CHECK(root.at("intensityProjection").at("slabThicknessMm") == 12.5f);
-  CHECK(root.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
-  CHECK(root.at("segmentationDisplay").at("outlineStyle") == "voxel");
-  CHECK(root.at("segmentationDisplay").at("erosionFactor") == 0.8f);
-  CHECK(root.at("isosurfaces").at("floatingPointInterpolationPolicy") == "floatingPoint");
-  CHECK(root.at("isosurfaces").at("modulateOpacityWithImageOpacity") == true);
-  CHECK(root.at("annotationDisplay").at("annotationsOnTop") == true);
-  CHECK(root.at("annotationDisplay").at("hideAnnotationVertices") == true);
+  REQUIRE(root.contains("settings"));
+  REQUIRE(root.at("settings").contains("rendering"));
+  const json& settings = root.at("settings");
+  const json& rendering = settings.at("rendering");
+  const json& raycasting = rendering.at("raycasting");
+  CHECK_FALSE(root.contains("raycasting"));
+  CHECK_FALSE(root.contains("intensityProjection"));
+  CHECK_FALSE(root.contains("segmentationDisplay"));
+  CHECK_FALSE(root.contains("isosurfaceDisplay"));
+  CHECK_FALSE(root.contains("annotationDisplay"));
+  CHECK(raycasting.at("samplingFactor") == 1.25f);
+  CHECK_FALSE(raycasting.contains("adaptiveSamplingEnabled"));
+  CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
+  CHECK(raycasting.at("transparentBackgroundWhenNoHit") == false);
+  CHECK(raycasting.at("backgroundEdgeBrighteningEnabled") == false);
+  CHECK(raycasting.at("showCrosshairsIn3D") == true);
+  CHECK(raycasting.at("crosshairs3DGlyphDiameterVoxelDiagonals") == 1.75f);
+  CHECK(raycasting.at("showThreeDCameraFrustumIn2DViews") == true);
+  CHECK(raycasting.at("reverseThreeDRotateAboutEye") == true);
+  CHECK(raycasting.at("threeDCameraFrustumColor").at(0) == 1.0f);
+  CHECK(raycasting.at("threeDCameraFrustumColor").at(1) == 0.25f);
+  CHECK(raycasting.at("threeDCameraFrustumColor").at(2) == 0.75f);
+  CHECK(raycasting.at("threeDCameraFrustumColor").at(3) == 0.8f);
+  CHECK(raycasting.at("renderFrontFaces") == false);
+  CHECK(raycasting.at("segmentationMasking") == "maskOut");
+  CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == true);
+  CHECK(rendering.at("intensityProjection").at("slabThicknessMm") == 12.5f);
+  CHECK(rendering.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
+  CHECK(rendering.at("segmentation").at("outlineStyle") == "voxel");
+  CHECK(rendering.at("segmentation").at("erosionFactor") == 0.8f);
+  CHECK(rendering.at("isosurfaces").at("floatingPointInterpolationPolicy") == "floatingPoint");
+  CHECK(rendering.at("isosurfaces").at("modulateOpacityWithImageOpacity") == true);
+  CHECK(settings.at("annotations").at("annotationsOnTop") == true);
+  CHECK(settings.at("annotations").at("hideAnnotationVertices") == true);
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -361,26 +381,29 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")
 {
   const json root = {
-    {"version", 1},
-    {"reference", {{"path", "image.nii.gz"}}},
-    {"raycasting",
-     {{"samplingFactor", 0.0f},
-      {"segmentationMasking", "bad"},
-      {"transparentBackgroundWhenNoHit", false},
-      {"renderFrontFaces", false}}},
-    {"intensityProjection",
-     {{"useMaximumImageExtent", true},
-      {"slabThicknessMm", -1.0f},
-      {"xrayEnergyKeV", 120.0f},
-      {"xrayWindow", 0.0f},
-      {"xrayLevel", 2.0f}}},
-    {"segmentationDisplay",
-     {{"modulateOpacityWithImageOpacity", false},
-      {"outlineStyle", "bad"},
-      {"interiorOpacity", 2.0f},
-      {"erosionFactor", 0.0f}}},
-    {"isosurfaces", {{"floatingPointInterpolationPolicy", "floatingPoint"}, {"modulateOpacityWithImageOpacity", true}}},
-    {"annotationDisplay", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}};
+    {"version", {{"major", 1}, {"minor", 0}}},
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings",
+     {{"rendering",
+       {{"raycasting",
+         {{"samplingFactor", 0.0f},
+          {"segmentationMasking", "bad"},
+          {"transparentBackgroundWhenNoHit", false},
+          {"renderFrontFaces", false}}},
+        {"intensityProjection",
+         {{"useMaximumImageExtent", true},
+          {"slabThicknessMm", -1.0f},
+          {"xrayEnergyKeV", 120.0f},
+          {"xrayWindow", 0.0f},
+          {"xrayLevel", 2.0f}}},
+        {"segmentation",
+         {{"modulateOpacityWithImageOpacity", false},
+          {"outlineStyle", "bad"},
+          {"interiorOpacity", 2.0f},
+          {"erosionFactor", 0.0f}}},
+        {"isosurfaces",
+         {{"floatingPointInterpolationPolicy", "floatingPoint"}, {"modulateOpacityWithImageOpacity", true}}}}},
+      {"annotations", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}}}};
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -422,17 +445,20 @@ TEST_CASE("Project serialization supports an external layouts file reference", "
   project.m_layouts.push_back(layout::LayoutSpec{});
 
   const json inlineJson = project;
-  CHECK(inlineJson.at("version") == 1);
-  CHECK(inlineJson.at("layoutsPath") == layoutsFile.generic_string());
+  CHECK(inlineJson.at("version").at("major") == 1);
+  REQUIRE(inlineJson.at("layouts").is_object());
+  CHECK(inlineJson.at("layouts").at("path") == layoutsFile.generic_string());
+  CHECK_FALSE(inlineJson.contains("layoutsPath"));
   CHECK_FALSE(inlineJson.contains("layoutsFile"));
-  CHECK_FALSE(inlineJson.contains("layouts"));
+  CHECK_FALSE(inlineJson.at("layouts").contains("embedded"));
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
-  CHECK(savedJson.at("layoutsPath") == "layouts.json");
+  CHECK(savedJson.at("layouts").at("path") == "layouts.json");
+  CHECK_FALSE(savedJson.contains("layoutsPath"));
   CHECK_FALSE(savedJson.contains("layoutsFile"));
-  CHECK_FALSE(savedJson.contains("layouts"));
+  CHECK_FALSE(savedJson.at("layouts").contains("embedded"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -459,13 +485,15 @@ TEST_CASE(
   project.m_layouts.push_back(layout);
 
   const json serialized = project;
-  CHECK(serialized.at("version") == 1);
+  CHECK(serialized.at("version").at("major") == 1);
   CHECK_FALSE(serialized.contains("layoutsPath"));
   REQUIRE(serialized.contains("layouts"));
-  REQUIRE(serialized.at("layouts").is_array());
-  REQUIRE(serialized.at("layouts").size() == 1);
-  CHECK(serialized.at("layouts").at(0).at("displayName") == "Review");
-  CHECK(serialized.at("currentLayoutIndex") == 1);
+  REQUIRE(serialized.at("layouts").is_object());
+  REQUIRE(serialized.at("layouts").at("embedded").is_array());
+  REQUIRE(serialized.at("layouts").at("embedded").size() == 1);
+  CHECK(serialized.at("layouts").at("embedded").at(0).at("displayName") == "Review");
+  CHECK(serialized.at("currentLayout") == 1);
+  CHECK_FALSE(serialized.contains("currentLayoutIndex"));
 
   serialize::EntropyProject loaded = serialized.get<serialize::EntropyProject>();
   CHECK_FALSE(loaded.m_layoutsFileName);
@@ -490,10 +518,10 @@ TEST_CASE(
   project.m_additionalImages.push_back(image);
 
   const json root = project;
-  REQUIRE(root.contains("additional"));
-  REQUIRE(root.at("additional").size() == 1);
+  REQUIRE(root.contains("images"));
+  REQUIRE(root.at("images").size() == 2);
 
-  const json& serializedImage = root.at("additional").at(0);
+  const json& serializedImage = root.at("images").at(1);
   CHECK(serializedImage.at("path") == "moving.nii.gz");
   CHECK_FALSE(serializedImage.contains("image"));
   REQUIRE(serializedImage.at("initialAffine").is_object());
@@ -521,11 +549,11 @@ TEST_CASE(
 TEST_CASE("Project serialization accepts path-backed image affine transforms", "[project][serialization]")
 {
   const json root = {
-    {"version", 1},
-    {"reference", {{"path", "reference.nii.gz"}}},
-    {"additional",
+    {"version", {{"major", 1}, {"minor", 0}}},
+    {"images",
      json::array(
-       {{{"path", "moving.nii.gz"},
+       {{{"path", "reference.nii.gz"}},
+        {{"path", "moving.nii.gz"},
          {"initialAffine", {{"path", "moving-initial.txt"}}},
          {"manualAffine", {{"path", "moving-manual.txt"}}}}})}};
 
@@ -565,15 +593,15 @@ TEST_CASE(
   REQUIRE(serialize::save(project, projectFile));
 
   const json saved = json::parse(std::ifstream{projectFile});
-  CHECK(saved.at("version") == 1);
-  REQUIRE(saved.contains("additional"));
-  REQUIRE(saved.at("additional").at(0).at("initialAffine").is_object());
-  CHECK(saved.at("additional").at(0).at("initialAffine").at("path") == "moving-affine.txt");
-  CHECK_FALSE(saved.at("additional").at(0).at("initialAffine").contains("file"));
-  REQUIRE(saved.at("additional").at(0).at("manualAffine").is_object());
-  REQUIRE(saved.at("additional").at(0).at("manualAffine").contains("matrix"));
-  CHECK_FALSE(saved.at("additional").at(0).contains("affine"));
-  CHECK_FALSE(saved.at("additional").at(0).contains("manualTransformation"));
+  CHECK(saved.at("version").at("major") == 1);
+  REQUIRE(saved.contains("images"));
+  REQUIRE(saved.at("images").at(1).at("initialAffine").is_object());
+  CHECK(saved.at("images").at(1).at("initialAffine").at("path") == "moving-affine.txt");
+  CHECK_FALSE(saved.at("images").at(1).at("initialAffine").contains("file"));
+  REQUIRE(saved.at("images").at(1).at("manualAffine").is_object());
+  REQUIRE(saved.at("images").at(1).at("manualAffine").contains("matrix"));
+  CHECK_FALSE(saved.at("images").at(1).contains("affine"));
+  CHECK_FALSE(saved.at("images").at(1).contains("manualTransformation"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -593,13 +621,15 @@ TEST_CASE("Project serialization supports embedded and external annotations", "[
   project.m_referenceImage.m_annotations.assign(2, Annotation{});
 
   const json root = project;
-  const json& reference = root.at("reference");
-  CHECK(reference.at("annotationsPath") == "reference-annotations.json");
-  CHECK_FALSE(reference.contains("annotationsFile"));
+  const json& reference = root.at("images").at(0);
   REQUIRE(reference.at("annotations").is_object());
-  CHECK(reference.at("annotations").at("version") == 1);
-  REQUIRE(reference.at("annotations").at("annotations").is_array());
-  CHECK(reference.at("annotations").at("annotations").size() == 2);
+  CHECK(reference.at("annotations").at("path") == "reference-annotations.json");
+  CHECK_FALSE(reference.contains("annotationsPath"));
+  CHECK_FALSE(reference.contains("annotationsFile"));
+  REQUIRE(reference.at("annotations").at("embedded").is_object());
+  CHECK(reference.at("annotations").at("embedded").at("version").at("major") == 1);
+  REQUIRE(reference.at("annotations").at("embedded").at("annotations").is_array());
+  CHECK(reference.at("annotations").at("embedded").at("annotations").size() == 2);
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_annotationsFileName);
@@ -613,10 +643,10 @@ TEST_CASE("Project serialization preserves embedded and path-backed landmark gro
 
   serialize::LandmarkGroup embedded;
   embedded.m_name = "Reference landmarks";
-  embedded.m_inVoxelSpace = false;
+  embedded.m_coordinateSpace = serialize::ProjectLandmarkCoordinateSpace::Subject;
   embedded.m_points = {
-    serialize::LandmarkPoint{.m_index = 1, .m_position = glm::vec3{1.0f, 2.0f, 3.0f}, .m_name = "AC"},
-    serialize::LandmarkPoint{.m_index = 2, .m_position = glm::vec3{4.0f, 5.0f, 6.0f}, .m_name = "PC"}};
+    serialize::LandmarkPoint{.m_index = 0, .m_position = glm::vec3{1.0f, 2.0f, 3.0f}, .m_name = "AC"},
+    serialize::LandmarkPoint{.m_index = 1, .m_position = glm::vec3{4.0f, 5.0f, 6.0f}, .m_name = "PC"}};
   embedded.m_visible = false;
   embedded.m_opacity = 0.5f;
   embedded.m_color = glm::vec3{0.2f, 0.3f, 0.4f};
@@ -624,32 +654,40 @@ TEST_CASE("Project serialization preserves embedded and path-backed landmark gro
   embedded.m_textColor = glm::vec3{0.9f, 0.8f, 0.7f};
   embedded.m_renderLandmarkIndices = false;
   embedded.m_renderLandmarkNames = true;
-  embedded.m_radiusFactor = 1.25f;
+  embedded.m_glyphRadiusFactor = 1.25f;
   project.m_referenceImage.m_landmarkGroups.push_back(embedded);
 
   serialize::LandmarkGroup fileBacked;
   fileBacked.m_csvFileName = "moving-landmarks.csv";
-  fileBacked.m_inVoxelSpace = true;
+  fileBacked.m_coordinateSpace = serialize::ProjectLandmarkCoordinateSpace::Voxel;
   project.m_referenceImage.m_landmarkGroups.push_back(fileBacked);
 
   const json root = project;
-  const json& savedLandmarks = root.at("reference").at("landmarks");
+  const json& savedLandmarks = root.at("images").at(0).at("landmarks");
   REQUIRE(savedLandmarks.size() == 2);
   CHECK_FALSE(savedLandmarks.at(0).contains("path"));
-  CHECK(savedLandmarks.at(0).at("name") == "Reference landmarks");
+  CHECK(savedLandmarks.at(0).at("coordinateSpace") == "subject");
+  CHECK(savedLandmarks.at(0).at("display").at("name") == "Reference landmarks");
   CHECK(savedLandmarks.at(0).at("points").size() == 2);
-  CHECK(savedLandmarks.at(0).at("points").at(0).at("index") == 1);
+  CHECK_FALSE(savedLandmarks.at(0).at("points").at(0).contains("index"));
   CHECK(savedLandmarks.at(0).at("points").at(0).at("position") == json::array({1.0f, 2.0f, 3.0f}));
   CHECK(savedLandmarks.at(0).at("points").at(0).at("name") == "AC");
   CHECK(savedLandmarks.at(0).at("display").at("visible") == false);
   CHECK(savedLandmarks.at(0).at("display").at("opacity") == 0.5f);
   CHECK(savedLandmarks.at(0).at("display").at("color") == json::array({0.2f, 0.3f, 0.4f}));
   CHECK(savedLandmarks.at(0).at("display").at("colorOverride") == true);
-  CHECK(savedLandmarks.at(0).at("display").at("textColor") == json::array({0.9f, 0.8f, 0.7f}));
-  CHECK(savedLandmarks.at(0).at("display").at("showIndices") == false);
-  CHECK(savedLandmarks.at(0).at("display").at("showNames") == true);
-  CHECK(savedLandmarks.at(0).at("display").at("radiusFactor") == 1.25f);
+  CHECK(savedLandmarks.at(0).at("display").at("labels").at("textColor") == json::array({0.9f, 0.8f, 0.7f}));
+  CHECK(savedLandmarks.at(0).at("display").at("labels").at("showIndices") == false);
+  CHECK(savedLandmarks.at(0).at("display").at("labels").at("showNames") == true);
+  CHECK(savedLandmarks.at(0).at("display").at("glyphRadiusFactor") == 1.25f);
+  CHECK_FALSE(savedLandmarks.at(0).contains("name"));
+  CHECK_FALSE(savedLandmarks.at(0).contains("inVoxelSpace"));
+  CHECK_FALSE(savedLandmarks.at(0).at("display").contains("textColor"));
+  CHECK_FALSE(savedLandmarks.at(0).at("display").contains("showIndices"));
+  CHECK_FALSE(savedLandmarks.at(0).at("display").contains("showNames"));
+  CHECK_FALSE(savedLandmarks.at(0).at("display").contains("radiusFactor"));
   CHECK(savedLandmarks.at(1).at("path") == "moving-landmarks.csv");
+  CHECK(savedLandmarks.at(1).at("coordinateSpace") == "voxel");
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_landmarkGroups.size() == 2);
@@ -657,10 +695,17 @@ TEST_CASE("Project serialization preserves embedded and path-backed landmark gro
   CHECK_FALSE(parsedEmbedded.m_csvFileName);
   CHECK(parsedEmbedded.m_name == embedded.m_name);
   CHECK(parsedEmbedded.m_points.size() == 2);
+  CHECK(parsedEmbedded.m_points.at(0).m_index == 0);
+  CHECK(parsedEmbedded.m_points.at(1).m_index == 1);
   CHECK(parsedEmbedded.m_points.at(1).m_name == "PC");
   CHECK(parsedEmbedded.m_textColor == embedded.m_textColor);
+  CHECK(parsedEmbedded.m_coordinateSpace == serialize::ProjectLandmarkCoordinateSpace::Subject);
+  CHECK(parsedEmbedded.m_glyphRadiusFactor == 1.25f);
   REQUIRE(parsed.m_referenceImage.m_landmarkGroups.at(1).m_csvFileName);
   CHECK(*parsed.m_referenceImage.m_landmarkGroups.at(1).m_csvFileName == fs::path{"moving-landmarks.csv"});
+  CHECK(
+    parsed.m_referenceImage.m_landmarkGroups.at(1).m_coordinateSpace ==
+    serialize::ProjectLandmarkCoordinateSpace::Voxel);
 }
 
 TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")
@@ -680,7 +725,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_window = 12.0,
     .m_thresholdLow = 1.0,
     .m_thresholdHigh = 11.0,
-    .m_opacity = 0.75,
+    .m_opacity = 0.5,
     .m_activeComponent = 2,
     .m_activeTimePoint = 4,
     .m_timePlaybackLoop = false,
@@ -749,78 +794,108 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_isosurfaceOpacityModulator = 0.45f};
 
   const json root = project;
-  const json& settings = root.at("reference").at("settings");
+  const json& settings = root.at("images").at(0).at("settings");
+  const json& display = settings.at("display");
+  const json& transform = settings.at("transform");
+  const json& time = settings.at("time");
+  const json& components = settings.at("components");
+  const json& vectorRendering = settings.at("vectorRendering");
+  const json& vectorArrows = settings.at("vectorArrows");
+  const json& warpedGrid = settings.at("warpedGrid");
+  const json& edges = settings.at("edges");
+  const json& raycasting = settings.at("raycasting");
+  const json& isosurfaces = settings.at("isosurfaces");
 
-  CHECK(settings.at("globalVisibility") == false);
-  CHECK(settings.at("globalOpacity") == 0.25);
-  CHECK(settings.at("borderColor") == json::array({0.4f, 0.5f, 0.6f}));
-  CHECK(settings.at("lockedToReference") == false);
-  CHECK(settings.at("warpEnabled") == false);
-  CHECK(settings.at("warpStrength") == 2.5f);
-  CHECK(settings.at("allowExaggeratedWarp") == true);
-  CHECK(settings.at("componentRenderMode") == "complexPhase");
-  CHECK(settings.at("complexPhaseUnit") == "degrees");
-  CHECK(settings.at("complexPhaseRange") == "unsigned");
-  CHECK(settings.at("vectorArrowOverlayVisible") == true);
-  CHECK(settings.at("vectorArrowOverlayOnImage") == false);
-  CHECK(settings.at("vectorArrowOverlayDensity") == 24.0f);
-  CHECK(settings.at("vectorArrowOverlayVoxelSpacing") == 2.5f);
-  CHECK(settings.at("vectorArrowOverlayMillimeterSpacing") == 12.5f);
-  CHECK(settings.at("vectorArrowOverlaySpacingMode") == "millimeters");
-  CHECK(settings.at("vectorArrowOverlayColor") == json::array({0.7f, 0.8f, 0.9f}));
-  CHECK(settings.at("vectorArrowOverlayUseDirectionColor") == true);
-  CHECK(settings.at("vectorArrowOverlayLineThickness") == 2.5f);
-  CHECK(settings.at("vectorArrowOverlayOpacity") == 0.65f);
-  CHECK(settings.at("vectorArrowOverlayScaleByMagnitude") == false);
-  CHECK(settings.at("vectorArrowOverlayScaleFactor") == 3.0f);
-  CHECK(settings.at("vectorWarpedGridVisible") == true);
-  CHECK(settings.at("vectorWarpedGridOverlayOnImage") == false);
-  CHECK(settings.at("vectorWarpedGridConvention") == "apparentDeformation");
-  CHECK(settings.at("vectorWarpedGridPixelSpacing") == 40.0f);
-  CHECK(settings.at("vectorWarpedGridVoxelSpacing") == 6.0f);
-  CHECK(settings.at("vectorWarpedGridMillimeterSpacing") == 14.0f);
-  CHECK(settings.at("vectorWarpedGridSpacingMode") == "voxels");
-  CHECK(settings.at("vectorWarpedGridLineThickness") == 2.25f);
-  CHECK(settings.at("vectorWarpedGridScaleFactor") == 1.75f);
-  CHECK(settings.at("vectorWarpedGridForegroundColor") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
-  CHECK(settings.at("vectorWarpedGridBackgroundColor") == json::array({0.5f, 0.6f, 0.7f, 0.8f}));
-  CHECK(settings.at("vectorPlanarProjectionSignedColors") == false);
-  CHECK(settings.at("vectorLogJacobianDeterminant") == true);
-  CHECK(settings.at("activeComponent") == 2);
-  CHECK(settings.at("activeTimePoint") == 4);
-  CHECK(settings.at("timePlaybackLoop") == false);
-  CHECK(settings.at("timePlaybackPlaying") == true);
-  CHECK(settings.at("timePlaybackSpeed") == 1.5);
-  CHECK(settings.at("ignoreAlpha") == true);
-  CHECK(settings.at("colorInterpolationMode") == "nearest");
-  CHECK(settings.at("componentLevels") == json::array({10.0, 20.0, 30.0}));
-  CHECK(settings.at("componentWindows") == json::array({11.0, 22.0, 33.0}));
-  CHECK(settings.at("componentVisibility") == json::array({true, false, true}));
-  CHECK(settings.at("componentOpacities") == json::array({1.0, 0.25, 0.5}));
-  CHECK(settings.at("colorMapIndices") == json::array({1, 2, 3}));
-  CHECK(settings.at("colorMapInverted") == json::array({false, true, false}));
-  CHECK(settings.at("colorMapContinuous") == json::array({true, false, true}));
-  CHECK(settings.at("colorMapLevels") == json::array({8, 9, 10}));
-  CHECK(settings.at("interpolationModes") == json::array({"linear", "nearest"}));
-  CHECK(settings.at("foregroundThresholdLows") == json::array({4.0, 5.0, 6.0}));
-  CHECK(settings.at("foregroundThresholdHighs") == json::array({40.0, 50.0, 60.0}));
-  CHECK(settings.at("edgeDetectionMethod") == "pixel");
-  CHECK(settings.at("showEdges") == true);
-  CHECK(settings.at("hardEdges") == false);
-  CHECK(settings.at("thinPixelEdges") == true);
-  CHECK(settings.at("overlayEdges") == false);
-  CHECK_FALSE(settings.contains("colormapEdges"));
-  CHECK(settings.at("edgeMagnitude") == 0.33);
-  CHECK(settings.at("pixelEdgeScale") == 2.5);
-  CHECK(settings.at("pixelEdgeThreshold") == 0.44);
-  CHECK(settings.at("edgeColor") == json::array({0.1f, 0.2f, 0.3f}));
-  CHECK(settings.at("edgeOpacity") == 0.6);
-  CHECK(settings.at("useDistanceMapForRaycasting") == false);
-  CHECK(settings.at("isosurfacesVisible") == false);
-  CHECK(settings.at("applyImageColormapToIsosurfaces") == true);
-  CHECK(settings.at("showIsocontoursIn2D") == false);
-  CHECK(settings.at("isocontourLineWidthIn2D") == 3.5);
-  CHECK(settings.at("isosurfaceOpacityModulator") == 0.45f);
+  CHECK_FALSE(settings.contains("globalVisibility"));
+  CHECK_FALSE(settings.contains("vectorArrowOverlayVisible"));
+  CHECK_FALSE(settings.contains("vectorWarpedGridVisible"));
+  CHECK_FALSE(settings.contains("componentLevels"));
+  CHECK_FALSE(settings.contains("colorMapIndices"));
+  CHECK_FALSE(settings.contains("foregroundThresholdLows"));
+  CHECK_FALSE(settings.contains("showEdges"));
+  CHECK_FALSE(settings.contains("isosurfacesVisible"));
+
+  CHECK(display.at("name") == "Image");
+  CHECK(display.at("visible") == false);
+  CHECK(display.at("opacity") == 0.25);
+  CHECK(display.at("borderColor") == json::array({0.4f, 0.5f, 0.6f}));
+  CHECK(transform.at("lockedToReference") == false);
+  CHECK(transform.at("warpEnabled") == false);
+  CHECK(transform.at("warpStrength") == 2.5f);
+  CHECK(transform.at("allowExaggeratedWarp") == true);
+  CHECK(time.at("activePoint") == 4);
+  CHECK(time.at("playbackLoop") == false);
+  CHECK(time.at("playbackPlaying") == true);
+  CHECK(time.at("playbackSpeed") == 1.5);
+  CHECK(components.at("active") == 2);
+  CHECK(components.at("renderMode") == "complexPhase");
+  CHECK(components.at("complexPhaseUnit") == "degrees");
+  CHECK(components.at("complexPhaseRange") == "unsigned");
+  CHECK(components.at("ignoreAlpha") == true);
+  CHECK(components.at("colorInterpolationMode") == "nearest");
+  REQUIRE(components.at("values").size() == 3);
+  CHECK(components.at("values").at(0).at("level") == 10.0);
+  CHECK(components.at("values").at(0).at("window") == 11.0);
+  CHECK(components.at("values").at(0).at("thresholdLow") == 1.0);
+  CHECK(components.at("values").at(0).at("thresholdHigh") == 9.0);
+  CHECK(components.at("values").at(0).at("visible") == true);
+  CHECK(components.at("values").at(0).at("opacity") == 1.0);
+  CHECK(components.at("values").at(0).at("colorMapIndex") == 1);
+  CHECK(components.at("values").at(0).at("colorMapInverted") == false);
+  CHECK(components.at("values").at(0).at("colorMapContinuous") == true);
+  CHECK(components.at("values").at(0).at("colorMapLevels") == 8);
+  CHECK(components.at("values").at(0).at("colorMapHsvModifier") == json::array({0.1f, 0.2f, 0.3f}));
+  CHECK(components.at("values").at(0).at("interpolationMode") == "linear");
+  CHECK(components.at("values").at(0).at("foregroundThresholdLow") == 4.0);
+  CHECK(components.at("values").at(0).at("foregroundThresholdHigh") == 40.0);
+  CHECK(components.at("values").at(1).at("visible") == false);
+  CHECK(components.at("values").at(1).at("colorMapHsvModifier") == json::array({0.4f, 0.5f, 0.6f}));
+  CHECK(components.at("values").at(1).at("interpolationMode") == "nearest");
+  CHECK(components.at("values").at(2).at("opacity") == 0.5);
+  CHECK_FALSE(components.at("values").at(2).contains("colorMapHsvModifier"));
+  CHECK_FALSE(components.at("values").at(2).contains("interpolationMode"));
+  CHECK(vectorRendering.at("planarProjectionSignedColors") == false);
+  CHECK(vectorRendering.at("logJacobianDeterminant") == true);
+  CHECK(vectorArrows.at("visible") == true);
+  CHECK(vectorArrows.at("onImage") == false);
+  CHECK(vectorArrows.at("density") == 24.0f);
+  CHECK(vectorArrows.at("voxelSpacing") == 2.5f);
+  CHECK(vectorArrows.at("millimeterSpacing") == 12.5f);
+  CHECK(vectorArrows.at("spacingMode") == "millimeters");
+  CHECK(vectorArrows.at("color") == json::array({0.7f, 0.8f, 0.9f}));
+  CHECK(vectorArrows.at("useDirectionColor") == true);
+  CHECK(vectorArrows.at("lineThickness") == 2.5f);
+  CHECK(vectorArrows.at("opacity") == 0.65f);
+  CHECK(vectorArrows.at("scaleByMagnitude") == false);
+  CHECK(vectorArrows.at("scaleFactor") == 3.0f);
+  CHECK(warpedGrid.at("visible") == true);
+  CHECK(warpedGrid.at("onImage") == false);
+  CHECK(warpedGrid.at("convention") == "apparentDeformation");
+  CHECK(warpedGrid.at("pixelSpacing") == 40.0f);
+  CHECK(warpedGrid.at("voxelSpacing") == 6.0f);
+  CHECK(warpedGrid.at("millimeterSpacing") == 14.0f);
+  CHECK(warpedGrid.at("spacingMode") == "voxels");
+  CHECK(warpedGrid.at("lineThickness") == 2.25f);
+  CHECK(warpedGrid.at("scaleFactor") == 1.75f);
+  CHECK(warpedGrid.at("foregroundColor") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
+  CHECK(warpedGrid.at("backgroundColor") == json::array({0.5f, 0.6f, 0.7f, 0.8f}));
+  CHECK(edges.at("method") == "pixel");
+  CHECK(edges.at("visible") == true);
+  CHECK(edges.at("hardEdges") == false);
+  CHECK(edges.at("thinPixelEdges") == true);
+  CHECK(edges.at("overlay") == false);
+  CHECK_FALSE(edges.contains("useColormap"));
+  CHECK(edges.at("magnitude") == 0.33);
+  CHECK(edges.at("pixelScale") == 2.5);
+  CHECK(edges.at("pixelThreshold") == 0.44);
+  CHECK(edges.at("color") == json::array({0.1f, 0.2f, 0.3f}));
+  CHECK(edges.at("opacity") == 0.6);
+  CHECK(raycasting.at("useDistanceMap") == false);
+  CHECK(isosurfaces.at("visible") == false);
+  CHECK(isosurfaces.at("applyImageColormap") == true);
+  CHECK(isosurfaces.at("showContours2D") == false);
+  CHECK(isosurfaces.at("contourLineWidth2D") == 3.5);
+  CHECK(isosurfaces.at("opacityModulator") == 0.45f);
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_settings.has_value());
@@ -867,6 +942,11 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_timePlaybackLoop);
   CHECK(parsedSettings.m_timePlaybackPlaying);
   CHECK(parsedSettings.m_timePlaybackSpeed == 1.5);
+  CHECK(parsedSettings.m_level == 30.0);
+  CHECK(parsedSettings.m_window == 33.0);
+  CHECK(parsedSettings.m_thresholdLow == 3.0);
+  CHECK(parsedSettings.m_thresholdHigh == 7.0);
+  CHECK(parsedSettings.m_opacity == 0.5);
   CHECK(parsedSettings.m_ignoreAlpha);
   CHECK(parsedSettings.m_colorInterpolationMode == InterpolationMode::NearestNeighbor);
   CHECK(parsedSettings.m_componentLevels == std::vector<double>{10.0, 20.0, 30.0});
@@ -927,10 +1007,18 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
 
   const json root = surface;
 
-  CHECK(root.at("rimOpacityStrength") == 0.8f);
-  CHECK(root.at("rimLightingEnabled") == true);
-  CHECK(root.at("rimEmissionStrength") == 1.25f);
-  CHECK(root.at("rimPower") == 3.5f);
+  CHECK(root.at("contourFillOpacity") == 0.25f);
+  CHECK(root.at("showContours2D") == false);
+  CHECK(root.at("rimLighting").at("enabled") == true);
+  CHECK(root.at("rimLighting").at("opacity") == 0.8f);
+  CHECK(root.at("rimLighting").at("glow") == 1.25f);
+  CHECK(root.at("rimLighting").at("falloff") == 3.5f);
+  CHECK_FALSE(root.contains("fillOpacity"));
+  CHECK_FALSE(root.contains("showIn2d"));
+  CHECK_FALSE(root.contains("rimLightingEnabled"));
+  CHECK_FALSE(root.contains("rimOpacityStrength"));
+  CHECK_FALSE(root.contains("rimEmissionStrength"));
+  CHECK_FALSE(root.contains("rimPower"));
   CHECK_FALSE(root.contains("edgeStrength"));
 
   const Isosurface parsed = root.get<Isosurface>();
@@ -949,21 +1037,6 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   CHECK(parsed.rimOpacityStrength == 0.8f);
   CHECK(parsed.rimEmissionStrength == 1.25f);
   CHECK(parsed.rimPower == 3.5f);
-}
-
-TEST_CASE("Isosurface serialization migrates legacy edge strength", "[project][serialization][isosurface]")
-{
-  const json legacy = {
-    {"name", "Legacy"},
-    {"edgeStrength", 4.0f},
-  };
-
-  const Isosurface parsed = legacy.get<Isosurface>();
-  CHECK(parsed.name == "Legacy");
-  CHECK(parsed.rimLightingEnabled);
-  CHECK(parsed.rimOpacityStrength == 1.0f);
-  CHECK(parsed.rimEmissionStrength == 0.0f);
-  CHECK(parsed.rimPower == 4.0f);
 }
 
 TEST_CASE("Project serialization preserves image isosurfaces", "[project][serialization][isosurface]")
@@ -987,13 +1060,18 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
 
   const json root = project;
-  const json& savedSurface = root.at("reference").at("isosurfaces").at(0);
+  const json& savedSurface = root.at("images").at(0).at("isosurfaces").at(0);
   CHECK(savedSurface.at("component") == 2);
   CHECK(savedSurface.at("surface").at("name") == "Rim surface");
-  CHECK(savedSurface.at("surface").at("rimLightingEnabled") == true);
-  CHECK(savedSurface.at("surface").at("rimOpacityStrength") == 0.7f);
-  CHECK(savedSurface.at("surface").at("rimEmissionStrength") == 1.4f);
-  CHECK(savedSurface.at("surface").at("rimPower") == 3.0f);
+  CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
+  CHECK(savedSurface.at("surface").at("showContours2D") == false);
+  CHECK(savedSurface.at("surface").at("rimLighting").at("enabled") == true);
+  CHECK(savedSurface.at("surface").at("rimLighting").at("opacity") == 0.7f);
+  CHECK(savedSurface.at("surface").at("rimLighting").at("glow") == 1.4f);
+  CHECK(savedSurface.at("surface").at("rimLighting").at("falloff") == 3.0f);
+  CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
+  CHECK_FALSE(savedSurface.at("surface").contains("showIn2d"));
+  CHECK_FALSE(savedSurface.at("surface").contains("rimLightingEnabled"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_isosurfaces.size() == 1);
@@ -1033,22 +1111,23 @@ TEST_CASE("Project serialization preserves inverse and forward warp paths", "[pr
   project.m_referenceImage.m_forwardWarpFieldPath = forwardFile;
 
   const json inlineJson = project;
-  CHECK(inlineJson.at("reference").at("inverseWarpField") == inverseFile.generic_string());
-  CHECK_FALSE(inlineJson.at("reference").contains("inverseWarp"));
-  CHECK(inlineJson.at("reference").at("inverseWarpReferenceImagePath") == referenceImageFile.generic_string());
-  CHECK_FALSE(inlineJson.at("reference").contains("inverseWarpReferenceImage"));
-  CHECK(inlineJson.at("reference").at("forwardWarpField") == forwardFile.generic_string());
-  CHECK_FALSE(inlineJson.at("reference").contains("forwardWarp"));
+  CHECK(inlineJson.at("images").at(0).at("inverseWarpField").at("path") == inverseFile.generic_string());
+  CHECK_FALSE(inlineJson.at("images").at(0).contains("inverseWarp"));
+  CHECK_FALSE(inlineJson.at("images").at(0).contains("inverseWarpReferenceImagePath"));
+  CHECK(
+    inlineJson.at("images").at(0).at("inverseWarpReferenceImage").at("path") == referenceImageFile.generic_string());
+  CHECK(inlineJson.at("images").at(0).at("forwardWarpField").at("path") == forwardFile.generic_string());
+  CHECK_FALSE(inlineJson.at("images").at(0).contains("forwardWarp"));
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
-  CHECK(savedJson.at("reference").at("inverseWarpField") == "inverse.nrrd");
-  CHECK_FALSE(savedJson.at("reference").contains("inverseWarp"));
-  CHECK(savedJson.at("reference").at("inverseWarpReferenceImagePath") == "fixed.nii.gz");
-  CHECK_FALSE(savedJson.at("reference").contains("inverseWarpReferenceImage"));
-  CHECK(savedJson.at("reference").at("forwardWarpField") == "forward.nrrd");
-  CHECK_FALSE(savedJson.at("reference").contains("forwardWarp"));
+  CHECK(savedJson.at("images").at(0).at("inverseWarpField").at("path") == "inverse.nrrd");
+  CHECK_FALSE(savedJson.at("images").at(0).contains("inverseWarp"));
+  CHECK_FALSE(savedJson.at("images").at(0).contains("inverseWarpReferenceImagePath"));
+  CHECK(savedJson.at("images").at(0).at("inverseWarpReferenceImage").at("path") == "fixed.nii.gz");
+  CHECK(savedJson.at("images").at(0).at("forwardWarpField").at("path") == "forward.nrrd");
+  CHECK_FALSE(savedJson.at("images").at(0).contains("forwardWarp"));
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -1063,7 +1142,8 @@ TEST_CASE("Project serialization preserves inverse and forward warp paths", "[pr
 TEST_CASE("Project serialization preserves registration result artifacts", "[project][serialization]")
 {
   const fs::path root = uniqueTempProjectDirectory();
-  const fs::path imageFile = root / "moving.nii.gz";
+  const fs::path fixedImageFile = root / "fixed.nii.gz";
+  const fs::path movingImageFile = root / "moving.nii.gz";
   const fs::path manifestFile = root / "registration" / "result.json";
   const fs::path warpedFile = root / "registration" / "warped.nii.gz";
   const fs::path inverseFile = root / "registration" / "inverse.nrrd";
@@ -1074,7 +1154,8 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   const fs::path landmarksFile = root / "registration" / "landmarks.json";
   const fs::path projectFile = root / "project.json";
 
-  touchFile(imageFile);
+  touchFile(fixedImageFile);
+  touchFile(movingImageFile);
   touchFile(manifestFile);
   touchFile(warpedFile);
   touchFile(inverseFile);
@@ -1085,11 +1166,12 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   touchFile(landmarksFile);
 
   serialize::EntropyProject project;
-  project.m_referenceImage.m_imageFileName = imageFile;
+  project.m_referenceImage.m_imageFileName = fixedImageFile;
+  project.m_additionalImages.push_back(serialize::Image{.m_imageFileName = movingImageFile});
   project.m_registrationResults.push_back(serialize::RegistrationResult{
     .m_backend = "Greedy",
-    .m_fixedImageUid = "fixed",
-    .m_movingImageUid = "moving",
+    .m_fixedImage = fixedImageFile,
+    .m_movingImage = movingImageFile,
     .m_manifestFileName = manifestFile,
     .m_warpedImage = warpedFile,
     .m_inverseWarpField = inverseFile,
@@ -1103,32 +1185,44 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   const json inlineJson = project;
   REQUIRE(inlineJson.contains("registrationResults"));
   CHECK(inlineJson.at("registrationResults").at(0).at("backend") == "Greedy");
-  CHECK(inlineJson.at("registrationResults").at(0).at("manifest") == manifestFile.generic_string());
+  CHECK(inlineJson.at("registrationResults").at(0).at("fixedImage").at("path") == fixedImageFile.generic_string());
+  CHECK(inlineJson.at("registrationResults").at(0).at("movingImage").at("path") == movingImageFile.generic_string());
+  CHECK(inlineJson.at("registrationResults").at(0).at("manifest").at("path") == manifestFile.generic_string());
   CHECK(inlineJson.at("registrationResults").at(0).at("warnings").at(0) == "low overlap");
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
   const json& savedResult = savedJson.at("registrationResults").at(0);
-  CHECK(savedResult.at("manifest") == "registration/result.json");
-  CHECK(savedResult.at("warpedImage") == "registration/warped.nii.gz");
-  CHECK(savedResult.at("inverseWarpField") == "registration/inverse.nrrd");
+  CHECK(savedResult.at("fixedImage").at("path") == "fixed.nii.gz");
+  CHECK(savedResult.at("movingImage").at("path") == "moving.nii.gz");
+  CHECK_FALSE(savedResult.contains("fixedImageUid"));
+  CHECK_FALSE(savedResult.contains("movingImageUid"));
+  CHECK(savedResult.at("manifest").at("path") == "registration/result.json");
+  CHECK(savedResult.at("warpedImage").at("path") == "registration/warped.nii.gz");
+  CHECK(savedResult.at("inverseWarpField").at("path") == "registration/inverse.nrrd");
   CHECK_FALSE(savedResult.contains("inverseWarp"));
-  CHECK(savedResult.at("forwardWarpField") == "registration/forward.nrrd");
+  CHECK(savedResult.at("forwardWarpField").at("path") == "registration/forward.nrrd");
   CHECK_FALSE(savedResult.contains("forwardWarp"));
-  CHECK(savedResult.at("affine") == "registration/affine.mat");
+  CHECK(savedResult.at("affine").at("path") == "registration/affine.mat");
   CHECK_FALSE(savedResult.contains("affineTransform"));
-  CHECK(savedResult.at("warpedSegmentations").at(0) == "registration/seg.nii.gz");
+  CHECK(savedResult.at("warpedSegmentations").at(0).at("path") == "registration/seg.nii.gz");
+  CHECK(savedResult.at("transformedSurfaces").at(0).at("path") == "registration/surface.vtk");
+  CHECK(savedResult.at("transformedLandmarks").at(0).at("path") == "registration/landmarks.json");
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
   REQUIRE(loaded.m_registrationResults.size() == 1);
   const serialize::RegistrationResult& loadedResult = loaded.m_registrationResults.front();
+  REQUIRE(loadedResult.m_fixedImage);
+  REQUIRE(loadedResult.m_movingImage);
   REQUIRE(loadedResult.m_manifestFileName);
   REQUIRE(loadedResult.m_warpedImage);
   REQUIRE(loadedResult.m_inverseWarpField);
   REQUIRE(loadedResult.m_forwardWarpField);
   REQUIRE(loadedResult.m_affineTransform);
+  CHECK(*loadedResult.m_fixedImage == fs::canonical(fixedImageFile));
+  CHECK(*loadedResult.m_movingImage == fs::canonical(movingImageFile));
   CHECK(*loadedResult.m_manifestFileName == fs::canonical(manifestFile));
   CHECK(*loadedResult.m_warpedImage == fs::canonical(warpedFile));
   CHECK(*loadedResult.m_inverseWarpField == fs::canonical(inverseFile));
@@ -1148,36 +1242,36 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
     .m_segFileName = "seg.nii.gz",
     .m_settings = serialize::SegSettings{
       .m_displayName = "Seg",
-      .m_visibility = false,
+      .m_visible = false,
       .m_opacity = 0.35,
-      .m_activeComponent = 0,
-      .m_componentVisibility = {false},
-      .m_componentOpacities = {0.35},
-      .m_labelTableIndices = {3},
-      .m_interpolationModes = {InterpolationMode::NearestNeighbor}}});
+      .m_labelTableIndex = 3,
+      .m_interpolationMode = InterpolationMode::NearestNeighbor}});
 
   const json root = project;
-  const json& settings = root.at("reference").at("segmentations").at(0).at("settings");
+  const json& settings = root.at("images").at(0).at("segmentations").at(0).at("settings");
 
-  CHECK(settings.at("displayName") == "Seg");
-  CHECK(settings.at("visibility") == false);
-  CHECK(settings.at("opacity") == 0.35);
-  CHECK(settings.at("componentVisibility") == json::array({false}));
-  CHECK(settings.at("componentOpacities") == json::array({0.35}));
-  CHECK(settings.at("labelTableIndices") == json::array({3}));
-  CHECK(settings.at("interpolationModes") == json::array({"nearest"}));
+  CHECK(settings.at("display").at("name") == "Seg");
+  CHECK(settings.at("display").at("visible") == false);
+  CHECK(settings.at("display").at("opacity") == 0.35);
+  CHECK(settings.at("labelTableIndex") == 3);
+  CHECK(settings.at("interpolationMode") == "nearest");
+  CHECK_FALSE(settings.contains("displayName"));
+  CHECK_FALSE(settings.contains("visibility"));
+  CHECK_FALSE(settings.contains("activeComponent"));
+  CHECK_FALSE(settings.contains("componentVisibility"));
+  CHECK_FALSE(settings.contains("componentOpacities"));
+  CHECK_FALSE(settings.contains("labelTableIndices"));
+  CHECK_FALSE(settings.contains("interpolationModes"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_segmentations.size() == 1);
   REQUIRE(parsed.m_referenceImage.m_segmentations.front().m_settings.has_value());
   const serialize::SegSettings& parsedSettings = *parsed.m_referenceImage.m_segmentations.front().m_settings;
   CHECK(parsedSettings.m_displayName == "Seg");
-  CHECK_FALSE(parsedSettings.m_visibility);
+  CHECK_FALSE(parsedSettings.m_visible);
   CHECK(parsedSettings.m_opacity == 0.35);
-  CHECK(parsedSettings.m_componentVisibility == std::vector<bool>{false});
-  CHECK(parsedSettings.m_componentOpacities == std::vector<double>{0.35});
-  CHECK(parsedSettings.m_labelTableIndices == std::vector<std::size_t>{3});
-  CHECK(parsedSettings.m_interpolationModes == std::vector<InterpolationMode>{InterpolationMode::NearestNeighbor});
+  CHECK(parsedSettings.m_labelTableIndex == 3);
+  CHECK(parsedSettings.m_interpolationMode == InterpolationMode::NearestNeighbor);
 }
 
 TEST_CASE("Project serialization preserves standard raster spatial metadata", "[project][serialization]")
@@ -1192,9 +1286,11 @@ TEST_CASE("Project serialization preserves standard raster spatial metadata", "[
   project.m_referenceImage.m_spatialMetadata = metadata;
 
   const json root = project;
-  const json& spatialMetadata = root.at("reference").at("spatialMetadata");
-  CHECK(spatialMetadata.at("spacingMm") == json::array({0.5f, 0.25f, 1.0f}));
-  CHECK(spatialMetadata.at("originMm") == json::array({1.0f, 2.0f, 3.0f}));
+  const json& spatialMetadata = root.at("images").at(0).at("spatialMetadata");
+  CHECK(spatialMetadata.at("spacing") == json::array({0.5f, 0.25f, 1.0f}));
+  CHECK_FALSE(spatialMetadata.contains("spacingMm"));
+  CHECK(spatialMetadata.at("origin") == json::array({1.0f, 2.0f, 3.0f}));
+  CHECK_FALSE(spatialMetadata.contains("originMm"));
   CHECK(spatialMetadata.at("directions").at(0) == json::array({0.0f, 1.0f, 0.0f}));
   CHECK(spatialMetadata.at("directions").at(1) == json::array({0.0f, 0.0f, 1.0f}));
   CHECK(spatialMetadata.at("directions").at(2) == json::array({1.0f, 0.0f, 0.0f}));
@@ -1216,12 +1312,44 @@ TEST_CASE("Project serialization preserves voxel edge colormap setting", "[proje
   project.m_referenceImage.m_settings->m_colormapEdges = true;
 
   const json root = project;
-  const json& settings = root.at("reference").at("settings");
-  CHECK(settings.at("edgeDetectionMethod") == "voxel");
-  CHECK(settings.at("colormapEdges") == true);
+  const json& settings = root.at("images").at(0).at("settings");
+  CHECK(settings.at("edges").at("method") == "voxel");
+  CHECK(settings.at("edges").at("useColormap") == true);
+  CHECK_FALSE(settings.contains("edgeDetectionMethod"));
+  CHECK_FALSE(settings.contains("colormapEdges"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_settings.has_value());
   CHECK(parsed.m_referenceImage.m_settings->m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Voxel);
   CHECK(parsed.m_referenceImage.m_settings->m_colormapEdges);
+}
+
+TEST_CASE("Project serialization preserves sparse image component setting indices", "[project][serialization]")
+{
+  const json root = {
+    {"version", {{"major", 1}, {"minor", 0}}},
+    {"images",
+     json::array(
+       {{{"path", "image.nii.gz"},
+         {"settings",
+          {{"components",
+            {{"active", 1},
+             {"values",
+              json::array(
+                {json::object(),
+                 {{"opacity", 0.25}, {"colorMapIndex", 7}, {"interpolationMode", "nearest"}}})}}}}}}})}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_settings.has_value());
+  const serialize::ImageSettings& settings = *parsed.m_referenceImage.m_settings;
+
+  REQUIRE(settings.m_componentOpacities.size() == 2);
+  CHECK(settings.m_componentOpacities.at(0) == 0.0);
+  CHECK(settings.m_componentOpacities.at(1) == 0.25);
+  REQUIRE(settings.m_colorMapIndices.size() == 2);
+  CHECK(settings.m_colorMapIndices.at(0) == 0);
+  CHECK(settings.m_colorMapIndices.at(1) == 7);
+  REQUIRE(settings.m_interpolationModes.size() == 2);
+  CHECK(settings.m_interpolationModes.at(1) == InterpolationMode::NearestNeighbor);
+  CHECK(settings.m_opacity == 0.25);
 }

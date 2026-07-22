@@ -572,7 +572,7 @@ def _expected_manifest(job: dict[str, Any], success: bool, error: str = "") -> d
     outputs = job.get("outputs") or {}
     has_deformable_stage = _has_deformable_stage(job)
     manifest = {
-        "version": 1,
+        "version": {"major": 1, "minor": 0},
         "success": success,
         "backend": "FireANTs",
         "fixedImageUid": (job.get("fixedImage") or {}).get("uid", ""),
