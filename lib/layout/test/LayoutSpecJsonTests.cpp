@@ -1,5 +1,7 @@
 #include "layout/LayoutSpecJson.h"
 
+#include "viewer/ViewModes.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
@@ -117,6 +119,7 @@ void requireSame(const layout::LayoutSpec& actual, const layout::LayoutSpec& exp
   REQUIRE(actual.m_preferredDefaultRenderedImages == expected.m_preferredDefaultRenderedImages);
   REQUIRE(actual.m_defaultRenderAllImages == expected.m_defaultRenderAllImages);
   requireSame(actual.m_imageSelection, expected.m_imageSelection);
+  REQUIRE(actual.m_grid == expected.m_grid);
   REQUIRE(actual.m_views.size() == expected.m_views.size());
   for (std::size_t i = 0; i < actual.m_views.size(); ++i) {
     requireSame(actual.m_views.at(i), expected.m_views.at(i));
@@ -146,11 +149,57 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
   CHECK(json.at("viewType") == "coronal");
   CHECK(json.at("renderMode") == "quadrants");
   CHECK(json.at("intensityProjectionMode") == "minimum");
-  CHECK(json.at("views").at(0).at("viewType") == "axial");
+  CHECK_FALSE(json.at("views").at(0).contains("viewType"));
   CHECK(json.at("views").at(0).at("offset").at("mode") == "relativeToImageScrolls");
   CHECK(json.at("views").at(0).at("threeD").at("projection") == "orthographic");
   CHECK(json.at("views").at(0).at("threeD").at("orbitTarget") == "crosshairs");
-  CHECK(json.at("views").at(1).at("offset").at("mode") == "none");
+  CHECK_FALSE(json.at("views").at(1).at("offset").contains("mode"));
+}
+
+TEST_CASE("layout spec JSON writes compact regular grids without expanded views", "[layout][serialization]")
+{
+  layout::LayoutSpec spec;
+  spec.m_kind = 0;
+  spec.m_displayName = "Review grid";
+  spec.m_viewType = 0;
+  spec.m_renderMode = 0;
+  spec.m_intensityProjectionMode = 0;
+  spec.m_grid = layout::GridSpec{.m_columns = 4, .m_rows = 3};
+
+  const nlohmann::json json = spec;
+
+  REQUIRE(json.at("displayName") == "Review grid");
+  REQUIRE(json.at("grid").at("columns") == 4);
+  REQUIRE(json.at("grid").at("rows") == 3);
+  REQUIRE_FALSE(json.contains("views"));
+
+  const layout::LayoutSpec restored = json.get<layout::LayoutSpec>();
+  REQUIRE(restored.m_grid);
+  REQUIRE(restored.m_grid->m_columns == 4);
+  REQUIRE(restored.m_grid->m_rows == 3);
+  REQUIRE(restored.m_views.empty());
+}
+
+TEST_CASE("layout spec JSON writes grid view overrides without redundant viewport data", "[layout][serialization]")
+{
+  layout::LayoutSpec spec;
+  spec.m_displayName = "Review grid";
+  spec.m_grid = layout::GridSpec{.m_columns = 3, .m_rows = 3};
+
+  layout::ViewSpec view;
+  view.m_index = 4;
+  view.m_renderMode = static_cast<int>(ViewRenderMode::Overlay);
+  view.m_imageSelection.m_renderedImageIndices = {0, 1};
+  spec.m_views = {view};
+
+  const nlohmann::json json = spec;
+
+  REQUIRE(json.at("grid").at("columns") == 3);
+  REQUIRE(json.at("grid").at("rows") == 3);
+  REQUIRE(json.at("views").size() == 1);
+  REQUIRE(json.at("views").at(0).at("index") == 4);
+  REQUIRE(json.at("views").at(0).at("renderMode") == "overlay");
+  REQUIRE_FALSE(json.at("views").at(0).contains("viewport"));
 }
 
 TEST_CASE("layout spec JSON preserves view order", "[layout][serialization]")
@@ -159,7 +208,7 @@ TEST_CASE("layout spec JSON preserves view order", "[layout][serialization]")
 
   const nlohmann::json json = original;
   REQUIRE(json.at("views").size() == 2);
-  REQUIRE(json.at("views").at(0).at("viewport").at("left").get<float>() == -1.0f);
+  REQUIRE_FALSE(json.at("views").at(0).at("viewport").contains("left"));
   REQUIRE(json.at("views").at(1).at("viewport").at("left").get<float>() == 0.0f);
 
   const layout::LayoutSpec restored = json.get<layout::LayoutSpec>();
@@ -174,7 +223,7 @@ TEST_CASE("layout spec JSON preserves receiver-only sync membership", "[layout][
   const nlohmann::json json = original;
   const auto& receiverOnlyView = json.at("views").at(1);
 
-  REQUIRE(receiverOnlyView.at("sync").at("source").at("zoom").is_null());
+  REQUIRE_FALSE(receiverOnlyView.at("sync").at("source").contains("zoom"));
   REQUIRE(receiverOnlyView.at("sync").at("membership").at("zoom").get<std::size_t>() == 2);
 
   const layout::LayoutSpec restored = json.get<layout::LayoutSpec>();

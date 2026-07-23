@@ -32,7 +32,7 @@ public:
   ~WindowData() = default;
 
   void setDefaultRenderedImagesForAllLayouts(const AppData& appData);
-  void setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData);
+  void setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData) const;
 
   /** @brief Reorder rendered and metric image selections after image order changes. */
   void updateImageOrdering(const uuid_range_t& orderedImageUids);
@@ -137,10 +137,41 @@ public:
     const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage = {});
 
   std::vector<layout::LayoutSpec> createProjectLayoutSnapshots(const uuid_range_t& orderedImageUids) const;
+  std::vector<layout::LayoutSpec> createDefaultProjectLayoutSnapshots(
+    const AppData& appData,
+    const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage = {}) const;
+  std::size_t defaultProjectLayoutIndex(
+    const AppData& appData,
+    const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage = {}) const;
   bool applyProjectLayoutSnapshots(
     const std::vector<layout::LayoutSpec>& layouts,
     const uuid_range_t& orderedImageUids,
     std::optional<std::size_t> currentLayoutIndex);
+
+  /**
+   * @brief Append project-specific layouts after regenerated default layouts.
+   * @param layouts Additional project layouts.
+   * @param orderedImageUids Image UIDs in application order.
+   * @param currentLayoutIndex Optional final layout index to select after appending.
+   * @return True when at least one layout was appended.
+   */
+  bool appendProjectLayoutSnapshots(
+    const std::vector<layout::LayoutSpec>& layouts,
+    const uuid_range_t& orderedImageUids,
+    std::optional<std::size_t> currentLayoutIndex);
+
+  /**
+   * @brief Replace one generated/default layout from a serialized snapshot.
+   * @param index Layout index to replace.
+   * @param layout Replacement layout snapshot.
+   * @param orderedImageUids Image UIDs in application order.
+   * @return True when the layout was replaced.
+   */
+  bool replaceProjectLayoutSnapshot(
+    std::size_t index,
+    const layout::LayoutSpec& layout,
+    const uuid_range_t& orderedImageUids);
+
   void removeLayout(std::size_t index);
   void clearLayouts();
   void resetDefaultLayouts();

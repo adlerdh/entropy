@@ -604,6 +604,28 @@ bool Image::hasPixelData() const
   return LoadState::LoadedPixels == m_loadState;
 }
 
+ImageSettings Image::defaultSettings() const
+{
+  std::vector<ComponentStats> componentStats;
+  componentStats.reserve(m_header.numComponentsPerPixel());
+  for (uint32_t component = 0; component < m_header.numComponentsPerPixel(); ++component) {
+    componentStats.push_back(m_settings.componentStatistics(component));
+  }
+
+  const std::string displayName =
+    m_header.fileName().empty() ? m_settings.displayName() : getFileName(m_header.fileName().string(), false);
+  ImageSettings settings(
+    displayName,
+    m_header.numPixels(),
+    m_header.numComponentsPerPixel(),
+    m_header.memoryComponentType(),
+    componentStats);
+  setDefaultComponentRendering(settings, m_header, m_imageRep, componentStats);
+  setDefaultVectorFieldRendering(settings, m_header);
+  setDefaultInterpolationModes(settings, m_imageRep);
+  return settings;
+}
+
 const Image::ImageRepresentation& Image::imageRep() const
 {
   return m_imageRep;

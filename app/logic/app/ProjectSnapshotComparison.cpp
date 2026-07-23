@@ -19,7 +19,8 @@ bool imageSettingsEqual(
   }
 
   return a->m_displayName == b->m_displayName && a->m_globalVisibility == b->m_globalVisibility &&
-         a->m_globalOpacity == b->m_globalOpacity && a->m_borderColor == b->m_borderColor && a->m_level == b->m_level &&
+         a->m_globalOpacity == b->m_globalOpacity && a->m_borderColor == b->m_borderColor &&
+         a->m_hasBorderColor == b->m_hasBorderColor && a->m_level == b->m_level &&
          a->m_lockedToReference == b->m_lockedToReference && a->m_warpEnabled == b->m_warpEnabled &&
          a->m_warpStrength == b->m_warpStrength && a->m_allowExaggeratedWarp == b->m_allowExaggeratedWarp &&
          a->m_window == b->m_window && a->m_thresholdLow == b->m_thresholdLow &&
@@ -27,7 +28,8 @@ bool imageSettingsEqual(
          a->m_activeComponent == b->m_activeComponent && a->m_activeTimePoint == b->m_activeTimePoint &&
          a->m_timePlaybackLoop == b->m_timePlaybackLoop && a->m_timePlaybackPlaying == b->m_timePlaybackPlaying &&
          a->m_timePlaybackSpeed == b->m_timePlaybackSpeed && a->m_componentRenderMode == b->m_componentRenderMode &&
-         a->m_complexPhaseUnit == b->m_complexPhaseUnit && a->m_complexPhaseRange == b->m_complexPhaseRange &&
+         a->m_hasComponentRenderMode == b->m_hasComponentRenderMode && a->m_complexPhaseUnit == b->m_complexPhaseUnit &&
+         a->m_complexPhaseRange == b->m_complexPhaseRange &&
          a->m_vectorArrowOverlayVisible == b->m_vectorArrowOverlayVisible &&
          a->m_vectorArrowOverlayOnImage == b->m_vectorArrowOverlayOnImage &&
          a->m_vectorArrowOverlayDensity == b->m_vectorArrowOverlayDensity &&
@@ -63,12 +65,27 @@ bool imageSettingsEqual(
          a->m_colorMapHsvModifiers == b->m_colorMapHsvModifiers && a->m_interpolationModes == b->m_interpolationModes &&
          a->m_foregroundThresholdLows == b->m_foregroundThresholdLows &&
          a->m_foregroundThresholdHighs == b->m_foregroundThresholdHighs &&
+         a->m_componentLevelIndices == b->m_componentLevelIndices &&
+         a->m_componentWindowIndices == b->m_componentWindowIndices &&
+         a->m_componentThresholdLowIndices == b->m_componentThresholdLowIndices &&
+         a->m_componentThresholdHighIndices == b->m_componentThresholdHighIndices &&
+         a->m_componentVisibilityIndices == b->m_componentVisibilityIndices &&
+         a->m_componentOpacityIndices == b->m_componentOpacityIndices &&
+         a->m_colorMapIndexIndices == b->m_colorMapIndexIndices &&
+         a->m_colorMapInvertedIndices == b->m_colorMapInvertedIndices &&
+         a->m_colorMapContinuousIndices == b->m_colorMapContinuousIndices &&
+         a->m_colorMapLevelIndices == b->m_colorMapLevelIndices &&
+         a->m_colorMapHsvModifierIndices == b->m_colorMapHsvModifierIndices &&
+         a->m_interpolationModeIndices == b->m_interpolationModeIndices &&
+         a->m_foregroundThresholdLowIndices == b->m_foregroundThresholdLowIndices &&
+         a->m_foregroundThresholdHighIndices == b->m_foregroundThresholdHighIndices &&
          a->m_edgeDetectionMethod == b->m_edgeDetectionMethod && a->m_showEdges == b->m_showEdges &&
          a->m_thresholdEdges == b->m_thresholdEdges && a->m_thinPixelEdges == b->m_thinPixelEdges &&
          a->m_overlayEdges == b->m_overlayEdges && a->m_colormapEdges == b->m_colormapEdges &&
          a->m_edgeMagnitude == b->m_edgeMagnitude && a->m_pixelEdgeScale == b->m_pixelEdgeScale &&
          a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold && a->m_edgeColor == b->m_edgeColor &&
-         a->m_edgeOpacity == b->m_edgeOpacity && a->m_useDistanceMapForRaycasting == b->m_useDistanceMapForRaycasting &&
+         a->m_hasEdgeColor == b->m_hasEdgeColor && a->m_edgeOpacity == b->m_edgeOpacity &&
+         a->m_useDistanceMapForRaycasting == b->m_useDistanceMapForRaycasting &&
          a->m_isosurfacesVisible == b->m_isosurfacesVisible &&
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
          a->m_showIsocontoursIn2D == b->m_showIsocontoursIn2D &&
@@ -148,32 +165,9 @@ bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize:
   return a.m_component == b.m_component && isosurfacesEqual(a.m_surface, b.m_surface);
 }
 
-bool imageSelectionsEqual(const layout::ImageSelectionSpec& a, const layout::ImageSelectionSpec& b)
-{
-  return a.m_renderedImageIndices == b.m_renderedImageIndices && a.m_metricImageIndices == b.m_metricImageIndices;
-}
-
-bool viewLayoutsEqual(const layout::ViewSpec& a, const layout::ViewSpec& b)
-{
-  return a.m_left == b.m_left && a.m_bottom == b.m_bottom && a.m_width == b.m_width && a.m_height == b.m_height &&
-         a.m_viewType == b.m_viewType && a.m_renderMode == b.m_renderMode &&
-         a.m_intensityProjectionMode == b.m_intensityProjectionMode && a.m_offsetMode == b.m_offsetMode &&
-         a.m_absoluteOffset == b.m_absoluteOffset && a.m_relativeOffsetSteps == b.m_relativeOffsetSteps &&
-         a.m_offsetImageIndex == b.m_offsetImageIndex && a.m_rotationSyncGroup == b.m_rotationSyncGroup &&
-         a.m_translationSyncGroup == b.m_translationSyncGroup && a.m_zoomSyncGroup == b.m_zoomSyncGroup &&
-         a.m_preferredDefaultRenderedImages == b.m_preferredDefaultRenderedImages &&
-         a.m_defaultRenderAllImages == b.m_defaultRenderAllImages &&
-         imageSelectionsEqual(a.m_imageSelection, b.m_imageSelection);
-}
-
 bool projectLayoutsEqual(const layout::LayoutSpec& a, const layout::LayoutSpec& b)
 {
-  return a.m_isLightbox == b.m_isLightbox && a.m_viewType == b.m_viewType && a.m_renderMode == b.m_renderMode &&
-         a.m_intensityProjectionMode == b.m_intensityProjectionMode &&
-         a.m_preferredDefaultRenderedImages == b.m_preferredDefaultRenderedImages &&
-         a.m_defaultRenderAllImages == b.m_defaultRenderAllImages &&
-         imageSelectionsEqual(a.m_imageSelection, b.m_imageSelection) &&
-         vectorsEqual(a.m_views, b.m_views, viewLayoutsEqual);
+  return a == b;
 }
 
 bool dicomSourcesEqual(const std::optional<serialize::DicomSource>& a, const std::optional<serialize::DicomSource>& b)
@@ -343,7 +337,8 @@ bool equivalent(const serialize::EntropyProject& a, const serialize::EntropyProj
   return imagesEqual(a.m_referenceImage, b.m_referenceImage) && a.m_layoutsFileName == b.m_layoutsFileName &&
          vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual) &&
          vectorsEqual(a.m_layouts, b.m_layouts, projectLayoutsEqual) &&
-         a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
+         a.m_removedDefaultLayoutIndices == b.m_removedDefaultLayoutIndices &&
+         a.m_modifiedDefaultLayouts == b.m_modifiedDefaultLayouts && a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
          projectInterfaceSettingsEqual(a.m_interface, b.m_interface) && projectViewSettingsEqual(a.m_view, b.m_view) &&
          comparisonSettingsEqual(a.m_comparison, b.m_comparison) &&
          raycastingSettingsEqual(a.m_raycasting, b.m_raycasting) &&

@@ -1,11 +1,10 @@
 #include "rendering/ascii/AsciiRenderer.h"
 
 #include "common/Exception.hpp"
-#include "common/Expected.h"
 #include "common/Types.h"
+#include "common/Viewport.h"
 
 #include "logic/app/Data.h"
-#include "common/Viewport.h"
 
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraTypes.h"
@@ -22,12 +21,13 @@
 
 #include <cmrc/cmrc.hpp>
 
-#include <spdlog/spdlog.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
+#include <spdlog/spdlog.h>
+
+#include <expected>
 
 #include <glad/glad.h>
 
@@ -73,7 +73,7 @@ std::string applyReplacements(const std::string& src, const std::unordered_map<s
   return result;
 }
 
-entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildAsciiShaderProgram(
+std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildAsciiShaderProgram(
   const std::string& programName,
   const std::string& vsName,
   const std::string& fsName,
@@ -96,8 +96,7 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildA
     fsSource = std::string(fsData.begin(), fsData.end());
   }
   catch (const std::exception& e) {
-    return entropy_expected::unexpected(
-      std::format("Exception loading ASCII shader for program {}: {}", programName, e.what()));
+    return std::unexpected(std::format("Exception loading ASCII shader for program {}: {}", programName, e.what()));
   }
 
   fsSource = applyReplacements(fsSource, fsReplacements);
@@ -111,13 +110,13 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildA
   auto program = std::make_unique<GLShaderProgram>(programName);
 
   if (!program->attachShader(vs)) {
-    return entropy_expected::unexpected(std::format("Unable to compile ASCII vertex shader {}", vsName));
+    return std::unexpected(std::format("Unable to compile ASCII vertex shader {}", vsName));
   }
   if (!program->attachShader(fs)) {
-    return entropy_expected::unexpected(std::format("Unable to compile ASCII fragment shader {}", fsName));
+    return std::unexpected(std::format("Unable to compile ASCII fragment shader {}", fsName));
   }
   if (!program->link()) {
-    return entropy_expected::unexpected(std::format("Failed to link ASCII shader program {}", programName));
+    return std::unexpected(std::format("Failed to link ASCII shader program {}", programName));
   }
 
   spdlog::debug("Linked ASCII shader program '{}'", programName);

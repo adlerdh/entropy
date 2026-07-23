@@ -1,10 +1,11 @@
 #pragma once
 
-#include "common/Expected.h"
 #include "image/Image.h"
 
-#include <cstdint>
 #include <glm/vec3.hpp>
+
+#include <cstdint>
+#include <expected>
 #include <optional>
 #include <string>
 #include <vector>
@@ -169,5 +170,5 @@ std::vector<DistanceMapImageResult> createDistanceMapImages(const Image& image, 
  * @param timePoint Source image time point.
  * @return Derived Float32 scalar image, or an error explaining why it cannot be created.
  */
-entropy_expected::expected<Image, std::string>
+std::expected<Image, std::string>
 createComponentProjectionImage(const Image& image, ComponentProjectionMode mode, uint32_t timePoint = 0);

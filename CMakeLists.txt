@@ -641,6 +641,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/app/Logging.cpp"
   "${entropy_APP_DIR}/logic/app/LoadingStatusItems.cpp"
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
+  "${entropy_APP_DIR}/logic/app/ProjectLayoutDelta.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotSettings.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"

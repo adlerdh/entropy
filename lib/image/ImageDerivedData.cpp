@@ -132,11 +132,11 @@ double secondDerivativeAt(
   return (sample(coordinate + 1u) - 2.0 * sample(coordinate) + sample(coordinate - 1u)) / (dx * dx);
 }
 
-entropy_expected::expected<std::vector<float>, std::string>
+std::expected<std::vector<float>, std::string>
 createVectorDerivativeValues(const Image& image, ComponentProjectionMode mode, uint32_t timePoint)
 {
   if (!isVectorFieldCandidate(image)) {
-    return entropy_expected::unexpected("Vector derivative projection requires a three-component image");
+    return std::unexpected("Vector derivative projection requires a three-component image");
   }
 
   const glm::uvec3 dims = image.header().pixelDimensions();
@@ -148,7 +148,7 @@ createVectorDerivativeValues(const Image& image, ComponentProjectionMode mode, u
         const std::optional<double> value =
           vectorDerivativeProjectionValue(image, mode, glm::uvec3{x, y, z}, timePoint);
         if (!value) {
-          return entropy_expected::unexpected("Unsupported vector derivative projection");
+          return std::unexpected("Unsupported vector derivative projection");
         }
 
         values[linearIndex(dims, x, y, z)] = static_cast<float>(std::isfinite(*value) ? *value : 0.0);
@@ -488,7 +488,7 @@ std::vector<DistanceMapImageResult> createDistanceMapImages(const Image& image, 
   return results;
 }
 
-entropy_expected::expected<Image, std::string>
+std::expected<Image, std::string>
 createComponentProjectionImage(const Image& image, ComponentProjectionMode mode, uint32_t timePoint)
 {
   /// @todo These CPU projections are the correctness reference for time-varying multi-component images.
@@ -498,11 +498,11 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
   /// and as an export path for users who need a real derived image on disk.
   const uint32_t numComponents = image.header().numComponentsPerPixel();
   if (numComponents < 2) {
-    return entropy_expected::unexpected("Component projection requires at least two image components");
+    return std::unexpected("Component projection requires at least two image components");
   }
 
   if (!image.hasPixelData()) {
-    return entropy_expected::unexpected("Component projection requires loaded image pixel data");
+    return std::unexpected("Component projection requires loaded image pixel data");
   }
 
   const bool isComplexPhaseProjection = ComponentProjectionMode::ComplexPhaseSignedRadians == mode ||
@@ -510,7 +510,7 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
                                         ComponentProjectionMode::ComplexPhaseSignedDegrees == mode ||
                                         ComponentProjectionMode::ComplexPhaseUnsignedDegrees == mode;
   if (isComplexPhaseProjection && !isComplexValuedImage(image)) {
-    return entropy_expected::unexpected("Complex phase projection requires a two-component complex image");
+    return std::unexpected("Complex phase projection requires a two-component complex image");
   }
 
   const std::size_t numPixels = image.header().numPixels();
@@ -519,7 +519,7 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
   if (isVectorDerivativeProjection(mode)) {
     auto derivativeValues = createVectorDerivativeValues(image, mode, clampedTimePoint);
     if (!derivativeValues) {
-      return entropy_expected::unexpected(derivativeValues.error());
+      return std::unexpected(derivativeValues.error());
     }
     values = std::move(*derivativeValues);
   }
@@ -536,7 +536,7 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
     for (uint32_t component = 0; component < numComponents; ++component) {
       const auto value = image.value<double>(component, pixel, clampedTimePoint);
       if (!value) {
-        return entropy_expected::unexpected(std::format("Unable to read component {} at pixel {}", component, pixel));
+        return std::unexpected(std::format("Unable to read component {} at pixel {}", component, pixel));
       }
 
       if (!std::isfinite(*value)) {
@@ -576,7 +576,7 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
         const auto real = image.value<double>(0, pixel, clampedTimePoint);
         const auto imaginary = image.value<double>(1, pixel, clampedTimePoint);
         if (!real || !imaginary) {
-          return entropy_expected::unexpected(std::format("Unable to read complex value at pixel {}", pixel));
+          return std::unexpected(std::format("Unable to read complex value at pixel {}", pixel));
         }
         if (!std::isfinite(*real) || !std::isfinite(*imaginary)) {
           values[pixel] = 0.0f;
@@ -616,12 +616,14 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
   header.setExistsOnDisk(false);
 
   const std::string displayName = image.settings().displayName() + " " + componentProjectionModeName(mode);
+
   Image projection(
     header,
     displayName,
     Image::ImageRepresentation::Image,
     Image::MultiComponentBufferType::SeparateImages,
     std::vector<const void*>{values.data()});
+
   projection.transformations() = image.transformations();
   projection.settings().setBorderColor(image.settings().borderColor());
   projection.settings().setGlobalVisibility(image.settings().globalVisibility());

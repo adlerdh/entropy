@@ -4,6 +4,7 @@
 #include "logic/app/AppPaths.h"
 #include "layout/LayoutFileSerialization.h"
 #include "logic/app/LoadingStatusItems.h"
+#include "logic/app/ProjectLayoutDelta.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "logic/app/ProjectSnapshotSettings.h"
 #include "logic/app/UserPreferences.h"
@@ -15,9 +16,13 @@
 #include "registration/Artifacts.h"
 #include "ui/NativeFileDialogs.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/color_space.hpp>
+
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cmath>
 #include <set>
 #include <string>
@@ -34,6 +39,7 @@ fs::path projectSavePath(fs::path fileName)
   }
   return fileName;
 }
+
 bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileName)
 {
   layout::LayoutFile layoutFile{
@@ -41,16 +47,19 @@ bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileN
     .m_layouts = appData.windowData().createProjectLayoutSnapshots(appData.imageUidsOrdered())};
   return layout::save(layoutFile, layoutsFileName);
 }
+
 constexpr uint64_t LargeImageWarningBytes = 2ull * 1024ull * 1024ull * 1024ull;
 
 bool shouldPromptForLargeImage(const ImageHeader& header)
 {
   return header.memoryImageSizeInBytes() >= LargeImageWarningBytes;
 }
+
 std::size_t numSerializedImages(const serialize::EntropyProject& project)
 {
   return 1 + project.m_additionalImages.size();
 }
+
 serialize::Image* serializedImageAt(serialize::EntropyProject& project, std::size_t index)
 {
   if (0 == index) {
@@ -64,6 +73,7 @@ serialize::Image* serializedImageAt(serialize::EntropyProject& project, std::siz
 
   return nullptr;
 }
+
 void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t index)
 {
   if (0 == index) {
@@ -75,6 +85,7 @@ void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t inde
     project.m_additionalImages.erase(project.m_additionalImages.begin() + static_cast<std::ptrdiff_t>(additionalIndex));
   }
 }
+
 bool isApproximatelyIdentity(const glm::mat4& matrix)
 {
   constexpr float epsilon = 1.0e-5f;
@@ -89,6 +100,21 @@ bool isApproximatelyIdentity(const glm::mat4& matrix)
   }
 
   return true;
+}
+
+glm::vec3 defaultImageBorderColor(const std::size_t imageIndex, const std::size_t numImages)
+{
+  if (0u == numImages) {
+    return glm::vec3{1.0f, 0.0f, 1.0f};
+  }
+
+  static constexpr float k_colorSat = 0.80f;
+  static constexpr float k_colorVal = 0.90f;
+  static constexpr float k_startHue = -1.0f / 48.0f;
+
+  const float normalizedHue =
+    std::fmod(1.0f + k_startHue + static_cast<float>(imageIndex) / static_cast<float>(numImages), 1.0f);
+  return glm::rgbColor(glm::vec3{360.0f * normalizedHue, k_colorSat, k_colorVal});
 }
 
 serialize::RegistrationResult registrationResultSnapshot(const registration::JobRecord& job)
@@ -169,18 +195,45 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
   }
 
   const uuids::uuid referenceImageUid = m_data.refImageUid().value_or(imageUids.front());
-  project.m_referenceImage = createImageSnapshot(referenceImageUid);
+  const auto defaultColorForImage = [&imageUids](const uuids::uuid& imageUid) {
+    const auto imageIt = std::find(imageUids.begin(), imageUids.end(), imageUid);
+    const std::size_t imageIndex =
+      imageIt == imageUids.end() ? 0u : static_cast<std::size_t>(std::distance(imageUids.begin(), imageIt));
+    return defaultImageBorderColor(imageIndex, imageUids.size());
+  };
+
+  project.m_referenceImage = createImageSnapshot(referenceImageUid, defaultColorForImage(referenceImageUid));
 
   for (const auto& imageUid : imageUids) {
     if (imageUid == referenceImageUid) {
       continue;
     }
 
-    project.m_additionalImages.emplace_back(createImageSnapshot(imageUid));
+    project.m_additionalImages.emplace_back(createImageSnapshot(imageUid, defaultColorForImage(imageUid)));
   }
 
-  project.m_layouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
-  project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
+  const auto defaultProjectLayouts =
+    m_data.windowData().createDefaultProjectLayoutSnapshots(m_data, dicomNativeViewTypesByImage());
+  const std::size_t defaultProjectLayoutIndex =
+    m_data.windowData().defaultProjectLayoutIndex(m_data, dicomNativeViewTypesByImage());
+  const auto currentProjectLayouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
+
+  if (const auto layoutDelta = project_layout_delta::compactLayoutDelta(currentProjectLayouts, defaultProjectLayouts)) {
+    project.m_layouts = layoutDelta->m_addedLayouts;
+    project.m_removedDefaultLayoutIndices = layoutDelta->m_removedDefaultLayoutIndices;
+    project.m_modifiedDefaultLayouts = layoutDelta->m_modifiedDefaultLayouts;
+    if (
+      !project.m_layouts.empty() || !project.m_removedDefaultLayoutIndices.empty() ||
+      !project.m_modifiedDefaultLayouts.empty() ||
+      m_data.windowData().currentLayoutIndex() != defaultProjectLayoutIndex)
+    {
+      project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
+    }
+  }
+  else if (currentProjectLayouts != defaultProjectLayouts) {
+    project.m_layouts = currentProjectLayouts;
+    project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
+  }
   project.m_interface = project_snapshot::interfaceSettings(m_data);
   project.m_view = project_snapshot::viewSettings(m_data);
   project.m_comparison = project_snapshot::comparisonSettings(m_data);
@@ -194,7 +247,9 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
   return project;
 }
 
-serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) const
+serialize::Image EntropyApp::createImageSnapshot(
+  const uuids::uuid& imageUid,
+  const std::optional<glm::vec3>& defaultBorderColor) const
 {
   serialize::Image serializedImage;
   const Image* image = m_data.image(imageUid);
@@ -222,7 +277,7 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
   {
     serializedImage.m_manualAffineMatrix = transformations.get_worldDef_T_affine();
   }
-  serializedImage.m_settings = project_snapshot::imageSettings(*image);
+  serializedImage.m_settings = project_snapshot::imageSettings(*image, defaultBorderColor);
 
   const auto defUids = m_data.imageToDefUids(imageUid);
   if (!defUids.empty()) {
@@ -560,6 +615,7 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   m_data.setProject(project);
   m_savedProjectSnapshot = project;
   m_data.setProjectFileName(normalizedFileName);
+  recordRecentProjectFile(normalizedFileName);
   updateWindowTitleStatus();
   m_glfw.postEmptyEvent();
   return true;

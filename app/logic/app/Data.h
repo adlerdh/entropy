@@ -1,8 +1,7 @@
 #pragma once
 
-#include "common/Expected.h"
-#include "logic/app/ParcellationLabelTable.h"
 #include "common/UuidRange.h"
+#include "logic/app/ParcellationLabelTable.h"
 
 #include "image/Image.h"
 #include "image/ImageColorMap.h"
@@ -25,6 +24,8 @@
 #include <glm/vec2.hpp>
 
 #include <uuid.h>
+
+#include <expected>
 
 #include <filesystem>
 #include <functional> // for std::reference_wrapper
@@ -241,8 +242,8 @@ public:
    */
   uuid effectiveImageUidForRendering(const uuid& imageUid) const;
 
-  entropy_expected::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
-  entropy_expected::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
+  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
+  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
 
   const Image* seg(const uuid& segUid) const;
   Image* seg(const uuid& segUid);

@@ -99,6 +99,7 @@ std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const g
 
 /// @brief Compute exact component statistics from sorted image values.
 std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& image);
+
 /// @brief Compute online component statistics without sorting image values.
 std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& image);
 

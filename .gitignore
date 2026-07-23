@@ -8,6 +8,7 @@
 .vs/**
 .vscode/**
 build*/**
+doc/**
 out/**
 log*/**
 /_CPack_Packages/

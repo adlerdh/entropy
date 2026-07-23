@@ -4,6 +4,7 @@ add_executable(TestAppSettings
   ImageScaleInteractionTests.cpp
   ImageSelectionPolicyTests.cpp
   LoadingStatusItemsTests.cpp
+  ProjectLayoutDeltaTests.cpp
   ProjectSnapshotComparisonTests.cpp
   ProjectSnapshotSettingsTests.cpp
   StackTraceTests.cpp
@@ -16,6 +17,7 @@ target_sources(TestAppSettings PRIVATE
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
   "${entropy_APP_DIR}/logic/app/LoadingStatusItems.cpp"
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
+  "${entropy_APP_DIR}/logic/app/ProjectLayoutDelta.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/StackTrace.cpp"

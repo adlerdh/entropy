@@ -1,10 +1,10 @@
 #pragma once
 
-#include "common/Expected.h"
 #include "image/Image.h"
 
 #include <atomic>
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <string>
 
@@ -72,7 +72,7 @@ std::string computedWarpDisplayName(const Image& sourceWarp, ComputedWarpDirecti
  * @param cancel Optional cancellation flag checked during ITK progress events.
  * @return Computed warp and quality report, or an error message.
  */
-entropy_expected::expected<WarpInversionResult, std::string> computeMatchingWarp(
+std::expected<WarpInversionResult, std::string> computeMatchingWarp(
   const Image& sourceWarp,
   const Image& outputDomain,
   ComputedWarpDirection direction,

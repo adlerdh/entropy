@@ -1,7 +1,6 @@
 #include "rendering/Rendering.h"
 
 #include "common/Exception.hpp"
-#include "common/Expected.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderData.h"
@@ -32,7 +31,7 @@ CMRC_DECLARE(shaders);
 namespace
 {
 
-entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> createShaderProgram(
+std::expected<std::unique_ptr<GLShaderProgram>, std::string> createShaderProgram(
   const std::string& programName,
   const std::string& vsName,
   const std::string& fsName,
@@ -55,8 +54,7 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> create
     fsSource = std::string(fsData.begin(), fsData.end());
   }
   catch (const std::exception& e) {
-    return entropy_expected::unexpected(
-      std::format("Exception loading shader for program {}: {}", programName, e.what()));
+    return std::unexpected(std::format("Exception loading shader for program {}: {}", programName, e.what()));
   }
 
   fsSource = rendering::replacePlaceholders(fsSource, fsReplacements);
@@ -70,17 +68,17 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> create
   auto program = std::make_unique<GLShaderProgram>(programName);
 
   if (!program->attachShader(vs)) {
-    return entropy_expected::unexpected(std::format("Unable to compile vertex shader {}", vsName));
+    return std::unexpected(std::format("Unable to compile vertex shader {}", vsName));
   }
   spdlog::debug("Compiled vertex shader {}", vsName);
 
   if (!program->attachShader(fs)) {
-    return entropy_expected::unexpected(std::format("Unable to compile fragment shader {}", fsName));
+    return std::unexpected(std::format("Unable to compile fragment shader {}", fsName));
   }
   spdlog::debug("Compiled fragment shader {}", fsName);
 
   if (!program->link()) {
-    return entropy_expected::unexpected(std::format("Failed to link shader program {}", programName));
+    return std::unexpected(std::format("Failed to link shader program {}", programName));
   }
 
   spdlog::debug("Linked shader program {}", programName);

@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -284,6 +285,7 @@ struct ImageSettings
   bool m_globalVisibility = true;            //!< Global image visibility
   double m_globalOpacity = 1.0;              //!< Global opacity multiplier
   glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Image border RGB color
+  bool m_hasBorderColor = false;             //!< Border color was present in the serialized settings
   bool m_lockedToReference = true;           //!< Lock image transformations to the reference image
   bool m_warpEnabled = true;                 //!< Apply assigned warp during image rendering
   float m_warpStrength = 1.0f;               //!< Warp strength multiplier
@@ -303,7 +305,8 @@ struct ImageSettings
   bool m_timePlaybackPlaying = false; //!< Time playback is running
   double m_timePlaybackSpeed = 1.0;   //!< Time playback speed multiplier
   ProjectComponentRenderMode m_componentRenderMode =
-    ProjectComponentRenderMode::Magnitude;                                       //!< Multi-component render mode
+    ProjectComponentRenderMode::SingleComponent;                                 //!< Multi-component render mode
+  bool m_hasComponentRenderMode = false;                                         //!< Component render mode was present
   ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units
   ProjectComplexPhaseRange m_complexPhaseRange =
     ProjectComplexPhaseRange::Signed;                  //!< Complex phase display range convention
@@ -353,8 +356,23 @@ struct ImageSettings
   std::vector<std::size_t> m_colorMapLevels;                              //!< Per-component discrete colormap levels
   std::vector<glm::vec3> m_colorMapHsvModifiers;                          //!< Per-component HSV colormap modifiers
   std::vector<InterpolationMode> m_interpolationModes;                    //!< Per-component scalar interpolation modes
-  std::vector<double> m_foregroundThresholdLows;  //!< Per-component distance-map foreground low thresholds
-  std::vector<double> m_foregroundThresholdHighs; //!< Per-component distance-map foreground high thresholds
+  std::vector<double> m_foregroundThresholdLows;         //!< Per-component distance-map foreground low thresholds
+  std::vector<double> m_foregroundThresholdHighs;        //!< Per-component distance-map foreground high thresholds
+  std::set<std::size_t> m_componentLevelIndices;         //!< Component indices with serialized window centers
+  std::set<std::size_t> m_componentWindowIndices;        //!< Component indices with serialized window widths
+  std::set<std::size_t> m_componentThresholdLowIndices;  //!< Component indices with serialized low thresholds
+  std::set<std::size_t> m_componentThresholdHighIndices; //!< Component indices with serialized high thresholds
+  std::set<std::size_t> m_componentVisibilityIndices;    //!< Component indices with serialized visibility
+  std::set<std::size_t> m_componentOpacityIndices;       //!< Component indices with serialized opacity
+  std::set<std::size_t> m_colorMapIndexIndices;          //!< Component indices with serialized colormap index
+  std::set<std::size_t> m_colorMapInvertedIndices;       //!< Component indices with serialized colormap inversion
+  std::set<std::size_t> m_colorMapContinuousIndices;     //!< Component indices with serialized colormap mode
+  std::set<std::size_t> m_colorMapLevelIndices;          //!< Component indices with serialized colormap levels
+  std::set<std::size_t> m_colorMapHsvModifierIndices;    //!< Component indices with serialized HSV modifiers
+  std::set<std::size_t> m_interpolationModeIndices;      //!< Component indices with serialized interpolation mode
+  std::set<std::size_t> m_foregroundThresholdLowIndices; //!< Component indices with serialized foreground low threshold
+  std::set<std::size_t>
+    m_foregroundThresholdHighIndices; //!< Component indices with serialized foreground high threshold
 
   ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space
   bool m_showEdges = false;                                                             //!< Show edge rendering
@@ -367,6 +385,7 @@ struct ImageSettings
   double m_pixelEdgeThreshold = 0.2;       //!< Pixel-space edge hard-edge threshold
   glm::vec3 m_edgeColor{1.0f, 0.0f, 1.0f}; //!< Solid edge RGB color
   double m_edgeOpacity = 1.0;              //!< Solid edge opacity
+  bool m_hasEdgeColor = false;             //!< Edge color was present in the serialized settings
 
   bool m_useDistanceMapForRaycasting = true;      //!< Use distance maps for image raycasting
   bool m_isosurfacesVisible = true;               //!< Show image isosurfaces
@@ -570,6 +589,17 @@ struct ProjectViewSettings
 };
 
 /**
+ * @brief Sparse override for one generated default layout.
+ */
+struct DefaultLayoutOverride
+{
+  std::size_t m_index = 0;     //!< Default layout index being overridden
+  layout::LayoutSpec m_layout; //!< Replacement layout snapshot
+
+  bool operator==(const DefaultLayoutOverride&) const = default;
+};
+
+/**
  * @brief Serialized data for an Entropy project
  */
 struct EntropyProject
@@ -578,6 +608,8 @@ struct EntropyProject
   std::vector<serialize::Image> m_additionalImages;
   std::optional<std::filesystem::path> m_layoutsFileName = std::nullopt;
   std::vector<layout::LayoutSpec> m_layouts;
+  std::vector<std::size_t> m_removedDefaultLayoutIndices;      //!< Default/generated layout indices removed by the user
+  std::vector<DefaultLayoutOverride> m_modifiedDefaultLayouts; //!< User-modified generated layouts
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
   ProjectInterfaceSettings m_interface;
   ProjectViewSettings m_view;

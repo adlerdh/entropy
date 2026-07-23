@@ -23,6 +23,7 @@ struct HistogramSettings
 {
   /// Method used for compute initial value for number of histogram bins
   NumBinsComputationMethod m_numBinsMethod{NumBinsComputationMethod::FreedmanDiaconis};
+
   int m_numBins{256};     //!< Number of bins in histogram
   double m_binWidth{1.0}; //!< Bin width
 

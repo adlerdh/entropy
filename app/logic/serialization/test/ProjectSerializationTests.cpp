@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -87,6 +88,33 @@ void checkMat4(const glm::mat4& actual, const glm::mat4& expected)
 }
 
 } // namespace
+
+TEST_CASE("Project serialization omits default settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_referenceImage.m_settings = serialize::ImageSettings{};
+  project.m_referenceImage.m_segmentations.push_back(
+    serialize::Segmentation{.m_segFileName = "seg.nii.gz", .m_settings = serialize::SegSettings{}});
+
+  const json root = project;
+
+  CHECK(root.at("version").at("major") == 1);
+  REQUIRE(root.at("images").size() == 1);
+  CHECK(root.at("images").at(0).at("path") == "image.nii.gz");
+  CHECK_FALSE(root.contains("settings"));
+  CHECK_FALSE(root.at("images").at(0).contains("settings"));
+  CHECK_FALSE(root.at("images").at(0).at("segmentations").at(0).contains("settings"));
+}
+
+TEST_CASE("Project serialization accepts missing version as current format", "[project][serialization]")
+{
+  const json root = {{"images", json::array({{{"path", "image.nii.gz"}}})}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK(parsed.m_referenceImage.m_imageFileName == fs::path{"image.nii.gz"});
+  CHECK(parsed.m_additionalImages.empty());
+}
 
 TEST_CASE("Project serialization preserves DICOM source metadata", "[project][dicom][serialization]")
 {
@@ -181,7 +209,7 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK_FALSE(root.contains("view"));
   const json& view = root.at("settings").at("view");
   CHECK(view.at("imageBorders").at("visible") == false);
-  CHECK(view.at("imageBorders").at("visibleInLightboxes") == false);
+  CHECK_FALSE(view.at("imageBorders").contains("visibleInLightboxes"));
   CHECK(view.at("crosshairs").at("visible") == false);
   CHECK(view.at("crosshairs").at("visibleInLightboxes") == false);
   CHECK(view.at("crosshairs").at("snapping") == "activeImage");
@@ -259,7 +287,7 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
   CHECK(comparison.at("localLinearResidual").at("patchRadius") == 4);
-  CHECK(comparison.at("overlay").at("magentaCyan") == false);
+  CHECK_FALSE(comparison.contains("overlay"));
   CHECK(comparison.at("quadrants").at("x") == false);
   CHECK(comparison.at("checkerboard").at("squares") == 31);
   CHECK(comparison.at("flashlight").at("radiusFraction") == 0.55f);
@@ -339,7 +367,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
   CHECK(raycasting.at("transparentBackgroundWhenNoHit") == false);
   CHECK(raycasting.at("showImageBox") == false);
-  CHECK(raycasting.at("showCrosshairsGlyph") == true);
+  CHECK_FALSE(raycasting.contains("showCrosshairsGlyph"));
   CHECK(raycasting.at("crosshairsGlyphDiameterVoxels") == 1.75f);
   CHECK(raycasting.at("showCameraFrustumIn2DViews") == true);
   CHECK(raycasting.at("reverseRotateAboutEye") == true);
@@ -348,6 +376,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(raycasting.at("cameraFrustumColor").at(2) == 0.75f);
   CHECK(raycasting.at("cameraFrustumColor").at(3) == 0.8f);
   CHECK(raycasting.at("renderFrontFaces") == false);
+  CHECK_FALSE(raycasting.contains("renderBackFaces"));
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
   CHECK_FALSE(raycasting.contains("backgroundEdgeBrighteningEnabled"));
   CHECK_FALSE(raycasting.contains("showCrosshairsIn3D"));
@@ -535,6 +564,66 @@ TEST_CASE(
   CHECK(*loaded.m_currentLayoutIndex == 1);
 }
 
+TEST_CASE("Project serialization preserves removed default layout indices", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_removedDefaultLayoutIndices = {1, 4};
+  project.m_currentLayoutIndex = 3;
+
+  const json serialized = project;
+  REQUIRE(serialized.contains("layouts"));
+  REQUIRE(serialized.at("layouts").at("removedDefaults").is_array());
+  CHECK(serialized.at("layouts").at("removedDefaults") == json::array({1, 4}));
+  CHECK(serialized.at("layouts").at("current") == 3);
+  CHECK_FALSE(serialized.at("layouts").contains("embedded"));
+
+  const serialize::EntropyProject loaded = serialized.get<serialize::EntropyProject>();
+  CHECK(loaded.m_removedDefaultLayoutIndices == std::vector<std::size_t>{1, 4});
+  REQUIRE(loaded.m_currentLayoutIndex);
+  CHECK(*loaded.m_currentLayoutIndex == 3);
+}
+
+TEST_CASE("Project serialization preserves modified default layout overrides", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_modifiedDefaultLayouts.push_back(serialize::DefaultLayoutOverride{
+    .m_index = 2,
+    .m_layout = layout::LayoutSpec{.m_kind = 3, .m_grid = layout::GridSpec{}, .m_views = {layout::ViewSpec{}}}});
+  project.m_currentLayoutIndex = 2;
+
+  const json serialized = project;
+  REQUIRE(serialized.contains("layouts"));
+  REQUIRE(serialized.at("layouts").at("modifiedDefaults").is_array());
+  REQUIRE(serialized.at("layouts").at("modifiedDefaults").size() == 1);
+  CHECK(serialized.at("layouts").at("modifiedDefaults").at(0).at("index") == 2);
+  CHECK(serialized.at("layouts").at("modifiedDefaults").at(0).at("layout").at("kind") == "oneUp");
+  CHECK(serialized.at("layouts").at("current") == 2);
+  CHECK_FALSE(serialized.at("layouts").contains("embedded"));
+
+  const serialize::EntropyProject loaded = serialized.get<serialize::EntropyProject>();
+  REQUIRE(loaded.m_modifiedDefaultLayouts.size() == 1);
+  CHECK(loaded.m_modifiedDefaultLayouts.front().m_index == 2);
+  CHECK(loaded.m_modifiedDefaultLayouts.front().m_layout.m_kind == 3);
+  REQUIRE(loaded.m_currentLayoutIndex);
+  CHECK(*loaded.m_currentLayoutIndex == 2);
+}
+
+TEST_CASE("Project serialization omits layouts when no layout state is provided", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+
+  const json serialized = project;
+  CHECK_FALSE(serialized.contains("layouts"));
+
+  const serialize::EntropyProject loaded = serialized.get<serialize::EntropyProject>();
+  CHECK_FALSE(loaded.m_layoutsFileName);
+  CHECK(loaded.m_layouts.empty());
+  CHECK_FALSE(loaded.m_currentLayoutIndex);
+}
+
 TEST_CASE(
   "Project serialization preserves image affine transform references and manual transforms",
   "[project][serialization]")
@@ -698,7 +787,7 @@ TEST_CASE("Project serialization preserves embedded and path-backed landmark gro
   const json& savedLandmarks = root.at("images").at(0).at("landmarks");
   REQUIRE(savedLandmarks.size() == 2);
   CHECK_FALSE(savedLandmarks.at(0).contains("path"));
-  CHECK(savedLandmarks.at(0).at("coordinateSpace") == "subject");
+  CHECK_FALSE(savedLandmarks.at(0).contains("coordinateSpace"));
   CHECK(savedLandmarks.at(0).at("display").at("name") == "Reference landmarks");
   CHECK(savedLandmarks.at(0).at("points").size() == 2);
   CHECK_FALSE(savedLandmarks.at(0).at("points").at(0).contains("index"));
@@ -749,6 +838,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_globalVisibility = false,
     .m_globalOpacity = 0.25,
     .m_borderColor = glm::vec3{0.4f, 0.5f, 0.6f},
+    .m_hasBorderColor = true,
     .m_lockedToReference = false,
     .m_warpEnabled = false,
     .m_warpStrength = 2.5f,
@@ -764,6 +854,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_timePlaybackPlaying = true,
     .m_timePlaybackSpeed = 1.5,
     .m_componentRenderMode = serialize::ProjectComponentRenderMode::ComplexPhase,
+    .m_hasComponentRenderMode = true,
     .m_complexPhaseUnit = serialize::ProjectComplexPhaseUnit::Degrees,
     .m_complexPhaseRange = serialize::ProjectComplexPhaseRange::Unsigned,
     .m_vectorArrowOverlayVisible = true,
@@ -818,6 +909,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_pixelEdgeThreshold = 0.44,
     .m_edgeColor = glm::vec3{0.1f, 0.2f, 0.3f},
     .m_edgeOpacity = 0.6,
+    .m_hasEdgeColor = true,
     .m_useDistanceMapForRaycasting = false,
     .m_isosurfacesVisible = false,
     .m_applyImageColormapToIsosurfaces = true,
@@ -870,14 +962,14 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(components.at("values").at(0).at("window") == 11.0);
   CHECK(components.at("values").at(0).at("thresholdLow") == 1.0);
   CHECK(components.at("values").at(0).at("thresholdHigh") == 9.0);
-  CHECK(components.at("values").at(0).at("visible") == true);
-  CHECK(components.at("values").at(0).at("opacity") == 1.0);
+  CHECK_FALSE(components.at("values").at(0).contains("opacity"));
   CHECK(components.at("values").at(0).at("colorMapIndex") == 1);
-  CHECK(components.at("values").at(0).at("colorMapInverted") == false);
-  CHECK(components.at("values").at(0).at("colorMapContinuous") == true);
-  CHECK(components.at("values").at(0).at("colorMapLevels") == 8);
+  CHECK_FALSE(components.at("values").at(0).contains("visible"));
+  CHECK_FALSE(components.at("values").at(0).contains("colorMapInverted"));
+  CHECK_FALSE(components.at("values").at(0).contains("colorMapContinuous"));
+  CHECK_FALSE(components.at("values").at(0).contains("colorMapLevels"));
   CHECK(components.at("values").at(0).at("colorMapHsvModifier") == json::array({0.1f, 0.2f, 0.3f}));
-  CHECK(components.at("values").at(0).at("interpolationMode") == "linear");
+  CHECK_FALSE(components.at("values").at(0).contains("interpolationMode"));
   CHECK(components.at("values").at(0).at("foregroundThresholdLow") == 4.0);
   CHECK(components.at("values").at(0).at("foregroundThresholdHigh") == 40.0);
   CHECK(components.at("values").at(1).at("visible") == false);
@@ -906,16 +998,16 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(warpedGrid.at("pixelSpacing") == 40.0f);
   CHECK(warpedGrid.at("voxelSpacing") == 6.0f);
   CHECK(warpedGrid.at("millimeterSpacing") == 14.0f);
-  CHECK(warpedGrid.at("spacingMode") == "voxels");
+  CHECK_FALSE(warpedGrid.contains("spacingMode"));
   CHECK(warpedGrid.at("lineThickness") == 2.25f);
   CHECK(warpedGrid.at("scaleFactor") == 1.75f);
   CHECK(warpedGrid.at("foregroundColor") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
   CHECK(warpedGrid.at("backgroundColor") == json::array({0.5f, 0.6f, 0.7f, 0.8f}));
   CHECK(edges.at("method") == "pixel");
   CHECK(edges.at("visible") == true);
-  CHECK(edges.at("hardEdges") == false);
-  CHECK(edges.at("thinPixelEdges") == true);
-  CHECK(edges.at("overlay") == false);
+  CHECK_FALSE(edges.contains("hardEdges"));
+  CHECK_FALSE(edges.contains("thinPixelEdges"));
+  CHECK_FALSE(edges.contains("overlay"));
   CHECK_FALSE(edges.contains("useColormap"));
   CHECK(edges.at("magnitude") == 0.33);
   CHECK(edges.at("pixelScale") == 2.5);
@@ -936,11 +1028,13 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_globalVisibility);
   CHECK(parsedSettings.m_globalOpacity == 0.25);
   CHECK(parsedSettings.m_borderColor == glm::vec3{0.4f, 0.5f, 0.6f});
+  CHECK(parsedSettings.m_hasBorderColor);
   CHECK_FALSE(parsedSettings.m_lockedToReference);
   CHECK_FALSE(parsedSettings.m_warpEnabled);
   CHECK(parsedSettings.m_warpStrength == 2.5f);
   CHECK(parsedSettings.m_allowExaggeratedWarp);
   CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::ComplexPhase);
+  CHECK(parsedSettings.m_hasComponentRenderMode);
   CHECK(parsedSettings.m_complexPhaseUnit == serialize::ProjectComplexPhaseUnit::Degrees);
   CHECK(parsedSettings.m_complexPhaseRange == serialize::ProjectComplexPhaseRange::Unsigned);
   CHECK(parsedSettings.m_vectorArrowOverlayVisible);
@@ -985,11 +1079,11 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_componentWindows == std::vector<double>{11.0, 22.0, 33.0});
   CHECK(parsedSettings.m_componentThresholdLows == std::vector<double>{1.0, 2.0, 3.0});
   CHECK(parsedSettings.m_componentThresholdHighs == std::vector<double>{9.0, 8.0, 7.0});
-  CHECK(parsedSettings.m_componentVisibility == std::vector<bool>{true, false, true});
+  CHECK(parsedSettings.m_componentVisibility == std::vector<bool>{true, false});
   CHECK(parsedSettings.m_componentOpacities == std::vector<double>{1.0, 0.25, 0.5});
   CHECK(parsedSettings.m_colorMapIndices == std::vector<std::size_t>{1, 2, 3});
-  CHECK(parsedSettings.m_colorMapInverted == std::vector<bool>{false, true, false});
-  CHECK(parsedSettings.m_colorMapContinuous == std::vector<bool>{true, false, true});
+  CHECK(parsedSettings.m_colorMapInverted == std::vector<bool>{false, true});
+  CHECK(parsedSettings.m_colorMapContinuous == std::vector<bool>{true, false});
   CHECK(parsedSettings.m_colorMapLevels == std::vector<std::size_t>{8, 9, 10});
   REQUIRE(parsedSettings.m_colorMapHsvModifiers.size() == 2);
   CHECK(parsedSettings.m_colorMapHsvModifiers.at(0) == glm::vec3{0.1f, 0.2f, 0.3f});
@@ -1009,6 +1103,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_pixelEdgeScale == 2.5);
   CHECK(parsedSettings.m_pixelEdgeThreshold == 0.44);
   CHECK(parsedSettings.m_edgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
+  CHECK(parsedSettings.m_hasEdgeColor);
   CHECK(parsedSettings.m_edgeOpacity == 0.6);
   CHECK_FALSE(parsedSettings.m_useDistanceMapForRaycasting);
   CHECK_FALSE(parsedSettings.m_isosurfacesVisible);
@@ -1286,7 +1381,7 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(settings.at("display").at("visible") == false);
   CHECK(settings.at("display").at("opacity") == 0.35);
   CHECK(settings.at("labelTableIndex") == 3);
-  CHECK(settings.at("interpolationMode") == "nearest");
+  CHECK_FALSE(settings.contains("interpolationMode"));
   CHECK_FALSE(settings.contains("displayName"));
   CHECK_FALSE(settings.contains("visibility"));
   CHECK_FALSE(settings.contains("activeComponent"));
@@ -1345,7 +1440,7 @@ TEST_CASE("Project serialization preserves voxel edge colormap setting", "[proje
 
   const json root = project;
   const json& settings = root.at("images").at(0).at("settings");
-  CHECK(settings.at("edges").at("method") == "voxel");
+  CHECK_FALSE(settings.at("edges").contains("method"));
   CHECK(settings.at("edges").at("useColormap") == true);
   CHECK_FALSE(settings.contains("edgeDetectionMethod"));
   CHECK_FALSE(settings.contains("colormapEdges"));
@@ -1376,12 +1471,47 @@ TEST_CASE("Project serialization preserves sparse image component setting indice
   const serialize::ImageSettings& settings = *parsed.m_referenceImage.m_settings;
 
   REQUIRE(settings.m_componentOpacities.size() == 2);
-  CHECK(settings.m_componentOpacities.at(0) == 0.0);
+  CHECK(settings.m_componentOpacities.at(0) == 1.0);
   CHECK(settings.m_componentOpacities.at(1) == 0.25);
+  CHECK(settings.m_componentOpacityIndices == std::set<std::size_t>{1});
   REQUIRE(settings.m_colorMapIndices.size() == 2);
   CHECK(settings.m_colorMapIndices.at(0) == 0);
   CHECK(settings.m_colorMapIndices.at(1) == 7);
+  CHECK(settings.m_colorMapIndexIndices == std::set<std::size_t>{1});
   REQUIRE(settings.m_interpolationModes.size() == 2);
   CHECK(settings.m_interpolationModes.at(1) == InterpolationMode::NearestNeighbor);
+  CHECK(settings.m_interpolationModeIndices == std::set<std::size_t>{1});
   CHECK(settings.m_opacity == 0.25);
+}
+
+TEST_CASE("Project serialization preserves sparse image component threshold indices", "[project][serialization]")
+{
+  const json root = {
+    {"version", {{"major", 1}, {"minor", 0}}},
+    {"images",
+     json::array(
+       {{{"path", "image.nii.gz"},
+         {"settings",
+          {{"components",
+            {{"values",
+              json::array(
+                {{{"index", 2},
+                  {"level", 77.0},
+                  {"window", 12.0},
+                  {"thresholdLow", 5.0},
+                  {"thresholdHigh", 99.0}}})}}}}}}})}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_settings.has_value());
+  const serialize::ImageSettings& settings = *parsed.m_referenceImage.m_settings;
+
+  REQUIRE(settings.m_componentLevels.size() == 3);
+  CHECK(settings.m_componentLevelIndices == std::set<std::size_t>{2});
+  CHECK(settings.m_componentWindowIndices == std::set<std::size_t>{2});
+  CHECK(settings.m_componentThresholdLowIndices == std::set<std::size_t>{2});
+  CHECK(settings.m_componentThresholdHighIndices == std::set<std::size_t>{2});
+  CHECK(settings.m_componentLevels.at(2) == 77.0);
+  CHECK(settings.m_componentWindows.at(2) == 12.0);
+  CHECK(settings.m_componentThresholdLows.at(2) == 5.0);
+  CHECK(settings.m_componentThresholdHighs.at(2) == 99.0);
 }

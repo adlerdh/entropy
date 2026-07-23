@@ -3,8 +3,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <cmath>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -97,6 +97,14 @@ void appendAnnotationsFromArray(const json& annotationArrayJson, std::vector<Ann
     annotations.emplace_back(annotJson);
   }
 }
+
+template<typename T>
+void addIfChanged(json& j, const char* key, const T& value, const T& defaultValue)
+{
+  if (value != defaultValue) {
+    j[key] = value;
+  }
+}
 } // namespace
 
 void to_json(json& j, const AnnotPolygon<float, 2>& poly)
@@ -117,27 +125,37 @@ void to_json(json& j, const Annotation& annot)
 {
   j.clear();
 
-  const glm::vec4& lineCol = annot.getLineColor();
-  const glm::vec4& fillCol = annot.getFillColor();
-
+  const Annotation defaults;
   const glm::vec4& planeEq = annot.getSubjectPlaneEquation();
+  const glm::vec4& defaultPlaneEq = defaults.getSubjectPlaneEquation();
 
-  j = json{
-    {"type", POLYGON_ANNOTATION_TYPE},
-    {"name", annot.getDisplayName()},
-    {"visible", annot.isVisible()},
-    {"opacity", annot.getOpacity()},
-    {"lineThickness", annot.getLineThickness()},
-    {"lineColor", annotation_json::colorToJson(lineCol)},
-    {"fillColor", annotation_json::colorToJson(fillCol)},
-    {"verticesVisible", annot.getVertexVisibility()},
-    {"closed", annot.isClosed()},
-    {"filled", annot.isFilled()},
-    {"smoothed", annot.isSmoothed()},
-    {"smoothingFactor", annot.getSmoothingFactor()},
-    {"subjectPlaneNormal", {planeEq.x, planeEq.y, planeEq.z}},
-    {"subjectPlaneOffset", planeEq[3]},
-    {"boundaries", boundariesToJson(annot)}};
+  j = json{{"type", POLYGON_ANNOTATION_TYPE}, {"boundaries", boundariesToJson(annot)}};
+
+  addIfChanged(
+    j,
+    "subjectPlaneNormal",
+    json::array({planeEq.x, planeEq.y, planeEq.z}),
+    json::array({defaultPlaneEq.x, defaultPlaneEq.y, defaultPlaneEq.z}));
+  addIfChanged(j, "subjectPlaneOffset", planeEq[3], defaultPlaneEq[3]);
+  addIfChanged(j, "name", annot.getDisplayName(), defaults.getDisplayName());
+  addIfChanged(j, "visible", annot.isVisible(), defaults.isVisible());
+  addIfChanged(j, "opacity", annot.getOpacity(), defaults.getOpacity());
+  addIfChanged(j, "lineThickness", annot.getLineThickness(), defaults.getLineThickness());
+  addIfChanged(
+    j,
+    "lineColor",
+    annotation_json::colorToJson(annot.getLineColor()),
+    annotation_json::colorToJson(defaults.getLineColor()));
+  addIfChanged(
+    j,
+    "fillColor",
+    annotation_json::colorToJson(annot.getFillColor()),
+    annotation_json::colorToJson(defaults.getFillColor()));
+  addIfChanged(j, "verticesVisible", annot.getVertexVisibility(), defaults.getVertexVisibility());
+  addIfChanged(j, "closed", annot.isClosed(), defaults.isClosed());
+  addIfChanged(j, "filled", annot.isFilled(), defaults.isFilled());
+  addIfChanged(j, "smoothed", annot.isSmoothed(), defaults.isSmoothed());
+  addIfChanged(j, "smoothingFactor", annot.getSmoothingFactor(), defaults.getSmoothingFactor());
 }
 
 void from_json(const json& j, Annotation& annot)
@@ -154,64 +172,68 @@ void from_json(const json& j, Annotation& annot)
     displayName = j.at("name").get<std::string>();
   }
 
-  bool visible = true;
+  Annotation defaults;
+  bool visible = defaults.isVisible();
   if (j.count("visible")) {
     visible = j.at("visible").get<bool>();
   }
 
-  float opacity = 1.0f;
+  float opacity = defaults.getOpacity();
   if (j.count("opacity")) {
     opacity = j.at("opacity").get<float>();
   }
 
-  float lineThickness = 2.0f;
+  float lineThickness = defaults.getLineThickness();
   if (j.count("lineThickness")) {
     lineThickness = j.at("lineThickness").get<float>();
   }
 
-  glm::vec4 lineColorVec4{1.0f, 0.0f, 0.0f, 1.0f};
+  glm::vec4 lineColorVec4 = defaults.getLineColor();
   if (j.count("lineColor")) {
     lineColorVec4 = annotation_json::colorFromJson(j.at("lineColor"));
   }
 
-  glm::vec4 fillColorVec4{1.0f, 0.0f, 0.0f, 0.5f};
+  glm::vec4 fillColorVec4 = defaults.getFillColor();
   if (j.count("fillColor")) {
     fillColorVec4 = annotation_json::colorFromJson(j.at("fillColor"));
   }
 
-  bool verticesVisible = true;
+  bool verticesVisible = defaults.getVertexVisibility();
   if (j.count("verticesVisible")) {
     verticesVisible = j.at("verticesVisible").get<bool>();
   }
 
-  bool closed = true;
+  bool closed = defaults.isClosed();
   if (j.count("closed")) {
     closed = j.at("closed").get<bool>();
   }
 
-  bool filled = true;
+  bool filled = defaults.isFilled();
   if (j.count("filled")) {
     filled = j.at("filled").get<bool>();
   }
 
-  bool smoothed = false;
+  bool smoothed = defaults.isSmoothed();
   if (j.count("smoothed")) {
     smoothed = j.at("smoothed").get<bool>();
   }
 
-  float smoothingFactor = 0.0f;
+  float smoothingFactor = defaults.getSmoothingFactor();
   if (j.count("smoothingFactor")) {
     smoothingFactor = j.at("smoothingFactor").get<float>();
   }
 
-  // The Subject plane normal and offset distance are required in the JSON:
-  std::array<float, 3> planeNormal;
-  j.at("subjectPlaneNormal").get_to(planeNormal);
-
-  float planeOffset = std::numeric_limits<float>::quiet_NaN();
-  j.at("subjectPlaneOffset").get_to(planeOffset);
-
-  const glm::vec4 subjectPlaneEquation{planeNormal[0], planeNormal[1], planeNormal[2], planeOffset};
+  glm::vec4 subjectPlaneEquation = defaults.getSubjectPlaneEquation();
+  if (j.count("subjectPlaneNormal")) {
+    std::array<float, 3> planeNormal;
+    j.at("subjectPlaneNormal").get_to(planeNormal);
+    subjectPlaneEquation.x = planeNormal[0];
+    subjectPlaneEquation.y = planeNormal[1];
+    subjectPlaneEquation.z = planeNormal[2];
+  }
+  if (j.count("subjectPlaneOffset")) {
+    j.at("subjectPlaneOffset").get_to(subjectPlaneEquation[3]);
+  }
 
   // The polygon vertices are required in the JSON:
   AnnotPolygon<float, 2> polygon;

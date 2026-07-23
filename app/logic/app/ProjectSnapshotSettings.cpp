@@ -5,6 +5,9 @@
 #include "logic/app/Data.h"
 
 #include <algorithm>
+#include <optional>
+#include <set>
+#include <vector>
 
 namespace
 {
@@ -12,6 +15,40 @@ GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement
 {
   return UiLayoutTabPlacement::Bottom == placement ? GuiData::LayoutTabPlacement::Bottom
                                                    : GuiData::LayoutTabPlacement::Top;
+}
+
+template<typename T>
+void setDiffValue(
+  std::vector<T>& values,
+  std::set<std::size_t>& valueIndices,
+  const std::size_t index,
+  const T& value,
+  const T& fillValue)
+{
+  if (values.size() <= index) {
+    values.resize(index + 1u, fillValue);
+  }
+  values[index] = value;
+  valueIndices.insert(index);
+}
+
+template<typename T>
+void addDiffValue(
+  std::vector<T>& values,
+  std::set<std::size_t>& valueIndices,
+  const std::size_t index,
+  const T& value,
+  const T& baseline,
+  const T& fillValue)
+{
+  if (value != baseline) {
+    setDiffValue(values, valueIndices, index, value, fillValue);
+  }
+}
+
+bool shouldApplySparseComponentValue(const std::set<std::size_t>& valueIndices, const std::size_t component)
+{
+  return valueIndices.empty() || valueIndices.contains(component);
 }
 
 } // namespace
@@ -369,27 +406,38 @@ bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& i
 
 // Per-image and per-segmentation settings.
 
-serialize::ImageSettings imageSettings(const Image& image)
+serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::vec3> defaultBorderColor)
 {
   const ImageSettings& imageSettings = image.settings();
-  const auto thresholds = image.settings().thresholds();
+  const ImageSettings defaultSettings = image.defaultSettings();
 
   serialize::ImageSettings settings;
-  settings.m_displayName = imageSettings.displayName();
+  if (imageSettings.displayName() != defaultSettings.displayName()) {
+    settings.m_displayName = imageSettings.displayName();
+  }
   settings.m_globalVisibility = imageSettings.globalVisibility();
   settings.m_globalOpacity = imageSettings.globalOpacity();
-  settings.m_borderColor = imageSettings.borderColor();
+  const glm::vec3 baselineBorderColor = defaultBorderColor.value_or(defaultSettings.borderColor());
+  if (imageSettings.borderColor() != baselineBorderColor) {
+    settings.m_borderColor = imageSettings.borderColor();
+    settings.m_hasBorderColor = true;
+  }
   settings.m_lockedToReference = imageSettings.isLockedToReference();
   settings.m_warpEnabled = imageSettings.warpEnabled();
   settings.m_warpStrength = imageSettings.warpStrength();
   settings.m_allowExaggeratedWarp = imageSettings.allowExaggeratedWarp();
-  settings.m_level = imageSettings.windowCenter();
-  settings.m_window = imageSettings.windowWidth();
-  settings.m_thresholdLow = thresholds.first;
-  settings.m_thresholdHigh = thresholds.second;
+  settings.m_level = 0.0;
+  settings.m_window = 1.0;
+  settings.m_thresholdLow = 0.0;
+  settings.m_thresholdHigh = 0.0;
   settings.m_opacity = imageSettings.opacity();
   settings.m_activeComponent = imageSettings.activeComponent();
-  settings.m_componentRenderMode = toSerializedComponentRenderMode(imageSettings.componentRenderMode());
+  const serialize::ProjectComponentRenderMode componentRenderMode =
+    toSerializedComponentRenderMode(imageSettings.componentRenderMode());
+  if (componentRenderMode != toSerializedComponentRenderMode(defaultSettings.componentRenderMode())) {
+    settings.m_componentRenderMode = componentRenderMode;
+    settings.m_hasComponentRenderMode = true;
+  }
   settings.m_complexPhaseUnit = toSerializedComplexPhaseUnit(imageSettings.complexPhaseUnit());
   settings.m_complexPhaseRange = toSerializedComplexPhaseRange(imageSettings.complexPhaseRange());
   settings.m_vectorArrowOverlayVisible = imageSettings.vectorArrowOverlayVisible();
@@ -443,20 +491,106 @@ serialize::ImageSettings imageSettings(const Image& image)
   for (uint32_t component = 0; component < imageSettings.numComponents(); ++component) {
     const auto componentThresholds = imageSettings.thresholds(component);
     const auto foregroundThresholds = imageSettings.foregroundThresholds(component);
-    settings.m_componentLevels.push_back(imageSettings.windowCenter(component));
-    settings.m_componentWindows.push_back(imageSettings.windowWidth(component));
-    settings.m_componentThresholdLows.push_back(componentThresholds.first);
-    settings.m_componentThresholdHighs.push_back(componentThresholds.second);
-    settings.m_componentVisibility.push_back(imageSettings.visibility(component));
-    settings.m_componentOpacities.push_back(imageSettings.opacity(component));
-    settings.m_colorMapIndices.push_back(imageSettings.colorMapIndex(component));
-    settings.m_colorMapInverted.push_back(imageSettings.isColorMapInverted(component));
-    settings.m_colorMapContinuous.push_back(imageSettings.colorMapContinuous(component));
-    settings.m_colorMapLevels.push_back(imageSettings.colorMapQuantizationLevels(component));
-    settings.m_colorMapHsvModifiers.push_back(imageSettings.colorMapHsvModFactors(component));
-    settings.m_interpolationModes.push_back(imageSettings.interpolationMode(component));
-    settings.m_foregroundThresholdLows.push_back(foregroundThresholds.first);
-    settings.m_foregroundThresholdHighs.push_back(foregroundThresholds.second);
+    const auto defaultComponentThresholds = defaultSettings.thresholds(component);
+    const auto defaultForegroundThresholds = defaultSettings.foregroundThresholds(component);
+    addDiffValue(
+      settings.m_componentLevels,
+      settings.m_componentLevelIndices,
+      component,
+      imageSettings.windowCenter(component),
+      defaultSettings.windowCenter(component),
+      0.0);
+    addDiffValue(
+      settings.m_componentWindows,
+      settings.m_componentWindowIndices,
+      component,
+      imageSettings.windowWidth(component),
+      defaultSettings.windowWidth(component),
+      1.0);
+    addDiffValue(
+      settings.m_componentThresholdLows,
+      settings.m_componentThresholdLowIndices,
+      component,
+      componentThresholds.first,
+      defaultComponentThresholds.first,
+      0.0);
+    addDiffValue(
+      settings.m_componentThresholdHighs,
+      settings.m_componentThresholdHighIndices,
+      component,
+      componentThresholds.second,
+      defaultComponentThresholds.second,
+      0.0);
+    addDiffValue(
+      settings.m_componentVisibility,
+      settings.m_componentVisibilityIndices,
+      component,
+      imageSettings.visibility(component),
+      defaultSettings.visibility(component),
+      true);
+    addDiffValue(
+      settings.m_componentOpacities,
+      settings.m_componentOpacityIndices,
+      component,
+      imageSettings.opacity(component),
+      defaultSettings.opacity(component),
+      1.0);
+    addDiffValue(
+      settings.m_colorMapIndices,
+      settings.m_colorMapIndexIndices,
+      component,
+      imageSettings.colorMapIndex(component),
+      defaultSettings.colorMapIndex(component),
+      std::size_t{0});
+    addDiffValue(
+      settings.m_colorMapInverted,
+      settings.m_colorMapInvertedIndices,
+      component,
+      imageSettings.isColorMapInverted(component),
+      defaultSettings.isColorMapInverted(component),
+      false);
+    addDiffValue(
+      settings.m_colorMapContinuous,
+      settings.m_colorMapContinuousIndices,
+      component,
+      imageSettings.colorMapContinuous(component),
+      defaultSettings.colorMapContinuous(component),
+      true);
+    addDiffValue(
+      settings.m_colorMapLevels,
+      settings.m_colorMapLevelIndices,
+      component,
+      imageSettings.colorMapQuantizationLevels(component),
+      defaultSettings.colorMapQuantizationLevels(component),
+      std::size_t{8});
+    addDiffValue(
+      settings.m_colorMapHsvModifiers,
+      settings.m_colorMapHsvModifierIndices,
+      component,
+      imageSettings.colorMapHsvModFactors(component),
+      defaultSettings.colorMapHsvModFactors(component),
+      glm::vec3{0.0f, 1.0f, 1.0f});
+    addDiffValue(
+      settings.m_interpolationModes,
+      settings.m_interpolationModeIndices,
+      component,
+      imageSettings.interpolationMode(component),
+      defaultSettings.interpolationMode(component),
+      InterpolationMode::Linear);
+    addDiffValue(
+      settings.m_foregroundThresholdLows,
+      settings.m_foregroundThresholdLowIndices,
+      component,
+      foregroundThresholds.first,
+      defaultForegroundThresholds.first,
+      0.0);
+    addDiffValue(
+      settings.m_foregroundThresholdHighs,
+      settings.m_foregroundThresholdHighIndices,
+      component,
+      foregroundThresholds.second,
+      defaultForegroundThresholds.second,
+      0.0);
   }
   settings.m_edgeDetectionMethod = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
                                      ? serialize::ProjectEdgeDetectionMethod::Pixel
@@ -474,7 +608,11 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_edgeMagnitude = imageSettings.edgeMagnitude();
   settings.m_pixelEdgeScale = imageSettings.pixelEdgeScale();
   settings.m_pixelEdgeThreshold = imageSettings.pixelEdgeThreshold();
-  settings.m_edgeColor = imageSettings.edgeColor();
+  const glm::vec3 baselineEdgeColor = defaultBorderColor.value_or(defaultSettings.edgeColor());
+  if (imageSettings.edgeColor() != baselineEdgeColor) {
+    settings.m_edgeColor = imageSettings.edgeColor();
+    settings.m_hasEdgeColor = true;
+  }
   settings.m_edgeOpacity = imageSettings.edgeOpacity();
   settings.m_useDistanceMapForRaycasting = imageSettings.useDistanceMapForRaycasting();
   settings.m_isosurfacesVisible = imageSettings.isosurfacesVisible();
@@ -508,7 +646,9 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
 
   imageSettings.setGlobalVisibility(settings.m_globalVisibility);
   imageSettings.setGlobalOpacity(settings.m_globalOpacity);
-  imageSettings.setBorderColor(settings.m_borderColor);
+  if (settings.m_hasBorderColor) {
+    imageSettings.setBorderColor(settings.m_borderColor);
+  }
   imageSettings.setLockedToReference(settings.m_lockedToReference);
   imageSettings.setWarpEnabled(settings.m_warpEnabled);
   imageSettings.setAllowExaggeratedWarp(settings.m_allowExaggeratedWarp);
@@ -520,16 +660,12 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setTimePlaybackLoop(settings.m_timePlaybackLoop);
   imageSettings.setTimePlaybackPlaying(settings.m_timePlaybackPlaying && image.isTimeSeries());
   imageSettings.setTimePlaybackSpeed(settings.m_timePlaybackSpeed);
-  imageSettings.setWindowCenter(settings.m_level);
-  if (settings.m_window > 0.0) {
-    imageSettings.setWindowWidth(settings.m_window);
-  }
-  imageSettings.setThresholdLow(settings.m_thresholdLow);
-  imageSettings.setThresholdHigh(settings.m_thresholdHigh);
   imageSettings.setOpacity(settings.m_opacity);
-  const ComponentRenderMode componentMode = fromSerializedComponentRenderMode(settings.m_componentRenderMode);
-  imageSettings.setComponentRenderMode(
-    componentRenderModeIsValidForImage(componentMode, image) ? componentMode : ComponentRenderMode::SingleComponent);
+  if (settings.m_hasComponentRenderMode) {
+    const ComponentRenderMode componentMode = fromSerializedComponentRenderMode(settings.m_componentRenderMode);
+    imageSettings.setComponentRenderMode(
+      componentRenderModeIsValidForImage(componentMode, image) ? componentMode : ComponentRenderMode::SingleComponent);
+  }
   if (ComponentRenderMode::ComplexReal == imageSettings.componentRenderMode()) {
     imageSettings.setActiveComponent(0);
   }
@@ -571,11 +707,17 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const std::size_t numLevelComponents =
     std::min<std::size_t>(settings.m_componentLevels.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numLevelComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_componentLevelIndices, component)) {
+      continue;
+    }
     imageSettings.setWindowCenter(static_cast<uint32_t>(component), settings.m_componentLevels.at(component));
   }
   const std::size_t numWindowComponents =
     std::min<std::size_t>(settings.m_componentWindows.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numWindowComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_componentWindowIndices, component)) {
+      continue;
+    }
     const double windowWidth = settings.m_componentWindows.at(component);
     if (windowWidth > 0.0) {
       imageSettings.setWindowWidth(static_cast<uint32_t>(component), windowWidth);
@@ -584,41 +726,65 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const std::size_t numThresholdLowComponents =
     std::min<std::size_t>(settings.m_componentThresholdLows.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numThresholdLowComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_componentThresholdLowIndices, component)) {
+      continue;
+    }
     imageSettings.setThresholdLow(static_cast<uint32_t>(component), settings.m_componentThresholdLows.at(component));
   }
   const std::size_t numThresholdHighComponents =
     std::min<std::size_t>(settings.m_componentThresholdHighs.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numThresholdHighComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_componentThresholdHighIndices, component)) {
+      continue;
+    }
     imageSettings.setThresholdHigh(static_cast<uint32_t>(component), settings.m_componentThresholdHighs.at(component));
   }
   const std::size_t numVisibilityComponents =
     std::min<std::size_t>(settings.m_componentVisibility.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numVisibilityComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_componentVisibilityIndices, component)) {
+      continue;
+    }
     imageSettings.setVisibility(static_cast<uint32_t>(component), settings.m_componentVisibility.at(component));
   }
   const std::size_t numOpacityComponents =
     std::min<std::size_t>(settings.m_componentOpacities.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numOpacityComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_componentOpacityIndices, component)) {
+      continue;
+    }
     imageSettings.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
   }
   const std::size_t numColorMapComponents =
     std::min<std::size_t>(settings.m_colorMapIndices.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numColorMapComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_colorMapIndexIndices, component)) {
+      continue;
+    }
     imageSettings.setColorMapIndex(static_cast<uint32_t>(component), settings.m_colorMapIndices.at(component));
   }
   const std::size_t numColorMapInvertedComponents =
     std::min<std::size_t>(settings.m_colorMapInverted.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numColorMapInvertedComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_colorMapInvertedIndices, component)) {
+      continue;
+    }
     imageSettings.setColorMapInverted(static_cast<uint32_t>(component), settings.m_colorMapInverted.at(component));
   }
   const std::size_t numColorMapContinuousComponents =
     std::min<std::size_t>(settings.m_colorMapContinuous.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numColorMapContinuousComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_colorMapContinuousIndices, component)) {
+      continue;
+    }
     imageSettings.setColorMapContinuous(static_cast<uint32_t>(component), settings.m_colorMapContinuous.at(component));
   }
   const std::size_t numColorMapLevelComponents =
     std::min<std::size_t>(settings.m_colorMapLevels.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numColorMapLevelComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_colorMapLevelIndices, component)) {
+      continue;
+    }
     imageSettings.setColorMapQuantization(
       static_cast<uint32_t>(component),
       static_cast<uint32_t>(settings.m_colorMapLevels.at(component)));
@@ -626,6 +792,9 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const std::size_t numColorMapHsvComponents =
     std::min<std::size_t>(settings.m_colorMapHsvModifiers.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numColorMapHsvComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_colorMapHsvModifierIndices, component)) {
+      continue;
+    }
     imageSettings.setColormapHsvModfactors(
       static_cast<uint32_t>(component),
       settings.m_colorMapHsvModifiers.at(component));
@@ -633,11 +802,17 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const std::size_t numInterpolationComponents =
     std::min<std::size_t>(settings.m_interpolationModes.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numInterpolationComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_interpolationModeIndices, component)) {
+      continue;
+    }
     imageSettings.setInterpolationMode(static_cast<uint32_t>(component), settings.m_interpolationModes.at(component));
   }
   const std::size_t numForegroundLowComponents =
     std::min<std::size_t>(settings.m_foregroundThresholdLows.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numForegroundLowComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_foregroundThresholdLowIndices, component)) {
+      continue;
+    }
     imageSettings.setForegroundThresholdLow(
       static_cast<uint32_t>(component),
       settings.m_foregroundThresholdLows.at(component));
@@ -645,6 +820,9 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const std::size_t numForegroundHighComponents =
     std::min<std::size_t>(settings.m_foregroundThresholdHighs.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numForegroundHighComponents; ++component) {
+    if (!shouldApplySparseComponentValue(settings.m_foregroundThresholdHighIndices, component)) {
+      continue;
+    }
     imageSettings.setForegroundThresholdHigh(
       static_cast<uint32_t>(component),
       settings.m_foregroundThresholdHighs.at(component));
@@ -663,7 +841,9 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setEdgeMagnitude(settings.m_edgeMagnitude);
   imageSettings.setPixelEdgeScale(settings.m_pixelEdgeScale);
   imageSettings.setPixelEdgeThreshold(settings.m_pixelEdgeThreshold);
-  imageSettings.setEdgeColor(settings.m_edgeColor);
+  if (settings.m_hasEdgeColor) {
+    imageSettings.setEdgeColor(settings.m_edgeColor);
+  }
   imageSettings.setEdgeOpacity(settings.m_edgeOpacity);
   imageSettings.setUseDistanceMapForRaycasting(settings.m_useDistanceMapForRaycasting);
   imageSettings.setIsosurfacesVisible(settings.m_isosurfacesVisible);

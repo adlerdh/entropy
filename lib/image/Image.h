@@ -88,7 +88,8 @@ public:
 
   ~Image() = default;
 
-  /** @brief Save an image component to disk. If the image is successfully saved and a
+  /**
+   * @brief Save an image component to disk. If the image is successfully saved and a
    * new file name is provided, then the Image's file name is set to the new file name.
    * @param[in] component Component of the image to save
    * @param[in] newFileName Optional new file name at which to save the image
@@ -105,6 +106,14 @@ public:
   /// @brief Return true when this image owns pixel buffers that can be sampled or saved.
   bool hasPixelData() const;
 
+  /**
+   * @brief Recompute the settings that this image would have immediately after loading.
+   *
+   * Project snapshots use these settings as the per-image baseline so image-derived defaults, such
+   * as window/level and default multi-component rendering, do not have to be written to project JSON.
+   */
+  ImageSettings defaultSettings() const;
+
   /// @brief Build sorted per-component buffers used by quantile and histogram queries.
   /// @return True when sorted buffers were generated for the image's memory component type.
   bool generateSortedBuffers();
@@ -115,7 +124,8 @@ public:
   /// @brief Return the selected in-memory layout for multi-component pixel data.
   const MultiComponentBufferType& bufferType() const;
 
-  /** @brief Get a const void pointer to an owned raw buffer.
+  /**
+   * @brief Get a const void pointer to an owned raw buffer.
    * @param[in] component Raw buffer slot to get.
    * @param[in] timePoint Time frame whose first value should be returned.
    * @return Pointer to the raw buffer slot, or nullptr when the slot/time is invalid.
@@ -130,21 +140,24 @@ public:
   /// @brief Get a non-const void pointer to the raw buffer data of an image component.
   void* bufferAsVoid(uint32_t component, uint32_t timePoint = 0);
 
-  /** @brief Get a const void pointer to the sorted buffer data of an image component.
-   *  @param[in] component Image component to get
-   *  @note Ignores the \c MultiComponentBufferType setting, so that the
-   *  component must be in the range [0, header().numComponentsPerPixel() - 1]
+  /**
+   * @brief Get a const void pointer to the sorted buffer data of an image component.
+   * @param[in] component Image component to get
+   * @note Ignores the \c MultiComponentBufferType setting, so that the
+   * component must be in the range [0, header().numComponentsPerPixel() - 1]
    */
   const void* bufferSortedAsVoid(uint32_t component) const;
 
   /// @brief Get a non-const void pointer to the sorted buffer data of an image component.
   void* bufferSortedAsVoid(uint32_t component);
 
-  /// @brief Get a component value at a linear pixel index.
-  /// @tparam T Requested return type. The stored component value is cast to this type.
-  /// @param component Logical component index.
-  /// @param index Linear pixel index in x-fastest order.
-  /// @return The converted value, or std::nullopt for an invalid index/component/type.
+  /**
+   * @brief Get a component value at a linear pixel index.
+   * @tparam T Requested return type. The stored component value is cast to this type.
+   * @param component Logical component index.
+   * @param index Linear pixel index in x-fastest order.
+   * @return The converted value, or std::nullopt for an invalid index/component/type.
+   */
   template<typename T>
   std::optional<T> value(uint32_t component, std::size_t index, uint32_t timePoint = 0) const
   {
@@ -187,9 +200,11 @@ public:
     }
   }
 
-  /// @brief Get a component value at a 3D pixel index.
-  /// @tparam T Requested return type. The stored component value is cast to this type.
-  /// @return The converted value, or std::nullopt when the index is outside the image.
+  /**
+   * @brief Get a component value at a 3D pixel index.
+   * @tparam T Requested return type. The stored component value is cast to this type.
+   * @return The converted value, or std::nullopt when the index is outside the image.
+   */
   template<typename T>
   std::optional<T> value(uint32_t component, int i, int j, int k, uint32_t timePoint = 0) const
   {
@@ -208,13 +223,15 @@ public:
     return value<T>(component, index, timePoint);
   }
 
-  /// @brief Linearly sample a component at continuous 3D image coordinates.
-  ///
-  /// Coordinates are valid in the half-voxel-extended range [-0.5, N - 0.5]. Valid coordinates are
-  /// clamped to edge samples before interpolation so edge and corner samples remain well defined.
-  ///
-  /// @tparam T Requested return type.
-  /// @return The interpolated value, or std::nullopt when the coordinate/component cannot be read.
+  /**
+   * @brief Linearly sample a component at continuous 3D image coordinates.
+   *
+   * Coordinates are valid in the half-voxel-extended range [-0.5, N - 0.5]. Valid coordinates are
+   * clamped to edge samples before interpolation so edge and corner samples remain well defined.
+   *
+   * @tparam T Requested return type.
+   * @return The interpolated value, or std::nullopt when the coordinate/component cannot be read.
+   */
   template<typename T>
   std::optional<T> valueLinear(uint32_t comp, double i, double j, double k, uint32_t timePoint = 0) const
   {
@@ -330,9 +347,11 @@ public:
     return c;
   }
 
-  /// @brief Set a component value at a 3D pixel index.
-  /// @tparam T Input value type. The value is cast to the image memory component type.
-  /// @return True when the coordinate/component/type is valid and the value was written.
+  /**
+   * @brief Set a component value at a 3D pixel index.
+   * @tparam T Input value type. The value is cast to the image memory component type.
+   * @return True when the coordinate/component/type is valid and the value was written.
+   */
   template<typename T>
   bool setValue(uint32_t component, int i, int j, int k, T value)
   {

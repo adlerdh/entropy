@@ -1,6 +1,7 @@
 #include "windowing/LayoutSerialization.h"
 
 #include "layout/ImageIndexMapping.h"
+#include "layout/LayoutKindInfo.h"
 #include "layout/SyncGroupIndexMap.h"
 #include "logic/app/CrosshairsState.h"
 #include "logic/camera/Camera.h"
@@ -25,6 +26,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -158,6 +160,316 @@ void normalizeLightboxOffsetSpec(layout::ViewSpec& viewSpec, const layout::Layou
   viewSpec.m_absoluteOffset = 0.0f;
 }
 
+bool containsApprox(const std::vector<float>& values, float value)
+{
+  return std::any_of(values.begin(), values.end(), [value](float existing) {
+    return std::fabs(existing - value) < 1.0e-4f;
+  });
+}
+
+std::optional<std::pair<std::size_t, std::size_t>> regularGridDimensions(const Layout& layout)
+{
+  std::vector<float> leftEdges;
+  std::vector<float> bottomEdges;
+
+  for (const View* view : layout.orderedViews()) {
+    if (!view) {
+      continue;
+    }
+
+    const glm::vec4& viewport = view->windowClipViewport();
+    if (!containsApprox(leftEdges, viewport.x)) {
+      leftEdges.push_back(viewport.x);
+    }
+    if (!containsApprox(bottomEdges, viewport.y)) {
+      bottomEdges.push_back(viewport.y);
+    }
+  }
+
+  if (leftEdges.empty() || bottomEdges.empty()) {
+    return std::nullopt;
+  }
+
+  const std::size_t columns = leftEdges.size();
+  const std::size_t rows = bottomEdges.size();
+  return columns * rows == layout.orderedViewUids().size() ? std::optional{std::pair{columns, rows}} : std::nullopt;
+}
+
+std::optional<std::size_t> firstImageIndex(const layout::ImageSelectionSpec& selection)
+{
+  if (!selection.m_renderedImageIndices.empty()) {
+    return selection.m_renderedImageIndices.front();
+  }
+  return std::nullopt;
+}
+
+bool isOneUpLayoutSpec(const layout::LayoutSpec& layoutSpec)
+{
+  return static_cast<int>(LayoutKind::OneUp) == layoutSpec.m_kind;
+}
+
+layout::GridSpec gridSpecForLayout(const Layout& layout, const layout::LayoutSpec& layoutSpec)
+{
+  layout::GridSpec grid;
+  if (const auto dimensions = regularGridDimensions(layout)) {
+    grid.m_columns = dimensions->first;
+    grid.m_rows = dimensions->second;
+  }
+
+  grid.m_offsetViews = layoutSpec.m_isLightbox;
+  if (!isOneUpLayoutSpec(layoutSpec)) {
+    grid.m_imageIndex = firstImageIndex(layoutSpec.m_imageSelection);
+    if (!grid.m_imageIndex && !layoutSpec.m_preferredDefaultRenderedImages.empty()) {
+      grid.m_imageIndex = *layoutSpec.m_preferredDefaultRenderedImages.begin();
+    }
+  }
+  return grid;
+}
+
+layout::ImageSelectionSpec defaultMetricImageSelection(std::size_t imageCount)
+{
+  layout::ImageSelectionSpec selection;
+  if (imageCount > 0) {
+    selection.m_metricImageIndices.push_back(0);
+  }
+  if (imageCount > 1) {
+    selection.m_metricImageIndices.push_back(1);
+  }
+  return selection;
+}
+
+layout::ViewSpec expectedGridViewSpec(
+  const layout::LayoutSpec& layoutSpec,
+  const layout::GridSpec& grid,
+  std::size_t imageCount,
+  std::size_t index)
+{
+  layout::ViewSpec viewSpec;
+  const std::size_t column = index % grid.m_columns;
+  const std::size_t row = index / grid.m_columns;
+  const float width = 2.0f / static_cast<float>(grid.m_columns);
+  const float height = 2.0f / static_cast<float>(grid.m_rows);
+
+  viewSpec.m_left = -1.0f + static_cast<float>(column) * width;
+  viewSpec.m_bottom = -1.0f + static_cast<float>(row) * height;
+  viewSpec.m_width = width;
+  viewSpec.m_height = height;
+  viewSpec.m_viewType = layoutSpec.m_viewType;
+  viewSpec.m_renderMode = layoutSpec.m_renderMode;
+  viewSpec.m_intensityProjectionMode = layoutSpec.m_intensityProjectionMode;
+
+  viewSpec.m_offsetMode = 0;
+  viewSpec.m_offsetImageIndex =
+    isOneUpLayoutSpec(layoutSpec) ? std::nullopt : std::optional<std::size_t>{grid.m_imageIndex.value_or(0)};
+  if (grid.m_offsetViews) {
+    const int offsetStep = static_cast<int>(index) - static_cast<int>(grid.m_columns * grid.m_rows) / 2;
+    viewSpec.m_relativeOffsetSteps = grid.m_absoluteOffsetStep ? 0 : offsetStep;
+    viewSpec.m_absoluteOffset =
+      grid.m_absoluteOffsetStep ? static_cast<float>(offsetStep) * *grid.m_absoluteOffsetStep : 0.0f;
+    if (grid.m_absoluteOffsetStep) {
+      viewSpec.m_offsetMode = 2;
+    }
+    else if (grid.m_imageIndex && 0 != *grid.m_imageIndex) {
+      viewSpec.m_offsetMode = 1;
+    }
+  }
+
+  viewSpec.m_rotationSyncGroup = 0;
+  viewSpec.m_translationSyncGroup = 0;
+  viewSpec.m_zoomSyncGroup = 0;
+  viewSpec.m_rotationSyncMembershipGroup = 0;
+  viewSpec.m_translationSyncMembershipGroup = 0;
+  viewSpec.m_zoomSyncMembershipGroup = 0;
+
+  if (layoutSpec.m_isLightbox) {
+    viewSpec.m_defaultRenderAllImages = true;
+  }
+  else if (isOneUpLayoutSpec(layoutSpec)) {
+    viewSpec.m_preferredDefaultRenderedImages = layoutSpec.m_preferredDefaultRenderedImages;
+    viewSpec.m_defaultRenderAllImages = true;
+    viewSpec.m_imageSelection = layoutSpec.m_imageSelection;
+  }
+  else {
+    viewSpec.m_preferredDefaultRenderedImages = {index};
+    viewSpec.m_defaultRenderAllImages = false;
+    if (index < imageCount) {
+      viewSpec.m_imageSelection.m_renderedImageIndices = {index};
+    }
+    viewSpec.m_imageSelection.m_metricImageIndices = defaultMetricImageSelection(imageCount).m_metricImageIndices;
+  }
+
+  return viewSpec;
+}
+
+std::vector<layout::ViewSpec>
+expectedGridViewSpecs(const layout::LayoutSpec& layoutSpec, const layout::GridSpec& grid, std::size_t imageCount)
+{
+  std::vector<layout::ViewSpec> views;
+  views.reserve(grid.m_columns * grid.m_rows);
+  for (std::size_t index = 0; index < grid.m_columns * grid.m_rows; ++index) {
+    views.emplace_back(expectedGridViewSpec(layoutSpec, grid, imageCount, index));
+  }
+  return views;
+}
+
+std::vector<layout::ViewSpec>
+mergeGridViewOverrides(const layout::LayoutSpec& spec, const layout::GridSpec& grid, std::size_t imageCount)
+{
+  std::vector<layout::ViewSpec> views = expectedGridViewSpecs(spec, grid, imageCount);
+  for (std::size_t overrideIndex = 0; overrideIndex < spec.m_views.size(); ++overrideIndex) {
+    const auto viewIndex = spec.m_views.at(overrideIndex).m_index.value_or(overrideIndex);
+    if (viewIndex >= views.size()) {
+      spdlog::warn("Skipping serialized grid view override {} because the grid has {} views", viewIndex, views.size());
+      continue;
+    }
+
+    const layout::ViewSpec defaults;
+    const layout::ViewSpec& override = spec.m_views.at(overrideIndex);
+    layout::ViewSpec& view = views.at(viewIndex);
+
+    // Grid layouts derive their viewport from rows and columns. Every other field below is a sparse override:
+    // the default ViewSpec value means "keep the generated grid value".
+    if (override.m_viewType != defaults.m_viewType) {
+      view.m_viewType = override.m_viewType;
+    }
+    if (override.m_renderMode != defaults.m_renderMode) {
+      view.m_renderMode = override.m_renderMode;
+    }
+    if (override.m_intensityProjectionMode != defaults.m_intensityProjectionMode) {
+      view.m_intensityProjectionMode = override.m_intensityProjectionMode;
+    }
+    if (
+      override.m_offsetMode != defaults.m_offsetMode || override.m_absoluteOffset != defaults.m_absoluteOffset ||
+      override.m_relativeOffsetSteps != defaults.m_relativeOffsetSteps ||
+      override.m_offsetImageIndex != defaults.m_offsetImageIndex)
+    {
+      view.m_offsetMode = override.m_offsetMode;
+      view.m_absoluteOffset = override.m_absoluteOffset;
+      view.m_relativeOffsetSteps = override.m_relativeOffsetSteps;
+      view.m_offsetImageIndex = override.m_offsetImageIndex;
+    }
+    if (
+      override.m_rotationSyncGroup != defaults.m_rotationSyncGroup ||
+      override.m_translationSyncGroup != defaults.m_translationSyncGroup ||
+      override.m_zoomSyncGroup != defaults.m_zoomSyncGroup ||
+      override.m_rotationSyncMembershipGroup != defaults.m_rotationSyncMembershipGroup ||
+      override.m_translationSyncMembershipGroup != defaults.m_translationSyncMembershipGroup ||
+      override.m_zoomSyncMembershipGroup != defaults.m_zoomSyncMembershipGroup)
+    {
+      view.m_rotationSyncGroup = override.m_rotationSyncGroup;
+      view.m_translationSyncGroup = override.m_translationSyncGroup;
+      view.m_zoomSyncGroup = override.m_zoomSyncGroup;
+      view.m_rotationSyncMembershipGroup = override.m_rotationSyncMembershipGroup;
+      view.m_translationSyncMembershipGroup = override.m_translationSyncMembershipGroup;
+      view.m_zoomSyncMembershipGroup = override.m_zoomSyncMembershipGroup;
+    }
+    if (
+      override.m_preferredDefaultRenderedImages != defaults.m_preferredDefaultRenderedImages ||
+      override.m_defaultRenderAllImages != defaults.m_defaultRenderAllImages)
+    {
+      view.m_preferredDefaultRenderedImages = override.m_preferredDefaultRenderedImages;
+      view.m_defaultRenderAllImages = override.m_defaultRenderAllImages;
+    }
+    if (override.m_imageSelection != defaults.m_imageSelection) {
+      view.m_imageSelection = override.m_imageSelection;
+    }
+    if (
+      override.m_threeDProjectionType != defaults.m_threeDProjectionType ||
+      override.m_threeDOrbitTargetMode != defaults.m_threeDOrbitTargetMode ||
+      override.m_threeDCameraFollowsCrosshairs != defaults.m_threeDCameraFollowsCrosshairs ||
+      override.m_threeDPerspectiveZoom != defaults.m_threeDPerspectiveZoom ||
+      override.m_threeDOrthographicZoom != defaults.m_threeDOrthographicZoom)
+    {
+      view.m_threeDProjectionType = override.m_threeDProjectionType;
+      view.m_threeDOrbitTargetMode = override.m_threeDOrbitTargetMode;
+      view.m_threeDCameraFollowsCrosshairs = override.m_threeDCameraFollowsCrosshairs;
+      view.m_threeDPerspectiveZoom = override.m_threeDPerspectiveZoom;
+      view.m_threeDOrthographicZoom = override.m_threeDOrthographicZoom;
+    }
+  }
+  return views;
+}
+
+std::optional<layout::ViewSpec>
+gridViewOverride(const layout::ViewSpec& viewSpec, const layout::ViewSpec& expected, std::size_t index)
+{
+  layout::ViewSpec override;
+  bool hasOverride = false;
+
+  if (viewSpec.m_viewType != expected.m_viewType) {
+    override.m_viewType = viewSpec.m_viewType;
+    hasOverride = true;
+  }
+  if (viewSpec.m_renderMode != expected.m_renderMode) {
+    override.m_renderMode = viewSpec.m_renderMode;
+    hasOverride = true;
+  }
+  if (viewSpec.m_intensityProjectionMode != expected.m_intensityProjectionMode) {
+    override.m_intensityProjectionMode = viewSpec.m_intensityProjectionMode;
+    hasOverride = true;
+  }
+  if (
+    viewSpec.m_offsetMode != expected.m_offsetMode || viewSpec.m_absoluteOffset != expected.m_absoluteOffset ||
+    viewSpec.m_relativeOffsetSteps != expected.m_relativeOffsetSteps ||
+    viewSpec.m_offsetImageIndex != expected.m_offsetImageIndex)
+  {
+    override.m_offsetMode = viewSpec.m_offsetMode;
+    override.m_absoluteOffset = viewSpec.m_absoluteOffset;
+    override.m_relativeOffsetSteps = viewSpec.m_relativeOffsetSteps;
+    override.m_offsetImageIndex = viewSpec.m_offsetImageIndex;
+    hasOverride = true;
+  }
+  if (
+    viewSpec.m_rotationSyncGroup != expected.m_rotationSyncGroup ||
+    viewSpec.m_translationSyncGroup != expected.m_translationSyncGroup ||
+    viewSpec.m_zoomSyncGroup != expected.m_zoomSyncGroup ||
+    viewSpec.m_rotationSyncMembershipGroup != expected.m_rotationSyncMembershipGroup ||
+    viewSpec.m_translationSyncMembershipGroup != expected.m_translationSyncMembershipGroup ||
+    viewSpec.m_zoomSyncMembershipGroup != expected.m_zoomSyncMembershipGroup)
+  {
+    override.m_rotationSyncGroup = viewSpec.m_rotationSyncGroup;
+    override.m_translationSyncGroup = viewSpec.m_translationSyncGroup;
+    override.m_zoomSyncGroup = viewSpec.m_zoomSyncGroup;
+    override.m_rotationSyncMembershipGroup = viewSpec.m_rotationSyncMembershipGroup;
+    override.m_translationSyncMembershipGroup = viewSpec.m_translationSyncMembershipGroup;
+    override.m_zoomSyncMembershipGroup = viewSpec.m_zoomSyncMembershipGroup;
+    hasOverride = true;
+  }
+  if (
+    viewSpec.m_preferredDefaultRenderedImages != expected.m_preferredDefaultRenderedImages ||
+    viewSpec.m_defaultRenderAllImages != expected.m_defaultRenderAllImages)
+  {
+    override.m_preferredDefaultRenderedImages = viewSpec.m_preferredDefaultRenderedImages;
+    override.m_defaultRenderAllImages = viewSpec.m_defaultRenderAllImages;
+    hasOverride = true;
+  }
+  if (viewSpec.m_imageSelection != expected.m_imageSelection) {
+    override.m_imageSelection = viewSpec.m_imageSelection;
+    hasOverride = true;
+  }
+  if (
+    viewSpec.m_threeDProjectionType != expected.m_threeDProjectionType ||
+    viewSpec.m_threeDOrbitTargetMode != expected.m_threeDOrbitTargetMode ||
+    viewSpec.m_threeDCameraFollowsCrosshairs != expected.m_threeDCameraFollowsCrosshairs ||
+    viewSpec.m_threeDPerspectiveZoom != expected.m_threeDPerspectiveZoom ||
+    viewSpec.m_threeDOrthographicZoom != expected.m_threeDOrthographicZoom)
+  {
+    override.m_threeDProjectionType = viewSpec.m_threeDProjectionType;
+    override.m_threeDOrbitTargetMode = viewSpec.m_threeDOrbitTargetMode;
+    override.m_threeDCameraFollowsCrosshairs = viewSpec.m_threeDCameraFollowsCrosshairs;
+    override.m_threeDPerspectiveZoom = viewSpec.m_threeDPerspectiveZoom;
+    override.m_threeDOrthographicZoom = viewSpec.m_threeDOrthographicZoom;
+    hasOverride = true;
+  }
+
+  if (!hasOverride) {
+    return std::nullopt;
+  }
+
+  override.m_index = index;
+  return override;
+}
+
 } // namespace
 
 namespace layout
@@ -229,6 +541,24 @@ LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedIma
     layoutSpec.m_views.emplace_back(std::move(viewSpec));
   }
 
+  const auto dimensions = regularGridDimensions(layout);
+  if (dimensions && layout::canUseRegularGridRecipe(layout.kind())) {
+    layoutSpec.m_grid = gridSpecForLayout(layout, layoutSpec);
+    const auto expectedViews = expectedGridViewSpecs(layoutSpec, *layoutSpec.m_grid, orderedImageUids.size());
+    std::vector<ViewSpec> overrides;
+    overrides.reserve(layoutSpec.m_views.size());
+    for (std::size_t viewIndex = 0; viewIndex < layoutSpec.m_views.size() && viewIndex < expectedViews.size();
+         ++viewIndex)
+    {
+      if (
+        auto viewOverride = gridViewOverride(layoutSpec.m_views.at(viewIndex), expectedViews.at(viewIndex), viewIndex))
+      {
+        overrides.emplace_back(std::move(*viewOverride));
+      }
+    }
+    layoutSpec.m_views = std::move(overrides);
+  }
+
   return layoutSpec;
 }
 
@@ -266,7 +596,9 @@ Layout instantiateLayoutSpec(
   SyncGroupIndexMap translationGroups;
   SyncGroupIndexMap zoomGroups;
 
-  for (const auto& viewSpec : spec.m_views) {
+  const std::vector<ViewSpec> views =
+    spec.m_grid ? mergeGridViewOverrides(spec, *spec.m_grid, orderedImageUids.size()) : spec.m_views;
+  for (const auto& viewSpec : views) {
     auto normalizedViewSpec = viewSpec;
     normalizeLightboxOffsetSpec(normalizedViewSpec, spec);
 
@@ -369,7 +701,7 @@ std::vector<Layout> instantiateLayoutSpecs(
   layouts.reserve(specs.size());
 
   for (const auto& spec : specs) {
-    if (spec.m_views.empty()) {
+    if (spec.m_views.empty() && !spec.m_grid) {
       spdlog::warn("Skipping serialized layout with no views");
       continue;
     }

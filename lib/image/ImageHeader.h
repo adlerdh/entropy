@@ -44,13 +44,16 @@ public:
 
   /// @brief Apply overrides to the original header geometry and recompute derived geometry.
   void setHeaderOverrides(const ImageHeaderOverrides& overrides);
+
   /// @brief Get the current header override state.
   const ImageHeaderOverrides& getHeaderOverrides() const;
 
   /// @brief Apply user-provided physical geometry and recompute derived geometry.
   void setUserSpatialMetadata(const ImageSpatialMetadata& metadata);
+
   /// @brief Clear user-provided physical geometry and return to IO metadata plus normal header overrides.
   void clearUserSpatialMetadata();
+
   /// @brief Return user-provided physical geometry, when present.
   const std::optional<ImageSpatialMetadata>& userSpatialMetadata() const;
 
@@ -59,16 +62,19 @@ public:
 
   /// @brief Return whether the source image exists on disk.
   bool existsOnDisk() const;
+
   /// @brief Set whether the source image exists on disk.
   void setExistsOnDisk(bool);
 
   /// @brief Get the source file name.
   const std::filesystem::path& fileName() const;
+
   /// @brief Set the source file name.
   void setFileName(std::filesystem::path fileName);
 
   /// @brief Get number of components per pixel in memory.
   uint32_t numComponentsPerPixel() const;
+
   /// @brief Get total number of pixels.
   uint64_t numPixels() const;
 
@@ -77,25 +83,31 @@ public:
 
   /// @brief Get image byte size in the source file representation.
   uint64_t fileImageSizeInBytes() const;
+
   /// @brief Get image byte size in the loaded memory representation.
   uint64_t memoryImageSizeInBytes() const;
 
   /// @brief Get logical pixel type.
   PixelType pixelType() const;
+
   /// @brief Get logical pixel type as a readable string.
   std::string pixelTypeAsString() const;
 
   /// @brief Get source file component type.
   ComponentType fileComponentType() const;
+
   /// @brief Get source file component type as a readable string.
   std::string fileComponentTypeAsString() const;
+
   /// @brief Get source file component size in bytes.
   uint32_t fileComponentSizeInBytes() const;
 
   /// @brief Get loaded memory component type.
   ComponentType memoryComponentType() const;
+
   /// @brief Get loaded memory component type as a readable string.
   std::string memoryComponentTypeAsString() const;
+
   /// @brief Get loaded memory component size in bytes.
   uint32_t memoryComponentSizeInBytes() const;
 
@@ -104,10 +116,13 @@ public:
 
   /// @brief Get image dimensions in Entropy's 3D pixel model.
   const glm::uvec3& pixelDimensions() const;
+
   /// @brief Get origin in physical subject space after overrides.
   const glm::vec3& origin() const;
+
   /// @brief Get pixel spacing in physical subject space after overrides.
   const glm::vec3& spacing() const;
+
   /// @brief Get axis directions in physical subject space after overrides, stored column-major.
   const glm::mat3& directions() const;
 

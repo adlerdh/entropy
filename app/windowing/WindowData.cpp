@@ -894,6 +894,98 @@ std::optional<Layout> createLightboxLayoutForImage(
   return std::optional<Layout>{std::move(layout)};
 }
 
+std::vector<Layout> createGeneratedManagedLayouts(
+  const AppData& appData,
+  const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage)
+{
+  std::vector<Layout> generatedLayouts;
+  generatedLayouts.reserve(5 + 3 * appData.numImages());
+
+  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const std::vector<ViewType> managedViewTypes =
+    managedSliceViewTypes(appData.numImages(), dicomNativeViewTypesByImage);
+
+  for (const ViewType viewType : managedViewTypes) {
+    generatedLayouts.emplace_back(
+      createGridLayout(viewType, 1, 1, false, false, crosshairs, viewAlignment, viewConvention, 0, std::nullopt));
+    generatedLayouts.back().setKind(oneUpLayoutKindForViewType(viewType));
+  }
+
+  if (orderedImageUids.size() > 1) {
+    if (const auto& refUid = appData.refImageUid()) {
+      for (const ViewType viewType : managedViewTypes) {
+        generatedLayouts.emplace_back(createGridLayout(
+          viewType,
+          orderedImageUids.size(),
+          1,
+          false,
+          false,
+          crosshairs,
+          viewAlignment,
+          viewConvention,
+          0,
+          refUid));
+        generatedLayouts.back().setKind(gridLayoutKindForViewType(viewType));
+      }
+    }
+  }
+
+  generatedLayouts.emplace_back(
+    createOrthogonalByImageLayout(orderedImageUids.size(), crosshairs, viewAlignment, viewConvention));
+
+  for (const auto& imageUid : orderedImageUids) {
+    const ViewType viewType = managedLightboxViewTypeForImage(imageUid, dicomNativeViewTypesByImage);
+    if (
+      auto layout =
+        createLightboxLayoutForImage(appData, crosshairs, viewAlignment, viewConvention, viewType, imageUid))
+    {
+      generatedLayouts.emplace_back(std::move(*layout));
+    }
+  }
+
+  return generatedLayouts;
+}
+
+std::vector<Layout> createDefaultProjectLayouts(
+  const AppData& appData,
+  const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage)
+{
+  std::vector<Layout> generatedLayouts =
+    createGeneratedManagedLayouts(appData, crosshairs, viewAlignment, viewConvention, dicomNativeViewTypesByImage);
+
+  std::vector<Layout> layouts;
+  layouts.reserve(generatedLayouts.size() + 2);
+
+  std::vector<bool> isOneUpGeneratedLayout;
+  isOneUpGeneratedLayout.reserve(generatedLayouts.size());
+  for (const auto& layout : generatedLayouts) {
+    isOneUpGeneratedLayout.push_back(isOneUpLayoutKind(layout.kind()));
+  }
+
+  for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
+    if (isOneUpGeneratedLayout.at(i)) {
+      layouts.emplace_back(std::move(generatedLayouts.at(i)));
+    }
+  }
+
+  layouts.emplace_back(createThreeUpLayout(crosshairs, viewAlignment, viewConvention));
+  layouts.emplace_back(createFourUpLayout(crosshairs, viewAlignment, viewConvention));
+
+  for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
+    if (!isOneUpGeneratedLayout.at(i)) {
+      layouts.emplace_back(std::move(generatedLayouts.at(i)));
+    }
+  }
+
+  return layouts;
+}
+
 std::vector<ViewCameraSnapshot> createManagedLayoutCameraSnapshots(const std::vector<Layout>& layouts)
 {
   std::vector<ViewCameraSnapshot> snapshots;
@@ -1226,50 +1318,13 @@ void WindowData::reconcileImageDependentLayouts(
       [](const Layout& layout) { return layout::isImageDependentManagedLayoutKind(layout.kind()); }),
     m_layouts.end());
 
-  std::vector<Layout> generatedLayouts;
-  generatedLayouts.reserve(5 + 3 * appData.numImages());
-
+  std::vector<Layout> generatedLayouts = createGeneratedManagedLayouts(
+    appData,
+    m_crosshairs,
+    m_viewAlignment,
+    m_viewConvention,
+    dicomNativeViewTypesByImage);
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
-  const std::vector<ViewType> managedViewTypes =
-    managedSliceViewTypes(appData.numImages(), dicomNativeViewTypesByImage);
-
-  for (const ViewType viewType : managedViewTypes) {
-    generatedLayouts.emplace_back(
-      createGridLayout(viewType, 1, 1, false, false, m_crosshairs, m_viewAlignment, m_viewConvention, 0, std::nullopt));
-    generatedLayouts.back().setKind(oneUpLayoutKindForViewType(viewType));
-  }
-
-  if (orderedImageUids.size() > 1) {
-    if (const auto& refUid = appData.refImageUid()) {
-      for (const ViewType viewType : managedViewTypes) {
-        generatedLayouts.emplace_back(createGridLayout(
-          viewType,
-          orderedImageUids.size(),
-          1,
-          false,
-          false,
-          m_crosshairs,
-          m_viewAlignment,
-          m_viewConvention,
-          0,
-          refUid));
-        generatedLayouts.back().setKind(gridLayoutKindForViewType(viewType));
-      }
-    }
-  }
-
-  generatedLayouts.emplace_back(
-    createOrthogonalByImageLayout(orderedImageUids.size(), m_crosshairs, m_viewAlignment, m_viewConvention));
-
-  for (const auto& imageUid : orderedImageUids) {
-    const ViewType viewType = managedLightboxViewTypeForImage(imageUid, dicomNativeViewTypesByImage);
-    if (
-      auto layout =
-        createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, imageUid))
-    {
-      generatedLayouts.emplace_back(std::move(*layout));
-    }
-  }
 
   for (auto& layout : generatedLayouts) {
     setDefaultRenderedImagesForLayout(layout, appData);
@@ -1293,9 +1348,15 @@ void WindowData::reconcileImageDependentLayouts(
   std::vector<Layout> orderedLayouts;
   orderedLayouts.reserve(m_layouts.size() + generatedLayouts.size());
 
-  for (auto& layout : generatedLayouts) {
-    if (isOneUpLayoutKind(layout.kind())) {
-      orderedLayouts.emplace_back(std::move(layout));
+  std::vector<bool> isOneUpGeneratedLayout;
+  isOneUpGeneratedLayout.reserve(generatedLayouts.size());
+  for (const auto& layout : generatedLayouts) {
+    isOneUpGeneratedLayout.push_back(isOneUpLayoutKind(layout.kind()));
+  }
+
+  for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
+    if (isOneUpGeneratedLayout.at(i)) {
+      orderedLayouts.emplace_back(std::move(generatedLayouts.at(i)));
     }
   }
 
@@ -1304,9 +1365,9 @@ void WindowData::reconcileImageDependentLayouts(
     std::make_move_iterator(m_layouts.begin()),
     std::make_move_iterator(m_layouts.begin() + static_cast<std::ptrdiff_t>(fixedPrefixLength)));
 
-  for (auto& layout : generatedLayouts) {
-    if (!isOneUpLayoutKind(layout.kind())) {
-      orderedLayouts.emplace_back(std::move(layout));
+  for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
+    if (!isOneUpGeneratedLayout.at(i)) {
+      orderedLayouts.emplace_back(std::move(generatedLayouts.at(i)));
     }
   }
 
@@ -1333,6 +1394,32 @@ std::vector<layout::LayoutSpec> WindowData::createProjectLayoutSnapshots(const u
   return layout::createLayoutSpecs(m_layouts, orderedImageUids);
 }
 
+std::vector<layout::LayoutSpec> WindowData::createDefaultProjectLayoutSnapshots(
+  const AppData& appData,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage) const
+{
+  std::vector<Layout> layouts =
+    createDefaultProjectLayouts(appData, m_crosshairs, m_viewAlignment, m_viewConvention, dicomNativeViewTypesByImage);
+  for (auto& layout : layouts) {
+    setDefaultRenderedImagesForLayout(layout, appData);
+  }
+
+  return layout::createLayoutSpecs(layouts, appData.imageUidsOrdered());
+}
+
+std::size_t WindowData::defaultProjectLayoutIndex(
+  const AppData& appData,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage) const
+{
+  std::vector<Layout> layouts =
+    createDefaultProjectLayouts(appData, m_crosshairs, m_viewAlignment, m_viewConvention, dicomNativeViewTypesByImage);
+  for (auto& layout : layouts) {
+    setDefaultRenderedImagesForLayout(layout, appData);
+  }
+
+  return defaultLayoutIndexForImages(layouts, appData);
+}
+
 bool WindowData::applyProjectLayoutSnapshots(
   const std::vector<layout::LayoutSpec>& layouts,
   const uuid_range_t& orderedImageUids,
@@ -1351,6 +1438,72 @@ bool WindowData::applyProjectLayoutSnapshots(
 
   m_layouts = std::move(restoredLayouts);
   m_currentLayout = (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) ? *currentLayoutIndex : 0;
+  m_activeViewUid = std::nullopt;
+  updateAllViews();
+  return true;
+}
+
+bool WindowData::appendProjectLayoutSnapshots(
+  const std::vector<layout::LayoutSpec>& layouts,
+  const uuid_range_t& orderedImageUids,
+  std::optional<std::size_t> currentLayoutIndex)
+{
+  if (layouts.empty()) {
+    return false;
+  }
+
+  std::vector<Layout> restoredLayouts =
+    layout::instantiateLayoutSpecs(layouts, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
+  if (restoredLayouts.empty()) {
+    return false;
+  }
+
+  const std::vector<layout::LayoutSpec> existingLayouts = layout::createLayoutSpecs(m_layouts, orderedImageUids);
+  const std::vector<layout::LayoutSpec> restoredLayoutSpecs =
+    layout::createLayoutSpecs(restoredLayouts, orderedImageUids);
+  std::size_t firstProjectLayoutIndex = 0;
+  while (firstProjectLayoutIndex < restoredLayoutSpecs.size() && firstProjectLayoutIndex < existingLayouts.size() &&
+         restoredLayoutSpecs.at(firstProjectLayoutIndex) == existingLayouts.at(firstProjectLayoutIndex))
+  {
+    ++firstProjectLayoutIndex;
+  }
+
+  if (firstProjectLayoutIndex == restoredLayouts.size()) {
+    if (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) {
+      m_currentLayout = *currentLayoutIndex;
+      updateAllViews();
+    }
+    return true;
+  }
+
+  m_layouts.insert(
+    m_layouts.end(),
+    std::make_move_iterator(restoredLayouts.begin() + static_cast<std::ptrdiff_t>(firstProjectLayoutIndex)),
+    std::make_move_iterator(restoredLayouts.end()));
+  if (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) {
+    m_currentLayout = *currentLayoutIndex;
+  }
+  m_activeViewUid = std::nullopt;
+  updateAllViews();
+  return true;
+}
+
+bool WindowData::replaceProjectLayoutSnapshot(
+  const std::size_t index,
+  const layout::LayoutSpec& layout,
+  const uuid_range_t& orderedImageUids)
+{
+  if (index >= m_layouts.size()) {
+    return false;
+  }
+
+  std::vector<Layout> restoredLayouts =
+    layout::instantiateLayoutSpecs({layout}, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
+  if (restoredLayouts.empty()) {
+    return false;
+  }
+
+  m_layouts.at(index).replaceContentsPreservingUid(std::move(restoredLayouts.front()));
   m_activeViewUid = std::nullopt;
   updateAllViews();
   return true;
@@ -1399,7 +1552,7 @@ void WindowData::resetToThreeUpLayout()
   setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
 }
 
-void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData)
+void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData) const
 {
   static constexpr bool s_filterAgainstDefaults = true;
 

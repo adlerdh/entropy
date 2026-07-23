@@ -3,6 +3,8 @@
 #include "image/ImageSettings.h"
 #include "logic/serialization/ProjectSerialization.h"
 
+#include <optional>
+
 class AppData;
 class Image;
 
@@ -19,9 +21,10 @@ namespace project_snapshot
 /**
  * @brief Build serialized image settings from the runtime image state.
  * @param image Image whose display settings should be serialized.
+ * @param defaultBorderColor Optional image-order default color used to omit unchanged generated colors.
  * @return Project image settings suitable for project JSON serialization.
  */
-serialize::ImageSettings imageSettings(const Image& image);
+serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::vec3> defaultBorderColor = std::nullopt);
 
 /**
  * @brief Apply serialized image settings to a loaded image.

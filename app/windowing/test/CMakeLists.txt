@@ -4,8 +4,11 @@ add_executable(TestWindowing
 
 target_link_libraries(TestWindowing PRIVATE
   Catch2::Catch2WithMain
+  Entropy::Common
+  Entropy::Image
   Entropy::Layout
   Entropy::Viewer
+  spdlog::spdlog
   nlohmann_json::nlohmann_json
   entropy_warnings
 )

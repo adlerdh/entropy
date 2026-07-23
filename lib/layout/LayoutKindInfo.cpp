@@ -54,6 +54,23 @@ bool isFixedManagedLayoutKind(LayoutKind kind)
   return false;
 }
 
+bool canUseRegularGridRecipe(LayoutKind kind)
+{
+  switch (kind) {
+    case LayoutKind::Custom:
+    case LayoutKind::OneUp:
+    case LayoutKind::MultiImageGrid:
+    case LayoutKind::AxCorSagByImage:
+    case LayoutKind::Lightbox:
+      return true;
+    case LayoutKind::FourUp:
+    case LayoutKind::ThreeUp:
+    case LayoutKind::NumElements:
+      return false;
+  }
+  return false;
+}
+
 LayoutKind lightboxLayoutKindForViewType(ViewType viewType)
 {
   switch (viewType) {

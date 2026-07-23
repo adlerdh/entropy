@@ -31,17 +31,17 @@ them following the "superbuild" pattern:
 ```sh
 BUILD_TYPE=release # or debug
 
-#Dependencies
+# Dependencies
 cmake --preset deps-${BUILD_TYPE}
 cmake --build --preset deps-${
   BUILD_TYPE} --parallel
 
-#Application
+# Application
 cmake --preset app-${BUILD_TYPE}
 cmake --build --preset app-${
   BUILD_TYPE} --parallel
 
-#Unit tests
+# Unit tests
 ctest --test-dir build-${
   BUILD_TYPE} --parallel 8 --output-on-failure
 ```
@@ -257,7 +257,8 @@ One typical workflow is to load a reference image and other images to compare ag
 5. Use image visibility, opacity, comparison modes, and the opacity mixer to compare images.
 6. Use the voxel inspector to verify coordinates and sampled values.
 7. Add segmentations, annotations, landmarks, affine transformations, or warp fields as needed.
-8. Save the work as an Entropy JSON project file. This file will persist all project images, properties, and settings.
+8. Save the work as an Entropy JSON project file. This file will persist the project image list, derived data,
+   transformations, layouts, and non-default project settings.
 
 ### Command Line
 
@@ -285,8 +286,9 @@ reference.
 
 Entropy project files preserve all state needed to reopen a review, except for the image data referenced on disk.
 They include a reference image, additional images, segmentations, landmarks, annotations, transformations, layouts, and
-presentation settings. Image entries are stored in `images`; the first entry is the reference image. Project-wide
-presentation settings are grouped under `settings`. Minimal example:
+presentation settings. Default values are omitted, so missing settings should be interpreted as Entropy defaults. Image
+entries are stored in `images`; the first entry is the reference image. Project-wide presentation settings are grouped
+under `settings`. Minimal example:
 
 ```json
 {

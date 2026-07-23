@@ -62,6 +62,19 @@ TEST_CASE("layout kind fixed managed classification covers initial layouts", "[l
   CHECK_FALSE(layout::isFixedManagedLayoutKind(LayoutKind::NumElements));
 }
 
+TEST_CASE("regular grid recipes are only used when they preserve layout view order", "[layout][layout_kind]")
+{
+  CHECK(layout::canUseRegularGridRecipe(LayoutKind::Custom));
+  CHECK(layout::canUseRegularGridRecipe(LayoutKind::OneUp));
+  CHECK(layout::canUseRegularGridRecipe(LayoutKind::MultiImageGrid));
+  CHECK(layout::canUseRegularGridRecipe(LayoutKind::AxCorSagByImage));
+  CHECK(layout::canUseRegularGridRecipe(LayoutKind::Lightbox));
+
+  CHECK_FALSE(layout::canUseRegularGridRecipe(LayoutKind::FourUp));
+  CHECK_FALSE(layout::canUseRegularGridRecipe(LayoutKind::ThreeUp));
+  CHECK_FALSE(layout::canUseRegularGridRecipe(LayoutKind::NumElements));
+}
+
 TEST_CASE("lightbox layout kind follows supported slice view type", "[layout][layout_kind]")
 {
   CHECK(layout::lightboxLayoutKindForViewType(ViewType::Axial) == LayoutKind::Lightbox);

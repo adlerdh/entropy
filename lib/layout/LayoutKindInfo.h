@@ -30,6 +30,13 @@ bool isImageDependentManagedLayoutKind(LayoutKind kind);
 bool isFixedManagedLayoutKind(LayoutKind kind);
 
 /**
+ * @brief Whether a layout kind can be losslessly serialized as a row-major regular grid.
+ * @param kind Layout kind to classify.
+ * @return True when a grid recipe preserves the semantic view order of the layout.
+ */
+bool canUseRegularGridRecipe(LayoutKind kind);
+
+/**
  * @brief Managed lightbox layout kind for a slice view type.
  * @param viewType View type used by the lightbox.
  * @return Axial, coronal, sagittal, or custom layout kind.

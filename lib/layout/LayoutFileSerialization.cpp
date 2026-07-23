@@ -144,8 +144,10 @@ bool save(const LayoutFile& file, const std::filesystem::path& fileName)
   nlohmann::json json{
     {"format", k_layoutFileFormat},
     {"version", {{"major", k_layoutFileVersion}, {"minor", 0}}},
-    {"currentLayout", file.m_currentLayoutIndex ? nlohmann::json(*file.m_currentLayoutIndex) : nlohmann::json(nullptr)},
     {"layouts", file.m_layouts}};
+  if (file.m_currentLayoutIndex) {
+    json["currentLayout"] = *file.m_currentLayoutIndex;
+  }
 
   std::ofstream out(fileName);
   if (!out) {

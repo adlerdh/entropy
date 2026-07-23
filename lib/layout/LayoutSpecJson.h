@@ -23,6 +23,21 @@ void to_json(nlohmann::json& j, const ImageSelectionSpec& selection);
 void from_json(const nlohmann::json& j, ImageSelectionSpec& selection);
 
 /**
+ * @brief Serialize a compact regular-grid layout descriptor to JSON.
+ * @param j Output JSON value.
+ * @param grid Grid descriptor to serialize.
+ */
+void to_json(nlohmann::json& j, const GridSpec& grid);
+
+/**
+ * @brief Deserialize a compact regular-grid layout descriptor from JSON.
+ * @param j Input JSON value.
+ * @param grid Output grid descriptor.
+ * @throws nlohmann::json::exception If `j` contains incompatible field types.
+ */
+void from_json(const nlohmann::json& j, GridSpec& grid);
+
+/**
  * @brief Serialize one view specification to JSON.
  * @param j Output JSON value.
  * @param view View specification to serialize.

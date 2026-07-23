@@ -139,22 +139,26 @@ public:
   /// @brief Get the interpolation mode used for sampling this color map.
   InterpolationMode interpolationMode() const;
 
-  /// @brief Load a color map from CSV text.
-  ///
-  /// The first three lines are the brief name, technical name, and description. Each remaining line
-  /// must contain either RGB or RGBA floating point components. RGB rows are promoted to alpha 1.
-  /// Header text is sanitized to alphanumeric characters plus spaces, '-', '_', '(' and ')'.
-  ///
-  /// @return A color map on success, or std::nullopt when metadata or color rows are invalid.
+  /**
+   * @brief Load a color map from CSV text.
+   *
+   * The first three lines are the brief name, technical name, and description. Each remaining line
+   * must contain either RGB or RGBA floating point components. RGB rows are promoted to alpha 1.
+   * Header text is sanitized to alphanumeric characters plus spaces, '-', '_', '(' and ')'.
+   *
+   * @return A color map on success, or std::nullopt when metadata or color rows are invalid.
+   */
   static std::optional<ImageColorMap> loadImageColorMap(std::istringstream& csv);
 
-  /// @brief Create a linear color map between two endpoint colors.
-  /// @param startColor First color-table entry.
-  /// @param endColor Last color-table entry.
-  /// @param numSteps Requested number of color-table entries. Values less than 2 are promoted to 2.
-  /// @param briefName Short user-facing name.
-  /// @param description Descriptive text.
-  /// @param technicalName Stable technical name.
+  /**
+   * @brief Create a linear color map between two endpoint colors.
+   * @param startColor First color-table entry.
+   * @param endColor Last color-table entry.
+   * @param numSteps Requested number of color-table entries. Values less than 2 are promoted to 2.
+   * @param briefName Short user-facing name.
+   * @param description Descriptive text.
+   * @param technicalName Stable technical name.
+   */
   static ImageColorMap createLinearImageColorMap(
     const glm::vec4& startColor,
     const glm::vec4& endColor,

@@ -18,13 +18,13 @@ namespace math
 {
 
 /**
- * @brief generateRandomHsvSamples
- * @param numSamples Number of colors to generate
- * @param hueMinMax Min and max hue
- * @param satMinMax Min and max saturation
- * @param valMinMax Min and max value/intensity
- * @param seed
- * @return Vector of colors in HSV format
+ * @brief Generate random HSV color samples inside the requested ranges.
+ * @param numSamples Number of colors to generate.
+ * @param hueMinMax Inclusive hue range.
+ * @param satMinMax Inclusive saturation range.
+ * @param valMinMax Inclusive value range.
+ * @param seed Optional deterministic random seed.
+ * @return Vector of HSV colors.
  */
 std::vector<glm::vec3> generateRandomHsvSamples(
   size_t numSamples,
@@ -34,23 +34,19 @@ std::vector<glm::vec3> generateRandomHsvSamples(
   const std::optional<uint32_t>& seed);
 
 /**
- * @brief Compute dimensions of image in Subject space
- *
- * @param[in] pixelDimensions Number of pixels per image dimensions
- * @param[in] pixelSpacing Pixel spacing in Subject space
- *
- * @return Vector of image dimensions in Subject space
+ * @brief Compute physical image dimensions in subject space.
+ * @param pixelDimensions Number of pixels along each image axis.
+ * @param pixelSpacing Pixel spacing along each image axis, in subject-space units.
+ * @return Physical image dimensions in subject-space units.
  */
 glm::dvec3 computeSubjectImageDimensions(const glm::u64vec3& pixelDimensions, const glm::dvec3& pixelSpacing);
 
 /**
  * @brief Compute transformation from image Pixel space to Subject space.
- *
- * @param[in] directions Directions of image Pixel axes in Subject space
- * @param[in] pixelSpacing Pixel spacing in Subject space
- * @param[in] origin Image origin in Subject space
- *
- * @return 4x4 matrix transforming image Pixel to Subject space
+ * @param directions Direction cosine matrix whose columns are image axis directions in subject space.
+ * @param pixelSpacing Pixel spacing along each image axis, in subject-space units.
+ * @param origin Image origin in subject space.
+ * @return Matrix transforming image pixel coordinates to subject coordinates.
  */
 glm::dmat4 computeImagePixelToSubjectTransformation(
   const glm::dmat3& directions,
@@ -58,34 +54,36 @@ glm::dmat4 computeImagePixelToSubjectTransformation(
   const glm::dvec3& origin);
 
 /**
- * @brief Compute transformation from image Pixel space, with coordinates (i, j, k) representing
- * pixel indices in [0, N-1] range,  to image Texture coordinates (s, t, p) in [1/(2N), 1 - 1/(2N)]
- * range
+ * @brief Compute the transform from image pixel coordinates to normalized texture coordinates.
+ * @param pixelDimensions Number of pixels along each image axis.
+ * @return Matrix transforming pixel coordinates to texture coordinates.
  *
- * @param[in] pixelDimensions Number of pixels per image dimensions
- *
- * @return 4x4 matrix transforming image Pixel to Texture space
+ * Pixel coordinates (i, j, k) in [0, N - 1] map to texture coordinates (s, t, p) in
+ * [1 / (2N), 1 - 1 / (2N)], so integer pixel coordinates sample texel centers.
  */
 glm::dmat4 computeImagePixelToTextureTransformation(const glm::u64vec3& pixelDimensions);
 
 /**
- * @brief computeInvPixelDimensions
- * @param pixelDimensions
- * @return
+ * @brief Compute reciprocal pixel dimensions as floats.
+ * @param pixelDimensions Number of pixels along each image axis.
+ * @return Reciprocal dimensions, with zero returned for zero-sized axes.
  */
 glm::vec3 computeInvPixelDimensions(const glm::u64vec3& pixelDimensions);
 
+/**
+ * @brief Compute the corner coordinates of an image pixel-space axis-aligned bounding box.
+ * @param pixelDims Number of pixels along each image axis.
+ * @return Eight pixel-space corners spanning the image voxel-edge bounds.
+ */
 std::array<glm::vec3, 8> computeImagePixelAABBoxCorners(const glm::u64vec3& pixelDims);
 
 /**
  * @brief Compute the bounding box of the image in physical Subject space.
- *
- * @param[in] pixelDimensions Number of pixels per image dimension
- * @param[in] directions Direction cosine matrix of image Pixel axes in Subject space
- * @param[in] pixelSpacing Pixel spacing in Subject space
- * @param[in] origin Image origin in Subject space
- *
- * @return Array of corners of the image bounding box in Subject space
+ * @param pixelDims Number of pixels along each image axis.
+ * @param directions Direction cosine matrix whose columns are image axis directions in subject space.
+ * @param pixelSpacing Pixel spacing along each image axis, in subject-space units.
+ * @param origin Image origin in subject space.
+ * @return Eight image bounding-box corners in subject space.
  */
 std::array<glm::vec3, 8> computeImageSubjectBoundingBoxCorners(
   const glm::u64vec3& pixelDims,
@@ -93,8 +91,22 @@ std::array<glm::vec3, 8> computeImageSubjectBoundingBoxCorners(
   const glm::vec3& pixelSpacing,
   const glm::vec3& origin);
 
+/**
+ * @brief Compute minimum and maximum corners from a set of bounding-box corners.
+ * @param subjectCorners Bounding-box corners.
+ * @return Pair of minimum and maximum corners.
+ */
 std::pair<glm::vec3, glm::vec3> computeMinMaxCornersOfAABBox(const std::array<glm::vec3, 8>& subjectCorners);
 
+/**
+ * @brief Test whether an axis-aligned bounding box intersects a plane.
+ * @tparam T Scalar type.
+ * @tparam Q GLM qualifier.
+ * @param boxCenter Center of the axis-aligned box.
+ * @param boxMaxCorner Maximum corner of the axis-aligned box.
+ * @param plane Plane equation coefficients (normal, distance).
+ * @return True when the plane intersects the box.
+ */
 template<typename T, glm::qualifier Q>
 bool testAABBoxPlaneIntersection(
   const glm::vec<3, T, Q>& boxCenter,
@@ -108,47 +120,42 @@ bool testAABBoxPlaneIntersection(
 }
 
 /**
- * @brief Compute the corners of an axis-aligned bounding box with given min/max corners
- *
- * @param[in] boxMinMaxCorners Min/max corners of the AABB
- *
- * @return All eight AABB corners
+ * @brief Compute the corners of an axis-aligned bounding box from its min/max corners.
+ * @param boxMinMaxCorners Min/max corners of the AABB.
+ * @return All eight AABB corners.
  */
 std::array<glm::vec3, 8> computeAllAABBoxCornersFromMinMaxCorners(
   const std::pair<glm::vec3, glm::vec3>& boxMinMaxCorners);
 
 /**
- * @brief Compute the anatomical direction "SPIRAL" code of an image from its direction matrix
- *
- * @param[in] directions 3x3 direction matrix: columns are the direction vectors
- *
- * @return Pair of the three-letter direction code and boolean flag that is true when the directions
- * are oblique to the coordinate axes
- *
- * @todo SPIRAL CODE IS WRONG FOR hippo warp image
+ * @brief Compute the anatomical direction code of an image from its direction matrix.
+ * @param directions Direction matrix whose columns are image axis direction vectors.
+ * @return Pair of the three-letter direction code and a flag that is true when directions are oblique.
  */
 std::pair<std::string, bool> computeSpiralCodeFromDirectionMatrix(const glm::dmat3& directions);
 
 /**
- * @brief Compute the closest orthogonal anatomical direction matrix of an image
- *
- * @param[in] directions 3x3 direction matrix: columns are the direction vectors
- *
- * @return Pair of the three-letter direction code and boolean flag that is true when the directions
- * are oblique to the coordinate axes
+ * @brief Compute the closest orthogonal anatomical direction matrix.
+ * @param directions Direction matrix whose columns are image axis direction vectors.
+ * @return Orthogonalized direction matrix.
  */
 glm::dmat3 computeClosestOrthogonalDirectionMatrix(const glm::dmat3& directions);
 
 /**
- * @brief Apply rotation to a coordinate frame about a given world center position
- * @param frame Frame to rotate
- * @param rotation Rotation, expressed as a quaternion
- * @param worldCenter Center of rotation in World space
+ * @brief Apply a rotation to a coordinate frame about a world-space center.
+ * @param frame Frame to rotate.
+ * @param rotation Rotation expressed as a quaternion.
+ * @param worldCenter Center of rotation in world space.
  */
 void rotateFrameAboutWorldPos(CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter);
 
 /**
- * @brief Finds the entering intersection between a ray e1+d and the volume's bounding box.
+ * @brief Compute the entering intersection between a ray and an axis-aligned bounding box.
+ * @param start Ray origin.
+ * @param dir Ray direction.
+ * @param minCorner Minimum box corner.
+ * @param maxCorner Maximum box corner.
+ * @return Ray parameter at the entering intersection, or an implementation-defined miss value.
  */
 float computeRayAABBoxIntersection(
   const glm::vec3& start,
@@ -156,16 +163,49 @@ float computeRayAABBoxIntersection(
   const glm::vec3& minCorner,
   const glm::vec3& maxCorner);
 
+/**
+ * @brief Compute near and far ray parameters for a ray-box intersection.
+ * @param e1 Ray origin.
+ * @param d Ray direction.
+ * @param uMinCorner Minimum box corner.
+ * @param uMaxCorner Maximum box corner.
+ * @return Near and far ray parameters.
+ */
 std::pair<float, float> hits(glm::vec3 e1, glm::vec3 d, glm::vec3 uMinCorner, glm::vec3 uMaxCorner);
 
+/**
+ * @brief Compute ray-box intersection using the slab method.
+ * @param rayPos Ray origin.
+ * @param rayDir Ray direction.
+ * @param boxMin Minimum box corner.
+ * @param boxMax Maximum box corner.
+ * @return Tuple of hit flag, entering ray parameter, and exiting ray parameter.
+ */
 std::tuple<bool, float, float> slabs(glm::vec3 rayPos, glm::vec3 rayDir, glm::vec3 boxMin, glm::vec3 boxMax);
 
+/**
+ * @brief Compute the forward intersection between a 2D ray and a line segment.
+ * @param rayOrigin Ray origin.
+ * @param rayDir Ray direction.
+ * @param lineA First segment endpoint.
+ * @param lineB Second segment endpoint.
+ * @return Ray parameter at the intersection, or std::nullopt when there is no forward hit.
+ */
 std::optional<float> computeRayLineSegmentIntersection(
   const glm::vec2& rayOrigin,
   const glm::vec2& rayDir,
   const glm::vec2& lineA,
   const glm::vec2& lineB);
 
+/**
+ * @brief Compute intersections between a 2D ray and an axis-aligned box.
+ * @param rayStart Ray origin.
+ * @param rayDir Ray direction.
+ * @param boxMin Minimum box corner.
+ * @param boxSize Box size.
+ * @param doBothRayDirections Whether to also test the opposite ray direction.
+ * @return Intersection points.
+ */
 std::vector<glm::vec2> computeRayAABoxIntersections(
   const glm::vec2& rayStart,
   const glm::vec2& rayDir,
@@ -174,18 +214,18 @@ std::vector<glm::vec2> computeRayAABoxIntersections(
   bool doBothRayDirections = false);
 
 /**
- * @brief Point inclusion in polygon test
- * @param poly Polygon vertices
- * @param p Test point
- * @return True iff the point is inside the polygon
+ * @brief Test whether a 2D point is inside a polygon.
+ * @param poly Polygon vertices.
+ * @param p Test point.
+ * @return Nonzero when the point is inside the polygon.
  */
 int pnpoly(const std::vector<glm::vec2>& poly, const glm::vec2& p);
 
 /**
- * @brief Interpolate table at at key value
- * @param x Value at which to interpolate table
- * @param table Table of key/value pairs
- * @return Interpolated table value at x
+ * @brief Interpolate a scalar lookup table.
+ * @param x Key at which to interpolate.
+ * @param table Sorted key/value pairs.
+ * @return Interpolated value at x.
  */
 float interpolate(float x, const std::map<float, float>& table);
 

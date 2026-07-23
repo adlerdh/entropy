@@ -34,11 +34,13 @@ public:
   /// Construct a 1x1 viewport with bottom-left at (0, 0).
   Viewport();
 
-  /// Construct a viewport with the given bottom-left coordinates and dimensions.
-  /// @param left Left coordinate in device-independent pixel units
-  /// @param bottom Bottom coordinate in device-independent pixel units
-  /// @param width Width in device-independent pixel units
-  /// @param height Height coordinate in device-independent pixel units
+  /**
+   * Construct a viewport with the given bottom-left coordinates and dimensions.
+   * @param left Left coordinate in device-independent pixel units
+   * @param bottom Bottom coordinate in device-independent pixel units
+   * @param width Width in device-independent pixel units
+   * @param height Height coordinate in device-independent pixel units
+   */
   Viewport(float left, float bottom, float width, float height);
 
   /// Construct a viewport from {left, bottom, width, height}.

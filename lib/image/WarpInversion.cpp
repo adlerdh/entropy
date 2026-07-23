@@ -135,13 +135,13 @@ FieldImage::Pointer makeFieldLikeDomain(const Image& domain)
   return field;
 }
 
-entropy_expected::expected<FieldImage::Pointer, std::string> makeFieldFromImage(const Image& image)
+std::expected<FieldImage::Pointer, std::string> makeFieldFromImage(const Image& image)
 {
   if (!image.hasPixelData()) {
-    return entropy_expected::unexpected("Warp field has no loaded pixel data");
+    return std::unexpected("Warp field has no loaded pixel data");
   }
   if (image.header().numComponentsPerPixel() < 3) {
-    return entropy_expected::unexpected("Warp field must have at least three components");
+    return std::unexpected("Warp field must have at least three components");
   }
 
   FieldImage::Pointer field = makeFieldLikeDomain(image);
@@ -158,7 +158,7 @@ entropy_expected::expected<FieldImage::Pointer, std::string> makeFieldFromImage(
     const auto dy = image.value<float>(1, linearIndex);
     const auto dz = image.value<float>(2, linearIndex);
     if (!dx || !dy || !dz) {
-      return entropy_expected::unexpected(std::format("Unable to read warp value at pixel {}", linearIndex));
+      return std::unexpected(std::format("Unable to read warp value at pixel {}", linearIndex));
     }
     it.Set(makeVectorPixel(*dx, *dy, *dz));
   }
@@ -332,7 +332,7 @@ std::string computedWarpDisplayName(const Image& sourceWarp, ComputedWarpDirecti
   return std::format("{} - {}", displayDirectionName(direction), sourceWarp.settings().displayName());
 }
 
-entropy_expected::expected<WarpInversionResult, std::string> computeMatchingWarp(
+std::expected<WarpInversionResult, std::string> computeMatchingWarp(
   const Image& sourceWarp,
   const Image& outputDomain,
   ComputedWarpDirection direction,
@@ -342,7 +342,7 @@ entropy_expected::expected<WarpInversionResult, std::string> computeMatchingWarp
 {
   const auto sourceField = makeFieldFromImage(sourceWarp);
   if (!sourceField) {
-    return entropy_expected::unexpected(sourceField.error());
+    return std::unexpected(sourceField.error());
   }
 
   FieldImage::Pointer initialEstimate = makeFieldLikeDomain(outputDomain);
@@ -367,7 +367,7 @@ entropy_expected::expected<WarpInversionResult, std::string> computeMatchingWarp
 
     inverter->Update();
     if (cancel && cancel->load()) {
-      return entropy_expected::unexpected("Warp inversion was canceled");
+      return std::unexpected("Warp inversion was canceled");
     }
 
     FieldImage::Pointer output = inverter->GetOutput();
@@ -391,9 +391,9 @@ entropy_expected::expected<WarpInversionResult, std::string> computeMatchingWarp
     return WarpInversionResult{makeImageFromField(output, outputDomain, displayName), report, direction};
   }
   catch (const itk::ExceptionObject& e) {
-    return entropy_expected::unexpected(std::format("ITK warp inversion failed: {}", e.what()));
+    return std::unexpected(std::format("ITK warp inversion failed: {}", e.what()));
   }
   catch (const std::exception& e) {
-    return entropy_expected::unexpected(std::format("Warp inversion failed: {}", e.what()));
+    return std::unexpected(std::format("Warp inversion failed: {}", e.what()));
   }
 }

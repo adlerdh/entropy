@@ -364,7 +364,8 @@ private:
   serialize::EntropyProject createProjectSnapshot() const;
 
   /** @brief Create a serialized snapshot for one image and its dependent data. */
-  serialize::Image createImageSnapshot(const uuids::uuid& imageUid) const;
+  serialize::Image createImageSnapshot(const uuids::uuid& imageUid, const std::optional<glm::vec3>& defaultBorderColor)
+    const;
 
   /** @brief Return true when current state differs from the saved project snapshot. */
   bool projectHasUnsavedChanges() const;

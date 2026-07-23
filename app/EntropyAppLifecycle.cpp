@@ -16,6 +16,7 @@
 #include <glm/gtc/epsilon.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
@@ -82,6 +83,28 @@ std::vector<std::string> rawWarpAssignmentWarnings(const Image& field, const Ima
     warnings.emplace_back("Physical domain does not fully cover the reference");
   }
   return warnings;
+}
+
+void removeDefaultLayouts(WindowData& windowData, std::vector<std::size_t> removedLayoutIndices)
+{
+  std::ranges::sort(removedLayoutIndices, std::greater<>{});
+  for (const std::size_t layoutIndex : removedLayoutIndices) {
+    if (layoutIndex < windowData.numLayouts()) {
+      windowData.removeLayout(layoutIndex);
+    }
+  }
+}
+
+void applyModifiedDefaultLayouts(
+  WindowData& windowData,
+  const std::vector<serialize::DefaultLayoutOverride>& overrides,
+  const uuid_range_t& imageUids)
+{
+  for (const auto& override : overrides) {
+    if (!windowData.replaceProjectLayoutSnapshot(override.m_index, override.m_layout, imageUids)) {
+      spdlog::warn("Skipping project layout override for missing default layout {}", override.m_index);
+    }
+  }
 }
 
 std::vector<std::string> inverseWarpAssignmentWarnings(const Image& field, const Image& referenceImage)
@@ -368,17 +391,36 @@ void EntropyApp::onImagesReady()
       }
       else if (!m_data.project().m_layouts.empty()) {
         spdlog::warn("Falling back to inline project layouts after referenced layout file failed to load");
-        m_data.windowData().applyProjectLayoutSnapshots(
+        applyModifiedDefaultLayouts(
+          m_data.windowData(),
+          m_data.project().m_modifiedDefaultLayouts,
+          m_data.imageUidsOrdered());
+        removeDefaultLayouts(m_data.windowData(), m_data.project().m_removedDefaultLayoutIndices);
+        m_data.windowData().appendProjectLayoutSnapshots(
           m_data.project().m_layouts,
           m_data.imageUidsOrdered(),
           m_data.project().m_currentLayoutIndex);
       }
     }
-    else if (!m_data.project().m_layouts.empty()) {
-      m_data.windowData().applyProjectLayoutSnapshots(
-        m_data.project().m_layouts,
-        m_data.imageUidsOrdered(),
-        m_data.project().m_currentLayoutIndex);
+    else {
+      applyModifiedDefaultLayouts(
+        m_data.windowData(),
+        m_data.project().m_modifiedDefaultLayouts,
+        m_data.imageUidsOrdered());
+      removeDefaultLayouts(m_data.windowData(), m_data.project().m_removedDefaultLayoutIndices);
+      if (!m_data.project().m_layouts.empty()) {
+        m_data.windowData().appendProjectLayoutSnapshots(
+          m_data.project().m_layouts,
+          m_data.imageUidsOrdered(),
+          m_data.project().m_currentLayoutIndex);
+      }
+    }
+
+    if (
+      m_data.project().m_currentLayoutIndex &&
+      *m_data.project().m_currentLayoutIndex < m_data.windowData().numLayouts())
+    {
+      m_data.windowData().setCurrentLayoutIndex(*m_data.project().m_currentLayoutIndex);
     }
 
     if (pendingLayoutsFile) {

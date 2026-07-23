@@ -1,7 +1,6 @@
 #include "rendering/PixelEdgeRenderer.h"
 
 #include "common/Exception.hpp"
-#include "common/Expected.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
@@ -11,6 +10,7 @@
 #include <glad/glad.h>
 #include <spdlog/spdlog.h>
 
+#include <expected>
 #include <format>
 
 CMRC_DECLARE(shaders);
@@ -21,7 +21,7 @@ namespace
 const glm::vec2 k_zeroVec2{0.0f, 0.0f};
 const glm::vec4 k_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 
-entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildPixelEdgeShaderProgram()
+std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildPixelEdgeShaderProgram()
 {
   static const std::string shaderPath("app/rendering/shaders/");
   static const std::string vsName("AsciiPost.vs");
@@ -38,7 +38,7 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildP
     fsSource = std::string(fsData.begin(), fsData.end());
   }
   catch (const std::exception& e) {
-    return entropy_expected::unexpected(std::format("Exception loading pixel-edge shader: {}", e.what()));
+    return std::unexpected(std::format("Exception loading pixel-edge shader: {}", e.what()));
   }
 
   Uniforms fsUniforms;
@@ -63,13 +63,13 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildP
   auto program = std::make_unique<GLShaderProgram>(to_string(ShaderProgramType::PixelEdgePost));
 
   if (!program->attachShader(vs)) {
-    return entropy_expected::unexpected(std::format("Unable to compile pixel-edge vertex shader {}", vsName));
+    return std::unexpected(std::format("Unable to compile pixel-edge vertex shader {}", vsName));
   }
   if (!program->attachShader(fs)) {
-    return entropy_expected::unexpected(std::format("Unable to compile pixel-edge fragment shader {}", fsName));
+    return std::unexpected(std::format("Unable to compile pixel-edge fragment shader {}", fsName));
   }
   if (!program->link()) {
-    return entropy_expected::unexpected("Failed to link pixel-edge shader program");
+    return std::unexpected("Failed to link pixel-edge shader program");
   }
 
   return program;

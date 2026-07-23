@@ -411,7 +411,7 @@ private:
   {
     uuids::uuid sourceImageUid;
     ComponentProjectionMode mode{ComponentProjectionMode::Mean};
-    std::vector<std::pair<uint32_t, entropy_expected::expected<Image, std::string>>> frames;
+    std::vector<std::pair<uint32_t, std::expected<Image, std::string>>> frames;
   };
 
   std::unordered_map<uuids::uuid, std::future<ComponentProjectionTaskResult>> m_componentProjectionFutures;
@@ -442,7 +442,7 @@ private:
     uuids::uuid imageUid;
     uuids::uuid sourceWarpUid;
     ComputedWarpDirection direction{ComputedWarpDirection::Inverse};
-    entropy_expected::expected<WarpInversionResult, std::string> result;
+    std::expected<WarpInversionResult, std::string> result;
   };
 
   std::unordered_map<uuids::uuid, WarpInversionTaskState> m_warpInversionTaskStates;

@@ -19,6 +19,25 @@ struct ImageSelectionSpec
   std::vector<std::size_t> m_renderedImageIndices;       //!< Images rendered in the view
   std::vector<std::size_t> m_volumeRenderedImageIndices; //!< Single image rendered in 3D volume raycasting
   std::vector<std::size_t> m_metricImageIndices;         //!< Images used by metric/comparison modes
+
+  bool operator==(const ImageSelectionSpec&) const = default;
+};
+
+/**
+ * @brief Compact description of a regular grid layout.
+ *
+ * Grid specs avoid writing one JSON object per generated view when a layout can be recreated from rows, columns, and
+ * common view settings.
+ */
+struct GridSpec
+{
+  std::size_t m_columns = 1;                                //!< Number of grid columns
+  std::size_t m_rows = 1;                                   //!< Number of grid rows
+  bool m_offsetViews = false;                               //!< Whether views are offset through image slices
+  std::optional<std::size_t> m_imageIndex = std::nullopt;   //!< Image index used for lightbox offsets
+  std::optional<float> m_absoluteOffsetStep = std::nullopt; //!< Optional absolute offset step in millimeters
+
+  bool operator==(const GridSpec&) const = default;
 };
 
 /**
@@ -29,6 +48,8 @@ struct ImageSelectionSpec
  */
 struct ViewSpec
 {
+  std::optional<std::size_t> m_index = std::nullopt; //!< View index when used as a sparse override
+
   float m_left = -1.0f;   //!< Normalized left edge in layout coordinates
   float m_bottom = -1.0f; //!< Normalized bottom edge in layout coordinates
   float m_width = 2.0f;   //!< Normalized width in layout coordinates
@@ -59,6 +80,8 @@ struct ViewSpec
   bool m_threeDCameraFollowsCrosshairs = false; //!< Whether 3D camera position follows crosshairs
   float m_threeDPerspectiveZoom = 1.0f;         //!< Saved 3D perspective projection zoom
   float m_threeDOrthographicZoom = 1.0f;        //!< Saved 3D orthographic projection zoom
+
+  bool operator==(const ViewSpec&) const = default;
 };
 
 /**
@@ -77,7 +100,10 @@ struct LayoutSpec
   std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Preferred default rendered image indices
   bool m_defaultRenderAllImages = false;                  //!< Whether generated views render all images
   ImageSelectionSpec m_imageSelection;                    //!< Layout-level explicit image selection
+  std::optional<GridSpec> m_grid = std::nullopt;          //!< Compact regular-grid layout descriptor
   std::vector<ViewSpec> m_views;                          //!< View specs in display order
+
+  bool operator==(const LayoutSpec&) const = default;
 };
 
 } // namespace layout
