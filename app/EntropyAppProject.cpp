@@ -327,7 +327,7 @@ serialize::Image EntropyApp::createImageSnapshot(
 
     serialize::Segmentation serializedSeg;
     serializedSeg.m_segFileName = seg->header().fileName();
-    serializedSeg.m_settings = project_snapshot::segmentationSettings(*seg);
+    serializedSeg.m_settings = project_snapshot::segmentationSettings(m_data, *seg);
     serializedImage.m_segmentations.emplace_back(std::move(serializedSeg));
   }
 

@@ -1,4 +1,5 @@
 #include "logic/app/ProjectSnapshotSettings.h"
+#include "logic/app/ParcellationLabelTable.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -68,4 +69,14 @@ TEST_CASE("Project snapshot component render modes round trip through serializat
   CHECK(
     project_snapshot::fromSerializedVectorWarpedGridConvention(project_snapshot::toSerializedVectorWarpedGridConvention(
       VectorWarpedGridConvention::ApparentDeformation)) == VectorWarpedGridConvention::ApparentDeformation);
+}
+
+TEST_CASE("New segmentation labels receive full-range generated colors", "[ProjectSnapshotSettings]")
+{
+  ParcellationLabelTable table(256, 1024);
+  const std::vector<std::size_t> added = table.addLabels(1);
+
+  REQUIRE(added.size() == 1);
+  const glm::u8vec3 color = table.getColor(added.front());
+  CHECK((color.r > 1 || color.g > 1 || color.b > 1));
 }

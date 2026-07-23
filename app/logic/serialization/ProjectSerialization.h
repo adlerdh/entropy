@@ -398,6 +398,25 @@ struct ImageSettings
 /**
  * @brief Serialized data for image segmentation settings
  */
+struct SegmentationLabel
+{
+  bool operator==(const SegmentationLabel&) const = default;
+
+  std::size_t m_index = 0; //!< Label table index
+  std::string m_name;      //!< Label name
+  glm::vec4 m_color{0.0f}; //!< Normalized non-premultiplied RGBA color
+  bool m_visible = true;   //!< Show label in segmentation rendering
+  bool m_showMesh = false; //!< Show label mesh in 3D views
+};
+
+struct SegmentationLabels
+{
+  bool operator==(const SegmentationLabels&) const = default;
+
+  std::size_t m_count = 0;                   //!< Label table size
+  std::vector<SegmentationLabel> m_values{}; //!< Labels that differ from generated defaults
+};
+
 struct SegSettings
 {
   std::string m_displayName;         //!< Segmentation display name
@@ -405,6 +424,7 @@ struct SegSettings
   double m_opacity = 1.0f;           //!< Global segmentation opacity
   std::size_t m_labelTableIndex = 0; //!< Label table index for segmentation labels
   InterpolationMode m_interpolationMode = InterpolationMode::NearestNeighbor; //!< Segmentation sampling mode
+  std::optional<SegmentationLabels> m_labels = std::nullopt;                  //!< Label table size and per-label edits
 };
 
 /**

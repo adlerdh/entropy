@@ -1,16 +1,16 @@
 #include "logic/serialization/ProjectSerialization.h"
-#include "common/Exception.hpp"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/JsonSerializers.h"
+
+#include "common/Exception.hpp"
 #include "layout/LayoutSpecJson.h"
 
 #include <safeclib/strerrorlen_s.h>
 
-#include <spdlog/fmt/std.h>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <spdlog/fmt/std.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -115,6 +115,14 @@ void removeDefaultEntries(json& value, const json& defaultValue)
   }
 }
 } // namespace
+
+namespace serialize
+{
+json segmentationLabelToJson(const SegmentationLabel& label);
+SegmentationLabel segmentationLabelFromJson(const json& j);
+json segmentationLabelsToJson(const SegmentationLabels& labels);
+SegmentationLabels segmentationLabelsFromJson(const json& j);
+} // namespace serialize
 
 void to_json(json& j, const SurfaceMaterial& material)
 {
@@ -1498,12 +1506,15 @@ void to_json(json& j, const serialize::SegSettings& settings)
   addIfChanged(display, "opacity", settings.m_opacity, defaults.m_opacity);
   addIfNotEmpty(j, "display", std::move(display));
 
-  addIfChanged(j, "labelTableIndex", settings.m_labelTableIndex, defaults.m_labelTableIndex);
   addIfChanged(
     j,
     "interpolationMode",
     enumToName(settings.m_interpolationMode, k_interpolationModeNames),
     enumToName(defaults.m_interpolationMode, k_interpolationModeNames));
+
+  if (settings.m_labels) {
+    addIfNotEmpty(j, "labels", segmentationLabelsToJson(*settings.m_labels));
+  }
 }
 
 void from_json(const json& j, serialize::SegSettings& settings)
@@ -1519,12 +1530,75 @@ void from_json(const json& j, serialize::SegSettings& settings)
       settings.m_opacity = opacity->get<double>();
     }
   }
-  if (const auto index = unsignedIntFromJson(j.value("labelTableIndex", json{}))) {
-    settings.m_labelTableIndex = *index;
-  }
   if (const auto parsed = enumFromName<InterpolationMode>(j.value("interpolationMode", ""), k_interpolationModeNames)) {
     settings.m_interpolationMode = *parsed;
   }
+  if (const auto labels = j.find("labels"); labels != j.end() && labels->is_object()) {
+    settings.m_labels = segmentationLabelsFromJson(*labels);
+  }
+}
+
+json segmentationLabelToJson(const serialize::SegmentationLabel& label)
+{
+  return json{
+    {"index", label.m_index},
+    {"name", label.m_name},
+    {"color", vec4ToJson(label.m_color)},
+    {"visible", label.m_visible},
+    {"showMesh", label.m_showMesh}};
+}
+
+serialize::SegmentationLabel segmentationLabelFromJson(const json& j)
+{
+  serialize::SegmentationLabel label;
+  if (const auto index = unsignedIntFromJson(j.value("index", json{}))) {
+    label.m_index = *index;
+  }
+  if (const auto name = j.find("name"); name != j.end() && name->is_string()) {
+    label.m_name = name->get<std::string>();
+  }
+  if (const auto color = j.find("color"); color != j.end() && color->is_array()) {
+    label.m_color = glm::clamp(vec4FromJson(*color), glm::vec4{0.0f}, glm::vec4{1.0f});
+  }
+  if (const auto visible = j.find("visible"); visible != j.end() && visible->is_boolean()) {
+    label.m_visible = visible->get<bool>();
+  }
+  if (const auto showMesh = j.find("showMesh"); showMesh != j.end() && showMesh->is_boolean()) {
+    label.m_showMesh = showMesh->get<bool>();
+  }
+  return label;
+}
+
+json segmentationLabelsToJson(const serialize::SegmentationLabels& labels)
+{
+  json j = json::object();
+  if (labels.m_count > 0) {
+    j["count"] = labels.m_count;
+  }
+  if (!labels.m_values.empty()) {
+    json values = json::array();
+    for (const auto& value : labels.m_values) {
+      values.push_back(segmentationLabelToJson(value));
+    }
+    j["values"] = std::move(values);
+  }
+  return j;
+}
+
+serialize::SegmentationLabels segmentationLabelsFromJson(const json& j)
+{
+  serialize::SegmentationLabels labels;
+  if (const auto count = unsignedIntFromJson(j.value("count", json{}))) {
+    labels.m_count = *count;
+  }
+  if (const auto values = j.find("values"); values != j.end() && values->is_array()) {
+    labels.m_values.clear();
+    labels.m_values.reserve(values->size());
+    for (const auto& value : *values) {
+      labels.m_values.push_back(segmentationLabelFromJson(value));
+    }
+  }
+  return labels;
 }
 
 void to_json(json& j, const serialize::Segmentation& seg)

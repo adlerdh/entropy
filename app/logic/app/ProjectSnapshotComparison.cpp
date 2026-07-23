@@ -99,7 +99,7 @@ bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std:
     return false;
   }
   return !a || (a->m_displayName == b->m_displayName && a->m_visible == b->m_visible && a->m_opacity == b->m_opacity &&
-                a->m_labelTableIndex == b->m_labelTableIndex && a->m_interpolationMode == b->m_interpolationMode);
+                a->m_interpolationMode == b->m_interpolationMode && a->m_labels == b->m_labels);
 }
 
 bool matricesEqual(const std::optional<glm::mat4>& a, const std::optional<glm::mat4>& b)

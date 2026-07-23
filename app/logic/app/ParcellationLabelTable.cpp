@@ -251,7 +251,7 @@ std::vector<std::size_t> ParcellationLabelTable::addLabels(std::size_t count)
     props.m_visible = true;
     props.m_showMesh = false;
     props.m_name = ss.str();
-    props.m_color = rgbValues[i - last];
+    props.m_color = glm::u8vec3{255.0f * rgbValues[i - last]};
 
     m_properties.emplace_back(std::move(props));
 

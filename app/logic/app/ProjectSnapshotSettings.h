@@ -35,17 +35,19 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings);
 
 /**
  * @brief Build serialized segmentation settings from the runtime segmentation state.
+ * @param appData Application data that owns the segmentation label tables.
  * @param segmentation Segmentation image whose settings should be serialized.
  * @return Project segmentation settings suitable for project JSON serialization.
  */
-serialize::SegSettings segmentationSettings(const Image& segmentation);
+serialize::SegSettings segmentationSettings(const AppData& appData, const Image& segmentation);
 
 /**
  * @brief Apply serialized segmentation settings to a loaded segmentation.
+ * @param appData Application data that owns the segmentation label tables.
  * @param segmentation Segmentation image to update.
  * @param settings Serialized settings to restore.
  */
-void applySegmentationSettings(Image& segmentation, const serialize::SegSettings& settings);
+void applySegmentationSettings(AppData& appData, Image& segmentation, const serialize::SegSettings& settings);
 
 /// @}
 

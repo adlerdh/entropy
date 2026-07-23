@@ -104,6 +104,18 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   changedSegmentation.m_referenceImage.m_segmentations.front().m_settings->m_opacity = 0.75;
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentation));
 
+  auto changedSegmentationLabels = project;
+  changedSegmentationLabels.m_referenceImage.m_segmentations.front().m_settings->m_labels =
+    serialize::SegmentationLabels{
+      .m_count = 256,
+      .m_values = {serialize::SegmentationLabel{
+        .m_index = 3,
+        .m_name = "Edited label",
+        .m_color = glm::vec4{0.2f, 0.4f, 0.6f, 1.0f},
+        .m_visible = true,
+        .m_showMesh = false}}};
+  CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationLabels));
+
   auto changedLandmarks = project;
   changedLandmarks.m_referenceImage.m_landmarkGroups.front().m_coordinateSpace =
     serialize::ProjectLandmarkCoordinateSpace::Subject;

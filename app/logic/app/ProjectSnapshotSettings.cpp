@@ -3,8 +3,10 @@
 #include "image/Image.h"
 #include "image/ImageDerivedData.h"
 #include "logic/app/Data.h"
+#include "logic/app/ParcellationLabelTable.h"
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <set>
 #include <vector>
@@ -49,6 +51,108 @@ void addDiffValue(
 bool shouldApplySparseComponentValue(const std::set<std::size_t>& valueIndices, const std::size_t component)
 {
   return valueIndices.empty() || valueIndices.contains(component);
+}
+
+std::size_t defaultLabelCountForSegmentation(const Image& seg)
+{
+  constexpr auto minNumLabels = static_cast<int64_t>(256);
+  const int64_t maxLabelInSeg = static_cast<int64_t>(seg.settings().componentStatistics().onlineStats.max);
+  const int64_t requiredLabels = maxLabelInSeg + 1;
+
+  return static_cast<std::size_t>(std::min(
+    std::max(requiredLabels, minNumLabels),
+    static_cast<int64_t>(ParcellationLabelTable::labelCountUpperBound())));
+}
+
+glm::vec4 normalizedLabelColor(const ParcellationLabelTable& table, const std::size_t index)
+{
+  const glm::u8vec3 color = table.getColor(index);
+  return glm::vec4{
+    static_cast<float>(color.r) / 255.0f,
+    static_cast<float>(color.g) / 255.0f,
+    static_cast<float>(color.b) / 255.0f,
+    static_cast<float>(table.getAlpha(index)) / 255.0f};
+}
+
+glm::u8vec3 labelColorFromNormalized(const glm::vec4& color)
+{
+  const glm::vec4 clamped = glm::clamp(color, glm::vec4{0.0f}, glm::vec4{1.0f});
+  return glm::u8vec3{
+    static_cast<uint8_t>(std::lround(clamped.r * 255.0f)),
+    static_cast<uint8_t>(std::lround(clamped.g * 255.0f)),
+    static_cast<uint8_t>(std::lround(clamped.b * 255.0f))};
+}
+
+uint8_t labelAlphaFromNormalized(const glm::vec4& color)
+{
+  return static_cast<uint8_t>(std::lround(glm::clamp(color.a, 0.0f, 1.0f) * 255.0f));
+}
+
+bool labelEntryMatches(const ParcellationLabelTable& table, const ParcellationLabelTable& baseline, std::size_t index)
+{
+  return table.getName(index) == baseline.getName(index) && table.getColor(index) == baseline.getColor(index) &&
+         table.getAlpha(index) == baseline.getAlpha(index) && table.getVisible(index) == baseline.getVisible(index) &&
+         table.getShowMesh(index) == baseline.getShowMesh(index);
+}
+
+std::optional<serialize::SegmentationLabels> segmentationLabels(const Image& seg, const ParcellationLabelTable* table)
+{
+  if (!table) {
+    return std::nullopt;
+  }
+
+  serialize::SegmentationLabels labels;
+  labels.m_count = table->numLabels();
+
+  const std::size_t defaultCount = defaultLabelCountForSegmentation(seg);
+  const ParcellationLabelTable baseline(labels.m_count, table->maxNumLabels());
+
+  for (std::size_t index = 0; index < table->numLabels(); ++index) {
+    if (labelEntryMatches(*table, baseline, index)) {
+      continue;
+    }
+
+    labels.m_values.push_back(serialize::SegmentationLabel{
+      .m_index = index,
+      .m_name = table->getName(index),
+      .m_color = normalizedLabelColor(*table, index),
+      .m_visible = table->getVisible(index),
+      .m_showMesh = table->getShowMesh(index)});
+  }
+
+  if (labels.m_count == defaultCount && labels.m_values.empty()) {
+    return std::nullopt;
+  }
+  return labels;
+}
+
+void applySegmentationLabels(AppData& appData, Image& seg, const serialize::SegmentationLabels& labels)
+{
+  if (seg.settings().numComponents() == 0) {
+    return;
+  }
+
+  const auto tableUid = appData.labelTableUid(seg.settings().labelTableIndex(0));
+  ParcellationLabelTable* table = tableUid ? appData.labelTable(*tableUid) : nullptr;
+  if (!table) {
+    return;
+  }
+
+  if (labels.m_count > table->numLabels()) {
+    table->addLabels(labels.m_count - table->numLabels());
+  }
+
+  for (const auto& label : labels.m_values) {
+    if (label.m_index >= table->numLabels()) {
+      continue;
+    }
+
+    table->setName(label.m_index, label.m_name);
+    table->setColor(label.m_index, labelColorFromNormalized(label.m_color));
+    table->setAlpha(label.m_index, labelAlphaFromNormalized(label.m_color));
+    table->setVisible(label.m_index, label.m_visible);
+    table->setShowMesh(label.m_index, label.m_showMesh);
+  }
 }
 
 } // namespace
@@ -623,7 +727,7 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
   return settings;
 }
 
-serialize::SegSettings segmentationSettings(const Image& seg)
+serialize::SegSettings segmentationSettings(const AppData& appData, const Image& seg)
 {
   serialize::SegSettings settings;
   const ImageSettings& segSettings = seg.settings();
@@ -633,6 +737,8 @@ serialize::SegSettings segmentationSettings(const Image& seg)
   if (segSettings.numComponents() > 0) {
     settings.m_labelTableIndex = segSettings.labelTableIndex(0);
     settings.m_interpolationMode = segSettings.interpolationMode(0);
+    const auto tableUid = appData.labelTableUid(settings.m_labelTableIndex);
+    settings.m_labels = segmentationLabels(seg, tableUid ? appData.labelTable(*tableUid) : nullptr);
   }
   return settings;
 }
@@ -853,7 +959,7 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
 }
 
-void applySegmentationSettings(Image& seg, const serialize::SegSettings& settings)
+void applySegmentationSettings(AppData& appData, Image& seg, const serialize::SegSettings& settings)
 {
   ImageSettings& segSettings = seg.settings();
   if (!settings.m_displayName.empty()) {
@@ -863,8 +969,10 @@ void applySegmentationSettings(Image& seg, const serialize::SegSettings& setting
   segSettings.setOpacity(settings.m_opacity);
   if (segSettings.numComponents() > 0) {
     segSettings.setActiveComponent(0);
-    segSettings.setLabelTableIndex(0, settings.m_labelTableIndex);
     segSettings.setInterpolationMode(0, settings.m_interpolationMode);
+  }
+  if (settings.m_labels) {
+    applySegmentationLabels(appData, seg, *settings.m_labels);
   }
 }
 } // namespace project_snapshot

@@ -1204,7 +1204,7 @@ bool EntropyApp::loadSerializedImage(
         });
 
       if (serializedImage.m_segmentations.end() != serializedSegIt && serializedSegIt->m_settings) {
-        project_snapshot::applySegmentationSettings(*seg, *serializedSegIt->m_settings);
+        project_snapshot::applySegmentationSettings(m_data, *seg, *serializedSegIt->m_settings);
       }
     }
 

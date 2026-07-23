@@ -5,6 +5,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -1371,8 +1372,15 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
       .m_displayName = "Seg",
       .m_visible = false,
       .m_opacity = 0.35,
-      .m_labelTableIndex = 3,
-      .m_interpolationMode = InterpolationMode::NearestNeighbor}});
+      .m_interpolationMode = InterpolationMode::NearestNeighbor,
+      .m_labels = serialize::SegmentationLabels{
+        .m_count = 300,
+        .m_values = {serialize::SegmentationLabel{
+          .m_index = 17,
+          .m_name = "Hippocampus",
+          .m_color = glm::vec4{0.1f, 0.2f, 0.3f, 0.4f},
+          .m_visible = false,
+          .m_showMesh = true}}}}});
 
   const json root = project;
   const json& settings = root.at("images").at(0).at("segmentations").at(0).at("settings");
@@ -1380,7 +1388,14 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(settings.at("display").at("name") == "Seg");
   CHECK(settings.at("display").at("visible") == false);
   CHECK(settings.at("display").at("opacity") == 0.35);
-  CHECK(settings.at("labelTableIndex") == 3);
+  CHECK_FALSE(settings.contains("labelTableIndex"));
+  REQUIRE(settings.at("labels").at("values").size() == 1);
+  CHECK(settings.at("labels").at("count") == 300);
+  CHECK(settings.at("labels").at("values").at(0).at("index") == 17);
+  CHECK(settings.at("labels").at("values").at(0).at("name") == "Hippocampus");
+  CHECK(settings.at("labels").at("values").at(0).at("color") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
+  CHECK(settings.at("labels").at("values").at(0).at("visible") == false);
+  CHECK(settings.at("labels").at("values").at(0).at("showMesh") == true);
   CHECK_FALSE(settings.contains("interpolationMode"));
   CHECK_FALSE(settings.contains("displayName"));
   CHECK_FALSE(settings.contains("visibility"));
@@ -1397,8 +1412,16 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(parsedSettings.m_displayName == "Seg");
   CHECK_FALSE(parsedSettings.m_visible);
   CHECK(parsedSettings.m_opacity == 0.35);
-  CHECK(parsedSettings.m_labelTableIndex == 3);
+  CHECK(parsedSettings.m_labelTableIndex == 0);
   CHECK(parsedSettings.m_interpolationMode == InterpolationMode::NearestNeighbor);
+  REQUIRE(parsedSettings.m_labels.has_value());
+  CHECK(parsedSettings.m_labels->m_count == 300);
+  REQUIRE(parsedSettings.m_labels->m_values.size() == 1);
+  CHECK(parsedSettings.m_labels->m_values.front().m_index == 17);
+  CHECK(parsedSettings.m_labels->m_values.front().m_name == "Hippocampus");
+  CHECK(parsedSettings.m_labels->m_values.front().m_color == glm::vec4{0.1f, 0.2f, 0.3f, 0.4f});
+  CHECK_FALSE(parsedSettings.m_labels->m_values.front().m_visible);
+  CHECK(parsedSettings.m_labels->m_values.front().m_showMesh);
 }
 
 TEST_CASE("Project serialization preserves standard raster spatial metadata", "[project][serialization]")
