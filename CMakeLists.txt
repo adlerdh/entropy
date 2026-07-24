@@ -626,11 +626,11 @@ add_subdirectory("${entropy_LIB_DIR}/registration")
 #--------------------------------------------------------------------------------
 set(entropy_SOURCES
   "${entropy_APP_DIR}/main.cpp"
+  "${entropy_APP_DIR}/AppCallbacks.cpp"
+  "${entropy_APP_DIR}/AppLifecycle.cpp"
+  "${entropy_APP_DIR}/AppProject.cpp"
+  "${entropy_APP_DIR}/AppRegistration.cpp"
   "${entropy_APP_DIR}/EntropyApp.cpp"
-  "${entropy_APP_DIR}/EntropyAppCallbacks.cpp"
-  "${entropy_APP_DIR}/EntropyAppLifecycle.cpp"
-  "${entropy_APP_DIR}/EntropyAppProject.cpp"
-  "${entropy_APP_DIR}/EntropyAppRegistration.cpp"
 
   "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_APP_DIR}/logic/app/Data.cpp"
@@ -676,6 +676,11 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/segmentation/SegHelpers.cpp"
 
   "${entropy_APP_DIR}/logic/serialization/ProjectSerialization.cpp"
+  "${entropy_APP_DIR}/logic/serialization/FileIo.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ImageRecords.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ImageSettings.cpp"
+  "${entropy_APP_DIR}/logic/serialization/Isosurface.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ProjectIo.cpp"
 
   "${entropy_APP_DIR}/logic/states/annotation/AnnotationStateHelpers.cpp"
   "${entropy_APP_DIR}/logic/states/annotation/AnnotationStateMachine.cpp"

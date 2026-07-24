@@ -1,4 +1,4 @@
-#Entropy Medical Image Viewer
+# Entropy Medical Image Viewer
 
 [![macOS CI](https://github.com/adlerdh/entropy/actions/workflows/macos.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/macos.yml)
 [![Windows CI](https://github.com/adlerdh/entropy/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/windows.yml)

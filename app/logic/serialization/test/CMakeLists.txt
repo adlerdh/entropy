@@ -4,6 +4,11 @@ add_executable(TestSerialization
 
 target_sources(TestSerialization PRIVATE
   "${entropy_APP_DIR}/logic/serialization/ProjectSerialization.cpp"
+  "${entropy_APP_DIR}/logic/serialization/FileIo.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ImageRecords.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ImageSettings.cpp"
+  "${entropy_APP_DIR}/logic/serialization/Isosurface.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ProjectIo.cpp"
   "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
 )
 

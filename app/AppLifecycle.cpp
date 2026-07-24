@@ -7,11 +7,10 @@
 #include "logic/app/ProjectSnapshotSettings.h"
 #include "logic/app/UserPreferences.h"
 #include "logic/states/FsmList.hpp"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
-
-#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <glm/gtc/epsilon.hpp>
 
