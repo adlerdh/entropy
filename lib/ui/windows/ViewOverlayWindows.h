@@ -70,11 +70,11 @@ struct ViewOverlayModeCallbacks
   std::function<void(const ViewType& viewType)> setViewType{};                               //!< Change view type
   std::function<void(const ViewRenderMode& renderMode)> setRenderMode{};                     //!< Change render mode
   std::function<void(const IntensityProjectionMode& projMode)> setIntensityProjectionMode{}; //!< Change projection
-  std::function<void()> recenter{}; //!< Recenter after mode/type changes when needed
 
   std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndShaderToAllViews{}; //!< Apply to all views
   std::function<bool()> isIsosurfacesPanelVisible{};           //!< Is the isosurfaces panel currently visible
   std::function<void()> showIsosurfacesPanel{};                //!< Open the isosurfaces panel
+  std::function<void()> hideIsosurfacesPanel{};                //!< Close the isosurfaces panel
   std::function<void()> showIsosurfacesPanelForRaycastImage{}; //!< Open the panel for the current raycast image
   std::function<void()>
     showIsosurfacesPanelForMissingRaycastImageIsosurface{};  //!< Open the panel if the raycast image has no surfaces
@@ -86,6 +86,8 @@ struct ViewOverlayModeCallbacks
   std::function<void(bool)> setThreeDViewPositionFollowsCrosshairs{};    //!< Set 3D eye position follows crosshairs
   std::function<camera3d::OrbitTargetMode()> getThreeDOrbitTargetMode{}; //!< Current 3D orbit target mode
   std::function<void(camera3d::OrbitTargetMode)> setThreeDOrbitTargetMode{}; //!< Set 3D orbit target mode
+  std::function<bool()> getThreeDImagePlanesVisible{};                       //!< Whether 3D image planes are shown
+  std::function<void(bool)> setThreeDImagePlanesVisible{};                   //!< Set 3D image-plane visibility
   std::function<bool()> getThreeDRenderImageBox{};                           //!< Whether 3D raycast image box is drawn
   std::function<void(bool)> setThreeDRenderImageBox{};                       //!< Set 3D raycast image box drawing
   std::function<std::optional<ClipboardPayload>()>

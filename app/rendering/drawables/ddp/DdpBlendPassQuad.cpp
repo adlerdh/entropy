@@ -1,6 +1,6 @@
 #include "rendering/drawables/ddp/DdpBlendPassQuad.h"
+#include "rendering/drawables/ddp/DdpShaderNames.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering_old/ShaderNames.h"
 
 #include "common/Exception.hpp"
 

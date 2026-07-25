@@ -105,14 +105,23 @@ float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img)
   return img / mix(1.0, float(numSamples), float(MEAN_IP_MODE == u_mipMode));
 }
 
+bool isContourNeighborhoodInsideTexture(vec3 texCoord)
+{
+  // Screen-space contour width depends on derivatives over the fragment quad. Suppress the one-pixel image-domain
+  // boundary neighborhood so derivative evaluation cannot turn texture clamp/discard behavior into a false contour.
+  vec3 dx = dFdx(texCoord);
+  vec3 dy = dFdy(texCoord);
+  return isInsideTexture(texCoord - dx - dy) && isInsideTexture(texCoord + dx - dy) &&
+         isInsideTexture(texCoord - dx + dy) && isInsideTexture(texCoord + dx + dy);
+}
+
 void main()
 {
-  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
-    discard;
-  }
-
   vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
-  if (!isInsideTexture(sampleTc)) {
+  bool renderMask = doRender(fs_in.v_clipPos, fs_in.v_checkerCoord);
+  bool contourNeighborhoodInside = isContourNeighborhoodInsideTexture(sampleTc);
+
+  if (!renderMask || !contourNeighborhoodInside) {
     discard;
   }
 

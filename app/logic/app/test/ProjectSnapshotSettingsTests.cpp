@@ -74,9 +74,14 @@ TEST_CASE("Project snapshot component render modes round trip through serializat
 TEST_CASE("New segmentation labels receive full-range generated colors", "[ProjectSnapshotSettings]")
 {
   ParcellationLabelTable table(256, 1024);
+
+  CHECK_FALSE(table.getShowMesh(0));
+  CHECK(table.getShowMesh(1));
+
   const std::vector<std::size_t> added = table.addLabels(1);
 
   REQUIRE(added.size() == 1);
   const glm::u8vec3 color = table.getColor(added.front());
   CHECK((color.r > 1 || color.g > 1 || color.b > 1));
+  CHECK(table.getShowMesh(added.front()));
 }

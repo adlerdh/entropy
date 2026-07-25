@@ -22,6 +22,7 @@ enum class ViewRenderMode
   Disabled,            //!< Disabled (no rendering)
   LocalNcc,            //!< Local normalized cross-correlation metric for the image pair
   LocalLinearResidual, //!< Residual after fitting a local linear intensity model
+  SegmentationMesh,    //!< Segmentation labels rendered as 3D meshes
   NumElements
 };
 
@@ -58,11 +59,13 @@ inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes = {ViewRender
 /** @brief Render modes for 3D views with two or more images, in UI order. */
 inline std::vector<ViewRenderMode> const All3dViewRenderModes = {
   ViewRenderMode::VolumeRender,
+  ViewRenderMode::SegmentationMesh,
   ViewRenderMode::Disabled};
 
 /** @brief Render modes for 3D views with one image, in UI order. */
 inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes = {
   ViewRenderMode::VolumeRender,
+  ViewRenderMode::SegmentationMesh,
   ViewRenderMode::Disabled};
 
 /** @brief Intensity projection modes in UI order. */

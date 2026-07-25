@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <ostream>
@@ -375,30 +376,37 @@ public:
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8: {
         m_data_int8.at(c)[offset] = static_cast<int8_t>(value);
+        markPixelDataModified();
         return true;
       }
       case ComponentType::UInt8: {
         m_data_uint8.at(c)[offset] = static_cast<uint8_t>(value);
+        markPixelDataModified();
         return true;
       }
       case ComponentType::Int16: {
         m_data_int16.at(c)[offset] = static_cast<int16_t>(value);
+        markPixelDataModified();
         return true;
       }
       case ComponentType::UInt16: {
         m_data_uint16.at(c)[offset] = static_cast<uint16_t>(value);
+        markPixelDataModified();
         return true;
       }
       case ComponentType::Int32: {
         m_data_int32.at(c)[offset] = static_cast<int32_t>(value);
+        markPixelDataModified();
         return true;
       }
       case ComponentType::UInt32: {
         m_data_uint32.at(c)[offset] = static_cast<uint32_t>(value);
+        markPixelDataModified();
         return true;
       }
       case ComponentType::Float32: {
         m_data_float32.at(c)[offset] = static_cast<float>(value);
+        markPixelDataModified();
         return true;
       }
       default:
@@ -411,51 +419,63 @@ public:
   template<typename T>
   void setAllValues(T v)
   {
+    bool wroteValues = false;
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8: {
         for (auto& C : m_data_int8) {
           std::fill(std::begin(C), std::end(C), static_cast<int8_t>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       case ComponentType::UInt8: {
         for (auto& C : m_data_uint8) {
           std::fill(std::begin(C), std::end(C), static_cast<uint8_t>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       case ComponentType::Int16: {
         for (auto& C : m_data_int16) {
           std::fill(std::begin(C), std::end(C), static_cast<int16_t>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       case ComponentType::UInt16: {
         for (auto& C : m_data_uint16) {
           std::fill(std::begin(C), std::end(C), static_cast<uint16_t>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       case ComponentType::Int32: {
         for (auto& C : m_data_int32) {
           std::fill(std::begin(C), std::end(C), static_cast<int32_t>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       case ComponentType::UInt32: {
         for (auto& C : m_data_uint32) {
           std::fill(std::begin(C), std::end(C), static_cast<uint32_t>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       case ComponentType::Float32: {
         for (auto& C : m_data_float32) {
           std::fill(std::begin(C), std::end(C), static_cast<float>(v));
         }
-        return;
+        wroteValues = true;
+        break;
       }
       default:
         return;
+    }
+
+    if (wroteValues) {
+      markPixelDataModified();
     }
   }
 
@@ -500,6 +520,15 @@ public:
 
   /// @brief Apply user-provided physical geometry and update dependent transforms.
   void setUserSpatialMetadata(const ImageSpatialMetadata& metadata);
+
+  /// @brief Return the current pixel-data revision used by renderer-side derived-data caches.
+  uint64_t pixelDataRevision() const;
+
+  /// @brief Return the current geometry revision used by renderer-side derived-data caches.
+  uint64_t geometryRevision() const;
+
+  /// @brief Increment the pixel-data revision after a batch edit to voxel values.
+  void markPixelDataModified();
 
   /// @brief Get read-only access to the image header.
   const ImageHeader& header() const;
@@ -591,4 +620,6 @@ private:
   ImageTransformations m_tx;
   ImageSettings m_settings;
   LoadState m_loadState = LoadState::LoadedPixels;
+  uint64_t m_pixelDataRevision = 0; //!< Monotonic counter for voxel-value changes
+  uint64_t m_geometryRevision = 0;  //!< Monotonic counter for effective spatial-geometry changes
 };

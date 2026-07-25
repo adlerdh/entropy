@@ -6,6 +6,16 @@
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
+#include "rendering/mesh/MeshCache.h"
+#include "rendering/mesh/MeshAmbientOcclusionResources.h"
+#include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshDdpResources.h"
+#include "rendering/mesh/MeshGpuStore.h"
+#include "rendering/mesh/MeshImagePlaneRenderList.h"
+#include "rendering/mesh/MeshImagePlaneScene.h"
+#include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshRenderer.h"
+#include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/containers/Uniforms.h"
 
@@ -125,6 +135,18 @@ public:
    * @return Clipboard payload if the view has a current ASCII render, otherwise std::nullopt.
    */
   std::optional<ClipboardPayload> exportAsciiClipboardPayloadForView(const View& view);
+
+  /**
+   * @brief Pick the nearest mesh-rendered surface in one 3D view.
+   *
+   * This uses the renderer-owned mesh handles and CPU mesh cache. It returns no hit when the corresponding mesh has not
+   * been extracted yet, allowing callers to fall back to non-mesh picking paths.
+   *
+   * @param view 3D view to pick in.
+   * @param viewClipPos Click position in normalized view-clip coordinates.
+   * @return Nearest mesh hit position in world coordinates, or empty for no hit.
+   */
+  std::optional<glm::vec3> pickNearestMeshWorldPositionForView(const View& view, const glm::vec2& viewClipPos);
 
   /**
    * @brief Upload one label color table to its GPU buffer texture.
@@ -255,6 +277,27 @@ private:
   /// Ordered image/segmentation pairs currently bound for one image, metric, or raycast draw.
   using CurrentImages = std::vector<ImgSegPair>;
 
+  /// Logical mesh handles keyed by their geometry-producing inputs.
+  using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
+  using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
+  using MeshHandle = rendering::mesh::MeshHandle;
+  using MeshHandleMap = std::unordered_map<MeshGeometryKey, MeshHandle, MeshGeometryKeyHash>;
+
+  struct MeshImagePlaneHandleKey
+  {
+    uuids::uuid imageUid;                                        //!< Source image rendered on the plane
+    rendering::mesh::MeshImagePlaneOrientation orientation = {}; //!< Orthogonal plane orientation
+
+    bool operator==(const MeshImagePlaneHandleKey&) const = default;
+  };
+
+  struct MeshImagePlaneHandleKeyHash
+  {
+    std::size_t operator()(const MeshImagePlaneHandleKey& key) const;
+  };
+
+  using MeshImagePlaneHandleMap = std::unordered_map<MeshImagePlaneHandleKey, MeshHandle, MeshImagePlaneHandleKeyHash>;
+
 #include "rendering/PrivateMethods.h"
 
   /// Shared application state. Not owned; Rendering reads and updates render-facing state through this reference.
@@ -277,6 +320,44 @@ private:
 
   /// Raycast isosurface shader variant that samples an inverse deformation field before sampling the scalar image.
   GLShaderProgram m_raycastIsoWarpedProgram;
+
+  GLShaderProgram m_meshProgram; //!< Basic lit mesh shader program
+
+  GLShaderProgram m_meshShadowDepthProgram; //!< Depth-only mesh shader for shadow-map generation
+
+  GLShaderProgram m_meshAmbientOcclusionGeometryProgram; //!< Mesh normal/depth shader for screen-space AO
+
+  GLShaderProgram m_meshAmbientOcclusionResolveProgram; //!< Full-screen mesh AO resolve shader
+
+  GLShaderProgram m_meshImagePlaneGrayLinearProgram; //!< Mesh image-plane shader for scalar 3D textures
+
+  GLShaderProgram m_meshImagePlaneGrayLinearTexture2DProgram; //!< Mesh image-plane shader for scalar 2D textures
+
+  GLShaderProgram m_meshDdpInitProgram; //!< Mesh DDP attachment initialization shader
+
+  GLShaderProgram m_meshDdpPeelProgram; //!< Mesh DDP per-layer peeling shader
+
+  GLShaderProgram m_meshDdpBackBlendProgram; //!< Mesh DDP back-color accumulation shader
+
+  GLShaderProgram m_meshDdpResolveProgram; //!< Mesh DDP final front/back resolve shader
+
+  rendering::mesh::MeshRenderer m_meshRenderer; //!< Stateless uploaded-mesh draw helper
+
+  rendering::mesh::MeshDdpResources m_meshDdpResources; //!< OpenGL attachments reserved for mesh DDP passes
+
+  rendering::mesh::MeshShadowMapResources m_meshShadowMapResources; //!< OpenGL attachments for future mesh shadows
+
+  rendering::mesh::MeshAmbientOcclusionResources m_meshAmbientOcclusionResources; //!< OpenGL attachments for mesh AO
+
+  rendering::mesh::MeshCache m_meshCpuCache; //!< CPU-side extracted mesh cache
+
+  rendering::mesh::MeshExtractionQueue m_meshExtractionQueue; //!< Background CPU mesh extraction queue
+
+  rendering::mesh::MeshGpuStore m_meshGpuStore; //!< Uploaded mesh buffers for the current OpenGL context
+
+  MeshHandleMap m_meshHandles; //!< Stable logical mesh handles keyed by geometry-producing inputs
+
+  MeshImagePlaneHandleMap m_meshImagePlaneHandles; //!< Stable handles for dynamic 3D image-plane meshes
 
   bool m_isAppDoneLoadingImages; //!< True once the application has finished the startup/image-loading phase
 

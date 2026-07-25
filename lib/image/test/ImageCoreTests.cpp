@@ -762,6 +762,39 @@ TEST_CASE("Raw Image construction computes values, stats, and transformations", 
   CHECK(image.header().origin() == glm::vec3(0.0f));
 }
 
+TEST_CASE("Image revisions track pixel-data and geometry changes", "[image][raw]")
+{
+  Image image = makeRawImage();
+
+  CHECK(image.pixelDataRevision() == 0);
+  CHECK(image.geometryRevision() == 0);
+
+  REQUIRE(image.setValue(0, 0, 0, 0, 9));
+  CHECK(image.pixelDataRevision() == 1);
+  CHECK(image.geometryRevision() == 0);
+
+  image.setAllValues(3);
+  CHECK(image.pixelDataRevision() == 2);
+  CHECK(image.geometryRevision() == 0);
+
+  image.setUseIdentityPixelSpacings(false);
+  CHECK(image.geometryRevision() == 0);
+
+  image.setUseIdentityPixelSpacings(true);
+  CHECK(image.geometryRevision() == 1);
+
+  image.setUseIdentityPixelSpacings(true);
+  CHECK(image.geometryRevision() == 1);
+
+  ImageSpatialMetadata metadata;
+  metadata.spacingMm = glm::vec3{2.0f, 2.0f, 1.0f};
+  image.setUserSpatialMetadata(metadata);
+  CHECK(image.geometryRevision() == 2);
+
+  image.setUserSpatialMetadata(metadata);
+  CHECK(image.geometryRevision() == 2);
+}
+
 TEST_CASE("Raw sparse binary images initialize full-range window and level", "[image][raw][settings]")
 {
   Image image = makeSparseBinaryImage();

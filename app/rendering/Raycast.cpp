@@ -61,10 +61,19 @@ void Rendering::renderVolumeImagesForView(const View& view)
     return;
   }
 
-  updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first);
-
   const auto deformationUid = activeRenderableDeformationUid(*imgSegPair.first);
   const bool renderWarped = deformationUid.has_value();
+  if (
+    m_appData.renderData().m_isosurfaceMeshRenderingEnabled &&
+    renderIsosurfaceMeshesForView(view, imgSegPair, renderWarped))
+  {
+    renderMeshCrosshairsForView(view);
+    renderMeshLandmarksForView(view);
+    return;
+  }
+
+  updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first);
+
   const std::optional<uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(*imgSegPair.first) : std::nullopt;
   const Image* domainImage = referenceImageUid ? m_appData.image(*referenceImageUid) : image;

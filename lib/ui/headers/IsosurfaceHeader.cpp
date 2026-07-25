@@ -109,7 +109,6 @@ std::optional<uuids::uuid> addSurfaceAtValue(
   surface.value = value;
   surface.color = color;
   surface.opacity = 1.0f;
-  surface.meshInSync = false;
 
   if (const auto isosurfaceUid = appData.addIsosurface(imageUid, component, std::move(surface))) {
     spdlog::debug(
@@ -118,57 +117,6 @@ std::optional<uuids::uuid> addSurfaceAtValue(
       imageUid,
       component,
       value);
-
-#if 0
-    // Function to update the mesh record in AppData after the mesh is generated
-    auto meshCpuRecordUpdater =
-      [&appData,
-       &imageUid,
-       component](const uuids::uuid& _isosurfaceUid, std::unique_ptr<MeshCpuRecord> meshCpuRecord)
-      -> bool
-    {
-      if (appData.updateIsosurfaceMeshCpuRecord(
-            imageUid, component, _isosurfaceUid, std::move(meshCpuRecord)
-          ))
-      {
-        spdlog::debug(
-          "Updated isosurface {} for image {} (component {}) with new mesh record",
-          _isosurfaceUid,
-          imageUid,
-          component
-        );
-        return true;
-      }
-
-      spdlog::error(
-        "Error updating isosurface {} for image {} (component {}) with new mesh record",
-        _isosurfaceUid,
-        imageUid,
-        component
-      );
-
-      return false;
-    };
-
-    // Generate a new UID for the mesh generation task
-    uuids::uuid taskUid = generateRandomUuid();
-
-    // Need to store the future so that its destructor is not called.
-    // Calling the destructor will cause us to wait on the future.
-    // Note: Bind the task ID to addTaskToIsosurfaceGpuMeshGenerationQueue
-    storeFuture(
-      taskUid,
-      generateIsosurfaceMeshCpuRecord(
-        *image,
-        imageUid,
-        component,
-        value,
-        *isosurfaceUid,
-        meshCpuRecordUpdater,
-        std::bind(addTaskToIsosurfaceGpuMeshGenerationQueue, taskUid)
-      )
-    );
-#endif
 
     return isosurfaceUid;
   }
@@ -851,6 +799,7 @@ void renderIsosurfacesHeader(
             itemsNeedSort = true;
           }
         }
+        item.m_surface->valueEditInProgress = ImGui::IsItemActive();
 
         ImGui::PopItemWidth();
       }
@@ -969,6 +918,7 @@ void renderIsosurfacesHeader(
       {
         // updateImageUniforms();
       }
+      surface->valueEditInProgress = ImGui::IsItemActive();
       ImGui::SameLine();
       helpMarker("Surface iso-value");
 
@@ -1027,6 +977,41 @@ void renderIsosurfacesHeader(
         ImGui::SameLine();
         helpMarker("Controls rim width; higher values make a narrower rim");
         if (!surface->rimLightingEnabled) {
+          ImGui::EndDisabled();
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TreePop();
+      }
+
+      if (ImGui::TreeNode("3D mesh material")) {
+        ImGui::Checkbox("PBR shading", &surface->material.usePbrShading);
+        ImGui::SameLine();
+        helpMarker("Use physically based shading for mesh-rendered isosurfaces");
+
+        if (!surface->material.usePbrShading) {
+          ImGui::BeginDisabled();
+        }
+        if (mySliderF32("Metallic", &surface->material.metallic, 0.0f, 1.0f, "%0.2f")) {
+          surface->material.metallic = std::clamp(surface->material.metallic, 0.0f, 1.0f);
+        }
+        ImGui::SameLine();
+        helpMarker("Controls how strongly the mesh behaves like a metal surface");
+
+        if (mySliderF32("Roughness", &surface->material.roughness, 0.001f, 1.0f, "%0.2f")) {
+          surface->material.roughness = std::clamp(surface->material.roughness, 0.001f, 1.0f);
+        }
+        ImGui::SameLine();
+        helpMarker("Controls highlight sharpness for physically based mesh shading");
+
+        if (mySliderF32("Ambient occlusion", &surface->material.ambientOcclusion, 0.0f, 1.0f, "%0.2f")) {
+          surface->material.ambientOcclusion = std::clamp(surface->material.ambientOcclusion, 0.0f, 1.0f);
+        }
+        ImGui::SameLine();
+        helpMarker("Darkens indirect lighting for physically based mesh shading");
+        if (!surface->material.usePbrShading) {
           ImGui::EndDisabled();
         }
 

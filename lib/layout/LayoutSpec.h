@@ -78,6 +78,7 @@ struct ViewSpec
   int m_threeDProjectionType = 1;               //!< Serialized 3D projection type
   int m_threeDOrbitTargetMode = 0;              //!< Serialized 3D orbit target mode
   bool m_threeDCameraFollowsCrosshairs = false; //!< Whether 3D camera position follows crosshairs
+  bool m_threeDImagePlanesVisible = false;      //!< Whether orthogonal image planes are shown in 3D
   float m_threeDPerspectiveZoom = 1.0f;         //!< Saved 3D perspective projection zoom
   float m_threeDOrthographicZoom = 1.0f;        //!< Saved 3D orthographic projection zoom
 

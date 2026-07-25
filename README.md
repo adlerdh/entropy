@@ -297,7 +297,8 @@ Including segmentations, landmarks, annotations, and an affine transformation:
 
 ```json
 {
-  "version" : {"major": 1, "minor": 0}, "images" : [
+  "version" : {"major": 1, "minor": 0},
+  "images" : [
     {
       "path": "ref.nii.gz",
       "segmentations": [{"path": "ref_seg.nii.gz"}],

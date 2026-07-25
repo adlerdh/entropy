@@ -475,6 +475,44 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
     "imageBoxVisible",
     settings.m_backgroundEdgeBrighteningEnabled,
     defaults.m_backgroundEdgeBrighteningEnabled);
+  addIfChanged(j, "meshRenderingEnabled", settings.m_meshRenderingEnabled, defaults.m_meshRenderingEnabled);
+  json meshShadows = json::object();
+  addIfChanged(meshShadows, "enabled", settings.m_meshShadowsEnabled, defaults.m_meshShadowsEnabled);
+  addIfChanged(meshShadows, "mapSizePixels", settings.m_meshShadowMapSizePixels, defaults.m_meshShadowMapSizePixels);
+  addIfChanged(meshShadows, "strength", settings.m_meshShadowStrength, defaults.m_meshShadowStrength);
+  addIfChanged(meshShadows, "depthBias", settings.m_meshShadowDepthBias, defaults.m_meshShadowDepthBias);
+  addIfNotEmpty(j, "meshShadows", std::move(meshShadows));
+  json meshAmbientOcclusion = json::object();
+  addIfChanged(
+    meshAmbientOcclusion,
+    "enabled",
+    settings.m_meshAmbientOcclusionEnabled,
+    defaults.m_meshAmbientOcclusionEnabled);
+  addIfChanged(
+    meshAmbientOcclusion,
+    "radiusPixels",
+    settings.m_meshAmbientOcclusionRadiusPixels,
+    defaults.m_meshAmbientOcclusionRadiusPixels);
+  addIfChanged(
+    meshAmbientOcclusion,
+    "strength",
+    settings.m_meshAmbientOcclusionStrength,
+    defaults.m_meshAmbientOcclusionStrength);
+  addIfNotEmpty(j, "meshAmbientOcclusion", std::move(meshAmbientOcclusion));
+  addIfChanged(
+    j,
+    "meshTranslucentCompositing",
+    enumToName(settings.m_meshTranslucentCompositing, k_meshCompositingModeNames),
+    enumToName(defaults.m_meshTranslucentCompositing, k_meshCompositingModeNames));
+  addIfChanged(j, "meshPickingEnabled", settings.m_meshPickingEnabled, defaults.m_meshPickingEnabled);
+  json meshClipPlane = json::object();
+  addIfChanged(meshClipPlane, "enabled", settings.m_meshClipPlaneEnabled, defaults.m_meshClipPlaneEnabled);
+  addIfChanged(
+    meshClipPlane,
+    "worldPlane",
+    vec4ToJson(settings.m_meshClipPlaneWorld),
+    vec4ToJson(defaults.m_meshClipPlaneWorld));
+  addIfNotEmpty(j, "meshClipPlane", std::move(meshClipPlane));
   addIfChanged(j, "crosshairsGlyphVisible", settings.m_showCrosshairsIn3D, defaults.m_showCrosshairsIn3D);
   addIfChanged(
     j,
@@ -515,6 +553,63 @@ void from_json(const json& j, ProjectRaycastingSettings& settings)
   }
   if (const auto value = j.find("imageBoxVisible"); value != j.end() && value->is_boolean()) {
     settings.m_backgroundEdgeBrighteningEnabled = value->get<bool>();
+  }
+  if (const auto value = j.find("meshRenderingEnabled"); value != j.end() && value->is_boolean()) {
+    settings.m_meshRenderingEnabled = value->get<bool>();
+  }
+  if (const auto meshShadows = j.find("meshShadows"); meshShadows != j.end() && meshShadows->is_object()) {
+    if (const auto value = meshShadows->find("enabled"); value != meshShadows->end() && value->is_boolean()) {
+      settings.m_meshShadowsEnabled = value->get<bool>();
+    }
+    if (const auto value = meshShadows->find("mapSizePixels");
+        value != meshShadows->end() && value->is_number_unsigned())
+    {
+      settings.m_meshShadowMapSizePixels = std::clamp(value->get<uint32_t>(), 128u, 8192u);
+    }
+    if (const auto value = meshShadows->find("strength"); value != meshShadows->end() && value->is_number()) {
+      settings.m_meshShadowStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = meshShadows->find("depthBias"); value != meshShadows->end() && value->is_number()) {
+      settings.m_meshShadowDepthBias = std::clamp(value->get<float>(), 0.0f, 0.1f);
+    }
+  }
+  if (const auto meshAmbientOcclusion = j.find("meshAmbientOcclusion");
+      meshAmbientOcclusion != j.end() && meshAmbientOcclusion->is_object())
+  {
+    if (const auto value = meshAmbientOcclusion->find("enabled");
+        value != meshAmbientOcclusion->end() && value->is_boolean())
+    {
+      settings.m_meshAmbientOcclusionEnabled = value->get<bool>();
+    }
+    if (const auto value = meshAmbientOcclusion->find("radiusPixels");
+        value != meshAmbientOcclusion->end() && value->is_number())
+    {
+      settings.m_meshAmbientOcclusionRadiusPixels = std::clamp(value->get<float>(), 1.0f, 128.0f);
+    }
+    if (const auto value = meshAmbientOcclusion->find("strength");
+        value != meshAmbientOcclusion->end() && value->is_number())
+    {
+      settings.m_meshAmbientOcclusionStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+  }
+  if (
+    const auto parsed =
+      enumFromName<ProjectMeshCompositingMode>(j.value("meshTranslucentCompositing", ""), k_meshCompositingModeNames))
+  {
+    settings.m_meshTranslucentCompositing = *parsed;
+  }
+  if (const auto value = j.find("meshPickingEnabled"); value != j.end() && value->is_boolean()) {
+    settings.m_meshPickingEnabled = value->get<bool>();
+  }
+  if (const auto meshClipPlane = j.find("meshClipPlane"); meshClipPlane != j.end() && meshClipPlane->is_object()) {
+    if (const auto value = meshClipPlane->find("enabled"); value != meshClipPlane->end() && value->is_boolean()) {
+      settings.m_meshClipPlaneEnabled = value->get<bool>();
+    }
+    if (const auto value = meshClipPlane->find("worldPlane");
+        value != meshClipPlane->end() && value->is_array() && value->size() == 4)
+    {
+      settings.m_meshClipPlaneWorld = vec4FromJson(*value);
+    }
   }
   if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();

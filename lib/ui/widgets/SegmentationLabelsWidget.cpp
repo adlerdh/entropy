@@ -86,6 +86,7 @@ void renderSegLabelsChildWindow(
     snprintf(labelIndexBuffer, 32, "%03zu", i);
 
     bool labelVisible = labelTable->getVisible(i);
+    bool labelShowMesh = labelTable->getShowMesh(i);
     std::string labelName = labelTable->getName(i);
 
     // ImGui::ColorEdit represents color as non-premultiplied colors
@@ -96,6 +97,17 @@ void renderSegLabelsChildWindow(
     if (ImGui::Checkbox("##labelVisible", &labelVisible)) {
       labelTable->setVisible(i, labelVisible);
       updateLabelColorTableTexture(tableIndex);
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("%s", "Show this label in 2D views");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Checkbox("##labelShowMesh", &labelShowMesh)) {
+      labelTable->setShowMesh(i, labelShowMesh);
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("%s", "Show this label as a 3D mesh");
     }
 
     ImGui::SameLine();

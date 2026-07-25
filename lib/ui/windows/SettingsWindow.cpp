@@ -12,6 +12,7 @@
 #include "common/LoggingSettings.h"
 #include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
+#include "rendering/mesh/MeshAdvancedLighting.h"
 #include "registration/Config.h"
 
 #include <glm/glm.hpp>
@@ -2198,6 +2199,135 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
   ImGui::SameLine();
   helpMarker("Render a subtle outline of the raycast image box in 3D views");
+
+  ImGui::Checkbox("Use mesh rendering when ready", &renderData.m_isosurfaceMeshRenderingEnabled);
+  ImGui::SameLine();
+  helpMarker(
+    "Render committed opaque isosurfaces as extracted meshes when possible; raycasting is still used while editing");
+
+  ImGui::BeginDisabled(!renderData.m_isosurfaceMeshRenderingEnabled);
+  const auto meshLightingPlan = rendering::mesh::meshAdvancedLightingPlan(
+    renderData.m_meshAdvancedLightingSettings,
+    rendering::mesh::MeshAdvancedLightingCapabilities{
+      .shadowMapPassAvailable = true,
+      .ambientOcclusionPassAvailable = true});
+  const std::vector<std::string> meshLightingDiagnostics =
+    rendering::mesh::advancedLightingDiagnostics(meshLightingPlan);
+  for (const std::string& diagnostic : meshLightingDiagnostics) {
+    disabledTextWrapped(diagnostic.c_str());
+  }
+
+  const char* meshCompositingPreview = "Alpha over";
+  switch (renderData.m_meshTranslucentCompositingMode) {
+    case rendering::mesh::MeshCompositingMode::Additive:
+      meshCompositingPreview = "Additive";
+      break;
+    case rendering::mesh::MeshCompositingMode::Multiplicative:
+      meshCompositingPreview = "Multiplicative";
+      break;
+    case rendering::mesh::MeshCompositingMode::Opaque:
+    case rendering::mesh::MeshCompositingMode::AlphaOverDdp:
+      meshCompositingPreview = "Alpha over";
+      break;
+  }
+  if (ImGui::BeginCombo("Translucent mesh compositing", meshCompositingPreview)) {
+    if (ImGui::Selectable(
+          "Alpha over",
+          renderData.m_meshTranslucentCompositingMode == rendering::mesh::MeshCompositingMode::AlphaOverDdp))
+    {
+      renderData.m_meshTranslucentCompositingMode = rendering::mesh::MeshCompositingMode::AlphaOverDdp;
+    }
+    if (ImGui::Selectable(
+          "Additive",
+          renderData.m_meshTranslucentCompositingMode == rendering::mesh::MeshCompositingMode::Additive))
+    {
+      renderData.m_meshTranslucentCompositingMode = rendering::mesh::MeshCompositingMode::Additive;
+    }
+    if (ImGui::Selectable(
+          "Multiplicative",
+          renderData.m_meshTranslucentCompositingMode == rendering::mesh::MeshCompositingMode::Multiplicative))
+    {
+      renderData.m_meshTranslucentCompositingMode = rendering::mesh::MeshCompositingMode::Multiplicative;
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::SameLine();
+  helpMarker("Compositing path used for translucent mesh surfaces");
+
+  ImGui::Checkbox("Mesh point picking", &renderData.m_meshPickingEnabled);
+  ImGui::SameLine();
+  helpMarker("Use ready mesh geometry for 3D double-click crosshairs placement before falling back to raycasting");
+
+  ImGui::Checkbox("Mesh clipping plane", &renderData.m_meshClipPlaneEnabled);
+  ImGui::SameLine();
+  helpMarker("Clip mesh surfaces against one world-space plane");
+  if (renderData.m_meshClipPlaneEnabled) {
+    ImGui::DragFloat4("Clip plane", glm::value_ptr(renderData.m_meshClipPlaneWorld), 0.1f, -10000.0f, 10000.0f);
+    ImGui::SameLine();
+    helpMarker("World-space plane as nx, ny, nz, d; visible points satisfy dot(n, position) + d >= 0");
+  }
+
+  ImGui::Checkbox("Mesh shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
+  ImGui::SameLine();
+  helpMarker("Cast simple directional shadows from mesh-rendered surfaces");
+  if (renderData.m_meshAdvancedLightingSettings.shadows.enabled) {
+    int mapSizePixels = static_cast<int>(renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels);
+    if (ImGui::DragInt("Shadow map size", &mapSizePixels, 64.0f, 128, 8192, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
+      renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = static_cast<uint32_t>(mapSizePixels);
+    }
+    ImGui::SameLine();
+    helpMarker("Square depth texture size used for mesh shadows");
+
+    ImGui::DragFloat(
+      "Shadow strength",
+      &renderData.m_meshAdvancedLightingSettings.shadows.strength,
+      0.01f,
+      0.0f,
+      1.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Fraction of direct light removed in shadowed regions");
+
+    ImGui::DragFloat(
+      "Shadow depth bias",
+      &renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
+      0.0001f,
+      0.0f,
+      0.1f,
+      "%0.4f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Depth offset used to reduce self-shadowing artifacts");
+  }
+
+  ImGui::Checkbox("Mesh ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
+  ImGui::SameLine();
+  helpMarker("Darken small screen-space creases and nearby mesh depth discontinuities");
+  if (renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled) {
+    ImGui::DragFloat(
+      "AO radius",
+      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels,
+      0.25f,
+      1.0f,
+      128.0f,
+      "%0.1f px",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Screen-space sample radius used by mesh ambient occlusion");
+
+    ImGui::DragFloat(
+      "AO strength",
+      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
+      0.01f,
+      0.0f,
+      1.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Maximum darkening applied by mesh ambient occlusion");
+  }
+  ImGui::EndDisabled();
 
   // Should the front and back faces be rendered in 3D raycasting?
   ImGui::Spacing();

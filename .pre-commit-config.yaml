@@ -5,7 +5,7 @@ repos:
       - id: codespell
         args:
           - --ignore-words=.codespellignore
-        exclude: ^(external/|app/logic_old/|app/rendering_old/|res/fonts/ForkAwesome/|build[^/]*/|.*\.log$)
+        exclude: ^(external/|res/fonts/ForkAwesome/|build[^/]*/|.*\.log$)
 
   - repo: local
     hooks:

@@ -23,6 +23,8 @@ std::string typeString(const ViewRenderMode& mode)
       return "Joint histogram";
     case ViewRenderMode::VolumeRender:
       return "Volume render isosurfaces";
+    case ViewRenderMode::SegmentationMesh:
+      return "Render segmentation meshes";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:
@@ -75,6 +77,8 @@ std::string descriptionString(const ViewRenderMode& mode)
       return "Joint histogram metric";
     case ViewRenderMode::VolumeRender:
       return "Iso-surface volume rendering";
+    case ViewRenderMode::SegmentationMesh:
+      return "Segmentation labels rendered as 3D meshes";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:

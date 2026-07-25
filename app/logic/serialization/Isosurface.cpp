@@ -54,6 +54,13 @@ void to_json(json& j, const SurfaceMaterial& material)
   addIfChanged(j, "diffuse", material.diffuse, defaults.diffuse);
   addIfChanged(j, "specular", material.specular, defaults.specular);
   addIfChanged(j, "shininess", material.shininess, defaults.shininess);
+
+  json pbr = json::object();
+  addIfChanged(pbr, "enabled", material.usePbrShading, defaults.usePbrShading);
+  addIfChanged(pbr, "metallic", material.metallic, defaults.metallic);
+  addIfChanged(pbr, "roughness", material.roughness, defaults.roughness);
+  addIfChanged(pbr, "ambientOcclusion", material.ambientOcclusion, defaults.ambientOcclusion);
+  addIfNotEmpty(j, "pbr", std::move(pbr));
 }
 
 void from_json(const json& j, SurfaceMaterial& material)
@@ -69,6 +76,20 @@ void from_json(const json& j, SurfaceMaterial& material)
   }
   if (const auto value = j.find("shininess"); value != j.end() && value->is_number()) {
     material.shininess = value->get<float>();
+  }
+  if (const auto pbr = j.find("pbr"); pbr != j.end() && pbr->is_object()) {
+    if (const auto value = pbr->find("enabled"); value != pbr->end() && value->is_boolean()) {
+      material.usePbrShading = value->get<bool>();
+    }
+    if (const auto value = pbr->find("metallic"); value != pbr->end() && value->is_number()) {
+      material.metallic = value->get<float>();
+    }
+    if (const auto value = pbr->find("roughness"); value != pbr->end() && value->is_number()) {
+      material.roughness = value->get<float>();
+    }
+    if (const auto value = pbr->find("ambientOcclusion"); value != pbr->end() && value->is_number()) {
+      material.ambientOcclusion = value->get<float>();
+    }
   }
 }
 

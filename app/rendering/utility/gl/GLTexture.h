@@ -138,8 +138,8 @@ public:
   /// Return whether this texture is currently bound, optionally on the supplied texture unit.
   bool isBound(std::optional<uint32_t> textureUnit = std::nullopt);
 
-  /// Unbind this texture target from the current context.
-  void unbind();
+  /// Unbind this texture target from the current context, or from one specific texture unit.
+  void unbind(std::optional<uint32_t> textureUnit = std::nullopt);
 
   /// @todo Place Sampler Object in separate class.
   /// @todo Store Sampler Object as member of GPU image record
@@ -222,6 +222,9 @@ public:
 
   /// Enable or disable automatic mipmap generation after texture uploads.
   void setAutoGenerateMipmaps(bool enabled);
+
+  /// Record storage attached through `glTexBuffer()`, which does not use the normal `setData()` upload path.
+  void markBufferTextureStorage(GLint internalFormat, std::size_t texelCount);
 
   void setMultisampleSettings(const MultisampleSettings& settings);
 
@@ -328,7 +331,13 @@ private:
   const GLenum m_targetEnum;
   GLuint m_id;
   glm::uvec3 m_size{0u};
+  bool m_hasAllocatedStorage = false;
   bool m_autoGenerateMipmaps = false;
+  mutable bool m_loggedSuspiciousBind = false;
+  mutable bool m_loggedUnitZeroBind = false;
+  GLint m_lastInternalFormat = 0;
+  GLenum m_lastBufferFormat = 0;
+  GLenum m_lastBufferType = 0;
 
   GLuint m_samplerID = 0u;
 

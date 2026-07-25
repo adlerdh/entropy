@@ -257,6 +257,14 @@ void Rendering::renderAllImagesForView(
 
     case ShaderGroup::Volume: {
       renderVolumeImagesForView(view);
+      renderMeshImagePlanesForView(view);
+      break;
+    }
+
+    case ShaderGroup::Mesh: {
+      renderSegmentationMeshesForView(view);
+      renderMeshCrosshairsForView(view);
+      renderMeshLandmarksForView(view);
       break;
     }
 

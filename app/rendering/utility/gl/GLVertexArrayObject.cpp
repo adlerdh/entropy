@@ -33,6 +33,22 @@ GLVertexArrayObject::~GLVertexArrayObject()
   destroy();
 }
 
+GLVertexArrayObject::GLVertexArrayObject(GLVertexArrayObject&& other) noexcept : m_id(other.m_id)
+{
+  other.m_id = 0;
+}
+
+GLVertexArrayObject& GLVertexArrayObject::operator=(GLVertexArrayObject&& other) noexcept
+{
+  if (this != &other) {
+    destroy();
+    m_id = other.m_id;
+    other.m_id = 0;
+  }
+
+  return *this;
+}
+
 void GLVertexArrayObject::generate()
 {
   glGenVertexArrays(1, &m_id);
@@ -43,6 +59,7 @@ void GLVertexArrayObject::generate()
 void GLVertexArrayObject::destroy()
 {
   glDeleteVertexArrays(1, &m_id);
+  m_id = 0;
 }
 
 void GLVertexArrayObject::bind() const

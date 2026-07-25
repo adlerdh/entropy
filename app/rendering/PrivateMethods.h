@@ -25,6 +25,86 @@ void createShaderPrograms();
  */
 bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
 
+/**
+ * @brief Compile and link the basic mesh shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh shadow-map depth shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshShadowDepthProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh ambient occlusion geometry shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh ambient occlusion resolve shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshAmbientOcclusionResolveProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane grayscale shader for ordinary 3D textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneGrayLinearProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane grayscale shader for planar 2D fallback textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh DDP initialization shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshDdpInitProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh DDP peeling shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshDdpPeelProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh DDP back-color blend shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshDdpBackBlendProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh DDP resolve shader program.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshDdpResolveProgram(GLShaderProgram& program);
+
 /// @}
 /// @name Top-level render passes
 /// @{
@@ -140,6 +220,71 @@ void renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXha
  * @brief Render the volume/raycast mode for one 3D view.
  */
 void renderVolumeImagesForView(const View& view);
+
+/**
+ * @brief Apply completed background mesh extraction jobs to the CPU mesh cache.
+ */
+void consumeCompletedMeshExtractions();
+
+/**
+ * @brief Render one mesh render list into a 3D view using the renderer's configured compositing paths.
+ *
+ * @param view View receiving the mesh draw.
+ * @param list Opaque, transparent, additive, and multiplicative mesh buckets to render.
+ */
+void drawMeshRenderListForView(const View& view, const rendering::mesh::MeshRenderList& list);
+
+/**
+ * @brief Render textured image-plane mesh renderables into a 3D view.
+ *
+ * @param view View receiving the image planes.
+ * @param list Filtered image-plane renderables to draw.
+ */
+void drawMeshImagePlaneRenderListForView(const View& view, const rendering::mesh::MeshImagePlaneRenderList& list);
+
+/**
+ * @brief Render enabled orthogonal image planes through the current 3D crosshairs position.
+ *
+ * @param view 3D view receiving the image planes.
+ */
+void renderMeshImagePlanesForView(const View& view);
+
+/**
+ * @brief Return project-wide world-space mesh clipping planes enabled for the current renderer state.
+ *
+ * @return Enabled mesh clipping planes, or an empty vector when clipping is disabled.
+ */
+std::vector<rendering::mesh::MeshClipPlane> meshClipPlanes() const;
+
+/**
+ * @brief Render committed isosurfaces through the mesh path when they no longer require raycasting.
+ *
+ * @param view 3D view receiving the mesh draw.
+ * @param imgSegPair Image/segmentation pair selected for volume rendering.
+ * @param renderWarped True when the current image would be sampled through an inverse warp field.
+ * @return True when all visible isosurfaces were rendered as meshes and raycasting can be skipped.
+ */
+bool renderIsosurfaceMeshesForView(const View& view, const ImgSegPair& imgSegPair, bool renderWarped);
+
+/**
+ * @brief Render the active segmentation of the selected 3D image as label meshes.
+ */
+void renderSegmentationMeshesForView(const View& view);
+
+/**
+ * @brief Render the 3D crosshairs glyph through the mesh path.
+ */
+void renderMeshCrosshairsForView(const View& view);
+
+/**
+ * @brief Render landmark groups assigned to the selected 3D image through the mesh path.
+ */
+void renderMeshLandmarksForView(const View& view);
+
+/**
+ * @brief Render the internal opt-in synthetic mesh scene for one 3D view.
+ */
+void renderSyntheticMeshSceneForView(const View& view);
 
 /**
  * @brief Return the image/segmentation pair currently eligible for 3D raycast rendering in a view.

@@ -3,6 +3,8 @@
 #include "common/Types.h"
 
 #include "rendering/TextureLayout.h"
+#include "rendering/mesh/MeshAdvancedLighting.h"
+#include "rendering/mesh/MeshCompositing.h"
 #include "rendering/utility/containers/VertexAttributeInfo.h"
 #include "rendering/utility/containers/VertexIndicesInfo.h"
 #include "rendering/utility/gl/GLBufferObject.h"
@@ -320,6 +322,20 @@ struct RenderData
 
   /// Whether raycast background edge brightening is enabled for rays crossing the image box.
   bool m_raycastBackgroundEdgeBrighteningEnabled;
+
+  /// Whether committed opaque isosurfaces may be rendered as extracted meshes instead of raycast previews.
+  bool m_isosurfaceMeshRenderingEnabled;
+
+  /// Optional advanced mesh-lighting settings for mesh-rendered 3D surfaces.
+  rendering::mesh::MeshAdvancedLightingSettings m_meshAdvancedLightingSettings;
+
+  rendering::mesh::MeshCompositingMode m_meshTranslucentCompositingMode; //!< Translucent mesh compositing path
+
+  bool m_meshPickingEnabled; //!< Whether mesh surfaces participate in 3D point picking
+
+  bool m_meshClipPlaneEnabled; //!< Whether the project-wide mesh clipping plane is active
+
+  glm::vec4 m_meshClipPlaneWorld; //!< World-space mesh clipping plane `(nx, ny, nz, d)`
 
   bool m_showCrosshairsIn3D; //!< Whether the 3D crosshairs glyph is rendered in raycast views
 

@@ -3,44 +3,16 @@
 #include "logic/app/ParcellationLabelTable.h"
 #include "image/ImageColorMap.h"
 
-#include "logic/records/MeshRecord.h"
-#include "logic_old/records/ImageRecord.h"
-#include "logic_old/records/SlideAnnotationRecord.h"
-#include "logic_old/records/SlideRecord.h"
+#include "rendering/records/MeshGpuRecord.h"
 
 #include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
 
-#include <vtkPolyData.h>
-#include <vtkSmartPointer.h>
-
 #include <memory>
-
-class PlanarPolygon;
 
 namespace gpuhelper
 {
-
-/**
- * @brief Create a GPU texture record for one component of a CPU image record.
- *
- * The texture is uploaded as a 3D texture using the image's native component type. Integer images can be uploaded as
- * normalized or integer textures depending on `useNormalizedIntegers`.
- *
- * @param imageCpuRecord Image data source.
- * @param componentIndex Image component to upload.
- * @param minFilter Texture minification filter.
- * @param magFilter Texture magnification filter.
- * @param useNormalizedIntegers Whether integer data should be uploaded through normalized integer texture formats.
- * @return GPU image record, or null if texture creation fails.
- */
-std::unique_ptr<ImageGpuRecord> createImageGpuRecord(
-  const Image* imageCpuRecord,
-  const uint32_t componentIndex,
-  const tex::MinificationFilter& minFilter,
-  const tex::MagnificationFilter& magFilter,
-  bool useNormalizedIntegers);
 
 /**
  * @brief Create GPU mesh buffers for the canonical slice mesh.
@@ -95,32 +67,6 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
   const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::DynamicDraw);
 
 /**
- * @brief Convert VTK polygonal data into a GPU mesh record.
- * @param polyData VTK polydata containing points, normals, and primitive connectivity.
- * @param primitiveType Mesh primitive interpretation for the generated record.
- * @param bufferUsagePattern OpenGL buffer usage hint.
- * @return GPU mesh record, or null if required VTK arrays cannot be extracted.
- */
-std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
-  vtkSmartPointer<vtkPolyData> polyData,
-  const MeshPrimitiveType& primitiveType,
-  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::StreamDraw);
-
-/**
- * @brief Create a GPU record for a slide image.
- * @param cpuRecord CPU slide record containing the source image data.
- * @return GPU slide record, or null if texture creation fails.
- */
-std::unique_ptr<SlideGpuRecord> createSlideGpuRecord(const slideio::SlideCpuRecord* cpuRecord);
-
-/**
- * @brief Create a GPU record for a slide annotation polygon.
- * @param polygon Planar polygon to upload.
- * @return GPU slide annotation record.
- */
-std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const PlanarPolygon& polygon);
-
-/**
  * @brief Create a 1D texture for an image color map.
  * @param colorMap Image color map to upload.
  * @return Texture object, or null if the input is invalid.
@@ -141,11 +87,5 @@ std::unique_ptr<GLBufferTexture> createLabelColorTableTextureBuffer(const Parcel
  * @return Blank texture object.
  */
 GLTexture createBlankRGBATexture(const ComponentType& compType, const tex::Target& texTarget);
-
-/**
- * @brief Fill a mesh record with a small test color buffer.
- * @param meshRecord Mesh record that receives the generated color buffer.
- */
-void createTestColorBuffer(MeshRecord& meshRecord);
 
 } // namespace gpuhelper

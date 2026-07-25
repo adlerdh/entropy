@@ -55,8 +55,8 @@ public:
   GLVertexArrayObject(const GLVertexArrayObject&) = delete;
   GLVertexArrayObject& operator=(const GLVertexArrayObject&) = delete;
 
-  GLVertexArrayObject(GLVertexArrayObject&&) = default;
-  GLVertexArrayObject& operator=(GLVertexArrayObject&&) = default;
+  GLVertexArrayObject(GLVertexArrayObject&& other) noexcept;
+  GLVertexArrayObject& operator=(GLVertexArrayObject&& other) noexcept;
 
   /// Generate the VAO name if needed.
   void generate();

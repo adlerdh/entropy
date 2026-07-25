@@ -13,6 +13,37 @@
 
 namespace
 {
+serialize::ProjectMeshCompositingMode projectMeshCompositingMode(
+  const rendering::mesh::MeshCompositingMode compositingMode) noexcept
+{
+  switch (compositingMode) {
+    case rendering::mesh::MeshCompositingMode::Additive:
+      return serialize::ProjectMeshCompositingMode::Additive;
+    case rendering::mesh::MeshCompositingMode::Multiplicative:
+      return serialize::ProjectMeshCompositingMode::Multiplicative;
+    case rendering::mesh::MeshCompositingMode::Opaque:
+    case rendering::mesh::MeshCompositingMode::AlphaOverDdp:
+      return serialize::ProjectMeshCompositingMode::AlphaOver;
+  }
+
+  return serialize::ProjectMeshCompositingMode::AlphaOver;
+}
+
+rendering::mesh::MeshCompositingMode meshCompositingMode(
+  const serialize::ProjectMeshCompositingMode compositingMode) noexcept
+{
+  switch (compositingMode) {
+    case serialize::ProjectMeshCompositingMode::Additive:
+      return rendering::mesh::MeshCompositingMode::Additive;
+    case serialize::ProjectMeshCompositingMode::Multiplicative:
+      return rendering::mesh::MeshCompositingMode::Multiplicative;
+    case serialize::ProjectMeshCompositingMode::AlphaOver:
+      return rendering::mesh::MeshCompositingMode::AlphaOverDdp;
+  }
+
+  return rendering::mesh::MeshCompositingMode::AlphaOverDdp;
+}
+
 GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
 {
   return UiLayoutTabPlacement::Bottom == placement ? GuiData::LayoutTabPlacement::Bottom
@@ -369,6 +400,18 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
     .m_samplingFactor = renderData.m_raycastSamplingFactor,
     .m_transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit,
     .m_backgroundEdgeBrighteningEnabled = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
+    .m_meshRenderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
+    .m_meshShadowsEnabled = renderData.m_meshAdvancedLightingSettings.shadows.enabled,
+    .m_meshShadowMapSizePixels = renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels,
+    .m_meshShadowStrength = renderData.m_meshAdvancedLightingSettings.shadows.strength,
+    .m_meshShadowDepthBias = renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
+    .m_meshAmbientOcclusionEnabled = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
+    .m_meshAmbientOcclusionRadiusPixels = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels,
+    .m_meshAmbientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
+    .m_meshTranslucentCompositing = projectMeshCompositingMode(renderData.m_meshTranslucentCompositingMode),
+    .m_meshPickingEnabled = renderData.m_meshPickingEnabled,
+    .m_meshClipPlaneEnabled = renderData.m_meshClipPlaneEnabled,
+    .m_meshClipPlaneWorld = renderData.m_meshClipPlaneWorld,
     .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
     .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
     .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
@@ -388,6 +431,18 @@ void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastin
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
   renderData.m_3dTransparentIfNoHit = settings.m_transparentBackgroundWhenNoHit;
   renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_backgroundEdgeBrighteningEnabled;
+  renderData.m_isosurfaceMeshRenderingEnabled = settings.m_meshRenderingEnabled;
+  renderData.m_meshAdvancedLightingSettings.shadows.enabled = settings.m_meshShadowsEnabled;
+  renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = settings.m_meshShadowMapSizePixels;
+  renderData.m_meshAdvancedLightingSettings.shadows.strength = settings.m_meshShadowStrength;
+  renderData.m_meshAdvancedLightingSettings.shadows.depthBias = settings.m_meshShadowDepthBias;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_meshAmbientOcclusionEnabled;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels = settings.m_meshAmbientOcclusionRadiusPixels;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_meshAmbientOcclusionStrength;
+  renderData.m_meshTranslucentCompositingMode = meshCompositingMode(settings.m_meshTranslucentCompositing);
+  renderData.m_meshPickingEnabled = settings.m_meshPickingEnabled;
+  renderData.m_meshClipPlaneEnabled = settings.m_meshClipPlaneEnabled;
+  renderData.m_meshClipPlaneWorld = settings.m_meshClipPlaneWorld;
   renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
   renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
   renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;

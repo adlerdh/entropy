@@ -5,7 +5,8 @@ namespace ui::view_overlay
 
 bool usesVisibleImageSelection(const ViewRenderMode renderMode)
 {
-  return ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode;
+  return ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode ||
+         ViewRenderMode::SegmentationMesh == renderMode;
 }
 
 bool usesMetricImageSelection(const ViewRenderMode renderMode)

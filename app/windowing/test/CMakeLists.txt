@@ -1,5 +1,10 @@
 add_executable(TestWindowing
+  ViewCameraDefaultsTests.cpp
   WindowingHeaderIncludeTests.cpp
+)
+
+target_sources(TestWindowing PRIVATE
+  "${entropy_APP_DIR}/windowing/ViewCameraDefaults.cpp"
 )
 
 target_link_libraries(TestWindowing PRIVATE

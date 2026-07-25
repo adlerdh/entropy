@@ -107,6 +107,7 @@ TEST_CASE("frame image selection exposes visible images by render mode", "[viewe
 
   CHECK(asVector(selection.visibleImages(ViewRenderMode::Image)) == std::vector{uuidFromIndex(1)});
   CHECK(asVector(selection.visibleImages(ViewRenderMode::VolumeRender)) == std::vector{uuidFromIndex(4)});
+  CHECK(asVector(selection.visibleImages(ViewRenderMode::SegmentationMesh)) == std::vector{uuidFromIndex(4)});
   CHECK(
     asVector(selection.visibleImages(ViewRenderMode::Difference)) == std::vector{uuidFromIndex(2), uuidFromIndex(3)});
   CHECK(selection.visibleImages(ViewRenderMode::Disabled).empty());

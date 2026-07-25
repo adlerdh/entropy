@@ -282,22 +282,6 @@ public:
 
   Isosurface* isosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
 
-  /*
-  bool updateIsosurfaceMeshCpuRecord(
-    const uuid& imageUid,
-    ComponentIndexType component,
-    const uuid& isosurfaceUid,
-    std::unique_ptr<MeshCpuRecord> cpuRecord
-  );
-
-  bool updateIsosurfaceMeshGpuRecord(
-    const uuid& imageUid,
-    ComponentIndexType component,
-    const uuid& isosurfaceUid,
-    std::unique_ptr<MeshGpuRecord> gpuRecord
-  );
-*/
-
   const ImageColorMap* imageColorMap(const uuid& mapUid) const;
   ImageColorMap* imageColorMap(const uuid& mapUid);
 

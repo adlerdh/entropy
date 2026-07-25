@@ -85,7 +85,8 @@ const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
     {ViewRenderMode::VolumeRender, "volumeRender"},
     {ViewRenderMode::Disabled, "disabled"},
     {ViewRenderMode::LocalNcc, "localNcc"},
-    {ViewRenderMode::LocalLinearResidual, "localLinearResidual"}};
+    {ViewRenderMode::LocalLinearResidual, "localLinearResidual"},
+    {ViewRenderMode::SegmentationMesh, "segmentationMesh"}};
   return names;
 }
 
@@ -331,6 +332,7 @@ void to_json(nlohmann::json& j, const ViewSpec& view)
     "cameraFollowsCrosshairs",
     view.m_threeDCameraFollowsCrosshairs,
     defaults.m_threeDCameraFollowsCrosshairs);
+  addIfChanged(threeD, "imagePlanesVisible", view.m_threeDImagePlanesVisible, defaults.m_threeDImagePlanesVisible);
   addIfChanged(threeD, "perspectiveZoom", view.m_threeDPerspectiveZoom, defaults.m_threeDPerspectiveZoom);
   addIfChanged(threeD, "orthographicZoom", view.m_threeDOrthographicZoom, defaults.m_threeDOrthographicZoom);
   addIfNotEmpty(j, "threeD", std::move(threeD));
@@ -429,6 +431,9 @@ void from_json(const nlohmann::json& j, ViewSpec& view)
     }
     if (t.count("cameraFollowsCrosshairs")) {
       t.at("cameraFollowsCrosshairs").get_to(view.m_threeDCameraFollowsCrosshairs);
+    }
+    if (t.count("imagePlanesVisible")) {
+      t.at("imagePlanesVisible").get_to(view.m_threeDImagePlanesVisible);
     }
     if (t.count("perspectiveZoom")) {
       t.at("perspectiveZoom").get_to(view.m_threeDPerspectiveZoom);

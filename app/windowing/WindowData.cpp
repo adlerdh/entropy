@@ -1718,18 +1718,9 @@ void WindowData::recenterView(
   bool resetZoom,
   bool resetObliqueOrientation)
 {
-  if (resetZoom) {
-    helper::resetZoom(view.camera());
-  }
-
-  if (resetObliqueOrientation) {
-    if (ViewType::Oblique == view.viewType()) {
-      // Reset the view orientation for oblique views:
-      helper::resetViewTransformation(view.camera());
-    }
-  }
-
   if (ViewType::ThreeD == view.viewType()) {
+    view.recenterSliceCamera(worldCenter, worldFov, resetZoom, resetObliqueOrientation);
+
     camera3d::SceneFrame scene;
     scene.m_center = worldCenter;
     scene.m_size = worldFov;
@@ -1753,12 +1744,7 @@ void WindowData::recenterView(
     return;
   }
 
-  if (resetZoom) {
-    helper::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);
-  }
-  else {
-    helper::positionCameraForWorldTarget(view.camera(), worldFov, worldCenter);
-  }
+  view.recenterSliceCamera(worldCenter, worldFov, resetZoom, resetObliqueOrientation);
 }
 
 uuid_range_t WindowData::currentViewUids() const

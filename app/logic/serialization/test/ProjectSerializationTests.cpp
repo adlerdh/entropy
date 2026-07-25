@@ -1,3 +1,4 @@
+#include "common/UuidUtility.h"
 #include "logic/serialization/ProjectSerialization.h"
 
 #include <catch2/catch_test_macros.hpp>
@@ -50,7 +51,7 @@ fs::path uniqueTempProjectDirectory()
   fs::create_directories(base);
 
   for (int i = 0; i < 1000; ++i) {
-    fs::path candidate = base / (std::string{"case-"} + std::to_string(i));
+    fs::path candidate = base / (std::string{"case-"} + uuids::to_string(generateRandomUuid()));
     std::error_code ec;
     if (fs::create_directories(candidate, ec)) {
       return candidate;
@@ -330,6 +331,18 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_raycasting.m_samplingFactor = 1.25f;
   project.m_raycasting.m_transparentBackgroundWhenNoHit = false;
   project.m_raycasting.m_backgroundEdgeBrighteningEnabled = false;
+  project.m_raycasting.m_meshRenderingEnabled = false;
+  project.m_raycasting.m_meshShadowsEnabled = true;
+  project.m_raycasting.m_meshShadowMapSizePixels = 2048;
+  project.m_raycasting.m_meshShadowStrength = 0.6f;
+  project.m_raycasting.m_meshShadowDepthBias = 0.002f;
+  project.m_raycasting.m_meshAmbientOcclusionEnabled = true;
+  project.m_raycasting.m_meshAmbientOcclusionRadiusPixels = 12.0f;
+  project.m_raycasting.m_meshAmbientOcclusionStrength = 0.7f;
+  project.m_raycasting.m_meshTranslucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
+  project.m_raycasting.m_meshPickingEnabled = false;
+  project.m_raycasting.m_meshClipPlaneEnabled = true;
+  project.m_raycasting.m_meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
   project.m_raycasting.m_showCrosshairsIn3D = true;
   project.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
   project.m_raycasting.m_showThreeDCameraFrustumIn2DViews = true;
@@ -368,6 +381,19 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
   CHECK(raycasting.at("transparentBackgroundWhenNoHit") == false);
   CHECK(raycasting.at("imageBoxVisible") == false);
+  CHECK(raycasting.at("meshRenderingEnabled") == false);
+  CHECK(raycasting.at("meshShadows").at("enabled") == true);
+  CHECK(raycasting.at("meshShadows").at("mapSizePixels") == 2048);
+  CHECK(raycasting.at("meshShadows").at("strength") == 0.6f);
+  CHECK(raycasting.at("meshShadows").at("depthBias") == 0.002f);
+  CHECK(raycasting.at("meshAmbientOcclusion").at("enabled") == true);
+  CHECK(raycasting.at("meshAmbientOcclusion").at("radiusPixels") == 12.0f);
+  CHECK(raycasting.at("meshAmbientOcclusion").at("strength") == 0.7f);
+  CHECK(raycasting.at("meshTranslucentCompositing") == "multiplicative");
+  CHECK(raycasting.at("meshPickingEnabled") == false);
+  CHECK(raycasting.at("meshClipPlane").at("enabled") == true);
+  CHECK(raycasting.at("meshClipPlane").at("worldPlane").at(1) == 1.0f);
+  CHECK(raycasting.at("meshClipPlane").at("worldPlane").at(3) == -12.5f);
   CHECK_FALSE(raycasting.contains("crosshairsGlyphVisible"));
   CHECK(raycasting.at("crosshairsGlyphDiameterVox") == 1.75f);
   CHECK(raycasting.at("cameraFrustumVisibleIn2DViews") == true);
@@ -400,6 +426,18 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
   CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
   CHECK(parsed.m_raycasting.m_backgroundEdgeBrighteningEnabled == false);
+  CHECK(parsed.m_raycasting.m_meshRenderingEnabled == false);
+  CHECK(parsed.m_raycasting.m_meshShadowsEnabled == true);
+  CHECK(parsed.m_raycasting.m_meshShadowMapSizePixels == 2048);
+  CHECK(parsed.m_raycasting.m_meshShadowStrength == 0.6f);
+  CHECK(parsed.m_raycasting.m_meshShadowDepthBias == 0.002f);
+  CHECK(parsed.m_raycasting.m_meshAmbientOcclusionEnabled == true);
+  CHECK(parsed.m_raycasting.m_meshAmbientOcclusionRadiusPixels == 12.0f);
+  CHECK(parsed.m_raycasting.m_meshAmbientOcclusionStrength == 0.7f);
+  CHECK(parsed.m_raycasting.m_meshTranslucentCompositing == serialize::ProjectMeshCompositingMode::Multiplicative);
+  CHECK(parsed.m_raycasting.m_meshPickingEnabled == false);
+  CHECK(parsed.m_raycasting.m_meshClipPlaneEnabled == true);
+  CHECK(parsed.m_raycasting.m_meshClipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
   CHECK(parsed.m_raycasting.m_showCrosshairsIn3D == true);
   CHECK(parsed.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
   CHECK(parsed.m_raycasting.m_showThreeDCameraFrustumIn2DViews == true);
@@ -1134,6 +1172,10 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   surface.material.diffuse = 0.6f;
   surface.material.specular = 0.3f;
   surface.material.shininess = 12.0f;
+  surface.material.usePbrShading = true;
+  surface.material.metallic = 0.4f;
+  surface.material.roughness = 0.2f;
+  surface.material.ambientOcclusion = 0.9f;
   surface.opacity = 0.7f;
   surface.fillOpacity = 0.25f;
   surface.visible = false;
@@ -1147,6 +1189,10 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
 
   CHECK(root.at("contourFillOpacity") == 0.25f);
   CHECK(root.at("showContours2D") == false);
+  CHECK(root.at("material").at("pbr").at("enabled") == true);
+  CHECK(root.at("material").at("pbr").at("metallic") == 0.4f);
+  CHECK(root.at("material").at("pbr").at("roughness") == 0.2f);
+  CHECK(root.at("material").at("pbr").at("ambientOcclusion") == 0.9f);
   CHECK(root.at("rimLighting").at("enabled") == true);
   CHECK(root.at("rimLighting").at("opacity") == 0.8f);
   CHECK(root.at("rimLighting").at("glow") == 1.25f);
@@ -1167,6 +1213,10 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   CHECK(parsed.material.diffuse == 0.6f);
   CHECK(parsed.material.specular == 0.3f);
   CHECK(parsed.material.shininess == 12.0f);
+  CHECK(parsed.material.usePbrShading);
+  CHECK(parsed.material.metallic == 0.4f);
+  CHECK(parsed.material.roughness == 0.2f);
+  CHECK(parsed.material.ambientOcclusion == 0.9f);
   CHECK(parsed.opacity == 0.7f);
   CHECK(parsed.fillOpacity == 0.25f);
   CHECK_FALSE(parsed.visible);

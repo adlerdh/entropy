@@ -1296,66 +1296,6 @@ Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType comp, c
   return const_cast<Isosurface*>(const_cast<const AppData*>(this)->isosurface(imageUid, comp, isosurfaceUid));
 }
 
-#if 0
-bool AppData::updateIsosurfaceMeshCpuRecord(
-  const uuid& imageUid,
-  ComponentIndexType component,
-  const uuid& isosurfaceUid,
-  std::unique_ptr<MeshCpuRecord> cpuRecord
-)
-{
-  std::lock_guard<std::mutex> lock(m_componentDataMutex);
-
-  auto compDataIt = m_imageToComponentData.find(imageUid);
-
-  if (std::end(m_imageToComponentData) != compDataIt)
-  {
-    if (component < compDataIt->second.size())
-    {
-      auto& isosurfaces = compDataIt->second.at(component).m_isosurfaces;
-      auto surfaceIt = isosurfaces.find(isosurfaceUid);
-
-      if (std::end(isosurfaces) != surfaceIt)
-      {
-        surfaceIt->second.mesh.setCpuData(std::move(cpuRecord));
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-bool AppData::updateIsosurfaceMeshGpuRecord(
-  const uuid& imageUid,
-  ComponentIndexType component,
-  const uuid& isosurfaceUid,
-  std::unique_ptr<MeshGpuRecord> gpuRecord
-)
-{
-  std::lock_guard<std::mutex> lock(m_componentDataMutex);
-
-  auto compDataIt = m_imageToComponentData.find(imageUid);
-
-  if (std::end(m_imageToComponentData) != compDataIt)
-  {
-    if (component < compDataIt->second.size())
-    {
-      auto& isosurfaces = compDataIt->second.at(component).m_isosurfaces;
-      auto surfaceIt = isosurfaces.find(isosurfaceUid);
-
-      if (std::end(isosurfaces) != surfaceIt)
-      {
-        surfaceIt->second.mesh.setGpuData(std::move(gpuRecord));
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-#endif
-
 const ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid) const
 {
   auto it = m_imageColorMaps.find(colorMapUid);

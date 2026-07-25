@@ -34,6 +34,10 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
       return ShaderGroup::Volume;
     }
 
+    case ViewRenderMode::SegmentationMesh: {
+      return ShaderGroup::Mesh;
+    }
+
     case ViewRenderMode::Disabled:
     default: {
       return ShaderGroup::None;

@@ -139,6 +139,36 @@ void Rendering::createShaderPrograms()
   if (!createRaycastIsoProgram(m_raycastIsoWarpedProgram, true)) {
     throwDebug("Failed to create warped isosurface raycasting program");
   }
+  if (!createMeshProgram(m_meshProgram)) {
+    throwDebug("Failed to create mesh program");
+  }
+  if (!createMeshShadowDepthProgram(m_meshShadowDepthProgram)) {
+    throwDebug("Failed to create mesh shadow-depth program");
+  }
+  if (!createMeshAmbientOcclusionGeometryProgram(m_meshAmbientOcclusionGeometryProgram)) {
+    throwDebug("Failed to create mesh ambient occlusion geometry program");
+  }
+  if (!createMeshAmbientOcclusionResolveProgram(m_meshAmbientOcclusionResolveProgram)) {
+    throwDebug("Failed to create mesh ambient occlusion resolve program");
+  }
+  if (!createMeshImagePlaneGrayLinearProgram(m_meshImagePlaneGrayLinearProgram)) {
+    throwDebug("Failed to create mesh image-plane grayscale program");
+  }
+  if (!createMeshImagePlaneGrayLinearTexture2DProgram(m_meshImagePlaneGrayLinearTexture2DProgram)) {
+    throwDebug("Failed to create mesh image-plane grayscale Texture2D program");
+  }
+  if (!createMeshDdpInitProgram(m_meshDdpInitProgram)) {
+    throwDebug("Failed to create mesh DDP init program");
+  }
+  if (!createMeshDdpPeelProgram(m_meshDdpPeelProgram)) {
+    throwDebug("Failed to create mesh DDP peel program");
+  }
+  if (!createMeshDdpBackBlendProgram(m_meshDdpBackBlendProgram)) {
+    throwDebug("Failed to create mesh DDP back-blend program");
+  }
+  if (!createMeshDdpResolveProgram(m_meshDdpResolveProgram)) {
+    throwDebug("Failed to create mesh DDP resolve program");
+  }
 
   m_asciiRenderer.registerShaderPrograms(m_shaderPrograms);
   m_pixelEdgeRenderer.registerShaderPrograms(m_shaderPrograms);

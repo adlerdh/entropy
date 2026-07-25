@@ -280,7 +280,15 @@ bool raycastingSettingsEqual(
   return a.m_samplingFactor == b.m_samplingFactor &&
          a.m_transparentBackgroundWhenNoHit == b.m_transparentBackgroundWhenNoHit &&
          a.m_backgroundEdgeBrighteningEnabled == b.m_backgroundEdgeBrighteningEnabled &&
-         a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
+         a.m_meshRenderingEnabled == b.m_meshRenderingEnabled && a.m_meshShadowsEnabled == b.m_meshShadowsEnabled &&
+         a.m_meshShadowMapSizePixels == b.m_meshShadowMapSizePixels &&
+         a.m_meshShadowStrength == b.m_meshShadowStrength && a.m_meshShadowDepthBias == b.m_meshShadowDepthBias &&
+         a.m_meshAmbientOcclusionEnabled == b.m_meshAmbientOcclusionEnabled &&
+         a.m_meshAmbientOcclusionRadiusPixels == b.m_meshAmbientOcclusionRadiusPixels &&
+         a.m_meshAmbientOcclusionStrength == b.m_meshAmbientOcclusionStrength &&
+         a.m_meshTranslucentCompositing == b.m_meshTranslucentCompositing &&
+         a.m_meshPickingEnabled == b.m_meshPickingEnabled && a.m_meshClipPlaneEnabled == b.m_meshClipPlaneEnabled &&
+         a.m_meshClipPlaneWorld == b.m_meshClipPlaneWorld && a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
          a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
          a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
          a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&

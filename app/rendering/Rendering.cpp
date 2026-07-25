@@ -17,6 +17,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -66,6 +67,61 @@ void logOpenGLTextureLimits()
     maxTextureBufferSize);
 }
 
+void logTextureUnitZeroStateIfChanged(const char* phase)
+{
+  struct UnitZeroState
+  {
+    GLint activeTexture = 0;
+    GLint texture2d = 0;
+    GLint texture3d = 0;
+    GLint textureBuffer = 0;
+    GLint textureRectangle = 0;
+    GLint sampler = 0;
+    GLint program = 0;
+
+    bool operator==(const UnitZeroState&) const = default;
+  };
+
+  static UnitZeroState lastState{};
+  static bool haveLastState = false;
+  static int logCount = 0;
+  static constexpr int maxLogs = 64;
+
+  if (logCount >= maxLogs) {
+    return;
+  }
+
+  UnitZeroState state;
+  glGetIntegerv(GL_ACTIVE_TEXTURE, &state.activeTexture);
+  glActiveTexture(GL_TEXTURE0);
+  glGetIntegerv(GL_TEXTURE_BINDING_2D, &state.texture2d);
+  glGetIntegerv(GL_TEXTURE_BINDING_3D, &state.texture3d);
+  glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &state.textureBuffer);
+  glGetIntegerv(GL_TEXTURE_BINDING_RECTANGLE, &state.textureRectangle);
+  glGetIntegerv(GL_SAMPLER_BINDING, &state.sampler);
+  glGetIntegerv(GL_CURRENT_PROGRAM, &state.program);
+  glActiveTexture(static_cast<GLenum>(state.activeTexture));
+
+  if (haveLastState && state == lastState) {
+    return;
+  }
+
+  spdlog::trace(
+    "Texture unit 0 state changed after {}: activeTexture={}, texture2D={}, texture3D={}, textureBuffer={}, "
+    "textureRectangle={}, sampler={}, program={}",
+    phase,
+    state.activeTexture,
+    state.texture2d,
+    state.texture3d,
+    state.textureBuffer,
+    state.textureRectangle,
+    state.sampler,
+    state.program);
+  lastState = state;
+  haveLastState = true;
+  ++logCount;
+}
+
 } // namespace
 
 Rendering::Rendering(AppData& appData)
@@ -75,6 +131,17 @@ Rendering::Rendering(AppData& appData)
   , m_pixelEdgeRenderer()
   , m_raycastIsoProgram("RaycastIsoSurfaceProgram")
   , m_raycastIsoWarpedProgram("RaycastIsoSurfaceWarpedProgram")
+  , m_meshProgram("MeshSimpleLitProgram")
+  , m_meshShadowDepthProgram("MeshShadowDepthProgram")
+  , m_meshAmbientOcclusionGeometryProgram("MeshAmbientOcclusionGeometryProgram")
+  , m_meshAmbientOcclusionResolveProgram("MeshAmbientOcclusionResolveProgram")
+  , m_meshImagePlaneGrayLinearProgram("MeshImagePlaneGrayLinearProgram")
+  , m_meshImagePlaneGrayLinearTexture2DProgram("MeshImagePlaneGrayLinearTexture2DProgram")
+  , m_meshDdpInitProgram("MeshDdpInitProgram")
+  , m_meshDdpPeelProgram("MeshDdpPeelProgram")
+  , m_meshDdpBackBlendProgram("MeshDdpBackBlendProgram")
+  , m_meshDdpResolveProgram("MeshDdpResolveProgram")
+  , m_meshRenderer()
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -251,6 +318,7 @@ void Rendering::render()
 
   // Set up OpenGL state, because it changes after NanoVG calls in the render of the prior frame
   setupOpenGLState();
+  logTextureUnitZeroStateIfChanged("setupOpenGLState");
 
   // Set the OpenGL viewport in device units:
   const glm::ivec4 deviceViewport = m_appData.windowData().viewport().getDeviceAsVec4();
@@ -262,6 +330,7 @@ void Rendering::render()
 
   try {
     renderImageData();
+    logTextureUnitZeroStateIfChanged("renderImageData");
   }
   catch (const std::exception& e) {
     spdlog::error("Exception while rendering image data: {}\n{}", e.what(), stack_trace::current(1));
@@ -270,6 +339,7 @@ void Rendering::render()
 
   try {
     renderVectorOverlays();
+    logTextureUnitZeroStateIfChanged("renderVectorOverlays");
   }
   catch (const std::exception& e) {
     spdlog::error("Exception while rendering vector overlays: {}\n{}", e.what(), stack_trace::current(1));
@@ -352,9 +422,10 @@ void Rendering::renderImageData()
       helper::computeMiewportFrameBounds(view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
     renderAllImagesForView(*view, miewportViewBounds, worldXhairsOffset);
+    renderSyntheticMeshSceneForView(*view);
 
-    // Do not render landmarks and annotations in volume rendering mode
-    if (ViewRenderMode::VolumeRender != view->renderMode()) {
+    // Do not render landmarks and annotations in 3D render modes.
+    if (ViewType::ThreeD != view->viewType()) {
       if (renderLandmarksOnTop) {
         renderAllLandmarksForView(*view, miewportViewBounds, worldXhairsOffset);
       }

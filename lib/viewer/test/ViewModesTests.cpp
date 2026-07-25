@@ -24,7 +24,7 @@ TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")
 
 TEST_CASE("3D render mode choices stay in stable UI order", "[viewer][modes]")
 {
-  const std::vector expected{ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
+  const std::vector expected{ViewRenderMode::VolumeRender, ViewRenderMode::SegmentationMesh, ViewRenderMode::Disabled};
 
   CHECK(All3dViewRenderModes == expected);
   CHECK(All3dNonMetricRenderModes == expected);
@@ -43,7 +43,8 @@ TEST_CASE("view render mode enum ordinals remain stable for serialized layout sp
   CHECK(static_cast<int>(ViewRenderMode::Disabled) == 8);
   CHECK(static_cast<int>(ViewRenderMode::LocalNcc) == 9);
   CHECK(static_cast<int>(ViewRenderMode::LocalLinearResidual) == 10);
-  CHECK(static_cast<int>(ViewRenderMode::NumElements) == 11);
+  CHECK(static_cast<int>(ViewRenderMode::SegmentationMesh) == 11);
+  CHECK(static_cast<int>(ViewRenderMode::NumElements) == 12);
 }
 
 TEST_CASE("intensity projection modes stay in stable UI order", "[viewer][modes]")

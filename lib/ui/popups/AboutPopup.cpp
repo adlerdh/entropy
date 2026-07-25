@@ -123,21 +123,17 @@ void renderAboutDialogModalPopup(bool open)
 
       if (ImGui::BeginTabItem("Runtime paths")) {
         const float inputWidth = runtimePathInputWidth(
-          {"Current working directory",
-           "Resource directory",
-           "User data directory",
-           "Cache directory",
-           "Log directory",
-           "Uses platform user directories"});
-        renderRuntimePathField("Current working directory", currentDirectory(), inputWidth);
+          {"Working directory", "Resource directory", "User data directory", "Cache directory", "Log directory"});
+        renderRuntimePathField("Working directory", currentDirectory(), inputWidth);
         renderRuntimePathField("Resource directory", displayPath(app_paths::resourceDirectory()), inputWidth);
         renderRuntimePathField("User data directory", displayPath(app_paths::userDataDirectory()), inputWidth);
         renderRuntimePathField("Cache directory", displayPath(app_paths::cacheDirectory()), inputWidth);
         renderRuntimePathField("Log directory", displayPath(app_paths::logDirectory()), inputWidth);
-        renderRuntimePathField(
-          "Uses platform user directories",
-          app_paths::usesPlatformUserDirectories() ? "yes" : "no",
-          inputWidth);
+        ImGui::TextDisabled(
+          "%s",
+          app_paths::usesPlatformUserDirectories()
+            ? "Settings and logs are stored in the standard user folders for this platform"
+            : "Settings and logs are stored next to the application");
         ImGui::EndTabItem();
       }
 

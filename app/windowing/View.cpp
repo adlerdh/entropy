@@ -10,6 +10,7 @@
 #include "logic/camera/OrthogonalProjection.h"
 #include "logic/camera/PerspectiveProjection.h"
 #include "rendering/utility/math/SliceIntersector.h"
+#include "windowing/ViewCameraDefaults.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -78,6 +79,9 @@ ViewRenderMode reconcileRenderModeForViewType(const ViewType& newViewType, const
     // then switch to ViewRenderMode::Image:
     return ViewRenderMode::Image;
   }
+  else if (ViewRenderMode::SegmentationMesh == currentRenderMode) {
+    return ViewRenderMode::Image;
+  }
 
   return currentRenderMode;
 }
@@ -130,7 +134,7 @@ View::View(
   : ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
   , m_uid(generateRandomUuid())
   , m_offset(offsetSetting)
-  , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
+  , m_projectionType(windowing::initialSliceProjectionType(m_viewType))
   , m_camera(m_projectionType, [this]() { return get_anatomy_T_start(m_viewType); })
   , m_threeDCamera(ProjectionType::Perspective, nullptr)
   , m_viewConvention(viewConvention)
@@ -140,8 +144,10 @@ View::View(
   , m_cameraTranslationSyncGroupUid(cameraTranslationSyncGroup)
   , m_cameraZoomSyncGroupUid(cameraZoomSyncGroup)
   , m_clipPlaneDepth(0.0f)
-  , m_anatomy_T_start(get_anatomy_T_start(m_viewType))
+  , m_anatomy_T_start(get_anatomy_T_start(windowing::initialSliceViewType(m_viewType)))
 {
+  m_camera.set_anatomy_T_start_provider([this]() { return m_anatomy_T_start; });
+  m_sliceCameraActivated = ViewType::ThreeD != m_viewType;
 }
 
 const uuid& View::uid() const
@@ -279,6 +285,7 @@ void View::setViewType(const ViewType& newViewType)
     return;
   }
 
+  const bool wasThreeD = ViewType::ThreeD == m_viewType;
   const auto newProjType = sk_viewTypeToDefaultProjectionTypeMap.at(newViewType);
 
   if (ViewType::ThreeD != newViewType && m_projectionType != newProjType) {
@@ -337,8 +344,17 @@ void View::setViewType(const ViewType& newViewType)
     }
   }
 
-  m_camera.set_anatomy_T_start_provider([this]() { return m_anatomy_T_start; });
   m_viewType = newViewType;
+
+  if (ViewType::ThreeD != m_viewType) {
+    if (wasThreeD && !m_sliceCameraActivated && m_sliceCameraDefaultWorldCenter && m_sliceCameraDefaultWorldFov) {
+      helper::positionCameraForWorldTargetAndFov(
+        m_camera,
+        *m_sliceCameraDefaultWorldFov,
+        *m_sliceCameraDefaultWorldCenter);
+    }
+    m_sliceCameraActivated = true;
+  }
 }
 
 void View::setRenderMode(const ViewRenderMode& renderMode)
@@ -443,4 +459,29 @@ void View::resetThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3&
   initializeThreeDCameraIfNeeded(scene);
   camera3d::resetView(m_threeDCamera, m_threeDState, scene, target);
   m_threeDCameraInitialized = true;
+}
+
+void View::recenterSliceCamera(
+  const glm::vec3& worldCenter,
+  const glm::vec3& worldFov,
+  bool resetZoom,
+  bool resetObliqueOrientation)
+{
+  m_sliceCameraDefaultWorldCenter = worldCenter;
+  m_sliceCameraDefaultWorldFov = worldFov;
+
+  if (resetZoom) {
+    helper::resetZoom(m_camera);
+  }
+
+  if (resetObliqueOrientation && ViewType::Oblique == m_viewType) {
+    helper::resetViewTransformation(m_camera);
+  }
+
+  if (resetZoom) {
+    helper::positionCameraForWorldTargetAndFov(m_camera, worldFov, worldCenter);
+  }
+  else {
+    helper::positionCameraForWorldTarget(m_camera, worldFov, worldCenter);
+  }
 }

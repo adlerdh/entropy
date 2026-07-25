@@ -49,6 +49,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   first.m_threeDProjectionType = 0;
   first.m_threeDOrbitTargetMode = 1;
   first.m_threeDCameraFollowsCrosshairs = true;
+  first.m_threeDImagePlanesVisible = true;
   first.m_threeDPerspectiveZoom = 0.75f;
   first.m_threeDOrthographicZoom = 1.5f;
 
@@ -104,6 +105,7 @@ void requireSame(const layout::ViewSpec& actual, const layout::ViewSpec& expecte
   REQUIRE(actual.m_threeDProjectionType == expected.m_threeDProjectionType);
   REQUIRE(actual.m_threeDOrbitTargetMode == expected.m_threeDOrbitTargetMode);
   REQUIRE(actual.m_threeDCameraFollowsCrosshairs == expected.m_threeDCameraFollowsCrosshairs);
+  REQUIRE(actual.m_threeDImagePlanesVisible == expected.m_threeDImagePlanesVisible);
   REQUIRE(actual.m_threeDPerspectiveZoom == expected.m_threeDPerspectiveZoom);
   REQUIRE(actual.m_threeDOrthographicZoom == expected.m_threeDOrthographicZoom);
 }
@@ -153,7 +155,20 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
   CHECK(json.at("views").at(0).at("offset").at("mode") == "relativeToImageScrolls");
   CHECK(json.at("views").at(0).at("threeD").at("projection") == "orthographic");
   CHECK(json.at("views").at(0).at("threeD").at("orbitTarget") == "crosshairs");
+  CHECK(json.at("views").at(0).at("threeD").at("imagePlanesVisible") == true);
   CHECK_FALSE(json.at("views").at(1).at("offset").contains("mode"));
+}
+
+TEST_CASE("layout spec JSON supports segmentation mesh render mode", "[layout][serialization]")
+{
+  layout::ViewSpec view;
+  view.m_renderMode = static_cast<int>(ViewRenderMode::SegmentationMesh);
+
+  const nlohmann::json json = view;
+  CHECK(json.at("renderMode") == "segmentationMesh");
+
+  const layout::ViewSpec restored = json.get<layout::ViewSpec>();
+  CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::SegmentationMesh));
 }
 
 TEST_CASE("layout spec JSON writes compact regular grids without expanded views", "[layout][serialization]")

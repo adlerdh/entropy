@@ -90,7 +90,6 @@ void renderViewSettingsComboWindow(
   const auto& setViewType = modes.setViewType;
   const auto& setRenderMode = modes.setRenderMode;
   const auto& setIntensityProjectionMode = modes.setIntensityProjectionMode;
-  const auto& recenter = modes.recenter;
   const auto& applyImageSelectionAndShaderToAllViews = modes.applyImageSelectionAndShaderToAllViews;
 
   const auto& getIntensityProjectionSlabThickness = projection.getIntensityProjectionSlabThickness;
@@ -104,7 +103,9 @@ void renderViewSettingsComboWindow(
   const auto& getXrayProjectionEnergy = projection.getXrayProjectionEnergy;
   const auto& setXrayProjectionEnergy = projection.setXrayProjectionEnergy;
 
-  const bool singleVolumeImageSelection = ViewType::ThreeD == viewType && ViewRenderMode::VolumeRender == renderMode;
+  const bool singleThreeDImageSelection =
+    ViewType::ThreeD == viewType &&
+    (ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationMesh == renderMode);
 
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -185,7 +186,7 @@ void renderViewSettingsComboWindow(
               bool rendered = isImageRendered(i);
               const bool oldRendered = rendered;
 
-              if (singleVolumeImageSelection) {
+              if (singleThreeDImageSelection) {
                 const bool canVolumeRender = canImageBeVolumeRendered(i);
                 if (!canVolumeRender) {
                   ImGui::BeginDisabled();
@@ -206,7 +207,7 @@ void renderViewSettingsComboWindow(
               }
 
               if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                if (singleVolumeImageSelection && !canImageBeVolumeRendered(i)) {
+                if (singleThreeDImageSelection && !canImageBeVolumeRendered(i)) {
                   ImGui::SetTooltip(
                     "%s",
                     "This image is uploaded as a 2D texture. It can be shown in 2D views but cannot be volume "
@@ -220,7 +221,7 @@ void renderViewSettingsComboWindow(
               ImGui::PopID(); /*** ID = i ***/
             }
 
-            if (!singleVolumeImageSelection) {
+            if (!singleThreeDImageSelection) {
               ImGui::Separator();
               if (iconButtonWithTooltip(ICON_FK_EYE, "Show all images in this view")) {
                 for (std::size_t i = 0; i < numImages; ++i) {
@@ -339,7 +340,7 @@ void renderViewSettingsComboWindow(
       }
 
       // Popup window with intensity projection mode:
-      if (uiControls.m_hasMipTypeComboBox && (ViewRenderMode::VolumeRender != renderMode)) {
+      if (uiControls.m_hasMipTypeComboBox && ViewType::ThreeD != viewType) {
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
@@ -518,7 +519,6 @@ void renderViewSettingsComboWindow(
               {
                 selectedViewType = vt;
                 setViewType(vt);
-                recenter();
                 if (ViewType::ThreeD == vt && modes.showIsosurfacesPanelForMissingRaycastImageIsosurface) {
                   modes.showIsosurfacesPanelForMissingRaycastImageIsosurface();
                 }
@@ -629,6 +629,14 @@ void renderViewSettingsComboWindow(
                 }
                 helpTooltip("Render a subtle outline of the raycast image box in 3D views.");
               }
+
+              if (modes.getThreeDImagePlanesVisible && modes.setThreeDImagePlanesVisible) {
+                bool showImagePlanes = modes.getThreeDImagePlanesVisible();
+                if (ImGui::Checkbox("Show image planes", &showImagePlanes)) {
+                  modes.setThreeDImagePlanesVisible(showImagePlanes);
+                }
+                helpTooltip("Show axial, coronal, and sagittal image planes through the current crosshairs in 3D");
+              }
             }
           }
 
@@ -650,7 +658,7 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      if (ViewType::ThreeD == viewType && ViewRenderMode::Disabled != renderMode && modes.showIsosurfacesPanel) {
+      if (ViewType::ThreeD == viewType && ViewRenderMode::VolumeRender == renderMode && modes.showIsosurfacesPanel) {
         ImGui::SameLine();
         const bool isosurfacesPanelVisible =
           modes.isIsosurfacesPanelVisible ? modes.isIsosurfacesPanelVisible() : false;
@@ -659,7 +667,10 @@ void renderViewSettingsComboWindow(
           ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
         }
         if (ImGui::Button(ICON_FK_CUBE)) {
-          if (modes.showIsosurfacesPanelForRaycastImage) {
+          if (isosurfacesPanelVisible && modes.hideIsosurfacesPanel) {
+            modes.hideIsosurfacesPanel();
+          }
+          else if (modes.showIsosurfacesPanelForRaycastImage) {
             modes.showIsosurfacesPanelForRaycastImage();
           }
           else {

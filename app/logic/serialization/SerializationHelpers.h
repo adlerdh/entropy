@@ -160,6 +160,11 @@ constexpr std::array k_raycastSegmentationMaskingNames{
   EnumName{serialize::ProjectSegmentationRaycastMasking::MaskIn, "maskIn"},
   EnumName{serialize::ProjectSegmentationRaycastMasking::MaskOut, "maskOut"}};
 
+constexpr std::array k_meshCompositingModeNames{
+  EnumName{serialize::ProjectMeshCompositingMode::AlphaOver, "alphaOver"},
+  EnumName{serialize::ProjectMeshCompositingMode::Additive, "additive"},
+  EnumName{serialize::ProjectMeshCompositingMode::Multiplicative, "multiplicative"}};
+
 constexpr std::array k_landmarkCoordinateSpaceNames{
   EnumName{serialize::ProjectLandmarkCoordinateSpace::Subject, "subject"},
   EnumName{serialize::ProjectLandmarkCoordinateSpace::Voxel, "voxel"}};

@@ -211,6 +211,30 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedRaycasting.m_raycasting.m_samplingFactor = 1.25f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
 
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_meshShadowsEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_meshAmbientOcclusionEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_meshTranslucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_meshPickingEnabled = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_meshClipPlaneEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
   auto changedIntensityProjection = project;
   changedIntensityProjection.m_intensityProjection.m_slabThicknessMm = 12.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedIntensityProjection));

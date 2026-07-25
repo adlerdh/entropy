@@ -66,6 +66,7 @@ void Rendering::renderAllImageBordersForView(
       break;
     }
     case ShaderGroup::Volume:
+    case ShaderGroup::Mesh:
     case ShaderGroup::None:
     case ShaderGroup::NumElements:
       break;

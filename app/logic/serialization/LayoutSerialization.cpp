@@ -112,7 +112,10 @@ void applyImageSelectionSpec(
 {
   frame.setRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
   frame.setVolumeRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_volumeRenderedImageIndices));
-  if (ViewRenderMode::VolumeRender == frame.renderMode() && frame.volumeRenderedImages().empty()) {
+  if (
+    (ViewRenderMode::VolumeRender == frame.renderMode() || ViewRenderMode::SegmentationMesh == frame.renderMode()) &&
+    frame.volumeRenderedImages().empty())
+  {
     frame.setVolumeRenderedImages(frame.renderedImages());
   }
   frame.setMetricImages(layout::imageUidsForIndices(orderedImageUids, selection.m_metricImageIndices));
@@ -377,12 +380,14 @@ mergeGridViewOverrides(const layout::LayoutSpec& spec, const layout::GridSpec& g
       override.m_threeDProjectionType != defaults.m_threeDProjectionType ||
       override.m_threeDOrbitTargetMode != defaults.m_threeDOrbitTargetMode ||
       override.m_threeDCameraFollowsCrosshairs != defaults.m_threeDCameraFollowsCrosshairs ||
+      override.m_threeDImagePlanesVisible != defaults.m_threeDImagePlanesVisible ||
       override.m_threeDPerspectiveZoom != defaults.m_threeDPerspectiveZoom ||
       override.m_threeDOrthographicZoom != defaults.m_threeDOrthographicZoom)
     {
       view.m_threeDProjectionType = override.m_threeDProjectionType;
       view.m_threeDOrbitTargetMode = override.m_threeDOrbitTargetMode;
       view.m_threeDCameraFollowsCrosshairs = override.m_threeDCameraFollowsCrosshairs;
+      view.m_threeDImagePlanesVisible = override.m_threeDImagePlanesVisible;
       view.m_threeDPerspectiveZoom = override.m_threeDPerspectiveZoom;
       view.m_threeDOrthographicZoom = override.m_threeDOrthographicZoom;
     }
@@ -451,12 +456,14 @@ gridViewOverride(const layout::ViewSpec& viewSpec, const layout::ViewSpec& expec
     viewSpec.m_threeDProjectionType != expected.m_threeDProjectionType ||
     viewSpec.m_threeDOrbitTargetMode != expected.m_threeDOrbitTargetMode ||
     viewSpec.m_threeDCameraFollowsCrosshairs != expected.m_threeDCameraFollowsCrosshairs ||
+    viewSpec.m_threeDImagePlanesVisible != expected.m_threeDImagePlanesVisible ||
     viewSpec.m_threeDPerspectiveZoom != expected.m_threeDPerspectiveZoom ||
     viewSpec.m_threeDOrthographicZoom != expected.m_threeDOrthographicZoom)
   {
     override.m_threeDProjectionType = viewSpec.m_threeDProjectionType;
     override.m_threeDOrbitTargetMode = viewSpec.m_threeDOrbitTargetMode;
     override.m_threeDCameraFollowsCrosshairs = viewSpec.m_threeDCameraFollowsCrosshairs;
+    override.m_threeDImagePlanesVisible = viewSpec.m_threeDImagePlanesVisible;
     override.m_threeDPerspectiveZoom = viewSpec.m_threeDPerspectiveZoom;
     override.m_threeDOrthographicZoom = viewSpec.m_threeDOrthographicZoom;
     hasOverride = true;
@@ -535,6 +542,7 @@ LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedIma
     viewSpec.m_threeDProjectionType = static_cast<int>(view.threeDState().m_projectionType);
     viewSpec.m_threeDOrbitTargetMode = static_cast<int>(view.threeDState().m_orbitTargetMode);
     viewSpec.m_threeDCameraFollowsCrosshairs = view.threeDState().m_viewPositionFollowsCrosshairs;
+    viewSpec.m_threeDImagePlanesVisible = view.threeDState().m_showImagePlanes;
     viewSpec.m_threeDPerspectiveZoom = view.threeDState().m_perspectiveZoom;
     viewSpec.m_threeDOrthographicZoom = view.threeDState().m_orthographicZoom;
 
@@ -663,6 +671,7 @@ Layout instantiateLayoutSpec(
     view->threeDState().m_viewPositionFollowsCrosshairs =
       ProjectionType::Perspective == view->threeDState().m_projectionType &&
       normalizedViewSpec.m_threeDCameraFollowsCrosshairs;
+    view->threeDState().m_showImagePlanes = normalizedViewSpec.m_threeDImagePlanesVisible;
     view->threeDState().m_perspectiveZoom = saneZoom(normalizedViewSpec.m_threeDPerspectiveZoom);
     view->threeDState().m_orthographicZoom = saneZoom(normalizedViewSpec.m_threeDOrthographicZoom);
     view->threeDCamera().setZoom(
@@ -682,7 +691,10 @@ Layout instantiateLayoutSpec(
     false);
   layout.ControlFrame::setVolumeRenderedImages(
     imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_volumeRenderedImageIndices));
-  if (ViewRenderMode::VolumeRender == layout.renderMode() && layout.volumeRenderedImages().empty()) {
+  if (
+    (ViewRenderMode::VolumeRender == layout.renderMode() || ViewRenderMode::SegmentationMesh == layout.renderMode()) &&
+    layout.volumeRenderedImages().empty())
+  {
     layout.ControlFrame::setVolumeRenderedImages(layout.renderedImages());
   }
   layout.ControlFrame::setMetricImages(

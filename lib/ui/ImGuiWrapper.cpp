@@ -1554,7 +1554,13 @@ void renderEmptyWorkspace(
       ImGui::Spacing();
       ImGui::Separator();
       ImGui::Spacing();
-      if (ImGui::Button("Clear Recents", ImVec2{buttonWidthForLabel("Clear Recents"), 0.0f}) && clearRecents) {
+      static const std::string clearRecentsButtonLabel = std::string{ICON_FK_ERASER} + " Clear Recents";
+      if (
+        ImGui::Button(
+          clearRecentsButtonLabel.c_str(),
+          ImVec2{buttonWidthForLabel(clearRecentsButtonLabel.c_str()), 0.0f}) &&
+        clearRecents)
+      {
         clearRecents();
       }
       if (ImGui::IsItemHovered()) {
@@ -2734,55 +2740,6 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
       spdlog::error("Null isosurface for isosurface {} of image {}", *value.objectUid, *value.imageUid);
       continue;
     }
-
-#if 0
-    const MeshCpuRecord* cpuMeshRecord = surface->mesh.cpuData();
-
-    if (!cpuMeshRecord)
-    {
-      spdlog::error(
-        "Null CPU mesh record for isosurface {} of image {}", *value.objectUid, *value.imageUid
-      );
-      continue;
-    }
-
-    std::unique_ptr<MeshGpuRecord> gpuMeshRecord = gpuhelper::createMeshGpuRecordFromVtkPolyData(
-      cpuMeshRecord->polyData(),
-      cpuMeshRecord->meshInfo().primitiveType(),
-      BufferUsagePattern::StreamDraw
-    );
-
-    if (!gpuMeshRecord)
-    {
-      spdlog::error(
-        "Error generating GPU mesh record for isosurface {} of image {}",
-        *value.objectUid,
-        *value.imageUid
-      );
-      continue;
-    }
-
-    spdlog::info("Task {}: Done generating GPU mesh for isosurface {} ", taskUid, *value.objectUid);
-
-    const bool updated = m_appData.updateIsosurfaceMeshGpuRecord(
-      *value.imageUid, *value.imageComponent, *value.objectUid, std::move(gpuMeshRecord)
-    );
-
-    if (updated)
-    {
-      spdlog::info(
-        "Updated GPU record for isosurface mesh {} of image {}", *value.objectUid, *value.imageUid
-      );
-    }
-    else
-    {
-      spdlog::error(
-        "Could not update GPU record for isosurface mesh {} of image {}",
-        *value.objectUid,
-        *value.imageUid
-      );
-    }
-#endif
   }
 }
 
@@ -4806,12 +4763,6 @@ void ImGuiWrapper::render()
   if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
 
-    static constexpr bool k_recenterCrosshairs = false;
-    static constexpr bool k_realignCrosshairs = false;
-    static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
-    static constexpr bool k_resetObliqueOrientation = false;
-    static constexpr bool k_resetZoom = true;
-
     const auto viewFrameBounds = helper::computeMindowFrameBounds(
       currentLayout.windowClipViewport(),
       m_appData.windowData().viewport().getAsVec4(),
@@ -4826,8 +4777,9 @@ void ImGuiWrapper::render()
       m_appData.state().worldCrosshairs(),
       m_appData.windowData().getContentScaleRatios()};
 
-    const bool useVolumeImageSelection =
-      ViewType::ThreeD == currentLayout.viewType() && ViewRenderMode::VolumeRender == currentLayout.renderMode();
+    const bool useSingleThreeDImageSelection =
+      ViewType::ThreeD == currentLayout.viewType() && (ViewRenderMode::VolumeRender == currentLayout.renderMode() ||
+                                                       ViewRenderMode::SegmentationMesh == currentLayout.renderMode());
     auto canImageBeVolumeRendered = [this](std::size_t index) {
       const auto imageUid = m_appData.imageUid(index);
       if (!imageUid) {
@@ -4852,13 +4804,13 @@ void ImGuiWrapper::render()
 
     const ViewOverlayImageCallbacks imageCallbacks{
       m_appData.numImages(),
-      [this, &currentLayout, useVolumeImageSelection, isLayoutVolumeImageRendered, canImageBeVolumeRendered](
+      [this, &currentLayout, useSingleThreeDImageSelection, isLayoutVolumeImageRendered, canImageBeVolumeRendered](
         std::size_t index) {
-        return useVolumeImageSelection ? canImageBeVolumeRendered(index) && isLayoutVolumeImageRendered(index)
-                                       : currentLayout.isImageRendered(m_appData, index);
+        return useSingleThreeDImageSelection ? canImageBeVolumeRendered(index) && isLayoutVolumeImageRendered(index)
+                                             : currentLayout.isImageRendered(m_appData, index);
       },
-      [this, &currentLayout, useVolumeImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
-        if (useVolumeImageSelection) {
+      [this, &currentLayout, useSingleThreeDImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
+        if (useSingleThreeDImageSelection) {
           currentLayout.setImageVolumeRendered(m_appData, index, visible && canImageBeVolumeRendered(index));
         }
         else {
@@ -4888,18 +4840,10 @@ void ImGuiWrapper::render()
         [&currentLayout](const IntensityProjectionMode& ipMode) {
           return currentLayout.setIntensityProjectionMode(ipMode);
         },
-      .recenter =
-        [this]() {
-          m_recenterAllViews(
-            k_recenterCrosshairs,
-            k_realignCrosshairs,
-            k_doNotRecenterOnCurrentCrosshairsPosition,
-            k_resetObliqueOrientation,
-            k_resetZoom);
-        },
       .applyImageSelectionAndShaderToAllViews = nullptr,
       .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
       .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
+      .hideIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = false; },
       .showIsosurfacesPanelForRaycastImage =
         [this, &currentLayout]() {
           m_appData.guiData().m_showIsosurfacesWindow = true;
@@ -4976,10 +4920,6 @@ void ImGuiWrapper::render()
         if (view) view->setIntensityProjectionMode(ipMode);
       };
 
-      auto recenter = [this, &viewUid]() {
-        m_recenterView(viewUid);
-      };
-
       const auto viewFrameBounds = helper::computeMindowFrameBounds(
         view->windowClipViewport(),
         m_appData.windowData().viewport().getAsVec4(),
@@ -4994,8 +4934,9 @@ void ImGuiWrapper::render()
         m_appData.state().worldCrosshairs(),
         m_appData.windowData().getContentScaleRatios()};
 
-      const bool useVolumeImageSelection =
-        ViewType::ThreeD == view->viewType() && ViewRenderMode::VolumeRender == view->renderMode();
+      const bool useSingleThreeDImageSelection =
+        ViewType::ThreeD == view->viewType() &&
+        (ViewRenderMode::VolumeRender == view->renderMode() || ViewRenderMode::SegmentationMesh == view->renderMode());
       auto canImageBeVolumeRendered = [this](std::size_t index) {
         const auto imageUid = m_appData.imageUid(index);
         if (!imageUid) {
@@ -5020,12 +4961,13 @@ void ImGuiWrapper::render()
 
       const ViewOverlayImageCallbacks imageCallbacks{
         m_appData.numImages(),
-        [this, view, useVolumeImageSelection, isViewVolumeImageRendered, canImageBeVolumeRendered](std::size_t index) {
-          return useVolumeImageSelection ? canImageBeVolumeRendered(index) && isViewVolumeImageRendered(index)
-                                         : view->isImageRendered(m_appData, index);
+        [this, view, useSingleThreeDImageSelection, isViewVolumeImageRendered, canImageBeVolumeRendered](
+          std::size_t index) {
+          return useSingleThreeDImageSelection ? canImageBeVolumeRendered(index) && isViewVolumeImageRendered(index)
+                                               : view->isImageRendered(m_appData, index);
         },
-        [this, view, useVolumeImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
-          if (useVolumeImageSelection) {
+        [this, view, useSingleThreeDImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
+          if (useSingleThreeDImageSelection) {
             view->setImageVolumeRendered(m_appData, index, visible && canImageBeVolumeRendered(index));
           }
           else {
@@ -5048,10 +4990,10 @@ void ImGuiWrapper::render()
         .setViewType = setViewType,
         .setRenderMode = setRenderMode,
         .setIntensityProjectionMode = setIntensityProjectionMode,
-        .recenter = recenter,
         .applyImageSelectionAndShaderToAllViews = applyImageSelectionAndRenderModesToAllViews,
         .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
         .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
+        .hideIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = false; },
         .showIsosurfacesPanelForRaycastImage =
           [this, view]() {
             m_appData.guiData().m_showIsosurfacesWindow = true;
@@ -5115,6 +5057,8 @@ void ImGuiWrapper::render()
             view->threeDState().m_orbitTargetMode = mode;
             view->threeDState().m_userMovedCamera = false;
           },
+        .getThreeDImagePlanesVisible = [view]() { return view->threeDState().m_showImagePlanes; },
+        .setThreeDImagePlanesVisible = [view](bool visible) { view->threeDState().m_showImagePlanes = visible; },
         .getThreeDRenderImageBox =
           [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
         .setThreeDRenderImageBox =

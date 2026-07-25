@@ -9,10 +9,14 @@
  */
 struct SurfaceMaterial
 {
-  float ambient = 0.15f;  //!< Ambient light lighting contribution
-  float diffuse = 0.75f;  //!< Diffuse reflection lighting contribution
-  float specular = 0.10f; //!< Specular reflection lighting contribution
-  float shininess = 8.0f; //!< Specular reflection coefficient
+  float ambient = 0.15f;         //!< Ambient light lighting contribution
+  float diffuse = 0.75f;         //!< Diffuse reflection lighting contribution
+  float specular = 0.10f;        //!< Specular reflection lighting contribution
+  float shininess = 8.0f;        //!< Specular reflection coefficient
+  bool usePbrShading = false;    //!< Use physically based shading for mesh rendering
+  float metallic = 0.0f;         //!< Physically based metallic factor for mesh rendering
+  float roughness = 0.55f;       //!< Physically based roughness factor for mesh rendering
+  float ambientOcclusion = 1.0f; //!< Physically based ambient occlusion factor for mesh rendering
 };
 
 /**
@@ -42,8 +46,7 @@ public:
   float rimEmissionStrength = 1.0f;  //!< Additive view-angle rim-light strength
   float rimPower = 2.0f;             //!< Rim falloff exponent; higher values produce a narrower rim
 
-  // MeshRecord mesh; //!< Mesh record of the isosurface
-  bool meshInSync = false; //!< Is the mesh in sync with the isosurface value?
+  bool valueEditInProgress = false; //!< Transient UI state used to defer mesh extraction during isovalue edits
 
   /// @brief Get the ambient RGB contribution derived from material and surface color.
   glm::vec3 ambientColor() const

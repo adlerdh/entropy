@@ -1,4 +1,4 @@
-#include "rendering_old/records/MeshGpuRecord.h"
+#include "rendering/records/MeshGpuRecord.h"
 
 MeshGpuRecord::MeshGpuRecord(
   GLBufferObject positionsObject,

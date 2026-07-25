@@ -1,7 +1,7 @@
 #include "rendering/drawables/ddp/FullScreenDebugQuad.h"
+#include "rendering/drawables/ddp/DdpShaderNames.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
-#include "rendering_old/ShaderNames.h"
 
 #include "common/Exception.hpp"
 

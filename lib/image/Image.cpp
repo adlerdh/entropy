@@ -678,9 +678,14 @@ ImageSettings& Image::settings()
 
 void Image::setUseIdentityPixelSpacings(bool identitySpacings)
 {
+  if (m_headerOverrides.m_useIdentityPixelSpacings == identitySpacings) {
+    return;
+  }
+
   m_headerOverrides.m_useIdentityPixelSpacings = identitySpacings;
   m_header.setHeaderOverrides(m_headerOverrides);
   m_tx.setHeaderOverrides(m_headerOverrides);
+  ++m_geometryRevision;
 }
 
 bool Image::getUseIdentityPixelSpacings() const
@@ -690,9 +695,14 @@ bool Image::getUseIdentityPixelSpacings() const
 
 void Image::setUseZeroPixelOrigin(bool zeroOrigin)
 {
+  if (m_headerOverrides.m_useZeroPixelOrigin == zeroOrigin) {
+    return;
+  }
+
   m_headerOverrides.m_useZeroPixelOrigin = zeroOrigin;
   m_header.setHeaderOverrides(m_headerOverrides);
   m_tx.setHeaderOverrides(m_headerOverrides);
+  ++m_geometryRevision;
 }
 
 bool Image::getUseZeroPixelOrigin() const
@@ -702,9 +712,14 @@ bool Image::getUseZeroPixelOrigin() const
 
 void Image::setUseIdentityPixelDirections(bool useIdentity)
 {
+  if (m_headerOverrides.m_useIdentityPixelDirections == useIdentity) {
+    return;
+  }
+
   m_headerOverrides.m_useIdentityPixelDirections = useIdentity;
   m_header.setHeaderOverrides(m_headerOverrides);
   m_tx.setHeaderOverrides(m_headerOverrides);
+  ++m_geometryRevision;
 }
 
 bool Image::getUseIdentityPixelDirections() const
@@ -714,9 +729,14 @@ bool Image::getUseIdentityPixelDirections() const
 
 void Image::setSnapToClosestOrthogonalPixelDirections(bool snap)
 {
+  if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections == snap) {
+    return;
+  }
+
   m_headerOverrides.m_snapToClosestOrthogonalPixelDirections = snap;
   m_header.setHeaderOverrides(m_headerOverrides);
   m_tx.setHeaderOverrides(m_headerOverrides);
+  ++m_geometryRevision;
 }
 
 bool Image::getSnapToClosestOrthogonalPixelDirections() const
@@ -726,9 +746,14 @@ bool Image::getSnapToClosestOrthogonalPixelDirections() const
 
 void Image::setHeaderOverrides(const ImageHeaderOverrides& overrides)
 {
+  if (m_headerOverrides == overrides) {
+    return;
+  }
+
   m_headerOverrides = overrides;
   m_header.setHeaderOverrides(m_headerOverrides);
   m_tx.setHeaderOverrides(m_headerOverrides);
+  ++m_geometryRevision;
 }
 
 const ImageHeaderOverrides& Image::getHeaderOverrides() const
@@ -738,8 +763,28 @@ const ImageHeaderOverrides& Image::getHeaderOverrides() const
 
 void Image::setUserSpatialMetadata(const ImageSpatialMetadata& metadata)
 {
+  if (m_header.userSpatialMetadata() == metadata) {
+    return;
+  }
+
   m_header.setUserSpatialMetadata(metadata);
   m_tx.setImageGeometry(m_header.pixelDimensions(), m_header.spacing(), m_header.origin(), m_header.directions());
+  ++m_geometryRevision;
+}
+
+uint64_t Image::pixelDataRevision() const
+{
+  return m_pixelDataRevision;
+}
+
+uint64_t Image::geometryRevision() const
+{
+  return m_geometryRevision;
+}
+
+void Image::markPixelDataModified()
+{
+  ++m_pixelDataRevision;
 }
 
 std::ostream& Image::metaData(std::ostream& os) const

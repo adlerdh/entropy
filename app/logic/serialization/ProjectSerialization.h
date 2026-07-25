@@ -116,6 +116,14 @@ enum class ProjectSegmentationRaycastMasking : std::uint8_t
   MaskOut
 };
 
+/// @brief Serialized compositing mode for translucent mesh surfaces.
+enum class ProjectMeshCompositingMode : std::uint8_t
+{
+  AlphaOver,
+  Additive,
+  Multiplicative
+};
+
 /// @brief Serialized coordinate space for landmark point positions.
 enum class ProjectLandmarkCoordinateSpace : std::uint8_t
 {
@@ -195,9 +203,22 @@ struct ProjectComparisonSettings
  */
 struct ProjectRaycastingSettings
 {
-  float m_samplingFactor = 0.8f;                          //!< Ray-marching sampling factor
-  bool m_transparentBackgroundWhenNoHit = true;           //!< Make missed 3D rays transparent
-  bool m_backgroundEdgeBrighteningEnabled = true;         //!< Brighten raycast background near image-domain edges
+  float m_samplingFactor = 0.8f;                   //!< Ray-marching sampling factor
+  bool m_transparentBackgroundWhenNoHit = true;    //!< Make missed 3D rays transparent
+  bool m_backgroundEdgeBrighteningEnabled = true;  //!< Brighten raycast background near image-domain edges
+  bool m_meshRenderingEnabled = true;              //!< Render committed opaque isosurfaces as meshes when ready
+  bool m_meshShadowsEnabled = false;               //!< Render mesh shadows when mesh rendering is active
+  uint32_t m_meshShadowMapSizePixels = 1024;       //!< Mesh shadow-map size in pixels
+  float m_meshShadowStrength = 0.35f;              //!< Mesh shadow contribution in [0, 1]
+  float m_meshShadowDepthBias = 0.001f;            //!< Mesh shadow depth bias
+  bool m_meshAmbientOcclusionEnabled = false;      //!< Render screen-space ambient occlusion for meshes
+  float m_meshAmbientOcclusionRadiusPixels = 8.0f; //!< Mesh AO screen-space radius in pixels
+  float m_meshAmbientOcclusionStrength = 0.5f;     //!< Mesh AO contribution in [0, 1]
+  ProjectMeshCompositingMode m_meshTranslucentCompositing =
+    ProjectMeshCompositingMode::AlphaOver;                //!< Translucent mesh compositing path
+  bool m_meshPickingEnabled = true;                       //!< Allow mesh point picking in 3D views
+  bool m_meshClipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
+  glm::vec4 m_meshClipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane
   bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views
   float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
   bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views

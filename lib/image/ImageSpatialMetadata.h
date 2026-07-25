@@ -24,6 +24,8 @@ struct ImageSpatialMetadata
   glm::vec3 spacingMm{1.0f, 1.0f, 1.0f}; //!< Physical spacing along image axes
   glm::vec3 originMm{0.0f, 0.0f, 0.0f};  //!< Physical coordinates of voxel (0, 0, 0)
   glm::mat3 directions{1.0f};            //!< Unit direction vectors stored as columns
+
+  bool operator==(const ImageSpatialMetadata&) const = default;
 };
 
 /**

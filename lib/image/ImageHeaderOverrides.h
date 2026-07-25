@@ -38,6 +38,8 @@ struct ImageHeaderOverrides
     m_originalIsOblique = math::computeSpiralCodeFromDirectionMatrix(m_originalDirs).second;
   }
 
+  bool operator==(const ImageHeaderOverrides&) const = default;
+
   bool m_useIdentityPixelSpacings = false;               //!< Use unit pixel spacings instead of original spacing
   bool m_useZeroPixelOrigin = false;                     //!< Use a zero origin instead of original origin
   bool m_useIdentityPixelDirections = false;             //!< Use identity directions instead of original directions

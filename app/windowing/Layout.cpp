@@ -22,7 +22,9 @@ ViewRenderMode reconcileRenderModeForViewType(ViewType viewType, ViewRenderMode 
     return ViewRenderMode::VolumeRender;
   }
 
-  return ViewRenderMode::VolumeRender == renderMode ? ViewRenderMode::Image : renderMode;
+  return (ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationMesh == renderMode)
+           ? ViewRenderMode::Image
+           : renderMode;
 }
 } // namespace
 

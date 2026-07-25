@@ -57,6 +57,8 @@ struct State
   float m_orthographicZoom = 1.0f;
   /** @brief True when the camera eye follows the global crosshairs position */
   bool m_viewPositionFollowsCrosshairs = false;
+  /** @brief True when orthogonal image planes are drawn in the 3D view */
+  bool m_showImagePlanes = false;
   /** @brief True after the user has manually changed the 3D camera */
   bool m_userMovedCamera = false;
 };

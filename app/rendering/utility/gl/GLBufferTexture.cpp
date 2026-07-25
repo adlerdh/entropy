@@ -57,6 +57,18 @@ static const std::unordered_map<tex::SizedInternalBufferTextureFormat, uint32_t>
     {tex::SizedInternalBufferTextureFormat::RGBA32I, 4},     {tex::SizedInternalBufferTextureFormat::RGBA8U, 1},
     {tex::SizedInternalBufferTextureFormat::RGBA16U, 2},     {tex::SizedInternalBufferTextureFormat::RGBA32U, 4}};
 
+std::size_t bytesPerTexel(const tex::SizedInternalBufferTextureFormat format)
+{
+  return static_cast<std::size_t>(sk_textureFormatToNumComponentsMap.at(format)) *
+         static_cast<std::size_t>(sk_textureFormatToNumBytesPerComponentMap.at(format));
+}
+
+std::size_t texelCountForBufferSize(const std::size_t sizeInBytes, const tex::SizedInternalBufferTextureFormat format)
+{
+  const std::size_t texelSize = bytesPerTexel(format);
+  return (sizeInBytes + texelSize - 1) / texelSize;
+}
+
 } // namespace
 
 GLBufferTexture::GLBufferTexture(const tex::SizedInternalBufferTextureFormat& format, const BufferUsagePattern& usage)
@@ -118,10 +130,7 @@ void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
   GLint maxSize = 0;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
 
-  const auto numComponents = static_cast<std::size_t>(sk_textureFormatToNumComponentsMap.at(m_format));
-  const auto numBytesPerComponent = static_cast<std::size_t>(sk_textureFormatToNumBytesPerComponentMap.at(m_format));
-  const std::size_t bytesPerTexel = numComponents * numBytesPerComponent;
-  const std::size_t texelCount = (sizeInBytes + bytesPerTexel - 1) / bytesPerTexel;
+  const std::size_t texelCount = texelCountForBufferSize(sizeInBytes, m_format);
 
   if (texelCount > static_cast<std::size_t>(maxSize)) {
     std::ostringstream ss;
@@ -172,6 +181,9 @@ void GLBufferTexture::attachBufferToTexture(std::optional<uint32_t> textureUnit)
   m_texture.bind(textureUnit);
 
   glTexBuffer(GL_TEXTURE_BUFFER, underlyingType(m_format), m_buffer.id());
+  m_texture.markBufferTextureStorage(
+    underlyingType_asInt32(m_format),
+    texelCountForBufferSize(m_buffer.size(), m_format));
   m_buffer.unbind();
 
   CHECK_GL_ERROR(m_errorChecker);

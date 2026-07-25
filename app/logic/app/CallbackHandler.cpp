@@ -580,6 +580,8 @@ bool CallbackHandler::executePoissonSegmentation(
 
   computeResultSeg(potBuffers, resultSegBuffer, dims);
 
+  potImage->markPixelDataModified();
+  resultSeg->markPixelDataModified();
   potImage->updateComponentStats();
   resultSeg->updateComponentStats();
 
@@ -1647,6 +1649,15 @@ void CallbackHandler::doThreeDIsosurfacePick(const ViewHit& hit)
     return;
   }
   if (!checkAndSetActiveView(hit.viewUid)) {
+    return;
+  }
+
+  if (
+    const std::optional<glm::vec3> meshHit =
+      m_rendering.pickNearestMeshWorldPositionForView(*hit.view, hit.viewClipPos))
+  {
+    m_appData.state().setWorldCrosshairsPos(*meshHit);
+    updateThreeDViewsFollowingCrosshairs();
     return;
   }
 

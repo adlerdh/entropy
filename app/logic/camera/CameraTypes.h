@@ -22,6 +22,7 @@ enum class ShaderGroup
   Image,
   Metric,
   Volume,
+  Mesh,
   None,
   NumElements
 };

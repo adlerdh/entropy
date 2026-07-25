@@ -1,0 +1,58 @@
+#pragma once
+
+#include "rendering/mesh/MeshHandle.h"
+
+#include <glm/mat4x4.hpp>
+#include <uuid.h>
+
+#include <cstdint>
+
+namespace rendering::mesh
+{
+
+/**
+ * @brief Image texture input sampled by a mesh image-plane renderable
+ */
+struct MeshImagePlaneTexture
+{
+  uuids::uuid imageUid;   //!< Image that owns the sampled texture
+  uint32_t component = 0; //!< Image component texture to sample
+  uint32_t timePoint = 0; //!< Time point represented by the uploaded texture
+};
+
+/**
+ * @brief Renderable for a textured image plane in a 3D mesh scene
+ *
+ * Image planes are intentionally separate from material-shaded `MeshRenderable` surfaces. They bind image textures and
+ * use the image-sampling shader path, while ordinary meshes use material lighting shaders.
+ */
+struct MeshImagePlaneRenderable
+{
+  MeshHandle mesh;                          //!< Plane mesh with positions and image texture coordinates
+  glm::mat4 world_T_mesh = glm::mat4{1.0f}; //!< Transform from mesh coordinates to world coordinates
+  MeshImagePlaneTexture texture;            //!< Image texture sampled by the plane
+  bool visible = true;                      //!< Whether the plane participates in image-plane draw lists
+};
+
+/**
+ * @brief Build a textured image-plane renderable
+ * @param mesh Uploaded or uploadable plane mesh handle
+ * @param world_T_mesh Transform from mesh coordinates to world coordinates
+ * @param texture Image texture selection
+ * @param visible Whether the image plane is visible
+ * @return Image-plane renderable
+ */
+MeshImagePlaneRenderable makeImagePlaneRenderable(
+  MeshHandle mesh,
+  const glm::mat4& world_T_mesh,
+  MeshImagePlaneTexture texture,
+  bool visible = true);
+
+/**
+ * @brief Return whether an image-plane renderable has enough state to be drawn
+ * @param renderable Image-plane renderable
+ * @return True when the renderable is visible and references a non-nil image and mesh
+ */
+bool isDrawableImagePlaneRenderable(const MeshImagePlaneRenderable& renderable) noexcept;
+
+} // namespace rendering::mesh

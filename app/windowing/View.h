@@ -154,6 +154,20 @@ public:
   void resetThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3& target);
 
   /**
+   * @brief Recenter the dedicated 2D slice camera and remember the default slice-camera frame
+   * @param worldCenter Target center in World space
+   * @param worldFov Field of view size in World units
+   * @param resetZoom True to reset camera zoom and default field of view
+   * @param resetObliqueOrientation True to reset oblique view orientation
+   * @throw Propagates exceptions from camera transforms
+   */
+  void recenterSliceCamera(
+    const glm::vec3& worldCenter,
+    const glm::vec3& worldFov,
+    bool resetZoom,
+    bool resetObliqueOrientation);
+
+  /**
    * @brief Update the view's camera based on the crosshairs World-space position
    * @param appData Application data used for image geometry
    * @param worldCrosshairs Crosshairs position in world coordinates
@@ -237,6 +251,12 @@ private:
   camera3d::State m_threeDState;
   /** @brief True after the 3D camera has been initialized for a scene */
   bool m_threeDCameraInitialized = false;
+  /** @brief True after the dedicated 2D camera has been used as the active view camera */
+  bool m_sliceCameraActivated = false;
+  /** @brief Last default recenter target for the dedicated 2D camera */
+  std::optional<glm::vec3> m_sliceCameraDefaultWorldCenter = std::nullopt;
+  /** @brief Last default field of view for the dedicated 2D camera */
+  std::optional<glm::vec3> m_sliceCameraDefaultWorldFov = std::nullopt;
 
   /** @brief Referenced application-level view convention */
   const ViewConvention& m_viewConvention;
