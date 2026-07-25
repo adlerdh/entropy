@@ -159,7 +159,7 @@ void applySegmentationLabels(AppData& appData, Image& seg, const serialize::Segm
 
 namespace project_snapshot
 {
-// Project-owned interface and view settings.
+// Project-owned synchronization and view settings.
 
 void syncLayoutTabGuiData(AppData& appData)
 {
@@ -167,12 +167,13 @@ void syncLayoutTabGuiData(AppData& appData)
   appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
 }
 
-serialize::ProjectInterfaceSettings interfaceSettings(const AppData& appData)
+serialize::ProjectSynchronizationSettings synchronizationSettings(const AppData& appData)
 {
-  return serialize::ProjectInterfaceSettings{.m_synchronizeTimeSeries = appData.settings().synchronizeTimeSeries()};
+  return serialize::ProjectSynchronizationSettings{
+    .m_synchronizeTimeSeries = appData.settings().synchronizeTimeSeries()};
 }
 
-void applyInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceSettings& settings)
+void applySynchronizationSettings(AppData& appData, const serialize::ProjectSynchronizationSettings& settings)
 {
   appData.settings().setSynchronizeTimeSeries(settings.m_synchronizeTimeSeries);
   syncLayoutTabGuiData(appData);
@@ -190,6 +191,9 @@ serialize::ProjectViewSettings viewSettings(const AppData& appData)
     .m_showAnatomicalLabelsInLightboxViews = appData.renderData().m_showAnatomicalLabelsInLightboxViews,
     .m_showScaleBars = appData.renderData().m_showScaleBars,
     .m_showScaleBarsInLightboxViews = appData.renderData().m_showScaleBarsInLightboxViews,
+    .m_annotationsOnTop = appData.renderData().m_globalAnnotationParams.renderOnTopOfAllImagePlanes,
+    .m_landmarksOnTop = appData.renderData().m_globalLandmarkParams.renderOnTopOfAllImagePlanes,
+    .m_hideAnnotationVertices = appData.renderData().m_globalAnnotationParams.hidePolygonVertices,
     .m_anatomicalLabelType = appData.renderData().m_anatomicalLabelType,
     .m_lockAnatomicalDirectionsToReferenceImage = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage(),
     .m_crosshairsSnapping = appData.renderData().m_snapCrosshairs};
@@ -210,6 +214,9 @@ void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& s
   appData.renderData().m_showScaleBars = settings.m_showScaleBars;
   appData.renderData().m_showScaleBarsInLightboxViews =
     settings.m_showScaleBars && settings.m_showScaleBarsInLightboxViews;
+  appData.renderData().m_globalAnnotationParams.renderOnTopOfAllImagePlanes = settings.m_annotationsOnTop;
+  appData.renderData().m_globalLandmarkParams.renderOnTopOfAllImagePlanes = settings.m_landmarksOnTop;
+  appData.renderData().m_globalAnnotationParams.hidePolygonVertices = settings.m_hideAnnotationVertices;
   appData.renderData().m_anatomicalLabelType = settings.m_anatomicalLabelType;
   appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
     settings.m_lockAnatomicalDirectionsToReferenceImage);
@@ -431,50 +438,32 @@ void applySegmentationDisplaySettings(AppData& appData, const serialize::Project
   renderData.m_segInterpCutoff = settings.m_erosionFactor;
 }
 
-serialize::ProjectIsosurfaceDisplaySettings isosurfaceDisplaySettings(const AppData& appData)
+serialize::ProjectIsocontourDisplaySettings isocontourDisplaySettings(const AppData& appData)
 {
   const auto& renderData = appData.renderData();
-  return serialize::ProjectIsosurfaceDisplaySettings{
+  return serialize::ProjectIsocontourDisplaySettings{
     .m_floatingPointInterpolationPolicy = renderData.m_isocontourFloatingPointInterpolationPolicy,
     .m_modulateOpacityWithImageOpacity = renderData.m_modulateIsocontourOpacityWithImageOpacity};
 }
 
-void applyIsosurfaceDisplaySettings(AppData& appData, const serialize::ProjectIsosurfaceDisplaySettings& settings)
+void applyIsocontourDisplaySettings(AppData& appData, const serialize::ProjectIsocontourDisplaySettings& settings)
 {
   auto& renderData = appData.renderData();
   renderData.m_isocontourFloatingPointInterpolationPolicy = settings.m_floatingPointInterpolationPolicy;
   renderData.m_modulateIsocontourOpacityWithImageOpacity = settings.m_modulateOpacityWithImageOpacity;
 }
 
-serialize::ProjectAnnotationDisplaySettings annotationDisplaySettings(const AppData& appData)
-{
-  const auto& renderData = appData.renderData();
-  return serialize::ProjectAnnotationDisplaySettings{
-    .m_annotationsOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes,
-    .m_landmarksOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes,
-    .m_hideAnnotationVertices = renderData.m_globalAnnotationParams.hidePolygonVertices};
-}
-
-void applyAnnotationDisplaySettings(AppData& appData, const serialize::ProjectAnnotationDisplaySettings& settings)
-{
-  auto& renderData = appData.renderData();
-  renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes = settings.m_annotationsOnTop;
-  renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes = settings.m_landmarksOnTop;
-  renderData.m_globalAnnotationParams.hidePolygonVertices = settings.m_hideAnnotationVertices;
-}
-
 // Project-wide reset.
 
 void applyDefaultProjectSettings(AppData& appData)
 {
-  applyInterfaceSettings(appData, serialize::ProjectInterfaceSettings{});
+  applySynchronizationSettings(appData, serialize::ProjectSynchronizationSettings{});
   applyViewSettings(appData, serialize::ProjectViewSettings{});
   applyComparisonSettings(appData, serialize::ProjectComparisonSettings{});
   applyRaycastingSettings(appData, serialize::ProjectRaycastingSettings{});
   applyIntensityProjectionSettings(appData, serialize::ProjectIntensityProjectionSettings{});
   applySegmentationDisplaySettings(appData, serialize::ProjectSegmentationDisplaySettings{});
-  applyIsosurfaceDisplaySettings(appData, serialize::ProjectIsosurfaceDisplaySettings{});
-  applyAnnotationDisplaySettings(appData, serialize::ProjectAnnotationDisplaySettings{});
+  applyIsocontourDisplaySettings(appData, serialize::ProjectIsocontourDisplaySettings{});
 }
 
 bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& image)

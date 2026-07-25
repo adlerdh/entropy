@@ -45,20 +45,57 @@ namespace math
  * lookat direction without any priority axes
  *
  * @see "Building an Orthonormal Basis, Revisited" by Tom Duff, James Burgess, Per Christensen,
- * Christophe Hery, Andrew Kensler, Max Liani, and Ryusuke Villemin.
+ * Christophe Hery, Andrew Kensler, Max Liani, and Ryusuke Villemin
  * Journal of Computer Graphics Techniques Vol. 6, No. 1, 2017
+ *
+ * @param n Unit vector used as the normal of the constructed basis
+ * @return Two vectors orthonormal to `n` and to each other
  */
 std::pair<glm::vec3, glm::vec3> buildOrthonormalBasis_branchless(const glm::vec3& n);
+
+/**
+ * @brief Build an orthonormal basis from a single vector
+ * @param n Unit vector used as the normal of the constructed basis
+ * @return Two vectors orthonormal to `n` and to each other
+ */
 std::pair<glm::vec3, glm::vec3> buildOrthonormalBasis(const glm::vec3& n);
 
+/**
+ * @brief Convert a signed direction vector to an RGB color triplet
+ * @param v Direction vector with components expected near `[-1, 1]`
+ * @return RGB color in normalized floating-point form
+ */
 glm::vec3 convertVecToRGB(const glm::vec3& v);
 
+/**
+ * @brief Convert a signed direction vector to an 8-bit RGB color triplet
+ * @param v Direction vector with components expected near `[-1, 1]`
+ * @return RGB color in unsigned 8-bit form
+ */
 glm::u8vec3 convertVecToRGB_uint8(const glm::vec3& v);
 
+/**
+ * @brief Return indices that order 2D points counterclockwise around their centroid
+ * @param points Points to sort
+ * @return Indices into `points` in counterclockwise order
+ * @throw Propagates exceptions from vector allocation
+ */
 std::vector<uint32_t> sortCounterclockwise(const std::vector<glm::vec2>& points);
 
+/**
+ * @brief Project 3D points into their best-fit local 2D plane
+ * @param A 3D points to project
+ * @return Projected 2D points
+ * @throw Propagates exceptions from vector allocation
+ */
 std::vector<glm::vec2> project3dPointsToPlane(const std::vector<glm::vec3>& A);
 
+/**
+ * @brief Orthogonally project a 3D point onto a plane
+ * @param point 3D point to project
+ * @param planeEquation Plane equation `(a, b, c, d)` where `ax + by + cz + d = 0`
+ * @return Projected 3D point
+ */
 glm::vec3 projectPointToPlane(const glm::vec3& point, const glm::vec4& planeEquation);
 
 /**
@@ -78,12 +115,13 @@ glm::vec2 projectPointToPlaneLocal2dCoords(
 /**
  * @brief Add offsets to vertex positions of an object (defined in its own Model space)
  * in order to account for its layering. This function is used when rendering "flat"
- * objects in 2D views.
+ * objects in 2D views
  *
  * @param[in] camera Camera of the view in which th object is rendered
  * @param[in] model_T_world Transformation from World to Model space
  * @param[in] layer Layer of the model
  * @param[in,out] modelPositions Model-space vertex positions that are modified
+ * @throw Propagates exceptions from vector access or camera math
  */
 void applyLayeringOffsetsToModelPositions(
   const Camera& camera,
@@ -91,6 +129,13 @@ void applyLayeringOffsetsToModelPositions(
   uint32_t layer,
   std::vector<glm::vec3>& modelPositions);
 
+/**
+ * @brief Compute a rotation matrix that rotates one vector onto another
+ * @tparam T Floating-point scalar type
+ * @param fromVec Source direction
+ * @param toVec Target direction
+ * @return Rotation matrix from `fromVec` to `toVec`
+ */
 template<typename T>
 gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
 {
@@ -169,6 +214,13 @@ gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
   return R;
 }
 
+/**
+ * @brief Compare two 3x3 matrices using GLM epsilon tolerance
+ * @tparam T Matrix scalar type
+ * @param A First matrix
+ * @param B Second matrix
+ * @return True when all corresponding elements are equal within tolerance
+ */
 template<typename T>
 bool areMatricesEqual(const gmat3<T>& A, const gmat3<T>& B)
 {
@@ -184,6 +236,14 @@ bool areMatricesEqual(const gmat3<T>& A, const gmat3<T>& B)
   return true;
 }
 
+/**
+ * @brief Compare two 4x4 matrices using a caller-provided tolerance
+ * @tparam T Matrix scalar type
+ * @param A First matrix
+ * @param B Second matrix
+ * @param epsilon Element-wise tolerance
+ * @return True when all corresponding elements are equal within `epsilon`
+ */
 template<typename T>
 bool areMatricesEqual(const gmat4<T>& A, const gmat4<T>& B, float epsilon = glm::epsilon<float>())
 {
@@ -197,6 +257,12 @@ bool areMatricesEqual(const gmat4<T>& A, const gmat4<T>& B, float epsilon = glm:
   return true;
 }
 
+/**
+ * @brief Check whether a quaternion represents the identity rotation
+ * @tparam T Quaternion scalar type
+ * @param q Quaternion to test
+ * @return True when `q` is identity within GLM epsilon tolerance
+ */
 template<typename T>
 bool isRotationIdentity(const glm::qua<T>& q)
 {
@@ -208,6 +274,12 @@ bool isRotationIdentity(const glm::qua<T>& q)
   return glm::abs(T(1) - dot) < glm::epsilon<T>();
 }
 
+/**
+ * @brief Compute front-to-back compositing weights for ordered layer opacities
+ * @tparam N Number of layers
+ * @param layerOpacities Per-layer opacities in draw order
+ * @return Per-layer blend weights after attenuation by layers in front
+ */
 template<size_t N>
 std::array<float, N> computeLayerBlendWeights(const std::array<float, N>& layerOpacities)
 {
@@ -222,6 +294,12 @@ std::array<float, N> computeLayerBlendWeights(const std::array<float, N>& layerO
   return weights;
 }
 
+/**
+ * @brief Compute total opacity after front-to-back compositing
+ * @tparam N Number of layers
+ * @param layerOpacities Per-layer opacities in draw order
+ * @return Overall composited opacity
+ */
 template<size_t N>
 float computeOverallOpacity(const std::array<float, N>& layerOpacities)
 {
@@ -230,6 +308,15 @@ float computeOverallOpacity(const std::array<float, N>& layerOpacities)
   return std::accumulate(std::begin(weights), std::end(weights), 0.0f);
 }
 
+/**
+ * @brief Intersect a ray with an axis-aligned bounding box
+ * @tparam T Coordinate scalar type
+ * @param rayOrig Ray origin
+ * @param rayDir Ray direction
+ * @param boxMin Minimum AABB corner
+ * @param boxMax Maximum AABB corner
+ * @return Intersection point when the ray intersects the box; otherwise `std::nullopt`
+ */
 template<typename T>
 std::optional<gvec3<T> >
 intersectRayWithAABBox(const gvec3<T>& rayOrig, const gvec3<T>& rayDir, const gvec3<T>& boxMin, const gvec3<T>& boxMax)
@@ -249,10 +336,11 @@ intersectRayWithAABBox(const gvec3<T>& rayOrig, const gvec3<T>& rayDir, const gv
 
 /**
  * @brief Signed distance from 3D point to plane
+ * @tparam T Coordinate scalar type
  * @param point 3D point
  * @param plane 3D plane expressed as (a, b, c, d), where ax + by + cz + d = 0
  * @return Positive distance if point is on same side of plane as normal vector;
- * negative if on the other side.
+ * negative if on the other side
  */
 template<typename T>
 T signedDistancePointToPlane(const gvec3<T>& point, const gvec4<T>& plane)
@@ -267,6 +355,7 @@ T signedDistancePointToPlane(const gvec3<T>& point, const gvec4<T>& plane)
  * (call this the "near" corner) and the corner of the box farthest from the
  * plane on its positive side (call this the "far" corner)
  *
+ * @tparam T Coordinate scalar type
  * @param boxCorners Array of the eight AABB corners
  * @param plane 3D plane expressed as (a, b, c, d), where ax + by + cz + d = 0
  *
@@ -302,7 +391,7 @@ std::tuple<gvec3<T>, T, gvec3<T>, T> computeNearAndFarAABBoxCorners(
 }
 
 /**
- * @brief Compute the left, posterior, and superior directions of the subject in Camera space.
+ * @brief Compute the left, posterior, and superior directions of the subject in Camera space
  *
  * @param[in] camera_T_world_rotation Rotation matrix from World to Camera space
  * @param[in] world_T_subject_rotation Rotation matrix from Subject to World space
@@ -315,20 +404,36 @@ glm::mat3 computeSubjectAxesInCamera(
 
 /**
  * @brief Compute the equation of the view plane in Subject space
- * @param subject_T_world
- * @param worldPlaneNormal
- * @param worldPlanePoint
- * @return
+ * @param subject_T_world Transform from World space to Subject space
+ * @param worldPlaneNormal Plane normal in World space
+ * @param worldPlanePoint Point on the plane in World space
+ * @return Subject-space plane equation and subject-space point on the plane
  */
 std::pair<glm::vec4, glm::vec3> computeSubjectPlaneEquation(
   const glm::mat4 subject_T_world,
   const glm::vec3& worldPlaneNormal,
   const glm::vec3& worldPlanePoint);
 
+/**
+ * @brief Compute anatomical label positions for a view from camera and subject transforms
+ * @param camera_T_world Transform from World space to Camera space
+ * @param world_T_subject Transform from Subject space to World space
+ * @return Two anatomical label position descriptors
+ */
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
   const glm::mat4& camera_T_world,
   const glm::mat4& world_T_subject);
 
+/**
+ * @brief Compute anatomical label positions in miewport coordinates for a rendered view
+ * @param miewportViewBounds View bounds in mouse-style y-down viewport coordinates
+ * @param windowVP Window viewport
+ * @param camera View camera
+ * @param world_T_subject Transform from Subject space to World space
+ * @param windowClip_T_viewClip Transform from View clip space to Window clip space
+ * @param worldCrosshairsPos Crosshairs position in World space
+ * @return Two anatomical label position descriptors
+ */
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const FrameBounds& miewportViewBounds,
   const Viewport& windowVP,

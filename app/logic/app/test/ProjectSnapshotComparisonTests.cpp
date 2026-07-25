@@ -142,9 +142,9 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedLayout.m_layouts.front().m_views.front().m_viewType = 1;
   CHECK_FALSE(project_snapshot::equivalent(project, changedLayout));
 
-  auto changedInterface = project;
-  changedInterface.m_interface.m_synchronizeTimeSeries = false;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedInterface));
+  auto changedSynchronization = project;
+  changedSynchronization.m_synchronization.m_synchronizeTimeSeries = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedSynchronization));
 
   auto changedView = project;
   changedView.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
@@ -187,6 +187,18 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedView.m_view.m_showScaleBarsInLightboxViews = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
+  changedView = project;
+  changedView.m_view.m_annotationsOnTop = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_landmarksOnTop = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_hideAnnotationVertices = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
   auto changedComparison = project;
   changedComparison.m_comparison.m_checkerboardSquares = 17;
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
@@ -207,13 +219,9 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ViewPixel;
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
 
-  auto changedIsosurfaces = project;
-  changedIsosurfaces.m_isosurfaces.m_modulateOpacityWithImageOpacity = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurfaces));
-
-  auto changedAnnotationDisplay = project;
-  changedAnnotationDisplay.m_annotationDisplay.m_annotationsOnTop = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedAnnotationDisplay));
+  auto changedIsocontours = project;
+  changedIsocontours.m_isocontours.m_modulateOpacityWithImageOpacity = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedIsocontours));
 }
 
 TEST_CASE("Project snapshot comparison detects registration result changes", "[ProjectSnapshotComparison]")

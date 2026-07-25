@@ -8,20 +8,40 @@
 namespace camera3d
 {
 
+/**
+ * @brief Camera drag operation selected from mouse buttons and keyboard modifiers
+ */
 enum class DragAction
 {
+  /** @brief Rotate the camera around the selected orbit target */
   Orbit,
+  /** @brief Rotate the camera around its current eye position */
   RotateAboutEye,
+  /** @brief Rotate the camera in the view plane */
   Roll,
+  /** @brief Translate the camera parallel to the view plane */
   Pan
 };
 
-bool mouseModeAllowsCameraInteraction(MouseMode mouseMode);
+/**
+ * @brief Check whether a mouse mode permits 3D camera interaction
+ * @param mouseMode Active application mouse mode
+ * @return True when 3D navigation should handle pointer drags in the mode
+ */
+bool mouseModeAllowsCameraInteraction(MouseMode mouseMode) noexcept;
 
+/**
+ * @brief Resolve the 3D camera drag action for the current input state
+ * @param mouseMode Active application mouse mode
+ * @param buttons Current mouse button state
+ * @param modifiers Current keyboard modifier state
+ * @param viewPositionFollowsCrosshairs True when left drag defaults to rotate-about-eye behavior
+ * @return Drag action to perform, or `std::nullopt` when no camera drag action is active
+ */
 std::optional<DragAction> dragActionForInput(
   MouseMode mouseMode,
   const ButtonState& buttons,
   const ModifierState& modifiers,
-  bool viewPositionFollowsCrosshairs = false);
+  bool viewPositionFollowsCrosshairs = false) noexcept;
 
 } // namespace camera3d

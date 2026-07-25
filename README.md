@@ -33,25 +33,21 @@ BUILD_TYPE=release # or debug
 
 # Dependencies
 cmake --preset deps-${BUILD_TYPE}
-cmake --build --preset deps-${
-  BUILD_TYPE} --parallel
+cmake --build --preset deps-${BUILD_TYPE} --parallel
 
 # Application
 cmake --preset app-${BUILD_TYPE}
-cmake --build --preset app-${
-  BUILD_TYPE} --parallel
+cmake --build --preset app-${BUILD_TYPE} --parallel
 
 # Unit tests
-ctest --test-dir build-${
-  BUILD_TYPE} --parallel 8 --output-on-failure
+ctest --test-dir build-${BUILD_TYPE} --parallel 8 --output-on-failure
 ```
 
 Adjust the parallel job count for your machine, lowering it if you run out of memory. Run with:
 
 ```sh
 build-${BUILD_TYPE}/bin/entropy # macOS and Linux
-.\build-${
-  BUILD_TYPE}\bin\entropy.exe # Windows
+.\build-${BUILD_TYPE}\bin\entropy.exe # Windows
 ```
 
 Release packages are generated with preset `package-release` for:
@@ -292,9 +288,8 @@ under `settings`. Minimal example:
 
 ```json
 {
-  "version" : {"major": 1, "minor": 0},
-              "images"
-    : [{"path": "reference_image.nii.gz"}, {"path": "moving_image_1.nii.gz"}, {"path": "moving_image_2.nii.gz"}]
+  "version": {"major": 1, "minor": 0},
+  "images": [{"path": "ref.nii.gz"}, {"path": "mov_1.nii.gz"}, {"path": "mov_2.nii.gz"}]
 }
 ```
 
@@ -304,21 +299,21 @@ Including segmentations, landmarks, annotations, and an affine transformation:
 {
   "version" : {"major": 1, "minor": 0}, "images" : [
     {
-      "path": "reference_image.nii.gz",
-      "segmentations": [{"path": "reference_seg.nii.gz"}],
+      "path": "ref.nii.gz",
+      "segmentations": [{"path": "ref_seg.nii.gz"}],
       "landmarks": [{
         "coordinateSpace": "subject",
         "points": [{"position": [12.0, 24.0, 36.0], "name": "AC"}],
         "display": {"name": "Reference landmarks"}
       }],
-      "annotations": {"path": "reference_annotations.json"}
+      "annotations": {"path": "ref_annot.json"}
     },
     {
-      "path": "moving_image.nii.gz",
-      "initialAffine": {"path": "moving_image_affine.txt"},
-      "segmentations": [{"path": "moving_image_seg.nii.gz"}],
-      "landmarks": [{"path": "moving_image_landmarks.csv", "coordinateSpace": "subject"}],
-      "annotations": {"path": "moving_image_annotations.json"}
+      "path": "mov.nii.gz",
+      "initialAffine": {"path": "mov_affine.txt"},
+      "segmentations": [{"path": "mov_seg.nii.gz"}],
+      "landmarks": [{"path": "mov_landmarks.csv", "coordinateSpace": "subject"}],
+      "annotations": {"path": "mov_annot.json"}
     }
   ]
 }

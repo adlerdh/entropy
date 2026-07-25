@@ -21,7 +21,7 @@
 #include "viewer/FrameHitGeometry.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
-#include "windowing/LayoutSerialization.h"
+#include "logic/serialization/LayoutSerialization.h"
 
 #include <glm/glm.hpp>
 

@@ -15,7 +15,7 @@
 #define GLFW_MOD_NUM_LOCK 0x0020
 
 // Use -1 to ignore parameter
-void ButtonState::updateFromGlfwEvent(int mouseButton, int mouseButtonAction)
+void ButtonState::updateFromGlfwEvent(int mouseButton, int mouseButtonAction) noexcept
 {
   if (mouseButton >= 0) {
     if (GLFW_MOUSE_BUTTON_LEFT == mouseButton) {
@@ -31,7 +31,7 @@ void ButtonState::updateFromGlfwEvent(int mouseButton, int mouseButtonAction)
 }
 
 // Use -1 to ignore parameter
-void ModifierState::updateFromGlfwEvent(int keyMods)
+void ModifierState::updateFromGlfwEvent(int keyMods) noexcept
 {
   if (keyMods >= 0) {
     shift = (GLFW_MOD_SHIFT & keyMods);

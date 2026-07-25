@@ -237,23 +237,13 @@ struct ProjectSegmentationDisplaySettings
 };
 
 /**
- * @brief Project-wide isosurface rendering settings.
+ * @brief Project-wide 2D isocontour settings.
  */
-struct ProjectIsosurfaceDisplaySettings
+struct ProjectIsocontourDisplaySettings
 {
   FloatingPointLinearInterpolationPolicy m_floatingPointInterpolationPolicy =
     FloatingPointLinearInterpolationPolicy::Automatic; //!< Isocontour interpolation policy
   bool m_modulateOpacityWithImageOpacity = false;      //!< Scale isocontour opacity by image opacity
-};
-
-/**
- * @brief Project-wide annotation and landmark display settings.
- */
-struct ProjectAnnotationDisplaySettings
-{
-  bool m_annotationsOnTop = false;       //!< Render annotations over all image planes
-  bool m_landmarksOnTop = false;         //!< Render landmarks over all image planes
-  bool m_hideAnnotationVertices = false; //!< Hide annotation polygon vertices
 };
 
 /**
@@ -583,9 +573,9 @@ struct Image
 };
 
 /**
- * @brief Interface settings saved with a project.
+ * @brief Time synchronization settings saved with a project.
  */
-struct ProjectInterfaceSettings
+struct ProjectSynchronizationSettings
 {
   bool m_synchronizeTimeSeries = true; //!< Synchronize displayed time points across time-series images
 };
@@ -603,6 +593,9 @@ struct ProjectViewSettings
   bool m_showAnatomicalLabelsInLightboxViews = true; //!< Show anatomical direction labels in lightbox layout tiles
   bool m_showScaleBars = false;                      //!< Show scale bars in all views
   bool m_showScaleBarsInLightboxViews = false;       //!< Show scale bars in lightbox layout tiles
+  bool m_annotationsOnTop = false;                   //!< Render annotations over all image planes
+  bool m_landmarksOnTop = false;                     //!< Render landmarks over all image planes
+  bool m_hideAnnotationVertices = false;             //!< Hide annotation polygon vertices
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention
   bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image
   CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior
@@ -631,30 +624,29 @@ struct EntropyProject
   std::vector<std::size_t> m_removedDefaultLayoutIndices;      //!< Default/generated layout indices removed by the user
   std::vector<DefaultLayoutOverride> m_modifiedDefaultLayouts; //!< User-modified generated layouts
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
-  ProjectInterfaceSettings m_interface;
+  ProjectSynchronizationSettings m_synchronization;
   ProjectViewSettings m_view;
   ProjectComparisonSettings m_comparison;
   ProjectRaycastingSettings m_raycasting;
   ProjectIntensityProjectionSettings m_intensityProjection;
   ProjectSegmentationDisplaySettings m_segmentationDisplay;
-  ProjectIsosurfaceDisplaySettings m_isosurfaces;
-  ProjectAnnotationDisplaySettings m_annotationDisplay;
+  ProjectIsocontourDisplaySettings m_isocontours;
   std::vector<RegistrationResult> m_registrationResults;
 };
 
 /**
- * @brief Serialize project interface settings to JSON.
+ * @brief Serialize project synchronization settings to JSON.
  * @param j Destination JSON object.
  * @param settings Settings to serialize.
  */
-void to_json(nlohmann::json& j, const ProjectInterfaceSettings& settings);
+void to_json(nlohmann::json& j, const ProjectSynchronizationSettings& settings);
 
 /**
- * @brief Deserialize project interface settings from JSON.
+ * @brief Deserialize project synchronization settings from JSON.
  * @param j Source JSON object.
  * @param settings Settings to update.
  */
-void from_json(const nlohmann::json& j, ProjectInterfaceSettings& settings);
+void from_json(const nlohmann::json& j, ProjectSynchronizationSettings& settings);
 
 /**
  * @brief Serialize project view settings to JSON.
@@ -727,32 +719,18 @@ void to_json(nlohmann::json& j, const ProjectSegmentationDisplaySettings& settin
 void from_json(const nlohmann::json& j, ProjectSegmentationDisplaySettings& settings);
 
 /**
- * @brief Serialize project isosurface display settings to JSON.
+ * @brief Serialize project 2D isocontour settings to JSON.
  * @param j Destination JSON object.
  * @param settings Settings to serialize.
  */
-void to_json(nlohmann::json& j, const ProjectIsosurfaceDisplaySettings& settings);
+void to_json(nlohmann::json& j, const ProjectIsocontourDisplaySettings& settings);
 
 /**
- * @brief Deserialize project isosurface display settings from JSON.
+ * @brief Deserialize project 2D isocontour settings from JSON.
  * @param j Source JSON object.
  * @param settings Settings to update.
  */
-void from_json(const nlohmann::json& j, ProjectIsosurfaceDisplaySettings& settings);
-
-/**
- * @brief Serialize project annotation display settings to JSON.
- * @param j Destination JSON object.
- * @param settings Settings to serialize.
- */
-void to_json(nlohmann::json& j, const ProjectAnnotationDisplaySettings& settings);
-
-/**
- * @brief Deserialize project annotation display settings from JSON.
- * @param j Source JSON object.
- * @param settings Settings to update.
- */
-void from_json(const nlohmann::json& j, ProjectAnnotationDisplaySettings& settings);
+void from_json(const nlohmann::json& j, ProjectIsocontourDisplaySettings& settings);
 
 /**
  * @brief Serialize a completed registration result to JSON.

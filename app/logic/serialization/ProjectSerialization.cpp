@@ -56,14 +56,14 @@ namespace serialize
 void to_json(json& j, const Image& image);
 void from_json(const json& j, Image& image);
 
-void to_json(json& j, const ProjectInterfaceSettings& settings)
+void to_json(json& j, const ProjectSynchronizationSettings& settings)
 {
-  const ProjectInterfaceSettings defaults;
+  const ProjectSynchronizationSettings defaults;
   j = json::object();
   addIfChanged(j, "synchronizeTimeSeries", settings.m_synchronizeTimeSeries, defaults.m_synchronizeTimeSeries);
 }
 
-void from_json(const json& j, ProjectInterfaceSettings& settings)
+void from_json(const json& j, ProjectSynchronizationSettings& settings)
 {
   if (const auto syncTime = j.find("synchronizeTimeSeries"); syncTime != j.end() && syncTime->is_boolean()) {
     settings.m_synchronizeTimeSeries = syncTime->get<bool>();
@@ -125,6 +125,15 @@ void to_json(json& j, const ProjectViewSettings& settings)
     settings.m_showScaleBarsInLightboxViews,
     defaults.m_showScaleBarsInLightboxViews);
   addIfNotEmpty(j, "scaleBars", std::move(scaleBars));
+
+  json annotations = json::object();
+  addIfChanged(annotations, "renderOnTop", settings.m_annotationsOnTop, defaults.m_annotationsOnTop);
+  addIfChanged(annotations, "verticesHidden", settings.m_hideAnnotationVertices, defaults.m_hideAnnotationVertices);
+  addIfNotEmpty(j, "annotations", std::move(annotations));
+
+  json landmarks = json::object();
+  addIfChanged(landmarks, "renderOnTop", settings.m_landmarksOnTop, defaults.m_landmarksOnTop);
+  addIfNotEmpty(j, "landmarks", std::move(landmarks));
 }
 
 void from_json(const json& j, ProjectViewSettings& settings)
@@ -186,6 +195,19 @@ void from_json(const json& j, ProjectViewSettings& settings)
     }
     if (const auto value = scaleBars->find("visibleInLightboxes"); value != scaleBars->end() && value->is_boolean()) {
       settings.m_showScaleBarsInLightboxViews = value->get<bool>();
+    }
+  }
+  if (const auto annotations = j.find("annotations"); annotations != j.end() && annotations->is_object()) {
+    if (const auto value = annotations->find("renderOnTop"); value != annotations->end() && value->is_boolean()) {
+      settings.m_annotationsOnTop = value->get<bool>();
+    }
+    if (const auto value = annotations->find("verticesHidden"); value != annotations->end() && value->is_boolean()) {
+      settings.m_hideAnnotationVertices = value->get<bool>();
+    }
+  }
+  if (const auto landmarks = j.find("landmarks"); landmarks != j.end() && landmarks->is_object()) {
+    if (const auto value = landmarks->find("renderOnTop"); value != landmarks->end() && value->is_boolean()) {
+      settings.m_landmarksOnTop = value->get<bool>();
     }
   }
 
@@ -450,18 +472,18 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
     defaults.m_transparentBackgroundWhenNoHit);
   addIfChanged(
     j,
-    "showImageBox",
+    "imageBoxVisible",
     settings.m_backgroundEdgeBrighteningEnabled,
     defaults.m_backgroundEdgeBrighteningEnabled);
-  addIfChanged(j, "showCrosshairsGlyph", settings.m_showCrosshairsIn3D, defaults.m_showCrosshairsIn3D);
+  addIfChanged(j, "crosshairsGlyphVisible", settings.m_showCrosshairsIn3D, defaults.m_showCrosshairsIn3D);
   addIfChanged(
     j,
-    "crosshairsGlyphDiameterVoxels",
+    "crosshairsGlyphDiameterVox",
     settings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
     defaults.m_crosshairs3DGlyphDiameterVoxelDiagonals);
   addIfChanged(
     j,
-    "showCameraFrustumIn2DViews",
+    "cameraFrustumVisibleIn2DViews",
     settings.m_showThreeDCameraFrustumIn2DViews,
     defaults.m_showThreeDCameraFrustumIn2DViews);
   addIfChanged(
@@ -491,16 +513,16 @@ void from_json(const json& j, ProjectRaycastingSettings& settings)
   if (const auto value = j.find("transparentBackgroundWhenNoHit"); value != j.end() && value->is_boolean()) {
     settings.m_transparentBackgroundWhenNoHit = value->get<bool>();
   }
-  if (const auto value = j.find("showImageBox"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("imageBoxVisible"); value != j.end() && value->is_boolean()) {
     settings.m_backgroundEdgeBrighteningEnabled = value->get<bool>();
   }
-  if (const auto value = j.find("showCrosshairsGlyph"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();
   }
-  if (const auto value = j.find("crosshairsGlyphDiameterVoxels"); value != j.end() && value->is_number()) {
+  if (const auto value = j.find("crosshairsGlyphDiameterVox"); value != j.end() && value->is_number()) {
     settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
   }
-  if (const auto value = j.find("showCameraFrustumIn2DViews"); value != j.end() && value->is_boolean()) {
+  if (const auto value = j.find("cameraFrustumVisibleIn2DViews"); value != j.end() && value->is_boolean()) {
     settings.m_showThreeDCameraFrustumIn2DViews = value->get<bool>();
   }
   if (const auto value = j.find("reverseRotateAboutEye"); value != j.end() && value->is_boolean()) {
@@ -590,9 +612,9 @@ void from_json(const json& j, ProjectSegmentationDisplaySettings& settings)
   }
 }
 
-void to_json(json& j, const ProjectIsosurfaceDisplaySettings& settings)
+void to_json(json& j, const ProjectIsocontourDisplaySettings& settings)
 {
-  const ProjectIsosurfaceDisplaySettings defaults;
+  const ProjectIsocontourDisplaySettings defaults;
   j = json::object();
   addIfChanged(
     j,
@@ -606,7 +628,7 @@ void to_json(json& j, const ProjectIsosurfaceDisplaySettings& settings)
     defaults.m_modulateOpacityWithImageOpacity);
 }
 
-void from_json(const json& j, ProjectIsosurfaceDisplaySettings& settings)
+void from_json(const json& j, ProjectIsocontourDisplaySettings& settings)
 {
   if (const auto policy = j.find("floatingPointInterpolationPolicy"); policy != j.end() && policy->is_string()) {
     if (
@@ -619,40 +641,6 @@ void from_json(const json& j, ProjectIsosurfaceDisplaySettings& settings)
   }
   if (const auto value = j.find("modulateOpacityWithImageOpacity"); value != j.end() && value->is_boolean()) {
     settings.m_modulateOpacityWithImageOpacity = value->get<bool>();
-  }
-}
-
-void to_json(json& j, const ProjectAnnotationDisplaySettings& settings)
-{
-  const ProjectAnnotationDisplaySettings defaults;
-  j = json::object();
-
-  json rendering = json::object();
-  addIfChanged(rendering, "annotationsOnTop", settings.m_annotationsOnTop, defaults.m_annotationsOnTop);
-  addIfChanged(rendering, "landmarksOnTop", settings.m_landmarksOnTop, defaults.m_landmarksOnTop);
-  addIfChanged(
-    rendering,
-    "hideAnnotationVertices",
-    settings.m_hideAnnotationVertices,
-    defaults.m_hideAnnotationVertices);
-  addIfNotEmpty(j, "rendering", std::move(rendering));
-}
-
-void from_json(const json& j, ProjectAnnotationDisplaySettings& settings)
-{
-  const auto rendering = j.find("rendering");
-  if (rendering == j.end() || !rendering->is_object()) {
-    return;
-  }
-
-  if (const auto value = rendering->find("annotationsOnTop"); value != rendering->end() && value->is_boolean()) {
-    settings.m_annotationsOnTop = value->get<bool>();
-  }
-  if (const auto value = rendering->find("landmarksOnTop"); value != rendering->end() && value->is_boolean()) {
-    settings.m_landmarksOnTop = value->get<bool>();
-  }
-  if (const auto value = rendering->find("hideAnnotationVertices"); value != rendering->end() && value->is_boolean()) {
-    settings.m_hideAnnotationVertices = value->get<bool>();
   }
 }
 
@@ -754,8 +742,8 @@ void to_json(json& j, const EntropyProject& project)
   }
 
   json settings = json::object();
-  json interface = project.m_interface;
-  addIfNotEmpty(settings, "interface", std::move(interface));
+  json synchronization = project.m_synchronization;
+  addIfNotEmpty(settings, "synchronization", std::move(synchronization));
 
   json view = project.m_view;
   addIfNotEmpty(settings, "view", std::move(view));
@@ -764,17 +752,14 @@ void to_json(json& j, const EntropyProject& project)
   json comparison = project.m_comparison;
   addIfNotEmpty(rendering, "comparison", std::move(comparison));
   json raycasting = project.m_raycasting;
-  addIfNotEmpty(rendering, "volumeRaycasting", std::move(raycasting));
+  addIfNotEmpty(rendering, "raycasting", std::move(raycasting));
   json intensityProjection = project.m_intensityProjection;
   addIfNotEmpty(rendering, "intensityProjection", std::move(intensityProjection));
   json segmentation = project.m_segmentationDisplay;
   addIfNotEmpty(rendering, "segmentation", std::move(segmentation));
-  json isosurfaces = project.m_isosurfaces;
-  addIfNotEmpty(rendering, "isosurfaces", std::move(isosurfaces));
+  json isocontours = project.m_isocontours;
+  addIfNotEmpty(rendering, "isocontours", std::move(isocontours));
   addIfNotEmpty(settings, "rendering", std::move(rendering));
-
-  json annotations = project.m_annotationDisplay;
-  addIfNotEmpty(settings, "annotations", std::move(annotations));
   addIfNotEmpty(j, "settings", std::move(settings));
 
   if (!project.m_registrationResults.empty()) {
@@ -825,8 +810,10 @@ void from_json(const json& j, EntropyProject& project)
     }
   }
   if (const auto settings = j.find("settings"); settings != j.end() && settings->is_object()) {
-    if (const auto interface = settings->find("interface"); interface != settings->end() && interface->is_object()) {
-      interface->get_to(project.m_interface);
+    if (const auto synchronization = settings->find("synchronization");
+        synchronization != settings->end() && synchronization->is_object())
+    {
+      synchronization->get_to(project.m_synchronization);
     }
     if (const auto view = settings->find("view"); view != settings->end() && view->is_object()) {
       view->get_to(project.m_view);
@@ -837,7 +824,7 @@ void from_json(const json& j, EntropyProject& project)
       {
         comparison->get_to(project.m_comparison);
       }
-      if (const auto raycasting = rendering->find("volumeRaycasting");
+      if (const auto raycasting = rendering->find("raycasting");
           raycasting != rendering->end() && raycasting->is_object())
       {
         raycasting->get_to(project.m_raycasting);
@@ -852,16 +839,11 @@ void from_json(const json& j, EntropyProject& project)
       {
         segmentation->get_to(project.m_segmentationDisplay);
       }
-      if (const auto isosurfaces = rendering->find("isosurfaces");
-          isosurfaces != rendering->end() && isosurfaces->is_object())
+      if (const auto isocontours = rendering->find("isocontours");
+          isocontours != rendering->end() && isocontours->is_object())
       {
-        isosurfaces->get_to(project.m_isosurfaces);
+        isocontours->get_to(project.m_isocontours);
       }
-    }
-    if (const auto annotations = settings->find("annotations");
-        annotations != settings->end() && annotations->is_object())
-    {
-      annotations->get_to(project.m_annotationDisplay);
     }
   }
   if (const auto registrationResults = j.find("registrationResults");

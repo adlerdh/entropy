@@ -31,7 +31,7 @@ LabelIndexMaps createLabelIndexMaps(
   return labelMaps;
 }
 
-VoxelDistances computeVoxelDistances(const glm::vec3& spacing, bool normalized)
+VoxelDistances computeVoxelDistances(const glm::vec3& spacing, bool normalized) noexcept
 {
   VoxelDistances v;
 

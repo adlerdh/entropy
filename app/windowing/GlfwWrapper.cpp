@@ -8,9 +8,6 @@
 #include "windowing/GlfwCallbacks.h"
 #include "windowing/WindowData.h"
 
-#if defined(__linux__)
-#include "windowing/EntropyIcon.h"
-#endif
 #ifdef _WIN32
 #include "ui/menus/WinNativeMainMenu.h"
 #endif
@@ -18,6 +15,13 @@
 #include <spdlog/spdlog.h>
 
 #include <glm/vec2.hpp>
+
+#if defined(__linux__)
+#define STBI_ONLY_PNG
+#include <stb_image.h>
+
+#include <cmrc/cmrc.hpp>
+#endif
 
 #include <glad/glad.h>
 #include <imgui.h>
@@ -28,16 +32,57 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <exception>
 #include <iterator>
 #include <limits>
 #include <optional>
 #include <string>
 #include <utility>
 
+#if defined(__linux__)
+CMRC_DECLARE(icons);
+#endif
+
 namespace
 {
 constexpr double kContentScalePollIntervalSeconds = 5.0;
 constexpr float kScaleEpsilon = 0.001f;
+
+#if defined(__linux__)
+void setWindowIcon(GLFWwindow* window)
+{
+  cmrc::file icon;
+  try {
+    const auto filesystem = cmrc::icons::get_filesystem();
+    icon = filesystem.open(ENTROPY_ABOUT_ICON_RESOURCE_PATH);
+  }
+  catch (const std::exception& e) {
+    spdlog::warn("Unable to load embedded window icon: {}", e.what());
+    return;
+  }
+
+  int width = 0;
+  int height = 0;
+  int channels = 0;
+  stbi_uc* pixels = stbi_load_from_memory(
+    reinterpret_cast<const stbi_uc*>(icon.begin()),
+    static_cast<int>(icon.size()),
+    &width,
+    &height,
+    &channels,
+    4);
+
+  if (!pixels || width <= 0 || height <= 0) {
+    stbi_image_free(pixels);
+    spdlog::warn("Unable to decode embedded window icon");
+    return;
+  }
+
+  GLFWimage image{width, height, pixels};
+  glfwSetWindowIcon(window, 1, &image);
+  stbi_image_free(pixels);
+}
+#endif
 
 /**
  * @brief Compare scale values while ignoring tiny backend reporting noise.
@@ -268,11 +313,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   spdlog::debug("Created GLFW window and context");
 
 #if defined(__linux__)
-  GLFWimage entropyWindowIcon{
-    windowing::kEntropyIconWidth,
-    windowing::kEntropyIconHeight,
-    const_cast<unsigned char*>(windowing::kEntropyIconRgba.data())};
-  glfwSetWindowIcon(m_window, 1, &entropyWindowIcon);
+  setWindowIcon(m_window);
 #endif
 
   // Embed pointer to application data in GLFW window
@@ -356,15 +397,6 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   m_mouseModeToCursor.emplace(MouseMode::WindowLevel, cursor);
 
   spdlog::debug("Created GLFW cursors");
-
-  //    GLFWimage images[1];
-  //    images[0].pixels = stbi_load("PATH", &images[0].width, &images[0].height, 0, 4); //rgba
-  //    channels glfwSetWindowIcon(window, 1, images); stbi_image_free(images[0].pixels);
-
-  //    GLFWimage icons[1];
-  //    icons[0].pixels = SOIL_load_image("icon.png", &icons[0].width, &icons[0].height, 0,
-  //    SOIL_LOAD_RGBA); glfwSetWindowIcon(window.window, 1, icons);
-  //    SOIL_free_image_data(icons[0].pixels);
 
   // Load all OpenGL function pointers with GLAD
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {

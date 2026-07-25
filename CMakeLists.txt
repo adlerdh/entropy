@@ -680,6 +680,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/serialization/ImageRecords.cpp"
   "${entropy_APP_DIR}/logic/serialization/ImageSettings.cpp"
   "${entropy_APP_DIR}/logic/serialization/Isosurface.cpp"
+  "${entropy_APP_DIR}/logic/serialization/LayoutSerialization.cpp"
   "${entropy_APP_DIR}/logic/serialization/ProjectIo.cpp"
 
   "${entropy_APP_DIR}/logic/states/annotation/AnnotationStateHelpers.cpp"
@@ -768,7 +769,6 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
   "${entropy_APP_DIR}/windowing/Layout.cpp"
-  "${entropy_APP_DIR}/windowing/LayoutSerialization.cpp"
   "${entropy_APP_DIR}/windowing/View.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
 

@@ -161,30 +161,24 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
   CHECK(source.m_files.at(1) == fs::canonical(slice2));
 }
 
-TEST_CASE("Project serialization preserves interface settings", "[project][serialization]")
+TEST_CASE("Project serialization preserves synchronization settings", "[project][serialization]")
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
-  project.m_interface.m_synchronizeTimeSeries = false;
+  project.m_synchronization.m_synchronizeTimeSeries = false;
 
   const json root = project;
 
   REQUIRE(root.contains("settings"));
-  REQUIRE(root.at("settings").contains("interface"));
+  REQUIRE(root.at("settings").contains("synchronization"));
   CHECK_FALSE(root.contains("interface"));
-  const json& interface = root.at("settings").at("interface");
-  CHECK_FALSE(interface.contains("showLayoutTabs"));
-  CHECK_FALSE(interface.contains("layoutTabsPosition"));
-  CHECK_FALSE(interface.contains("showGlobalTimeControls"));
-  CHECK(interface.at("synchronizeTimeSeries") == false);
-  CHECK_FALSE(interface.contains("imageValuePrecision"));
-  CHECK_FALSE(interface.contains("coordinatesPrecision"));
-  CHECK_FALSE(interface.contains("transformPrecision"));
-  CHECK_FALSE(interface.contains("percentilePrecision"));
+  CHECK_FALSE(root.at("settings").contains("interface"));
+  const json& synchronization = root.at("settings").at("synchronization");
+  CHECK(synchronization.at("synchronizeTimeSeries") == false);
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
-  CHECK(parsed.m_interface.m_synchronizeTimeSeries == false);
+  CHECK(parsed.m_synchronization.m_synchronizeTimeSeries == false);
 }
 
 TEST_CASE("Project serialization preserves project view settings", "[project][serialization]")
@@ -199,6 +193,9 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   project.m_view.m_showAnatomicalLabelsInLightboxViews = false;
   project.m_view.m_showScaleBars = true;
   project.m_view.m_showScaleBarsInLightboxViews = true;
+  project.m_view.m_annotationsOnTop = true;
+  project.m_view.m_landmarksOnTop = true;
+  project.m_view.m_hideAnnotationVertices = true;
   project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
   project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
@@ -220,6 +217,9 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(view.at("anatomicalLabels").at("lockDirectionsToReferenceImage") == true);
   CHECK(view.at("scaleBars").at("visible") == true);
   CHECK(view.at("scaleBars").at("visibleInLightboxes") == true);
+  CHECK(view.at("annotations").at("renderOnTop") == true);
+  CHECK(view.at("annotations").at("verticesHidden") == true);
+  CHECK(view.at("landmarks").at("renderOnTop") == true);
   CHECK_FALSE(view.contains("showImageBorders"));
   CHECK_FALSE(view.contains("showImageBordersInLightboxViews"));
   CHECK_FALSE(view.contains("showCrosshairs"));
@@ -242,6 +242,9 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(parsed.m_view.m_showAnatomicalLabelsInLightboxViews == false);
   CHECK(parsed.m_view.m_showScaleBars == true);
   CHECK(parsed.m_view.m_showScaleBarsInLightboxViews == true);
+  CHECK(parsed.m_view.m_annotationsOnTop == true);
+  CHECK(parsed.m_view.m_landmarksOnTop == true);
+  CHECK(parsed.m_view.m_hideAnnotationVertices == true);
   CHECK(parsed.m_view.m_anatomicalLabelType == AnatomicalLabelType::Rodent);
   CHECK(parsed.m_view.m_lockAnatomicalDirectionsToReferenceImage == true);
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
@@ -344,11 +347,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ImageVoxel;
   project.m_segmentationDisplay.m_interiorOpacity = 0.4f;
   project.m_segmentationDisplay.m_erosionFactor = 0.8f;
-  project.m_isosurfaces.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
-  project.m_isosurfaces.m_modulateOpacityWithImageOpacity = true;
-  project.m_annotationDisplay.m_annotationsOnTop = true;
-  project.m_annotationDisplay.m_landmarksOnTop = true;
-  project.m_annotationDisplay.m_hideAnnotationVertices = true;
+  project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
+  project.m_isocontours.m_modulateOpacityWithImageOpacity = true;
 
   const json root = project;
 
@@ -356,21 +356,21 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   REQUIRE(root.at("settings").contains("rendering"));
   const json& settings = root.at("settings");
   const json& rendering = settings.at("rendering");
-  const json& raycasting = rendering.at("volumeRaycasting");
+  const json& raycasting = rendering.at("raycasting");
   CHECK_FALSE(root.contains("raycasting"));
   CHECK_FALSE(root.contains("intensityProjection"));
   CHECK_FALSE(root.contains("segmentationDisplay"));
   CHECK_FALSE(root.contains("isosurfaceDisplay"));
   CHECK_FALSE(root.contains("annotationDisplay"));
-  CHECK_FALSE(rendering.contains("raycasting"));
+  CHECK_FALSE(rendering.contains("volumeRaycasting"));
   CHECK(raycasting.at("samplingFactor") == 1.25f);
   CHECK_FALSE(raycasting.contains("adaptiveSamplingEnabled"));
   CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
   CHECK(raycasting.at("transparentBackgroundWhenNoHit") == false);
-  CHECK(raycasting.at("showImageBox") == false);
-  CHECK_FALSE(raycasting.contains("showCrosshairsGlyph"));
-  CHECK(raycasting.at("crosshairsGlyphDiameterVoxels") == 1.75f);
-  CHECK(raycasting.at("showCameraFrustumIn2DViews") == true);
+  CHECK(raycasting.at("imageBoxVisible") == false);
+  CHECK_FALSE(raycasting.contains("crosshairsGlyphVisible"));
+  CHECK(raycasting.at("crosshairsGlyphDiameterVox") == 1.75f);
+  CHECK(raycasting.at("cameraFrustumVisibleIn2DViews") == true);
   CHECK(raycasting.at("reverseRotateAboutEye") == true);
   CHECK(raycasting.at("cameraFrustumColor").at(0) == 1.0f);
   CHECK(raycasting.at("cameraFrustumColor").at(1) == 0.25f);
@@ -390,14 +390,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(rendering.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
   CHECK(rendering.at("segmentation").at("outlineStyle") == "voxel");
   CHECK(rendering.at("segmentation").at("erosionFactor") == 0.8f);
-  CHECK(rendering.at("isosurfaces").at("floatingPointInterpolationPolicy") == "floatingPoint");
-  CHECK(rendering.at("isosurfaces").at("modulateOpacityWithImageOpacity") == true);
-  CHECK(settings.at("annotations").at("rendering").at("annotationsOnTop") == true);
-  CHECK(settings.at("annotations").at("rendering").at("landmarksOnTop") == true);
-  CHECK(settings.at("annotations").at("rendering").at("hideAnnotationVertices") == true);
-  CHECK_FALSE(settings.at("annotations").contains("annotationsOnTop"));
-  CHECK_FALSE(settings.at("annotations").contains("landmarksOnTop"));
-  CHECK_FALSE(settings.at("annotations").contains("hideAnnotationVertices"));
+  CHECK(rendering.at("isocontours").at("floatingPointInterpolationPolicy") == "floatingPoint");
+  CHECK(rendering.at("isocontours").at("modulateOpacityWithImageOpacity") == true);
+  CHECK_FALSE(settings.contains("annotations"));
+  CHECK_FALSE(rendering.contains("isosurfaces"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
@@ -425,11 +421,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 0.4f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.8f);
   CHECK(
-    parsed.m_isosurfaces.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
-  CHECK(parsed.m_isosurfaces.m_modulateOpacityWithImageOpacity == true);
-  CHECK(parsed.m_annotationDisplay.m_annotationsOnTop == true);
-  CHECK(parsed.m_annotationDisplay.m_landmarksOnTop == true);
-  CHECK(parsed.m_annotationDisplay.m_hideAnnotationVertices == true);
+    parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
+  CHECK(parsed.m_isocontours.m_modulateOpacityWithImageOpacity == true);
 }
 
 TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")
@@ -441,7 +434,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
      {
        {"rendering",
         {
-          {"volumeRaycasting",
+          {"raycasting",
            {{"samplingFactor", 0.0f},
             {"segmentationMasking", "bad"},
             {"transparentBackgroundWhenNoHit", false},
@@ -457,11 +450,11 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
             {"outlineStyle", "bad"},
             {"interiorOpacity", 2.0f},
             {"erosionFactor", 0.0f}}},
-          {"isosurfaces",
+          {"isocontours",
            {{"floatingPointInterpolationPolicy", "floatingPoint"}, {"modulateOpacityWithImageOpacity", true}}},
         }},
-       {"annotations",
-        {{"rendering", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}}},
+       {"view",
+        {{"annotations", {{"renderOnTop", true}, {"verticesHidden", true}}}, {"landmarks", {{"renderOnTop", true}}}}},
      }}};
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
@@ -481,11 +474,11 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 1.0f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
   CHECK(
-    parsed.m_isosurfaces.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
-  CHECK(parsed.m_isosurfaces.m_modulateOpacityWithImageOpacity == true);
-  CHECK(parsed.m_annotationDisplay.m_annotationsOnTop == true);
-  CHECK(parsed.m_annotationDisplay.m_landmarksOnTop == true);
-  CHECK(parsed.m_annotationDisplay.m_hideAnnotationVertices == true);
+    parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
+  CHECK(parsed.m_isocontours.m_modulateOpacityWithImageOpacity == true);
+  CHECK(parsed.m_view.m_annotationsOnTop == true);
+  CHECK(parsed.m_view.m_landmarksOnTop == true);
+  CHECK(parsed.m_view.m_hideAnnotationVertices == true);
 }
 
 TEST_CASE("Project serialization supports an external layouts file reference", "[project][serialization]")
@@ -589,9 +582,12 @@ TEST_CASE("Project serialization preserves modified default layout overrides", "
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
-  project.m_modifiedDefaultLayouts.push_back(serialize::DefaultLayoutOverride{
-    .m_index = 2,
-    .m_layout = layout::LayoutSpec{.m_kind = 3, .m_grid = layout::GridSpec{}, .m_views = {layout::ViewSpec{}}}});
+  layout::LayoutSpec overrideLayout;
+  overrideLayout.m_kind = 3;
+  overrideLayout.m_grid = layout::GridSpec{};
+  overrideLayout.m_views.emplace_back();
+  project.m_modifiedDefaultLayouts.push_back(
+    serialize::DefaultLayoutOverride{.m_index = 2, .m_layout = overrideLayout});
   project.m_currentLayoutIndex = 2;
 
   const json serialized = project;
@@ -899,6 +895,20 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_interpolationModes = {InterpolationMode::Linear, InterpolationMode::NearestNeighbor},
     .m_foregroundThresholdLows = {4.0, 5.0, 6.0},
     .m_foregroundThresholdHighs = {40.0, 50.0, 60.0},
+    .m_componentLevelIndices = {},
+    .m_componentWindowIndices = {},
+    .m_componentThresholdLowIndices = {},
+    .m_componentThresholdHighIndices = {},
+    .m_componentVisibilityIndices = {},
+    .m_componentOpacityIndices = {},
+    .m_colorMapIndexIndices = {},
+    .m_colorMapInvertedIndices = {},
+    .m_colorMapContinuousIndices = {},
+    .m_colorMapLevelIndices = {},
+    .m_colorMapHsvModifierIndices = {},
+    .m_interpolationModeIndices = {},
+    .m_foregroundThresholdLowIndices = {},
+    .m_foregroundThresholdHighIndices = {},
     .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Pixel,
     .m_showEdges = true,
     .m_thresholdEdges = false,
@@ -1295,7 +1305,9 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = fixedImageFile;
-  project.m_additionalImages.push_back(serialize::Image{.m_imageFileName = movingImageFile});
+  serialize::Image movingImage;
+  movingImage.m_imageFileName = movingImageFile;
+  project.m_additionalImages.push_back(movingImage);
   project.m_registrationResults.push_back(serialize::RegistrationResult{
     .m_backend = "Greedy",
     .m_fixedImage = fixedImageFile,

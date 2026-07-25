@@ -5,8 +5,7 @@ tests, and general source build instructions, see [BUILDING.md](BUILDING.md).
 
 Entropy packages are created with [CPack](https://cmake.org/cmake/help/latest/module/CPack.html) from the release app build and written to `build-release/packages/`.
 
-All packages include the runtime application plus `README.md`, `LICENSE.txt`, `NOTICE.txt`, and
-`THIRD_PARTY_NOTICES.md`.
+All packages include the runtime application plus `README.md`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_NOTICES.md`.
 
 Release package builds link bundled third-party libraries statically where practical. Qt and platform system libraries
 remain dynamic and are bundled or referenced according to the platform package format.
@@ -204,9 +203,7 @@ Or keep WiX local to the build tree. CMake automatically checks `build-release\t
 
 ```powershell
 New-Item -ItemType Directory -Force build-release\tools | Out-Null
-curl.exe -L --retry 3 --retry-delay 2 --fail `
-  -o build-release\tools\wix.3.14.1.nupkg `
-  https://www.nuget.org/api/v2/package/wix/3.14.1
+curl.exe -L --retry 3 --retry-delay 2 --fail -o build-release\tools\wix.3.14.1.nupkg https://www.nuget.org/api/v2/package/wix/3.14.1
 Copy-Item build-release\tools\wix.3.14.1.nupkg build-release\tools\wix.3.14.1.zip -Force
 Expand-Archive build-release\tools\wix.3.14.1.zip build-release\tools\wix -Force
 cmake --preset app-release

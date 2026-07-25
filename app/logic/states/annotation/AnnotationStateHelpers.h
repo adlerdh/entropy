@@ -4,41 +4,124 @@
 
 namespace state::annot
 {
-/// Are annotation selections/highlights visible?
+/**
+ * @brief Check whether annotation selections and highlights should be visible
+ * @return True when annotation highlights are visible in the current annotation state
+ */
 bool isInStateWhereAnnotationHighlightsAreVisible();
 
-/// Are vertex selections/highlights visible?
+/**
+ * @brief Check whether annotation vertex selections and highlights should be visible
+ * @return True when vertex highlights are visible in the current annotation state
+ */
 bool isInStateWhereVertexHighlightsAreVisible();
 
-/// Can views scroll in the current state?
+/**
+ * @brief Check whether views can scroll while the annotation state machine is active
+ * @return True when scrolling is allowed in the current annotation state
+ */
 bool isInStateWhereViewsCanScroll();
 
-/// Can crosshairs move with the mouse in the current state?
+/**
+ * @brief Check whether mouse interaction can move crosshairs in the current annotation state
+ * @return True when crosshairs movement is allowed
+ */
 bool isInStateWhereCrosshairsCanMove();
 
-/// Can the type of the view in the current state?
+/**
+ * @brief Check whether a view can change type in the current annotation state
+ * @param viewUid UID of the view being changed
+ * @return True when the view type may be changed
+ */
 bool isInStateWhereViewTypeCanChange(const uuids::uuid& viewUid);
 
-/// Is the toolbar visible in the current state?
+/**
+ * @brief Check whether the annotation toolbar should be visible
+ * @return True when the toolbar should be shown
+ */
 bool isInStateWhereToolbarVisible();
 
-/// Are view highlights and selections visible in the current state?
+/**
+ * @brief Check whether annotation view selection highlights should be visible
+ * @return True when view selection highlights should be shown
+ */
 bool isInStateWhereViewSelectionsVisible();
 
-// The following functions are used to check whether Annotation Toolbar buttons
-// are visible in the current state
+/**
+ * @brief Check whether the toolbar create button should be visible
+ * @return True when a new annotation can be started
+ */
+bool showToolbarCreateButton();
 
-bool showToolbarCreateButton();                   // Create new annotation
-bool showToolbarCompleteButton();                 // Complete current annotation
-bool showToolbarCloseButton();                    // Close current annotation
-bool showToolbarFillButton();                     // Fill current annotation
-bool showToolbarCancelButton();                   // Cancel current annotation
-bool showToolbarUndoButton();                     // Undo last vertex
-bool showToolbarInsertVertexButton();             // Insert vertex
-bool showToolbarRemoveSelectedVertexButton();     // Remove selected vertex
-bool showToolbarRemoveSelectedAnnotationButton(); // Remove selected annotation
-bool showToolbarCutSelectedAnnotationButton();    // Cut selected annotation
-bool showToolbarCopySelectedAnnotationButton();   // Copy selected annotation
-bool showToolbarPasteSelectedAnnotationButton();  // Paste selected annotation
-bool showToolbarFlipAnnotationButtons();          // Flip selected annotation
+/**
+ * @brief Check whether the toolbar complete button should be visible
+ * @return True when the annotation in progress can be completed
+ */
+bool showToolbarCompleteButton();
+
+/**
+ * @brief Check whether the toolbar close button should be visible
+ * @return True when the annotation in progress can be closed
+ */
+bool showToolbarCloseButton();
+
+/**
+ * @brief Check whether the toolbar fill button should be visible
+ * @return True when the selected annotation can fill a segmentation
+ */
+bool showToolbarFillButton();
+
+/**
+ * @brief Check whether the toolbar cancel button should be visible
+ * @return True when annotation creation can be canceled
+ */
+bool showToolbarCancelButton();
+
+/**
+ * @brief Check whether the toolbar undo button should be visible
+ * @return True when the last annotation vertex can be removed
+ */
+bool showToolbarUndoButton();
+
+/**
+ * @brief Check whether the toolbar insert-vertex button should be visible
+ * @return True when a selected vertex can be followed by a new vertex
+ */
+bool showToolbarInsertVertexButton();
+
+/**
+ * @brief Check whether the toolbar remove-vertex button should be visible
+ * @return True when a selected annotation vertex can be removed
+ */
+bool showToolbarRemoveSelectedVertexButton();
+
+/**
+ * @brief Check whether the toolbar remove-annotation button should be visible
+ * @return True when a selected annotation can be removed
+ */
+bool showToolbarRemoveSelectedAnnotationButton();
+
+/**
+ * @brief Check whether the toolbar cut button should be visible
+ * @return True when a selected annotation can be cut
+ */
+bool showToolbarCutSelectedAnnotationButton();
+
+/**
+ * @brief Check whether the toolbar copy button should be visible
+ * @return True when a selected annotation can be copied
+ */
+bool showToolbarCopySelectedAnnotationButton();
+
+/**
+ * @brief Check whether the toolbar paste button should be visible
+ * @return True when a copied annotation can be pasted
+ */
+bool showToolbarPasteSelectedAnnotationButton();
+
+/**
+ * @brief Check whether annotation flip buttons should be visible
+ * @return True when a selected annotation can be flipped
+ */
+bool showToolbarFlipAnnotationButtons();
 } // namespace state::annot

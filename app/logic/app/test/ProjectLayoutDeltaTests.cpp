@@ -46,7 +46,9 @@ TEST_CASE("project layout delta records edited generated layouts as overrides", 
 {
   const std::vector<layout::LayoutSpec> defaults{layoutWithKind(1), layoutWithKind(2)};
   std::vector<layout::LayoutSpec> current = defaults;
-  current.at(0).m_views.push_back(layout::ViewSpec{.m_imageSelection = {.m_renderedImageIndices = {0}}});
+  layout::ViewSpec editedView;
+  editedView.m_imageSelection.m_renderedImageIndices = {0};
+  current.at(0).m_views.push_back(editedView);
 
   const auto delta = project_layout_delta::compactLayoutDelta(current, defaults);
 

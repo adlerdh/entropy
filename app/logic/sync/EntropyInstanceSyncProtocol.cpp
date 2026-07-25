@@ -32,7 +32,7 @@ bool isSupportedProtocolVersion(const nlohmann::json& root)
 }
 } // namespace
 
-bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b)
+bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b) noexcept
 {
   return glm::length(a - b) <= sk_cursorEpsilonMm;
 }

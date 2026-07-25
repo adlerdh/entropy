@@ -1,4 +1,4 @@
-#include "windowing/LayoutSerialization.h"
+#include "logic/serialization/LayoutSerialization.h"
 
 #include "layout/ImageIndexMapping.h"
 #include "layout/LayoutKindInfo.h"

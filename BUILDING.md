@@ -213,6 +213,7 @@ cmake -S . -B build-coverage \
   -DBUILD_SHARED_LIBS=ON \
   -DEntropy_SUPERBUILD=ON \
   -DEntropy_SUPERBUILD_CONFIG=Debug
+
 cmake --build build-coverage --parallel
 
 cmake -S . -B build-coverage \
@@ -220,6 +221,7 @@ cmake -S . -B build-coverage \
   -DBUILD_SHARED_LIBS=ON \
   -DEntropy_SUPERBUILD=OFF \
   -DEntropy_ENABLE_COVERAGE=ON
+
 cmake --build build-coverage --target coverage --parallel
 ```
 

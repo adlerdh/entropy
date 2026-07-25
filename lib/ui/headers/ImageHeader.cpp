@@ -2447,6 +2447,10 @@ void renderImageHeader(
         ImGui::SameLine();
         helpMarker("Render color map as either continuous or discrete");
 
+        disabledWrappedText(
+          colorMapContinuous ? "Color maps are continuous for this component"
+                             : "Color maps are discrete for this component");
+
         if (!colorMapContinuous) {
           int numColorMapLevels = static_cast<int>(viewSettings.colorMapQuantizationLevels());
 

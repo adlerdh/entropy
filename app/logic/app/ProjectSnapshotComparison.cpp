@@ -216,9 +216,9 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
          vectorsEqual(a.m_isosurfaces, b.m_isosurfaces, imageIsosurfacesEqual);
 }
 
-bool projectInterfaceSettingsEqual(
-  const serialize::ProjectInterfaceSettings& a,
-  const serialize::ProjectInterfaceSettings& b)
+bool projectSynchronizationSettingsEqual(
+  const serialize::ProjectSynchronizationSettings& a,
+  const serialize::ProjectSynchronizationSettings& b)
 {
   return a.m_synchronizeTimeSeries == b.m_synchronizeTimeSeries;
 }
@@ -233,6 +233,8 @@ bool projectViewSettingsEqual(const serialize::ProjectViewSettings& a, const ser
          a.m_showAnatomicalLabelsInLightboxViews == b.m_showAnatomicalLabelsInLightboxViews &&
          a.m_showScaleBars == b.m_showScaleBars &&
          a.m_showScaleBarsInLightboxViews == b.m_showScaleBarsInLightboxViews &&
+         a.m_annotationsOnTop == b.m_annotationsOnTop && a.m_landmarksOnTop == b.m_landmarksOnTop &&
+         a.m_hideAnnotationVertices == b.m_hideAnnotationVertices &&
          a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
          a.m_lockAnatomicalDirectionsToReferenceImage == b.m_lockAnatomicalDirectionsToReferenceImage &&
          a.m_crosshairsSnapping == b.m_crosshairsSnapping;
@@ -303,20 +305,12 @@ bool segmentationDisplaySettingsEqual(
          a.m_erosionFactor == b.m_erosionFactor;
 }
 
-bool isosurfaceDisplaySettingsEqual(
-  const serialize::ProjectIsosurfaceDisplaySettings& a,
-  const serialize::ProjectIsosurfaceDisplaySettings& b)
+bool isocontourDisplaySettingsEqual(
+  const serialize::ProjectIsocontourDisplaySettings& a,
+  const serialize::ProjectIsocontourDisplaySettings& b)
 {
   return a.m_floatingPointInterpolationPolicy == b.m_floatingPointInterpolationPolicy &&
          a.m_modulateOpacityWithImageOpacity == b.m_modulateOpacityWithImageOpacity;
-}
-
-bool annotationDisplaySettingsEqual(
-  const serialize::ProjectAnnotationDisplaySettings& a,
-  const serialize::ProjectAnnotationDisplaySettings& b)
-{
-  return a.m_annotationsOnTop == b.m_annotationsOnTop && a.m_landmarksOnTop == b.m_landmarksOnTop &&
-         a.m_hideAnnotationVertices == b.m_hideAnnotationVertices;
 }
 
 bool registrationResultsEqual(const serialize::RegistrationResult& a, const serialize::RegistrationResult& b)
@@ -339,13 +333,12 @@ bool equivalent(const serialize::EntropyProject& a, const serialize::EntropyProj
          vectorsEqual(a.m_layouts, b.m_layouts, projectLayoutsEqual) &&
          a.m_removedDefaultLayoutIndices == b.m_removedDefaultLayoutIndices &&
          a.m_modifiedDefaultLayouts == b.m_modifiedDefaultLayouts && a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
-         projectInterfaceSettingsEqual(a.m_interface, b.m_interface) && projectViewSettingsEqual(a.m_view, b.m_view) &&
-         comparisonSettingsEqual(a.m_comparison, b.m_comparison) &&
+         projectSynchronizationSettingsEqual(a.m_synchronization, b.m_synchronization) &&
+         projectViewSettingsEqual(a.m_view, b.m_view) && comparisonSettingsEqual(a.m_comparison, b.m_comparison) &&
          raycastingSettingsEqual(a.m_raycasting, b.m_raycasting) &&
          intensityProjectionSettingsEqual(a.m_intensityProjection, b.m_intensityProjection) &&
          segmentationDisplaySettingsEqual(a.m_segmentationDisplay, b.m_segmentationDisplay) &&
-         isosurfaceDisplaySettingsEqual(a.m_isosurfaces, b.m_isosurfaces) &&
-         annotationDisplaySettingsEqual(a.m_annotationDisplay, b.m_annotationDisplay) &&
+         isocontourDisplaySettingsEqual(a.m_isocontours, b.m_isocontours) &&
          vectorsEqual(a.m_registrationResults, b.m_registrationResults, registrationResultsEqual);
 }
 } // namespace project_snapshot

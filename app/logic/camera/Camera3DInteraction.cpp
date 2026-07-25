@@ -3,7 +3,7 @@
 namespace camera3d
 {
 
-bool mouseModeAllowsCameraInteraction(MouseMode mouseMode)
+bool mouseModeAllowsCameraInteraction(MouseMode mouseMode) noexcept
 {
   (void)mouseMode;
   return true;
@@ -13,7 +13,7 @@ std::optional<DragAction> dragActionForInput(
   MouseMode mouseMode,
   const ButtonState& buttons,
   const ModifierState& modifiers,
-  bool viewPositionFollowsCrosshairs)
+  bool viewPositionFollowsCrosshairs) noexcept
 {
   if (!mouseModeAllowsCameraInteraction(mouseMode)) {
     return std::nullopt;

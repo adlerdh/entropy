@@ -64,14 +64,14 @@ void applySegmentationSettings(AppData& appData, Image& segmentation, const seri
  * @param appData Application data containing the current project review state.
  * @return Project interface settings suitable for project JSON serialization.
  */
-serialize::ProjectInterfaceSettings interfaceSettings(const AppData& appData);
+serialize::ProjectSynchronizationSettings synchronizationSettings(const AppData& appData);
 
 /**
  * @brief Apply project-owned interface settings to the application data.
  * @param appData Application data to update.
  * @param settings Serialized interface settings to restore.
  */
-void applyInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceSettings& settings);
+void applySynchronizationSettings(AppData& appData, const serialize::ProjectSynchronizationSettings& settings);
 
 /**
  * @brief Build project-owned view settings from the current application data.
@@ -144,32 +144,18 @@ serialize::ProjectSegmentationDisplaySettings segmentationDisplaySettings(const 
 void applySegmentationDisplaySettings(AppData& appData, const serialize::ProjectSegmentationDisplaySettings& settings);
 
 /**
- * @brief Build project-owned isosurface display settings from the current application data.
+ * @brief Build project-owned 2D isocontour settings from the current application data.
  * @param appData Application data containing current project rendering state.
- * @return Project isosurface display settings suitable for project JSON serialization.
+ * @return Project isocontour settings suitable for project JSON serialization.
  */
-serialize::ProjectIsosurfaceDisplaySettings isosurfaceDisplaySettings(const AppData& appData);
+serialize::ProjectIsocontourDisplaySettings isocontourDisplaySettings(const AppData& appData);
 
 /**
- * @brief Apply project-owned isosurface display settings to the application data.
+ * @brief Apply project-owned 2D isocontour settings to the application data.
  * @param appData Application data to update.
- * @param settings Serialized isosurface display settings to restore.
+ * @param settings Serialized isocontour settings to restore.
  */
-void applyIsosurfaceDisplaySettings(AppData& appData, const serialize::ProjectIsosurfaceDisplaySettings& settings);
-
-/**
- * @brief Build project-owned annotation display settings from the current application data.
- * @param appData Application data containing current project annotation and landmark rendering state.
- * @return Project annotation display settings suitable for project JSON serialization.
- */
-serialize::ProjectAnnotationDisplaySettings annotationDisplaySettings(const AppData& appData);
-
-/**
- * @brief Apply project-owned annotation display settings to the application data.
- * @param appData Application data to update.
- * @param settings Serialized annotation display settings to restore.
- */
-void applyAnnotationDisplaySettings(AppData& appData, const serialize::ProjectAnnotationDisplaySettings& settings);
+void applyIsocontourDisplaySettings(AppData& appData, const serialize::ProjectIsocontourDisplaySettings& settings);
 
 /**
  * @brief Reset project-wide settings to built-in defaults.
