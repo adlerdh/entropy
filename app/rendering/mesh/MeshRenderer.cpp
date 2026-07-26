@@ -7,9 +7,7 @@
 
 #include <glad/glad.h>
 
-#include <glm/geometric.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <glm/vec3.hpp>
 
 #include <array>
 #include <cstddef>
@@ -24,15 +22,6 @@ namespace
 
 constexpr uint32_t k_shadowMapTextureUnit = 7u;
 constexpr uint32_t k_ambientOcclusionTextureUnit = 6u;
-
-glm::vec3 normalizedLightDirectionOrFallback(const glm::vec3& lightDirection) noexcept
-{
-  if (!isFinite(lightDirection) || glm::dot(lightDirection, lightDirection) <= 0.0f) {
-    return glm::normalize(glm::vec3{0.4f, 0.6f, 0.7f});
-  }
-
-  return glm::normalize(lightDirection);
-}
 
 GLenum polygonModeForFillMode(const MeshFillMode fillMode) noexcept
 {
@@ -296,7 +285,6 @@ void MeshRenderer::drawBucket(
   program.use();
   program.setUniform("u_clip_T_world", context.clip_T_world);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
-  program.setUniform("u_lightDirectionWorld", normalizedLightDirectionOrFallback(context.lightDirectionWorld));
   uploadShadowUniforms(context, program);
   uploadAmbientOcclusionUniforms(context, program);
 

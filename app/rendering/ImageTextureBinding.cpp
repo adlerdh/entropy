@@ -52,14 +52,15 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
   }
 
   const ImageSettings& S = image->settings();
+  const uuid textureImageUid = m_appData.effectiveImageUidForRendering(*imgUid);
 
   // Uncomment this to render the image's distance map instead:
   // GLTexture& imgTex = R.m_distanceMapTextures.at(*imageUid).at(imgSettings.activeComponent());
 
   // Bind the active component of the image
-  auto imageTextureIt = R.m_imageTextures.find(*imgUid);
+  auto imageTextureIt = R.m_imageTextures.find(textureImageUid);
   if (std::end(R.m_imageTextures) == imageTextureIt || imageTextureIt->second.empty()) {
-    spdlog::warn("Image {} has no loaded texture; using a blank texture instead", *imgUid);
+    spdlog::warn("Image {} has no loaded texture; using a blank texture instead", textureImageUid);
   }
 
   GLTexture& imgTex = (std::end(R.m_imageTextures) == imageTextureIt || imageTextureIt->second.empty())
@@ -88,12 +89,12 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
     boundTextures.emplace_back(cmapTex);
   }
 
-  const auto distTextureIt = R.m_distanceMapTextures.find(*imgUid);
+  const auto distTextureIt = R.m_distanceMapTextures.find(textureImageUid);
   const bool useDistMap = S.useDistanceMapForRaycasting() && std::end(R.m_distanceMapTextures) != distTextureIt;
   bool foundMap = false;
 
   if (useDistMap) {
-    const auto& distMaps = m_appData.distanceMaps(*imgUid, S.activeComponent());
+    const auto& distMaps = m_appData.distanceMaps(textureImageUid, S.activeComponent());
 
     if (distMaps.empty()) {
       static bool alreadyShowedWarning = false;

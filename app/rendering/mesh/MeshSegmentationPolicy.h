@@ -11,9 +11,9 @@ namespace rendering::mesh
 {
 
 /**
- * @brief Algorithm name used by the first built-in scalar-grid segmentation-label extractor
+ * @brief Algorithm name used by the built-in scalar-grid segmentation-label extractor
  */
-inline constexpr const char* kScalarGridSegmentationAlgorithm = "scalar-grid-segmentation-label";
+inline constexpr const char* kScalarGridSegmentationAlgorithm = "scalar-grid-vtk-discrete-flying-edges-3d";
 
 /**
  * @brief Version for the built-in scalar-grid segmentation-label extractor

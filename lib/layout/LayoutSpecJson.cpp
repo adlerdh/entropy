@@ -185,9 +185,6 @@ void from_json(const nlohmann::json& j, ImageSelectionSpec& selection)
   }
   if (j.count("volumeRendered")) {
     j.at("volumeRendered").get_to(selection.m_volumeRenderedImageIndices);
-    if (selection.m_volumeRenderedImageIndices.size() > 1) {
-      selection.m_volumeRenderedImageIndices.resize(1);
-    }
   }
   if (j.count("metric")) {
     j.at("metric").get_to(selection.m_metricImageIndices);

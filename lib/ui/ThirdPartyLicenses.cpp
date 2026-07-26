@@ -54,6 +54,7 @@ static const LicenseDocument sk_qtDocs[] = {{"LGPL-3.0-only", "licenses/Qt-LGPL-
 static const LicenseDocument sk_spdlogDocs[] = {{"License", "licenses/spdlog.txt"}};
 static const LicenseDocument sk_stduuidDocs[] = {{"License", "licenses/stduuid.txt"}};
 static const LicenseDocument sk_tinyfsmDocs[] = {{"License", "licenses/TinyFSM.txt"}};
+static const LicenseDocument sk_vtkDocs[] = {{"Copyright and license", "licenses/VTK.txt"}};
 static const LicenseDocument sk_gladDocs[] = {{"License", "licenses/GLAD.txt"}};
 static const LicenseDocument sk_imguizmoDocs[] = {{"License", "licenses/imGuIZMO.quat.txt"}};
 static const LicenseDocument sk_imguiKnobsDocs[] = {{"License", "licenses/imgui-knobs.txt"}};
@@ -265,6 +266,13 @@ static const LicenseEntry sk_entries[] = {
    sk_tdigestDocs,
    count(sk_tdigestDocs)},
   {"TinyFSM", "v1.15.1", "https://github.com/digint/tinyfsm", "MIT", "", sk_tinyfsmDocs, count(sk_tinyfsmDocs)},
+  {"Visualization Toolkit (VTK)",
+   "v9.6.2",
+   "https://github.com/Kitware/VTK",
+   "BSD-3-Clause",
+   "Entropy builds a selected VTK module set for CPU-side mesh extraction and processing.",
+   sk_vtkDocs,
+   count(sk_vtkDocs)},
 };
 
 std::string loadLicenseText(const char* resourcePath)

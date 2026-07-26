@@ -32,6 +32,7 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/mesh/MeshExtraction.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionQueue.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionRunner.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshGeneration.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGlyphs.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshImageAdapter.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshImagePlane.cpp"
@@ -73,6 +74,7 @@ target_link_libraries(TestRendering PRIVATE
   entropy::shaders
   glad
   entropy_warnings
+  ${VTK_LIBRARIES}
 )
 
 entropy_enable_coverage_for_target(TestRendering)

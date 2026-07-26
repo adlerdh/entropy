@@ -65,6 +65,11 @@ bool canDrawFrustumForThreeDView(const AppData& appData, const View& view)
          hasVisibleIsosurfaceForView(appData, view);
 }
 
+bool suppressTwoDVectorOverlays(const View& view)
+{
+  return ViewRenderMode::VolumeRender == view.renderMode() || ViewRenderMode::SegmentationMesh == view.renderMode();
+}
+
 const View* activeThreeDFrustumSource(const AppData& appData)
 {
   const WindowData& windowData = appData.windowData();
@@ -228,8 +233,7 @@ void Rendering::renderVectorOverlays()
       const bool showCrosshairsInCurrentLayout =
         R.m_showCrosshairs && (!windowData.currentLayout().isLightbox() || R.m_showCrosshairsInLightboxViews);
 
-      // Do not render crosshairs in volume rendering mode
-      if (showCrosshairsInCurrentLayout && ViewRenderMode::VolumeRender != view->renderMode()) {
+      if (showCrosshairsInCurrentLayout && !suppressTwoDVectorOverlays(*view)) {
         // If aligning views to crosshairs, then crosshairs are based on the crosshairs
         // transform (world_T_crosshairsFrame)
         const auto labelPosInfo_forXhairs =
@@ -265,7 +269,7 @@ void Rendering::renderVectorOverlays()
 
       const bool allowScaleBarsInCurrentLayout =
         !windowData.currentLayout().isLightbox() || R.m_showScaleBarsInLightboxViews;
-      if (R.m_showScaleBars && allowScaleBarsInCurrentLayout && ViewRenderMode::VolumeRender != view->renderMode()) {
+      if (R.m_showScaleBars && allowScaleBarsInCurrentLayout && !suppressTwoDVectorOverlays(*view)) {
         drawScaleBar(
           m_nvg,
           miewportViewBounds,
@@ -280,9 +284,7 @@ void Rendering::renderVectorOverlays()
           static_cast<int>(m_appData.guiData().m_coordsPrecision));
       }
 
-      if (
-        R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox() &&
-        ViewRenderMode::VolumeRender != view->renderMode())
+      if (R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox() && !suppressTwoDVectorOverlays(*view))
       {
         drawLightboxOffsetLabel(
           m_nvg,

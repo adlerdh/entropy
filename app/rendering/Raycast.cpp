@@ -33,14 +33,30 @@ void Rendering::volumeRenderOneImage(
 
 void Rendering::renderVolumeImagesForView(const View& view)
 {
-  const std::optional<ImgSegPair> maybeImgSegPair = raycastImageForView(view);
-  if (!maybeImgSegPair || !maybeImgSegPair->first) {
+  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  if (imageSegPairs.empty() || !imageSegPairs.front().first) {
     return;
   }
 
-  // Only volume render the first image:
-  /// @todo Either 1) let user only select one image or 2) enable rendering more than one image
-  const ImgSegPair& imgSegPair = *maybeImgSegPair;
+  const std::optional<ActiveIsosurfaceEdit> activeEdit = activeIsosurfaceEdit(imageSegPairs);
+
+  if (
+    !activeEdit && m_appData.renderData().m_isosurfaceMeshRenderingEnabled &&
+    renderIsosurfaceMeshesForView(view, imageSegPairs))
+  {
+    renderMeshCrosshairsForView(view);
+    renderMeshLandmarksForView(view);
+    return;
+  }
+
+  // The raycast shader remains a single-volume fallback. During isovalue edits, render only the edited surface through
+  // this live path so all committed meshes are hidden until the edit finishes.
+  const ImgSegPair imgSegPair = activeEdit ? activeEdit->imageSegPair : imageSegPairs.front();
+  const std::optional<uuid> onlyIsosurfaceUid =
+    activeEdit ? std::optional<uuid>{activeEdit->isosurfaceUid} : std::nullopt;
+  if (!imgSegPair.first) {
+    return;
+  }
 
   const Image* image = m_appData.image(*imgSegPair.first);
   if (!image) {
@@ -63,16 +79,8 @@ void Rendering::renderVolumeImagesForView(const View& view)
 
   const auto deformationUid = activeRenderableDeformationUid(*imgSegPair.first);
   const bool renderWarped = deformationUid.has_value();
-  if (
-    m_appData.renderData().m_isosurfaceMeshRenderingEnabled &&
-    renderIsosurfaceMeshesForView(view, imgSegPair, renderWarped))
-  {
-    renderMeshCrosshairsForView(view);
-    renderMeshLandmarksForView(view);
-    return;
-  }
 
-  updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first);
+  updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first, onlyIsosurfaceUid);
 
   const std::optional<uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(*imgSegPair.first) : std::nullopt;

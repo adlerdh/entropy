@@ -12,10 +12,13 @@ namespace rendering::mesh
 
 MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View& view)
 {
+  const glm::vec3 cameraFrontWorld = helper::worldDirection(view.camera(), Directions::View::Front);
+
   return MeshDrawContext{
     .clip_T_world = helper::clip_T_world(view.camera()),
     .cameraWorldPosition = helper::worldOrigin(view.camera()),
-    .lightDirectionWorld = glm::vec3{0.4f, 0.6f, 0.7f},
+    // Shadow and future advanced-lighting passes use a directional approximation of the shader's headlight.
+    .lightDirectionWorld = -cameraFrontWorld,
     .fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f},
     .meshLookup = [&gpuStore](const MeshHandle& handle) -> const MeshGpuData* {
       return gpuStore.lookup(handle);

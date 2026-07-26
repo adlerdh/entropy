@@ -330,6 +330,7 @@ void Rendering::render()
 
   try {
     renderImageData();
+    updateMeshExtractionStatus();
     logTextureUnitZeroStateIfChanged("renderImageData");
   }
   catch (const std::exception& e) {

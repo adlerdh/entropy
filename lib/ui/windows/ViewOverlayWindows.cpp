@@ -103,7 +103,7 @@ void renderViewSettingsComboWindow(
   const auto& getXrayProjectionEnergy = projection.getXrayProjectionEnergy;
   const auto& setXrayProjectionEnergy = projection.setXrayProjectionEnergy;
 
-  const bool singleThreeDImageSelection =
+  const bool usesThreeDImageSelection =
     ViewType::ThreeD == viewType &&
     (ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationMesh == renderMode);
 
@@ -186,13 +186,14 @@ void renderViewSettingsComboWindow(
               bool rendered = isImageRendered(i);
               const bool oldRendered = rendered;
 
-              if (singleThreeDImageSelection) {
+              if (usesThreeDImageSelection) {
                 const bool canVolumeRender = canImageBeVolumeRendered(i);
                 if (!canVolumeRender) {
                   ImGui::BeginDisabled();
                 }
-                if (ImGui::RadioButton(displayName.c_str(), rendered) && canVolumeRender) {
-                  setImageRendered(i, true);
+                ImGui::Checkbox(displayName.c_str(), &rendered);
+                if (oldRendered != rendered && canVolumeRender) {
+                  setImageRendered(i, rendered);
                 }
                 if (!canVolumeRender) {
                   ImGui::EndDisabled();
@@ -207,7 +208,7 @@ void renderViewSettingsComboWindow(
               }
 
               if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                if (singleThreeDImageSelection && !canImageBeVolumeRendered(i)) {
+                if (usesThreeDImageSelection && !canImageBeVolumeRendered(i)) {
                   ImGui::SetTooltip(
                     "%s",
                     "This image is uploaded as a 2D texture. It can be shown in 2D views but cannot be volume "
@@ -221,24 +222,24 @@ void renderViewSettingsComboWindow(
               ImGui::PopID(); /*** ID = i ***/
             }
 
-            if (!singleThreeDImageSelection) {
-              ImGui::Separator();
-              if (iconButtonWithTooltip(ICON_FK_EYE, "Show all images in this view")) {
-                for (std::size_t i = 0; i < numImages; ++i) {
+            ImGui::Separator();
+            if (iconButtonWithTooltip(ICON_FK_EYE, "Show all images in this view")) {
+              for (std::size_t i = 0; i < numImages; ++i) {
+                if (!usesThreeDImageSelection || canImageBeVolumeRendered(i)) {
                   setImageRendered(i, true);
                 }
               }
-              ImGui::SameLine();
-              if (iconButtonWithTooltip(ICON_FK_EYE_SLASH, "Hide all images in this view")) {
-                for (std::size_t i = 0; i < numImages; ++i) {
-                  setImageRendered(i, false);
-                }
+            }
+            ImGui::SameLine();
+            if (iconButtonWithTooltip(ICON_FK_EYE_SLASH, "Hide all images in this view")) {
+              for (std::size_t i = 0; i < numImages; ++i) {
+                setImageRendered(i, false);
               }
-              if (applyImageVisibilityToAllViews) {
-                ImGui::SameLine();
-                if (iconButtonWithTooltip(ICON_FK_RSS, "Apply this image visibility to all views in the layout")) {
-                  applyImageVisibilityToAllViews(viewOrLayoutUid);
-                }
+            }
+            if (applyImageVisibilityToAllViews) {
+              ImGui::SameLine();
+              if (iconButtonWithTooltip(ICON_FK_RSS, "Apply this image visibility to all views in the layout")) {
+                applyImageVisibilityToAllViews(viewOrLayoutUid);
               }
             }
 

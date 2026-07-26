@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 #include <vector>
 
 namespace
@@ -20,7 +21,10 @@ namespace
 const glm::vec3 WHITE{1.0f};
 }
 
-void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid)
+void Rendering::updateIsosurfaceDataFor3d(
+  AppData& appData,
+  const uuids::uuid& imageUid,
+  const std::optional<uuids::uuid>& onlyIsosurfaceUid)
 {
   constexpr int maxNumIsos = 8;
 
@@ -51,6 +55,10 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& i
   int i = 0;
 
   for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComp)) {
+    if (onlyIsosurfaceUid && surfaceUid != *onlyIsosurfaceUid) {
+      continue;
+    }
+
     const Isosurface* surface = m_appData.isosurface(imageUid, activeComp, surfaceUid);
     if (!surface) {
       spdlog::warn("Null isosurface {} for image {}", surfaceUid, imageUid);
@@ -64,6 +72,10 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& i
     const float opacity = surface->opacity * settings.isosurfaceOpacityModulator();
     if (opacity <= 0.0f) {
       continue;
+    }
+
+    if (i >= maxNumIsos) {
+      break;
     }
 
     // Map isovalue from native image intensity to texture intensity:
@@ -93,9 +105,5 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& i
 
     ++i;
     isoData.numIsos = i;
-
-    if (i >= maxNumIsos) {
-      break;
-    }
   }
 }

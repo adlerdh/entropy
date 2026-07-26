@@ -137,6 +137,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           glm::mat4{1.0f},
           rendering::mesh::IsosurfaceMeshStyle{
             .material = meshMaterialForIsosurface(*surface, color),
+            .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(effectiveOpacity),
             .visible = surface->visible});
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));

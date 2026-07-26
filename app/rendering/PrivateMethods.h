@@ -227,6 +227,18 @@ void renderVolumeImagesForView(const View& view);
 void consumeCompletedMeshExtractions();
 
 /**
+ * @brief Publish the current background mesh extraction count to the UI status popup.
+ */
+void updateMeshExtractionStatus();
+
+/**
+ * @brief Clear one 3D mesh view viewport with the configured 3D background color.
+ *
+ * @param view View whose device viewport should be cleared.
+ */
+void clearMeshViewBackgroundForView(const View& view);
+
+/**
  * @brief Render one mesh render list into a 3D view using the renderer's configured compositing paths.
  *
  * @param view View receiving the mesh draw.
@@ -260,11 +272,10 @@ std::vector<rendering::mesh::MeshClipPlane> meshClipPlanes() const;
  * @brief Render committed isosurfaces through the mesh path when they no longer require raycasting.
  *
  * @param view 3D view receiving the mesh draw.
- * @param imgSegPair Image/segmentation pair selected for volume rendering.
- * @param renderWarped True when the current image would be sampled through an inverse warp field.
- * @return True when all visible isosurfaces were rendered as meshes and raycasting can be skipped.
+ * @param imageSegPairs Image/segmentation pairs selected for 3D rendering.
+ * @return True when at least one isosurface mesh was rendered and raycasting can be skipped.
  */
-bool renderIsosurfaceMeshesForView(const View& view, const ImgSegPair& imgSegPair, bool renderWarped);
+bool renderIsosurfaceMeshesForView(const View& view, const CurrentImages& imageSegPairs);
 
 /**
  * @brief Render the active segmentation of the selected 3D image as label meshes.
@@ -290,6 +301,19 @@ void renderSyntheticMeshSceneForView(const View& view);
  * @brief Return the image/segmentation pair currently eligible for 3D raycast rendering in a view.
  */
 std::optional<ImgSegPair> raycastImageForView(const View& view);
+
+/**
+ * @brief Return all image/segmentation pairs currently eligible for 3D rendering in a view.
+ */
+CurrentImages raycastImagesForView(const View& view);
+
+/**
+ * @brief Return the selected isosurface currently being interactively edited, if any.
+ *
+ * @param imageSegPairs Image/segmentation pairs selected for 3D rendering.
+ * @return Edited isosurface and its owning image pair, or nullopt when no isovalue edit is active.
+ */
+std::optional<ActiveIsosurfaceEdit> activeIsosurfaceEdit(const CurrentImages& imageSegPairs) const;
 
 void renderSegmentationForImage(
   const View& view,

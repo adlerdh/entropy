@@ -41,24 +41,24 @@ public:
    */
   void setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults);
 
-  /** @brief Is the image selected for 3D volume raycasting? */
+  /** @brief Is the image selected for 3D rendering? */
   bool isImageVolumeRendered(const uuids::uuid& imageUid) const;
 
   /**
-   * @brief Set the single image selected for 3D volume raycasting.
+   * @brief Add or remove a 3D-rendered image.
    *
-   * Volume raycasting currently renders at most one image. Setting an image visible replaces
-   * any previous volume-rendered image; setting it invisible clears it.
+   * The raycast shader uses the first selected image as a fallback path. Mesh rendering can use
+   * all selected images.
    */
   void setImageVolumeRendered(const uuids::uuid& imageUid, const uuid_range_t& orderedImageUids, bool visible);
 
-  /** @brief Image selected for 3D volume raycasting, if one has been explicitly chosen. */
+  /** @brief Images selected for 3D rendering, in application image order. */
   const std::list<uuids::uuid>& volumeRenderedImages() const;
 
-  /** @brief Replace the 3D volume-raycast image selection, keeping at most one image. */
+  /** @brief Replace the 3D-rendered image selection. */
   void setVolumeRenderedImages(const std::list<uuids::uuid>& imageUids);
 
-  /** @brief Select the first rendered image for volume raycasting if no explicit volume image is selected. */
+  /** @brief Select the first rendered image for 3D rendering if no explicit 3D image is selected. */
   void ensureVolumeRenderedImageSelected();
 
   /** @brief Is the image selected for metric/comparison rendering? */
@@ -109,7 +109,7 @@ public:
 private:
   std::list<uuids::uuid> m_renderedImageUids;       //!< Rendered images, bottom layer first
   std::list<uuids::uuid> m_metricImageUids;         //!< Images used by metric/comparison modes
-  std::list<uuids::uuid> m_volumeRenderedImageUids; //!< Single image used by 3D volume raycasting
+  std::list<uuids::uuid> m_volumeRenderedImageUids; //!< Images selected for 3D rendering
 
   std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Default rendered image indices
   bool m_defaultRenderAllImages = true;                   //!< Ignore preferred indices and render all images

@@ -12,6 +12,7 @@
 #include "rendering/mesh/MeshExtraction.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionRunner.h"
+#include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshGlyphs.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlane.h"
@@ -1068,8 +1069,18 @@ TEST_CASE("isosurface mesh policy keeps raycast-only appearances on the raycast 
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.renderWarped = true, .opacity = 1.0f, .visible = true}));
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.rimLightingEnabled = true, .opacity = 1.0f, .visible = true}));
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.valueEditInProgress = true, .opacity = 1.0f, .visible = true}));
-  CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.opacity = 0.5f, .visible = true}));
+  CHECK(mesh::canRenderIsosurfaceWithMesh({.opacity = 0.5f, .visible = true}));
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.opacity = 1.0f, .visible = false}));
+}
+
+TEST_CASE("isosurface mesh policy uses DDP for translucent surfaces", "[rendering][mesh]")
+{
+  CHECK(mesh::compositingModeForIsosurfaceAlpha(1.0f) == mesh::MeshCompositingMode::Opaque);
+  CHECK(mesh::compositingModeForIsosurfaceAlpha(0.999f) == mesh::MeshCompositingMode::Opaque);
+  CHECK(mesh::compositingModeForIsosurfaceAlpha(0.998f) == mesh::MeshCompositingMode::AlphaOverDdp);
+  CHECK(
+    mesh::compositingModeForIsosurfaceAlpha(0.5f, mesh::MeshCompositingMode::Additive) ==
+    mesh::MeshCompositingMode::Additive);
 }
 
 TEST_CASE("scalar-grid isosurface policy builds stable extraction requests", "[rendering][mesh]")
@@ -1264,18 +1275,19 @@ TEST_CASE("mesh extraction queue suppresses duplicate active keys", "[rendering]
   key.extractionAlgorithm = "queued-test";
 
   mesh::MeshExtractionQueue queue;
-  CHECK(queue.submit(key, [key] {
+  CHECK(queue.submit(key, "first mesh", [key] {
     return mesh::MeshExtractionJobResult{
       .key = key,
       .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}};
   }));
-  CHECK_FALSE(queue.submit(key, [key] {
+  CHECK_FALSE(queue.submit(key, "duplicate mesh", [key] {
     return mesh::MeshExtractionJobResult{
       .key = key,
       .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}};
   }));
   CHECK(queue.active(key));
   CHECK(queue.activeCount() == 1);
+  CHECK(queue.activeDescriptions() == std::vector<std::string>{"first mesh"});
 
   const std::vector<mesh::MeshExtractionJobResult> completed = waitForCompleted(queue);
 
@@ -1283,6 +1295,42 @@ TEST_CASE("mesh extraction queue suppresses duplicate active keys", "[rendering]
   CHECK(completed.front().key == key);
   CHECK_FALSE(queue.active(key));
   CHECK(queue.activeCount() == 0);
+}
+
+TEST_CASE("mesh extraction queue respects the active job limit", "[rendering][mesh]")
+{
+  mesh::MeshGeometryKey firstKey;
+  firstKey.sourceUid = generateRandomUuid();
+  firstKey.extractionAlgorithm = "first";
+
+  mesh::MeshGeometryKey secondKey;
+  secondKey.sourceUid = generateRandomUuid();
+  secondKey.extractionAlgorithm = "second";
+
+  mesh::MeshExtractionQueue queue{1};
+  CHECK(queue.maxActiveJobs() == 1);
+
+  CHECK(queue.submit(firstKey, "first mesh", [firstKey] {
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
+    return mesh::MeshExtractionJobResult{
+      .key = firstKey,
+      .result = mesh::MeshExtractionResult{.key = firstKey, .mesh = makeTriangleMesh()}};
+  }));
+  CHECK_FALSE(queue.submit(secondKey, "second mesh", [secondKey] {
+    return mesh::MeshExtractionJobResult{
+      .key = secondKey,
+      .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh()}};
+  }));
+
+  const std::vector<mesh::MeshExtractionJobResult> completed = waitForCompleted(queue);
+  REQUIRE(completed.size() == 1);
+  CHECK(completed.front().key == firstKey);
+
+  CHECK(queue.submit(secondKey, "second mesh", [secondKey] {
+    return mesh::MeshExtractionJobResult{
+      .key = secondKey,
+      .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh()}};
+  }));
 }
 
 TEST_CASE("mesh extraction queue results are applied to pending cache entries", "[rendering][mesh]")
@@ -1295,7 +1343,7 @@ TEST_CASE("mesh extraction queue results are applied to pending cache entries", 
   cache.markPending(key);
 
   mesh::MeshExtractionQueue queue;
-  REQUIRE(queue.submit(key, [key] {
+  REQUIRE(queue.submit(key, "ready mesh", [key] {
     return mesh::MeshExtractionJobResult{
       .key = key,
       .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {"ready"}}};
@@ -1455,16 +1503,16 @@ TEST_CASE("scalar-grid isosurface extraction rejects invalid grids", "[rendering
   grid.values.resize(4);
 
   CHECK_FALSE(mesh::isValidScalarGrid(grid));
-  CHECK_FALSE(mesh::extractIsosurfaceMesh(grid, 0.5));
+  CHECK_FALSE(mesh::generateIsoSurfaceMesh(grid, 0.5));
 
   grid.dimensions = glm::uvec3{2, 2, 2};
   CHECK_FALSE(mesh::isValidScalarGrid(grid));
-  CHECK_FALSE(mesh::extractIsosurfaceMesh(grid, 0.5));
+  CHECK_FALSE(mesh::generateIsoSurfaceMesh(grid, 0.5));
 }
 
 TEST_CASE("scalar-grid isosurface extraction creates a planar surface", "[rendering][mesh]")
 {
-  const std::optional<mesh::MeshData> meshData = mesh::extractIsosurfaceMesh(makePlanarScalarGrid(), 0.5);
+  const std::optional<mesh::MeshData> meshData = mesh::generateIsoSurfaceMesh(makePlanarScalarGrid(), 0.5);
 
   REQUIRE(meshData);
   CHECK(mesh::isValidMeshData(*meshData));
@@ -1488,7 +1536,7 @@ TEST_CASE("scalar-grid extraction honors coordinate transforms", "[rendering][me
                            glm::scale(glm::mat4{1.0f}, glm::vec3{2.0f, 3.0f, 4.0f});
   grid.coordinateSpace = mesh::MeshCoordinateSpace::World;
 
-  const std::optional<mesh::MeshData> meshData = mesh::extractIsosurfaceMesh(grid, 0.5);
+  const std::optional<mesh::MeshData> meshData = mesh::generateIsoSurfaceMesh(grid, 0.5);
 
   REQUIRE(meshData);
   CHECK(meshData->coordinateSpace == mesh::MeshCoordinateSpace::World);
@@ -1520,7 +1568,7 @@ TEST_CASE("image component adapter creates scalar grids with image geometry", "[
 
 TEST_CASE("scalar-grid segmentation extraction creates the requested label surface", "[rendering][mesh]")
 {
-  const std::optional<mesh::MeshData> meshData = mesh::extractSegmentationLabelMesh(makeBinaryLabelGrid(), 7);
+  const std::optional<mesh::MeshData> meshData = mesh::generateLabelMesh(makeBinaryLabelGrid(), 7);
 
   REQUIRE(meshData);
   CHECK(mesh::isValidMeshData(*meshData));
@@ -1529,51 +1577,7 @@ TEST_CASE("scalar-grid segmentation extraction creates the requested label surfa
     CHECK(position.x == Catch::Approx(0.5f));
   }
 
-  CHECK_FALSE(mesh::extractSegmentationLabelMesh(makeBinaryLabelGrid(), 99));
-}
-
-TEST_CASE("scalar-grid extractor classes adapt providers to extraction results", "[rendering][mesh]")
-{
-  const uuids::uuid imageUid = generateRandomUuid();
-  const uuids::uuid segmentationUid = generateRandomUuid();
-
-  mesh::ScalarGridIsosurfaceExtractor isosurfaceExtractor{[](const mesh::IsosurfaceMeshRequest&) {
-    return makePlanarScalarGrid();
-  }};
-  const mesh::IsosurfaceMeshRequest isosurfaceRequest{
-    .imageUid = imageUid,
-    .imageDataVersion = 1,
-    .imageGeometryVersion = 2,
-    .component = 0,
-    .timePoint = 3,
-    .isoValue = 0.5,
-    .algorithm = "marching-tetrahedra",
-    .algorithmVersion = 1};
-
-  const std::optional<mesh::MeshExtractionResult> isosurfaceResult = isosurfaceExtractor.extract(isosurfaceRequest);
-
-  REQUIRE(isosurfaceResult);
-  CHECK(isosurfaceResult->key == mesh::geometryKeyForRequest(isosurfaceRequest));
-  CHECK(mesh::isValidMeshData(isosurfaceResult->mesh));
-
-  mesh::ScalarGridSegmentationExtractor segmentationExtractor{[](const mesh::SegmentationMeshRequest&) {
-    return makeBinaryLabelGrid();
-  }};
-  const mesh::SegmentationMeshRequest segmentationRequest{
-    .segmentationUid = segmentationUid,
-    .segmentationDataVersion = 4,
-    .segmentationGeometryVersion = 5,
-    .labelValue = 7,
-    .timePoint = 6,
-    .algorithm = "marching-tetrahedra",
-    .algorithmVersion = 1};
-
-  const std::optional<mesh::MeshExtractionResult> segmentationResult =
-    segmentationExtractor.extract(segmentationRequest);
-
-  REQUIRE(segmentationResult);
-  CHECK(segmentationResult->key == mesh::geometryKeyForRequest(segmentationRequest));
-  CHECK(mesh::isValidMeshData(segmentationResult->mesh));
+  CHECK_FALSE(mesh::generateLabelMesh(makeBinaryLabelGrid(), 99));
 }
 
 TEST_CASE("mesh cube primitive creates valid flat-shaded geometry", "[rendering][mesh]")

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <utility>
 
 namespace rendering::mesh
@@ -31,13 +32,21 @@ failedOrStale(const MeshGeometryKey& key, std::vector<std::string> diagnostics, 
 
 } // namespace
 
-bool MeshExtractionQueue::submit(MeshGeometryKey key, MeshExtractionJob job)
+MeshExtractionQueue::MeshExtractionQueue(const std::size_t maxActiveJobs)
+  : m_maxActiveJobs(std::max<std::size_t>(1, maxActiveJobs))
 {
-  if (active(key)) {
+}
+
+bool MeshExtractionQueue::submit(MeshGeometryKey key, std::string description, MeshExtractionJob job)
+{
+  if (active(key) || m_activeJobs.size() >= m_maxActiveJobs) {
     return false;
   }
 
-  m_activeJobs.push_back(ActiveJob{.key = std::move(key), .future = std::async(std::launch::async, std::move(job))});
+  m_activeJobs.push_back(ActiveJob{
+    .key = std::move(key),
+    .description = std::move(description),
+    .future = std::async(std::launch::async, std::move(job))});
   return true;
 }
 
@@ -66,6 +75,26 @@ bool MeshExtractionQueue::active(const MeshGeometryKey& key) const
 std::size_t MeshExtractionQueue::activeCount() const noexcept
 {
   return m_activeJobs.size();
+}
+
+std::vector<std::string> MeshExtractionQueue::activeDescriptions() const
+{
+  std::vector<std::string> descriptions;
+  descriptions.reserve(m_activeJobs.size());
+  for (const ActiveJob& job : m_activeJobs) {
+    descriptions.push_back(job.description);
+  }
+  return descriptions;
+}
+
+std::size_t MeshExtractionQueue::maxActiveJobs() const noexcept
+{
+  return m_maxActiveJobs;
+}
+
+void MeshExtractionQueue::setMaxActiveJobs(const std::size_t maxActiveJobs) noexcept
+{
+  m_maxActiveJobs = std::max<std::size_t>(1, maxActiveJobs);
 }
 
 MeshExtractionRunResult applyExtractionJobResult(MeshExtractionJobResult jobResult, MeshCache& cache)

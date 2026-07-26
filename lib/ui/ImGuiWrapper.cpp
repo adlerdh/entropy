@@ -974,6 +974,58 @@ void renderLoadingStatusWindow(const GuiData& guiData)
   ImGui::PopStyleVar();
 }
 
+void renderMeshExtractionStatusWindow(const GuiData& guiData)
+{
+  if (!guiData.m_meshExtractionStatus) {
+    return;
+  }
+
+  std::string title;
+  std::size_t activeJobs = 0;
+  std::vector<std::string> descriptions;
+  {
+    std::scoped_lock lock(guiData.m_meshExtractionStatus->mutex);
+    if (!guiData.m_meshExtractionStatus->visible) {
+      return;
+    }
+    title = guiData.m_meshExtractionStatus->title;
+    activeJobs = guiData.m_meshExtractionStatus->activeJobs;
+    descriptions = guiData.m_meshExtractionStatus->descriptions;
+  }
+
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const float margin = ui::scaledPixel(12.0f);
+  const ImVec2 size = ui::scaledSize(360.0f, 112.0f);
+  const ImVec2 pos{viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - margin};
+
+  ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2{0.0f, 1.0f});
+  ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+
+  constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                                     ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing |
+                                     ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ui::scaledSize(12.0f, 10.0f));
+
+  const std::string windowTitle = (title.empty() ? "Computing Meshes" : title) + "###MeshExtractionStatus";
+  if (ImGui::Begin(windowTitle.c_str(), nullptr, flags)) {
+    const int dotCount = static_cast<int>(ImGui::GetTime() * 3.0) % 4;
+    std::string text = title.empty() ? "Computing meshes" : title;
+    text.append(static_cast<std::size_t>(dotCount), '.');
+    ImGui::TextUnformatted(text.c_str());
+    ImGui::TextDisabled("%zu active job%s", activeJobs, activeJobs == 1 ? "" : "s");
+    if (!descriptions.empty()) {
+      ImGui::Separator();
+      ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
+      ImGui::TextUnformatted(descriptions.front().c_str());
+      ImGui::PopTextWrapPos();
+    }
+  }
+
+  ImGui::End();
+  ImGui::PopStyleVar();
+}
+
 void refreshTimeSeriesTexture(AppData& appData, const uuids::uuid& imageUid)
 {
   refreshImageTexturesForActiveTimePoint(appData, imageUid);
@@ -4461,6 +4513,7 @@ void ImGuiWrapper::render()
     if (backgroundTaskRunning) {
       renderLoadingStatusWindow(m_appData.guiData());
     }
+    renderMeshExtractionStatusWindow(m_appData.guiData());
     renderWarpInversionProgressPopup();
     ui::updates::renderUpdateCheckWindow(
       m_updateCheckWindowState,
@@ -4777,7 +4830,7 @@ void ImGuiWrapper::render()
       m_appData.state().worldCrosshairs(),
       m_appData.windowData().getContentScaleRatios()};
 
-    const bool useSingleThreeDImageSelection =
+    const bool useThreeDImageSelection =
       ViewType::ThreeD == currentLayout.viewType() && (ViewRenderMode::VolumeRender == currentLayout.renderMode() ||
                                                        ViewRenderMode::SegmentationMesh == currentLayout.renderMode());
     auto canImageBeVolumeRendered = [this](std::size_t index) {
@@ -4804,13 +4857,13 @@ void ImGuiWrapper::render()
 
     const ViewOverlayImageCallbacks imageCallbacks{
       m_appData.numImages(),
-      [this, &currentLayout, useSingleThreeDImageSelection, isLayoutVolumeImageRendered, canImageBeVolumeRendered](
+      [this, &currentLayout, useThreeDImageSelection, isLayoutVolumeImageRendered, canImageBeVolumeRendered](
         std::size_t index) {
-        return useSingleThreeDImageSelection ? canImageBeVolumeRendered(index) && isLayoutVolumeImageRendered(index)
-                                             : currentLayout.isImageRendered(m_appData, index);
+        return useThreeDImageSelection ? canImageBeVolumeRendered(index) && isLayoutVolumeImageRendered(index)
+                                       : currentLayout.isImageRendered(m_appData, index);
       },
-      [this, &currentLayout, useSingleThreeDImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
-        if (useSingleThreeDImageSelection) {
+      [this, &currentLayout, useThreeDImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
+        if (useThreeDImageSelection) {
           currentLayout.setImageVolumeRendered(m_appData, index, visible && canImageBeVolumeRendered(index));
         }
         else {
@@ -4934,7 +4987,7 @@ void ImGuiWrapper::render()
         m_appData.state().worldCrosshairs(),
         m_appData.windowData().getContentScaleRatios()};
 
-      const bool useSingleThreeDImageSelection =
+      const bool useThreeDImageSelection =
         ViewType::ThreeD == view->viewType() &&
         (ViewRenderMode::VolumeRender == view->renderMode() || ViewRenderMode::SegmentationMesh == view->renderMode());
       auto canImageBeVolumeRendered = [this](std::size_t index) {
@@ -4961,13 +5014,12 @@ void ImGuiWrapper::render()
 
       const ViewOverlayImageCallbacks imageCallbacks{
         m_appData.numImages(),
-        [this, view, useSingleThreeDImageSelection, isViewVolumeImageRendered, canImageBeVolumeRendered](
-          std::size_t index) {
-          return useSingleThreeDImageSelection ? canImageBeVolumeRendered(index) && isViewVolumeImageRendered(index)
-                                               : view->isImageRendered(m_appData, index);
+        [this, view, useThreeDImageSelection, isViewVolumeImageRendered, canImageBeVolumeRendered](std::size_t index) {
+          return useThreeDImageSelection ? canImageBeVolumeRendered(index) && isViewVolumeImageRendered(index)
+                                         : view->isImageRendered(m_appData, index);
         },
-        [this, view, useSingleThreeDImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
-          if (useSingleThreeDImageSelection) {
+        [this, view, useThreeDImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
+          if (useThreeDImageSelection) {
             view->setImageVolumeRendered(m_appData, index, visible && canImageBeVolumeRendered(index));
           }
           else {

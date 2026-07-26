@@ -582,6 +582,64 @@ ExternalProject_Add(ITK
 )
 
 
+message(STATUS "Adding external library VTK in ${vtk_PREFIX}")
+
+set(_vtk_module_args
+  -DVTK_BUILD_ALL_MODULES:BOOL=OFF
+  -DVTK_GROUP_ENABLE_MPI:STRING=DONT_WANT
+  -DVTK_GROUP_ENABLE_Qt:STRING=DONT_WANT
+  -DVTK_GROUP_ENABLE_Rendering:STRING=DONT_WANT
+  -DVTK_GROUP_ENABLE_StandAlone:STRING=DONT_WANT
+  -DVTK_GROUP_ENABLE_Views:STRING=DONT_WANT
+  -DVTK_GROUP_ENABLE_Web:STRING=DONT_WANT
+  -DVTK_MODULE_ENABLE_VTK_CommonCore:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_CommonDataModel:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_CommonExecutionModel:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_FiltersCore:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:STRING=YES
+)
+
+ExternalProject_Add(VTK
+  URL "https://github.com/Kitware/VTK/archive/refs/tags/v${vtk_VERSION}.tar.gz"
+  URL_HASH SHA256=de5c02499c550aa09052b2d5f3823a8cae54c72ce1b0014afcde2dabd8e390ea
+  DOWNLOAD_NAME "VTK-v${vtk_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  PREFIX "${vtk_PREFIX}"
+  TMP_DIR "${vtk_PREFIX}/tmp"
+  STAMP_DIR "${vtk_PREFIX}/stamp"
+  DOWNLOAD_DIR "${vtk_PREFIX}/download"
+  SOURCE_DIR "${vtk_PREFIX}/src"
+  BINARY_DIR "${vtk_PREFIX}/build"
+  INSTALL_DIR "${vtk_PREFIX}/install"
+
+  CMAKE_ARGS
+    ${_ext_cmake_build_type_args}
+    ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
+    ${_ext_shared_runtime_args}
+    ${_ext_cxx_std_args}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_SHARED_LIBS:BOOL=OFF
+    -DBUILD_TESTING:BOOL=OFF
+    -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
+    -DVTK_BUILD_DOCUMENTATION:BOOL=OFF
+    -DVTK_BUILD_EXAMPLES:BOOL=OFF
+    -DVTK_BUILD_TESTING:STRING=OFF
+    -DVTK_ENABLE_REMOTE_MODULES:BOOL=OFF
+    -DVTK_ENABLE_WRAPPING:BOOL=OFF
+    -DVTK_LEGACY_REMOVE:BOOL=OFF
+    -DVTK_SMP_IMPLEMENTATION_TYPE:STRING=STDThread
+    -DVTK_USE_EXTERNAL:BOOL=OFF
+    ${_vtk_module_args}
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
 message(STATUS "Adding external library NanoVG in ${nanovg_PREFIX}")
 
 ExternalProject_Add(NanoVG

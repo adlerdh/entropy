@@ -329,6 +329,8 @@ struct RenderData
   /// Optional advanced mesh-lighting settings for mesh-rendered 3D surfaces.
   rendering::mesh::MeshAdvancedLightingSettings m_meshAdvancedLightingSettings;
 
+  uint32_t m_meshGenerationThreadCount; //!< Maximum VTK threads for one CPU mesh extraction job, or zero for auto
+
   rendering::mesh::MeshCompositingMode m_meshTranslucentCompositingMode; //!< Translucent mesh compositing path
 
   bool m_meshPickingEnabled; //!< Whether mesh surfaces participate in 3D point picking

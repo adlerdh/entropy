@@ -1,5 +1,5 @@
-#include "rendering/mesh/vtkdetails/MeshGeneration.hpp"
-#include "rendering/mesh/vtkdetails/ErrorObserver.hpp"
+#include "rendering/mesh/vtkdetails/MeshGeneration.h"
+#include "rendering/mesh/vtkdetails/ErrorObserver.h"
 
 #include "common/MathFuncs.h"
 

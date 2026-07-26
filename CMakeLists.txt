@@ -293,6 +293,7 @@ set(qtbase_VERSION "6.8.1")
 set(spdlog_VERSION "1.17.0")
 set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
+set(vtk_VERSION "9.6.2")
 
 include(ItkComponents)
 
@@ -315,6 +316,7 @@ set(qtbase_PREFIX "${EXTERNAL_DIR}/qtbase-${qtbase_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(stduuid_PREFIX "${EXTERNAL_DIR}/stduuid-${stduuid_VERSION}")
 set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
+set(vtk_PREFIX "${EXTERNAL_DIR}/vtk-${vtk_VERSION}")
 
 option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 
@@ -446,6 +448,20 @@ message(STATUS "Using stduuid in ${stduuid_DIR}")
 set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
   CACHE PATH "TinyFSM include directory")
 
+# VTK for mesh extraction and mesh processing
+set(entropy_VTK_COMPONENTS
+  CommonCore
+  CommonDataModel
+  CommonExecutionModel
+  FiltersCore
+  FiltersGeneral
+)
+
+find_package(VTK ${vtk_VERSION} REQUIRED COMPONENTS ${entropy_VTK_COMPONENTS}
+  HINTS "${vtk_PREFIX}/install"
+  NO_DEFAULT_PATH)
+
+message(STATUS "Using VTK in ${VTK_DIR}")
 
 # std::expected: C++23 vocabulary type for operations that return either a value or an error.
 include(CheckCXXSourceCompiles)
@@ -719,6 +735,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/mesh/MeshExtraction.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionQueue.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionRunner.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshGeneration.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGpuData.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGpuStore.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGpuSync.cpp"
@@ -976,30 +993,33 @@ macro(entropy_add_license_resource resource_name source_path)
   list(APPEND entropy_LICENSES "${entropy_LICENSE_RESOURCE_DIR}/licenses/${resource_name}")
 endmacro()
 
+entropy_add_license_resource("Apache-2.0.txt" "${itk_PREFIX}/src/LICENSE")
+entropy_add_license_resource("CC0-1.0.txt" "${qtbase_PREFIX}/src/LICENSES/CC0-1.0.txt")
 entropy_add_license_resource("CLI11.txt" "${cli11_PREFIX}/src/LICENSE")
 entropy_add_license_resource("CMakeRC.txt" "${cmakerc_PREFIX}/src/LICENSE.txt")
 entropy_add_license_resource("curl.txt" "${entropy_RES_DIR}/licenses/curl.txt")
+entropy_add_license_resource("DearImGui.txt" "${entropy_RES_DIR}/licenses/DearImGui-MIT.txt")
 entropy_add_license_resource("GLFW.txt" "${glfw_PREFIX}/src/LICENSE.md")
 entropy_add_license_resource("GLM.txt" "${glm_PREFIX}/src/copying.txt")
 entropy_add_license_resource("IconFontCppHeaders.txt" "${entropy_RES_DIR}/licenses/IconFontCppHeaders-Zlib.txt")
-entropy_add_license_resource("DearImGui.txt" "${entropy_RES_DIR}/licenses/DearImGui-MIT.txt")
 entropy_add_license_resource("ImPlot.txt" "${implot_PREFIX}/src/implot/LICENSE")
-entropy_add_license_resource("Apache-2.0.txt" "${itk_PREFIX}/src/LICENSE")
 entropy_add_license_resource("ITK-NOTICE.txt" "${itk_PREFIX}/src/NOTICE")
 entropy_add_license_resource("NanoVG.txt" "${nanovg_PREFIX}/src/LICENSE.txt")
 entropy_add_license_resource("NativeFileDialogExtended.txt" "${nativefiledialog_PREFIX}/src/LICENSE")
 entropy_add_license_resource("nlohmann-json.txt" "${nlohmann_json_PREFIX}/src/LICENSE.MIT")
 entropy_add_license_resource("Qt-LGPL-3.0-only.txt" "${qtbase_PREFIX}/src/LICENSES/LGPL-3.0-only.txt")
-entropy_add_license_resource("CC0-1.0.txt" "${qtbase_PREFIX}/src/LICENSES/CC0-1.0.txt")
 entropy_add_license_resource("spdlog.txt" "${spdlog_PREFIX}/src/LICENSE")
 entropy_add_license_resource("stduuid.txt" "${stduuid_PREFIX}/src/LICENSE")
 entropy_add_license_resource("TinyFSM.txt" "${tinyfsm_PREFIX}/src/COPYING")
+entropy_add_license_resource("VTK.txt" "${vtk_PREFIX}/src/Copyright.txt")
+
 entropy_add_license_resource("GLAD.txt" "${entropy_EXT_DIR}/glad/LICENSE.txt")
 entropy_add_license_resource("imGuIZMO.quat.txt" "${entropy_EXT_DIR}/imGuIZMO.quat/license.txt")
 entropy_add_license_resource("imgui-knobs.txt" "${entropy_EXT_DIR}/imgui-knobs/LICENSE")
 entropy_add_license_resource("PNPOLY.txt" "${entropy_EXT_DIR}/wrfranklin/LICENSE.txt")
 entropy_add_license_resource("SafeCLib.txt" "${entropy_EXT_DIR}/safeclib/LICENSE.txt")
 entropy_add_license_resource("CubicBSplineInterpolation.txt" "${entropy_APP_DIR}/rendering/shaders/functions/TricubicReadme.txt")
+
 entropy_add_license_resource("Cousine.txt" "${entropy_RES_DIR}/fonts/Cousine/LICENSE.txt")
 entropy_add_license_resource("ForkAwesome.txt" "${entropy_RES_DIR}/fonts/ForkAwesome/LICENSES.txt")
 entropy_add_license_resource("IBMPlexSans.txt" "${entropy_RES_DIR}/fonts/IBMPlexSans/LICENSE.txt")
@@ -1129,6 +1149,7 @@ target_link_libraries(entropy PRIVATE
   entropy::licenses
   entropy::shaders
   entropy_warnings
+  ${VTK_LIBRARIES}
 )
 
 entropy_enable_coverage_for_target(entropy)

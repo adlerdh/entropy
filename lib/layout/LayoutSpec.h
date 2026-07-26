@@ -17,7 +17,7 @@ namespace layout
 struct ImageSelectionSpec
 {
   std::vector<std::size_t> m_renderedImageIndices;       //!< Images rendered in the view
-  std::vector<std::size_t> m_volumeRenderedImageIndices; //!< Single image rendered in 3D volume raycasting
+  std::vector<std::size_t> m_volumeRenderedImageIndices; //!< Images selected for 3D rendering
   std::vector<std::size_t> m_metricImageIndices;         //!< Images used by metric/comparison modes
 
   bool operator==(const ImageSelectionSpec&) const = default;

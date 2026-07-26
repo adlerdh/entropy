@@ -16,8 +16,10 @@
 #include "rendering/mesh/MeshViewViewport.h"
 #include "windowing/View.h"
 
+#include <glad/glad.h>
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <functional>
 #include <optional>
 #include <string>
@@ -54,6 +56,34 @@ void Rendering::consumeCompletedMeshExtractions()
   for (rendering::mesh::MeshExtractionJobResult& result : m_meshExtractionQueue.takeCompleted()) {
     rendering::mesh::applyExtractionJobResult(std::move(result), m_meshCpuCache);
   }
+}
+
+void Rendering::updateMeshExtractionStatus()
+{
+  if (!m_appData.guiData().m_meshExtractionStatus) {
+    return;
+  }
+
+  const std::size_t activeJobs = m_meshExtractionQueue.activeCount();
+  std::vector<std::string> activeDescriptions = m_meshExtractionQueue.activeDescriptions();
+  std::scoped_lock lock(m_appData.guiData().m_meshExtractionStatus->mutex);
+  m_appData.guiData().m_meshExtractionStatus->visible = activeJobs > 0;
+  m_appData.guiData().m_meshExtractionStatus->title = activeJobs == 1 ? "Computing mesh" : "Computing meshes";
+  m_appData.guiData().m_meshExtractionStatus->activeJobs = activeJobs;
+  m_appData.guiData().m_meshExtractionStatus->descriptions = std::move(activeDescriptions);
+}
+
+void Rendering::clearMeshViewBackgroundForView(const View& view)
+{
+  const rendering::mesh::ScopedMeshViewViewport scopedViewport{view, m_appData.windowData()};
+
+  std::array<GLfloat, 4> previousClearColor{};
+  glGetFloatv(GL_COLOR_CLEAR_VALUE, previousClearColor.data());
+
+  const auto& bg = m_appData.renderData().m_3dBackgroundColor;
+  glClearColor(bg.r, bg.g, bg.b, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  glClearColor(previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
 }
 
 void Rendering::drawMeshRenderListForView(const View& view, const rendering::mesh::MeshRenderList& list)

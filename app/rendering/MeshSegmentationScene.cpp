@@ -6,6 +6,7 @@
 #include "logic/app/ParcellationLabelTable.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
@@ -19,6 +20,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -49,103 +52,138 @@ glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const s
   return glm::vec4{labelTable.color_RGBA_nonpremult_U8(labelIndex)} / 255.0f;
 }
 
+std::string segmentationMeshDescription(
+  const Image& segmentation,
+  const ParcellationLabelTable& labelTable,
+  const std::size_t labelIndex)
+{
+  return std::format(
+    "Segmentation mesh: {} - {} (label {})",
+    segmentation.settings().displayName(),
+    labelTable.getName(labelIndex),
+    labelIndex);
+}
+
 } // namespace
 
 void Rendering::renderSegmentationMeshesForView(const View& view)
 {
   consumeCompletedMeshExtractions();
+  clearMeshViewBackgroundForView(view);
 
-  const std::optional<ImgSegPair> maybeImgSegPair = raycastImageForView(view);
-  if (!maybeImgSegPair || !maybeImgSegPair->second) {
+  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  if (imageSegPairs.empty()) {
     return;
   }
 
-  const uuids::uuid& segUid = *maybeImgSegPair->second;
-  const Image* seg = m_appData.seg(segUid);
-  if (!seg || !seg->settings().visibility()) {
-    return;
-  }
-
-  const auto tableUid = m_appData.labelTableUid(seg->settings().labelTableIndex());
-  const ParcellationLabelTable* labelTable = tableUid ? m_appData.labelTable(*tableUid) : nullptr;
-  if (!labelTable) {
-    spdlog::warn("Unable to render segmentation meshes for {}: missing label table", segUid);
-    return;
-  }
-
-  const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
-  const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
 
-  for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
-    const rendering::mesh::SegmentationLabelMeshState labelState{
-      .visible = labelTable->getVisible(labelIndex),
-      .showMesh = labelTable->getShowMesh(labelIndex),
-      .opacity = segmentationOpacity};
-    if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
+  for (const ImgSegPair& imgSegPair : imageSegPairs) {
+    if (!imgSegPair.second) {
       continue;
     }
 
-    const int64_t labelValue = static_cast<int64_t>(labelIndex);
-    const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
-      segUid,
-      seg->pixelDataRevision(),
-      seg->geometryRevision(),
-      labelValue,
-      timePoint);
-    const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-    const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
+    const uuids::uuid& segUid = *imgSegPair.second;
+    const Image* seg = m_appData.seg(segUid);
+    if (!seg || !seg->settings().visibility()) {
+      continue;
+    }
 
-    if (!m_meshCpuCache.readyMesh(key)) {
-      if (!m_meshCpuCache.contains(key) && !m_meshExtractionQueue.active(key)) {
-        std::optional<rendering::mesh::ScalarGrid3D> grid = rendering::mesh::scalarGridFromImageComponent(
-          *seg,
-          0,
-          request.timePoint,
-          rendering::mesh::MeshCoordinateSpace::World);
-        if (!grid) {
-          continue;
-        }
+    const auto tableUid = m_appData.labelTableUid(seg->settings().labelTableIndex());
+    const ParcellationLabelTable* labelTable = tableUid ? m_appData.labelTable(*tableUid) : nullptr;
+    if (!labelTable) {
+      spdlog::warn("Unable to render segmentation meshes for {}: missing label table", segUid);
+      continue;
+    }
 
-        m_meshCpuCache.markPending(key);
-        m_meshExtractionQueue.submit(key, [request, key, grid = std::move(*grid)]() mutable {
-          std::optional<rendering::mesh::MeshData> mesh =
-            rendering::mesh::extractSegmentationLabelMesh(grid, request.labelValue);
-          if (!mesh) {
-            return rendering::mesh::MeshExtractionJobResult{
-              .key = key,
-              .result = std::nullopt,
-              .diagnostics = {std::string{"No segmentation label mesh could be extracted"}}};
-          }
+    const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
+    const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
+    renderables.reserve(renderables.size() + labelTable->numLabels());
+    std::shared_ptr<const Image> segmentationSnapshot;
 
-          return rendering::mesh::MeshExtractionJobResult{
-            .key = key,
-            .result = rendering::mesh::MeshExtractionResult{.key = key, .mesh = std::move(*mesh)}};
-        });
+    for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
+      const rendering::mesh::SegmentationLabelMeshState labelState{
+        .visible = labelTable->getVisible(labelIndex),
+        .showMesh = labelTable->getShowMesh(labelIndex),
+        .opacity = segmentationOpacity};
+      if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
+        continue;
       }
 
-      continue;
-    }
+      const int64_t labelValue = static_cast<int64_t>(labelIndex);
+      const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
+        segUid,
+        seg->pixelDataRevision(),
+        seg->geometryRevision(),
+        labelValue,
+        timePoint);
+      const rendering::mesh::MeshGenerationOptions generationOptions{
+        .threadCount = m_appData.renderData().m_meshGenerationThreadCount};
+      const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
+      const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
 
-    const rendering::mesh::MeshGpuSyncStatus syncStatus =
-      rendering::mesh::syncReadyMeshToGpu(key, handle, m_meshCpuCache, m_meshGpuStore);
-    if (
-      syncStatus != rendering::mesh::MeshGpuSyncStatus::Uploaded &&
-      syncStatus != rendering::mesh::MeshGpuSyncStatus::AlreadyCurrent)
-    {
-      continue;
-    }
+      if (!m_meshCpuCache.readyMesh(key)) {
+        if (!m_meshCpuCache.contains(key) && !m_meshExtractionQueue.active(key)) {
+          if (!segmentationSnapshot) {
+            segmentationSnapshot = std::make_shared<Image>(*seg);
+          }
 
-    const rendering::mesh::SegmentationLabelMeshStyle style = rendering::mesh::segmentationLabelMeshStyle(
-      labelValue,
-      normalizedLabelColor(*labelTable, labelIndex),
-      labelState,
-      m_appData.renderData().m_meshTranslucentCompositingMode);
-    rendering::mesh::MeshRenderable renderable =
-      rendering::mesh::makeSegmentationLabelRenderable(handle, glm::mat4{1.0f}, style);
-    renderable.drawOptions.clipPlanes = clipPlanes;
-    renderables.push_back(std::move(renderable));
+          const std::string description = segmentationMeshDescription(*seg, *labelTable, labelIndex);
+          if (m_meshExtractionQueue
+                .submit(key, description, [request, key, generationOptions, segmentationSnapshot]() mutable {
+                  std::optional<rendering::mesh::ScalarGrid3D> grid = rendering::mesh::scalarGridFromImageComponent(
+                    *segmentationSnapshot,
+                    0,
+                    request.timePoint,
+                    rendering::mesh::MeshCoordinateSpace::World);
+                  if (!grid) {
+                    return rendering::mesh::MeshExtractionJobResult{
+                      .key = key,
+                      .result = std::nullopt,
+                      .diagnostics = {std::string{"No segmentation label grid could be created"}}};
+                  }
+
+                  std::optional<rendering::mesh::MeshData> mesh =
+                    rendering::mesh::generateLabelMesh(*grid, request.labelValue, generationOptions);
+                  if (!mesh) {
+                    return rendering::mesh::MeshExtractionJobResult{
+                      .key = key,
+                      .result = std::nullopt,
+                      .diagnostics = {std::string{"No segmentation label mesh could be extracted"}}};
+                  }
+
+                  return rendering::mesh::MeshExtractionJobResult{
+                    .key = key,
+                    .result = rendering::mesh::MeshExtractionResult{.key = key, .mesh = std::move(*mesh)}};
+                }))
+          {
+            m_meshCpuCache.markPending(key);
+          }
+        }
+
+        continue;
+      }
+
+      const rendering::mesh::MeshGpuSyncStatus syncStatus =
+        rendering::mesh::syncReadyMeshToGpu(key, handle, m_meshCpuCache, m_meshGpuStore);
+      if (
+        syncStatus != rendering::mesh::MeshGpuSyncStatus::Uploaded &&
+        syncStatus != rendering::mesh::MeshGpuSyncStatus::AlreadyCurrent)
+      {
+        continue;
+      }
+
+      const rendering::mesh::SegmentationLabelMeshStyle style = rendering::mesh::segmentationLabelMeshStyle(
+        labelValue,
+        normalizedLabelColor(*labelTable, labelIndex),
+        labelState,
+        m_appData.renderData().m_meshTranslucentCompositingMode);
+      rendering::mesh::MeshRenderable renderable =
+        rendering::mesh::makeSegmentationLabelRenderable(handle, glm::mat4{1.0f}, style);
+      renderable.drawOptions.clipPlanes = clipPlanes;
+      renderables.push_back(std::move(renderable));
+    }
   }
 
   if (renderables.empty()) {

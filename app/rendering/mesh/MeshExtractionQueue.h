@@ -41,13 +41,20 @@ class MeshExtractionQueue
 {
 public:
   /**
+   * @brief Construct a queue with a conservative active-job limit
+   * @param maxActiveJobs Maximum queued/running jobs. Values below one are clamped to one.
+   */
+  explicit MeshExtractionQueue(std::size_t maxActiveJobs = 1);
+
+  /**
    * @brief Queue one extraction job unless the key is already active
    * @param key Geometry key produced by the job
+   * @param description Human-readable description of the mesh being computed
    * @param job CPU-only extraction job
    * @return True when a new job was queued
    * @throw Propagates allocation failures or `std::async` launch failures
    */
-  bool submit(MeshGeometryKey key, MeshExtractionJob job);
+  bool submit(MeshGeometryKey key, std::string description, MeshExtractionJob job);
 
   /**
    * @brief Move finished job results out of the queue
@@ -69,14 +76,35 @@ public:
    */
   std::size_t activeCount() const noexcept;
 
+  /**
+   * @brief Return descriptions for queued or running jobs
+   * @return Active job descriptions in queue order
+   * @throw Propagates allocation failures
+   */
+  std::vector<std::string> activeDescriptions() const;
+
+  /**
+   * @brief Return the maximum number of queued or running jobs
+   * @return Active-job limit
+   */
+  std::size_t maxActiveJobs() const noexcept;
+
+  /**
+   * @brief Set the maximum number of queued or running jobs
+   * @param maxActiveJobs Active-job limit. Values below one are clamped to one.
+   */
+  void setMaxActiveJobs(std::size_t maxActiveJobs) noexcept;
+
 private:
   struct ActiveJob
   {
     MeshGeometryKey key;
+    std::string description;
     std::future<MeshExtractionJobResult> future;
   };
 
   std::vector<ActiveJob> m_activeJobs;
+  std::size_t m_maxActiveJobs = 1;
 };
 
 /**

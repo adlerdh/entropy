@@ -20,7 +20,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   spec.m_preferredDefaultRenderedImages = {0, 2};
   spec.m_defaultRenderAllImages = false;
   spec.m_imageSelection.m_renderedImageIndices = {2};
-  spec.m_imageSelection.m_volumeRenderedImageIndices = {1};
+  spec.m_imageSelection.m_volumeRenderedImageIndices = {1, 2};
   spec.m_imageSelection.m_metricImageIndices = {0, 2};
 
   layout::ViewSpec first;
@@ -44,7 +44,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   first.m_preferredDefaultRenderedImages = {1};
   first.m_defaultRenderAllImages = false;
   first.m_imageSelection.m_renderedImageIndices = {1};
-  first.m_imageSelection.m_volumeRenderedImageIndices = {2};
+  first.m_imageSelection.m_volumeRenderedImageIndices = {0, 2};
   first.m_imageSelection.m_metricImageIndices = {0, 1};
   first.m_threeDProjectionType = 0;
   first.m_threeDOrbitTargetMode = 1;

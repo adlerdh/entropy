@@ -8,6 +8,8 @@
 
 #include <glad/glad.h>
 
+#include <glm/vec2.hpp>
+
 #include <array>
 #include <cstdint>
 
@@ -214,13 +216,17 @@ void resolveDdp(const MeshDdpRenderRequest& request, const ScopedDdpGlState& sco
   scopedState.restore();
   glDisable(GL_DEPTH_TEST);
   glDepthMask(GL_FALSE);
-  glDisable(GL_BLEND);
+  glEnable(GL_BLEND);
+  glBlendEquation(GL_FUNC_ADD);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   request.resources.frontColorTexture(currentId).bind(k_resolveFrontTextureUnit);
   request.resources.backColorTexture().bind(k_resolveBackTextureUnit);
   request.resolveProgram.use();
   request.resolveProgram.setUniform("u_frontColorTex", static_cast<GLint>(k_resolveFrontTextureUnit));
   request.resolveProgram.setUniform("u_backColorTex", static_cast<GLint>(k_resolveBackTextureUnit));
+  const GlViewport viewport = currentViewport();
+  request.resolveProgram.setUniform("u_viewportOrigin", glm::ivec2{viewport.x, viewport.y});
   drawFullScreenTriangle(request.resources);
   request.resolveProgram.stopUse();
   request.resources.backColorTexture().unbind(k_resolveBackTextureUnit);

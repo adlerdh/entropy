@@ -111,8 +111,11 @@ void FrameImageSelection::setImageVolumeRendered(
     return;
   }
 
-  m_volumeRenderedImageUids.clear();
-  m_volumeRenderedImageUids.push_back(imageUid);
+  if (contains(m_volumeRenderedImageUids, imageUid)) {
+    return;
+  }
+
+  insertByImageOrder(m_volumeRenderedImageUids, imageUid, orderedImageUids);
 }
 
 const std::list<uuids::uuid>& FrameImageSelection::volumeRenderedImages() const
@@ -122,16 +125,13 @@ const std::list<uuids::uuid>& FrameImageSelection::volumeRenderedImages() const
 
 void FrameImageSelection::setVolumeRenderedImages(const std::list<uuids::uuid>& imageUids)
 {
-  m_volumeRenderedImageUids.clear();
-  if (!imageUids.empty()) {
-    m_volumeRenderedImageUids.push_back(imageUids.front());
-  }
+  m_volumeRenderedImageUids = imageUids;
 }
 
 void FrameImageSelection::ensureVolumeRenderedImageSelected()
 {
   if (m_volumeRenderedImageUids.empty() && !m_renderedImageUids.empty()) {
-    m_volumeRenderedImageUids.push_back(m_renderedImageUids.front());
+    m_volumeRenderedImageUids = m_renderedImageUids;
   }
 }
 
@@ -222,7 +222,7 @@ void FrameImageSelection::updateImageOrdering(const uuid_range_t& orderedImageUi
 {
   m_renderedImageUids = image_selection::reorderSelectedImages(m_renderedImageUids, orderedImageUids);
   m_metricImageUids = image_selection::reorderSelectedImages(m_metricImageUids, orderedImageUids, sk_maxMetricImages);
-  m_volumeRenderedImageUids = image_selection::reorderSelectedImages(m_volumeRenderedImageUids, orderedImageUids, 1u);
+  m_volumeRenderedImageUids = image_selection::reorderSelectedImages(m_volumeRenderedImageUids, orderedImageUids);
 }
 
 } // namespace viewer

@@ -400,6 +400,7 @@ json toJson(
        {{"limit", renderPreferences.limitFrameRate},
         {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
       {"camera", {{"reversePovRotation", renderPreferences.reversePovRotation}}},
+      {"mesh", {{"generationThreads", renderPreferences.meshGenerationThreadCount}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
         {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
@@ -612,6 +613,12 @@ void applyJson(
     }
     if (const auto camera = rendering->find("camera"); camera != rendering->end() && camera->is_object()) {
       setFromJson(renderPreferences.reversePovRotation, *camera, "reversePovRotation");
+    }
+    if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
+      if (const auto threads = mesh->find("generationThreads"); threads != mesh->end() && threads->is_number_unsigned())
+      {
+        renderPreferences.meshGenerationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
+      }
     }
     if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {
       setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");

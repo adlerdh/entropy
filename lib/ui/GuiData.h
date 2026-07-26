@@ -182,6 +182,18 @@ struct GuiData
 
   std::shared_ptr<LoadingStatus> m_loadingStatus = std::make_shared<LoadingStatus>(); //!< Active image-load status
 
+  struct MeshExtractionStatus
+  {
+    mutable std::mutex mutex;               //!< Guards visibility and current job labels
+    bool visible = false;                   //!< Show the mesh extraction popup
+    std::string title = "Computing meshes"; //!< Popup title text
+    std::size_t activeJobs = 0;             //!< Number of queued or running CPU mesh jobs
+    std::vector<std::string> descriptions;  //!< Human-readable active mesh jobs
+  };
+
+  std::shared_ptr<MeshExtractionStatus> m_meshExtractionStatus =
+    std::make_shared<MeshExtractionStatus>(); //!< Active CPU mesh extraction status
+
   /// Number of already-finalized images that image-dependent panels may render while a background load is active.
   std::optional<std::size_t> m_visibleImageCountDuringLoad = std::nullopt;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshRenderableFactory.h"
 
 #include <cstdint>
 
@@ -8,9 +9,9 @@ namespace rendering::mesh
 {
 
 /**
- * @brief Algorithm name used by the first built-in scalar-grid isosurface extractor
+ * @brief Algorithm name used by the built-in scalar-grid isosurface extractor
  */
-inline constexpr const char* kScalarGridIsosurfaceAlgorithm = "scalar-grid-marching-tetrahedra";
+inline constexpr const char* kScalarGridIsosurfaceAlgorithm = "scalar-grid-vtk-flying-edges-3d";
 
 /**
  * @brief Version for the built-in scalar-grid isosurface extractor
@@ -35,6 +36,16 @@ struct IsosurfaceMeshEligibility
  * @return True when the mesh path can represent the surface without a known visual regression
  */
 bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) noexcept;
+
+/**
+ * @brief Select the mesh compositing path for an isosurface alpha value
+ * @param alpha Effective non-premultiplied surface alpha
+ * @param translucentMode Compositing path used for translucent surfaces
+ * @return Opaque compositing for fully opaque surfaces, otherwise the requested translucent compositing path
+ */
+MeshCompositingMode compositingModeForIsosurfaceAlpha(
+  float alpha,
+  MeshCompositingMode translucentMode = MeshCompositingMode::AlphaOverDdp) noexcept;
 
 /**
  * @brief Build an extraction request for one image isosurface using the built-in scalar-grid backend

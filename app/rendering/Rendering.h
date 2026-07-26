@@ -277,6 +277,13 @@ private:
   /// Ordered image/segmentation pairs currently bound for one image, metric, or raycast draw.
   using CurrentImages = std::vector<ImgSegPair>;
 
+  /// Isosurface currently being edited and therefore rendered through the live raycast path.
+  struct ActiveIsosurfaceEdit
+  {
+    ImgSegPair imageSegPair;   //!< Image/segmentation pair that owns the edited surface
+    uuids::uuid isosurfaceUid; //!< Edited isosurface
+  };
+
   /// Logical mesh handles keyed by their geometry-producing inputs.
   using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
   using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
@@ -364,5 +371,8 @@ private:
   bool m_showOverlays; //!< Global runtime overlay switch used by the view overlay cycling actions
 
   /// Refresh the CPU-side isosurface arrays consumed by the 3D raycast shader for one image.
-  void updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid);
+  void updateIsosurfaceDataFor3d(
+    AppData& appData,
+    const uuids::uuid& imageUid,
+    const std::optional<uuids::uuid>& onlyIsosurfaceUid = std::nullopt);
 };

@@ -2206,6 +2206,13 @@ void renderRaycastingTab(RenderData& renderData)
     "Render committed opaque isosurfaces as extracted meshes when possible; raycasting is still used while editing");
 
   ImGui::BeginDisabled(!renderData.m_isosurfaceMeshRenderingEnabled);
+  int meshGenerationThreadCount = static_cast<int>(renderData.m_meshGenerationThreadCount);
+  if (ImGui::InputInt("Mesh generation threads", &meshGenerationThreadCount)) {
+    renderData.m_meshGenerationThreadCount = static_cast<uint32_t>(std::clamp(meshGenerationThreadCount, 0, 64));
+  }
+  ImGui::SameLine();
+  helpMarker("Maximum VTK CPU threads used by one mesh extraction job. Zero uses a conservative automatic value");
+
   const auto meshLightingPlan = rendering::mesh::meshAdvancedLightingPlan(
     renderData.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{

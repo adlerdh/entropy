@@ -11,7 +11,6 @@ uniform float u_ambientOcclusion;
 uniform int u_shadingModel;
 uniform bool u_hasVertexColors;
 uniform vec3 u_cameraWorldPosition;
-uniform vec3 u_lightDirectionWorld;
 uniform bool u_shadowMapEnabled;
 uniform sampler2D u_shadowMapTex;
 uniform mat4 u_lightClip_T_world;
@@ -31,8 +30,8 @@ const float kPi = 3.14159265359;
 vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection)
 {
   vec3 halfVector = normalize(lightDirection + viewDirection);
-  float diffuse = max(dot(normal, lightDirection), 0.0);
-  float specular = pow(max(dot(normal, halfVector), 0.0), 32.0);
+  float diffuse = abs(dot(normal, lightDirection));
+  float specular = pow(abs(dot(normal, halfVector)), 32.0);
   return albedo * (0.18 + 0.82 * diffuse) + vec3(0.18 * specular);
 }
 
@@ -116,8 +115,8 @@ void main()
   }
 
   vec3 normal = normalize(v_worldNormal);
-  vec3 lightDirection = normalize(u_lightDirectionWorld);
   vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
+  vec3 lightDirection = viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
   vec3 litColor = u_shadingModel == kShadingModelPhysicallyBased
                     ? physicallyBasedColor(color.rgb, normal, lightDirection, viewDirection)

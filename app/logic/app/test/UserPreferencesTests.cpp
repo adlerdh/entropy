@@ -153,6 +153,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.renderFrontFaces = false;
   preferences.renderBackFaces = true;
   preferences.reversePovRotation = true;
+  preferences.meshGenerationThreadCount = 3;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
   preferences.asciiEnabled = true;
   preferences.asciiCellSizePx = {10.0f, 20.0f};
@@ -325,6 +326,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.renderFrontFaces == expected.renderFrontFaces);
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
+  CHECK(actual.meshGenerationThreadCount == expected.meshGenerationThreadCount);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
   CHECK(actual.asciiEnabled == expected.asciiEnabled);
   CHECK(actual.asciiCellSizePx == expected.asciiCellSizePx);

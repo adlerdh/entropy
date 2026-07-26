@@ -129,6 +129,7 @@ struct RenderPreferences
   bool renderFrontFaces = true;
   bool renderBackFaces = true;
   bool reversePovRotation = false;
+  uint32_t meshGenerationThreadCount = 0;
   SegMaskingForRaycasting segmentationMasking = SegMaskingForRaycasting::Disabled;
 
   bool asciiEnabled = false;

@@ -7,7 +7,6 @@ in vec4 v_color;
 uniform vec4 u_baseColor;
 uniform bool u_hasVertexColors;
 uniform vec3 u_cameraWorldPosition;
-uniform vec3 u_lightDirectionWorld;
 uniform int u_clipPlaneCount;
 uniform vec4 u_clipPlanes[8];
 

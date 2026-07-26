@@ -26,6 +26,7 @@ taken from the upstream license files for the pinned source versions.
 | [spdlog](https://github.com/gabime/spdlog) | v1.17.0 | https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.tar.gz | MIT |
 | [stduuid](https://github.com/mariusbancila/stduuid) | v1.2.3 | https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz | MIT |
 | [TinyFSM](https://github.com/digint/tinyfsm) | v1.15.1 | https://github.com/digint/tinyfsm/archive/01908cab0397fcdadb0a14e9a3187c308e2708ca.tar.gz | MIT |
+| [Visualization Toolkit (VTK)](https://vtk.org/) | v9.6.2 | https://github.com/Kitware/VTK/archive/refs/tags/v9.6.2.tar.gz | BSD-3-Clause |
 
 Qt Base is available upstream under multiple license options. Entropy uses the open-source LGPL-3.0-only option for Qt
 Core and configures Qt as a shared-library build so QtCore is dynamically linked.

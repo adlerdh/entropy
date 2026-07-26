@@ -10,9 +10,15 @@ bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) n
   }
 
   // Keep the handoff conservative. Raycasting remains the interactive path while the isovalue is actively changing,
-  // and warping, transparency, and rim lighting still have raycast-only behavior.
-  return !eligibility.renderWarped && !eligibility.rimLightingEnabled && !eligibility.valueEditInProgress &&
-         eligibility.opacity >= 0.999f;
+  // and warping and rim lighting still have raycast-only behavior.
+  return !eligibility.renderWarped && !eligibility.rimLightingEnabled && !eligibility.valueEditInProgress;
+}
+
+MeshCompositingMode compositingModeForIsosurfaceAlpha(
+  const float alpha,
+  const MeshCompositingMode translucentMode) noexcept
+{
+  return alpha >= 0.999f ? MeshCompositingMode::Opaque : translucentMode;
 }
 
 IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(

@@ -106,7 +106,6 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
   uniforms.insertUniform("u_hasVertexColors", UniformType::Bool, false);
   uniforms.insertUniform("u_cameraWorldPosition", UniformType::Vec3, glm::vec3{0.0f});
-  uniforms.insertUniform("u_lightDirectionWorld", UniformType::Vec3, glm::vec3{0.4f, 0.6f, 0.7f});
   uniforms.insertUniform("u_shadowMapEnabled", UniformType::Bool, false);
   uniforms.insertUniform("u_shadowMapTex", UniformType::Sampler, 7, k_optionalUniform);
   uniforms.insertUniform("u_lightClip_T_world", UniformType::Mat4, glm::mat4{1.0f});
@@ -267,5 +266,6 @@ bool Rendering::createMeshDdpResolveProgram(GLShaderProgram& program)
   Uniforms fsUniforms;
   fsUniforms.insertUniform("u_frontColorTex", UniformType::Sampler, 0, k_optionalUniform);
   fsUniforms.insertUniform("u_backColorTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms.insertUniform("u_viewportOrigin", UniformType::IVec2, glm::ivec2{0, 0});
   return createFullscreenMeshDdpProgram(program, "app/rendering/shaders/mesh/MeshDdpResolve.fs", std::move(fsUniforms));
 }

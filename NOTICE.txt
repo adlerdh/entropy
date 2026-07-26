@@ -1,7 +1,6 @@
 Entropy Medical Image Viewer
 
-Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of
-Pennsylvania.
+Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania.
 
 This product includes software developed for Entropy.
 Project URL: https://github.com/adlerdh/entropy

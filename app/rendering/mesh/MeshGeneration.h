@@ -1,0 +1,55 @@
+#pragma once
+
+#include "rendering/mesh/MeshData.h"
+#include "rendering/mesh/MeshScalarGrid.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+
+namespace rendering::mesh
+{
+
+/**
+ * @brief Runtime options for CPU mesh generation backends
+ */
+struct MeshGenerationOptions
+{
+  /**
+   * @brief Maximum number of CPU threads the backend may use
+   *
+   * A value of zero chooses a conservative automatic count that leaves CPU capacity for the UI, texture uploads, and
+   * other background work.
+   */
+  std::size_t threadCount = 0;
+};
+
+/**
+ * @brief Generate an isosurface mesh from a scalar volume using VTK Flying Edges 3D
+ *
+ * The public API stays VTK-free. The implementation converts the scalar grid to `vtkImageData`, runs Flying Edges,
+ * applies the grid transform, cleans/triangulates the output, and computes point normals for rendering.
+ *
+ * @param grid Scalar volume in i-fastest order
+ * @param isoValue Scalar value to extract
+ * @param options Backend runtime options
+ * @return Triangle mesh, or empty when no surface can be extracted
+ */
+std::optional<MeshData>
+generateIsoSurfaceMesh(const ScalarGrid3D& grid, double isoValue, const MeshGenerationOptions& options = {});
+
+/**
+ * @brief Generate a label-boundary mesh from a scalar segmentation volume using VTK Discrete Flying Edges 3D
+ *
+ * Discrete Flying Edges is used instead of thresholding to a floating-point mask so label boundaries remain tied to the
+ * integer segmentation data.
+ *
+ * @param grid Scalar label volume in i-fastest order
+ * @param labelValue Label value to extract
+ * @param options Backend runtime options
+ * @return Triangle mesh, or empty when no surface can be extracted
+ */
+std::optional<MeshData>
+generateLabelMesh(const ScalarGrid3D& grid, int64_t labelValue, const MeshGenerationOptions& options = {});
+
+} // namespace rendering::mesh
