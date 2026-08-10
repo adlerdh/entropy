@@ -784,10 +784,10 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.showImagePlanesIn3D = currentPreferences.showImagePlanesIn3D;
   preferences.modulateImagePlaneOpacityWithViewAngle = currentPreferences.modulateImagePlaneOpacityWithViewAngle;
   preferences.shadeImagePlanesIn3D = currentPreferences.shadeImagePlanesIn3D;
-  preferences.imagePlaneAmbient = currentPreferences.imagePlaneAmbient;
-  preferences.imagePlaneDiffuse = currentPreferences.imagePlaneDiffuse;
-  preferences.imagePlaneSpecular = currentPreferences.imagePlaneSpecular;
-  preferences.imagePlaneShininess = currentPreferences.imagePlaneShininess;
+  preferences.lightingAmbient = currentPreferences.lightingAmbient;
+  preferences.lightingDiffuse = currentPreferences.lightingDiffuse;
+  preferences.lightingSpecular = currentPreferences.lightingSpecular;
+  preferences.lightingSpecularPower = currentPreferences.lightingSpecularPower;
   preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
   preferences.renderBackFaces = currentPreferences.renderBackFaces;
   preferences.segmentationMasking = currentPreferences.segmentationMasking;

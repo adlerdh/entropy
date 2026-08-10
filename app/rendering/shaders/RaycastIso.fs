@@ -36,7 +36,10 @@ uniform float u_isoRimPowers[NISO];
 uniform vec3 u_ambient[NISO];
 uniform vec3 u_diffuse[NISO];
 uniform vec3 u_specular[NISO];
-uniform float u_shininess[NISO];
+uniform float u_lightingAmbient;
+uniform float u_lightingDiffuse;
+uniform float u_lightingSpecular;
+uniform float u_lightingSpecularPower;
 
 uniform vec4 u_bgColor; // premultiplied by alpha
 uniform bool u_bgEdgeBrighteningEnabled;
@@ -231,10 +234,11 @@ vec4 shade(vec3 worldLightDir, vec3 worldViewDir, vec3 texNormal, int i)
   vec3 normal = worldNormalFromTextureGradient(texNormal);
   vec3 h = normalize(worldLightDir + worldViewDir);
   float d = abs(dot(normal, worldLightDir));
-  float s = pow(abs(dot(normal, h)), u_shininess[i]);
+  float s = pow(abs(dot(normal, h)), max(u_lightingSpecularPower, 0.001));
   float rim = pow(clamp(1.0 - abs(dot(normal, worldViewDir)), 0.0, 1.0), max(u_isoRimPowers[i], 1.0e-3));
   float alphaScale = mix(1.0, rim, clamp(u_isoRimOpacityStrengths[i], 0.0, 1.0));
-  vec3 litColor = u_ambient[i] + d * u_diffuse[i] + s * u_specular[i];
+  vec3 litColor =
+    u_lightingAmbient * u_ambient[i] + u_lightingDiffuse * d * u_diffuse[i] + u_lightingSpecular * s * u_specular[i];
   vec3 rimColor = max(u_diffuse[i], u_ambient[i]);
   litColor += max(u_isoRimEmissionStrengths[i], 0.0) * rim * rimColor;
 

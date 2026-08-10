@@ -280,9 +280,9 @@ bool threeDRenderingSettingsEqual(
   return a.m_transparentBackground == b.m_transparentBackground && a.m_imageBoxVisible == b.m_imageBoxVisible &&
          a.m_imagePlanesVisible == b.m_imagePlanesVisible &&
          a.m_imagePlaneViewAngleOpacity == b.m_imagePlaneViewAngleOpacity &&
-         a.m_imagePlaneShading == b.m_imagePlaneShading && a.m_imagePlaneAmbient == b.m_imagePlaneAmbient &&
-         a.m_imagePlaneDiffuse == b.m_imagePlaneDiffuse && a.m_imagePlaneSpecular == b.m_imagePlaneSpecular &&
-         a.m_imagePlaneShininess == b.m_imagePlaneShininess && a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
+         a.m_imagePlaneShading == b.m_imagePlaneShading && a.m_lightingAmbient == b.m_lightingAmbient &&
+         a.m_lightingDiffuse == b.m_lightingDiffuse && a.m_lightingSpecular == b.m_lightingSpecular &&
+         a.m_lightingSpecularPower == b.m_lightingSpecularPower && a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
          a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
          a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
          a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&

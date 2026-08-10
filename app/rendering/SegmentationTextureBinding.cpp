@@ -61,7 +61,6 @@ std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextu
 
   if (tableUid) {
     GLBufferTexture& tblTex = R.m_labelBufferTextures.at(*tableUid);
-    tblTex.bind(msk_segLabelTableTexSampler.index);
     tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
     boundBufferTextures.emplace_back(tblTex);
   }
@@ -69,7 +68,6 @@ std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextu
     // No label table, so bind the first available one:
     auto it = std::begin(R.m_labelBufferTextures);
     GLBufferTexture& tblTex = it->second;
-    tblTex.bind(msk_segLabelTableTexSampler.index);
     tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
     boundBufferTextures.emplace_back(tblTex);
   }

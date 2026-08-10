@@ -288,6 +288,10 @@ void MeshRenderer::drawBucket(
   program.use();
   program.setUniform("u_clip_T_world", context.clip_T_world);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
+  program.setUniform("u_lightingAmbient", context.lighting.x);
+  program.setUniform("u_lightingDiffuse", context.lighting.y);
+  program.setUniform("u_lightingSpecular", context.lighting.z);
+  program.setUniform("u_lightingSpecularPower", context.lighting.w);
   uploadShadowUniforms(context, program);
   uploadAmbientOcclusionUniforms(context, program);
 

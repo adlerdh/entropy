@@ -10,7 +10,7 @@
 namespace rendering::mesh
 {
 
-MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View& view)
+MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View& view, const glm::vec4& lighting)
 {
   const glm::vec3 cameraFrontWorld = helper::worldDirection(view.camera(), Directions::View::Front);
 
@@ -20,6 +20,7 @@ MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View&
     .cameraFrontWorld = cameraFrontWorld,
     // Shadow and future advanced-lighting passes use a directional approximation of the shader's headlight.
     .lightDirectionWorld = -cameraFrontWorld,
+    .lighting = lighting,
     .fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f},
     .meshLookup = [&gpuStore](const MeshHandle& handle) -> const MeshGpuData* {
       return gpuStore.lookup(handle);

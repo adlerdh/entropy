@@ -208,10 +208,10 @@ struct ProjectThreeDRenderingSettings
   bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
   bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
   bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
-  float m_imagePlaneAmbient = 0.35f;                      //!< Image-plane shading ambient term
-  float m_imagePlaneDiffuse = 0.65f;                      //!< Image-plane shading diffuse term
-  float m_imagePlaneSpecular = 0.18f;                     //!< Image-plane shading specular term
-  float m_imagePlaneShininess = 32.0f;                    //!< Image-plane shading specular exponent
+  float m_lightingAmbient = 0.35f;                        //!< 3D ADS ambient term
+  float m_lightingDiffuse = 0.55f;                        //!< 3D ADS diffuse term
+  float m_lightingSpecular = 0.10f;                       //!< 3D ADS specular term
+  float m_lightingSpecularPower = 16.0f;                  //!< 3D ADS specular exponent
   bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D views
   float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
   bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views

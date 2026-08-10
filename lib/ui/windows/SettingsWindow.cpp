@@ -2171,6 +2171,38 @@ void render3DRenderingTab(RenderData& renderData)
   helpMarker("Make the 3D view background transparent for raycast and mesh rendering");
 
   ImGui::Spacing();
+  ImGui::SeparatorText("3D lighting");
+
+  const float lightingWidth = ImGui::CalcItemWidth();
+  ImGui::PushItemWidth(lightingWidth);
+
+  if (mySliderF32("Ambient", &renderData.m_lightingAmbient, 0.0f, 2.0f, "%0.2f")) {
+    renderData.m_lightingAmbient = std::clamp(renderData.m_lightingAmbient, 0.0f, 2.0f);
+  }
+  ImGui::SameLine();
+  helpMarker("Base brightness for Blinn-Phong lighting in 3D image planes, raycast isosurfaces, and mesh surfaces");
+
+  if (mySliderF32("Diffuse", &renderData.m_lightingDiffuse, 0.0f, 2.0f, "%0.2f")) {
+    renderData.m_lightingDiffuse = std::clamp(renderData.m_lightingDiffuse, 0.0f, 2.0f);
+  }
+  ImGui::SameLine();
+  helpMarker("Brightness that increases as a 3D surface or image plane faces the camera");
+
+  if (mySliderF32("Specular", &renderData.m_lightingSpecular, 0.0f, 2.0f, "%0.2f")) {
+    renderData.m_lightingSpecular = std::clamp(renderData.m_lightingSpecular, 0.0f, 2.0f);
+  }
+  ImGui::SameLine();
+  helpMarker("Strength of the headlight highlight; high values can clip after ambient, diffuse, and specular add");
+
+  if (mySliderF32("Specular power", &renderData.m_lightingSpecularPower, 1.0f, 128.0f, "%0.1f")) {
+    renderData.m_lightingSpecularPower = std::clamp(renderData.m_lightingSpecularPower, 1.0f, 128.0f);
+  }
+  ImGui::SameLine();
+  helpMarker("Higher values make the specular highlight smaller and sharper");
+
+  ImGui::PopItemWidth();
+
+  ImGui::Spacing();
   ImGui::SeparatorText("3D image planes");
 
   ImGui::Checkbox("Show image planes in 3D", &renderData.m_showImagePlanesIn3D);
@@ -2185,37 +2217,6 @@ void render3DRenderingTab(RenderData& renderData)
   ImGui::Checkbox("Blinn-Phong shading", &renderData.m_shadeImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker("Apply headlight shading to image planes so their orientation is easier to read in 3D");
-
-  if (renderData.m_shadeImagePlanesIn3D) {
-    const float imagePlaneLightingWidth = ImGui::CalcItemWidth();
-    ImGui::PushItemWidth(imagePlaneLightingWidth);
-
-    if (mySliderF32("Ambient", &renderData.m_imagePlaneAmbient, 0.0f, 2.0f, "%0.2f")) {
-      renderData.m_imagePlaneAmbient = std::clamp(renderData.m_imagePlaneAmbient, 0.0f, 2.0f);
-    }
-    ImGui::SameLine();
-    helpMarker("Base brightness applied uniformly to 3D image planes");
-
-    if (mySliderF32("Diffuse", &renderData.m_imagePlaneDiffuse, 0.0f, 2.0f, "%0.2f")) {
-      renderData.m_imagePlaneDiffuse = std::clamp(renderData.m_imagePlaneDiffuse, 0.0f, 2.0f);
-    }
-    ImGui::SameLine();
-    helpMarker("Brightness that increases as an image plane faces the camera");
-
-    if (mySliderF32("Specular", &renderData.m_imagePlaneSpecular, 0.0f, 2.0f, "%0.2f")) {
-      renderData.m_imagePlaneSpecular = std::clamp(renderData.m_imagePlaneSpecular, 0.0f, 2.0f);
-    }
-    ImGui::SameLine();
-    helpMarker("Strength of the headlight highlight on 3D image planes");
-
-    if (mySliderF32("Shininess", &renderData.m_imagePlaneShininess, 1.0f, 128.0f, "%0.1f")) {
-      renderData.m_imagePlaneShininess = std::clamp(renderData.m_imagePlaneShininess, 1.0f, 128.0f);
-    }
-    ImGui::SameLine();
-    helpMarker("Higher values make the specular highlight smaller and sharper");
-
-    ImGui::PopItemWidth();
-  }
   ImGui::EndDisabled();
 
   ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);

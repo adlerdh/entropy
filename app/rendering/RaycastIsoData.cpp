@@ -38,7 +38,6 @@ void Rendering::updateIsosurfaceDataFor3d(
   std::fill(std::begin(isoData.ambient), std::end(isoData.ambient), glm::vec3{0.0f});
   std::fill(std::begin(isoData.diffuse), std::end(isoData.diffuse), glm::vec3{0.0f});
   std::fill(std::begin(isoData.specular), std::end(isoData.specular), glm::vec3{0.0f});
-  std::fill(std::begin(isoData.shininesses), std::end(isoData.shininesses), 0.0f);
 
   const Image* image = appData.image(imageUid);
   if (!image) {
@@ -89,7 +88,6 @@ void Rendering::updateIsosurfaceDataFor3d(
     isoData.rimOpacityStrengths[i] = surface->rimLightingEnabled ? surface->rimOpacityStrength : 0.0f;
     isoData.rimEmissionStrengths[i] = surface->rimLightingEnabled ? surface->rimEmissionStrength : 0.0f;
     isoData.rimPowers[i] = surface->rimPower;
-    isoData.shininesses[i] = surface->material.shininess;
 
     if (settings.applyImageColormapToIsosurfaces()) {
       // Color the surface using the current image colormap:

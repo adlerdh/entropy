@@ -9,6 +9,10 @@ uniform float u_metallic;
 uniform float u_roughness;
 uniform float u_ambientOcclusion;
 uniform int u_shadingModel;
+uniform float u_lightingAmbient;
+uniform float u_lightingDiffuse;
+uniform float u_lightingSpecular;
+uniform float u_lightingSpecularPower;
 uniform bool u_rimLightingEnabled;
 uniform float u_rimOpacityStrength;
 uniform float u_rimEmissionStrength;
@@ -37,8 +41,8 @@ vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDire
 {
   vec3 halfVector = normalize(lightDirection + viewDirection);
   float diffuse = abs(dot(normal, lightDirection));
-  float specular = pow(abs(dot(normal, halfVector)), 32.0);
-  return albedo * (0.18 + 0.82 * diffuse) + vec3(0.18 * specular);
+  float specular = pow(abs(dot(normal, halfVector)), max(u_lightingSpecularPower, 0.001));
+  return albedo * (u_lightingAmbient + u_lightingDiffuse * diffuse) + vec3(u_lightingSpecular * specular);
 }
 
 float distributionGgx(vec3 normal, vec3 halfVector, float roughness)

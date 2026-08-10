@@ -951,10 +951,6 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
-      ImGui::Checkbox("Show surface in 3D", &surface->showIn3d);
-      ImGui::SameLine();
-      helpMarker("Show this isosurface in 3D raycast and mesh views");
-
       if (ImGui::TreeNode("3D rim lighting")) {
         ImGui::Checkbox("Enable", &surface->rimLightingEnabled);
         ImGui::SameLine();
@@ -1046,13 +1042,6 @@ void renderIsosurfacesHeader(
         }
         ImGui::SameLine();
         helpMarker("Show isocontours in 2D image planes");
-
-        bool showIn3d = imgSettings.showIsosurfacesIn3D();
-        if (ImGui::Checkbox("Show isosurfaces in 3D", &showIn3d)) {
-          imgSettings.setShowIsosurfacesIn3D(showIn3d);
-        }
-        ImGui::SameLine();
-        helpMarker("Show isosurfaces in 3D raycast and mesh views");
 
         bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
         if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {

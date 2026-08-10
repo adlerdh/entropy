@@ -50,7 +50,10 @@ void Rendering::setRaycastIsoUniforms(
   program.setUniform("u_ambient", renderData.m_isosurfaceData.ambient);
   program.setUniform("u_diffuse", renderData.m_isosurfaceData.diffuse);
   program.setUniform("u_specular", renderData.m_isosurfaceData.specular);
-  program.setUniform("u_shininess", renderData.m_isosurfaceData.shininesses);
+  program.setUniform("u_lightingAmbient", renderData.m_lightingAmbient);
+  program.setUniform("u_lightingDiffuse", renderData.m_lightingDiffuse);
+  program.setUniform("u_lightingSpecular", renderData.m_lightingSpecular);
+  program.setUniform("u_lightingSpecularPower", renderData.m_lightingSpecularPower);
 
   program.setUniform("u_samplingFactor", std::clamp(renderData.m_raycastSamplingFactor, 0.5f, 2.0f));
   program.setUniform("u_imgInvDims", 1.0f / glm::vec3{image.header().pixelDimensions()});

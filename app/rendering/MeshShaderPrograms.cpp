@@ -111,6 +111,10 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_roughness", UniformType::Float, 0.55f);
   uniforms.insertUniform("u_ambientOcclusion", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
+  uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.35f);
+  uniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.55f);
+  uniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.10f);
+  uniforms.insertUniform("u_lightingSpecularPower", UniformType::Float, 16.0f);
   uniforms.insertUniform("u_rimLightingEnabled", UniformType::Bool, false);
   uniforms.insertUniform("u_rimOpacityStrength", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_rimEmissionStrength", UniformType::Float, 1.0f);

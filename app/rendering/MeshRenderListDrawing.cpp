@@ -101,10 +101,18 @@ void Rendering::drawMeshRenderListForView(
   std::array<GLint, 4> viewViewport{};
   glGetIntegerv(GL_VIEWPORT, viewViewport.data());
 
-  rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(m_meshGpuStore, view);
+  const RenderData& renderData = m_appData.renderData();
+  rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(
+    m_meshGpuStore,
+    view,
+    glm::vec4{
+      renderData.m_lightingAmbient,
+      renderData.m_lightingDiffuse,
+      renderData.m_lightingSpecular,
+      renderData.m_lightingSpecularPower});
   context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
-    m_appData.renderData().m_meshAdvancedLightingSettings,
+    renderData.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{
       .shadowMapPassAvailable = true,
       .ambientOcclusionPassAvailable = true});

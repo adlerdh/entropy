@@ -329,13 +329,13 @@ struct RenderData
 
   bool m_shadeImagePlanesIn3D; //!< Apply headlight Blinn-Phong shading to 3D image planes
 
-  float m_imagePlaneAmbient; //!< Ambient term for 3D image-plane Blinn-Phong shading
+  float m_lightingAmbient; //!< Ambient term for 3D ADS lighting
 
-  float m_imagePlaneDiffuse; //!< Diffuse term for 3D image-plane Blinn-Phong shading
+  float m_lightingDiffuse; //!< Diffuse term for 3D ADS lighting
 
-  float m_imagePlaneSpecular; //!< Specular term for 3D image-plane Blinn-Phong shading
+  float m_lightingSpecular; //!< Specular term for 3D ADS lighting
 
-  float m_imagePlaneShininess; //!< Specular exponent for 3D image-plane Blinn-Phong shading
+  float m_lightingSpecularPower; //!< Specular exponent for 3D ADS lighting
 
   /// Whether committed opaque isosurfaces may be rendered as extracted meshes instead of raycast previews.
   bool m_isosurfaceMeshRenderingEnabled;
@@ -537,7 +537,6 @@ struct RenderData
     std::vector<glm::vec3> ambient;  //!< Ambient material colors
     std::vector<glm::vec3> diffuse;  //!< Diffuse material colors
     std::vector<glm::vec3> specular; //!< Specular material colors
-    std::vector<float> shininesses;  //!< Specular shininess values
   };
 
   IsosurfaceData m_isosurfaceData; //!< Packed isosurface parameters used by the current 3D raycast shader path

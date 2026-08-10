@@ -194,7 +194,6 @@ std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLab
     tableIt = std::begin(appData.renderData().m_labelBufferTextures);
   }
 
-  tableIt->second.bind(sk_segLabelTableTexSampler.index);
   tableIt->second.attachBufferToTexture(sk_segLabelTableTexSampler.index);
   boundTextures.emplace_back(tableIt->second);
   return boundTextures;
@@ -203,7 +202,7 @@ std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLab
 void unbindImagePlaneSegmentationLabelTableTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures)
 {
   for (const std::reference_wrapper<GLBufferTexture> texture : textures) {
-    texture.get().release(sk_segLabelTableTexSampler.index);
+    texture.get().unbind();
   }
 }
 
@@ -318,10 +317,10 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_hasVertexNormals", hasVertexNormals);
   program.setUniform("u_imagePlaneShadingEnabled", renderable.shadingEnabled);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
-  program.setUniform("u_imagePlaneAmbient", renderData.m_imagePlaneAmbient);
-  program.setUniform("u_imagePlaneDiffuse", renderData.m_imagePlaneDiffuse);
-  program.setUniform("u_imagePlaneSpecular", renderData.m_imagePlaneSpecular);
-  program.setUniform("u_imagePlaneShininess", renderData.m_imagePlaneShininess);
+  program.setUniform("u_lightingAmbient", renderData.m_lightingAmbient);
+  program.setUniform("u_lightingDiffuse", renderData.m_lightingDiffuse);
+  program.setUniform("u_lightingSpecular", renderData.m_lightingSpecular);
+  program.setUniform("u_lightingSpecularPower", renderData.m_lightingSpecularPower);
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_numCheckers", checkerboardSquares);
 

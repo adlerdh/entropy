@@ -35,10 +35,10 @@ uniform vec2 u_imgThresholds;            // lower/upper image thresholds (textur
 uniform float u_imgOpacity;              // image opacity
 uniform bool u_imagePlaneShadingEnabled; // apply headlight shading to 3D image planes
 uniform vec3 u_cameraWorldPosition;      // camera eye position for 3D image-plane shading
-uniform float u_imagePlaneAmbient;
-uniform float u_imagePlaneDiffuse;
-uniform float u_imagePlaneSpecular;
-uniform float u_imagePlaneShininess;
+uniform float u_lightingAmbient;
+uniform float u_lightingDiffuse;
+uniform float u_lightingSpecular;
+uniform float u_lightingSpecularPower;
 
 // Image color map adjustment uniforms:
 uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
@@ -96,9 +96,9 @@ float blinnPhongImagePlaneLighting(vec3 worldPosition, vec3 worldNormal)
   vec3 normal = worldNormal / normalLength;
   vec3 viewDirection = eyeVector / eyeVectorLength;
   float diffuse = abs(dot(normal, viewDirection));
-  float specular = pow(max(abs(dot(normal, viewDirection)), 0.0), max(u_imagePlaneShininess, 0.001));
-  float maxLighting = max(u_imagePlaneAmbient + u_imagePlaneDiffuse + u_imagePlaneSpecular, 1.0);
-  return clamp(u_imagePlaneAmbient + u_imagePlaneDiffuse * diffuse + u_imagePlaneSpecular * specular, 0.0, maxLighting);
+  float specular = pow(max(abs(dot(normal, viewDirection)), 0.0), max(u_lightingSpecularPower, 0.001));
+  float lighting = u_lightingAmbient + u_lightingDiffuse * diffuse + u_lightingSpecular * specular;
+  return clamp(lighting, 0.0, 1.0);
 }
 
 void main()

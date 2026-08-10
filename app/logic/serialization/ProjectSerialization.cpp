@@ -474,16 +474,16 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
     settings.m_imagePlaneViewAngleOpacity,
     defaults.m_imagePlaneViewAngleOpacity);
   addIfChanged(imagePlanes, "shading", settings.m_imagePlaneShading, defaults.m_imagePlaneShading);
-  json lighting = json::object();
-  addIfChanged(lighting, "ambient", settings.m_imagePlaneAmbient, defaults.m_imagePlaneAmbient);
-  addIfChanged(lighting, "diffuse", settings.m_imagePlaneDiffuse, defaults.m_imagePlaneDiffuse);
-  addIfChanged(lighting, "specular", settings.m_imagePlaneSpecular, defaults.m_imagePlaneSpecular);
-  addIfChanged(lighting, "shininess", settings.m_imagePlaneShininess, defaults.m_imagePlaneShininess);
-  if (!lighting.empty()) {
-    imagePlanes["lighting"] = std::move(lighting);
-  }
   if (!imagePlanes.empty()) {
     j["imagePlanes"] = std::move(imagePlanes);
+  }
+  json lighting = json::object();
+  addIfChanged(lighting, "ambient", settings.m_lightingAmbient, defaults.m_lightingAmbient);
+  addIfChanged(lighting, "diffuse", settings.m_lightingDiffuse, defaults.m_lightingDiffuse);
+  addIfChanged(lighting, "specular", settings.m_lightingSpecular, defaults.m_lightingSpecular);
+  addIfChanged(lighting, "specularPower", settings.m_lightingSpecularPower, defaults.m_lightingSpecularPower);
+  if (!lighting.empty()) {
+    j["lighting"] = std::move(lighting);
   }
   addIfChanged(j, "crosshairsGlyphVisible", settings.m_showCrosshairsIn3D, defaults.m_showCrosshairsIn3D);
   addIfChanged(
@@ -526,19 +526,19 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     if (const auto value = imagePlanes->find("shading"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlaneShading = value->get<bool>();
     }
-    if (const auto lighting = imagePlanes->find("lighting"); lighting != imagePlanes->end() && lighting->is_object()) {
-      if (const auto value = lighting->find("ambient"); value != lighting->end() && value->is_number()) {
-        settings.m_imagePlaneAmbient = std::clamp(value->get<float>(), 0.0f, 2.0f);
-      }
-      if (const auto value = lighting->find("diffuse"); value != lighting->end() && value->is_number()) {
-        settings.m_imagePlaneDiffuse = std::clamp(value->get<float>(), 0.0f, 2.0f);
-      }
-      if (const auto value = lighting->find("specular"); value != lighting->end() && value->is_number()) {
-        settings.m_imagePlaneSpecular = std::clamp(value->get<float>(), 0.0f, 2.0f);
-      }
-      if (const auto value = lighting->find("shininess"); value != lighting->end() && value->is_number()) {
-        settings.m_imagePlaneShininess = std::clamp(value->get<float>(), 1.0f, 128.0f);
-      }
+  }
+  if (const auto lighting = j.find("lighting"); lighting != j.end() && lighting->is_object()) {
+    if (const auto value = lighting->find("ambient"); value != lighting->end() && value->is_number()) {
+      settings.m_lightingAmbient = std::clamp(value->get<float>(), 0.0f, 2.0f);
+    }
+    if (const auto value = lighting->find("diffuse"); value != lighting->end() && value->is_number()) {
+      settings.m_lightingDiffuse = std::clamp(value->get<float>(), 0.0f, 2.0f);
+    }
+    if (const auto value = lighting->find("specular"); value != lighting->end() && value->is_number()) {
+      settings.m_lightingSpecular = std::clamp(value->get<float>(), 0.0f, 2.0f);
+    }
+    if (const auto value = lighting->find("specularPower"); value != lighting->end() && value->is_number()) {
+      settings.m_lightingSpecularPower = std::clamp(value->get<float>(), 1.0f, 128.0f);
     }
   }
   if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
