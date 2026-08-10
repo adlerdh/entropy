@@ -88,7 +88,7 @@ bool imageSettingsEqual(
          a->m_useDistanceMapForRaycasting == b->m_useDistanceMapForRaycasting &&
          a->m_isosurfacesVisible == b->m_isosurfacesVisible &&
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
-         a->m_showIsocontoursIn2D == b->m_showIsocontoursIn2D &&
+         a->m_showIsocontoursIn2D == b->m_showIsocontoursIn2D && a->m_showIsosurfacesIn3D == b->m_showIsosurfacesIn3D &&
          a->m_isocontourLineWidthIn2D == b->m_isocontourLineWidthIn2D &&
          a->m_isosurfaceOpacityModulator == b->m_isosurfaceOpacityModulator;
 }
@@ -155,9 +155,9 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 {
   return a.name == b.name && a.value == b.value && a.color == b.color &&
          surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
-         a.visible == b.visible && a.showIn2d == b.showIn2d && a.rimLightingEnabled == b.rimLightingEnabled &&
-         a.rimOpacityStrength == b.rimOpacityStrength && a.rimEmissionStrength == b.rimEmissionStrength &&
-         a.rimPower == b.rimPower;
+         a.visible == b.visible && a.showIn2d == b.showIn2d && a.showIn3d == b.showIn3d &&
+         a.rimLightingEnabled == b.rimLightingEnabled && a.rimOpacityStrength == b.rimOpacityStrength &&
+         a.rimEmissionStrength == b.rimEmissionStrength && a.rimPower == b.rimPower;
 }
 
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)
@@ -273,27 +273,42 @@ bool comparisonSettingsEqual(
          a.m_flashlightOverlayMovingImage == b.m_flashlightOverlayMovingImage;
 }
 
+bool threeDRenderingSettingsEqual(
+  const serialize::ProjectThreeDRenderingSettings& a,
+  const serialize::ProjectThreeDRenderingSettings& b)
+{
+  return a.m_transparentBackground == b.m_transparentBackground && a.m_imageBoxVisible == b.m_imageBoxVisible &&
+         a.m_imagePlanesVisible == b.m_imagePlanesVisible &&
+         a.m_imagePlaneViewAngleOpacity == b.m_imagePlaneViewAngleOpacity &&
+         a.m_imagePlaneShading == b.m_imagePlaneShading && a.m_imagePlaneAmbient == b.m_imagePlaneAmbient &&
+         a.m_imagePlaneDiffuse == b.m_imagePlaneDiffuse && a.m_imagePlaneSpecular == b.m_imagePlaneSpecular &&
+         a.m_imagePlaneShininess == b.m_imagePlaneShininess && a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
+         a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
+         a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
+         a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&
+         a.m_threeDCameraFrustumColor == b.m_threeDCameraFrustumColor;
+}
+
 bool raycastingSettingsEqual(
   const serialize::ProjectRaycastingSettings& a,
   const serialize::ProjectRaycastingSettings& b)
 {
-  return a.m_samplingFactor == b.m_samplingFactor &&
-         a.m_transparentBackgroundWhenNoHit == b.m_transparentBackgroundWhenNoHit &&
-         a.m_backgroundEdgeBrighteningEnabled == b.m_backgroundEdgeBrighteningEnabled &&
-         a.m_meshRenderingEnabled == b.m_meshRenderingEnabled && a.m_meshShadowsEnabled == b.m_meshShadowsEnabled &&
-         a.m_meshShadowMapSizePixels == b.m_meshShadowMapSizePixels &&
-         a.m_meshShadowStrength == b.m_meshShadowStrength && a.m_meshShadowDepthBias == b.m_meshShadowDepthBias &&
-         a.m_meshAmbientOcclusionEnabled == b.m_meshAmbientOcclusionEnabled &&
-         a.m_meshAmbientOcclusionRadiusPixels == b.m_meshAmbientOcclusionRadiusPixels &&
-         a.m_meshAmbientOcclusionStrength == b.m_meshAmbientOcclusionStrength &&
-         a.m_meshTranslucentCompositing == b.m_meshTranslucentCompositing &&
-         a.m_meshPickingEnabled == b.m_meshPickingEnabled && a.m_meshClipPlaneEnabled == b.m_meshClipPlaneEnabled &&
-         a.m_meshClipPlaneWorld == b.m_meshClipPlaneWorld && a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
-         a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
-         a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
-         a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&
-         a.m_threeDCameraFrustumColor == b.m_threeDCameraFrustumColor && a.m_renderFrontFaces == b.m_renderFrontFaces &&
+  return a.m_samplingFactor == b.m_samplingFactor && a.m_renderFrontFaces == b.m_renderFrontFaces &&
          a.m_renderBackFaces == b.m_renderBackFaces && a.m_segmentationMasking == b.m_segmentationMasking;
+}
+
+bool meshRenderingSettingsEqual(
+  const serialize::ProjectMeshRenderingSettings& a,
+  const serialize::ProjectMeshRenderingSettings& b)
+{
+  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_generationThreadCount == b.m_generationThreadCount &&
+         a.m_translucentCompositing == b.m_translucentCompositing && a.m_pickingEnabled == b.m_pickingEnabled &&
+         a.m_clipPlaneEnabled == b.m_clipPlaneEnabled && a.m_clipPlaneWorld == b.m_clipPlaneWorld &&
+         a.m_shadowsEnabled == b.m_shadowsEnabled && a.m_shadowMapSizePixels == b.m_shadowMapSizePixels &&
+         a.m_shadowStrength == b.m_shadowStrength && a.m_shadowDepthBias == b.m_shadowDepthBias &&
+         a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
+         a.m_ambientOcclusionRadiusPixels == b.m_ambientOcclusionRadiusPixels &&
+         a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength;
 }
 
 bool intensityProjectionSettingsEqual(
@@ -343,7 +358,9 @@ bool equivalent(const serialize::EntropyProject& a, const serialize::EntropyProj
          a.m_modifiedDefaultLayouts == b.m_modifiedDefaultLayouts && a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
          projectSynchronizationSettingsEqual(a.m_synchronization, b.m_synchronization) &&
          projectViewSettingsEqual(a.m_view, b.m_view) && comparisonSettingsEqual(a.m_comparison, b.m_comparison) &&
+         threeDRenderingSettingsEqual(a.m_threeDRendering, b.m_threeDRendering) &&
          raycastingSettingsEqual(a.m_raycasting, b.m_raycasting) &&
+         meshRenderingSettingsEqual(a.m_meshRendering, b.m_meshRendering) &&
          intensityProjectionSettingsEqual(a.m_intensityProjection, b.m_intensityProjection) &&
          segmentationDisplaySettingsEqual(a.m_segmentationDisplay, b.m_segmentationDisplay) &&
          isocontourDisplaySettingsEqual(a.m_isocontours, b.m_isocontours) &&

@@ -1,10 +1,13 @@
 #version 330 core
 
 layout(location = 0) in vec3 a_position;
+layout(location = 1) in vec3 a_normal;
 layout(location = 3) in vec3 a_texCoord;
 
 uniform mat4 u_clip_T_world;
 uniform mat4 u_world_T_mesh;
+uniform mat3 u_world_T_meshNormal;
+uniform bool u_hasVertexNormals;
 uniform float u_aspectRatio;
 uniform int u_numCheckers;
 
@@ -12,6 +15,7 @@ out VS_OUT
 {
   vec3 v_texCoord;
   vec3 v_worldPos;
+  vec3 v_worldNormal;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
@@ -26,6 +30,7 @@ void main()
 
   vs_out.v_texCoord = a_texCoord;
   vs_out.v_worldPos = worldPosition.xyz / worldPosition.w;
+  vs_out.v_worldNormal = u_hasVertexNormals ? normalize(u_world_T_meshNormal * a_normal) : vec3(0.0, 0.0, 1.0);
   vs_out.v_clipPos = clipPos;
   vs_out.v_checkerCoord = mix(
     vec2(checkerBase.x, checkerBase.y / u_aspectRatio),

@@ -1411,7 +1411,10 @@ float minPositiveSpacing(const Image& image)
 std::vector<double> pickableIsoValues(const AppData& appData, const uuid& imageUid, const Image& image)
 {
   const ImageSettings& settings = image.settings();
-  if (!settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible()) {
+  if (
+    !settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible() ||
+    !settings.showIsosurfacesIn3D())
+  {
     return {};
   }
 
@@ -1419,7 +1422,7 @@ std::vector<double> pickableIsoValues(const AppData& appData, const uuid& imageU
   const uint32_t activeComponent = settings.activeComponent();
   for (const uuid& surfaceUid : appData.isosurfaceUids(imageUid, activeComponent)) {
     const Isosurface* surface = appData.isosurface(imageUid, activeComponent, surfaceUid);
-    if (surface && surface->visible) {
+    if (surface && surface->visible && surface->showIn3d) {
       values.push_back(surface->value);
     }
   }

@@ -56,6 +56,10 @@ std::size_t MeshStyleKeyHash::operator()(const MeshStyleKey& key) const
   hashCombine(seed, key.material.roughness);
   hashCombine(seed, key.material.ambientOcclusion);
   hashCombine(seed, static_cast<int>(key.material.shadingModel));
+  hashCombine(seed, key.material.rimLightingEnabled);
+  hashCombine(seed, key.material.rimOpacityStrength);
+  hashCombine(seed, key.material.rimEmissionStrength);
+  hashCombine(seed, key.material.rimPower);
   hashCombine(seed, static_cast<int>(key.compositingMode));
   hashCombine(seed, static_cast<int>(key.fillMode));
   hashCombine(seed, key.backfaceCulling);

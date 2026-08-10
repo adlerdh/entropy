@@ -70,6 +70,14 @@ public:
   ~Rendering();
 
   /**
+   * @brief Clear renderer-owned OpenGL bindings before UI and window teardown.
+   *
+   * The OpenGL context must still be current. This removes stale texture, sampler, program, framebuffer, and VAO
+   * bindings so platform OpenGL drivers do not validate deleted or incomplete textures during shutdown.
+   */
+  void prepareForShutdown();
+
+  /**
    * @brief Initialize the initial OpenGL state and texture resources.
    */
   void init();
@@ -294,6 +302,8 @@ private:
   {
     uuids::uuid imageUid;                                        //!< Source image rendered on the plane
     rendering::mesh::MeshImagePlaneOrientation orientation = {}; //!< Orthogonal plane orientation
+    bool border = false;                                         //!< Whether the handle stores the border mesh
+    bool imageBox = false;                                       //!< Whether the handle stores the full image box
 
     bool operator==(const MeshImagePlaneHandleKey&) const = default;
   };
@@ -339,6 +349,20 @@ private:
   GLShaderProgram m_meshImagePlaneGrayLinearProgram; //!< Mesh image-plane shader for scalar 3D textures
 
   GLShaderProgram m_meshImagePlaneGrayLinearTexture2DProgram; //!< Mesh image-plane shader for scalar 2D textures
+
+  GLShaderProgram m_meshImagePlaneIsoContourProgram; //!< Mesh image-plane isocontour shader for scalar 3D textures
+
+  GLShaderProgram
+    m_meshImagePlaneIsoContourTexture2DProgram; //!< Mesh image-plane isocontour shader for scalar 2D textures
+
+  GLShaderProgram m_meshImagePlaneDdpInitProgram; //!< Mesh image-plane DDP depth initialization shader for 3D textures
+
+  GLShaderProgram
+    m_meshImagePlaneDdpInitTexture2DProgram; //!< Mesh image-plane DDP depth initialization shader for 2D textures
+
+  GLShaderProgram m_meshImagePlaneDdpPeelProgram; //!< Mesh image-plane DDP peeling shader for 3D textures
+
+  GLShaderProgram m_meshImagePlaneDdpPeelTexture2DProgram; //!< Mesh image-plane DDP peeling shader for 2D textures
 
   GLShaderProgram m_meshDdpInitProgram; //!< Mesh DDP attachment initialization shader
 

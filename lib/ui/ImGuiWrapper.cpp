@@ -4848,11 +4848,7 @@ void ImGuiWrapper::render()
         return false;
       }
       const auto& volumeImages = currentLayout.volumeRenderedImages();
-      if (!volumeImages.empty()) {
-        return currentLayout.isImageVolumeRendered(*imageUid);
-      }
-      const auto& renderedImages = currentLayout.renderedImages();
-      return !renderedImages.empty() && renderedImages.front() == *imageUid;
+      return !volumeImages.empty() && currentLayout.isImageVolumeRendered(*imageUid);
     };
 
     const ViewOverlayImageCallbacks imageCallbacks{
@@ -5005,11 +5001,7 @@ void ImGuiWrapper::render()
           return false;
         }
         const auto& volumeImages = view->volumeRenderedImages();
-        if (!volumeImages.empty()) {
-          return view->isImageVolumeRendered(*imageUid);
-        }
-        const auto& renderedImages = view->renderedImages();
-        return !renderedImages.empty() && renderedImages.front() == *imageUid;
+        return !volumeImages.empty() && view->isImageVolumeRendered(*imageUid);
       };
 
       const ViewOverlayImageCallbacks imageCallbacks{

@@ -108,6 +108,7 @@ void to_json(json& j, const Isosurface& surface)
   addIfChanged(j, "contourFillOpacity", surface.fillOpacity, defaults.fillOpacity);
   addIfChanged(j, "visible", surface.visible, defaults.visible);
   addIfChanged(j, "showContours2D", surface.showIn2d, defaults.showIn2d);
+  addIfChanged(j, "showSurface3D", surface.showIn3d, defaults.showIn3d);
 
   json rimLighting = json::object();
   addIfChanged(rimLighting, "enabled", surface.rimLightingEnabled, defaults.rimLightingEnabled);
@@ -144,6 +145,9 @@ void from_json(const json& j, Isosurface& surface)
   }
   if (const auto value = j.find("showContours2D"); value != j.end() && value->is_boolean()) {
     surface.showIn2d = value->get<bool>();
+  }
+  if (const auto value = j.find("showSurface3D"); value != j.end() && value->is_boolean()) {
+    surface.showIn3d = value->get<bool>();
   }
   if (const auto rim = j.find("rimLighting"); rim != j.end() && rim->is_object()) {
     if (const auto value = rim->find("enabled"); value != rim->end() && value->is_boolean()) {

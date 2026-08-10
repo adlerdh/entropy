@@ -164,6 +164,9 @@ void initializeDepthBounds(const MeshDdpRenderRequest& request)
   // The initialization shader writes only depth bounds. Opaque and translucent surface meshes are both included when
   // DDP is active so opaque alpha-1 fragments correctly occlude transparent fragments behind them.
   request.meshRenderer.drawBucket(request.renderables, request.context, request.initProgram);
+  if (request.drawExtraDepthBounds) {
+    request.drawExtraDepthBounds();
+  }
 }
 
 void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t currentId)
@@ -191,6 +194,11 @@ void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t 
   request.meshRenderer.drawBucket(request.renderables, request.context, request.peelProgram);
   request.resources.frontColorTexture(previousId).unbind(k_frontColorTextureUnit);
   request.resources.depthTexture(previousId).unbind(k_depthTextureUnit);
+  if (request.drawExtraPeelLayers) {
+    request.drawExtraPeelLayers(
+      request.resources.depthTexture(previousId),
+      request.resources.frontColorTexture(previousId));
+  }
 }
 
 void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId)

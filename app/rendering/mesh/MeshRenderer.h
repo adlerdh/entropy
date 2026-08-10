@@ -25,8 +25,10 @@ struct MeshDrawContext
 {
   glm::mat4 clip_T_world = glm::mat4{1.0f};                        //!< Transform from world to clip coordinates
   glm::vec3 cameraWorldPosition = glm::vec3{0.0f};                 //!< Camera eye position in world coordinates
+  glm::vec3 cameraFrontWorld = glm::vec3{0.0f, 1.0f, 0.0f};        //!< Camera forward direction in world coordinates
   glm::vec3 lightDirectionWorld = glm::vec3{0.4f, 0.6f, 0.7f};     //!< Direction from the surface toward the light
   glm::vec4 fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f};     //!< Color used when material color is invalid
+  glm::ivec2 viewportOrigin = glm::ivec2{0};                       //!< Lower-left origin of the active view viewport
   MeshAdvancedLightingPlan advancedLighting;                       //!< Sanitized optional lighting pass decisions
   glm::mat4 shadowLightClip_T_world = glm::mat4{1.0f};             //!< Transform from world to shadow-map clip space
   GLTexture* shadowDepthTexture = nullptr;                         //!< Shadow-map depth texture, if available

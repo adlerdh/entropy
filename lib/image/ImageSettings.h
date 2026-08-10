@@ -383,6 +383,12 @@ public:
   /// @brief Return whether isocontours are shown in 2D slice views.
   bool showIsocontoursIn2D() const;
 
+  /// @brief Set whether isosurfaces are shown in 3D views.
+  void setShowIsosurfacesIn3D(bool show);
+
+  /// @brief Return whether isosurfaces are shown in 3D views.
+  bool showIsosurfacesIn3D() const;
+
   /// @brief Set 2D isocontour line width in pixels.
   void setIsosurfaceWidthIn2d(double width);
 
@@ -1002,6 +1008,7 @@ private:
   bool m_isosurfacesVisible{true};               //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces{false}; //!< Color image isosurfaces using the image colormap
   bool m_showIsocontoursIn2D{true};              //!< Visibility of isosurface edges in 2D image slices
+  bool m_showIsosurfacesIn3D{true};              //!< Visibility of isosurfaces in 3D views
 
   /// Width of isovalue lines in 2D, roughly in terms of pixels
   double m_isocontourLineWidthIn2D{2.0};

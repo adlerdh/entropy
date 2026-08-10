@@ -17,6 +17,7 @@ out VS_OUT
 {
   vec3 v_texCoord;     // Image texture coords of the vertex
   vec3 v_worldPos;     // World/reference-space position of the vertex
+  vec3 v_worldNormal;  // Default normal used by 3D image-plane shader variants
   vec2 v_checkerCoord; // Checkerboard square coords
   vec2 v_clipPos;      // Clip position
 }
@@ -37,5 +38,6 @@ void main()
   vec4 worldPos = u_world_T_clip * clipPos3d;
   vec4 imgTexPos = u_tex_T_world * worldPos;
   vs_out.v_worldPos = vec3(worldPos / worldPos.w);
+  vs_out.v_worldNormal = vec3(0.0, 0.0, 1.0);
   vs_out.v_texCoord = vec3(imgTexPos / imgTexPos.w);
 }

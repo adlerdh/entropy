@@ -17,6 +17,7 @@ MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View&
   return MeshDrawContext{
     .clip_T_world = helper::clip_T_world(view.camera()),
     .cameraWorldPosition = helper::worldOrigin(view.camera()),
+    .cameraFrontWorld = cameraFrontWorld,
     // Shadow and future advanced-lighting passes use a directional approximation of the shader's headlight.
     .lightDirectionWorld = -cameraFrontWorld,
     .fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f},

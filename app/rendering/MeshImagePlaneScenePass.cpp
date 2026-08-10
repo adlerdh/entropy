@@ -3,18 +3,26 @@
 #include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "logic/app/Data.h"
+#include "logic/camera/CameraHelpers.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderData.h"
+#include "rendering/mesh/MeshImagePlane.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
+#include "rendering/mesh/MeshRenderableFactory.h"
+#include "rendering/mesh/MeshRenderList.h"
 #include "rendering/mesh/MeshScene.h"
 #include "rendering/utility/gl/GLBufferTypes.h"
 #include "windowing/View.h"
 
+#include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -36,6 +44,16 @@ void hashVec3(std::size_t& seed, const glm::vec3& value)
   hashCombine(seed, value.z);
 }
 
+std::array<glm::vec3, 8> transformedCorners(const std::array<glm::vec3, 8>& corners, const glm::mat4& transform)
+{
+  std::array<glm::vec3, 8> transformed{};
+  std::ranges::transform(corners, transformed.begin(), [&transform](const glm::vec3& corner) {
+    const glm::vec4 value = transform * glm::vec4{corner, 1.0f};
+    return std::abs(value.w) > 1.0e-6f ? glm::vec3{value / value.w} : glm::vec3{value};
+  });
+  return transformed;
+}
+
 std::uint64_t geometryVersionForImagePlane(
   const Image& image,
   const rendering::mesh::MeshImagePlaneOrientation orientation,
@@ -48,6 +66,34 @@ std::uint64_t geometryVersionForImagePlane(
   return seed;
 }
 
+std::uint64_t geometryVersionForImageBox(const Image& image)
+{
+  std::size_t seed = 0;
+  hashCombine(seed, image.geometryRevision());
+  hashCombine(seed, 0x4b7d2a31u);
+  return seed;
+}
+
+float imagePlaneBorderWidthWorld(const RenderData::ImageUniforms& uniforms) noexcept
+{
+  const glm::vec3 spacing = glm::abs(uniforms.voxelSpacing);
+  const float minSpacing = std::min({spacing.x, spacing.y, spacing.z});
+  return std::isfinite(minSpacing) && minSpacing > 0.0f ? 0.25f * minSpacing : 0.25f;
+}
+
+glm::vec3 meshPositionCenter(const rendering::mesh::MeshData& mesh) noexcept
+{
+  if (mesh.positions.empty()) {
+    return glm::vec3{0.0f};
+  }
+
+  glm::vec3 sum{0.0f};
+  for (const glm::vec3& position : mesh.positions) {
+    sum += position;
+  }
+  return sum / static_cast<float>(mesh.positions.size());
+}
+
 } // namespace
 
 std::size_t Rendering::MeshImagePlaneHandleKeyHash::operator()(const MeshImagePlaneHandleKey& key) const
@@ -55,29 +101,26 @@ std::size_t Rendering::MeshImagePlaneHandleKeyHash::operator()(const MeshImagePl
   std::size_t seed = 0;
   hashCombine(seed, key.imageUid);
   hashCombine(seed, static_cast<int>(key.orientation));
+  hashCombine(seed, key.border);
+  hashCombine(seed, key.imageBox);
   return seed;
 }
 
-void Rendering::renderMeshImagePlanesForView(const View& view)
+std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshImagePlaneRenderablesForView(
+  const View& view,
+  std::vector<rendering::mesh::MeshRenderable>& borderRenderables)
 {
-  if (ViewType::ThreeD != view.viewType() || !view.threeDState().m_showImagePlanes) {
-    return;
+  const bool showImagePlanes = m_appData.renderData().m_showImagePlanesIn3D && view.threeDState().m_showImagePlanes;
+  const bool showImageBox = m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled;
+  const bool showImagePlaneBorders =
+    m_appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
+  if (ViewType::ThreeD != view.viewType() || (!showImagePlanes && !showImageBox)) {
+    return {};
   }
 
-  const std::optional<ImgSegPair> maybeImgSegPair = raycastImageForView(view);
-  if (!maybeImgSegPair || !maybeImgSegPair->first) {
-    return;
-  }
-
-  const uuids::uuid& imageUid = *maybeImgSegPair->first;
-  const Image* image = m_appData.image(imageUid);
-  if (!image) {
-    return;
-  }
-
-  const auto uniformsIt = m_appData.renderData().m_uniforms.find(imageUid);
-  if (std::end(m_appData.renderData().m_uniforms) == uniformsIt) {
-    return;
+  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  if (imageSegPairs.empty()) {
+    return {};
   }
 
   static const std::vector<rendering::mesh::MeshImagePlaneOrientation> sk_orientations{
@@ -86,57 +129,164 @@ void Rendering::renderMeshImagePlanesForView(const View& view)
     rendering::mesh::MeshImagePlaneOrientation::Sagittal};
 
   const glm::vec3 worldCrosshairs = m_appData.state().worldCrosshairs().worldOrigin();
-  const rendering::mesh::MeshImagePlaneSceneInputs inputs{
-    .worldCrosshairs = worldCrosshairs,
-    .world_T_pixel = image->transformations().worldDef_T_pixel(),
-    .pixel_T_world = image->transformations().pixel_T_worldDef(),
-    .texture_T_world = uniformsIt->second.imgTexture_T_world,
-    .pixelBoxCorners = image->header().pixelBBoxCorners(),
-    .orientations = sk_orientations};
-  const std::vector<rendering::mesh::MeshImagePlaneSceneMesh> meshes =
-    rendering::mesh::buildOrthogonalImagePlaneSceneMeshes(inputs);
+  const glm::vec3 viewDirectionWorld = helper::worldDirection(view.threeDCamera(), Directions::View::Back);
 
   std::vector<rendering::mesh::MeshImagePlaneRenderable> renderables;
-  renderables.reserve(meshes.size());
+  renderables.reserve(3u * imageSegPairs.size());
+  borderRenderables.reserve(3u * imageSegPairs.size());
 
-  const ImageSettings& settings = image->settings();
-  const uint32_t activeComponent = settings.activeComponent();
-  const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
-
-  for (const rendering::mesh::MeshImagePlaneSceneMesh& mesh : meshes) {
-    const MeshImagePlaneHandleKey handleKey{.imageUid = imageUid, .orientation = mesh.orientation};
+  const auto uploadImagePlaneMesh =
+    [this](
+      const rendering::mesh::MeshData& mesh,
+      const MeshImagePlaneHandleKey& handleKey,
+      const std::uint64_t geometryVersion) -> std::optional<rendering::mesh::MeshHandle> {
     auto [handleIt, inserted] = m_meshImagePlaneHandles.emplace(
       handleKey,
       rendering::mesh::MeshHandle{.uid = generateRandomUuid(), .geometryVersion = 0});
     (void)inserted;
 
     rendering::mesh::MeshHandle handle = handleIt->second;
-    handle.geometryVersion = geometryVersionForImagePlane(*image, mesh.orientation, worldCrosshairs);
-
+    handle.geometryVersion = geometryVersion;
     if (!m_meshGpuStore.lookup(handle)) {
-      if (!m_meshGpuStore.uploadOrReplace(mesh.mesh, handle, BufferUsagePattern::DynamicDraw)) {
-        continue;
+      if (!m_meshGpuStore.uploadOrReplace(mesh, handle, BufferUsagePattern::DynamicDraw)) {
+        return std::nullopt;
       }
       handleIt->second = handle;
     }
 
-    renderables.push_back(rendering::mesh::makeImagePlaneRenderable(
-      handle,
-      glm::mat4{1.0f},
-      rendering::mesh::MeshImagePlaneTexture{
-        .imageUid = imageUid,
-        .component = activeComponent,
-        .timePoint = activeTimePoint},
-      true));
+    return handle;
+  };
+
+  for (const ImgSegPair& imgSegPair : imageSegPairs) {
+    if (!imgSegPair.first) {
+      continue;
+    }
+
+    const uuids::uuid& imageUid = *imgSegPair.first;
+    const Image* image = m_appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    const auto uniformsIt = m_appData.renderData().m_uniforms.find(imageUid);
+    if (std::end(m_appData.renderData().m_uniforms) == uniformsIt) {
+      continue;
+    }
+
+    const rendering::mesh::MeshImagePlaneSceneInputs inputs{
+      .worldCrosshairs = worldCrosshairs,
+      .world_T_pixel = image->transformations().worldDef_T_pixel(),
+      .pixel_T_world = image->transformations().pixel_T_worldDef(),
+      .texture_T_world = uniformsIt->second.imgTexture_T_world,
+      .pixelBoxCorners = image->header().pixelBBoxCorners(),
+      .orientations = sk_orientations,
+      .borderWidthWorld = imagePlaneBorderWidthWorld(uniformsIt->second)};
+    const std::vector<rendering::mesh::MeshImagePlaneSceneMesh> meshes =
+      rendering::mesh::buildOrthogonalImagePlaneSceneMeshes(inputs);
+
+    const ImageSettings& settings = image->settings();
+    const uint32_t activeComponent = settings.activeComponent();
+    const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
+
+    const auto appendBorderRenderable =
+      [&borderRenderables, &settings](const rendering::mesh::MeshHandle& borderHandle, const float opacity) {
+        rendering::mesh::MeshMaterial borderMaterial;
+        borderMaterial.baseColor = glm::vec4{settings.borderColor(), opacity};
+        borderMaterial.shadingModel = rendering::mesh::MeshShadingModel::Unlit;
+        const rendering::mesh::MeshCompositingMode compositingMode =
+          opacity >= 0.999f ? rendering::mesh::MeshCompositingMode::Opaque
+                            : rendering::mesh::MeshCompositingMode::AlphaOverDdp;
+        borderRenderables.push_back(rendering::mesh::makeIsosurfaceRenderable(
+          borderHandle,
+          glm::mat4{1.0f},
+          rendering::mesh::IsosurfaceMeshStyle{
+            .material = borderMaterial,
+            .compositingMode = compositingMode,
+            .visible = opacity > 0.0f}));
+      };
+
+    if (showImagePlanes) {
+      for (const rendering::mesh::MeshImagePlaneSceneMesh& mesh : meshes) {
+        const std::uint64_t geometryVersion = geometryVersionForImagePlane(*image, mesh.orientation, worldCrosshairs);
+        const float opacityMultiplier = m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle
+                                          ? rendering::mesh::imagePlaneViewOpacityMultiplier(
+                                              rendering::mesh::imagePlaneWorldNormal(mesh.orientation),
+                                              viewDirectionWorld)
+                                          : 1.0f;
+
+        const std::optional<rendering::mesh::MeshHandle> handle = uploadImagePlaneMesh(
+          mesh.mesh,
+          MeshImagePlaneHandleKey{.imageUid = imageUid, .orientation = mesh.orientation, .border = false},
+          geometryVersion);
+        if (!handle) {
+          continue;
+        }
+
+        renderables.push_back(rendering::mesh::makeImagePlaneRenderable(
+          *handle,
+          glm::mat4{1.0f},
+          meshPositionCenter(mesh.mesh),
+          rendering::mesh::MeshImagePlaneTexture{
+            .imageUid = imageUid,
+            .segmentationUid = imgSegPair.second,
+            .component = activeComponent,
+            .timePoint = activeTimePoint},
+          opacityMultiplier,
+          m_appData.renderData().m_shadeImagePlanesIn3D,
+          true));
+
+        if (!showImagePlaneBorders || !mesh.borderMesh) {
+          continue;
+        }
+
+        const std::optional<rendering::mesh::MeshHandle> borderHandle = uploadImagePlaneMesh(
+          *mesh.borderMesh,
+          MeshImagePlaneHandleKey{.imageUid = imageUid, .orientation = mesh.orientation, .border = true},
+          geometryVersion);
+        if (borderHandle) {
+          appendBorderRenderable(*borderHandle, 1.0f);
+        }
+      }
+    }
+
+    if (showImageBox) {
+      const std::array<glm::vec3, 8> worldCorners =
+        transformedCorners(image->header().pixelBBoxCorners(), image->transformations().worldDef_T_pixel());
+      const std::optional<rendering::mesh::MeshData> boxMesh =
+        rendering::mesh::makeImageBoxBorderMesh(worldCorners, imagePlaneBorderWidthWorld(uniformsIt->second));
+      if (boxMesh) {
+        const std::optional<rendering::mesh::MeshHandle> boxHandle = uploadImagePlaneMesh(
+          *boxMesh,
+          MeshImagePlaneHandleKey{.imageUid = imageUid, .imageBox = true},
+          geometryVersionForImageBox(*image));
+        if (boxHandle) {
+          appendBorderRenderable(*boxHandle, 1.0f);
+        }
+      }
+    }
   }
 
-  if (renderables.empty()) {
+  return renderables;
+}
+
+void Rendering::renderMeshImagePlanesForView(const View& view)
+{
+  std::vector<rendering::mesh::MeshRenderable> borderRenderables;
+  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
+    collectMeshImagePlaneRenderablesForView(view, borderRenderables);
+
+  rendering::mesh::MeshScene imagePlaneScene;
+  imagePlaneScene.setImagePlaneRenderables(std::move(imagePlaneRenderables));
+  const rendering::mesh::MeshImagePlaneRenderList imagePlaneList =
+    rendering::mesh::buildImagePlaneRenderList(imagePlaneScene.imagePlaneRenderables());
+
+  rendering::mesh::MeshScene borderScene;
+  borderScene.setRenderables(std::move(borderRenderables));
+  const rendering::mesh::MeshRenderList borderList = rendering::mesh::buildRenderList(borderScene.renderables());
+
+  if (imagePlaneList.imagePlanes.empty() && rendering::mesh::visibleRenderableCount(borderList) == 0u) {
     return;
   }
 
-  rendering::mesh::MeshScene scene;
-  scene.setImagePlaneRenderables(std::move(renderables));
-  const rendering::mesh::MeshImagePlaneRenderList list =
-    rendering::mesh::buildImagePlaneRenderList(scene.imagePlaneRenderables());
-  drawMeshImagePlaneRenderListForView(view, list);
+  drawMeshRenderListForView(view, borderList, &imagePlaneList);
 }

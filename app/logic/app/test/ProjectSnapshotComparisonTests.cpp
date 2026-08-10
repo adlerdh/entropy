@@ -211,29 +211,37 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedRaycasting.m_raycasting.m_samplingFactor = 1.25f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
 
-  changedRaycasting = project;
-  changedRaycasting.m_raycasting.m_meshShadowsEnabled = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+  auto changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_transparentBackground = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
-  changedRaycasting = project;
-  changedRaycasting.m_raycasting.m_meshAmbientOcclusionEnabled = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+  changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
-  changedRaycasting = project;
-  changedRaycasting.m_raycasting.m_meshTranslucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+  auto changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_shadowsEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
-  changedRaycasting = project;
-  changedRaycasting.m_raycasting.m_meshPickingEnabled = false;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_ambientOcclusionEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
-  changedRaycasting = project;
-  changedRaycasting.m_raycasting.m_meshClipPlaneEnabled = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_translucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
-  changedRaycasting = project;
-  changedRaycasting.m_raycasting.m_meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
-  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_pickingEnabled = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_clipPlaneEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   auto changedIntensityProjection = project;
   changedIntensityProjection.m_intensityProjection.m_slabThicknessMm = 12.0f;

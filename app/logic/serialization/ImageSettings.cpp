@@ -224,6 +224,7 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     settings.m_applyImageColormapToIsosurfaces,
     defaults.m_applyImageColormapToIsosurfaces);
   addIfChanged(isosurfaces, "showContours2D", settings.m_showIsocontoursIn2D, defaults.m_showIsocontoursIn2D);
+  addIfChanged(isosurfaces, "showSurfaces3D", settings.m_showIsosurfacesIn3D, defaults.m_showIsosurfacesIn3D);
   addIfChanged(
     isosurfaces,
     "contourLineWidth2D",
@@ -680,6 +681,11 @@ void from_json(const json& j, serialize::ImageSettings& settings)
         contours != isosurfaces->end() && contours->is_boolean())
     {
       settings.m_showIsocontoursIn2D = contours->get<bool>();
+    }
+    if (const auto surfaces = isosurfaces->find("showSurfaces3D");
+        surfaces != isosurfaces->end() && surfaces->is_boolean())
+    {
+      settings.m_showIsosurfacesIn3D = surfaces->get<bool>();
     }
     if (const auto lineWidth = isosurfaces->find("contourLineWidth2D");
         lineWidth != isosurfaces->end() && lineWidth->is_number())

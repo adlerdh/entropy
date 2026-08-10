@@ -256,14 +256,16 @@ void Rendering::renderAllImagesForView(
     }
 
     case ShaderGroup::Volume: {
+      clearMeshViewBackgroundForView(view);
       renderVolumeImagesForView(view);
-      renderMeshImagePlanesForView(view);
       break;
     }
 
     case ShaderGroup::Mesh: {
-      renderSegmentationMeshesForView(view);
-      renderMeshCrosshairsForView(view);
+      clearMeshViewBackgroundForView(view);
+      if (!renderSegmentationMeshesForView(view)) {
+        renderMeshCrosshairsForView(view);
+      }
       renderMeshLandmarksForView(view);
       break;
     }

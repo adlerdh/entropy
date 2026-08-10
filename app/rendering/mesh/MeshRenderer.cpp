@@ -169,10 +169,12 @@ void drawUploadedMesh(const MeshGpuData& gpuData)
 int shaderValue(const MeshShadingModel shadingModel) noexcept
 {
   switch (shadingModel) {
-    case MeshShadingModel::SimpleLit:
+    case MeshShadingModel::Unlit:
       return 0;
-    case MeshShadingModel::PhysicallyBased:
+    case MeshShadingModel::SimpleLit:
       return 1;
+    case MeshShadingModel::PhysicallyBased:
+      return 2;
   }
 
   return 0;
@@ -208,6 +210,7 @@ void uploadAmbientOcclusionUniforms(const MeshDrawContext& context, GLShaderProg
   const bool enabled = ambientOcclusionActive(context);
   program.setUniform("u_screenAmbientOcclusionEnabled", enabled);
   program.setUniform("u_screenAmbientOcclusionTex", static_cast<GLint>(k_ambientOcclusionTextureUnit));
+  program.setUniform("u_viewportOrigin", context.viewportOrigin);
   if (enabled) {
     context.ambientOcclusionTexture->bind(k_ambientOcclusionTextureUnit);
   }
@@ -304,6 +307,10 @@ void MeshRenderer::drawBucket(
     program.setUniform("u_roughness", material.roughness);
     program.setUniform("u_ambientOcclusion", material.ambientOcclusion);
     program.setUniform("u_shadingModel", shaderValue(material.shadingModel));
+    program.setUniform("u_rimLightingEnabled", material.rimLightingEnabled);
+    program.setUniform("u_rimOpacityStrength", material.rimOpacityStrength);
+    program.setUniform("u_rimEmissionStrength", material.rimEmissionStrength);
+    program.setUniform("u_rimPower", material.rimPower);
     program.setUniform("u_hasVertexNormals", gpuData->hasNormals());
     program.setUniform("u_hasVertexColors", gpuData->hasColors());
     uploadClipPlanes(renderable.drawOptions, program);

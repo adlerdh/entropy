@@ -44,7 +44,6 @@ void Rendering::renderVolumeImagesForView(const View& view)
     !activeEdit && m_appData.renderData().m_isosurfaceMeshRenderingEnabled &&
     renderIsosurfaceMeshesForView(view, imageSegPairs))
   {
-    renderMeshCrosshairsForView(view);
     renderMeshLandmarksForView(view);
     return;
   }
@@ -65,7 +64,7 @@ void Rendering::renderVolumeImagesForView(const View& view)
   }
 
   const ImageSettings& settings = image->settings();
-  if (!settings.isosurfacesVisible()) {
+  if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D()) {
     return; // Hide all surfaces
   }
 

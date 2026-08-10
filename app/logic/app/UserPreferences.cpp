@@ -779,7 +779,15 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
   preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
   preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
-  preferences.transparentBackgroundWhenNoHit = currentPreferences.transparentBackgroundWhenNoHit;
+  preferences.transparent3DBackground = currentPreferences.transparent3DBackground;
+  preferences.imageBoxVisible = currentPreferences.imageBoxVisible;
+  preferences.showImagePlanesIn3D = currentPreferences.showImagePlanesIn3D;
+  preferences.modulateImagePlaneOpacityWithViewAngle = currentPreferences.modulateImagePlaneOpacityWithViewAngle;
+  preferences.shadeImagePlanesIn3D = currentPreferences.shadeImagePlanesIn3D;
+  preferences.imagePlaneAmbient = currentPreferences.imagePlaneAmbient;
+  preferences.imagePlaneDiffuse = currentPreferences.imagePlaneDiffuse;
+  preferences.imagePlaneSpecular = currentPreferences.imagePlaneSpecular;
+  preferences.imagePlaneShininess = currentPreferences.imagePlaneShininess;
   preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
   preferences.renderBackFaces = currentPreferences.renderBackFaces;
   preferences.segmentationMasking = currentPreferences.segmentationMasking;

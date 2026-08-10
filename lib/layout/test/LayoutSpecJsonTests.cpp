@@ -49,7 +49,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   first.m_threeDProjectionType = 0;
   first.m_threeDOrbitTargetMode = 1;
   first.m_threeDCameraFollowsCrosshairs = true;
-  first.m_threeDImagePlanesVisible = true;
+  first.m_threeDImagePlanesVisible = false;
   first.m_threeDPerspectiveZoom = 0.75f;
   first.m_threeDOrthographicZoom = 1.5f;
 
@@ -155,7 +155,7 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
   CHECK(json.at("views").at(0).at("offset").at("mode") == "relativeToImageScrolls");
   CHECK(json.at("views").at(0).at("threeD").at("projection") == "orthographic");
   CHECK(json.at("views").at(0).at("threeD").at("orbitTarget") == "crosshairs");
-  CHECK(json.at("views").at(0).at("threeD").at("imagePlanesVisible") == true);
+  CHECK(json.at("views").at(0).at("threeD").at("imagePlanesVisible") == false);
   CHECK_FALSE(json.at("views").at(1).at("offset").contains("mode"));
 }
 

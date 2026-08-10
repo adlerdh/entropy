@@ -6,6 +6,7 @@
 #include <glm/vec4.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -71,6 +72,66 @@ std::optional<glm::vec3> polygonNormal(const std::vector<glm::vec3>& vertices) n
   }
 
   return normalizedDirection(normal);
+}
+
+std::optional<std::pair<glm::vec3, glm::vec3>> edgeFrame(const glm::vec3& edgeDirection) noexcept
+{
+  const glm::vec3 referenceAxis =
+    std::abs(edgeDirection.x) < 0.75f ? glm::vec3{1.0f, 0.0f, 0.0f} : glm::vec3{0.0f, 1.0f, 0.0f};
+  const std::optional<glm::vec3> n1 = normalizedDirection(glm::cross(edgeDirection, referenceAxis));
+  if (!n1) {
+    return std::nullopt;
+  }
+
+  const std::optional<glm::vec3> n2 = normalizedDirection(glm::cross(edgeDirection, *n1));
+  if (!n2) {
+    return std::nullopt;
+  }
+
+  return std::pair{*n1, *n2};
+}
+
+void appendBoxEdgePrism(MeshData& mesh, const glm::vec3& a, const glm::vec3& b, const float halfWidth)
+{
+  const std::optional<glm::vec3> edgeDirection = normalizedDirection(b - a);
+  if (!edgeDirection) {
+    return;
+  }
+
+  const std::optional<std::pair<glm::vec3, glm::vec3>> frame = edgeFrame(*edgeDirection);
+  if (!frame) {
+    return;
+  }
+
+  const glm::vec3 u = halfWidth * frame->first;
+  const glm::vec3 v = halfWidth * frame->second;
+  const std::array<glm::vec3, 8>
+    positions{a - u - v, a + u - v, a + u + v, a - u + v, b - u - v, b + u - v, b + u + v, b - u + v};
+
+  const std::uint32_t baseIndex = static_cast<std::uint32_t>(mesh.positions.size());
+  mesh.positions.insert(mesh.positions.end(), positions.begin(), positions.end());
+  mesh.normals.insert(
+    mesh.normals.end(),
+    {
+      -frame->first - frame->second,
+      frame->first - frame->second,
+      frame->first + frame->second,
+      -frame->first + frame->second,
+      -frame->first - frame->second,
+      frame->first - frame->second,
+      frame->first + frame->second,
+      -frame->first + frame->second,
+    });
+
+  const std::array<std::uint32_t, 36> indices{0, 1, 5, 0, 5, 4, //
+                                              1, 2, 6, 1, 6, 5, //
+                                              2, 3, 7, 2, 7, 6, //
+                                              3, 0, 4, 3, 4, 7, //
+                                              0, 3, 2, 0, 2, 1, //
+                                              4, 5, 6, 4, 6, 7};
+  for (const std::uint32_t index : indices) {
+    mesh.indices.push_back(baseIndex + index);
+  }
 }
 
 } // namespace
@@ -195,6 +256,52 @@ std::optional<MeshData> makeImageSliceIntersectionMesh(const intersection::Inter
   return mesh;
 }
 
+std::optional<MeshData> makeImageSliceIntersectionBorderMesh(
+  const intersection::IntersectionVertices& intersections,
+  const float widthWorld)
+{
+  if (!std::isfinite(widthWorld) || widthWorld <= 0.0f) {
+    return std::nullopt;
+  }
+
+  const std::vector<glm::vec3> polygon = uniquePolygonVertices(intersections);
+  const std::optional<glm::vec3> planeNormal = polygonNormal(polygon);
+  if (!planeNormal) {
+    return std::nullopt;
+  }
+
+  MeshData mesh;
+  mesh.coordinateSpace = MeshCoordinateSpace::World;
+  mesh.positions.reserve(polygon.size() * 4u);
+  mesh.normals.reserve(polygon.size() * 4u);
+  mesh.indices.reserve(polygon.size() * 6u);
+
+  const float halfWidth = 0.5f * widthWorld;
+  for (std::size_t i = 0; i < polygon.size(); ++i) {
+    const glm::vec3& a = polygon[i];
+    const glm::vec3& b = polygon[(i + 1u) % polygon.size()];
+    const std::optional<glm::vec3> edgeDirection = normalizedDirection(b - a);
+    if (!edgeDirection) {
+      continue;
+    }
+
+    const std::optional<glm::vec3> offsetDirection = normalizedDirection(glm::cross(*planeNormal, *edgeDirection));
+    if (!offsetDirection) {
+      continue;
+    }
+
+    const glm::vec3 offset = halfWidth * *offsetDirection;
+    const std::uint32_t baseIndex = static_cast<std::uint32_t>(mesh.positions.size());
+    mesh.positions.insert(mesh.positions.end(), {a - offset, b - offset, b + offset, a + offset});
+    mesh.normals.insert(mesh.normals.end(), {*planeNormal, *planeNormal, *planeNormal, *planeNormal});
+    mesh.indices.insert(
+      mesh.indices.end(),
+      {baseIndex, baseIndex + 1u, baseIndex + 2u, baseIndex, baseIndex + 2u, baseIndex + 3u});
+  }
+
+  return mesh.indices.empty() ? std::nullopt : std::optional<MeshData>{std::move(mesh)};
+}
+
 std::optional<MeshData> makeImageSliceIntersectionMesh(const intersection::IntersectionVerticesVec4& intersections)
 {
   intersection::IntersectionVertices cartesian{};
@@ -207,6 +314,60 @@ std::optional<MeshData> makeImageSliceIntersectionMesh(const intersection::Inter
   }
 
   return makeImageSliceIntersectionMesh(cartesian);
+}
+
+std::optional<MeshData> makeImageSliceIntersectionBorderMesh(
+  const intersection::IntersectionVerticesVec4& intersections,
+  const float widthWorld)
+{
+  intersection::IntersectionVertices cartesian{};
+  for (std::size_t i = 0; i < intersections.size(); ++i) {
+    const glm::vec4& point = intersections[i];
+    if (std::abs(point.w) <= 1.0e-6f) {
+      return std::nullopt;
+    }
+    cartesian[i] = glm::vec3{point / point.w};
+  }
+
+  return makeImageSliceIntersectionBorderMesh(cartesian, widthWorld);
+}
+
+std::optional<MeshData> makeImageBoxBorderMesh(const std::array<glm::vec3, 8>& worldCorners, const float widthWorld)
+{
+  if (!std::isfinite(widthWorld) || widthWorld <= 0.0f) {
+    return std::nullopt;
+  }
+
+  if (!std::ranges::all_of(worldCorners, isFiniteVec3)) {
+    return std::nullopt;
+  }
+
+  static constexpr std::array<std::pair<std::size_t, std::size_t>, 12> sk_edges{
+    std::pair{0u, 1u},
+    std::pair{0u, 2u},
+    std::pair{1u, 3u},
+    std::pair{2u, 3u},
+    std::pair{4u, 5u},
+    std::pair{4u, 6u},
+    std::pair{5u, 7u},
+    std::pair{6u, 7u},
+    std::pair{0u, 4u},
+    std::pair{1u, 5u},
+    std::pair{2u, 6u},
+    std::pair{3u, 7u}};
+
+  MeshData mesh;
+  mesh.coordinateSpace = MeshCoordinateSpace::World;
+  mesh.positions.reserve(8u * sk_edges.size());
+  mesh.normals.reserve(8u * sk_edges.size());
+  mesh.indices.reserve(36u * sk_edges.size());
+
+  const float halfWidth = 0.5f * widthWorld;
+  for (const auto& [aIndex, bIndex] : sk_edges) {
+    appendBoxEdgePrism(mesh, worldCorners[aIndex], worldCorners[bIndex], halfWidth);
+  }
+
+  return mesh.indices.empty() ? std::nullopt : std::optional<MeshData>{std::move(mesh)};
 }
 
 std::optional<MeshData> makeTexturedImageSliceIntersectionMesh(

@@ -543,6 +543,16 @@ bool ImageSettings::showIsocontoursIn2D() const
   return m_showIsocontoursIn2D;
 }
 
+void ImageSettings::setShowIsosurfacesIn3D(bool show)
+{
+  m_showIsosurfacesIn3D = show;
+}
+
+bool ImageSettings::showIsosurfacesIn3D() const
+{
+  return m_showIsosurfacesIn3D;
+}
+
 void ImageSettings::setIsosurfaceWidthIn2d(double width)
 {
   m_isocontourLineWidthIn2D = width;

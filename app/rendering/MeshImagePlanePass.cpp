@@ -2,20 +2,29 @@
 
 #include "image/Image.h"
 #include "logic/app/Data.h"
+#include "logic/camera/CameraHelpers.h"
+#include "logic/camera/MathUtility.h"
+#include "logic/SurfaceUtility.h"
 #include "rendering/PrivateMethods.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/mesh/MeshGpuData.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshViewContext.h"
 #include "rendering/mesh/MeshViewViewport.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "viewer/ViewModes.h"
 #include "windowing/View.h"
 
 #include <glad/glad.h>
+#include <spdlog/spdlog.h>
 
+#include <glm/geometric.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -23,12 +32,17 @@
 #include <functional>
 #include <list>
 #include <optional>
+#include <vector>
 
 namespace
 {
 
 constexpr Uniforms::SamplerIndexType sk_imgTexSampler{0};
 constexpr Uniforms::SamplerIndexType sk_imgCmapTexSampler{1};
+constexpr Uniforms::SamplerIndexType sk_segTexSampler{2};
+constexpr Uniforms::SamplerIndexType sk_segLabelTableTexSampler{3};
+constexpr Uniforms::SamplerIndexType sk_previousDepthBoundsSampler{4};
+constexpr Uniforms::SamplerIndexType sk_previousFrontColorSampler{5};
 
 class ScopedImagePlaneBlendState
 {
@@ -74,7 +88,9 @@ public:
   ScopedImagePlaneDepthState()
   {
     m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+    m_stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &m_depthWriteEnabled);
+    glGetIntegerv(GL_DEPTH_FUNC, &m_depthFunc);
   }
 
   ScopedImagePlaneDepthState(const ScopedImagePlaneDepthState&) = delete;
@@ -82,13 +98,17 @@ public:
 
   ~ScopedImagePlaneDepthState()
   {
+    glDepthFunc(static_cast<GLenum>(m_depthFunc));
     glDepthMask(m_depthWriteEnabled);
     m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+    m_stencilTestEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
   }
 
 private:
   GLboolean m_depthTestEnabled = GL_FALSE;
+  GLboolean m_stencilTestEnabled = GL_FALSE;
   GLboolean m_depthWriteEnabled = GL_TRUE;
+  GLint m_depthFunc = GL_LESS;
 };
 
 GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
@@ -136,13 +156,156 @@ std::list<std::reference_wrapper<GLTexture>> bindImagePlaneTextures(
   return boundTextures;
 }
 
+std::list<std::reference_wrapper<GLTexture>> bindImagePlaneSegmentationTextures(
+  AppData& appData,
+  const std::optional<uuids::uuid>& segmentationUid)
+{
+  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  if (!segmentationUid) {
+    return boundTextures;
+  }
+
+  auto& renderData = appData.renderData();
+  const auto textureIt = renderData.m_segTextures.find(*segmentationUid);
+  if (std::end(renderData.m_segTextures) == textureIt) {
+    return boundTextures;
+  }
+
+  textureIt->second.bind(sk_segTexSampler.index);
+  boundTextures.emplace_back(textureIt->second);
+  return boundTextures;
+}
+
+std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLabelTableTextures(
+  AppData& appData,
+  const std::optional<uuids::uuid>& segmentationUid)
+{
+  std::list<std::reference_wrapper<GLBufferTexture>> boundTextures;
+  if (appData.renderData().m_labelBufferTextures.empty()) {
+    return boundTextures;
+  }
+
+  const Image* segmentation = segmentationUid ? appData.seg(*segmentationUid) : nullptr;
+  const std::optional<uuids::uuid> tableUid =
+    segmentation ? appData.labelTableUid(segmentation->settings().labelTableIndex()) : std::nullopt;
+  auto tableIt = tableUid ? appData.renderData().m_labelBufferTextures.find(*tableUid)
+                          : appData.renderData().m_labelBufferTextures.end();
+  if (std::end(appData.renderData().m_labelBufferTextures) == tableIt) {
+    tableIt = std::begin(appData.renderData().m_labelBufferTextures);
+  }
+
+  tableIt->second.bind(sk_segLabelTableTexSampler.index);
+  tableIt->second.attachBufferToTexture(sk_segLabelTableTexSampler.index);
+  boundTextures.emplace_back(tableIt->second);
+  return boundTextures;
+}
+
+void unbindImagePlaneSegmentationLabelTableTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures)
+{
+  for (const std::reference_wrapper<GLBufferTexture> texture : textures) {
+    texture.get().release(sk_segLabelTableTexSampler.index);
+  }
+}
+
+std::vector<glm::vec3> computeMeshImagePlaneSegmentationOutlineSamplingDirs(
+  const Image& geometryImage,
+  const View& view,
+  const Viewport& windowViewport,
+  const SegmentationOutlineStyle outlineStyle)
+{
+  namespace image_drawing = rendering::image_drawing;
+
+  std::vector<glm::vec3> samplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  if (SegmentationOutlineStyle::Disabled == outlineStyle) {
+    return samplingDirs;
+  }
+
+  const auto posInfo = math::computeAnatomicalLabelsForView(
+    view.camera().camera_T_world(),
+    geometryImage.transformations().worldDef_T_subject());
+  const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
+
+  switch (outlineStyle) {
+    case SegmentationOutlineStyle::ImageVoxel: {
+      const glm::mat4 voxel_T_viewClip = geometryImage.transformations().pixel_T_worldDef() * world_T_viewClip;
+      for (int i = 0; i < 2; ++i) {
+        samplingDirs[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
+          voxel_T_viewClip,
+          windowViewport,
+          view.viewClip_T_windowClip(),
+          geometryImage.transformations().invPixelDimensions(),
+          posInfo[i].viewClipDir);
+      }
+      break;
+    }
+    case SegmentationOutlineStyle::ViewPixel: {
+      const glm::mat4 texture_T_viewClip = geometryImage.transformations().texture_T_worldDef() * world_T_viewClip;
+      for (int i = 0; i < 2; ++i) {
+        samplingDirs[i] = image_drawing::computeTextureSamplingDirectionForViewPixelOffset(
+          texture_T_viewClip,
+          windowViewport,
+          view.viewClip_T_windowClip(),
+          posInfo[i].viewClipDir);
+      }
+      break;
+    }
+    case SegmentationOutlineStyle::Disabled: {
+      break;
+    }
+  }
+
+  return samplingDirs;
+}
+
+void setMeshImagePlaneSegmentationUniforms(
+  GLShaderProgram& program,
+  AppData& appData,
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderable& renderable,
+  const RenderData::ImageUniforms& uniforms,
+  const bool segmentationVisible)
+{
+  const Image* image = appData.image(renderable.texture.imageUid);
+  const Image* segmentation =
+    renderable.texture.segmentationUid ? appData.seg(*renderable.texture.segmentationUid) : nullptr;
+  const RenderData& renderData = appData.renderData();
+  const bool drawSegmentation = segmentationVisible && image && segmentation && uniforms.segOpacity > 0.0f;
+
+  program.setUniform("u_segVisible", drawSegmentation);
+  program.setSamplerUniform("u_segTex", sk_segTexSampler.index);
+  program.setSamplerUniform("u_segLabelCmapTex", sk_segLabelTableTexSampler.index);
+  program.setUniform(
+    "u_segOpacity",
+    drawSegmentation
+      ? uniforms.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? uniforms.imgOpacity : 1.0f)
+      : 0.0f);
+  program.setUniform(
+    "u_segFillOpacity",
+    (SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle) ? 1.0f : renderData.m_segInteriorOpacity);
+  program.setUniform("u_segInterpCutoff", renderData.m_segInterpCutoff);
+  program.setUniform(
+    "u_segLinearInterpolation",
+    drawSegmentation && InterpolationMode::NearestNeighbor != segmentation->settings().interpolationMode());
+
+  const std::vector<glm::vec3> outlineSamplingDirs = image ? computeMeshImagePlaneSegmentationOutlineSamplingDirs(
+                                                               *image,
+                                                               view,
+                                                               appData.windowData().viewport(),
+                                                               renderData.m_segOutlineStyle)
+                                                           : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  program.setUniform("u_texSamplingDirsForSegOutline", outlineSamplingDirs);
+  program.setUniform("u_texSamplingDirsForSmoothSeg", outlineSamplingDirs);
+}
+
 void setMeshImagePlaneUniforms(
   GLShaderProgram& program,
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
+  const RenderData& renderData,
   const RenderData::ImageUniforms& uniforms,
   const RenderData::PlanarTextureLayout& textureLayout,
   const rendering::mesh::MeshDrawContext& context,
+  const bool hasVertexNormals,
   const int checkerboardSquares)
 {
   program.setSamplerUniform("u_imgTex", sk_imgTexSampler.index);
@@ -151,6 +314,14 @@ void setMeshImagePlaneUniforms(
 
   program.setUniform("u_clip_T_world", context.clip_T_world);
   program.setUniform("u_world_T_mesh", renderable.world_T_mesh);
+  program.setUniform("u_world_T_meshNormal", glm::inverseTranspose(glm::mat3{renderable.world_T_mesh}));
+  program.setUniform("u_hasVertexNormals", hasVertexNormals);
+  program.setUniform("u_imagePlaneShadingEnabled", renderable.shadingEnabled);
+  program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
+  program.setUniform("u_imagePlaneAmbient", renderData.m_imagePlaneAmbient);
+  program.setUniform("u_imagePlaneDiffuse", renderData.m_imagePlaneDiffuse);
+  program.setUniform("u_imagePlaneSpecular", renderData.m_imagePlaneSpecular);
+  program.setUniform("u_imagePlaneShininess", renderData.m_imagePlaneShininess);
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_numCheckers", checkerboardSquares);
 
@@ -161,10 +332,55 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_cmapQuantLevels", uniforms.cmapQuantLevels);
   program.setUniform("u_imgThresholds", uniforms.thresholds);
   program.setUniform("u_imgMinMax", uniforms.minMax);
-  program.setUniform("u_imgOpacity", uniforms.imgOpacity);
+  program.setUniform("u_imgOpacity", uniforms.imgOpacity * renderable.opacityMultiplier);
 
   // 3D image planes use the image shader's ordinary layer path. Comparison modes, flashlight masking, and intensity
   // projection are 2D-view concepts and remain disabled for this mesh pass.
+  program.setUniform("u_renderMode", 0);
+  program.setUniform("u_clipCrosshairs", glm::vec2{0.0f});
+  program.setUniform("u_quadrants", glm::ivec2{0, 0});
+  program.setUniform("u_showFix", true);
+  program.setUniform("u_flashlightRadius", 0.0f);
+  program.setUniform("u_flashlightMovingOnFixed", false);
+  program.setUniform("u_mipMode", 0);
+  program.setUniform("u_halfNumMipSamples", 0);
+  program.setUniform("u_texSamplingDirZ", glm::vec3{0.0f});
+  program.setUniform("u_worldSamplingDirZ", glm::vec3{0.0f});
+}
+
+void setMeshImagePlaneIsoContourUniforms(
+  GLShaderProgram& program,
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderable& renderable,
+  const RenderData::ImageUniforms& uniforms,
+  const RenderData::PlanarTextureLayout& textureLayout,
+  const rendering::mesh::MeshDrawContext& context,
+  const int checkerboardSquares,
+  const ImageSettings& imageSettings,
+  const Isosurface& surface,
+  const glm::vec3& color,
+  const float imagePlaneOpacityMultiplier)
+{
+  const float isosurfaceOpacity = imageSettings.isosurfaceOpacityModulator() * imagePlaneOpacityMultiplier;
+
+  program.setSamplerUniform("u_imgTex", sk_imgTexSampler.index);
+  rendering::setTexture2DAxesUniforms(program, textureLayout);
+
+  program.setUniform("u_clip_T_world", context.clip_T_world);
+  program.setUniform("u_world_T_mesh", renderable.world_T_mesh);
+  program.setUniform("u_aspectRatio", view.camera().aspectRatio());
+  program.setUniform("u_numCheckers", checkerboardSquares);
+
+  program.setUniform("u_isoValue", static_cast<float>(imageSettings.mapNativeIntensityToTexture(surface.value)));
+  program.setUniform("u_fillOpacity", static_cast<float>(isosurfaceOpacity * surface.fillOpacity));
+  program.setUniform("u_lineOpacity", static_cast<float>(isosurfaceOpacity * surface.opacity));
+  program.setUniform("u_contourWidth", static_cast<float>(imageSettings.isoContourLineWidthIn2D()));
+  program.setUniform("u_color", color);
+  program.setUniform("u_imgMinMax", uniforms.minMax);
+  program.setUniform("u_imgThresholds", uniforms.thresholds);
+
+  // Mesh image planes are ordinary 3D slice overlays. The comparison and intensity-projection controls are specific
+  // to 2D image views, so they stay disabled here.
   program.setUniform("u_renderMode", 0);
   program.setUniform("u_clipCrosshairs", glm::vec2{0.0f});
   program.setUniform("u_quadrants", glm::ivec2{0, 0});
@@ -182,6 +398,108 @@ void drawUploadedImagePlane(const rendering::mesh::MeshGpuData& gpuData)
   gpuData.vao().bind();
   gpuData.vao().drawElements(gpuData.drawParams());
   gpuData.vao().release();
+}
+
+void drawImagePlaneRenderablesWithProgram(
+  AppData& appData,
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context,
+  GLShaderProgram& texture3dProgram,
+  GLShaderProgram& texture2dProgram,
+  GLShaderProgram* const previousTexturesProgram = nullptr,
+  GLTexture* const previousDepthBounds = nullptr,
+  GLTexture* const previousFrontColor = nullptr)
+{
+  if (!context.meshLookup) {
+    return;
+  }
+
+  if (previousTexturesProgram && previousDepthBounds && previousFrontColor) {
+    previousDepthBounds->bind(sk_previousDepthBoundsSampler.index);
+    previousFrontColor->bind(sk_previousFrontColorSampler.index);
+  }
+
+  for (const std::reference_wrapper<const rendering::mesh::MeshImagePlaneRenderable> imagePlaneRef : list.imagePlanes) {
+    const rendering::mesh::MeshImagePlaneRenderable& imagePlane = imagePlaneRef.get();
+    const rendering::mesh::MeshGpuData* gpuData = context.meshLookup(imagePlane.mesh);
+    if (!gpuData || !gpuData->hasTextureCoords()) {
+      continue;
+    }
+
+    const Image* image = appData.image(imagePlane.texture.imageUid);
+    if (!image) {
+      continue;
+    }
+
+    const auto uniformsIt = appData.renderData().m_uniforms.find(imagePlane.texture.imageUid);
+    if (uniformsIt == std::end(appData.renderData().m_uniforms)) {
+      continue;
+    }
+
+    const RenderData::PlanarTextureLayout textureLayout =
+      rendering::textureLayoutOrDefault(appData.renderData().m_imageTextureLayouts, imagePlane.texture.imageUid);
+    GLShaderProgram& program =
+      shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
+    const auto boundTextures =
+      bindImagePlaneTextures(appData, imagePlane.texture.imageUid, imagePlane.texture.component, textureLayout);
+    const auto boundSegTextures = bindImagePlaneSegmentationTextures(appData, imagePlane.texture.segmentationUid);
+    const auto boundSegBufferTextures =
+      bindImagePlaneSegmentationLabelTableTextures(appData, imagePlane.texture.segmentationUid);
+
+    program.use();
+    setMeshImagePlaneUniforms(
+      program,
+      view,
+      imagePlane,
+      appData.renderData(),
+      uniformsIt->second,
+      textureLayout,
+      context,
+      gpuData->hasNormals(),
+      appData.renderData().m_numCheckerboardSquares);
+    setMeshImagePlaneSegmentationUniforms(
+      program,
+      appData,
+      view,
+      imagePlane,
+      uniformsIt->second,
+      !boundSegTextures.empty() && !boundSegBufferTextures.empty());
+    if (previousTexturesProgram) {
+      program.setSamplerUniform("u_previousDepthBoundsTex", sk_previousDepthBoundsSampler.index);
+      program.setSamplerUniform("u_previousFrontColorTex", sk_previousFrontColorSampler.index);
+    }
+    drawUploadedImagePlane(*gpuData);
+    program.stopUse();
+
+    for (std::reference_wrapper<GLTexture> texture : boundTextures) {
+      texture.get().unbind();
+    }
+    for (std::reference_wrapper<GLTexture> texture : boundSegTextures) {
+      texture.get().unbind();
+    }
+    unbindImagePlaneSegmentationLabelTableTextures(boundSegBufferTextures);
+  }
+
+  if (previousTexturesProgram && previousDepthBounds && previousFrontColor) {
+    previousFrontColor->unbind(sk_previousFrontColorSampler.index);
+    previousDepthBounds->unbind(sk_previousDepthBoundsSampler.index);
+  }
+}
+
+std::vector<std::reference_wrapper<const rendering::mesh::MeshImagePlaneRenderable>> sortedImagePlanesBackToFront(
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context)
+{
+  std::vector<std::reference_wrapper<const rendering::mesh::MeshImagePlaneRenderable>> imagePlanes = list.imagePlanes;
+  std::ranges::stable_sort(imagePlanes, [&context](const auto& lhsRef, const auto& rhsRef) {
+    const auto& lhs = lhsRef.get();
+    const auto& rhs = rhsRef.get();
+    const float lhsDepth = glm::dot(lhs.centerWorld - context.cameraWorldPosition, context.cameraFrontWorld);
+    const float rhsDepth = glm::dot(rhs.centerWorld - context.cameraWorldPosition, context.cameraFrontWorld);
+    return lhsDepth > rhsDepth;
+  });
+  return imagePlanes;
 }
 
 } // namespace
@@ -203,12 +521,16 @@ void Rendering::drawMeshImagePlaneRenderListForView(
   const ScopedImagePlaneDepthState scopedDepthState;
   const ScopedImagePlaneBlendState scopedBlendState;
   glEnable(GL_DEPTH_TEST);
-  glDepthMask(GL_FALSE);
+  glDepthFunc(GL_LESS);
+  glDepthMask(GL_TRUE);
+  glDisable(GL_STENCIL_TEST);
   glEnable(GL_BLEND);
   glBlendEquation(GL_FUNC_ADD);
   glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-  for (const std::reference_wrapper<const rendering::mesh::MeshImagePlaneRenderable> imagePlaneRef : list.imagePlanes) {
+  const auto sortedImagePlanes = sortedImagePlanesBackToFront(list, context);
+  for (const std::reference_wrapper<const rendering::mesh::MeshImagePlaneRenderable> imagePlaneRef : sortedImagePlanes)
+  {
     const rendering::mesh::MeshImagePlaneRenderable& imagePlane = imagePlaneRef.get();
     const rendering::mesh::MeshGpuData* gpuData = context.meshLookup(imagePlane.mesh);
     if (!gpuData || !gpuData->hasTextureCoords()) {
@@ -241,16 +563,91 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         program,
         view,
         imagePlane,
+        m_appData.renderData(),
         uniformsIt->second,
         textureLayout,
         context,
+        gpuData->hasNormals(),
         m_appData.renderData().m_numCheckerboardSquares);
       drawUploadedImagePlane(*gpuData);
     }
     program.stopUse();
 
+    const ImageSettings& imageSettings = image->settings();
+    if (imageSettings.isosurfacesVisible() && imageSettings.showIsocontoursIn2D()) {
+      GLShaderProgram& isoProgram = shaderProgramForImagePlaneTextureDimension(
+        m_meshImagePlaneIsoContourProgram,
+        m_meshImagePlaneIsoContourTexture2DProgram,
+        textureLayout.dimension);
+
+      isoProgram.use();
+      for (const auto& surfaceUid : m_appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component))
+      {
+        const Isosurface* surface =
+          m_appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
+        if (!surface) {
+          spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
+          continue;
+        }
+        if (!surface->visible || !surface->showIn2d) {
+          continue;
+        }
+
+        static constexpr bool premultipliedAlpha = false;
+        const glm::vec3 color = glm::vec3{
+          getIsosurfaceColor(m_appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
+        setMeshImagePlaneIsoContourUniforms(
+          isoProgram,
+          view,
+          imagePlane,
+          uniformsIt->second,
+          textureLayout,
+          context,
+          m_appData.renderData().m_numCheckerboardSquares,
+          imageSettings,
+          *surface,
+          color,
+          imagePlane.opacityMultiplier);
+        drawUploadedImagePlane(*gpuData);
+      }
+      isoProgram.stopUse();
+    }
+
     unbindTextures(boundTextures);
   }
 
   setupOpenGLState();
+}
+
+void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context)
+{
+  drawImagePlaneRenderablesWithProgram(
+    m_appData,
+    view,
+    list,
+    context,
+    m_meshImagePlaneDdpInitProgram,
+    m_meshImagePlaneDdpInitTexture2DProgram);
+}
+
+void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context,
+  GLTexture& previousDepthBounds,
+  GLTexture& previousFrontColor)
+{
+  drawImagePlaneRenderablesWithProgram(
+    m_appData,
+    view,
+    list,
+    context,
+    m_meshImagePlaneDdpPeelProgram,
+    m_meshImagePlaneDdpPeelTexture2DProgram,
+    &m_meshImagePlaneDdpPeelProgram,
+    &previousDepthBounds,
+    &previousFrontColor);
 }

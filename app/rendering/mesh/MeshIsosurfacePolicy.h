@@ -24,7 +24,6 @@ inline constexpr uint64_t kScalarGridIsosurfaceAlgorithmVersion = 1;
 struct IsosurfaceMeshEligibility
 {
   bool renderWarped = false;        //!< True when the raycast path applies an inverse warp field
-  bool rimLightingEnabled = false;  //!< True when raycast-only rim lighting is enabled
   bool valueEditInProgress = false; //!< True while the user is interactively changing the isovalue
   float opacity = 1.0f;             //!< Effective opacity after image-level modulation
   bool visible = true;              //!< User-visible surface flag
@@ -38,13 +37,17 @@ struct IsosurfaceMeshEligibility
 bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) noexcept;
 
 /**
- * @brief Select the mesh compositing path for an isosurface alpha value
+ * @brief Select the mesh compositing path for an isosurface appearance
  * @param alpha Effective non-premultiplied surface alpha
+ * @param rimLightingEnabled Whether view-angle rim lighting is active
+ * @param rimOpacityStrength Strength of view-angle opacity modulation
  * @param translucentMode Compositing path used for translucent surfaces
  * @return Opaque compositing for fully opaque surfaces, otherwise the requested translucent compositing path
  */
 MeshCompositingMode compositingModeForIsosurfaceAlpha(
   float alpha,
+  bool rimLightingEnabled = false,
+  float rimOpacityStrength = 0.0f,
   MeshCompositingMode translucentMode = MeshCompositingMode::AlphaOverDdp) noexcept;
 
 /**

@@ -47,7 +47,10 @@ void Rendering::updateIsosurfaceDataFor3d(
 
   const ImageSettings& settings = image->settings();
 
-  if (!settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible()) {
+  if (
+    !settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible() ||
+    !settings.showIsosurfacesIn3D())
+  {
     return;
   }
 
@@ -65,7 +68,7 @@ void Rendering::updateIsosurfaceDataFor3d(
       continue;
     }
 
-    if (!surface->visible) {
+    if (!surface->visible || !surface->showIn3d) {
       continue;
     }
 

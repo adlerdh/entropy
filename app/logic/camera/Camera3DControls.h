@@ -58,7 +58,7 @@ struct State
   /** @brief True when the camera eye follows the global crosshairs position */
   bool m_viewPositionFollowsCrosshairs = false;
   /** @brief True when orthogonal image planes are drawn in the 3D view */
-  bool m_showImagePlanes = false;
+  bool m_showImagePlanes = true;
   /** @brief True after the user has manually changed the 3D camera */
   bool m_userMovedCamera = false;
 };

@@ -157,6 +157,24 @@ void Rendering::createShaderPrograms()
   if (!createMeshImagePlaneGrayLinearTexture2DProgram(m_meshImagePlaneGrayLinearTexture2DProgram)) {
     throwDebug("Failed to create mesh image-plane grayscale Texture2D program");
   }
+  if (!createMeshImagePlaneIsoContourProgram(m_meshImagePlaneIsoContourProgram)) {
+    throwDebug("Failed to create mesh image-plane isocontour program");
+  }
+  if (!createMeshImagePlaneIsoContourTexture2DProgram(m_meshImagePlaneIsoContourTexture2DProgram)) {
+    throwDebug("Failed to create mesh image-plane isocontour Texture2D program");
+  }
+  if (!createMeshImagePlaneDdpInitProgram(m_meshImagePlaneDdpInitProgram)) {
+    throwDebug("Failed to create mesh image-plane DDP init program");
+  }
+  if (!createMeshImagePlaneDdpInitTexture2DProgram(m_meshImagePlaneDdpInitTexture2DProgram)) {
+    throwDebug("Failed to create mesh image-plane DDP init Texture2D program");
+  }
+  if (!createMeshImagePlaneDdpPeelProgram(m_meshImagePlaneDdpPeelProgram)) {
+    throwDebug("Failed to create mesh image-plane DDP peel program");
+  }
+  if (!createMeshImagePlaneDdpPeelTexture2DProgram(m_meshImagePlaneDdpPeelTexture2DProgram)) {
+    throwDebug("Failed to create mesh image-plane DDP peel Texture2D program");
+  }
   if (!createMeshDdpInitProgram(m_meshDdpInitProgram)) {
     throwDebug("Failed to create mesh DDP init program");
   }

@@ -40,7 +40,7 @@ cmake --preset app-${BUILD_TYPE}
 cmake --build --preset app-${BUILD_TYPE} --parallel
 
 # Unit tests
-ctest --test-dir build-${BUILD_TYPE} --parallel 8 --output-on-failure
+ctest --test-dir build-${BUILD_TYPE} --parallel --output-on-failure
 ```
 
 Adjust the parallel job count for your machine, lowering it if you run out of memory. Run with:
@@ -233,7 +233,7 @@ reference space.
 ### Application Settings and Project Settings
 
 Application settings store personal UI preferences and backend configuration. Project settings store presentation and
-review state that is packaged with a project, such as layouts, comparison settings, raycasting settings, segmentation
+review state that is packaged with a project, such as layouts, comparison settings, 3D rendering settings, segmentation
 display defaults, and transformation assignments.
 
 ## Quick Start

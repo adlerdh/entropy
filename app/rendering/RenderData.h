@@ -258,7 +258,7 @@ struct RenderData
 
   glm::vec3 m_2dBackgroundColor; //!< Background clear color for 2D views
 
-  glm::vec4 m_3dBackgroundColor; //!< Raycast background color for 3D views as non-premultiplied RGBA
+  glm::vec4 m_3dBackgroundColor; //!< Background clear color for 3D views as non-premultiplied RGBA
 
   /// Whether a 3D view remains transparent when an eye ray does not hit the image bounding box.
   bool m_3dTransparentIfNoHit;
@@ -320,8 +320,22 @@ struct RenderData
   /// Measured raycast update frame rate used by adaptive sampling diagnostics.
   float m_adaptiveRaycastMeasuredFrameRate;
 
-  /// Whether raycast background edge brightening is enabled for rays crossing the image box.
+  /// Whether the image domain outline is visible in 3D views.
   bool m_raycastBackgroundEdgeBrighteningEnabled;
+
+  bool m_showImagePlanesIn3D; //!< Whether orthogonal image planes are visible in 3D views
+
+  bool m_modulateImagePlaneOpacityWithViewAngle; //!< Fade 3D image planes according to their view angle
+
+  bool m_shadeImagePlanesIn3D; //!< Apply headlight Blinn-Phong shading to 3D image planes
+
+  float m_imagePlaneAmbient; //!< Ambient term for 3D image-plane Blinn-Phong shading
+
+  float m_imagePlaneDiffuse; //!< Diffuse term for 3D image-plane Blinn-Phong shading
+
+  float m_imagePlaneSpecular; //!< Specular term for 3D image-plane Blinn-Phong shading
+
+  float m_imagePlaneShininess; //!< Specular exponent for 3D image-plane Blinn-Phong shading
 
   /// Whether committed opaque isosurfaces may be rendered as extracted meshes instead of raycast previews.
   bool m_isosurfaceMeshRenderingEnabled;
@@ -339,7 +353,7 @@ struct RenderData
 
   glm::vec4 m_meshClipPlaneWorld; //!< World-space mesh clipping plane `(nx, ny, nz, d)`
 
-  bool m_showCrosshairsIn3D; //!< Whether the 3D crosshairs glyph is rendered in raycast views
+  bool m_showCrosshairsIn3D; //!< Whether the 3D crosshairs glyph is rendered in 3D views
 
   /// Diameter of the 3D crosshairs glyph in image voxel-diagonal units.
   float m_crosshairs3DGlyphDiameterVoxelDiagonals;

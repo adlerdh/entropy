@@ -2156,49 +2156,118 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
 }
 
 /**
- * @brief Render the Raycasting settings section contents.
+ * @brief Render the general 3D Rendering settings section contents.
  */
-void renderRaycastingTab(RenderData& renderData)
+void render3DRenderingTab(RenderData& renderData)
 {
-  ImGui::PushID("raycasting"); /*** PushID raycasting ***/
+  ImGui::PushID("3d_rendering"); /*** PushID 3d_rendering ***/
 
-  /// @todo if these are added to the uniforms, then we'll have update uniforms when they
-  /// change
-
-  static constexpr float k_factorStep = 0.1f;
-  static constexpr float k_minFactor = 0.5f;
-  static constexpr float k_maxFactor = 2.0f;
-
-  renderData.m_adaptiveRaycastSamplingEnabled = false;
-  renderData.m_raycastSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, k_minFactor, k_maxFactor);
-  if (ImGui::DragFloat(
-        "Raycast sampling rate",
-        &(renderData.m_raycastSamplingFactor),
-        k_factorStep,
-        k_minFactor,
-        k_maxFactor,
-        "%0.1f vox",
-        ImGuiSliderFlags_AlwaysClamp))
-  {
-    // Update uniforms if m_raycastSamplingFactor gets added to uniforms
-  }
+  ImGui::ColorEdit4("Background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   ImGui::SameLine();
-  helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
+  helpMarker("Background color used by 3D raycast and mesh views");
+
+  ImGui::Checkbox("Transparent 3D background", &renderData.m_3dTransparentIfNoHit);
+  ImGui::SameLine();
+  helpMarker("Make the 3D view background transparent for raycast and mesh rendering");
 
   ImGui::Spacing();
-  ImGui::ColorEdit4("Raycast background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
-  ImGui::SameLine();
-  helpMarker("Color used for raycast pixels that do not hit visible image content");
+  ImGui::SeparatorText("3D image planes");
 
-  // Should the no-hit zone of raycast views be transparent, so that the view background is
-  // visible?
-  ImGui::Checkbox("Transparent background", &renderData.m_3dTransparentIfNoHit);
+  ImGui::Checkbox("Show image planes in 3D", &renderData.m_showImagePlanesIn3D);
   ImGui::SameLine();
-  helpMarker("Background of view is transparent outside of image volume");
+  helpMarker("Show orthogonal image planes through the current crosshairs in 3D views");
+
+  ImGui::BeginDisabled(!renderData.m_showImagePlanesIn3D);
+  ImGui::Checkbox("Fade with view angle", &renderData.m_modulateImagePlaneOpacityWithViewAngle);
+  ImGui::SameLine();
+  helpMarker("Make image planes more transparent as their plane becomes parallel to the camera direction");
+
+  ImGui::Checkbox("Blinn-Phong shading", &renderData.m_shadeImagePlanesIn3D);
+  ImGui::SameLine();
+  helpMarker("Apply headlight shading to image planes so their orientation is easier to read in 3D");
+
+  if (renderData.m_shadeImagePlanesIn3D) {
+    const float imagePlaneLightingWidth = ImGui::CalcItemWidth();
+    ImGui::PushItemWidth(imagePlaneLightingWidth);
+
+    if (mySliderF32("Ambient", &renderData.m_imagePlaneAmbient, 0.0f, 2.0f, "%0.2f")) {
+      renderData.m_imagePlaneAmbient = std::clamp(renderData.m_imagePlaneAmbient, 0.0f, 2.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Base brightness applied uniformly to 3D image planes");
+
+    if (mySliderF32("Diffuse", &renderData.m_imagePlaneDiffuse, 0.0f, 2.0f, "%0.2f")) {
+      renderData.m_imagePlaneDiffuse = std::clamp(renderData.m_imagePlaneDiffuse, 0.0f, 2.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Brightness that increases as an image plane faces the camera");
+
+    if (mySliderF32("Specular", &renderData.m_imagePlaneSpecular, 0.0f, 2.0f, "%0.2f")) {
+      renderData.m_imagePlaneSpecular = std::clamp(renderData.m_imagePlaneSpecular, 0.0f, 2.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Strength of the headlight highlight on 3D image planes");
+
+    if (mySliderF32("Shininess", &renderData.m_imagePlaneShininess, 1.0f, 128.0f, "%0.1f")) {
+      renderData.m_imagePlaneShininess = std::clamp(renderData.m_imagePlaneShininess, 1.0f, 128.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Higher values make the specular highlight smaller and sharper");
+
+    ImGui::PopItemWidth();
+  }
+  ImGui::EndDisabled();
 
   ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
   ImGui::SameLine();
-  helpMarker("Render a subtle outline of the raycast image box in 3D views");
+  helpMarker("Render a subtle outline of the visible image domain in 3D views");
+
+  ImGui::Spacing();
+  ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
+  ImGui::SameLine();
+  helpMarker("Reverse drag direction for POV 3D rotation about the current eye position");
+
+  ImGui::Spacing();
+  ImGui::Checkbox("Show crosshairs glyph in 3D", &renderData.m_showCrosshairsIn3D);
+  ImGui::SameLine();
+  helpMarker("Render a small depth-correct sphere at the crosshairs position in 3D views");
+
+  if (renderData.m_showCrosshairsIn3D) {
+    ImGui::DragFloat(
+      "Glyph diameter",
+      &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+      0.05f,
+      0.1f,
+      10.0f,
+      "%0.2f vox",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Sphere diameter as a multiple of the current image voxel diagonal");
+  }
+
+  ImGui::Spacing();
+  ImGui::Checkbox("Show 3D camera frustum in 2D views", &renderData.m_showThreeDCameraFrustumIn2DViews);
+  ImGui::SameLine();
+  helpMarker("Show the last-interacted 3D raycast camera eye and frustum footprint in 2D views");
+
+  if (renderData.m_showThreeDCameraFrustumIn2DViews) {
+    ImGui::ColorEdit4(
+      "Camera frustum line color",
+      glm::value_ptr(renderData.m_threeDCameraFrustumColor),
+      k_colorAlphaEditFlags);
+    ImGui::SameLine();
+    helpMarker("Color used for the 3D camera eye dot and frustum lines in 2D views");
+  }
+
+  ImGui::PopID(); /*** PopID 3d_rendering ***/
+}
+
+/**
+ * @brief Render the Mesh Rendering settings section contents.
+ */
+void renderMeshRenderingTab(RenderData& renderData)
+{
+  ImGui::PushID("mesh_rendering"); /*** PushID mesh_rendering ***/
 
   ImGui::Checkbox("Use mesh rendering when ready", &renderData.m_isosurfaceMeshRenderingEnabled);
   ImGui::SameLine();
@@ -2336,6 +2405,39 @@ void renderRaycastingTab(RenderData& renderData)
   }
   ImGui::EndDisabled();
 
+  ImGui::PopID(); /*** PopID mesh_rendering ***/
+}
+
+/**
+ * @brief Render the Raycasting settings section contents.
+ */
+void renderRaycastingTab(RenderData& renderData)
+{
+  ImGui::PushID("raycasting"); /*** PushID raycasting ***/
+
+  /// @todo if these are added to the uniforms, then we'll have update uniforms when they
+  /// change
+
+  static constexpr float k_factorStep = 0.1f;
+  static constexpr float k_minFactor = 0.5f;
+  static constexpr float k_maxFactor = 2.0f;
+
+  renderData.m_adaptiveRaycastSamplingEnabled = false;
+  renderData.m_raycastSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, k_minFactor, k_maxFactor);
+  if (ImGui::DragFloat(
+        "Raycast sampling rate",
+        &(renderData.m_raycastSamplingFactor),
+        k_factorStep,
+        k_minFactor,
+        k_maxFactor,
+        "%0.1f vox",
+        ImGuiSliderFlags_AlwaysClamp))
+  {
+    // Update uniforms if m_raycastSamplingFactor gets added to uniforms
+  }
+  ImGui::SameLine();
+  helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
+
   // Should the front and back faces be rendered in 3D raycasting?
   ImGui::Spacing();
   ImGui::Checkbox("Render front faces", &renderData.m_renderFrontFaces);
@@ -2345,42 +2447,6 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::Checkbox("Render back faces", &renderData.m_renderBackFaces);
   ImGui::SameLine();
   helpMarker("Render back faces in raycasting");
-
-  ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
-  ImGui::SameLine();
-  helpMarker("Reverse drag direction for POV 3D rotation about the current eye position");
-
-  ImGui::Spacing();
-  ImGui::Checkbox("Show crosshairs glyph in 3D", &renderData.m_showCrosshairsIn3D);
-  ImGui::SameLine();
-  helpMarker("Render a small depth-correct sphere at the crosshairs position in 3D raycast views");
-
-  if (renderData.m_showCrosshairsIn3D) {
-    ImGui::DragFloat(
-      "Glyph diameter",
-      &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-      0.05f,
-      0.1f,
-      10.0f,
-      "%0.2f vox",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Sphere diameter as a multiple of the current image voxel diagonal");
-  }
-
-  ImGui::Spacing();
-  ImGui::Checkbox("Show 3D camera frustum in 2D views", &renderData.m_showThreeDCameraFrustumIn2DViews);
-  ImGui::SameLine();
-  helpMarker("Show the last-interacted 3D raycast camera eye and frustum footprint in 2D views");
-
-  if (renderData.m_showThreeDCameraFrustumIn2DViews) {
-    ImGui::ColorEdit4(
-      "Camera frustum line color",
-      glm::value_ptr(renderData.m_threeDCameraFrustumColor),
-      k_colorAlphaEditFlags);
-    ImGui::SameLine();
-    helpMarker("Color used for the 3D camera eye dot and frustum lines in 2D views");
-  }
 
   ImGui::Spacing();
   ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -2463,11 +2529,23 @@ void renderRenderingTab(RenderData& renderData)
   }
   finishSettingsSection(frameRateOpen);
 
+  const bool threeDRenderingOpen = ImGui::CollapsingHeader("3D Rendering", ImGuiTreeNodeFlags_DefaultOpen);
+  if (threeDRenderingOpen) {
+    render3DRenderingTab(renderData);
+  }
+  finishSettingsSection(threeDRenderingOpen);
+
   const bool raycastingOpen = ImGui::CollapsingHeader("Raycasting", ImGuiTreeNodeFlags_DefaultOpen);
   if (raycastingOpen) {
     renderRaycastingTab(renderData);
   }
   finishSettingsSection(raycastingOpen);
+
+  const bool meshRenderingOpen = ImGui::CollapsingHeader("Mesh Rendering", ImGuiTreeNodeFlags_DefaultOpen);
+  if (meshRenderingOpen) {
+    renderMeshRenderingTab(renderData);
+  }
+  finishSettingsSection(meshRenderingOpen);
 
   const bool isosurfacesOpen = ImGui::CollapsingHeader("Isosurfaces", ImGuiTreeNodeFlags_DefaultOpen);
   if (isosurfacesOpen) {

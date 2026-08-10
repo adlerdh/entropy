@@ -74,6 +74,54 @@ bool createMeshImagePlaneGrayLinearProgram(GLShaderProgram& program);
 bool createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& program);
 
 /**
+ * @brief Compile and link the mesh image-plane isocontour shader for ordinary 3D textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneIsoContourProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane isocontour shader for planar 2D fallback textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneIsoContourTexture2DProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane DDP initialization shader for ordinary 3D textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneDdpInitProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane DDP initialization shader for planar 2D fallback textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneDdpInitTexture2DProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane DDP peeling shader for ordinary 3D textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program);
+
+/**
+ * @brief Compile and link the mesh image-plane DDP peeling shader for planar 2D fallback textures.
+ *
+ * @param program Program object to populate.
+ * @return True when the program compiled and linked successfully.
+ */
+bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program);
+
+/**
  * @brief Compile and link the mesh DDP initialization shader program.
  *
  * @param program Program object to populate.
@@ -244,7 +292,10 @@ void clearMeshViewBackgroundForView(const View& view);
  * @param view View receiving the mesh draw.
  * @param list Opaque, transparent, additive, and multiplicative mesh buckets to render.
  */
-void drawMeshRenderListForView(const View& view, const rendering::mesh::MeshRenderList& list);
+void drawMeshRenderListForView(
+  const View& view,
+  const rendering::mesh::MeshRenderList& list,
+  const rendering::mesh::MeshImagePlaneRenderList* imagePlaneList = nullptr);
 
 /**
  * @brief Render textured image-plane mesh renderables into a 3D view.
@@ -253,6 +304,45 @@ void drawMeshRenderListForView(const View& view, const rendering::mesh::MeshRend
  * @param list Filtered image-plane renderables to draw.
  */
 void drawMeshImagePlaneRenderListForView(const View& view, const rendering::mesh::MeshImagePlaneRenderList& list);
+
+/**
+ * @brief Draw image-plane depth bounds into the active DDP initialization framebuffer.
+ *
+ * @param view View whose camera uniforms are used.
+ * @param list Image-plane renderables participating in DDP.
+ * @param context Mesh draw context shared by the DDP pass.
+ */
+void drawMeshImagePlaneDdpDepthBoundsForView(
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context);
+
+/**
+ * @brief Peel image-plane layers into the active DDP ping-pong framebuffer.
+ *
+ * @param view View whose camera uniforms are used.
+ * @param list Image-plane renderables participating in DDP.
+ * @param context Mesh draw context shared by the DDP pass.
+ * @param previousDepthBounds Previous DDP depth-bounds texture.
+ * @param previousFrontColor Previous DDP accumulated front-color texture.
+ */
+void drawMeshImagePlaneDdpPeelLayersForView(
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context,
+  GLTexture& previousDepthBounds,
+  GLTexture& previousFrontColor);
+
+/**
+ * @brief Build enabled 3D image-plane renderables without drawing them.
+ *
+ * @param view 3D view whose visible images and crosshairs position define the planes.
+ * @param[out] borderRenderables Ordinary mesh renderables for image-plane borders and image boxes.
+ * @return Textured image-plane renderables for DDP composition.
+ */
+std::vector<rendering::mesh::MeshImagePlaneRenderable> collectMeshImagePlaneRenderablesForView(
+  const View& view,
+  std::vector<rendering::mesh::MeshRenderable>& borderRenderables);
 
 /**
  * @brief Render enabled orthogonal image planes through the current 3D crosshairs position.
@@ -280,7 +370,16 @@ bool renderIsosurfaceMeshesForView(const View& view, const CurrentImages& imageS
 /**
  * @brief Render the active segmentation of the selected 3D image as label meshes.
  */
-void renderSegmentationMeshesForView(const View& view);
+bool renderSegmentationMeshesForView(const View& view);
+
+/**
+ * @brief Append the 3D crosshairs glyph to a mesh scene when it is visible for the view.
+ *
+ * @param view 3D view receiving the mesh draw.
+ * @param renderables Mesh renderable list to extend.
+ * @return True when a glyph renderable was appended.
+ */
+bool appendMeshCrosshairsRenderableForView(const View& view, std::vector<rendering::mesh::MeshRenderable>& renderables);
 
 /**
  * @brief Render the 3D crosshairs glyph through the mesh path.

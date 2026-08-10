@@ -125,7 +125,15 @@ struct RenderPreferences
   bool limitFrameRate = false;
   double targetFrameTimeSeconds = 1.0 / 60.0;
   float raycastSamplingFactor = 0.8f;
-  bool transparentBackgroundWhenNoHit = true;
+  bool transparent3DBackground = true;
+  bool imageBoxVisible = false;
+  bool showImagePlanesIn3D = true;
+  bool modulateImagePlaneOpacityWithViewAngle = true;
+  bool shadeImagePlanesIn3D = true;
+  float imagePlaneAmbient = 0.35f;
+  float imagePlaneDiffuse = 0.65f;
+  float imagePlaneSpecular = 0.18f;
+  float imagePlaneShininess = 32.0f;
   bool renderFrontFaces = true;
   bool renderBackFaces = true;
   bool reversePovRotation = false;

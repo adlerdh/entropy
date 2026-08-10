@@ -8,6 +8,7 @@
 #include <span>
 
 class GLShaderProgram;
+class GLTexture;
 
 namespace rendering::mesh
 {
@@ -21,13 +22,15 @@ struct MeshDdpRenderRequest
 {
   MeshDdpResources& resources;                                               //!< DDP framebuffer and texture owner
   std::span<const std::reference_wrapper<const MeshRenderable>> renderables; //!< Meshes resolved by DDP
-  const MeshDrawContext& context;    //!< Camera, lighting, and mesh lookup state
-  const MeshDdpPlan& plan;           //!< Sanitized DDP execution plan
-  const MeshRenderer& meshRenderer;  //!< Stateless mesh draw helper
-  GLShaderProgram& initProgram;      //!< Mesh fragment shader that initializes depth bounds
-  GLShaderProgram& peelProgram;      //!< Mesh fragment shader that peels front/back layers
-  GLShaderProgram& backBlendProgram; //!< Full-screen shader that accumulates back colors
-  GLShaderProgram& resolveProgram;   //!< Full-screen shader that resolves front over back
+  const MeshDrawContext& context;             //!< Camera, lighting, and mesh lookup state
+  const MeshDdpPlan& plan;                    //!< Sanitized DDP execution plan
+  const MeshRenderer& meshRenderer;           //!< Stateless mesh draw helper
+  GLShaderProgram& initProgram;               //!< Mesh fragment shader that initializes depth bounds
+  GLShaderProgram& peelProgram;               //!< Mesh fragment shader that peels front/back layers
+  GLShaderProgram& backBlendProgram;          //!< Full-screen shader that accumulates back colors
+  GLShaderProgram& resolveProgram;            //!< Full-screen shader that resolves front over back
+  std::function<void()> drawExtraDepthBounds; //!< Optional non-material renderables for the DDP initialization pass
+  std::function<void(GLTexture&, GLTexture&)> drawExtraPeelLayers; //!< Optional non-material peel pass
 };
 
 /**

@@ -237,7 +237,9 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
   project.m_synchronization = project_snapshot::synchronizationSettings(m_data);
   project.m_view = project_snapshot::viewSettings(m_data);
   project.m_comparison = project_snapshot::comparisonSettings(m_data);
+  project.m_threeDRendering = project_snapshot::threeDRenderingSettings(m_data);
   project.m_raycasting = project_snapshot::raycastingSettings(m_data);
+  project.m_meshRendering = project_snapshot::meshRenderingSettings(m_data);
   project.m_intensityProjection = project_snapshot::intensityProjectionSettings(m_data);
   project.m_segmentationDisplay = project_snapshot::segmentationDisplaySettings(m_data);
   project.m_isocontours = project_snapshot::isocontourDisplaySettings(m_data);
@@ -736,7 +738,9 @@ void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::option
   project_snapshot::applySynchronizationSettings(m_data, m_data.project().m_synchronization);
   project_snapshot::applyViewSettings(m_data, m_data.project().m_view);
   project_snapshot::applyComparisonSettings(m_data, m_data.project().m_comparison);
+  project_snapshot::applyThreeDRenderingSettings(m_data, m_data.project().m_threeDRendering);
   project_snapshot::applyRaycastingSettings(m_data, m_data.project().m_raycasting);
+  project_snapshot::applyMeshRenderingSettings(m_data, m_data.project().m_meshRendering);
   project_snapshot::applyIntensityProjectionSettings(m_data, m_data.project().m_intensityProjection);
   project_snapshot::applySegmentationDisplaySettings(m_data, m_data.project().m_segmentationDisplay);
   project_snapshot::applyIsocontourDisplaySettings(m_data, m_data.project().m_isocontours);

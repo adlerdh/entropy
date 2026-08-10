@@ -328,29 +328,37 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_threeDRendering.m_transparentBackground = false;
+  project.m_threeDRendering.m_imageBoxVisible = true;
+  project.m_threeDRendering.m_imagePlanesVisible = false;
+  project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
+  project.m_threeDRendering.m_imagePlaneShading = false;
+  project.m_threeDRendering.m_imagePlaneAmbient = 0.42f;
+  project.m_threeDRendering.m_imagePlaneDiffuse = 0.83f;
+  project.m_threeDRendering.m_imagePlaneSpecular = 0.51f;
+  project.m_threeDRendering.m_imagePlaneShininess = 48.0f;
+  project.m_threeDRendering.m_showCrosshairsIn3D = true;
+  project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
+  project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
+  project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
+  project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
   project.m_raycasting.m_samplingFactor = 1.25f;
-  project.m_raycasting.m_transparentBackgroundWhenNoHit = false;
-  project.m_raycasting.m_backgroundEdgeBrighteningEnabled = false;
-  project.m_raycasting.m_meshRenderingEnabled = false;
-  project.m_raycasting.m_meshShadowsEnabled = true;
-  project.m_raycasting.m_meshShadowMapSizePixels = 2048;
-  project.m_raycasting.m_meshShadowStrength = 0.6f;
-  project.m_raycasting.m_meshShadowDepthBias = 0.002f;
-  project.m_raycasting.m_meshAmbientOcclusionEnabled = true;
-  project.m_raycasting.m_meshAmbientOcclusionRadiusPixels = 12.0f;
-  project.m_raycasting.m_meshAmbientOcclusionStrength = 0.7f;
-  project.m_raycasting.m_meshTranslucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
-  project.m_raycasting.m_meshPickingEnabled = false;
-  project.m_raycasting.m_meshClipPlaneEnabled = true;
-  project.m_raycasting.m_meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
-  project.m_raycasting.m_showCrosshairsIn3D = true;
-  project.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
-  project.m_raycasting.m_showThreeDCameraFrustumIn2DViews = true;
-  project.m_raycasting.m_reverseThreeDRotateAboutEye = true;
-  project.m_raycasting.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
   project.m_raycasting.m_renderFrontFaces = false;
   project.m_raycasting.m_renderBackFaces = true;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
+  project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_generationThreadCount = 3;
+  project.m_meshRendering.m_shadowsEnabled = true;
+  project.m_meshRendering.m_shadowMapSizePixels = 2048;
+  project.m_meshRendering.m_shadowStrength = 0.6f;
+  project.m_meshRendering.m_shadowDepthBias = 0.002f;
+  project.m_meshRendering.m_ambientOcclusionEnabled = true;
+  project.m_meshRendering.m_ambientOcclusionRadiusPixels = 12.0f;
+  project.m_meshRendering.m_ambientOcclusionStrength = 0.7f;
+  project.m_meshRendering.m_translucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
+  project.m_meshRendering.m_pickingEnabled = false;
+  project.m_meshRendering.m_clipPlaneEnabled = true;
+  project.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
   project.m_intensityProjection.m_useMaximumImageExtent = true;
   project.m_intensityProjection.m_slabThicknessMm = 12.5f;
   project.m_intensityProjection.m_xrayEnergyKeV = 120.0f;
@@ -369,42 +377,60 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   REQUIRE(root.at("settings").contains("rendering"));
   const json& settings = root.at("settings");
   const json& rendering = settings.at("rendering");
+  const json& threeD = rendering.at("threeD");
   const json& raycasting = rendering.at("raycasting");
+  const json& mesh = rendering.at("mesh");
   CHECK_FALSE(root.contains("raycasting"));
   CHECK_FALSE(root.contains("intensityProjection"));
   CHECK_FALSE(root.contains("segmentationDisplay"));
   CHECK_FALSE(root.contains("isosurfaceDisplay"));
   CHECK_FALSE(root.contains("annotationDisplay"));
   CHECK_FALSE(rendering.contains("volumeRaycasting"));
+  CHECK(threeD.at("transparentBackground") == false);
+  CHECK(threeD.at("imageBoxVisible") == true);
+  CHECK(threeD.at("imagePlanes").at("visible") == false);
+  CHECK(threeD.at("imagePlanes").at("viewAngleOpacity") == false);
+  CHECK(threeD.at("imagePlanes").at("shading") == false);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("ambient") == 0.42f);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("diffuse") == 0.83f);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("specular") == 0.51f);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("shininess") == 48.0f);
+  CHECK_FALSE(threeD.contains("crosshairsGlyphVisible"));
+  CHECK(threeD.at("crosshairsGlyphDiameterVox") == 1.75f);
+  CHECK(threeD.at("cameraFrustumVisibleIn2DViews") == true);
+  CHECK(threeD.at("reverseRotateAboutEye") == true);
+  CHECK(threeD.at("cameraFrustumColor").at(0) == 1.0f);
+  CHECK(threeD.at("cameraFrustumColor").at(1) == 0.25f);
+  CHECK(threeD.at("cameraFrustumColor").at(2) == 0.75f);
+  CHECK(threeD.at("cameraFrustumColor").at(3) == 0.8f);
   CHECK(raycasting.at("samplingFactor") == 1.25f);
   CHECK_FALSE(raycasting.contains("adaptiveSamplingEnabled"));
   CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
-  CHECK(raycasting.at("transparentBackgroundWhenNoHit") == false);
-  CHECK(raycasting.at("imageBoxVisible") == false);
-  CHECK(raycasting.at("meshRenderingEnabled") == false);
-  CHECK(raycasting.at("meshShadows").at("enabled") == true);
-  CHECK(raycasting.at("meshShadows").at("mapSizePixels") == 2048);
-  CHECK(raycasting.at("meshShadows").at("strength") == 0.6f);
-  CHECK(raycasting.at("meshShadows").at("depthBias") == 0.002f);
-  CHECK(raycasting.at("meshAmbientOcclusion").at("enabled") == true);
-  CHECK(raycasting.at("meshAmbientOcclusion").at("radiusPixels") == 12.0f);
-  CHECK(raycasting.at("meshAmbientOcclusion").at("strength") == 0.7f);
-  CHECK(raycasting.at("meshTranslucentCompositing") == "multiplicative");
-  CHECK(raycasting.at("meshPickingEnabled") == false);
-  CHECK(raycasting.at("meshClipPlane").at("enabled") == true);
-  CHECK(raycasting.at("meshClipPlane").at("worldPlane").at(1) == 1.0f);
-  CHECK(raycasting.at("meshClipPlane").at("worldPlane").at(3) == -12.5f);
-  CHECK_FALSE(raycasting.contains("crosshairsGlyphVisible"));
-  CHECK(raycasting.at("crosshairsGlyphDiameterVox") == 1.75f);
-  CHECK(raycasting.at("cameraFrustumVisibleIn2DViews") == true);
-  CHECK(raycasting.at("reverseRotateAboutEye") == true);
-  CHECK(raycasting.at("cameraFrustumColor").at(0) == 1.0f);
-  CHECK(raycasting.at("cameraFrustumColor").at(1) == 0.25f);
-  CHECK(raycasting.at("cameraFrustumColor").at(2) == 0.75f);
-  CHECK(raycasting.at("cameraFrustumColor").at(3) == 0.8f);
   CHECK(raycasting.at("renderFrontFaces") == false);
   CHECK_FALSE(raycasting.contains("renderBackFaces"));
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
+  CHECK(mesh.at("enabled") == false);
+  CHECK(mesh.at("generationThreads") == 3);
+  CHECK(mesh.at("shadows").at("enabled") == true);
+  CHECK(mesh.at("shadows").at("mapSizePixels") == 2048);
+  CHECK(mesh.at("shadows").at("strength") == 0.6f);
+  CHECK(mesh.at("shadows").at("depthBias") == 0.002f);
+  CHECK(mesh.at("ambientOcclusion").at("enabled") == true);
+  CHECK(mesh.at("ambientOcclusion").at("radiusPixels") == 12.0f);
+  CHECK(mesh.at("ambientOcclusion").at("strength") == 0.7f);
+  CHECK(mesh.at("translucentCompositing") == "multiplicative");
+  CHECK(mesh.at("pointPicking") == false);
+  CHECK(mesh.at("clipPlane").at("enabled") == true);
+  CHECK(mesh.at("clipPlane").at("worldPlane").at(1) == 1.0f);
+  CHECK(mesh.at("clipPlane").at("worldPlane").at(3) == -12.5f);
+  CHECK_FALSE(raycasting.contains("transparentBackgroundWhenNoHit"));
+  CHECK_FALSE(raycasting.contains("imageBoxVisible"));
+  CHECK_FALSE(raycasting.contains("meshRenderingEnabled"));
+  CHECK_FALSE(raycasting.contains("meshShadows"));
+  CHECK_FALSE(raycasting.contains("meshAmbientOcclusion"));
+  CHECK_FALSE(raycasting.contains("meshTranslucentCompositing"));
+  CHECK_FALSE(raycasting.contains("meshPickingEnabled"));
+  CHECK_FALSE(raycasting.contains("meshClipPlane"));
   CHECK_FALSE(raycasting.contains("backgroundEdgeBrighteningEnabled"));
   CHECK_FALSE(raycasting.contains("showCrosshairsIn3D"));
   CHECK_FALSE(raycasting.contains("crosshairs3DGlyphDiameterVoxelDiagonals"));
@@ -423,32 +449,40 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
+  CHECK(parsed.m_threeDRendering.m_transparentBackground == false);
+  CHECK(parsed.m_threeDRendering.m_imageBoxVisible == true);
+  CHECK(parsed.m_threeDRendering.m_imagePlanesVisible == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneViewAngleOpacity == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneShading == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneAmbient == 0.42f);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneDiffuse == 0.83f);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneSpecular == 0.51f);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneShininess == 48.0f);
+  CHECK(parsed.m_threeDRendering.m_showCrosshairsIn3D == true);
+  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
+  CHECK(parsed.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews == true);
+  CHECK(parsed.m_threeDRendering.m_reverseThreeDRotateAboutEye == true);
+  CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.x == 1.0f);
+  CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.y == 0.25f);
+  CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.z == 0.75f);
+  CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.w == 0.8f);
   CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
-  CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
-  CHECK(parsed.m_raycasting.m_backgroundEdgeBrighteningEnabled == false);
-  CHECK(parsed.m_raycasting.m_meshRenderingEnabled == false);
-  CHECK(parsed.m_raycasting.m_meshShadowsEnabled == true);
-  CHECK(parsed.m_raycasting.m_meshShadowMapSizePixels == 2048);
-  CHECK(parsed.m_raycasting.m_meshShadowStrength == 0.6f);
-  CHECK(parsed.m_raycasting.m_meshShadowDepthBias == 0.002f);
-  CHECK(parsed.m_raycasting.m_meshAmbientOcclusionEnabled == true);
-  CHECK(parsed.m_raycasting.m_meshAmbientOcclusionRadiusPixels == 12.0f);
-  CHECK(parsed.m_raycasting.m_meshAmbientOcclusionStrength == 0.7f);
-  CHECK(parsed.m_raycasting.m_meshTranslucentCompositing == serialize::ProjectMeshCompositingMode::Multiplicative);
-  CHECK(parsed.m_raycasting.m_meshPickingEnabled == false);
-  CHECK(parsed.m_raycasting.m_meshClipPlaneEnabled == true);
-  CHECK(parsed.m_raycasting.m_meshClipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
-  CHECK(parsed.m_raycasting.m_showCrosshairsIn3D == true);
-  CHECK(parsed.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
-  CHECK(parsed.m_raycasting.m_showThreeDCameraFrustumIn2DViews == true);
-  CHECK(parsed.m_raycasting.m_reverseThreeDRotateAboutEye == true);
-  CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.x == 1.0f);
-  CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.y == 0.25f);
-  CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.z == 0.75f);
-  CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.w == 0.8f);
   CHECK(parsed.m_raycasting.m_renderFrontFaces == false);
   CHECK(parsed.m_raycasting.m_renderBackFaces == true);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
+  CHECK(parsed.m_meshRendering.m_renderingEnabled == false);
+  CHECK(parsed.m_meshRendering.m_generationThreadCount == 3);
+  CHECK(parsed.m_meshRendering.m_shadowsEnabled == true);
+  CHECK(parsed.m_meshRendering.m_shadowMapSizePixels == 2048);
+  CHECK(parsed.m_meshRendering.m_shadowStrength == 0.6f);
+  CHECK(parsed.m_meshRendering.m_shadowDepthBias == 0.002f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled == true);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusPixels == 12.0f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
+  CHECK(parsed.m_meshRendering.m_translucentCompositing == serialize::ProjectMeshCompositingMode::Multiplicative);
+  CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
+  CHECK(parsed.m_meshRendering.m_clipPlaneEnabled == true);
+  CHECK(parsed.m_meshRendering.m_clipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
   CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == true);
   CHECK(parsed.m_intensityProjection.m_slabThicknessMm == 12.5f);
   CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
@@ -472,11 +506,8 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
      {
        {"rendering",
         {
-          {"raycasting",
-           {{"samplingFactor", 0.0f},
-            {"segmentationMasking", "bad"},
-            {"transparentBackgroundWhenNoHit", false},
-            {"renderFrontFaces", false}}},
+          {"threeD", {{"transparentBackground", false}}},
+          {"raycasting", {{"samplingFactor", 0.0f}, {"segmentationMasking", "bad"}, {"renderFrontFaces", false}}},
           {"intensityProjection",
            {{"useMaximumImageExtent", true},
             {"slabThicknessMm", -1.0f},
@@ -499,7 +530,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
 
   CHECK(parsed.m_raycasting.m_samplingFactor == 0.5f);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::Disabled);
-  CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
+  CHECK(parsed.m_threeDRendering.m_transparentBackground == false);
   CHECK(parsed.m_raycasting.m_renderFrontFaces == false);
   CHECK(parsed.m_raycasting.m_renderBackFaces == true);
   CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == true);
@@ -963,6 +994,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_isosurfacesVisible = false,
     .m_applyImageColormapToIsosurfaces = true,
     .m_showIsocontoursIn2D = false,
+    .m_showIsosurfacesIn3D = false,
     .m_isocontourLineWidthIn2D = 3.5,
     .m_isosurfaceOpacityModulator = 0.45f};
 
@@ -1067,6 +1099,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(isosurfaces.at("visible") == false);
   CHECK(isosurfaces.at("applyImageColormap") == true);
   CHECK(isosurfaces.at("showContours2D") == false);
+  CHECK(isosurfaces.at("showSurfaces3D") == false);
   CHECK(isosurfaces.at("contourLineWidth2D") == 3.5);
   CHECK(isosurfaces.at("opacityModulator") == 0.45f);
 
@@ -1158,6 +1191,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_isosurfacesVisible);
   CHECK(parsedSettings.m_applyImageColormapToIsosurfaces);
   CHECK_FALSE(parsedSettings.m_showIsocontoursIn2D);
+  CHECK_FALSE(parsedSettings.m_showIsosurfacesIn3D);
   CHECK(parsedSettings.m_isocontourLineWidthIn2D == 3.5);
   CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
 }
@@ -1180,6 +1214,7 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   surface.fillOpacity = 0.25f;
   surface.visible = false;
   surface.showIn2d = false;
+  surface.showIn3d = false;
   surface.rimLightingEnabled = true;
   surface.rimOpacityStrength = 0.8f;
   surface.rimEmissionStrength = 1.25f;
@@ -1189,6 +1224,7 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
 
   CHECK(root.at("contourFillOpacity") == 0.25f);
   CHECK(root.at("showContours2D") == false);
+  CHECK(root.at("showSurface3D") == false);
   CHECK(root.at("material").at("pbr").at("enabled") == true);
   CHECK(root.at("material").at("pbr").at("metallic") == 0.4f);
   CHECK(root.at("material").at("pbr").at("roughness") == 0.2f);
@@ -1199,6 +1235,7 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   CHECK(root.at("rimLighting").at("falloff") == 3.5f);
   CHECK_FALSE(root.contains("fillOpacity"));
   CHECK_FALSE(root.contains("showIn2d"));
+  CHECK_FALSE(root.contains("showIn3d"));
   CHECK_FALSE(root.contains("rimLightingEnabled"));
   CHECK_FALSE(root.contains("rimOpacityStrength"));
   CHECK_FALSE(root.contains("rimEmissionStrength"));
@@ -1221,6 +1258,7 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   CHECK(parsed.fillOpacity == 0.25f);
   CHECK_FALSE(parsed.visible);
   CHECK_FALSE(parsed.showIn2d);
+  CHECK_FALSE(parsed.showIn3d);
   CHECK(parsed.rimLightingEnabled);
   CHECK(parsed.rimOpacityStrength == 0.8f);
   CHECK(parsed.rimEmissionStrength == 1.25f);
@@ -1241,6 +1279,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   imageSurface.m_surface.fillOpacity = 0.15f;
   imageSurface.m_surface.visible = false;
   imageSurface.m_surface.showIn2d = false;
+  imageSurface.m_surface.showIn3d = false;
   imageSurface.m_surface.rimLightingEnabled = true;
   imageSurface.m_surface.rimOpacityStrength = 0.7f;
   imageSurface.m_surface.rimEmissionStrength = 1.4f;
@@ -1253,12 +1292,14 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(savedSurface.at("surface").at("name") == "Rim surface");
   CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
   CHECK(savedSurface.at("surface").at("showContours2D") == false);
+  CHECK(savedSurface.at("surface").at("showSurface3D") == false);
   CHECK(savedSurface.at("surface").at("rimLighting").at("enabled") == true);
   CHECK(savedSurface.at("surface").at("rimLighting").at("opacity") == 0.7f);
   CHECK(savedSurface.at("surface").at("rimLighting").at("glow") == 1.4f);
   CHECK(savedSurface.at("surface").at("rimLighting").at("falloff") == 3.0f);
   CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
   CHECK_FALSE(savedSurface.at("surface").contains("showIn2d"));
+  CHECK_FALSE(savedSurface.at("surface").contains("showIn3d"));
   CHECK_FALSE(savedSurface.at("surface").contains("rimLightingEnabled"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
@@ -1272,6 +1313,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(parsedSurface.m_surface.fillOpacity == 0.15f);
   CHECK_FALSE(parsedSurface.m_surface.visible);
   CHECK_FALSE(parsedSurface.m_surface.showIn2d);
+  CHECK_FALSE(parsedSurface.m_surface.showIn3d);
   CHECK(parsedSurface.m_surface.rimLightingEnabled);
   CHECK(parsedSurface.m_surface.rimOpacityStrength == 0.7f);
   CHECK(parsedSurface.m_surface.rimEmissionStrength == 1.4f);

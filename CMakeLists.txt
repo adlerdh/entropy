@@ -920,6 +920,8 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/mesh/FullScreenTriangle.vs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshAmbientOcclusionGeometry.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshAmbientOcclusionResolve.fs"
+  "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs"
+  "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlane.vs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/Mesh.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/Mesh.vs"

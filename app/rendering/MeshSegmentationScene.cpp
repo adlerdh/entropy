@@ -66,18 +66,20 @@ std::string segmentationMeshDescription(
 
 } // namespace
 
-void Rendering::renderSegmentationMeshesForView(const View& view)
+bool Rendering::renderSegmentationMeshesForView(const View& view)
 {
   consumeCompletedMeshExtractions();
-  clearMeshViewBackgroundForView(view);
 
   const CurrentImages imageSegPairs = raycastImagesForView(view);
   if (imageSegPairs.empty()) {
-    return;
+    return false;
   }
 
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
+  std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
+  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
+    collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
 
   for (const ImgSegPair& imgSegPair : imageSegPairs) {
     if (!imgSegPair.second) {
@@ -186,12 +188,24 @@ void Rendering::renderSegmentationMeshesForView(const View& view)
     }
   }
 
-  if (renderables.empty()) {
-    return;
+  renderables.insert(renderables.end(), imagePlaneBorderRenderables.begin(), imagePlaneBorderRenderables.end());
+
+  rendering::mesh::MeshScene imagePlaneScene;
+  imagePlaneScene.setImagePlaneRenderables(std::move(imagePlaneRenderables));
+  const rendering::mesh::MeshImagePlaneRenderList imagePlaneList =
+    rendering::mesh::buildImagePlaneRenderList(imagePlaneScene.imagePlaneRenderables());
+
+  // Keep the crosshairs glyph in the same mesh pass as translucent segmentation surfaces so DDP can depth-order the
+  // glyph with the surface instead of drawing the glyph later against an empty default depth buffer.
+  appendMeshCrosshairsRenderableForView(view, renderables);
+
+  if (renderables.empty() && imagePlaneList.imagePlanes.empty()) {
+    return false;
   }
 
   rendering::mesh::MeshScene scene;
   scene.setRenderables(renderables);
   const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
-  drawMeshRenderListForView(view, list);
+  drawMeshRenderListForView(view, list, &imagePlaneList);
+  return true;
 }

@@ -185,6 +185,8 @@ EntropyApp::~EntropyApp()
   if (m_futureDiscoverDicom.valid()) {
     m_futureDiscoverDicom.wait();
   }
+
+  m_rendering.prepareForShutdown();
 }
 
 void EntropyApp::init()

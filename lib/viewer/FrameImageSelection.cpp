@@ -184,10 +184,10 @@ const std::list<uuids::uuid>& FrameImageSelection::visibleImages(ViewRenderMode 
       return renderedImages();
     }
     case ViewRenderMode::VolumeRender: {
-      return m_volumeRenderedImageUids.empty() ? renderedImages() : volumeRenderedImages();
+      return volumeRenderedImages();
     }
     case ViewRenderMode::SegmentationMesh: {
-      return m_volumeRenderedImageUids.empty() ? renderedImages() : volumeRenderedImages();
+      return volumeRenderedImages();
     }
     case ViewRenderMode::Disabled: {
       return sk_noImages;

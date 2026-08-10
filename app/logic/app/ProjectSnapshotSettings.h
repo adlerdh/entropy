@@ -102,6 +102,20 @@ serialize::ProjectComparisonSettings comparisonSettings(const AppData& appData);
 void applyComparisonSettings(AppData& appData, const serialize::ProjectComparisonSettings& settings);
 
 /**
+ * @brief Build project-owned shared 3D rendering settings from the current application data.
+ * @param appData Application data containing current project rendering state.
+ * @return Project 3D rendering settings suitable for project JSON serialization.
+ */
+serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned shared 3D rendering settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized 3D rendering settings to restore.
+ */
+void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThreeDRenderingSettings& settings);
+
+/**
  * @brief Build project-owned raycasting settings from the current application data.
  * @param appData Application data containing current project rendering state.
  * @return Project raycasting settings suitable for project JSON serialization.
@@ -114,6 +128,20 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData);
  * @param settings Serialized raycasting settings to restore.
  */
 void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastingSettings& settings);
+
+/**
+ * @brief Build project-owned mesh rendering settings from the current application data.
+ * @param appData Application data containing current project rendering state.
+ * @return Project mesh rendering settings suitable for project JSON serialization.
+ */
+serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned mesh rendering settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized mesh rendering settings to restore.
+ */
+void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRenderingSettings& settings);
 
 /**
  * @brief Build project-owned intensity projection defaults from the current application data.

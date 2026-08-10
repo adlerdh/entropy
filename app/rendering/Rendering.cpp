@@ -122,6 +122,43 @@ void logTextureUnitZeroStateIfChanged(const char* phase)
   ++logCount;
 }
 
+void clearTextureBindingsForAllUnits()
+{
+  GLint previousTextureUnit = GL_TEXTURE0;
+  GLint maxTextureUnits = 0;
+
+  glGetIntegerv(GL_ACTIVE_TEXTURE, &previousTextureUnit);
+  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+
+  for (GLint unit = 0; unit < maxTextureUnits; ++unit) {
+    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + unit));
+    glBindSampler(static_cast<GLuint>(unit), 0);
+    glBindTexture(GL_TEXTURE_1D, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glBindTexture(GL_TEXTURE_1D_ARRAY, 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 0);
+  }
+
+  glActiveTexture(static_cast<GLenum>(previousTextureUnit));
+}
+
+void clearOpenGLBindingsForShutdown()
+{
+  glUseProgram(0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+  glBindVertexArray(0);
+  clearTextureBindingsForAllUnits();
+  glActiveTexture(GL_TEXTURE0);
+}
+
 } // namespace
 
 Rendering::Rendering(AppData& appData)
@@ -137,6 +174,12 @@ Rendering::Rendering(AppData& appData)
   , m_meshAmbientOcclusionResolveProgram("MeshAmbientOcclusionResolveProgram")
   , m_meshImagePlaneGrayLinearProgram("MeshImagePlaneGrayLinearProgram")
   , m_meshImagePlaneGrayLinearTexture2DProgram("MeshImagePlaneGrayLinearTexture2DProgram")
+  , m_meshImagePlaneIsoContourProgram("MeshImagePlaneIsoContourProgram")
+  , m_meshImagePlaneIsoContourTexture2DProgram("MeshImagePlaneIsoContourTexture2DProgram")
+  , m_meshImagePlaneDdpInitProgram("MeshImagePlaneDdpInitProgram")
+  , m_meshImagePlaneDdpInitTexture2DProgram("MeshImagePlaneDdpInitTexture2DProgram")
+  , m_meshImagePlaneDdpPeelProgram("MeshImagePlaneDdpPeelProgram")
+  , m_meshImagePlaneDdpPeelTexture2DProgram("MeshImagePlaneDdpPeelTexture2DProgram")
   , m_meshDdpInitProgram("MeshDdpInitProgram")
   , m_meshDdpPeelProgram("MeshDdpPeelProgram")
   , m_meshDdpBackBlendProgram("MeshDdpBackBlendProgram")
@@ -180,11 +223,21 @@ Rendering::Rendering(AppData& appData)
 
 Rendering::~Rendering()
 {
+  prepareForShutdown();
+
   if (m_nvg) {
     nvgDeleteGL3(m_nvg);
     m_nvg = nullptr;
   }
+
+  prepareForShutdown();
 }
+
+void Rendering::prepareForShutdown()
+{
+  clearOpenGLBindingsForShutdown();
+}
+
 void Rendering::setupOpenGLState()
 {
   glEnable(GL_BLEND);

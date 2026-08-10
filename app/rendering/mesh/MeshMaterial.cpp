@@ -32,6 +32,9 @@ MeshMaterial sanitizedMaterial(const MeshMaterial& material, const glm::vec4& fa
   sanitized.metallic = glm::clamp(finiteValueOrFallback(material.metallic, 0.0f), 0.0f, 1.0f);
   sanitized.roughness = glm::clamp(finiteValueOrFallback(material.roughness, 0.55f), 0.001f, 1.0f);
   sanitized.ambientOcclusion = glm::clamp(finiteValueOrFallback(material.ambientOcclusion, 1.0f), 0.0f, 1.0f);
+  sanitized.rimOpacityStrength = glm::clamp(finiteValueOrFallback(material.rimOpacityStrength, 1.0f), 0.0f, 1.0f);
+  sanitized.rimEmissionStrength = glm::max(finiteValueOrFallback(material.rimEmissionStrength, 1.0f), 0.0f);
+  sanitized.rimPower = glm::max(finiteValueOrFallback(material.rimPower, 2.0f), 0.001f);
   return sanitized;
 }
 

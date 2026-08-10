@@ -393,30 +393,50 @@ void applyComparisonSettings(AppData& appData, const serialize::ProjectCompariso
 
 // Project-owned rendering presentation settings.
 
+serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectThreeDRenderingSettings{
+    .m_transparentBackground = renderData.m_3dTransparentIfNoHit,
+    .m_imageBoxVisible = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
+    .m_imagePlanesVisible = renderData.m_showImagePlanesIn3D,
+    .m_imagePlaneViewAngleOpacity = renderData.m_modulateImagePlaneOpacityWithViewAngle,
+    .m_imagePlaneShading = renderData.m_shadeImagePlanesIn3D,
+    .m_imagePlaneAmbient = renderData.m_imagePlaneAmbient,
+    .m_imagePlaneDiffuse = renderData.m_imagePlaneDiffuse,
+    .m_imagePlaneSpecular = renderData.m_imagePlaneSpecular,
+    .m_imagePlaneShininess = renderData.m_imagePlaneShininess,
+    .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
+    .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+    .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
+    .m_reverseThreeDRotateAboutEye = renderData.m_reverseThreeDRotateAboutEye,
+    .m_threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor};
+}
+
+void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThreeDRenderingSettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_3dTransparentIfNoHit = settings.m_transparentBackground;
+  renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_imageBoxVisible;
+  renderData.m_showImagePlanesIn3D = settings.m_imagePlanesVisible;
+  renderData.m_modulateImagePlaneOpacityWithViewAngle = settings.m_imagePlaneViewAngleOpacity;
+  renderData.m_shadeImagePlanesIn3D = settings.m_imagePlaneShading;
+  renderData.m_imagePlaneAmbient = settings.m_imagePlaneAmbient;
+  renderData.m_imagePlaneDiffuse = settings.m_imagePlaneDiffuse;
+  renderData.m_imagePlaneSpecular = settings.m_imagePlaneSpecular;
+  renderData.m_imagePlaneShininess = settings.m_imagePlaneShininess;
+  renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
+  renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
+  renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
+  renderData.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
+  renderData.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
+}
+
 serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
 {
   const auto& renderData = appData.renderData();
   return serialize::ProjectRaycastingSettings{
     .m_samplingFactor = renderData.m_raycastSamplingFactor,
-    .m_transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit,
-    .m_backgroundEdgeBrighteningEnabled = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
-    .m_meshRenderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
-    .m_meshShadowsEnabled = renderData.m_meshAdvancedLightingSettings.shadows.enabled,
-    .m_meshShadowMapSizePixels = renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels,
-    .m_meshShadowStrength = renderData.m_meshAdvancedLightingSettings.shadows.strength,
-    .m_meshShadowDepthBias = renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
-    .m_meshAmbientOcclusionEnabled = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
-    .m_meshAmbientOcclusionRadiusPixels = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels,
-    .m_meshAmbientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
-    .m_meshTranslucentCompositing = projectMeshCompositingMode(renderData.m_meshTranslucentCompositingMode),
-    .m_meshPickingEnabled = renderData.m_meshPickingEnabled,
-    .m_meshClipPlaneEnabled = renderData.m_meshClipPlaneEnabled,
-    .m_meshClipPlaneWorld = renderData.m_meshClipPlaneWorld,
-    .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
-    .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
-    .m_reverseThreeDRotateAboutEye = renderData.m_reverseThreeDRotateAboutEye,
-    .m_threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor,
     .m_renderFrontFaces = renderData.m_renderFrontFaces,
     .m_renderBackFaces = renderData.m_renderBackFaces,
     .m_segmentationMasking = raycastSegmentationMasking(renderData.m_segMasking)};
@@ -429,28 +449,46 @@ void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastin
   renderData.m_adaptiveRaycastSamplingEnabled = false;
   renderData.m_adaptiveRaycastTargetFrameRate = 30.0f;
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
-  renderData.m_3dTransparentIfNoHit = settings.m_transparentBackgroundWhenNoHit;
-  renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_backgroundEdgeBrighteningEnabled;
-  renderData.m_isosurfaceMeshRenderingEnabled = settings.m_meshRenderingEnabled;
-  renderData.m_meshAdvancedLightingSettings.shadows.enabled = settings.m_meshShadowsEnabled;
-  renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = settings.m_meshShadowMapSizePixels;
-  renderData.m_meshAdvancedLightingSettings.shadows.strength = settings.m_meshShadowStrength;
-  renderData.m_meshAdvancedLightingSettings.shadows.depthBias = settings.m_meshShadowDepthBias;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_meshAmbientOcclusionEnabled;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels = settings.m_meshAmbientOcclusionRadiusPixels;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_meshAmbientOcclusionStrength;
-  renderData.m_meshTranslucentCompositingMode = meshCompositingMode(settings.m_meshTranslucentCompositing);
-  renderData.m_meshPickingEnabled = settings.m_meshPickingEnabled;
-  renderData.m_meshClipPlaneEnabled = settings.m_meshClipPlaneEnabled;
-  renderData.m_meshClipPlaneWorld = settings.m_meshClipPlaneWorld;
-  renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
-  renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
-  renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
-  renderData.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
-  renderData.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
   renderData.m_renderFrontFaces = settings.m_renderFrontFaces;
   renderData.m_renderBackFaces = settings.m_renderBackFaces;
   renderData.m_segMasking = raycastSegmentationMasking(settings.m_segmentationMasking);
+}
+
+serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectMeshRenderingSettings{
+    .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
+    .m_generationThreadCount = renderData.m_meshGenerationThreadCount,
+    .m_translucentCompositing = projectMeshCompositingMode(renderData.m_meshTranslucentCompositingMode),
+    .m_pickingEnabled = renderData.m_meshPickingEnabled,
+    .m_clipPlaneEnabled = renderData.m_meshClipPlaneEnabled,
+    .m_clipPlaneWorld = renderData.m_meshClipPlaneWorld,
+    .m_shadowsEnabled = renderData.m_meshAdvancedLightingSettings.shadows.enabled,
+    .m_shadowMapSizePixels = renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels,
+    .m_shadowStrength = renderData.m_meshAdvancedLightingSettings.shadows.strength,
+    .m_shadowDepthBias = renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
+    .m_ambientOcclusionEnabled = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
+    .m_ambientOcclusionRadiusPixels = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels,
+    .m_ambientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength};
+}
+
+void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRenderingSettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
+  renderData.m_meshGenerationThreadCount = std::min<uint32_t>(settings.m_generationThreadCount, 64);
+  renderData.m_meshTranslucentCompositingMode = meshCompositingMode(settings.m_translucentCompositing);
+  renderData.m_meshPickingEnabled = settings.m_pickingEnabled;
+  renderData.m_meshClipPlaneEnabled = settings.m_clipPlaneEnabled;
+  renderData.m_meshClipPlaneWorld = settings.m_clipPlaneWorld;
+  renderData.m_meshAdvancedLightingSettings.shadows.enabled = settings.m_shadowsEnabled;
+  renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = settings.m_shadowMapSizePixels;
+  renderData.m_meshAdvancedLightingSettings.shadows.strength = settings.m_shadowStrength;
+  renderData.m_meshAdvancedLightingSettings.shadows.depthBias = settings.m_shadowDepthBias;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_ambientOcclusionEnabled;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels = settings.m_ambientOcclusionRadiusPixels;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_ambientOcclusionStrength;
 }
 
 serialize::ProjectIntensityProjectionSettings intensityProjectionSettings(const AppData& appData)
@@ -515,7 +553,9 @@ void applyDefaultProjectSettings(AppData& appData)
   applySynchronizationSettings(appData, serialize::ProjectSynchronizationSettings{});
   applyViewSettings(appData, serialize::ProjectViewSettings{});
   applyComparisonSettings(appData, serialize::ProjectComparisonSettings{});
+  applyThreeDRenderingSettings(appData, serialize::ProjectThreeDRenderingSettings{});
   applyRaycastingSettings(appData, serialize::ProjectRaycastingSettings{});
+  applyMeshRenderingSettings(appData, serialize::ProjectMeshRenderingSettings{});
   applyIntensityProjectionSettings(appData, serialize::ProjectIntensityProjectionSettings{});
   applySegmentationDisplaySettings(appData, serialize::ProjectSegmentationDisplaySettings{});
   applyIsocontourDisplaySettings(appData, serialize::ProjectIsocontourDisplaySettings{});
@@ -766,6 +806,7 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
   settings.m_isosurfacesVisible = imageSettings.isosurfacesVisible();
   settings.m_applyImageColormapToIsosurfaces = imageSettings.applyImageColormapToIsosurfaces();
   settings.m_showIsocontoursIn2D = imageSettings.showIsocontoursIn2D();
+  settings.m_showIsosurfacesIn3D = imageSettings.showIsosurfacesIn3D();
   settings.m_isocontourLineWidthIn2D = imageSettings.isoContourLineWidthIn2D();
   settings.m_isosurfaceOpacityModulator = imageSettings.isosurfaceOpacityModulator();
   return settings;
@@ -999,6 +1040,7 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setIsosurfacesVisible(settings.m_isosurfacesVisible);
   imageSettings.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
   imageSettings.setShowIsoscontoursIn2D(settings.m_showIsocontoursIn2D);
+  imageSettings.setShowIsosurfacesIn3D(settings.m_showIsosurfacesIn3D);
   imageSettings.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);
   imageSettings.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
 }

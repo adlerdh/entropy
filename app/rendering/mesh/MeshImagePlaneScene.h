@@ -34,6 +34,7 @@ struct MeshImagePlaneSceneInputs
   glm::mat4 texture_T_world{1.0f};                          //!< Transform from world to normalized image texture
   std::array<glm::vec3, 8> pixelBoxCorners{};               //!< Image pixel-domain box corners
   std::vector<MeshImagePlaneOrientation> orientations = {}; //!< Plane orientations to generate
+  float borderWidthWorld = 0.0f;                            //!< Optional border width in world units
 };
 
 /**
@@ -43,7 +44,23 @@ struct MeshImagePlaneSceneMesh
 {
   MeshImagePlaneOrientation orientation = MeshImagePlaneOrientation::Axial; //!< Plane orientation
   MeshData mesh;                                                            //!< World-space textured mesh
+  std::optional<MeshData> borderMesh;                                       //!< Optional boundary mesh
 };
+
+/**
+ * @brief World-space normal for an orthogonal image plane orientation
+ * @param orientation Plane orientation
+ * @return Unit normal in world/LPS coordinates
+ */
+glm::vec3 imagePlaneWorldNormal(MeshImagePlaneOrientation orientation) noexcept;
+
+/**
+ * @brief Opacity multiplier used to fade image planes by view angle
+ * @param planeNormalWorld Unit or non-unit world-space plane normal
+ * @param viewDirectionWorld Unit or non-unit world-space view direction
+ * @return Clamped opacity multiplier in `[0, 1]`
+ */
+float imagePlaneViewOpacityMultiplier(const glm::vec3& planeNormalWorld, const glm::vec3& viewDirectionWorld) noexcept;
 
 /**
  * @brief Build clipped world-space meshes for requested orthogonal image planes.

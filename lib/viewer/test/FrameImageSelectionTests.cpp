@@ -118,6 +118,7 @@ TEST_CASE("frame image selection keeps multiple 3D images", "[viewer][frame_imag
   const std::vector ordered{uuidFromIndex(1), uuidFromIndex(2), uuidFromIndex(3)};
   viewer::FrameImageSelection selection;
   selection.setRenderedImages({uuidFromIndex(1), uuidFromIndex(2)}, false);
+  CHECK(selection.visibleImages(ViewRenderMode::VolumeRender).empty());
 
   selection.ensureVolumeRenderedImageSelected();
   CHECK(
@@ -137,6 +138,11 @@ TEST_CASE("frame image selection keeps multiple 3D images", "[viewer][frame_imag
 
   selection.setVolumeRenderedImages({uuidFromIndex(1), uuidFromIndex(2)});
   CHECK(asVector(selection.volumeRenderedImages()) == std::vector{uuidFromIndex(1), uuidFromIndex(2)});
+
+  selection.setImageVolumeRendered(uuidFromIndex(1), ordered, false);
+  selection.setImageVolumeRendered(uuidFromIndex(2), ordered, false);
+  selection.setImageVolumeRendered(uuidFromIndex(3), ordered, false);
+  CHECK(selection.visibleImages(ViewRenderMode::VolumeRender).empty());
 }
 
 TEST_CASE("frame image selection reorders selections and drops missing images", "[viewer][frame_image_selection]")

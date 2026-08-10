@@ -9,6 +9,10 @@ uniform float u_metallic;
 uniform float u_roughness;
 uniform float u_ambientOcclusion;
 uniform int u_shadingModel;
+uniform bool u_rimLightingEnabled;
+uniform float u_rimOpacityStrength;
+uniform float u_rimEmissionStrength;
+uniform float u_rimPower;
 uniform bool u_hasVertexColors;
 uniform vec3 u_cameraWorldPosition;
 uniform bool u_shadowMapEnabled;
@@ -18,6 +22,7 @@ uniform float u_shadowStrength;
 uniform float u_shadowDepthBias;
 uniform bool u_screenAmbientOcclusionEnabled;
 uniform sampler2D u_screenAmbientOcclusionTex;
+uniform ivec2 u_viewportOrigin;
 uniform int u_clipPlaneCount;
 uniform vec4 u_clipPlanes[8];
 uniform sampler2D u_previousDepthBoundsTex;
@@ -29,7 +34,9 @@ layout(location = 2) out vec4 outBackColor;
 
 const float kMaxDepth = 1.0;
 const float kDepthEpsilon = 0.000001;
-const int kShadingModelPhysicallyBased = 1;
+const int kShadingModelUnlit = 0;
+const int kShadingModelSimpleLit = 1;
+const int kShadingModelPhysicallyBased = 2;
 const float kPi = 3.14159265359;
 
 vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection)
@@ -107,8 +114,22 @@ float screenAmbientOcclusion()
     return 1.0;
   }
 
-  ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
+  ivec2 pixelCoord = ivec2(gl_FragCoord.xy) - u_viewportOrigin;
   return texelFetch(u_screenAmbientOcclusionTex, pixelCoord, 0).r;
+}
+
+vec4 applyRimLighting(vec4 color, vec3 normal, vec3 viewDirection)
+{
+  if (!u_rimLightingEnabled) {
+    return color;
+  }
+
+  float rim = pow(clamp(1.0 - abs(dot(normal, viewDirection)), 0.0, 1.0), max(u_rimPower, 0.001));
+  float alphaScale = mix(1.0, rim, clamp(u_rimOpacityStrength, 0.0, 1.0));
+  vec3 rimColor = max(u_baseColor.rgb, vec3(0.0));
+  color.rgb += max(u_rimEmissionStrength, 0.0) * rim * rimColor;
+  color.a *= alphaScale;
+  return color;
 }
 
 vec4 shadedMeshColor()
@@ -117,12 +138,14 @@ vec4 shadedMeshColor()
   vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
   vec3 lightDirection = viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
-  vec3 litColor = u_shadingModel == kShadingModelPhysicallyBased
-                    ? physicallyBasedColor(color.rgb, normal, lightDirection, viewDirection)
-                    : simpleLitColor(color.rgb, normal, lightDirection, viewDirection);
+  vec3 litColor = u_shadingModel == kShadingModelUnlit
+                    ? color.rgb
+                    : (u_shadingModel == kShadingModelPhysicallyBased
+                         ? physicallyBasedColor(color.rgb, normal, lightDirection, viewDirection)
+                         : simpleLitColor(color.rgb, normal, lightDirection, viewDirection));
   litColor *= shadowVisibility(v_worldPosition);
   litColor *= screenAmbientOcclusion();
-  return vec4(litColor, color.a);
+  return applyRimLighting(vec4(litColor, color.a), normal, viewDirection);
 }
 
 void main()

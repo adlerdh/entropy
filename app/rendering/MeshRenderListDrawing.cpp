@@ -39,6 +39,11 @@ std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> ddpSu
   return renderables;
 }
 
+bool hasImagePlaneDdpRenderables(const rendering::mesh::MeshImagePlaneRenderList* const imagePlaneList) noexcept
+{
+  return imagePlaneList && !imagePlaneList->imagePlanes.empty();
+}
+
 std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> shadowCastingRenderables(
   const rendering::mesh::MeshRenderList& list)
 {
@@ -81,15 +86,23 @@ void Rendering::clearMeshViewBackgroundForView(const View& view)
   glGetFloatv(GL_COLOR_CLEAR_VALUE, previousClearColor.data());
 
   const auto& bg = m_appData.renderData().m_3dBackgroundColor;
-  glClearColor(bg.r, bg.g, bg.b, 1.0f);
+  const float alpha = m_appData.renderData().m_3dTransparentIfNoHit ? 0.0f : 1.0f;
+  glClearColor(bg.r, bg.g, bg.b, alpha);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   glClearColor(previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
 }
 
-void Rendering::drawMeshRenderListForView(const View& view, const rendering::mesh::MeshRenderList& list)
+void Rendering::drawMeshRenderListForView(
+  const View& view,
+  const rendering::mesh::MeshRenderList& list,
+  const rendering::mesh::MeshImagePlaneRenderList* const imagePlaneList)
 {
   const rendering::mesh::ScopedMeshViewViewport scopedViewport{view, m_appData.windowData()};
+  std::array<GLint, 4> viewViewport{};
+  glGetIntegerv(GL_VIEWPORT, viewViewport.data());
+
   rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(m_meshGpuStore, view);
+  context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
     m_appData.renderData().m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{
@@ -156,7 +169,13 @@ void Rendering::drawMeshRenderListForView(const View& view, const rendering::mes
     }
   }
 
-  const rendering::mesh::MeshDdpPlan ddpPlan = rendering::mesh::meshDdpPlanForRenderList(list, {});
+  rendering::mesh::MeshDdpPlan ddpPlan = rendering::mesh::meshDdpPlanForRenderList(list, {});
+  if (hasImagePlaneDdpRenderables(imagePlaneList) && !ddpPlan.active) {
+    ddpPlan = rendering::mesh::MeshDdpPlan{
+      .active = true,
+      .peelPasses = rendering::mesh::sanitizedDdpPeelPasses(8u, 32u),
+      .renderableCount = static_cast<uint32_t>(imagePlaneList->imagePlanes.size())};
+  }
   for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, {})) {
     spdlog::debug("{}", diagnostic);
   }
@@ -172,7 +191,23 @@ void Rendering::drawMeshRenderListForView(const View& view, const rendering::mes
       .initProgram = m_meshDdpInitProgram,
       .peelProgram = m_meshDdpPeelProgram,
       .backBlendProgram = m_meshDdpBackBlendProgram,
-      .resolveProgram = m_meshDdpResolveProgram});
+      .resolveProgram = m_meshDdpResolveProgram,
+      .drawExtraDepthBounds = imagePlaneList
+                                 ? [this, &view, imagePlaneList, &context]() {
+                                     drawMeshImagePlaneDdpDepthBoundsForView(view, *imagePlaneList, context);
+                                   }
+                                 : std::function<void()>{},
+      .drawExtraPeelLayers = imagePlaneList
+                               ? [this, &view, imagePlaneList, &context](GLTexture& previousDepthBounds,
+                                                                           GLTexture& previousFrontColor) {
+                                   drawMeshImagePlaneDdpPeelLayersForView(
+                                     view,
+                                     *imagePlaneList,
+                                     context,
+                                     previousDepthBounds,
+                                     previousFrontColor);
+                                 }
+                               : std::function<void(GLTexture&, GLTexture&)>{}});
   }
   else {
     m_meshRenderer.drawOpaque(list, context, m_meshProgram);

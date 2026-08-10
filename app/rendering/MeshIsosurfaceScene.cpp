@@ -57,6 +57,10 @@ rendering::mesh::MeshMaterial meshMaterialForIsosurface(const Isosurface& surfac
   material.ambientOcclusion = surface.material.ambientOcclusion;
   material.shadingModel = surface.material.usePbrShading ? rendering::mesh::MeshShadingModel::PhysicallyBased
                                                          : rendering::mesh::MeshShadingModel::SimpleLit;
+  material.rimLightingEnabled = surface.rimLightingEnabled;
+  material.rimOpacityStrength = surface.rimOpacityStrength;
+  material.rimEmissionStrength = surface.rimEmissionStrength;
+  material.rimPower = surface.rimPower;
   return material;
 }
 
@@ -78,6 +82,9 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
 
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
+  std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
+  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
+    collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
 
   for (const ImgSegPair& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
@@ -92,7 +99,7 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
 
     const bool renderWarped = activeRenderableDeformationUid(imageUid).has_value();
     const ImageSettings& settings = image->settings();
-    if (!settings.isosurfacesVisible()) {
+    if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D()) {
       continue;
     }
 
@@ -113,10 +120,9 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
       const float effectiveOpacity = surface->opacity * settings.isosurfaceOpacityModulator();
       const rendering::mesh::IsosurfaceMeshEligibility eligibility{
         .renderWarped = renderWarped,
-        .rimLightingEnabled = surface->rimLightingEnabled,
         .valueEditInProgress = surface->valueEditInProgress,
         .opacity = effectiveOpacity,
-        .visible = surface->visible};
+        .visible = surface->visible && surface->showIn3d};
       if (!rendering::mesh::canRenderIsosurfaceWithMesh(eligibility)) {
         continue;
       }
@@ -188,8 +194,11 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
       color.a = effectiveOpacity;
       const rendering::mesh::IsosurfaceMeshStyle style{
         .material = meshMaterialForIsosurface(*surface, color),
-        .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(effectiveOpacity),
-        .visible = surface->visible};
+        .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
+          effectiveOpacity,
+          surface->rimLightingEnabled,
+          surface->rimOpacityStrength),
+        .visible = surface->visible && surface->showIn3d};
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, glm::mat4{1.0f}, style);
       renderable.drawOptions.clipPlanes = clipPlanes;
@@ -197,7 +206,18 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
     }
   }
 
-  if (renderables.empty()) {
+  renderables.insert(renderables.end(), imagePlaneBorderRenderables.begin(), imagePlaneBorderRenderables.end());
+
+  rendering::mesh::MeshScene imagePlaneScene;
+  imagePlaneScene.setImagePlaneRenderables(std::move(imagePlaneRenderables));
+  const rendering::mesh::MeshImagePlaneRenderList imagePlaneList =
+    rendering::mesh::buildImagePlaneRenderList(imagePlaneScene.imagePlaneRenderables());
+
+  // Keep the crosshairs glyph in the same mesh pass as translucent surfaces so DDP can depth-order the glyph with the
+  // surface instead of drawing the glyph later against an empty default depth buffer.
+  appendMeshCrosshairsRenderableForView(view, renderables);
+
+  if (renderables.empty() && imagePlaneList.imagePlanes.empty()) {
     return false;
   }
 
@@ -208,6 +228,6 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
     return false;
   }
 
-  drawMeshRenderListForView(view, list);
+  drawMeshRenderListForView(view, list, &imagePlaneList);
   return true;
 }

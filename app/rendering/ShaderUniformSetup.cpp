@@ -85,6 +85,12 @@ ShaderUniformSet buildShaderUniformSet()
   fsImageAdjustmentUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsImageAdjustmentUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
   fsImageAdjustmentUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsImageAdjustmentUniforms.insertUniform("u_imagePlaneShadingEnabled", UniformType::Bool, false, sk_optionalUniform);
+  fsImageAdjustmentUniforms.insertUniform("u_cameraWorldPosition", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsImageAdjustmentUniforms.insertUniform("u_imagePlaneAmbient", UniformType::Float, 0.35f, sk_optionalUniform);
+  fsImageAdjustmentUniforms.insertUniform("u_imagePlaneDiffuse", UniformType::Float, 0.65f, sk_optionalUniform);
+  fsImageAdjustmentUniforms.insertUniform("u_imagePlaneSpecular", UniformType::Float, 0.18f, sk_optionalUniform);
+  fsImageAdjustmentUniforms.insertUniform("u_imagePlaneShininess", UniformType::Float, 32.0f, sk_optionalUniform);
 
   Uniforms fsColorMapUniforms;
   fsColorMapUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);

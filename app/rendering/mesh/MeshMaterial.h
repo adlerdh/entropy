@@ -10,6 +10,7 @@ namespace rendering::mesh
  */
 enum class MeshShadingModel
 {
+  Unlit,
   SimpleLit,
   PhysicallyBased
 };
@@ -26,6 +27,10 @@ struct MeshMaterial
   float roughness = 0.55f;                                     //!< PBR roughness factor
   float ambientOcclusion = 1.0f;                               //!< PBR ambient occlusion factor
   MeshShadingModel shadingModel = MeshShadingModel::SimpleLit; //!< Selected lighting model
+  bool rimLightingEnabled = false;                             //!< Enable view-angle rim opacity and glow
+  float rimOpacityStrength = 1.0f;                             //!< Strength of silhouette opacity modulation
+  float rimEmissionStrength = 1.0f;                            //!< Strength of additive silhouette glow
+  float rimPower = 2.0f;                                       //!< Rim falloff exponent
 
   bool operator==(const MeshMaterial&) const = default;
 };

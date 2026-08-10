@@ -6,6 +6,8 @@
 
 #include <glm/vec4.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <utility>
 
 namespace rendering::mesh
@@ -26,6 +28,15 @@ intersection::AlignmentMethod alignmentForOrientation(const MeshImagePlaneOrient
   }
 
   return intersection::AlignmentMethod::FrameZ;
+}
+
+std::optional<glm::vec3> normalizedVec3(const glm::vec3& value) noexcept
+{
+  const float length = glm::length(value);
+  if (!std::isfinite(length) || length <= 0.0f) {
+    return std::nullopt;
+  }
+  return value / length;
 }
 
 std::optional<intersection::IntersectionVerticesVec4> worldIntersectionsForPlane(
@@ -56,6 +67,31 @@ std::optional<intersection::IntersectionVerticesVec4> worldIntersectionsForPlane
 
 } // namespace
 
+glm::vec3 imagePlaneWorldNormal(const MeshImagePlaneOrientation orientation) noexcept
+{
+  switch (orientation) {
+    case MeshImagePlaneOrientation::Axial:
+      return glm::vec3{0.0f, 0.0f, 1.0f};
+    case MeshImagePlaneOrientation::Coronal:
+      return glm::vec3{0.0f, 1.0f, 0.0f};
+    case MeshImagePlaneOrientation::Sagittal:
+      return glm::vec3{1.0f, 0.0f, 0.0f};
+  }
+
+  return glm::vec3{0.0f, 0.0f, 1.0f};
+}
+
+float imagePlaneViewOpacityMultiplier(const glm::vec3& planeNormalWorld, const glm::vec3& viewDirectionWorld) noexcept
+{
+  const std::optional<glm::vec3> normal = normalizedVec3(planeNormalWorld);
+  const std::optional<glm::vec3> viewDirection = normalizedVec3(viewDirectionWorld);
+  if (!normal || !viewDirection) {
+    return 0.0f;
+  }
+
+  return std::clamp(std::abs(glm::dot(*normal, *viewDirection)), 0.0f, 1.0f);
+}
+
 std::vector<MeshImagePlaneSceneMesh> buildOrthogonalImagePlaneSceneMeshes(const MeshImagePlaneSceneInputs& inputs)
 {
   std::vector<MeshImagePlaneSceneMesh> meshes;
@@ -73,7 +109,15 @@ std::vector<MeshImagePlaneSceneMesh> buildOrthogonalImagePlaneSceneMeshes(const 
       continue;
     }
 
-    meshes.push_back(MeshImagePlaneSceneMesh{.orientation = orientation, .mesh = std::move(*mesh)});
+    std::optional<MeshData> borderMesh;
+    if (inputs.borderWidthWorld > 0.0f) {
+      borderMesh = makeImageSliceIntersectionBorderMesh(*intersections, inputs.borderWidthWorld);
+    }
+
+    meshes.push_back(MeshImagePlaneSceneMesh{
+      .orientation = orientation,
+      .mesh = std::move(*mesh),
+      .borderMesh = std::move(borderMesh)});
   }
 
   return meshes;

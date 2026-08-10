@@ -354,6 +354,8 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
   CHECK(settings.applyImageColormapToIsosurfaces());
   settings.setShowIsoscontoursIn2D(false);
   CHECK_FALSE(settings.showIsocontoursIn2D());
+  settings.setShowIsosurfacesIn3D(false);
+  CHECK_FALSE(settings.showIsosurfacesIn3D());
   settings.setIsosurfaceWidthIn2d(3.5);
   CHECK(settings.isoContourLineWidthIn2D() == Catch::Approx(3.5));
   settings.setIsosurfaceOpacityModulator(0.4f);

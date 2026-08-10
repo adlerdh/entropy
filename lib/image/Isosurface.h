@@ -41,6 +41,7 @@ public:
   float fillOpacity = 0.0f;          //!< Fill opacity
   bool visible = true;               //!< Visibility
   bool showIn2d = true;              //!< Show in 2D slice views
+  bool showIn3d = true;              //!< Show in 3D views
   bool rimLightingEnabled = false;   //!< Enable view-angle rim opacity modulation and glow
   float rimOpacityStrength = 1.0f;   //!< View-angle opacity modulation strength
   float rimEmissionStrength = 1.0f;  //!< Additive view-angle rim-light strength

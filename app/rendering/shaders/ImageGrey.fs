@@ -16,6 +16,7 @@ in VS_OUT
 {
   vec3 v_texCoord;
   vec3 v_worldPos;
+  vec3 v_worldNormal;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
@@ -28,10 +29,16 @@ uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // image (scalar, red channel only)
 uniform sampler1D u_cmapTex;             // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
-uniform vec2 u_imgSlopeIntercept; // map texture to normalized intensity [0, 1], plus window/leveling
-uniform vec2 u_imgMinMax;         // min/max image values (texture intenstiy units)
-uniform vec2 u_imgThresholds;     // lower/upper image thresholds (texture intensity units)
-uniform float u_imgOpacity;       // image opacity
+uniform vec2 u_imgSlopeIntercept;        // map texture to normalized intensity [0, 1], plus window/leveling
+uniform vec2 u_imgMinMax;                // min/max image values (texture intenstiy units)
+uniform vec2 u_imgThresholds;            // lower/upper image thresholds (texture intensity units)
+uniform float u_imgOpacity;              // image opacity
+uniform bool u_imagePlaneShadingEnabled; // apply headlight shading to 3D image planes
+uniform vec3 u_cameraWorldPosition;      // camera eye position for 3D image-plane shading
+uniform float u_imagePlaneAmbient;
+uniform float u_imagePlaneDiffuse;
+uniform float u_imagePlaneSpecular;
+uniform float u_imagePlaneShininess;
 
 // Image color map adjustment uniforms:
 uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
@@ -73,6 +80,27 @@ $$DO_RENDER_FUNCTION$$
 /// float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img);
 $$IP_FUNCTION$$
 
+float blinnPhongImagePlaneLighting(vec3 worldPosition, vec3 worldNormal)
+{
+  if (!u_imagePlaneShadingEnabled) {
+    return 1.0;
+  }
+
+  float normalLength = length(worldNormal);
+  vec3 eyeVector = u_cameraWorldPosition - worldPosition;
+  float eyeVectorLength = length(eyeVector);
+  if (normalLength <= 0.0 || eyeVectorLength <= 0.0) {
+    return 1.0;
+  }
+
+  vec3 normal = worldNormal / normalLength;
+  vec3 viewDirection = eyeVector / eyeVectorLength;
+  float diffuse = abs(dot(normal, viewDirection));
+  float specular = pow(max(abs(dot(normal, viewDirection)), 0.0), max(u_imagePlaneShininess, 0.001));
+  float maxLighting = max(u_imagePlaneAmbient + u_imagePlaneDiffuse + u_imagePlaneSpecular, 1.0);
+  return clamp(u_imagePlaneAmbient + u_imagePlaneDiffuse * diffuse + u_imagePlaneSpecular * specular, 0.0, maxLighting);
+}
+
 void main()
 {
   if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
@@ -103,8 +131,14 @@ void main()
   // Conditionally use HSV modified colors:
   float mask = float(isInsideTexture(sampleTc));                           // image mask based on texture coords
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds); // alpha = opacity * mask * threshold
+  if (alpha <= 0.0) {
+    discard;
+  }
+
+  vec3 mappedColor = mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod));
+  mappedColor *= blinnPhongImagePlaneLighting(fs_in.v_worldPos, fs_in.v_worldNormal);
 
   // Output color (premult. RGBA)
-  o_color = alpha * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod)), 1.0);
+  o_color = alpha * imgColorOrig.a * vec4(mappedColor, 1.0);
   // o_color.rgb = pow(o_color.rgb, vec3(1.8));
 }

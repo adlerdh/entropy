@@ -64,6 +64,10 @@ rendering::mesh::MeshMaterial meshMaterialForIsosurface(const Isosurface& surfac
   material.ambientOcclusion = surface.material.ambientOcclusion;
   material.shadingModel = surface.material.usePbrShading ? rendering::mesh::MeshShadingModel::PhysicallyBased
                                                          : rendering::mesh::MeshShadingModel::SimpleLit;
+  material.rimLightingEnabled = surface.rimLightingEnabled;
+  material.rimOpacityStrength = surface.rimOpacityStrength;
+  material.rimEmissionStrength = surface.rimEmissionStrength;
+  material.rimPower = surface.rimPower;
   return material;
 }
 
@@ -94,7 +98,8 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
 
       const ImageSettings& settings = image->settings();
-      if (!settings.isosurfacesVisible() || activeRenderableDeformationUid(imageUid)) {
+      if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D() || activeRenderableDeformationUid(imageUid))
+      {
         return std::nullopt;
       }
 
@@ -109,10 +114,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         const float effectiveOpacity = surface->opacity * settings.isosurfaceOpacityModulator();
         if (!rendering::mesh::canRenderIsosurfaceWithMesh(
               {.renderWarped = false,
-               .rimLightingEnabled = surface->rimLightingEnabled,
                .valueEditInProgress = surface->valueEditInProgress,
                .opacity = effectiveOpacity,
-               .visible = surface->visible}))
+               .visible = surface->visible && surface->showIn3d}))
         {
           return std::nullopt;
         }
@@ -137,7 +141,10 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           glm::mat4{1.0f},
           rendering::mesh::IsosurfaceMeshStyle{
             .material = meshMaterialForIsosurface(*surface, color),
-            .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(effectiveOpacity),
+            .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
+              effectiveOpacity,
+              surface->rimLightingEnabled,
+              surface->rimOpacityStrength),
             .visible = surface->visible});
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));

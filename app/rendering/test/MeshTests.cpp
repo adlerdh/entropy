@@ -986,6 +986,10 @@ TEST_CASE("mesh materials sanitize shader-facing values", "[rendering][mesh]")
   material.roughness = 0.0f;
   material.ambientOcclusion = -1.0f;
   material.shadingModel = mesh::MeshShadingModel::PhysicallyBased;
+  material.rimLightingEnabled = true;
+  material.rimOpacityStrength = 2.0f;
+  material.rimEmissionStrength = -1.0f;
+  material.rimPower = 0.0f;
 
   const mesh::MeshMaterial sanitized = mesh::sanitizedMaterial(material, glm::vec4{0.25f, 0.5f, 0.75f, 1.0f});
 
@@ -994,6 +998,10 @@ TEST_CASE("mesh materials sanitize shader-facing values", "[rendering][mesh]")
   CHECK(sanitized.roughness == Catch::Approx(0.001f));
   CHECK(sanitized.ambientOcclusion == Catch::Approx(0.0f));
   CHECK(sanitized.shadingModel == mesh::MeshShadingModel::PhysicallyBased);
+  CHECK(sanitized.rimLightingEnabled);
+  CHECK(sanitized.rimOpacityStrength == Catch::Approx(1.0f));
+  CHECK(sanitized.rimEmissionStrength == Catch::Approx(0.0f));
+  CHECK(sanitized.rimPower == Catch::Approx(0.001f));
 }
 
 TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][mesh]")
@@ -1003,6 +1011,9 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
   material.metallic = std::numeric_limits<float>::quiet_NaN();
   material.roughness = std::numeric_limits<float>::quiet_NaN();
   material.ambientOcclusion = std::numeric_limits<float>::quiet_NaN();
+  material.rimOpacityStrength = std::numeric_limits<float>::quiet_NaN();
+  material.rimEmissionStrength = std::numeric_limits<float>::quiet_NaN();
+  material.rimPower = std::numeric_limits<float>::quiet_NaN();
 
   const mesh::MeshMaterial sanitized = mesh::sanitizedMaterial(material, glm::vec4{0.25f, 0.5f, 0.75f, 1.0f});
 
@@ -1010,6 +1021,9 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
   CHECK(sanitized.metallic == Catch::Approx(0.0f));
   CHECK(sanitized.roughness == Catch::Approx(0.55f));
   CHECK(sanitized.ambientOcclusion == Catch::Approx(1.0f));
+  CHECK(sanitized.rimOpacityStrength == Catch::Approx(1.0f));
+  CHECK(sanitized.rimEmissionStrength == Catch::Approx(1.0f));
+  CHECK(sanitized.rimPower == Catch::Approx(2.0f));
 }
 
 TEST_CASE("isosurface and segmentation extraction requests build distinct geometry keys", "[rendering][mesh]")
@@ -1062,12 +1076,11 @@ TEST_CASE("isosurface and segmentation extraction requests build distinct geomet
   CHECK(segKey.extractionAlgorithmVersion == 11);
 }
 
-TEST_CASE("isosurface mesh policy keeps raycast-only appearances on the raycast path", "[rendering][mesh]")
+TEST_CASE("isosurface mesh policy keeps raycast-only states on the raycast path", "[rendering][mesh]")
 {
   CHECK(mesh::canRenderIsosurfaceWithMesh({.opacity = 1.0f, .visible = true}));
 
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.renderWarped = true, .opacity = 1.0f, .visible = true}));
-  CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.rimLightingEnabled = true, .opacity = 1.0f, .visible = true}));
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.valueEditInProgress = true, .opacity = 1.0f, .visible = true}));
   CHECK(mesh::canRenderIsosurfaceWithMesh({.opacity = 0.5f, .visible = true}));
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.opacity = 1.0f, .visible = false}));
@@ -1078,8 +1091,10 @@ TEST_CASE("isosurface mesh policy uses DDP for translucent surfaces", "[renderin
   CHECK(mesh::compositingModeForIsosurfaceAlpha(1.0f) == mesh::MeshCompositingMode::Opaque);
   CHECK(mesh::compositingModeForIsosurfaceAlpha(0.999f) == mesh::MeshCompositingMode::Opaque);
   CHECK(mesh::compositingModeForIsosurfaceAlpha(0.998f) == mesh::MeshCompositingMode::AlphaOverDdp);
+  CHECK(mesh::compositingModeForIsosurfaceAlpha(1.0f, true, 1.0f) == mesh::MeshCompositingMode::AlphaOverDdp);
+  CHECK(mesh::compositingModeForIsosurfaceAlpha(1.0f, true, 0.0f) == mesh::MeshCompositingMode::Opaque);
   CHECK(
-    mesh::compositingModeForIsosurfaceAlpha(0.5f, mesh::MeshCompositingMode::Additive) ==
+    mesh::compositingModeForIsosurfaceAlpha(0.5f, false, 0.0f, mesh::MeshCompositingMode::Additive) ==
     mesh::MeshCompositingMode::Additive);
 }
 
@@ -1677,8 +1692,10 @@ TEST_CASE("image plane renderables keep texture binding state separate from mate
   const mesh::MeshHandle handle{.uid = meshUid, .geometryVersion = 17};
   const mesh::MeshImagePlaneTexture texture{.imageUid = imageUid, .component = 2, .timePoint = 3};
   const glm::mat4 world_T_mesh = glm::translate(glm::mat4{1.0f}, glm::vec3{4.0f, 5.0f, 6.0f});
+  const glm::vec3 centerWorld{7.0f, 8.0f, 9.0f};
 
-  const mesh::MeshImagePlaneRenderable renderable = mesh::makeImagePlaneRenderable(handle, world_T_mesh, texture, true);
+  const mesh::MeshImagePlaneRenderable renderable =
+    mesh::makeImagePlaneRenderable(handle, world_T_mesh, centerWorld, texture, 0.75f, false, true);
 
   CHECK(renderable.mesh.uid == meshUid);
   CHECK(renderable.mesh.geometryVersion == 17);
@@ -1686,7 +1703,14 @@ TEST_CASE("image plane renderables keep texture binding state separate from mate
   CHECK(renderable.texture.component == 2);
   CHECK(renderable.texture.timePoint == 3);
   CHECK(renderable.world_T_mesh == world_T_mesh);
+  CHECK(renderable.centerWorld == centerWorld);
+  CHECK(renderable.opacityMultiplier == Catch::Approx(0.75f));
+  CHECK_FALSE(renderable.shadingEnabled);
   CHECK(mesh::isDrawableImagePlaneRenderable(renderable));
+
+  mesh::MeshImagePlaneRenderable transparent = renderable;
+  transparent.opacityMultiplier = 0.0f;
+  CHECK_FALSE(mesh::isDrawableImagePlaneRenderable(transparent));
 
   mesh::MeshImagePlaneRenderable hidden = renderable;
   hidden.visible = false;
@@ -1709,6 +1733,7 @@ TEST_CASE("image plane render list filters non-drawable image planes", "[renderi
   mesh::MeshImagePlaneRenderable drawable = mesh::makeImagePlaneRenderable(
     mesh::MeshHandle{.uid = meshUid, .geometryVersion = 1},
     glm::mat4{1.0f},
+    glm::vec3{0.0f},
     mesh::MeshImagePlaneTexture{.imageUid = imageUid});
   mesh::MeshImagePlaneRenderable hidden = drawable;
   hidden.visible = false;
@@ -1772,6 +1797,66 @@ TEST_CASE("orthogonal image plane scene meshes are clipped to the image box", "[
       CHECK(texCoord.z <= 1.0f);
     }
   }
+}
+
+TEST_CASE("orthogonal image plane scene can build boundary meshes", "[rendering][mesh]")
+{
+  const std::array<glm::vec3, 8> boxCorners{
+    glm::vec3{0.0f, 0.0f, 0.0f},
+    glm::vec3{1.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 1.0f, 0.0f},
+    glm::vec3{1.0f, 1.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 1.0f},
+    glm::vec3{1.0f, 0.0f, 1.0f},
+    glm::vec3{0.0f, 1.0f, 1.0f},
+    glm::vec3{1.0f, 1.0f, 1.0f}};
+
+  const mesh::MeshImagePlaneSceneInputs inputs{
+    .worldCrosshairs = glm::vec3{0.5f},
+    .world_T_pixel = glm::mat4{1.0f},
+    .pixel_T_world = glm::mat4{1.0f},
+    .texture_T_world = glm::mat4{1.0f},
+    .pixelBoxCorners = boxCorners,
+    .orientations = {mesh::MeshImagePlaneOrientation::Axial},
+    .borderWidthWorld = 0.05f};
+
+  const std::vector<mesh::MeshImagePlaneSceneMesh> planes = mesh::buildOrthogonalImagePlaneSceneMeshes(inputs);
+
+  REQUIRE(planes.size() == 1);
+  REQUIRE(planes.front().borderMesh.has_value());
+  CHECK_FALSE(planes.front().borderMesh->positions.empty());
+  CHECK_FALSE(planes.front().borderMesh->indices.empty());
+}
+
+TEST_CASE("image box border mesh builds all twelve box edges", "[rendering][mesh]")
+{
+  const std::array<glm::vec3, 8> boxCorners{
+    glm::vec3{0.0f, 0.0f, 0.0f},
+    glm::vec3{2.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 3.0f, 0.0f},
+    glm::vec3{2.0f, 3.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 4.0f},
+    glm::vec3{2.0f, 0.0f, 4.0f},
+    glm::vec3{0.0f, 3.0f, 4.0f},
+    glm::vec3{2.0f, 3.0f, 4.0f}};
+
+  const std::optional<mesh::MeshData> mesh = mesh::makeImageBoxBorderMesh(boxCorners, 0.1f);
+
+  REQUIRE(mesh.has_value());
+  CHECK(mesh->positions.size() == 12u * 8u);
+  CHECK(mesh->normals.size() == mesh->positions.size());
+  CHECK(mesh->indices.size() == 12u * 36u);
+}
+
+TEST_CASE("image plane orientation opacity follows legacy auto-hiding behavior", "[rendering][mesh]")
+{
+  CHECK(
+    mesh::imagePlaneViewOpacityMultiplier(glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f, 0.0f, 2.0f}) ==
+    Catch::Approx(1.0f));
+  CHECK(
+    mesh::imagePlaneViewOpacityMultiplier(glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f, 2.0f, 0.0f}) ==
+    Catch::Approx(0.0f));
+  CHECK(mesh::imagePlaneViewOpacityMultiplier(glm::vec3{0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}) == Catch::Approx(0.0f));
 }
 
 TEST_CASE("orthogonal image plane scene omits planes outside the image box", "[rendering][mesh]")

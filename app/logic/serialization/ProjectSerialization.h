@@ -199,27 +199,20 @@ struct ProjectComparisonSettings
 };
 
 /**
- * @brief Project-wide volume raycasting settings.
+ * @brief Project-wide 3D view settings shared by raycast and mesh renderers.
  */
-struct ProjectRaycastingSettings
+struct ProjectThreeDRenderingSettings
 {
-  float m_samplingFactor = 0.8f;                   //!< Ray-marching sampling factor
-  bool m_transparentBackgroundWhenNoHit = true;    //!< Make missed 3D rays transparent
-  bool m_backgroundEdgeBrighteningEnabled = true;  //!< Brighten raycast background near image-domain edges
-  bool m_meshRenderingEnabled = true;              //!< Render committed opaque isosurfaces as meshes when ready
-  bool m_meshShadowsEnabled = false;               //!< Render mesh shadows when mesh rendering is active
-  uint32_t m_meshShadowMapSizePixels = 1024;       //!< Mesh shadow-map size in pixels
-  float m_meshShadowStrength = 0.35f;              //!< Mesh shadow contribution in [0, 1]
-  float m_meshShadowDepthBias = 0.001f;            //!< Mesh shadow depth bias
-  bool m_meshAmbientOcclusionEnabled = false;      //!< Render screen-space ambient occlusion for meshes
-  float m_meshAmbientOcclusionRadiusPixels = 8.0f; //!< Mesh AO screen-space radius in pixels
-  float m_meshAmbientOcclusionStrength = 0.5f;     //!< Mesh AO contribution in [0, 1]
-  ProjectMeshCompositingMode m_meshTranslucentCompositing =
-    ProjectMeshCompositingMode::AlphaOver;                //!< Translucent mesh compositing path
-  bool m_meshPickingEnabled = true;                       //!< Allow mesh point picking in 3D views
-  bool m_meshClipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
-  glm::vec4 m_meshClipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane
-  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views
+  bool m_transparentBackground = true;                    //!< Make the 3D view background transparent
+  bool m_imageBoxVisible = false;                         //!< Show the image-domain outline in 3D views
+  bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
+  bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
+  bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
+  float m_imagePlaneAmbient = 0.35f;                      //!< Image-plane shading ambient term
+  float m_imagePlaneDiffuse = 0.65f;                      //!< Image-plane shading diffuse term
+  float m_imagePlaneSpecular = 0.18f;                     //!< Image-plane shading specular term
+  float m_imagePlaneShininess = 32.0f;                    //!< Image-plane shading specular exponent
+  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D views
   float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
   bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views
   bool m_reverseThreeDRotateAboutEye = false;             //!< Reverse POV 3D camera rotation direction
@@ -227,11 +220,40 @@ struct ProjectRaycastingSettings
     0x7c / 255.0f,
     0x5e / 255.0f,
     0xd5 / 255.0f,
-    0xa2 / 255.0f};               //!< 2D frustum overlay color
+    0xa2 / 255.0f}; //!< 2D frustum overlay color
+};
+
+/**
+ * @brief Project-wide volume raycasting settings.
+ */
+struct ProjectRaycastingSettings
+{
+  float m_samplingFactor = 0.8f;  //!< Ray-marching sampling factor
   bool m_renderFrontFaces = true; //!< Render front faces in 3D raycasting
   bool m_renderBackFaces = true;  //!< Render back faces in 3D raycasting
   ProjectSegmentationRaycastMasking m_segmentationMasking =
     ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior
+};
+
+/**
+ * @brief Project-wide mesh rendering settings.
+ */
+struct ProjectMeshRenderingSettings
+{
+  bool m_renderingEnabled = true;       //!< Render committed opaque isosurfaces as meshes when ready
+  uint32_t m_generationThreadCount = 0; //!< Maximum VTK threads for one CPU mesh extraction job
+  ProjectMeshCompositingMode m_translucentCompositing =
+    ProjectMeshCompositingMode::AlphaOver;            //!< Translucent mesh compositing path
+  bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
+  bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
+  glm::vec4 m_clipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane
+  bool m_shadowsEnabled = false;                      //!< Render mesh shadows when mesh rendering is active
+  uint32_t m_shadowMapSizePixels = 1024;              //!< Mesh shadow-map size in pixels
+  float m_shadowStrength = 0.35f;                     //!< Mesh shadow contribution in [0, 1]
+  float m_shadowDepthBias = 0.001f;                   //!< Mesh shadow depth bias
+  bool m_ambientOcclusionEnabled = false;             //!< Render screen-space ambient occlusion for meshes
+  float m_ambientOcclusionRadiusPixels = 8.0f;        //!< Mesh AO screen-space radius in pixels
+  float m_ambientOcclusionStrength = 0.5f;            //!< Mesh AO contribution in [0, 1]
 };
 
 /**
@@ -402,6 +424,7 @@ struct ImageSettings
   bool m_isosurfacesVisible = true;               //!< Show image isosurfaces
   bool m_applyImageColormapToIsosurfaces = false; //!< Color isosurfaces with the image colormap
   bool m_showIsocontoursIn2D = true;              //!< Show 2D isocontours
+  bool m_showIsosurfacesIn3D = true;              //!< Show 3D isosurfaces
   double m_isocontourLineWidthIn2D = 2.0;         //!< 2D isocontour line width
   float m_isosurfaceOpacityModulator = 1.0f;      //!< Isosurface opacity multiplier
 };
@@ -648,7 +671,9 @@ struct EntropyProject
   ProjectSynchronizationSettings m_synchronization;
   ProjectViewSettings m_view;
   ProjectComparisonSettings m_comparison;
+  ProjectThreeDRenderingSettings m_threeDRendering;
   ProjectRaycastingSettings m_raycasting;
+  ProjectMeshRenderingSettings m_meshRendering;
   ProjectIntensityProjectionSettings m_intensityProjection;
   ProjectSegmentationDisplaySettings m_segmentationDisplay;
   ProjectIsocontourDisplaySettings m_isocontours;
@@ -698,6 +723,20 @@ void to_json(nlohmann::json& j, const ProjectComparisonSettings& settings);
 void from_json(const nlohmann::json& j, ProjectComparisonSettings& settings);
 
 /**
+ * @brief Serialize project 3D rendering settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectThreeDRenderingSettings& settings);
+
+/**
+ * @brief Deserialize project 3D rendering settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectThreeDRenderingSettings& settings);
+
+/**
  * @brief Serialize project raycasting settings to JSON.
  * @param j Destination JSON object.
  * @param settings Settings to serialize.
@@ -710,6 +749,20 @@ void to_json(nlohmann::json& j, const ProjectRaycastingSettings& settings);
  * @param settings Settings to update.
  */
 void from_json(const nlohmann::json& j, ProjectRaycastingSettings& settings);
+
+/**
+ * @brief Serialize project mesh rendering settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectMeshRenderingSettings& settings);
+
+/**
+ * @brief Deserialize project mesh rendering settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectMeshRenderingSettings& settings);
 
 /**
  * @brief Serialize project intensity projection defaults to JSON.

@@ -85,6 +85,34 @@ std::optional<MeshData> makeImageSliceIntersectionMesh(const intersection::Inter
 std::optional<MeshData> makeImageSliceIntersectionMesh(const intersection::IntersectionVerticesVec4& intersections);
 
 /**
+ * @brief Create a thin triangle mesh around the boundary of a clipped image slice.
+ * @param intersections Six polygon vertices plus centroid from the slice intersector
+ * @param widthWorld Border width in world units
+ * @return Triangle mesh containing one thin quad per polygon edge
+ */
+std::optional<MeshData> makeImageSliceIntersectionBorderMesh(
+  const intersection::IntersectionVertices& intersections,
+  float widthWorld);
+
+/**
+ * @brief Create a thin triangle mesh around homogeneous clipped image slice intersections.
+ * @param intersections Six homogeneous polygon vertices plus centroid from the slice intersector
+ * @param widthWorld Border width in world units
+ * @return Triangle mesh containing one thin quad per polygon edge
+ */
+std::optional<MeshData> makeImageSliceIntersectionBorderMesh(
+  const intersection::IntersectionVerticesVec4& intersections,
+  float widthWorld);
+
+/**
+ * @brief Create a thin triangle mesh around the twelve edges of an image box
+ * @param worldCorners Eight image-domain box corners in world coordinates
+ * @param widthWorld Edge width in world units
+ * @return Triangle mesh containing one rectangular prism per box edge
+ */
+std::optional<MeshData> makeImageBoxBorderMesh(const std::array<glm::vec3, 8>& worldCorners, float widthWorld);
+
+/**
  * @brief Create a textured triangle-fan mesh from clipped image slice intersections
  * @param intersections Six polygon vertices plus centroid from the slice intersector
  * @param texture_T_world Transform from world/LPS coordinates to normalized image texture coordinates

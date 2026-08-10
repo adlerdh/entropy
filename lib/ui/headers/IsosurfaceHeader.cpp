@@ -951,10 +951,14 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
+      ImGui::Checkbox("Show surface in 3D", &surface->showIn3d);
+      ImGui::SameLine();
+      helpMarker("Show this isosurface in 3D raycast and mesh views");
+
       if (ImGui::TreeNode("3D rim lighting")) {
         ImGui::Checkbox("Enable", &surface->rimLightingEnabled);
         ImGui::SameLine();
-        helpMarker("Enable view-angle rim opacity modulation and glow for this surface in 3D raycasting");
+        helpMarker("Enable view-angle rim opacity modulation and glow for this surface in 3D");
 
         if (!surface->rimLightingEnabled) {
           ImGui::BeginDisabled();
@@ -963,13 +967,13 @@ void renderIsosurfacesHeader(
           surface->rimOpacityStrength = std::clamp(surface->rimOpacityStrength, 0.0f, 1.0f);
         }
         ImGui::SameLine();
-        helpMarker("Modulate surface opacity by view angle so silhouettes remain more visible in 3D raycasting");
+        helpMarker("Modulate surface opacity by view angle so silhouettes remain more visible in 3D");
 
         if (mySliderF32("Glow", &surface->rimEmissionStrength, 0.0f, 2.0f, "%0.2f")) {
           surface->rimEmissionStrength = std::max(surface->rimEmissionStrength, 0.0f);
         }
         ImGui::SameLine();
-        helpMarker("Add view-angle rim light at silhouettes in 3D raycasting");
+        helpMarker("Add view-angle rim light at silhouettes in 3D");
 
         if (mySliderF32("Falloff", &surface->rimPower, 0.25f, 8.0f, "%0.2f")) {
           surface->rimPower = std::max(surface->rimPower, 0.25f);
@@ -1042,6 +1046,13 @@ void renderIsosurfacesHeader(
         }
         ImGui::SameLine();
         helpMarker("Show isocontours in 2D image planes");
+
+        bool showIn3d = imgSettings.showIsosurfacesIn3D();
+        if (ImGui::Checkbox("Show isosurfaces in 3D", &showIn3d)) {
+          imgSettings.setShowIsosurfacesIn3D(showIn3d);
+        }
+        ImGui::SameLine();
+        helpMarker("Show isosurfaces in 3D raycast and mesh views");
 
         bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
         if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {
