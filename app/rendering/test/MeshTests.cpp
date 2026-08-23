@@ -604,9 +604,39 @@ TEST_CASE("mesh DDP policy clamps peel pass counts", "[rendering][mesh]")
   const std::vector renderables{ddp};
   const mesh::MeshRenderList list = mesh::buildRenderList(renderables);
 
-  CHECK(mesh::meshDdpPlanForRenderList(list, {.requestedPeelPasses = 0, .maxPeelPasses = 8}).peelPasses == 1);
-  CHECK(mesh::meshDdpPlanForRenderList(list, {.requestedPeelPasses = 20, .maxPeelPasses = 8}).peelPasses == 8);
-  CHECK_FALSE(mesh::meshDdpPlanForRenderList(list, {.requestedPeelPasses = 4, .maxPeelPasses = 0}).active);
+  const mesh::MeshDdpPlan defaultPlan = mesh::meshDdpPlanForRenderList(list, {});
+  CHECK(defaultPlan.untilComplete);
+  CHECK(defaultPlan.peelPasses == 8);
+
+  const mesh::MeshDdpPlan fixedPlan =
+    mesh::meshDdpPlanForRenderList(list, {.untilComplete = false, .maxPeelPasses = 4});
+  CHECK_FALSE(fixedPlan.untilComplete);
+  CHECK(fixedPlan.peelPasses == 4);
+  CHECK(mesh::meshDdpPlanForRenderList(list, {.maxPeelPasses = 0}).peelPasses == 1);
+  CHECK(mesh::meshDdpPlanForRenderList(list, {.maxPeelPasses = 40}).peelPasses == 32);
+}
+
+TEST_CASE("mesh DDP adaptive peeling stops on completion or its safety limit", "[rendering][mesh]")
+{
+  const mesh::MeshDdpPlan adaptivePlan{.active = true, .untilComplete = true, .peelPasses = 8, .renderableCount = 1};
+
+  CHECK(mesh::shouldContinueDdpPeeling(0, adaptivePlan, true));
+  CHECK(mesh::shouldContinueDdpPeeling(7, adaptivePlan, true));
+  CHECK_FALSE(mesh::shouldContinueDdpPeeling(8, adaptivePlan, true));
+  CHECK_FALSE(mesh::shouldContinueDdpPeeling(1, adaptivePlan, false));
+}
+
+TEST_CASE("mesh DDP fixed peeling ignores completion until its pass limit", "[rendering][mesh]")
+{
+  const mesh::MeshDdpPlan fixedPlan{.active = true, .untilComplete = false, .peelPasses = 4, .renderableCount = 1};
+
+  CHECK(mesh::shouldContinueDdpPeeling(0, fixedPlan, false));
+  CHECK(mesh::shouldContinueDdpPeeling(3, fixedPlan, false));
+  CHECK_FALSE(mesh::shouldContinueDdpPeeling(4, fixedPlan, true));
+
+  mesh::MeshDdpPlan inactivePlan = fixedPlan;
+  inactivePlan.active = false;
+  CHECK_FALSE(mesh::shouldContinueDdpPeeling(0, inactivePlan, true));
 }
 
 TEST_CASE("mesh DDP diagnostics explain inactive and clamped plans", "[rendering][mesh]")
@@ -622,13 +652,7 @@ TEST_CASE("mesh DDP diagnostics explain inactive and clamped plans", "[rendering
     mesh::meshDdpDiagnostics(disabledPlan, disabledSettings) ==
     std::vector<std::string>{"Mesh DDP is disabled; alpha-over mesh surfaces will not use order independent blending"});
 
-  const mesh::MeshDdpSettings unavailableSettings{.requestedPeelPasses = 4, .maxPeelPasses = 0};
-  const mesh::MeshDdpPlan unavailablePlan = mesh::meshDdpPlanForRenderList(list, unavailableSettings);
-  CHECK(
-    mesh::meshDdpDiagnostics(unavailablePlan, unavailableSettings) ==
-    std::vector<std::string>{"Mesh DDP has no available peel passes"});
-
-  const mesh::MeshDdpSettings clampedSettings{.requestedPeelPasses = 20, .maxPeelPasses = 8};
+  const mesh::MeshDdpSettings clampedSettings{.maxPeelPasses = 40};
   const mesh::MeshDdpPlan clampedPlan = mesh::meshDdpPlanForRenderList(list, clampedSettings);
   CHECK(
     mesh::meshDdpDiagnostics(clampedPlan, clampedSettings) ==
@@ -1824,8 +1848,8 @@ TEST_CASE("orthogonal image plane scene can build boundary meshes", "[rendering]
 
   REQUIRE(planes.size() == 1);
   REQUIRE(planes.front().borderMesh.has_value());
-  CHECK_FALSE(planes.front().borderMesh->positions.empty());
-  CHECK_FALSE(planes.front().borderMesh->indices.empty());
+  CHECK(planes.front().borderMesh->positions.size() == 8u);
+  CHECK(planes.front().borderMesh->indices.size() == 24u);
 }
 
 TEST_CASE("image box border mesh builds all twelve box edges", "[rendering][mesh]")

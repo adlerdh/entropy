@@ -19,6 +19,6 @@ class MeshGpuStore;
 MeshDrawContext meshDrawContextForView(
   const MeshGpuStore& gpuStore,
   const View& view,
-  const glm::vec4& lighting = glm::vec4{0.35f, 0.55f, 0.10f, 16.0f});
+  const glm::vec4& lighting = glm::vec4{0.30f, 0.50f, 0.20f, 16.0f});
 
 } // namespace rendering::mesh

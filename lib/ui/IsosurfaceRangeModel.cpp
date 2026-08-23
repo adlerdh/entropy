@@ -89,6 +89,14 @@ std::string defaultIsosurfaceName(std::size_t index)
   return out.str();
 }
 
+glm::vec3 defaultIsosurfaceColor(const glm::vec3& imageBorderColor)
+{
+  static constexpr float k_defaultSaturation = 128.0f / 255.0f;
+  glm::vec3 hsv = glm::hsvColor(glm::clamp(imageBorderColor, glm::vec3{0.0f}, glm::vec3{1.0f}));
+  hsv.y = k_defaultSaturation;
+  return glm::clamp(glm::rgbColor(hsv), glm::vec3{0.0f}, glm::vec3{1.0f});
+}
+
 glm::vec3 interpolateHsvColor(const glm::vec3& startRgb, const glm::vec3& endRgb, double t)
 {
   const double clampedT = std::clamp(t, 0.0, 1.0);

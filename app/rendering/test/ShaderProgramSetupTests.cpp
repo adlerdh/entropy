@@ -1,4 +1,5 @@
 #include "rendering/ShaderProgramSetup.h"
+#include "rendering/ShaderSourceSetup.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -98,4 +99,18 @@ TEST_CASE("shader program setup exposes complete texture lookup replacement sour
   REQUIRE_FALSE(setup.lookupReplacementSources.cubic3D.empty());
   REQUIRE_FALSE(setup.lookupReplacementSources.cubic2D.empty());
   REQUIRE_FALSE(setup.lookupReplacementSources.uintLinear2D.empty());
+}
+
+TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributions", "[rendering][shaders]")
+{
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.fs");
+  const std::string mesh = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.fs");
+
+  CHECK(raycast.find("u_isoColors[i] * (u_lightingAmbient + u_lightingDiffuse * d)") != std::string::npos);
+  CHECK(raycast.find("vec3(u_lightingSpecular * s)") != std::string::npos);
+  CHECK(mesh.find("albedo * (u_lightingAmbient + u_lightingDiffuse * diffuse)") != std::string::npos);
+  CHECK(mesh.find("vec3(u_lightingSpecular * specular)") != std::string::npos);
+  CHECK(raycast.find("uniform vec3 u_ambient") == std::string::npos);
+  CHECK(raycast.find("uniform vec3 u_diffuse") == std::string::npos);
+  CHECK(raycast.find("uniform vec3 u_specular") == std::string::npos);
 }

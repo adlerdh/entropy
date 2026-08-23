@@ -7,6 +7,9 @@
 namespace rendering::shader_setup
 {
 
+/** @brief Load one GLSL source file from the embedded shader resources. */
+std::string loadEmbeddedShaderSource(const std::string& path);
+
 /**
  * @brief Embedded GLSL source snippets used to specialize shader templates.
  *

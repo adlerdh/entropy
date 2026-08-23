@@ -272,31 +272,43 @@ std::optional<MeshData> makeImageSliceIntersectionBorderMesh(
 
   MeshData mesh;
   mesh.coordinateSpace = MeshCoordinateSpace::World;
-  mesh.positions.reserve(polygon.size() * 4u);
-  mesh.normals.reserve(polygon.size() * 4u);
+  mesh.positions.reserve(polygon.size() * 2u);
+  mesh.normals.reserve(polygon.size() * 2u);
   mesh.indices.reserve(polygon.size() * 6u);
 
   const float halfWidth = 0.5f * widthWorld;
   for (std::size_t i = 0; i < polygon.size(); ++i) {
-    const glm::vec3& a = polygon[i];
-    const glm::vec3& b = polygon[(i + 1u) % polygon.size()];
-    const std::optional<glm::vec3> edgeDirection = normalizedDirection(b - a);
-    if (!edgeDirection) {
-      continue;
+    const glm::vec3& previous = polygon[(i + polygon.size() - 1u) % polygon.size()];
+    const glm::vec3& current = polygon[i];
+    const glm::vec3& next = polygon[(i + 1u) % polygon.size()];
+    const std::optional<glm::vec3> previousEdge = normalizedDirection(current - previous);
+    const std::optional<glm::vec3> nextEdge = normalizedDirection(next - current);
+    if (!previousEdge || !nextEdge) {
+      return std::nullopt;
     }
 
-    const std::optional<glm::vec3> offsetDirection = normalizedDirection(glm::cross(*planeNormal, *edgeDirection));
-    if (!offsetDirection) {
-      continue;
+    const glm::vec3 previousOffset = glm::cross(*planeNormal, *previousEdge);
+    const glm::vec3 nextOffset = glm::cross(*planeNormal, *nextEdge);
+    const std::optional<glm::vec3> miterDirection = normalizedDirection(previousOffset + nextOffset);
+    if (!miterDirection) {
+      return std::nullopt;
     }
 
-    const glm::vec3 offset = halfWidth * *offsetDirection;
-    const std::uint32_t baseIndex = static_cast<std::uint32_t>(mesh.positions.size());
-    mesh.positions.insert(mesh.positions.end(), {a - offset, b - offset, b + offset, a + offset});
-    mesh.normals.insert(mesh.normals.end(), {*planeNormal, *planeNormal, *planeNormal, *planeNormal});
-    mesh.indices.insert(
-      mesh.indices.end(),
-      {baseIndex, baseIndex + 1u, baseIndex + 2u, baseIndex, baseIndex + 2u, baseIndex + 3u});
+    // Join adjacent ribbons at their offset-line intersection. A continuous silhouette avoids the corner gaps
+    // produced by independent edge quads and lets framebuffer multisampling anti-alias the whole outline cleanly.
+    const float miterScale = halfWidth / glm::dot(*miterDirection, nextOffset);
+    const glm::vec3 offset = miterScale * *miterDirection;
+    mesh.positions.insert(mesh.positions.end(), {current - offset, current + offset});
+    mesh.normals.insert(mesh.normals.end(), {*planeNormal, *planeNormal});
+  }
+
+  for (std::uint32_t i = 0; i < polygon.size(); ++i) {
+    const std::uint32_t next = (i + 1u) % static_cast<std::uint32_t>(polygon.size());
+    const std::uint32_t inner = 2u * i;
+    const std::uint32_t outer = inner + 1u;
+    const std::uint32_t nextInner = 2u * next;
+    const std::uint32_t nextOuter = nextInner + 1u;
+    mesh.indices.insert(mesh.indices.end(), {inner, nextInner, nextOuter, inner, nextOuter, outer});
   }
 
   return mesh.indices.empty() ? std::nullopt : std::optional<MeshData>{std::move(mesh)};

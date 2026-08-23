@@ -4790,29 +4790,6 @@ void ImGuiWrapper::render()
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);
 
-  const auto imageHasAnyIsosurface = [this](const uuids::uuid& imageUid) {
-    const Image* image = m_appData.image(imageUid);
-    if (!image) {
-      return false;
-    }
-
-    for (ComponentIndexType component = 0; component < image->header().numComponentsPerPixel(); ++component) {
-      if (!m_appData.isosurfaceUids(imageUid, component).empty()) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const auto showIsosurfacesPanelIfImageHasNoIsosurfaces =
-    [this, &imageHasAnyIsosurface](const std::optional<uuids::uuid>& imageUid) {
-      if (!imageUid || imageHasAnyIsosurface(*imageUid)) {
-        return;
-      }
-      m_appData.guiData().m_showIsosurfacesWindow = true;
-      m_appData.guiData().m_requestedIsosurfacesImageUid = *imageUid;
-    };
-
   if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
 
@@ -4899,18 +4876,6 @@ void ImGuiWrapper::render()
           if (!currentLayout.visibleImages().empty()) {
             m_appData.guiData().m_requestedIsosurfacesImageUid = currentLayout.visibleImages().front();
           }
-        },
-      .showIsosurfacesPanelForMissingRaycastImageIsosurface =
-        [&currentLayout, &showIsosurfacesPanelIfImageHasNoIsosurfaces]() {
-          const auto& volumeImages = currentLayout.volumeRenderedImages();
-          if (!volumeImages.empty()) {
-            showIsosurfacesPanelIfImageHasNoIsosurfaces(volumeImages.front());
-            return;
-          }
-
-          const auto& renderedImages = currentLayout.renderedImages();
-          showIsosurfacesPanelIfImageHasNoIsosurfaces(
-            renderedImages.empty() ? std::optional<uuids::uuid>{} : std::optional<uuids::uuid>{renderedImages.front()});
         },
       .getThreeDRenderImageBox = [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
       .setThreeDRenderImageBox =
@@ -5044,19 +5009,6 @@ void ImGuiWrapper::render()
             if (!view->visibleImages().empty()) {
               m_appData.guiData().m_requestedIsosurfacesImageUid = view->visibleImages().front();
             }
-          },
-        .showIsosurfacesPanelForMissingRaycastImageIsosurface =
-          [view, &showIsosurfacesPanelIfImageHasNoIsosurfaces]() {
-            const auto& volumeImages = view->volumeRenderedImages();
-            if (!volumeImages.empty()) {
-              showIsosurfacesPanelIfImageHasNoIsosurfaces(volumeImages.front());
-              return;
-            }
-
-            const auto& renderedImages = view->renderedImages();
-            showIsosurfacesPanelIfImageHasNoIsosurfaces(
-              renderedImages.empty() ? std::optional<uuids::uuid>{}
-                                     : std::optional<uuids::uuid>{renderedImages.front()});
           },
         .getThreeDProjectionType = [view]() { return view->threeDState().m_projectionType; },
         .setThreeDProjectionType =

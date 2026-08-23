@@ -14,9 +14,9 @@ namespace rendering::mesh
  */
 struct MeshDdpSettings
 {
-  bool enabled = true;              //!< Whether alpha-over order-independent transparency is allowed
-  uint32_t requestedPeelPasses = 8; //!< Requested number of front/back peel iterations
-  uint32_t maxPeelPasses = 32;      //!< Hard safety cap for one frame
+  bool enabled = true;        //!< Whether alpha-over order-independent transparency is allowed
+  bool untilComplete = true;  //!< Stop early when an occlusion query reports no newly peeled back fragments
+  uint32_t maxPeelPasses = 8; //!< Maximum front/back peel iterations executed in one frame
 };
 
 /**
@@ -25,6 +25,7 @@ struct MeshDdpSettings
 struct MeshDdpPlan
 {
   bool active = false;          //!< True when a DDP pass should run
+  bool untilComplete = true;    //!< Whether an occlusion query may terminate peeling early
   uint32_t peelPasses = 0;      //!< Number of front/back peel iterations to execute
   uint32_t renderableCount = 0; //!< Number of alpha-over renderables that require DDP
 };
@@ -44,6 +45,15 @@ uint32_t sanitizedDdpPeelPasses(uint32_t requestedPasses, uint32_t maxPasses) no
  * @return DDP pass plan
  */
 MeshDdpPlan meshDdpPlanForRenderList(const MeshRenderList& list, const MeshDdpSettings& settings) noexcept;
+
+/**
+ * @brief Decide whether another DDP peel iteration should run
+ * @param completedPasses Number of peel iterations already completed
+ * @param plan Sanitized DDP plan
+ * @param anySamplesPassed Result of the latest completion occlusion query
+ * @return True when the configured pass limit and completion policy allow another iteration
+ */
+bool shouldContinueDdpPeeling(uint32_t completedPasses, const MeshDdpPlan& plan, bool anySamplesPassed) noexcept;
 
 /**
  * @brief Build short diagnostics that explain a DDP plan or fallback

@@ -763,7 +763,7 @@ std::optional<std::size_t> firstLayoutIndexWithKind(const std::vector<Layout>& l
 
 std::size_t defaultLayoutIndexForImages(const std::vector<Layout>& layouts, const AppData& appData)
 {
-  const LayoutKind preferredKind = shouldDefaultToOneUpLayout(appData) ? LayoutKind::OneUp : LayoutKind::ThreeUp;
+  const LayoutKind preferredKind = shouldDefaultToOneUpLayout(appData) ? LayoutKind::OneUp : LayoutKind::FourUp;
   if (const auto preferredIndex = firstLayoutIndexWithKind(layouts, preferredKind)) {
     return *preferredIndex;
   }

@@ -10,12 +10,14 @@ MeshImagePlaneRenderable makeImagePlaneRenderable(
   const MeshImagePlaneTexture texture,
   const float opacityMultiplier,
   const bool shadingEnabled,
-  const bool visible)
+  const bool visible,
+  const MeshImagePlaneOrientation orientation)
 {
   return MeshImagePlaneRenderable{
     .mesh = mesh,
     .world_T_mesh = world_T_mesh,
     .centerWorld = centerWorld,
+    .orientation = orientation,
     .texture = texture,
     .opacityMultiplier = opacityMultiplier,
     .shadingEnabled = shadingEnabled,

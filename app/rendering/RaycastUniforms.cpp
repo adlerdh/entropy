@@ -47,9 +47,7 @@ void Rendering::setRaycastIsoUniforms(
   program.setUniform("u_isoRimOpacityStrengths", renderData.m_isosurfaceData.rimOpacityStrengths);
   program.setUniform("u_isoRimEmissionStrengths", renderData.m_isosurfaceData.rimEmissionStrengths);
   program.setUniform("u_isoRimPowers", renderData.m_isosurfaceData.rimPowers);
-  program.setUniform("u_ambient", renderData.m_isosurfaceData.ambient);
-  program.setUniform("u_diffuse", renderData.m_isosurfaceData.diffuse);
-  program.setUniform("u_specular", renderData.m_isosurfaceData.specular);
+  program.setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
   program.setUniform("u_lightingAmbient", renderData.m_lightingAmbient);
   program.setUniform("u_lightingDiffuse", renderData.m_lightingDiffuse);
   program.setUniform("u_lightingSpecular", renderData.m_lightingSpecular);

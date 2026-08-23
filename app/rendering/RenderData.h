@@ -5,6 +5,7 @@
 #include "rendering/TextureLayout.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshCompositing.h"
+#include "rendering/mesh/MeshDdpPolicy.h"
 #include "rendering/utility/containers/VertexAttributeInfo.h"
 #include "rendering/utility/containers/VertexIndicesInfo.h"
 #include "rendering/utility/gl/GLBufferObject.h"
@@ -260,7 +261,7 @@ struct RenderData
 
   glm::vec4 m_3dBackgroundColor; //!< Background clear color for 3D views as non-premultiplied RGBA
 
-  /// Whether a 3D view remains transparent when an eye ray does not hit the image bounding box.
+  /// Whether raycasting preserves the existing view background when an eye ray does not hit the image bounding box.
   bool m_3dTransparentIfNoHit;
 
   glm::vec4 m_crosshairsColor; //!< Crosshairs color as non-premultiplied RGBA
@@ -346,6 +347,8 @@ struct RenderData
   uint32_t m_meshGenerationThreadCount; //!< Maximum VTK threads for one CPU mesh extraction job, or zero for auto
 
   rendering::mesh::MeshCompositingMode m_meshTranslucentCompositingMode; //!< Translucent mesh compositing path
+
+  rendering::mesh::MeshDdpSettings m_meshDdpSettings; //!< Dual-depth-peeling termination and safety limit
 
   bool m_meshPickingEnabled; //!< Whether mesh surfaces participate in 3D point picking
 
@@ -533,10 +536,6 @@ struct RenderData
     std::vector<float> rimEmissionStrengths; //!< Rim-lighting emission/glow strengths
     std::vector<float> rimPowers;            //!< Rim-lighting falloff exponents
     std::vector<glm::vec3> colors;           //!< Base isosurface colors
-
-    std::vector<glm::vec3> ambient;  //!< Ambient material colors
-    std::vector<glm::vec3> diffuse;  //!< Diffuse material colors
-    std::vector<glm::vec3> specular; //!< Specular material colors
   };
 
   IsosurfaceData m_isosurfaceData; //!< Packed isosurface parameters used by the current 3D raycast shader path

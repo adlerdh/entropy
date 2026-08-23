@@ -34,6 +34,8 @@ uniform vec2 u_imgMinMax;
 uniform vec2 u_imgThresholds;
 uniform float u_imgOpacity;
 uniform bool u_imagePlaneShadingEnabled;
+uniform vec4 u_imagePlaneBorderColor;
+uniform float u_imagePlaneBorderWidthPixels;
 uniform vec3 u_cameraWorldPosition;
 
 uniform vec2 u_cmapSlopeIntercept;
@@ -59,6 +61,7 @@ uniform float u_segOpacity;
 uniform float u_segFillOpacity;
 uniform float u_segInterpCutoff;
 uniform bool u_segLinearInterpolation;
+uniform bool u_segOutlineUsesScreenPixels;
 uniform vec3 u_texSamplingDirsForSegOutline[2];
 uniform vec3 u_texSamplingDirsForSmoothSeg[2];
 
@@ -171,10 +174,16 @@ float getSegInteriorAlpha(vec3 texCoord, uint seg)
     return 1.0;
   }
 
+  // Screen-pixel outlines must be measured at the actual 3D plane depth. CPU-side near-plane offsets change with the
+  // camera and can make segmentation interiors flicker between fill and edge opacity.
+  vec3 screenPixelDirs[2] = vec3[2](dFdx(texCoord), dFdy(texCoord));
+
   for (int i = 0; i <= 8; ++i) {
     float row = float(mod(i, 3) - 1);
     float col = float(floor(float(i / 3)) - 1);
-    vec3 texPosOffset = row * u_texSamplingDirsForSegOutline[0] + col * u_texSamplingDirsForSegOutline[1];
+    vec3 texPosOffset = u_segOutlineUsesScreenPixels
+                          ? row * screenPixelDirs[0] + col * screenPixelDirs[1]
+                          : row * u_texSamplingDirsForSegOutline[0] + col * u_texSamplingDirsForSegOutline[1];
 
     float ignore;
     if (seg != getSegValue(texCoord, texPosOffset, ignore)) {
@@ -223,7 +232,20 @@ float imagePlaneAlpha()
   float mask = float(isInsideTexture(sampleTc));
   float imageAlpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds) * imgColor.a + 0.0 * mappedColor.r;
   float segmentationAlpha = segmentationPlaneAlpha(sampleTc);
-  return segmentationAlpha + imageAlpha * (1.0 - segmentationAlpha);
+  float borderDistancePixels = 1e20;
+  for (int axis = 0; axis < 3; ++axis) {
+    float textureUnitsPerPixel = length(vec2(dFdx(fs_in.v_texCoord[axis]), dFdy(fs_in.v_texCoord[axis])));
+    if (textureUnitsPerPixel > 1e-8) {
+      borderDistancePixels =
+        min(borderDistancePixels, min(fs_in.v_texCoord[axis], 1.0 - fs_in.v_texCoord[axis]) / textureUnitsPerPixel);
+    }
+  }
+  float borderAlpha = u_imagePlaneBorderColor.a * (1.0 - smoothstep(
+                                                           max(u_imagePlaneBorderWidthPixels - 0.5, 0.0),
+                                                           u_imagePlaneBorderWidthPixels + 0.5,
+                                                           borderDistancePixels));
+  float contentAlpha = segmentationAlpha + imageAlpha * (1.0 - segmentationAlpha);
+  return borderAlpha + contentAlpha * (1.0 - borderAlpha);
 }
 
 void main()

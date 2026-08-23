@@ -86,8 +86,7 @@ void Rendering::clearMeshViewBackgroundForView(const View& view)
   glGetFloatv(GL_COLOR_CLEAR_VALUE, previousClearColor.data());
 
   const auto& bg = m_appData.renderData().m_3dBackgroundColor;
-  const float alpha = m_appData.renderData().m_3dTransparentIfNoHit ? 0.0f : 1.0f;
-  glClearColor(bg.r, bg.g, bg.b, alpha);
+  glClearColor(bg.r, bg.g, bg.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   glClearColor(previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
 }
@@ -177,14 +176,16 @@ void Rendering::drawMeshRenderListForView(
     }
   }
 
-  rendering::mesh::MeshDdpPlan ddpPlan = rendering::mesh::meshDdpPlanForRenderList(list, {});
+  const rendering::mesh::MeshDdpSettings& ddpSettings = renderData.m_meshDdpSettings;
+  rendering::mesh::MeshDdpPlan ddpPlan = rendering::mesh::meshDdpPlanForRenderList(list, ddpSettings);
   if (hasImagePlaneDdpRenderables(imagePlaneList) && !ddpPlan.active) {
     ddpPlan = rendering::mesh::MeshDdpPlan{
       .active = true,
-      .peelPasses = rendering::mesh::sanitizedDdpPeelPasses(8u, 32u),
+      .untilComplete = ddpSettings.untilComplete,
+      .peelPasses = rendering::mesh::sanitizedDdpPeelPasses(ddpSettings.maxPeelPasses, 32u),
       .renderableCount = static_cast<uint32_t>(imagePlaneList->imagePlanes.size())};
   }
-  for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, {})) {
+  for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, ddpSettings)) {
     spdlog::debug("{}", diagnostic);
   }
   if (ddpPlan.active) {

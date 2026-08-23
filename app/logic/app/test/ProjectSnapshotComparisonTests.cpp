@@ -232,6 +232,14 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_ddpUntilComplete = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_ddpMaxPeelPasses = 12;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
   changedMeshRendering.m_meshRendering.m_pickingEnabled = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 

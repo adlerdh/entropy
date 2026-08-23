@@ -33,9 +33,7 @@ uniform float u_isoRimOpacityStrengths[NISO];
 uniform float u_isoRimEmissionStrengths[NISO];
 uniform float u_isoRimPowers[NISO];
 
-uniform vec3 u_ambient[NISO];
-uniform vec3 u_diffuse[NISO];
-uniform vec3 u_specular[NISO];
+uniform vec3 u_isoColors[NISO];
 uniform float u_lightingAmbient;
 uniform float u_lightingDiffuse;
 uniform float u_lightingSpecular;
@@ -237,9 +235,8 @@ vec4 shade(vec3 worldLightDir, vec3 worldViewDir, vec3 texNormal, int i)
   float s = pow(abs(dot(normal, h)), max(u_lightingSpecularPower, 0.001));
   float rim = pow(clamp(1.0 - abs(dot(normal, worldViewDir)), 0.0, 1.0), max(u_isoRimPowers[i], 1.0e-3));
   float alphaScale = mix(1.0, rim, clamp(u_isoRimOpacityStrengths[i], 0.0, 1.0));
-  vec3 litColor =
-    u_lightingAmbient * u_ambient[i] + u_lightingDiffuse * d * u_diffuse[i] + u_lightingSpecular * s * u_specular[i];
-  vec3 rimColor = max(u_diffuse[i], u_ambient[i]);
+  vec3 litColor = u_isoColors[i] * (u_lightingAmbient + u_lightingDiffuse * d) + vec3(u_lightingSpecular * s);
+  vec3 rimColor = max(u_isoColors[i], vec3(0.0));
   litColor += max(u_isoRimEmissionStrengths[i], 0.0) * rim * rimColor;
 
   return vec4(u_isoOpacities[i] * alphaScale * litColor, u_isoOpacities[i] * alphaScale);

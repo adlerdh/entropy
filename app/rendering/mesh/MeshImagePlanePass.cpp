@@ -2,11 +2,8 @@
 
 #include "image/Image.h"
 #include "logic/app/Data.h"
-#include "logic/camera/CameraHelpers.h"
-#include "logic/camera/MathUtility.h"
 #include "logic/SurfaceUtility.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/mesh/MeshGpuData.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
@@ -206,51 +203,40 @@ void unbindImagePlaneSegmentationLabelTableTextures(const std::list<std::referen
   }
 }
 
-std::vector<glm::vec3> computeMeshImagePlaneSegmentationOutlineSamplingDirs(
-  const Image& geometryImage,
-  const View& view,
-  const Viewport& windowViewport,
-  const SegmentationOutlineStyle outlineStyle)
+std::array<glm::vec3, 2> imagePlaneWorldAxes(const rendering::mesh::MeshImagePlaneOrientation orientation) noexcept
 {
-  namespace image_drawing = rendering::image_drawing;
-
-  std::vector<glm::vec3> samplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
-  if (SegmentationOutlineStyle::Disabled == outlineStyle) {
-    return samplingDirs;
+  switch (orientation) {
+    case rendering::mesh::MeshImagePlaneOrientation::Axial:
+      return {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}};
+    case rendering::mesh::MeshImagePlaneOrientation::Coronal:
+      return {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}};
+    case rendering::mesh::MeshImagePlaneOrientation::Sagittal:
+      return {glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}};
   }
 
-  const auto posInfo = math::computeAnatomicalLabelsForView(
-    view.camera().camera_T_world(),
-    geometryImage.transformations().worldDef_T_subject());
-  const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
+  return {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}};
+}
 
-  switch (outlineStyle) {
-    case SegmentationOutlineStyle::ImageVoxel: {
-      const glm::mat4 voxel_T_viewClip = geometryImage.transformations().pixel_T_worldDef() * world_T_viewClip;
-      for (int i = 0; i < 2; ++i) {
-        samplingDirs[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
-          voxel_T_viewClip,
-          windowViewport,
-          view.viewClip_T_windowClip(),
-          geometryImage.transformations().invPixelDimensions(),
-          posInfo[i].viewClipDir);
-      }
-      break;
-    }
-    case SegmentationOutlineStyle::ViewPixel: {
-      const glm::mat4 texture_T_viewClip = geometryImage.transformations().texture_T_worldDef() * world_T_viewClip;
-      for (int i = 0; i < 2; ++i) {
-        samplingDirs[i] = image_drawing::computeTextureSamplingDirectionForViewPixelOffset(
-          texture_T_viewClip,
-          windowViewport,
-          view.viewClip_T_windowClip(),
-          posInfo[i].viewClipDir);
-      }
-      break;
-    }
-    case SegmentationOutlineStyle::Disabled: {
-      break;
-    }
+glm::vec3 textureSamplingDirectionForImageVoxelOffset(const Image& image, const glm::vec3& worldAxis)
+{
+  glm::vec3 pixelDirection = glm::mat3{image.transformations().pixel_T_worldDef()} * worldAxis;
+  const float directionLength = glm::length(pixelDirection);
+  if (!std::isfinite(directionLength) || directionLength <= 1.0e-6f) {
+    return glm::vec3{0.0f};
+  }
+
+  pixelDirection /= directionLength;
+  return glm::dot(glm::abs(pixelDirection), image.transformations().invPixelDimensions()) * pixelDirection;
+}
+
+std::vector<glm::vec3> computeMeshImagePlaneSegmentationVoxelSamplingDirs(
+  const Image& geometryImage,
+  const rendering::mesh::MeshImagePlaneOrientation orientation)
+{
+  std::vector<glm::vec3> samplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  const std::array<glm::vec3, 2> worldAxes = imagePlaneWorldAxes(orientation);
+  for (int i = 0; i < 2; ++i) {
+    samplingDirs[i] = textureSamplingDirectionForImageVoxelOffset(geometryImage, worldAxes[i]);
   }
 
   return samplingDirs;
@@ -259,7 +245,6 @@ std::vector<glm::vec3> computeMeshImagePlaneSegmentationOutlineSamplingDirs(
 void setMeshImagePlaneSegmentationUniforms(
   GLShaderProgram& program,
   AppData& appData,
-  const View& view,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
   const RenderData::ImageUniforms& uniforms,
   const bool segmentationVisible)
@@ -285,15 +270,18 @@ void setMeshImagePlaneSegmentationUniforms(
   program.setUniform(
     "u_segLinearInterpolation",
     drawSegmentation && InterpolationMode::NearestNeighbor != segmentation->settings().interpolationMode());
+  program.setUniform(
+    "u_segOutlineUsesScreenPixels",
+    drawSegmentation && SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle);
 
-  const std::vector<glm::vec3> outlineSamplingDirs = image ? computeMeshImagePlaneSegmentationOutlineSamplingDirs(
-                                                               *image,
-                                                               view,
-                                                               appData.windowData().viewport(),
-                                                               renderData.m_segOutlineStyle)
-                                                           : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  const std::vector<glm::vec3> voxelSamplingDirs =
+    image ? computeMeshImagePlaneSegmentationVoxelSamplingDirs(*image, renderable.orientation)
+          : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  const bool useImageVoxelOutline = SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle;
+  const std::vector<glm::vec3> outlineSamplingDirs =
+    useImageVoxelOutline ? voxelSamplingDirs : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
   program.setUniform("u_texSamplingDirsForSegOutline", outlineSamplingDirs);
-  program.setUniform("u_texSamplingDirsForSmoothSeg", outlineSamplingDirs);
+  program.setUniform("u_texSamplingDirsForSmoothSeg", voxelSamplingDirs);
 }
 
 void setMeshImagePlaneUniforms(
@@ -332,6 +320,8 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_imgThresholds", uniforms.thresholds);
   program.setUniform("u_imgMinMax", uniforms.minMax);
   program.setUniform("u_imgOpacity", uniforms.imgOpacity * renderable.opacityMultiplier);
+  program.setUniform("u_imagePlaneBorderColor", renderable.borderColor);
+  program.setUniform("u_imagePlaneBorderWidthPixels", renderable.borderWidthPixels);
 
   // 3D image planes use the image shader's ordinary layer path. Comparison modes, flashlight masking, and intensity
   // projection are 2D-view concepts and remain disabled for this mesh pass.
@@ -460,7 +450,6 @@ void drawImagePlaneRenderablesWithProgram(
     setMeshImagePlaneSegmentationUniforms(
       program,
       appData,
-      view,
       imagePlane,
       uniformsIt->second,
       !boundSegTextures.empty() && !boundSegBufferTextures.empty());

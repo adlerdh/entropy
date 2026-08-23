@@ -111,9 +111,9 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_roughness", UniformType::Float, 0.55f);
   uniforms.insertUniform("u_ambientOcclusion", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
-  uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.35f);
-  uniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.55f);
-  uniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.10f);
+  uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);
+  uniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.50f);
+  uniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.20f);
   uniforms.insertUniform("u_lightingSpecularPower", UniformType::Float, 16.0f);
   uniforms.insertUniform("u_rimLightingEnabled", UniformType::Bool, false);
   uniforms.insertUniform("u_rimOpacityStrength", UniformType::Float, 1.0f);
@@ -232,6 +232,7 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   fsUniforms.insertUniform("u_segFillOpacity", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
   fsUniforms.insertUniform("u_segLinearInterpolation", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_segOutlineUsesScreenPixels", UniformType::Bool, false);
   fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
   fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
   if (peelShader) {

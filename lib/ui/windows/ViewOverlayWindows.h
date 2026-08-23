@@ -72,19 +72,17 @@ struct ViewOverlayModeCallbacks
   std::function<void(const IntensityProjectionMode& projMode)> setIntensityProjectionMode{}; //!< Change projection
 
   std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndShaderToAllViews{}; //!< Apply to all views
-  std::function<bool()> isIsosurfacesPanelVisible{};           //!< Is the isosurfaces panel currently visible
-  std::function<void()> showIsosurfacesPanel{};                //!< Open the isosurfaces panel
-  std::function<void()> hideIsosurfacesPanel{};                //!< Close the isosurfaces panel
-  std::function<void()> showIsosurfacesPanelForRaycastImage{}; //!< Open the panel for the current raycast image
-  std::function<void()>
-    showIsosurfacesPanelForMissingRaycastImageIsosurface{};  //!< Open the panel if the raycast image has no surfaces
-  std::function<ProjectionType()> getThreeDProjectionType{}; //!< Current 3D projection type
-  std::function<void(ProjectionType)> setThreeDProjectionType{};         //!< Set 3D projection type
-  std::function<float()> getThreeDFovAngleDegrees{};                     //!< Current perspective field-of-view angle
-  std::function<void(float)> setThreeDFovAngleDegrees{};                 //!< Set perspective field-of-view angle
-  std::function<bool()> getThreeDViewPositionFollowsCrosshairs{};        //!< Whether 3D eye position follows crosshairs
-  std::function<void(bool)> setThreeDViewPositionFollowsCrosshairs{};    //!< Set 3D eye position follows crosshairs
-  std::function<camera3d::OrbitTargetMode()> getThreeDOrbitTargetMode{}; //!< Current 3D orbit target mode
+  std::function<bool()> isIsosurfacesPanelVisible{};                  //!< Is the isosurfaces panel currently visible
+  std::function<void()> showIsosurfacesPanel{};                       //!< Open the isosurfaces panel
+  std::function<void()> hideIsosurfacesPanel{};                       //!< Close the isosurfaces panel
+  std::function<void()> showIsosurfacesPanelForRaycastImage{};        //!< Open the panel for the current raycast image
+  std::function<ProjectionType()> getThreeDProjectionType{};          //!< Current 3D projection type
+  std::function<void(ProjectionType)> setThreeDProjectionType{};      //!< Set 3D projection type
+  std::function<float()> getThreeDFovAngleDegrees{};                  //!< Current perspective field-of-view angle
+  std::function<void(float)> setThreeDFovAngleDegrees{};              //!< Set perspective field-of-view angle
+  std::function<bool()> getThreeDViewPositionFollowsCrosshairs{};     //!< Whether 3D eye position follows crosshairs
+  std::function<void(bool)> setThreeDViewPositionFollowsCrosshairs{}; //!< Set 3D eye position follows crosshairs
+  std::function<camera3d::OrbitTargetMode()> getThreeDOrbitTargetMode{};     //!< Current 3D orbit target mode
   std::function<void(camera3d::OrbitTargetMode)> setThreeDOrbitTargetMode{}; //!< Set 3D orbit target mode
   std::function<bool()> getThreeDImagePlanesVisible{};                       //!< Whether 3D image planes are shown
   std::function<void(bool)> setThreeDImagePlanesVisible{};                   //!< Set 3D image-plane visibility

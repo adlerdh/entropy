@@ -70,6 +70,13 @@ std::vector<double> isosurfaceRangeValues(const IsosurfaceRangeParameters& param
 std::string defaultIsosurfaceName(std::size_t index);
 
 /**
+ * @brief Derive a default isosurface color from an image border color.
+ *
+ * Preserves hue and value while using a consistent 8-bit HSV saturation of 128.
+ */
+glm::vec3 defaultIsosurfaceColor(const glm::vec3& imageBorderColor);
+
+/**
  * @brief Interpolate two RGB colors in HSV space.
  *
  * @param startRgb RGB color used at @p t equal to zero.

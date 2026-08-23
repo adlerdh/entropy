@@ -124,12 +124,10 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
     fsUniforms.insertUniform("u_isoRimEmissionStrengths", UniformType::FloatVector, FloatVector{0.0f});
     fsUniforms.insertUniform("u_isoRimPowers", UniformType::FloatVector, FloatVector{2.0f});
 
-    fsUniforms.insertUniform("u_ambient", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("u_diffuse", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("u_specular", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.35f);
-    fsUniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.55f);
-    fsUniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.10f);
+    fsUniforms.insertUniform("u_isoColors", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+    fsUniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);
+    fsUniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.50f);
+    fsUniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.20f);
     fsUniforms.insertUniform("u_lightingSpecularPower", UniformType::Float, 16.0f);
 
     fsUniforms.insertUniform("u_bgColor", UniformType::Vec4, sk_zeroVec4);

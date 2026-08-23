@@ -5,6 +5,7 @@
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <exception>
@@ -12,7 +13,9 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <system_error>
+#include <vector>
 
 #if !defined(_MSC_VER)
 #define HAS_IOS_BASE_FAILURE_DERIVED_FROM_SYSTEM_ERROR 1
@@ -21,11 +24,67 @@
 #endif
 
 using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
 
 namespace fs = std::filesystem;
 
 namespace
 {
+ordered_json orderedProjectJson(const json& value, const std::string_view path = {})
+{
+  if (value.is_array()) {
+    ordered_json result = ordered_json::array();
+    for (const json& element : value) {
+      result.push_back(orderedProjectJson(element, path));
+    }
+    return result;
+  }
+  if (!value.is_object()) {
+    return value;
+  }
+
+  ordered_json result = ordered_json::object();
+  std::vector<std::string_view> preferredKeys;
+  if (path == "settings/rendering") {
+    preferredKeys = {
+      "threeD",
+      "raycasting",
+      "mesh",
+      "isocontours",
+      "dualDepthPeeling",
+      "comparison",
+      "intensityProjection",
+      "segmentation"};
+  }
+  else if (path == "settings/rendering/mesh") {
+    preferredKeys = {
+      "enabled",
+      "generationThreads",
+      "translucentCompositing",
+      "pointPicking",
+      "clipPlane",
+      "shadows",
+      "ambientOcclusion"};
+  }
+
+  const auto append = [&](const std::string& key) {
+    const std::string childPath = path.empty() ? key : std::string{path} + "/" + key;
+    result[key] = orderedProjectJson(value.at(key), childPath);
+  };
+  for (const std::string_view key : preferredKeys) {
+    if (value.contains(key)) {
+      append(std::string{key});
+    }
+  }
+  for (const auto& [key, child] : value.items()) {
+    (void)child;
+    if (std::find(preferredKeys.begin(), preferredKeys.end(), key) == preferredKeys.end()) {
+      append(key);
+    }
+  }
+  return result;
+}
+
 void applyToImagePaths(
   serialize::EntropyProject& project,
   const fs::path& projectBasePath,
@@ -438,11 +497,12 @@ bool save(const EntropyProject& project, const fs::path& fileName)
       makeRegistrationResultPathsRelative(result, projectBasePath);
     }
     const json j = projectRelative;
+    const ordered_json ordered = orderedProjectJson(j);
 
     std::ofstream outFile(fileName);
-    outFile << j.dump(2) << '\n';
+    outFile << ordered.dump(2) << '\n';
 
-    spdlog::debug("Saved JSON for project (with relative image paths):\n{}", j.dump(2));
+    spdlog::debug("Saved JSON for project (with relative image paths):\n{}", ordered.dump(2));
     spdlog::info("Saved project to file {}", fileName);
     return true;
   }

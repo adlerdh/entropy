@@ -356,6 +356,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_ambientOcclusionRadiusPixels = 12.0f;
   project.m_meshRendering.m_ambientOcclusionStrength = 0.7f;
   project.m_meshRendering.m_translucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
+  project.m_meshRendering.m_ddpUntilComplete = false;
+  project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
   project.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
@@ -380,6 +382,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   const json& threeD = rendering.at("threeD");
   const json& raycasting = rendering.at("raycasting");
   const json& mesh = rendering.at("mesh");
+  const json& dualDepthPeeling = rendering.at("dualDepthPeeling");
   CHECK_FALSE(root.contains("raycasting"));
   CHECK_FALSE(root.contains("intensityProjection"));
   CHECK_FALSE(root.contains("segmentationDisplay"));
@@ -419,6 +422,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(mesh.at("ambientOcclusion").at("radiusPixels") == 12.0f);
   CHECK(mesh.at("ambientOcclusion").at("strength") == 0.7f);
   CHECK(mesh.at("translucentCompositing") == "multiplicative");
+  CHECK(dualDepthPeeling.at("untilComplete") == false);
+  CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
+  CHECK_FALSE(mesh.contains("dualDepthPeeling"));
   CHECK(mesh.at("pointPicking") == false);
   CHECK(mesh.at("clipPlane").at("enabled") == true);
   CHECK(mesh.at("clipPlane").at("worldPlane").at(1) == 1.0f);
@@ -480,6 +486,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusPixels == 12.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
   CHECK(parsed.m_meshRendering.m_translucentCompositing == serialize::ProjectMeshCompositingMode::Multiplicative);
+  CHECK(parsed.m_meshRendering.m_ddpUntilComplete == false);
+  CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
   CHECK(parsed.m_meshRendering.m_clipPlaneEnabled == true);
   CHECK(parsed.m_meshRendering.m_clipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
@@ -495,6 +503,52 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(
     parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
   CHECK(parsed.m_isocontours.m_modulateOpacityWithImageOpacity == true);
+}
+
+TEST_CASE("Saved project rendering settings follow the application settings order", "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path projectFile = root / "project.json";
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_threeDRendering.m_imageBoxVisible = true;
+  project.m_raycasting.m_samplingFactor = 1.25f;
+  project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_ddpUntilComplete = false;
+  project.m_isocontours.m_modulateOpacityWithImageOpacity = true;
+
+  REQUIRE(serialize::save(project, projectFile));
+
+  std::ifstream input{projectFile};
+  const std::string contents{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
+  const auto threeD = contents.find("\"threeD\"");
+  const auto raycasting = contents.find("\"raycasting\"");
+  const auto mesh = contents.find("\"mesh\"");
+  const auto isocontours = contents.find("\"isocontours\"");
+  const auto dualDepthPeeling = contents.find("\"dualDepthPeeling\"");
+
+  REQUIRE(threeD != std::string::npos);
+  REQUIRE(raycasting != std::string::npos);
+  REQUIRE(mesh != std::string::npos);
+  REQUIRE(isocontours != std::string::npos);
+  REQUIRE(dualDepthPeeling != std::string::npos);
+  CHECK(threeD < raycasting);
+  CHECK(raycasting < mesh);
+  CHECK(mesh < isocontours);
+  CHECK(isocontours < dualDepthPeeling);
+}
+
+TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh", "[project][serialization]")
+{
+  const json root = {
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings",
+     {{"rendering", {{"mesh", {{"dualDepthPeeling", {{"untilComplete", false}, {"maxPeelPasses", 12u}}}}}}}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK_FALSE(parsed.m_meshRendering.m_ddpUntilComplete);
+  CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
 }
 
 TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")

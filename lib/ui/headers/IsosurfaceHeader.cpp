@@ -49,13 +49,6 @@ struct AddSurfacesDialogState
 
 std::unordered_map<uuids::uuid, AddSurfacesDialogState> addSurfacesDialogStateByImage;
 
-glm::vec3 defaultIsosurfaceColor(const glm::vec3& imageBorderColor)
-{
-  glm::vec3 hsv = glm::hsvColor(glm::clamp(imageBorderColor, glm::vec3{0.0f}, glm::vec3{1.0f}));
-  hsv.y = std::clamp(0.5f * hsv.y, 0.0f, 1.0f);
-  return glm::clamp(glm::rgbColor(hsv), glm::vec3{0.0f}, glm::vec3{1.0f});
-}
-
 /**
  * @brief Compute the ImGui header background and text colors from an image border color.
  *
@@ -239,7 +232,7 @@ bool renderAddSurfacesDialog(
         const double t =
           (values.size() <= 1) ? 0.0 : static_cast<double>(valueIndex) / static_cast<double>(values.size() - 1);
         const glm::vec3 color = state.colorRange ? ui::interpolateHsvColor(state.startColor, state.endColor, t)
-                                                 : defaultIsosurfaceColor(image->settings().borderColor());
+                                                 : ui::defaultIsosurfaceColor(image->settings().borderColor());
 
         lastAddedUid = addSurfaceAtValue(
           appData,
@@ -293,7 +286,7 @@ void openAddSurfacesDialog(const uuids::uuid& imageUid, const Image& image, uint
   params.end = static_cast<double>(stats.onlineStats.max);
   params.count = k_defaultRangeCount;
   ui::updateIsosurfaceRangeSpacing(params);
-  state.startColor = defaultIsosurfaceColor(image.settings().borderColor());
+  state.startColor = ui::defaultIsosurfaceColor(image.settings().borderColor());
   state.endColor = k_defaultIsosurfaceRangeEndColor;
 
   ImGui::OpenPopup(k_addSurfacesPopupName);
@@ -424,7 +417,7 @@ std::optional<uuids::uuid> addNewSurface(
     component,
     index,
     static_cast<double>(stats.quantiles[k_defaultIsovalueQuantile]),
-    defaultIsosurfaceColor(image->settings().borderColor()),
+    ui::defaultIsosurfaceColor(image->settings().borderColor()),
     storeFuture,
     addTaskToIsosurfaceGpuMeshGenerationQueue);
 }

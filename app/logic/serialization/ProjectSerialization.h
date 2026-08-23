@@ -208,9 +208,9 @@ struct ProjectThreeDRenderingSettings
   bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
   bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
   bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
-  float m_lightingAmbient = 0.35f;                        //!< 3D ADS ambient term
-  float m_lightingDiffuse = 0.55f;                        //!< 3D ADS diffuse term
-  float m_lightingSpecular = 0.10f;                       //!< 3D ADS specular term
+  float m_lightingAmbient = 0.30f;                        //!< 3D ADS ambient term
+  float m_lightingDiffuse = 0.50f;                        //!< 3D ADS diffuse term
+  float m_lightingSpecular = 0.20f;                       //!< 3D ADS specular term
   float m_lightingSpecularPower = 16.0f;                  //!< 3D ADS specular exponent
   bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D views
   float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
@@ -244,6 +244,8 @@ struct ProjectMeshRenderingSettings
   uint32_t m_generationThreadCount = 0; //!< Maximum VTK threads for one CPU mesh extraction job
   ProjectMeshCompositingMode m_translucentCompositing =
     ProjectMeshCompositingMode::AlphaOver;            //!< Translucent mesh compositing path
+  bool m_ddpUntilComplete = true;                     //!< Stop DDP when no newly peeled fragments remain
+  uint32_t m_ddpMaxPeelPasses = 8;                    //!< DDP safety/fixed front-back peel iteration count
   bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
   bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
   glm::vec4 m_clipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane

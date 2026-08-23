@@ -101,7 +101,6 @@ std::size_t Rendering::MeshImagePlaneHandleKeyHash::operator()(const MeshImagePl
   std::size_t seed = 0;
   hashCombine(seed, key.imageUid);
   hashCombine(seed, static_cast<int>(key.orientation));
-  hashCombine(seed, key.border);
   hashCombine(seed, key.imageBox);
   return seed;
 }
@@ -173,6 +172,9 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       continue;
     }
 
+    const std::array<glm::vec3, 8> worldCorners =
+      transformedCorners(image->header().pixelBBoxCorners(), image->transformations().worldDef_T_pixel());
+
     const rendering::mesh::MeshImagePlaneSceneInputs inputs{
       .worldCrosshairs = worldCrosshairs,
       .world_T_pixel = image->transformations().worldDef_T_pixel(),
@@ -180,7 +182,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       .texture_T_world = uniformsIt->second.imgTexture_T_world,
       .pixelBoxCorners = image->header().pixelBBoxCorners(),
       .orientations = sk_orientations,
-      .borderWidthWorld = imagePlaneBorderWidthWorld(uniformsIt->second)};
+      .borderWidthWorld = 0.0f};
     const std::vector<rendering::mesh::MeshImagePlaneSceneMesh> meshes =
       rendering::mesh::buildOrthogonalImagePlaneSceneMeshes(inputs);
 
@@ -188,22 +190,24 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     const uint32_t activeComponent = settings.activeComponent();
     const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
 
-    const auto appendBorderRenderable =
-      [&borderRenderables, &settings](const rendering::mesh::MeshHandle& borderHandle, const float opacity) {
-        rendering::mesh::MeshMaterial borderMaterial;
-        borderMaterial.baseColor = glm::vec4{settings.borderColor(), opacity};
-        borderMaterial.shadingModel = rendering::mesh::MeshShadingModel::Unlit;
-        const rendering::mesh::MeshCompositingMode compositingMode =
-          opacity >= 0.999f ? rendering::mesh::MeshCompositingMode::Opaque
-                            : rendering::mesh::MeshCompositingMode::AlphaOverDdp;
-        borderRenderables.push_back(rendering::mesh::makeIsosurfaceRenderable(
-          borderHandle,
-          glm::mat4{1.0f},
-          rendering::mesh::IsosurfaceMeshStyle{
-            .material = borderMaterial,
-            .compositingMode = compositingMode,
-            .visible = opacity > 0.0f}));
-      };
+    const auto appendBorderRenderable = [&borderRenderables, &settings](
+                                          const rendering::mesh::MeshHandle& borderHandle,
+                                          const glm::mat4& world_T_border,
+                                          const float opacity) {
+      rendering::mesh::MeshMaterial borderMaterial;
+      borderMaterial.baseColor = glm::vec4{settings.borderColor(), opacity};
+      borderMaterial.shadingModel = rendering::mesh::MeshShadingModel::Unlit;
+      const rendering::mesh::MeshCompositingMode compositingMode =
+        opacity >= 0.999f ? rendering::mesh::MeshCompositingMode::Opaque
+                          : rendering::mesh::MeshCompositingMode::AlphaOverDdp;
+      borderRenderables.push_back(rendering::mesh::makeIsosurfaceRenderable(
+        borderHandle,
+        world_T_border,
+        rendering::mesh::IsosurfaceMeshStyle{
+          .material = borderMaterial,
+          .compositingMode = compositingMode,
+          .visible = opacity > 0.0f}));
+    };
 
     if (showImagePlanes) {
       for (const rendering::mesh::MeshImagePlaneSceneMesh& mesh : meshes) {
@@ -216,13 +220,13 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
 
         const std::optional<rendering::mesh::MeshHandle> handle = uploadImagePlaneMesh(
           mesh.mesh,
-          MeshImagePlaneHandleKey{.imageUid = imageUid, .orientation = mesh.orientation, .border = false},
+          MeshImagePlaneHandleKey{.imageUid = imageUid, .orientation = mesh.orientation},
           geometryVersion);
         if (!handle) {
           continue;
         }
 
-        renderables.push_back(rendering::mesh::makeImagePlaneRenderable(
+        rendering::mesh::MeshImagePlaneRenderable renderable = rendering::mesh::makeImagePlaneRenderable(
           *handle,
           glm::mat4{1.0f},
           meshPositionCenter(mesh.mesh),
@@ -233,25 +237,15 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
             .timePoint = activeTimePoint},
           opacityMultiplier,
           m_appData.renderData().m_shadeImagePlanesIn3D,
-          true));
-
-        if (!showImagePlaneBorders || !mesh.borderMesh) {
-          continue;
-        }
-
-        const std::optional<rendering::mesh::MeshHandle> borderHandle = uploadImagePlaneMesh(
-          *mesh.borderMesh,
-          MeshImagePlaneHandleKey{.imageUid = imageUid, .orientation = mesh.orientation, .border = true},
-          geometryVersion);
-        if (borderHandle) {
-          appendBorderRenderable(*borderHandle, 1.0f);
-        }
+          true,
+          mesh.orientation);
+        renderable.borderColor = showImagePlaneBorders ? glm::vec4{settings.borderColor(), 1.0f} : glm::vec4{0.0f};
+        renderable.borderWidthPixels = showImagePlaneBorders ? 1.0f : 0.0f;
+        renderables.push_back(std::move(renderable));
       }
     }
 
     if (showImageBox) {
-      const std::array<glm::vec3, 8> worldCorners =
-        transformedCorners(image->header().pixelBBoxCorners(), image->transformations().worldDef_T_pixel());
       const std::optional<rendering::mesh::MeshData> boxMesh =
         rendering::mesh::makeImageBoxBorderMesh(worldCorners, imagePlaneBorderWidthWorld(uniformsIt->second));
       if (boxMesh) {
@@ -260,7 +254,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           MeshImagePlaneHandleKey{.imageUid = imageUid, .imageBox = true},
           geometryVersionForImageBox(*image));
         if (boxHandle) {
-          appendBorderRenderable(*boxHandle, 1.0f);
+          appendBorderRenderable(*boxHandle, glm::mat4{1.0f}, 1.0f);
         }
       }
     }

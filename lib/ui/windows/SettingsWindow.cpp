@@ -39,6 +39,7 @@ static constexpr bool k_recenterCrosshairs = true;
 static constexpr bool k_realignCrosshairs = true;
 static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
 static constexpr float k_viewOptionControlWidth = 180.0f;
+static constexpr const char* k_boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
 
 void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persistenceCallbacks);
 void renderResetInterfaceSettingsPopup(const SettingsPersistenceCallbacks& persistenceCallbacks);
@@ -106,6 +107,18 @@ void disabledTextWrapped(const char* text)
   ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
   ImGui::TextWrapped("%s", text);
   ImGui::PopStyleColor();
+}
+
+void renderSettingsPageHeading(const GuiData& guiData, const char* label)
+{
+  const auto boldFont = guiData.m_fonts.find(k_boldFontPath);
+  if (boldFont != std::end(guiData.m_fonts)) {
+    ImGui::PushFont(boldFont->second);
+  }
+  ImGui::TextUnformatted(label);
+  if (boldFont != std::end(guiData.m_fonts)) {
+    ImGui::PopFont();
+  }
 }
 
 /**
@@ -663,7 +676,7 @@ void renderAnnotationViewSettings(RenderData& renderData)
  */
 void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRecenterType& recenterAllViews)
 {
-  ImGui::ColorEdit3("Background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
+  ImGui::ColorEdit3("2D view background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
   // Show image-view intersection border
   bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
@@ -2164,11 +2177,7 @@ void render3DRenderingTab(RenderData& renderData)
 
   ImGui::ColorEdit4("Background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   ImGui::SameLine();
-  helpMarker("Background color used by 3D raycast and mesh views");
-
-  ImGui::Checkbox("Transparent 3D background", &renderData.m_3dTransparentIfNoHit);
-  ImGui::SameLine();
-  helpMarker("Make the 3D view background transparent for raycast and mesh rendering");
+  helpMarker("Background color used by 3D views");
 
   ImGui::Spacing();
   ImGui::SeparatorText("3D lighting");
@@ -2416,6 +2425,12 @@ void renderRaycastingTab(RenderData& renderData)
 {
   ImGui::PushID("raycasting"); /*** PushID raycasting ***/
 
+  ImGui::Checkbox("Use transparent raycast background", &renderData.m_3dTransparentIfNoHit);
+  ImGui::SameLine();
+  helpMarker(
+    "Show the underlying view background where a ray does not hit the image volume. This does not change the opacity "
+    "of raycast surfaces");
+
   /// @todo if these are added to the uniforms, then we'll have update uniforms when they
   /// change
 
@@ -2484,52 +2499,6 @@ void renderRenderingTab(RenderData& renderData)
 {
   RenderData& rd = renderData;
 
-  const bool frameRateOpen = ImGui::CollapsingHeader("Frame Rate", ImGuiTreeNodeFlags_DefaultOpen);
-  if (frameRateOpen) {
-    ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
-    ImGui::SameLine();
-    helpMarker("Manually limit the rendering frame rate");
-
-    if (renderData.m_manualFramerateLimiter) {
-      constexpr float hzSpeed = 1.0e-1f;
-      constexpr double hzMin = 1.0;
-      constexpr double hzMax = 240.0;
-
-      constexpr float secSpeed = 1.0e-4f;
-      constexpr double secMin = 1.0 / hzMax;
-      constexpr double secMax = 1.0 / hzMin;
-
-      double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
-      if (ImGui::DragScalar(
-            "Frame rate",
-            ImGuiDataType_Double,
-            &hz,
-            hzSpeed,
-            &hzMin,
-            &hzMax,
-            "%.1f Hz",
-            ImGuiSliderFlags_ClampOnInput))
-      {
-        renderData.m_targetFrameTimeSeconds = 1.0 / hz;
-      }
-
-      double sec = renderData.m_targetFrameTimeSeconds;
-      if (ImGui::DragScalar(
-            "Frame period",
-            ImGuiDataType_Double,
-            &sec,
-            secSpeed,
-            &secMin,
-            &secMax,
-            "%.4f sec",
-            ImGuiSliderFlags_ClampOnInput))
-      {
-        renderData.m_targetFrameTimeSeconds = sec;
-      }
-    }
-  }
-  finishSettingsSection(frameRateOpen);
-
   const bool threeDRenderingOpen = ImGui::CollapsingHeader("3D Rendering", ImGuiTreeNodeFlags_DefaultOpen);
   if (threeDRenderingOpen) {
     render3DRenderingTab(renderData);
@@ -2556,7 +2525,28 @@ void renderRenderingTab(RenderData& renderData)
   }
   finishSettingsSection(isosurfacesOpen);
 
-  const bool asciiOpen = ImGui::CollapsingHeader("ASCII Shading", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool dualDepthPeelingOpen = ImGui::CollapsingHeader("Dual Depth Peeling", ImGuiTreeNodeFlags_DefaultOpen);
+  if (dualDepthPeelingOpen) {
+    disabledTextWrapped(
+      "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
+      "nearest and farthest remaining transparency layers.");
+
+    ImGui::Checkbox("Stop when all transparency layers are resolved", &renderData.m_meshDdpSettings.untilComplete);
+    ImGui::SameLine();
+    helpMarker(
+      "Automatically stop when no unresolved transparency layers remain. The maximum iteration count is still used "
+      "as a safety limit");
+
+    int maxPeelPasses = static_cast<int>(renderData.m_meshDdpSettings.maxPeelPasses);
+    if (ImGui::InputInt("Maximum dual-peel iterations", &maxPeelPasses)) {
+      renderData.m_meshDdpSettings.maxPeelPasses = static_cast<uint32_t>(std::clamp(maxPeelPasses, 1, 32));
+    }
+    ImGui::SameLine();
+    helpMarker("Maximum front/back peel iterations per frame. N iterations resolve up to 2N transparency layers");
+  }
+  finishSettingsSection(dualDepthPeelingOpen);
+
+  const bool asciiOpen = ImGui::CollapsingHeader("ASCII Rendering", ImGuiTreeNodeFlags_DefaultOpen);
   if (asciiOpen) {
     ImGui::PushID("ascii");
 
@@ -2612,6 +2602,53 @@ void renderRenderingTab(RenderData& renderData)
 
     ImGui::PopID(); /*** PopID ascii ***/
   }
+  finishSettingsSection(asciiOpen);
+
+  const bool frameRateOpen = ImGui::CollapsingHeader("Frame Rate", ImGuiTreeNodeFlags_DefaultOpen);
+  if (frameRateOpen) {
+    ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
+    ImGui::SameLine();
+    helpMarker("Manually limit the rendering frame rate");
+
+    if (renderData.m_manualFramerateLimiter) {
+      constexpr float hzSpeed = 1.0e-1f;
+      constexpr double hzMin = 1.0;
+      constexpr double hzMax = 240.0;
+
+      constexpr float secSpeed = 1.0e-4f;
+      constexpr double secMin = 1.0 / hzMax;
+      constexpr double secMax = 1.0 / hzMin;
+
+      double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
+      if (ImGui::DragScalar(
+            "Frame rate",
+            ImGuiDataType_Double,
+            &hz,
+            hzSpeed,
+            &hzMin,
+            &hzMax,
+            "%.1f Hz",
+            ImGuiSliderFlags_ClampOnInput))
+      {
+        renderData.m_targetFrameTimeSeconds = 1.0 / hz;
+      }
+
+      double sec = renderData.m_targetFrameTimeSeconds;
+      if (ImGui::DragScalar(
+            "Frame period",
+            ImGuiDataType_Double,
+            &sec,
+            secSpeed,
+            &secMin,
+            &secMax,
+            "%.4f sec",
+            ImGuiSliderFlags_ClampOnInput))
+      {
+        renderData.m_targetFrameTimeSeconds = sec;
+      }
+    }
+  }
+  finishSettingsSection(frameRateOpen);
 }
 
 /**
@@ -2858,7 +2895,7 @@ static void renderSettingsPage(
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
 {
-  ImGui::TextUnformatted(ui_settings::settingsPageLabel(page));
+  renderSettingsPageHeading(appData.guiData(), ui_settings::settingsPageLabel(page));
   ImGui::Separator();
   ImGui::Spacing();
 

@@ -16,11 +16,6 @@
 #include <optional>
 #include <vector>
 
-namespace
-{
-const glm::vec3 WHITE{1.0f};
-}
-
 void Rendering::updateIsosurfaceDataFor3d(
   AppData& appData,
   const uuids::uuid& imageUid,
@@ -35,9 +30,7 @@ void Rendering::updateIsosurfaceDataFor3d(
   std::fill(std::begin(isoData.rimOpacityStrengths), std::end(isoData.rimOpacityStrengths), 0.0f);
   std::fill(std::begin(isoData.rimEmissionStrengths), std::end(isoData.rimEmissionStrengths), 0.0f);
   std::fill(std::begin(isoData.rimPowers), std::end(isoData.rimPowers), 2.0f);
-  std::fill(std::begin(isoData.ambient), std::end(isoData.ambient), glm::vec3{0.0f});
-  std::fill(std::begin(isoData.diffuse), std::end(isoData.diffuse), glm::vec3{0.0f});
-  std::fill(std::begin(isoData.specular), std::end(isoData.specular), glm::vec3{0.0f});
+  std::fill(std::begin(isoData.colors), std::end(isoData.colors), glm::vec3{0.0f});
 
   const Image* image = appData.image(imageUid);
   if (!image) {
@@ -92,16 +85,11 @@ void Rendering::updateIsosurfaceDataFor3d(
     if (settings.applyImageColormapToIsosurfaces()) {
       // Color the surface using the current image colormap:
       static constexpr bool premult = false;
-      const glm::vec3 cmapColor = getIsosurfaceColor(m_appData, *surface, settings, activeComp, premult);
-      isoData.ambient[i] = surface->material.ambient * cmapColor;
-      isoData.diffuse[i] = surface->material.diffuse * cmapColor;
-      isoData.specular[i] = surface->material.specular * WHITE;
+      isoData.colors[i] = getIsosurfaceColor(m_appData, *surface, settings, activeComp, premult);
     }
     else {
       // Color the surface using its explicitly defined color:
-      isoData.ambient[i] = surface->ambientColor();
-      isoData.diffuse[i] = surface->diffuseColor();
-      isoData.specular[i] = surface->specularColor();
+      isoData.colors[i] = surface->color;
     }
 
     ++i;

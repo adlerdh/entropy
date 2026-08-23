@@ -63,6 +63,17 @@ TEST_CASE("Default isosurface names pad one-digit indices")
   CHECK(ui::defaultIsosurfaceName(100) == "Surface 100");
 }
 
+TEST_CASE("Default isosurface colors use 8-bit saturation 128 while preserving hue and value")
+{
+  const glm::vec3 borderHsv{215.0f, 0.80f, 0.90f};
+  const glm::vec3 color = ui::defaultIsosurfaceColor(glm::rgbColor(borderHsv));
+  const glm::vec3 colorHsv = glm::hsvColor(color);
+
+  CHECK(colorHsv.x == Approx(borderHsv.x).margin(1.0e-3f));
+  CHECK(colorHsv.y == Approx(128.0f / 255.0f).margin(1.0e-6f));
+  CHECK(colorHsv.z == Approx(borderHsv.z).margin(1.0e-6f));
+}
+
 TEST_CASE("HSV color interpolation keeps endpoints and interpolates hue")
 {
   const glm::vec3 red{1.0f, 0.0f, 0.0f};

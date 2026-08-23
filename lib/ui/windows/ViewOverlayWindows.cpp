@@ -520,9 +520,6 @@ void renderViewSettingsComboWindow(
               {
                 selectedViewType = vt;
                 setViewType(vt);
-                if (ViewType::ThreeD == vt && modes.showIsosurfacesPanelForMissingRaycastImageIsosurface) {
-                  modes.showIsosurfacesPanelForMissingRaycastImageIsosurface();
-                }
               }
 
               if (isSelected) {

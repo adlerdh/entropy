@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshHandle.h"
+#include "rendering/mesh/MeshImagePlaneScene.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -34,10 +35,13 @@ struct MeshImagePlaneRenderable
   MeshHandle mesh;                          //!< Plane mesh with positions and image texture coordinates
   glm::mat4 world_T_mesh = glm::mat4{1.0f}; //!< Transform from mesh coordinates to world coordinates
   glm::vec3 centerWorld = glm::vec3{0.0f};  //!< Approximate center used for camera-depth sorting
-  MeshImagePlaneTexture texture;            //!< Image texture sampled by the plane
-  float opacityMultiplier = 1.0f;           //!< Additional opacity multiplier applied by the 3D view
-  bool shadingEnabled = true;               //!< Whether headlight shading is applied to the plane
-  bool visible = true;                      //!< Whether the plane participates in image-plane draw lists
+  MeshImagePlaneOrientation orientation = MeshImagePlaneOrientation::Axial; //!< Orthogonal plane orientation
+  MeshImagePlaneTexture texture;                                            //!< Image texture sampled by the plane
+  float opacityMultiplier = 1.0f;          //!< Additional opacity multiplier applied by the 3D view
+  glm::vec4 borderColor = glm::vec4{0.0f}; //!< Premultiplied in the shader; zero alpha disables the analytic border
+  float borderWidthPixels = 0.0f;          //!< Inward screen-space border width in device pixels
+  bool shadingEnabled = true;              //!< Whether headlight shading is applied to the plane
+  bool visible = true;                     //!< Whether the plane participates in image-plane draw lists
 };
 
 /**
@@ -49,6 +53,7 @@ struct MeshImagePlaneRenderable
  * @param opacityMultiplier Additional opacity multiplier applied by the 3D view
  * @param shadingEnabled Whether headlight shading is applied to the plane
  * @param visible Whether the image plane is visible
+ * @param orientation Orthogonal plane orientation
  * @return Image-plane renderable
  */
 MeshImagePlaneRenderable makeImagePlaneRenderable(
@@ -58,7 +63,8 @@ MeshImagePlaneRenderable makeImagePlaneRenderable(
   MeshImagePlaneTexture texture,
   float opacityMultiplier = 1.0f,
   bool shadingEnabled = true,
-  bool visible = true);
+  bool visible = true,
+  MeshImagePlaneOrientation orientation = MeshImagePlaneOrientation::Axial);
 
 /**
  * @brief Return whether an image-plane renderable has enough state to be drawn

@@ -302,7 +302,6 @@ private:
   {
     uuids::uuid imageUid;                                        //!< Source image rendered on the plane
     rendering::mesh::MeshImagePlaneOrientation orientation = {}; //!< Orthogonal plane orientation
-    bool border = false;                                         //!< Whether the handle stores the border mesh
     bool imageBox = false;                                       //!< Whether the handle stores the full image box
 
     bool operator==(const MeshImagePlaneHandleKey&) const = default;

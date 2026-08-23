@@ -603,6 +603,10 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
     "translucentCompositing",
     enumToName(settings.m_translucentCompositing, k_meshCompositingModeNames),
     enumToName(defaults.m_translucentCompositing, k_meshCompositingModeNames));
+  json dualDepthPeeling = json::object();
+  addIfChanged(dualDepthPeeling, "untilComplete", settings.m_ddpUntilComplete, defaults.m_ddpUntilComplete);
+  addIfChanged(dualDepthPeeling, "maxPeelPasses", settings.m_ddpMaxPeelPasses, defaults.m_ddpMaxPeelPasses);
+  addIfNotEmpty(j, "dualDepthPeeling", std::move(dualDepthPeeling));
   addIfChanged(j, "pointPicking", settings.m_pickingEnabled, defaults.m_pickingEnabled);
   json clipPlane = json::object();
   addIfChanged(clipPlane, "enabled", settings.m_clipPlaneEnabled, defaults.m_clipPlaneEnabled);
@@ -640,6 +644,14 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
       enumFromName<ProjectMeshCompositingMode>(j.value("translucentCompositing", ""), k_meshCompositingModeNames))
   {
     settings.m_translucentCompositing = *parsed;
+  }
+  if (const auto ddp = j.find("dualDepthPeeling"); ddp != j.end() && ddp->is_object()) {
+    if (const auto value = ddp->find("untilComplete"); value != ddp->end() && value->is_boolean()) {
+      settings.m_ddpUntilComplete = value->get<bool>();
+    }
+    if (const auto value = ddp->find("maxPeelPasses"); value != ddp->end() && value->is_number_unsigned()) {
+      settings.m_ddpMaxPeelPasses = std::clamp(value->get<uint32_t>(), 1u, 32u);
+    }
   }
   if (const auto value = j.find("pointPicking"); value != j.end() && value->is_boolean()) {
     settings.m_pickingEnabled = value->get<bool>();
@@ -895,6 +907,11 @@ void to_json(json& j, const EntropyProject& project)
   json raycasting = project.m_raycasting;
   addIfNotEmpty(rendering, "raycasting", std::move(raycasting));
   json mesh = project.m_meshRendering;
+  json dualDepthPeeling = json::object();
+  if (const auto ddp = mesh.find("dualDepthPeeling"); ddp != mesh.end()) {
+    dualDepthPeeling = *ddp;
+    mesh.erase(ddp);
+  }
   addIfNotEmpty(rendering, "mesh", std::move(mesh));
   json intensityProjection = project.m_intensityProjection;
   addIfNotEmpty(rendering, "intensityProjection", std::move(intensityProjection));
@@ -902,6 +919,7 @@ void to_json(json& j, const EntropyProject& project)
   addIfNotEmpty(rendering, "segmentation", std::move(segmentation));
   json isocontours = project.m_isocontours;
   addIfNotEmpty(rendering, "isocontours", std::move(isocontours));
+  addIfNotEmpty(rendering, "dualDepthPeeling", std::move(dualDepthPeeling));
   addIfNotEmpty(settings, "rendering", std::move(rendering));
   addIfNotEmpty(j, "settings", std::move(settings));
 
@@ -977,6 +995,9 @@ void from_json(const json& j, EntropyProject& project)
       }
       if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
         mesh->get_to(project.m_meshRendering);
+      }
+      if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
+        from_json(json{{"dualDepthPeeling", *ddp}}, project.m_meshRendering);
       }
       if (const auto intensityProjection = rendering->find("intensityProjection");
           intensityProjection != rendering->end() && intensityProjection->is_object())

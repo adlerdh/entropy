@@ -201,7 +201,7 @@ void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t 
   }
 }
 
-void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId)
+bool blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId, const GLuint completionQuery)
 {
   request.resources.backBlendFbo().bind(fbo::TargetType::DrawAndRead);
   glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -213,9 +213,22 @@ void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentI
   request.resources.backTempTexture(currentId).bind(k_backTempTextureUnit);
   request.backBlendProgram.use();
   request.backBlendProgram.setUniform("u_backTempTex", static_cast<GLint>(k_backTempTextureUnit));
+  if (completionQuery != 0u) {
+    glBeginQuery(GL_ANY_SAMPLES_PASSED, completionQuery);
+  }
   drawFullScreenTriangle(request.resources);
+  if (completionQuery != 0u) {
+    glEndQuery(GL_ANY_SAMPLES_PASSED);
+  }
   request.backBlendProgram.stopUse();
   request.resources.backTempTexture(currentId).unbind(k_backTempTextureUnit);
+
+  if (completionQuery == 0u) {
+    return true;
+  }
+  GLuint anySamplesPassed = GL_FALSE;
+  glGetQueryObjectuiv(completionQuery, GL_QUERY_RESULT, &anySamplesPassed);
+  return GL_TRUE == anySamplesPassed;
 }
 
 void resolveDdp(const MeshDdpRenderRequest& request, const ScopedDdpGlState& scopedState, const uint32_t currentId)
@@ -265,12 +278,24 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
   clearDdpTargets(request.resources, 0u);
   initializeDepthBounds(request);
 
+  GLuint completionQuery = 0u;
+  if (request.plan.untilComplete) {
+    glGenQueries(1, &completionQuery);
+  }
+
   uint32_t currentId = 0u;
-  for (uint32_t peel = 0; peel < request.plan.peelPasses; ++peel) {
-    currentId = (peel + 1u) % 2u;
+  uint32_t completedPasses = 0u;
+  bool anySamplesPassed = true;
+  while (shouldContinueDdpPeeling(completedPasses, request.plan, anySamplesPassed)) {
+    currentId = (completedPasses + 1u) % 2u;
     clearDdpTargets(request.resources, currentId);
     peelFrontAndBackLayers(request, currentId);
-    blendBackLayer(request, currentId);
+    anySamplesPassed = blendBackLayer(request, currentId, completionQuery);
+    ++completedPasses;
+  }
+
+  if (completionQuery != 0u) {
+    glDeleteQueries(1, &completionQuery);
   }
 
   resolveDdp(request, scopedState, currentId);

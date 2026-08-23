@@ -130,9 +130,9 @@ struct RenderPreferences
   bool showImagePlanesIn3D = true;
   bool modulateImagePlaneOpacityWithViewAngle = true;
   bool shadeImagePlanesIn3D = true;
-  float lightingAmbient = 0.35f;
-  float lightingDiffuse = 0.55f;
-  float lightingSpecular = 0.10f;
+  float lightingAmbient = 0.30f;
+  float lightingDiffuse = 0.50f;
+  float lightingSpecular = 0.20f;
   float lightingSpecularPower = 16.0f;
   bool renderFrontFaces = true;
   bool renderBackFaces = true;
