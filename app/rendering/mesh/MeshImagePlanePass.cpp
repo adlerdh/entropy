@@ -322,6 +322,16 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_imgOpacity", uniforms.imgOpacity * renderable.opacityMultiplier);
   program.setUniform("u_imagePlaneBorderColor", renderable.borderColor);
   program.setUniform("u_imagePlaneBorderWidthPixels", renderable.borderWidthPixels);
+  program.setUniform("u_ddpDepthBias", renderable.ddpDepthBias);
+  program.setUniform("u_boundaryVertexCount", static_cast<int>(renderable.boundaryVertexCount));
+  program.setUniform(
+    "u_boundaryWorldPositions",
+    std::vector<glm::vec3>{
+      renderable.boundaryWorld.begin(),
+      renderable.boundaryWorld.begin() + renderable.boundaryVertexCount});
+  std::array<GLint, 4> viewport{};
+  glGetIntegerv(GL_VIEWPORT, viewport.data());
+  program.setUniform("u_viewportSize", glm::vec2{viewport[2], viewport[3]});
 
   // 3D image planes use the image shader's ordinary layer path. Comparison modes, flashlight masking, and intensity
   // projection are 2D-view concepts and remain disabled for this mesh pass.

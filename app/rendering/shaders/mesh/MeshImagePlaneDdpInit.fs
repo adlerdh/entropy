@@ -36,6 +36,11 @@ uniform float u_imgOpacity;
 uniform bool u_imagePlaneShadingEnabled;
 uniform vec4 u_imagePlaneBorderColor;
 uniform float u_imagePlaneBorderWidthPixels;
+uniform float u_ddpDepthBias;
+uniform int u_boundaryVertexCount;
+uniform vec3 u_boundaryWorldPositions[6];
+uniform vec2 u_viewportSize;
+uniform mat4 u_clip_T_world;
 uniform vec3 u_cameraWorldPosition;
 
 uniform vec2 u_cmapSlopeIntercept;
@@ -232,13 +237,17 @@ float imagePlaneAlpha()
   float mask = float(isInsideTexture(sampleTc));
   float imageAlpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds) * imgColor.a + 0.0 * mappedColor.r;
   float segmentationAlpha = segmentationPlaneAlpha(sampleTc);
+  vec2 fragmentPixels = 0.5 * (fs_in.v_clipPos + vec2(1.0)) * u_viewportSize;
   float borderDistancePixels = 1e20;
-  for (int axis = 0; axis < 3; ++axis) {
-    float textureUnitsPerPixel = length(vec2(dFdx(fs_in.v_texCoord[axis]), dFdy(fs_in.v_texCoord[axis])));
-    if (textureUnitsPerPixel > 1e-8) {
-      borderDistancePixels =
-        min(borderDistancePixels, min(fs_in.v_texCoord[axis], 1.0 - fs_in.v_texCoord[axis]) / textureUnitsPerPixel);
-    }
+  for (int i = 0; i < u_boundaryVertexCount; ++i) {
+    int next = (i + 1) % u_boundaryVertexCount;
+    vec4 aClip = u_clip_T_world * vec4(u_boundaryWorldPositions[i], 1.0);
+    vec4 bClip = u_clip_T_world * vec4(u_boundaryWorldPositions[next], 1.0);
+    vec2 a = 0.5 * (aClip.xy / aClip.w + vec2(1.0)) * u_viewportSize;
+    vec2 b = 0.5 * (bClip.xy / bClip.w + vec2(1.0)) * u_viewportSize;
+    vec2 ab = b - a;
+    float t = clamp(dot(fragmentPixels - a, ab) / max(dot(ab, ab), 1e-8), 0.0, 1.0);
+    borderDistancePixels = min(borderDistancePixels, length(fragmentPixels - (a + t * ab)));
   }
   float borderAlpha = u_imagePlaneBorderColor.a * (1.0 - smoothstep(
                                                            max(u_imagePlaneBorderWidthPixels - 0.5, 0.0),
@@ -254,5 +263,6 @@ void main()
     discard;
   }
 
-  outDepthBounds = vec2(-gl_FragCoord.z, gl_FragCoord.z);
+  float orderedDepth = clamp(gl_FragCoord.z - u_ddpDepthBias, 0.0, 1.0);
+  outDepthBounds = vec2(-orderedDepth, orderedDepth);
 }

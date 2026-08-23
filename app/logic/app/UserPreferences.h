@@ -138,6 +138,8 @@ struct RenderPreferences
   bool renderBackFaces = true;
   bool reversePovRotation = false;
   uint32_t meshGenerationThreadCount = 0;
+  bool ddpUntilComplete = true;
+  uint32_t ddpMaxPeelPasses = 8;
   SegMaskingForRaycasting segmentationMasking = SegMaskingForRaycasting::Disabled;
 
   bool asciiEnabled = false;

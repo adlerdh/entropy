@@ -158,6 +158,8 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.renderBackFaces = renderData.m_renderBackFaces;
   preferences.reversePovRotation = renderData.m_reverseThreeDRotateAboutEye;
   preferences.meshGenerationThreadCount = renderData.m_meshGenerationThreadCount;
+  preferences.ddpUntilComplete = renderData.m_meshDdpSettings.untilComplete;
+  preferences.ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses;
   preferences.segmentationMasking =
     static_cast<user_preferences::RenderPreferences::SegMaskingForRaycasting>(renderData.m_segMasking);
   preferences.asciiEnabled = renderData.m_asciiEnabled;
@@ -268,6 +270,8 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_renderBackFaces = preferences.renderBackFaces;
   renderData.m_reverseThreeDRotateAboutEye = preferences.reversePovRotation;
   renderData.m_meshGenerationThreadCount = std::min<uint32_t>(preferences.meshGenerationThreadCount, 64);
+  renderData.m_meshDdpSettings.untilComplete = preferences.ddpUntilComplete;
+  renderData.m_meshDdpSettings.maxPeelPasses = std::clamp<uint32_t>(preferences.ddpMaxPeelPasses, 1u, 32u);
   renderData.m_segMasking = static_cast<RenderData::SegMaskingForRaycasting>(preferences.segmentationMasking);
   renderData.m_asciiEnabled = preferences.asciiEnabled;
   renderData.m_asciiCellSizePx = preferences.asciiCellSizePx;

@@ -1387,7 +1387,7 @@ bool AppData::setActiveImageUid(const uuid& uid)
 
 void AppData::setRainbowColorsForAllImages()
 {
-  static constexpr float sk_colorSat = 0.80f;
+  static constexpr float sk_colorSat = 0.65f;
   static constexpr float sk_colorVal = 0.90f;
 
   // Starting color hue, where hues repeat cyclically over range [0.0, 1.0]

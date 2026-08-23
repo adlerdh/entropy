@@ -1772,6 +1772,27 @@ TEST_CASE("image plane render list filters non-drawable image planes", "[renderi
   CHECK(mesh::visibleImagePlaneCount(list) == 1);
 }
 
+TEST_CASE("image plane DDP depth bias follows bottom-to-top image order", "[rendering][mesh][ddp]")
+{
+  using Orientation = mesh::MeshImagePlaneOrientation;
+  CHECK(mesh::imagePlaneDdpDepthBias(0u, Orientation::Axial) == Catch::Approx(0.0f));
+  CHECK(
+    mesh::imagePlaneDdpDepthBias(0u, Orientation::Coronal) == Catch::Approx(mesh::k_imagePlaneDdpDepthBiasPerSurface));
+  CHECK(
+    mesh::imagePlaneDdpDepthBias(0u, Orientation::Sagittal) > mesh::imagePlaneDdpDepthBias(0u, Orientation::Coronal));
+  CHECK(mesh::imagePlaneDdpDepthBias(1u, Orientation::Axial) > mesh::imagePlaneDdpDepthBias(0u, Orientation::Sagittal));
+}
+
+TEST_CASE("image plane borders are hidden with their source image", "[rendering][mesh]")
+{
+  CHECK(mesh::imagePlaneBorderOpacity(true, 1.0f) == Catch::Approx(1.0f));
+  CHECK(mesh::imagePlaneBorderOpacity(true, 0.25f) == Catch::Approx(1.0f));
+  CHECK(mesh::imagePlaneBorderOpacity(true, 0.0f) == Catch::Approx(0.0f));
+  CHECK(mesh::imagePlaneBorderOpacity(false, 1.0f) == Catch::Approx(0.0f));
+  CHECK(mesh::imagePlaneBorderOpacity(true, 1.0f, 0.25f) == Catch::Approx(0.25f));
+  CHECK(mesh::imagePlaneBorderOpacity(true, 1.0f, 0.0f) == Catch::Approx(0.0f));
+}
+
 TEST_CASE("orthogonal image plane scene meshes are clipped to the image box", "[rendering][mesh]")
 {
   const std::array<glm::vec3, 8> boxCorners{
@@ -1810,6 +1831,17 @@ TEST_CASE("orthogonal image plane scene meshes are clipped to the image box", "[
       CHECK(position.y <= 1.0f);
       CHECK(position.z >= 0.0f);
       CHECK(position.z <= 1.0f);
+      switch (plane.orientation) {
+        case mesh::MeshImagePlaneOrientation::Axial:
+          CHECK(position.z == inputs.worldCrosshairs.z);
+          break;
+        case mesh::MeshImagePlaneOrientation::Coronal:
+          CHECK(position.y == inputs.worldCrosshairs.y);
+          break;
+        case mesh::MeshImagePlaneOrientation::Sagittal:
+          CHECK(position.x == inputs.worldCrosshairs.x);
+          break;
+      }
     }
 
     for (const glm::vec3& texCoord : *plane.mesh.textureCoords) {

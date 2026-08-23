@@ -162,6 +162,8 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.renderBackFaces = true;
   preferences.reversePovRotation = true;
   preferences.meshGenerationThreadCount = 3;
+  preferences.ddpUntilComplete = false;
+  preferences.ddpMaxPeelPasses = 12;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
   preferences.asciiEnabled = true;
   preferences.asciiCellSizePx = {10.0f, 20.0f};
@@ -343,6 +345,8 @@ void requireRenderPreferencesEqual(
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
   CHECK(actual.meshGenerationThreadCount == expected.meshGenerationThreadCount);
+  CHECK(actual.ddpUntilComplete == expected.ddpUntilComplete);
+  CHECK(actual.ddpMaxPeelPasses == expected.ddpMaxPeelPasses);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
   CHECK(actual.asciiEnabled == expected.asciiEnabled);
   CHECK(actual.asciiCellSizePx == expected.asciiCellSizePx);
@@ -531,6 +535,8 @@ TEST_CASE("application render preferences ignore project-owned presentation sett
   preferences.showImageBorders = false;
   preferences.asciiEnabled = true;
   preferences.reversePovRotation = true;
+  preferences.ddpUntilComplete = false;
+  preferences.ddpMaxPeelPasses = 12;
 
   const user_preferences::RenderPreferences appPreferences =
     user_preferences::applicationRenderPreferences(preferences);
@@ -543,6 +549,22 @@ TEST_CASE("application render preferences ignore project-owned presentation sett
   CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
   CHECK(appPreferences.asciiEnabled == true);
   CHECK(appPreferences.reversePovRotation == true);
+  CHECK_FALSE(appPreferences.ddpUntilComplete);
+  CHECK(appPreferences.ddpMaxPeelPasses == 12u);
+}
+
+TEST_CASE("DDP changes modify the application settings fingerprint", "[app][settings][ddp]")
+{
+  const AppSettings settings;
+  const user_preferences::RenderPreferences defaults;
+  user_preferences::RenderPreferences changed = defaults;
+  changed.ddpUntilComplete = !defaults.ddpUntilComplete;
+
+  CHECK(user_preferences::toJsonString(settings, changed) != user_preferences::toJsonString(settings, defaults));
+
+  changed = defaults;
+  ++changed.ddpMaxPeelPasses;
+  CHECK(user_preferences::toJsonString(settings, changed) != user_preferences::toJsonString(settings, defaults));
 }
 
 TEST_CASE("user preferences reject invalid JSON without mutating existing values", "[app][settings]")
@@ -736,6 +758,8 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("segmentation").contains("display"));
   CHECK_FALSE(root.at("rendering").contains("raycasting"));
   CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
+  CHECK(root.at("rendering").at("dualDepthPeeling").at("untilComplete") == true);
+  CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 8u);
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
   CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));

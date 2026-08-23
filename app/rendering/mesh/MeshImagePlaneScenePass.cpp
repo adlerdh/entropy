@@ -156,6 +156,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     return handle;
   };
 
+  std::size_t imageLayer = 0u;
   for (const ImgSegPair& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
       continue;
@@ -239,13 +240,25 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           m_appData.renderData().m_shadeImagePlanesIn3D,
           true,
           mesh.orientation);
-        renderable.borderColor = showImagePlaneBorders ? glm::vec4{settings.borderColor(), 1.0f} : glm::vec4{0.0f};
-        renderable.borderWidthPixels = showImagePlaneBorders ? 1.0f : 0.0f;
+        // Image selections are bottom layer first, just as in the 2D views. Coincident planes must have distinct DDP
+        // depths because draw order alone cannot order fragments that share exactly the same depth bound.
+        renderable.ddpDepthBias = rendering::mesh::imagePlaneDdpDepthBias(imageLayer, mesh.orientation);
+        renderable.boundaryVertexCount = static_cast<uint32_t>(
+          std::min<std::size_t>(renderable.boundaryWorld.size(), mesh.mesh.positions.size() - 1u));
+        for (uint32_t i = 0u; i < renderable.boundaryVertexCount; ++i) {
+          renderable.boundaryWorld[i] = mesh.mesh.positions[i + 1u];
+        }
+        const float viewModulatedBorderOpacity = rendering::mesh::imagePlaneBorderOpacity(
+          showImagePlaneBorders,
+          uniformsIt->second.imgOpacity,
+          opacityMultiplier);
+        renderable.borderColor = glm::vec4{settings.borderColor(), viewModulatedBorderOpacity};
+        renderable.borderWidthPixels = viewModulatedBorderOpacity > 0.0f ? 1.0f : 0.0f;
         renderables.push_back(std::move(renderable));
       }
     }
 
-    if (showImageBox) {
+    if (showImageBox && uniformsIt->second.imgOpacity > 0.0f) {
       const std::optional<rendering::mesh::MeshData> boxMesh =
         rendering::mesh::makeImageBoxBorderMesh(worldCorners, imagePlaneBorderWidthWorld(uniformsIt->second));
       if (boxMesh) {
@@ -258,6 +271,8 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
         }
       }
     }
+
+    ++imageLayer;
   }
 
   return renderables;

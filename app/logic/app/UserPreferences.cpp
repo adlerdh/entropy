@@ -401,6 +401,8 @@ json toJson(
         {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
       {"camera", {{"reversePovRotation", renderPreferences.reversePovRotation}}},
       {"mesh", {{"generationThreads", renderPreferences.meshGenerationThreadCount}}},
+      {"dualDepthPeeling",
+       {{"untilComplete", renderPreferences.ddpUntilComplete}, {"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
         {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
@@ -618,6 +620,12 @@ void applyJson(
       if (const auto threads = mesh->find("generationThreads"); threads != mesh->end() && threads->is_number_unsigned())
       {
         renderPreferences.meshGenerationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
+      }
+    }
+    if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
+      setFromJson(renderPreferences.ddpUntilComplete, *ddp, "untilComplete");
+      if (const auto passes = ddp->find("maxPeelPasses"); passes != ddp->end() && passes->is_number_unsigned()) {
+        renderPreferences.ddpMaxPeelPasses = std::clamp<uint32_t>(passes->get<uint32_t>(), 1u, 32u);
       }
     }
     if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {

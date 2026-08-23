@@ -7,11 +7,42 @@
 #include <glm/vec3.hpp>
 #include <uuid.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 
 namespace rendering::mesh
 {
+
+/** DDP depth separation applied per ordered image-plane surface. */
+inline constexpr float k_imagePlaneDdpDepthBiasPerSurface = 4.0e-6f;
+
+/** Return the DDP-only depth tie-break for an image layer and orthogonal plane orientation. */
+constexpr float imagePlaneDdpDepthBias(
+  const std::size_t imageLayer,
+  const MeshImagePlaneOrientation orientation) noexcept
+{
+  const std::size_t orientationLayer = [&]() constexpr {
+    switch (orientation) {
+      case MeshImagePlaneOrientation::Axial:
+        return 0u;
+      case MeshImagePlaneOrientation::Coronal:
+        return 1u;
+      case MeshImagePlaneOrientation::Sagittal:
+        return 2u;
+    }
+    return 0u;
+  }();
+  return k_imagePlaneDdpDepthBiasPerSurface * static_cast<float>(3u * imageLayer + orientationLayer);
+}
+
+/** Return border opacity gated by source-image visibility and modulated by the plane's view angle. */
+constexpr float
+imagePlaneBorderOpacity(const bool bordersVisible, const float imageOpacity, const float viewOpacity = 1.0f) noexcept
+{
+  return bordersVisible && imageOpacity > 0.0f && viewOpacity > 0.0f ? viewOpacity : 0.0f;
+}
 
 /**
  * @brief Image texture input sampled by a mesh image-plane renderable
@@ -35,8 +66,11 @@ struct MeshImagePlaneRenderable
   MeshHandle mesh;                          //!< Plane mesh with positions and image texture coordinates
   glm::mat4 world_T_mesh = glm::mat4{1.0f}; //!< Transform from mesh coordinates to world coordinates
   glm::vec3 centerWorld = glm::vec3{0.0f};  //!< Approximate center used for camera-depth sorting
+  std::array<glm::vec3, 6> boundaryWorld{}; //!< Ordered perimeter vertices used for analytic border rendering
+  uint32_t boundaryVertexCount = 0u;        //!< Number of valid perimeter vertices
   MeshImagePlaneOrientation orientation = MeshImagePlaneOrientation::Axial; //!< Orthogonal plane orientation
   MeshImagePlaneTexture texture;                                            //!< Image texture sampled by the plane
+  float ddpDepthBias = 0.0f;               //!< DDP-only depth tie-break; larger values composite in front
   float opacityMultiplier = 1.0f;          //!< Additional opacity multiplier applied by the 3D view
   glm::vec4 borderColor = glm::vec4{0.0f}; //!< Premultiplied in the shader; zero alpha disables the analytic border
   float borderWidthPixels = 0.0f;          //!< Inward screen-space border width in device pixels

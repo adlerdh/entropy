@@ -108,7 +108,7 @@ glm::vec3 defaultImageBorderColor(const std::size_t imageIndex, const std::size_
     return glm::vec3{1.0f, 0.0f, 1.0f};
   }
 
-  static constexpr float k_colorSat = 0.80f;
+  static constexpr float k_colorSat = 0.65f;
   static constexpr float k_colorVal = 0.90f;
   static constexpr float k_startHue = -1.0f / 48.0f;
 

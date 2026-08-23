@@ -36,6 +36,11 @@ uniform float u_imgOpacity;
 uniform bool u_imagePlaneShadingEnabled;
 uniform vec4 u_imagePlaneBorderColor;
 uniform float u_imagePlaneBorderWidthPixels;
+uniform float u_ddpDepthBias;
+uniform int u_boundaryVertexCount;
+uniform vec3 u_boundaryWorldPositions[6];
+uniform vec2 u_viewportSize;
+uniform mat4 u_clip_T_world;
 uniform vec3 u_cameraWorldPosition;
 uniform float u_lightingAmbient;
 uniform float u_lightingDiffuse;
@@ -273,13 +278,17 @@ vec4 imagePlaneColor()
   vec4 segmentationColor = segmentationPlaneColor(sampleTc);
   vec4 contentColor = segmentationColor + imageColor * (1.0 - segmentationColor.a);
 
+  vec2 fragmentPixels = 0.5 * (fs_in.v_clipPos + vec2(1.0)) * u_viewportSize;
   float borderDistancePixels = 1e20;
-  for (int axis = 0; axis < 3; ++axis) {
-    float textureUnitsPerPixel = length(vec2(dFdx(fs_in.v_texCoord[axis]), dFdy(fs_in.v_texCoord[axis])));
-    if (textureUnitsPerPixel > 1e-8) {
-      borderDistancePixels =
-        min(borderDistancePixels, min(fs_in.v_texCoord[axis], 1.0 - fs_in.v_texCoord[axis]) / textureUnitsPerPixel);
-    }
+  for (int i = 0; i < u_boundaryVertexCount; ++i) {
+    int next = (i + 1) % u_boundaryVertexCount;
+    vec4 aClip = u_clip_T_world * vec4(u_boundaryWorldPositions[i], 1.0);
+    vec4 bClip = u_clip_T_world * vec4(u_boundaryWorldPositions[next], 1.0);
+    vec2 a = 0.5 * (aClip.xy / aClip.w + vec2(1.0)) * u_viewportSize;
+    vec2 b = 0.5 * (bClip.xy / bClip.w + vec2(1.0)) * u_viewportSize;
+    vec2 ab = b - a;
+    float t = clamp(dot(fragmentPixels - a, ab) / max(dot(ab, ab), 1e-8), 0.0, 1.0);
+    borderDistancePixels = min(borderDistancePixels, length(fragmentPixels - (a + t * ab)));
   }
   float borderCoverage = 1.0 - smoothstep(
                                  max(u_imagePlaneBorderWidthPixels - 0.5, 0.0),
@@ -295,7 +304,8 @@ void main()
   ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
   vec2 previousDepthBounds = texelFetch(u_previousDepthBoundsTex, pixelCoord, 0).xy;
   vec4 previousFrontColor = texelFetch(u_previousFrontColorTex, pixelCoord, 0);
-  float fragmentDepth = gl_FragCoord.z;
+  // Resolve exactly coincident image planes according to the same bottom-to-top image order used by 2D views.
+  float fragmentDepth = clamp(gl_FragCoord.z - u_ddpDepthBias, 0.0, 1.0);
   float nearestDepth = -previousDepthBounds.x;
   float farthestDepth = previousDepthBounds.y;
 

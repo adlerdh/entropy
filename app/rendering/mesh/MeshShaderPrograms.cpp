@@ -235,6 +235,10 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   fsUniforms.insertUniform("u_segOutlineUsesScreenPixels", UniformType::Bool, false);
   fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
   fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
+  fsUniforms.insertUniform("u_boundaryVertexCount", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_boundaryWorldPositions", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
+  fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
+  fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
   if (peelShader) {
     fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 4, k_optionalUniform);
     fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 5, k_optionalUniform);

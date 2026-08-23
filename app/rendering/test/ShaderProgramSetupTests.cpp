@@ -114,3 +114,27 @@ TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributio
   CHECK(raycast.find("uniform vec3 u_diffuse") == std::string::npos);
   CHECK(raycast.find("uniform vec3 u_specular") == std::string::npos);
 }
+
+TEST_CASE("image plane DDP shaders apply the ordered coplanar depth tie-break", "[rendering][shaders][ddp]")
+{
+  const std::string init =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  CHECK(init.find("gl_FragCoord.z - u_ddpDepthBias") != std::string::npos);
+  CHECK(peel.find("gl_FragCoord.z - u_ddpDepthBias") != std::string::npos);
+}
+
+TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering][shaders][ddp]")
+{
+  const std::string init =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  CHECK(init.find("u_boundaryWorldPositions") != std::string::npos);
+  CHECK(peel.find("u_boundaryWorldPositions") != std::string::npos);
+  CHECK(init.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
+  CHECK(peel.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
+}

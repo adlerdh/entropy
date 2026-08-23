@@ -61,6 +61,19 @@ std::optional<intersection::IntersectionVerticesVec4> worldIntersectionsForPlane
   intersection::IntersectionVerticesVec4 worldIntersections{};
   for (std::size_t i = 0; i < worldIntersections.size(); ++i) {
     worldIntersections[i] = inputs.world_T_pixel * glm::vec4{pixelIntersections->at(i), 1.0f};
+    // Every image's polygon for a given orientation represents the same world-space crosshair plane. Remove
+    // image-transform round-trip error so coincident planes remain exactly coplanar at grazing view angles.
+    switch (orientation) {
+      case MeshImagePlaneOrientation::Axial:
+        worldIntersections[i].z = inputs.worldCrosshairs.z * worldIntersections[i].w;
+        break;
+      case MeshImagePlaneOrientation::Coronal:
+        worldIntersections[i].y = inputs.worldCrosshairs.y * worldIntersections[i].w;
+        break;
+      case MeshImagePlaneOrientation::Sagittal:
+        worldIntersections[i].x = inputs.worldCrosshairs.x * worldIntersections[i].w;
+        break;
+    }
   }
   return worldIntersections;
 }
