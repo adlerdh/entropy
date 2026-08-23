@@ -258,7 +258,9 @@ void resolveDdp(const MeshDdpRenderRequest& request, const ScopedDdpGlState& sco
 
 void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
 {
-  if (!request.plan.active || request.renderables.empty()) {
+  // Image planes are submitted through the extra draw callbacks rather than request.renderables. An active plan may
+  // therefore have no ordinary mesh surfaces and must still execute the complete DDP pass.
+  if (!request.plan.active) {
     return;
   }
 

@@ -33,6 +33,7 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionQueue.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionRunner.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGeneration.cpp"
+  "${entropy_APP_DIR}/rendering/utility/vtk/PolyDataGenerator.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGlyphs.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshImageAdapter.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshImagePlane.cpp"

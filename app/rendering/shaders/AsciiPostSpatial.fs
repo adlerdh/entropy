@@ -21,6 +21,7 @@ uniform sampler2D u_cellMeanTex;
 uniform sampler2D u_asciiAtlas;
 uniform sampler2D u_asciiLumLut;
 uniform vec2 u_viewSizePx;
+uniform vec2 u_sceneOriginPx;
 uniform vec2 u_asciiCellSizePx;
 uniform vec2 u_asciiSlotSizePx;
 uniform int u_asciiGlyphCount;
@@ -47,7 +48,7 @@ void main()
     discard;
   }
 
-  vec2 fragPx = v_uv * u_viewSizePx;
+  vec2 fragPx = u_sceneOriginPx + v_uv * u_viewSizePx;
   vec2 cellCoord = floor(fragPx / u_asciiCellSizePx);
 
   // Cell mean for alpha discard and colormap

@@ -16,6 +16,9 @@ MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View&
 
   return MeshDrawContext{
     .clip_T_world = helper::clip_T_world(view.camera()),
+    .clip_T_camera = view.camera().clip_T_camera(),
+    .camera_T_clip = view.camera().camera_T_clip(),
+    .camera_T_world = view.camera().camera_T_world(),
     .cameraWorldPosition = helper::worldOrigin(view.camera()),
     .cameraFrontWorld = cameraFrontWorld,
     // Shadow and future advanced-lighting passes use a directional approximation of the shader's headlight.

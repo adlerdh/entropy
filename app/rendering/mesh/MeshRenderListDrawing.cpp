@@ -3,8 +3,8 @@
 #include "logic/app/Data.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderData.h"
-#include "rendering/mesh/MeshAmbientOcclusionPass.h"
-#include "rendering/mesh/MeshAmbientOcclusionResources.h"
+#include "rendering/mesh/AmbientOcclusionPass.h"
+#include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/mesh/MeshBounds.h"
 #include "rendering/mesh/MeshDdpPass.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
@@ -158,9 +158,10 @@ void Rendering::drawMeshRenderListForView(
   }
 
   if (context.advancedLighting.ambientOcclusion.state == rendering::mesh::MeshAdvancedLightingFeatureState::Enabled) {
-    const std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> aoRenderables =
-      shadowCastingRenderables(list);
+    const auto& aoRenderables = list.opaque;
     rendering::mesh::MeshDrawContext aoContext = context;
+    aoContext.advancedLighting.shadows.state = rendering::mesh::MeshAdvancedLightingFeatureState::Disabled;
+    aoContext.shadowDepthTexture = nullptr;
     aoContext.advancedLighting.ambientOcclusion.state = rendering::mesh::MeshAdvancedLightingFeatureState::Disabled;
     aoContext.ambientOcclusionTexture = nullptr;
     if (rendering::mesh::renderMeshAmbientOcclusion(rendering::mesh::MeshAmbientOcclusionRenderRequest{
@@ -170,7 +171,8 @@ void Rendering::drawMeshRenderListForView(
           .plan = context.advancedLighting.ambientOcclusion,
           .meshRenderer = m_meshRenderer,
           .geometryProgram = m_meshAmbientOcclusionGeometryProgram,
-          .resolveProgram = m_meshAmbientOcclusionResolveProgram}))
+          .resolveProgram = m_meshAmbientOcclusionResolveProgram,
+          .filterProgram = m_meshAmbientOcclusionFilterProgram}))
     {
       context.ambientOcclusionTexture = &m_meshAmbientOcclusionResources.occlusionTexture();
     }
@@ -178,12 +180,11 @@ void Rendering::drawMeshRenderListForView(
 
   const rendering::mesh::MeshDdpSettings& ddpSettings = renderData.m_meshDdpSettings;
   rendering::mesh::MeshDdpPlan ddpPlan = rendering::mesh::meshDdpPlanForRenderList(list, ddpSettings);
-  if (hasImagePlaneDdpRenderables(imagePlaneList) && !ddpPlan.active) {
-    ddpPlan = rendering::mesh::MeshDdpPlan{
-      .active = true,
-      .untilComplete = ddpSettings.untilComplete,
-      .peelPasses = rendering::mesh::sanitizedDdpPeelPasses(ddpSettings.maxPeelPasses, 32u),
-      .renderableCount = static_cast<uint32_t>(imagePlaneList->imagePlanes.size())};
+  if (hasImagePlaneDdpRenderables(imagePlaneList)) {
+    ddpPlan = rendering::mesh::meshDdpPlanWithExtraRenderables(
+      ddpPlan,
+      ddpSettings,
+      static_cast<uint32_t>(imagePlaneList->imagePlanes.size()));
   }
   for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, ddpSettings)) {
     spdlog::debug("{}", diagnostic);
@@ -191,10 +192,14 @@ void Rendering::drawMeshRenderListForView(
   if (ddpPlan.active) {
     const std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> ddpRenderables =
       ddpSurfaceRenderables(list);
+    // DDP peels into view-sized textures with a (0, 0) viewport. AO is also view-sized, so mesh peel shaders must
+    // address it in that local coordinate system rather than subtracting the window-space viewport origin.
+    rendering::mesh::MeshDrawContext ddpContext = context;
+    ddpContext.viewportOrigin = glm::ivec2{0};
     rendering::mesh::renderMeshDdpAlphaOver(rendering::mesh::MeshDdpRenderRequest{
       .resources = m_meshDdpResources,
       .renderables = ddpRenderables,
-      .context = context,
+      .context = ddpContext,
       .plan = ddpPlan,
       .meshRenderer = m_meshRenderer,
       .initProgram = m_meshDdpInitProgram,

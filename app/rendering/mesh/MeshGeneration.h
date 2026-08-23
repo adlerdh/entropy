@@ -52,4 +52,7 @@ generateIsoSurfaceMesh(const ScalarGrid3D& grid, double isoValue, const MeshGene
 std::optional<MeshData>
 generateLabelMesh(const ScalarGrid3D& grid, int64_t labelValue, const MeshGenerationOptions& options = {});
 
+/** Generate the canonical two-ended cylinder-and-cone mesh used for one 3D crosshair axis. */
+std::optional<MeshData> generateCrosshairsAxisMesh(double coneLengthRatio = 0.15);
+
 } // namespace rendering::mesh

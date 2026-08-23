@@ -108,11 +108,46 @@ TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributio
 
   CHECK(raycast.find("u_isoColors[i] * (u_lightingAmbient + u_lightingDiffuse * d)") != std::string::npos);
   CHECK(raycast.find("vec3(u_lightingSpecular * s)") != std::string::npos);
-  CHECK(mesh.find("albedo * (u_lightingAmbient + u_lightingDiffuse * diffuse)") != std::string::npos);
+  CHECK(mesh.find("albedo * u_lightingAmbient * ao") != std::string::npos);
+  CHECK(mesh.find("direct * shadow") != std::string::npos);
   CHECK(mesh.find("vec3(u_lightingSpecular * specular)") != std::string::npos);
   CHECK(raycast.find("uniform vec3 u_ambient") == std::string::npos);
   CHECK(raycast.find("uniform vec3 u_diffuse") == std::string::npos);
   CHECK(raycast.find("uniform vec3 u_specular") == std::string::npos);
+}
+
+TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
+{
+  const std::string resolve =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionResolve.fs");
+  const std::string filter =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionFilter.fs");
+
+  CHECK(resolve.find("u_camera_T_clip") != std::string::npos);
+  CHECK(resolve.find("u_clip_T_camera") != std::string::npos);
+  CHECK(resolve.find("u_camera_T_worldNormal") != std::string::npos);
+  CHECK(resolve.find("u_sampleCount") != std::string::npos);
+  CHECK(resolve.find("tangent_T_camera * hemisphere") != std::string::npos);
+  CHECK(resolve.find("smoothstep(u_radiusMm * 0.5, u_radiusMm, separation)") != std::string::npos);
+  CHECK(filter.find("normalWeight") != std::string::npos);
+  CHECK(filter.find("depthWeight") != std::string::npos);
+}
+
+TEST_CASE("ASCII compositing addresses the full framebuffer from the render viewport", "[rendering][shaders][ascii]")
+{
+  const std::string post = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/AsciiPost.fs");
+  const std::string spatial = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/AsciiPostSpatial.fs");
+
+  CHECK(post.find("u_sceneOriginPx + v_uv * u_viewSizePx") != std::string::npos);
+  CHECK(spatial.find("u_sceneOriginPx + v_uv * u_viewSizePx") != std::string::npos);
+}
+
+TEST_CASE("raycasting does not render the mesh-only 3D crosshairs", "[rendering][shaders][crosshairs]")
+{
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.fs");
+
+  CHECK(raycast.find("u_showCrosshairs3D") == std::string::npos);
+  CHECK(raycast.find("raySphereFirstHit") == std::string::npos);
 }
 
 TEST_CASE("image plane DDP shaders apply the ordered coplanar depth tie-break", "[rendering][shaders][ddp]")

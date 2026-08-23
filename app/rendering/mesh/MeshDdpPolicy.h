@@ -47,6 +47,18 @@ uint32_t sanitizedDdpPeelPasses(uint32_t requestedPasses, uint32_t maxPasses) no
 MeshDdpPlan meshDdpPlanForRenderList(const MeshRenderList& list, const MeshDdpSettings& settings) noexcept;
 
 /**
+ * @brief Extend a DDP plan with alpha-over geometry drawn by pass callbacks, such as image planes
+ * @param plan Plan produced for ordinary mesh renderables
+ * @param settings DDP settings and limits
+ * @param extraRenderableCount Number of additional alpha-over renderables
+ * @return Plan that remains active even when callback geometry is the only DDP content
+ */
+MeshDdpPlan meshDdpPlanWithExtraRenderables(
+  const MeshDdpPlan& plan,
+  const MeshDdpSettings& settings,
+  uint32_t extraRenderableCount) noexcept;
+
+/**
  * @brief Decide whether another DDP peel iteration should run
  * @param completedPasses Number of peel iterations already completed
  * @param plan Sanitized DDP plan

@@ -6,6 +6,7 @@ out vec4 o_color;
 uniform sampler2D u_cellMeanTex;
 uniform sampler2D u_asciiAtlas;
 uniform vec2 u_viewSizePx;
+uniform vec2 u_sceneOriginPx;
 uniform vec2 u_asciiCellSizePx;
 uniform vec2 u_asciiSlotSizePx;
 uniform int u_asciiGlyphCount;
@@ -25,7 +26,7 @@ void main()
     discard;
   }
 
-  vec2 fragPx = v_uv * u_viewSizePx;
+  vec2 fragPx = u_sceneOriginPx + v_uv * u_viewSizePx;
   vec2 cellCoord = floor(fragPx / u_asciiCellSizePx);
 
   vec4 srcPM = texelFetch(u_cellMeanTex, ivec2(cellCoord), 0);

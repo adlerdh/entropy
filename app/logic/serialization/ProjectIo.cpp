@@ -48,13 +48,38 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   if (path == "settings/rendering") {
     preferredKeys = {
       "threeD",
-      "raycasting",
       "mesh",
       "isocontours",
+      "raycasting",
       "dualDepthPeeling",
       "comparison",
       "intensityProjection",
       "segmentation"};
+  }
+  else if (path == "settings/rendering/dualDepthPeeling") {
+    preferredKeys = {"untilComplete", "maxPeelPasses"};
+  }
+  else if (path == "settings/rendering/threeD") {
+    preferredKeys = {
+      "transparentBackground",
+      "cameraFrustumVisibleIn2DViews",
+      "cameraFrustumColor",
+      "lighting",
+      "imagePlanes",
+      "imageBoxVisible",
+      "reverseRotateAboutEye",
+      "crosshairsGlyphVisible",
+      "crosshairsGlyphDiameterVox",
+      "crosshairsGlyphLengthVox"};
+  }
+  else if (path == "settings/rendering/threeD/lighting" || path == "settings/rendering/threeD/imagePlanes/lighting") {
+    preferredKeys = {"ambient", "diffuse", "specular", "specularPower"};
+  }
+  else if (path == "settings/rendering/threeD/imagePlanes") {
+    preferredKeys = {"visible", "viewAngleOpacity", "shading", "lightingMode", "lighting"};
+  }
+  else if (path == "settings/rendering/raycasting") {
+    preferredKeys = {"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
   }
   else if (path == "settings/rendering/mesh") {
     preferredKeys = {
@@ -65,6 +90,18 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "clipPlane",
       "shadows",
       "ambientOcclusion"};
+  }
+  else if (path == "settings/rendering/mesh/clipPlane") {
+    preferredKeys = {"enabled", "worldPlane"};
+  }
+  else if (path == "settings/rendering/mesh/shadows") {
+    preferredKeys = {"enabled", "mapSizePixels", "strength", "depthBias"};
+  }
+  else if (path == "settings/rendering/mesh/ambientOcclusion") {
+    preferredKeys = {"enabled", "radiusMm", "strength", "sampleCount", "radiusPixels"};
+  }
+  else if (path == "settings/rendering/isocontours") {
+    preferredKeys = {"floatingPointInterpolationPolicy", "modulateOpacityWithImageOpacity"};
   }
 
   const auto append = [&](const std::string& key) {

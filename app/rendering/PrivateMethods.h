@@ -57,6 +57,9 @@ bool createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& program);
  */
 bool createMeshAmbientOcclusionResolveProgram(GLShaderProgram& program);
 
+/** @brief Compile and link the edge-preserving mesh ambient occlusion filter. */
+bool createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program);
+
 /**
  * @brief Compile and link the mesh image-plane grayscale shader for ordinary 3D textures.
  *
@@ -493,7 +496,6 @@ void volumeRenderOneImage(
  */
 void setRaycastIsoUniforms(
   GLShaderProgram& program,
-  const View& view,
   const ImgSegPair& imgSegPair,
   const Image& image,
   const RenderData::ImageUniforms& uniforms,

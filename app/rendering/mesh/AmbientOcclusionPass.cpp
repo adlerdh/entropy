@@ -1,6 +1,6 @@
-#include "rendering/mesh/MeshAmbientOcclusionPass.h"
+#include "rendering/mesh/AmbientOcclusionPass.h"
 
-#include "rendering/mesh/MeshAmbientOcclusionResources.h"
+#include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/utility/gl/GLFrameBufferObject.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
@@ -20,6 +20,7 @@ namespace
 
 constexpr uint32_t k_normalTextureUnit = 0u;
 constexpr uint32_t k_depthTextureUnit = 1u;
+constexpr uint32_t k_rawOcclusionTextureUnit = 2u;
 
 struct GlViewport
 {
@@ -61,6 +62,14 @@ public:
     glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_blendEquationRgb);
     glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_blendEquationAlpha);
     glGetIntegerv(GL_CULL_FACE_MODE, &m_cullFaceMode);
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, m_clearColor.data());
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &m_activeTexture);
+    glGetIntegerv(GL_CURRENT_PROGRAM, &m_program);
+    for (uint32_t unit = 0; unit < m_texture2DBindings.size(); ++unit) {
+      glActiveTexture(GL_TEXTURE0 + unit);
+      glGetIntegerv(GL_TEXTURE_BINDING_2D, &m_texture2DBindings[unit]);
+    }
+    glActiveTexture(static_cast<GLenum>(m_activeTexture));
     m_blendEnabled = glIsEnabled(GL_BLEND);
     m_scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
     m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
@@ -89,6 +98,13 @@ public:
     m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
     m_cullFaceEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
     glCullFace(static_cast<GLenum>(m_cullFaceMode));
+    glClearColor(m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]);
+    for (uint32_t unit = 0; unit < m_texture2DBindings.size(); ++unit) {
+      glActiveTexture(GL_TEXTURE0 + unit);
+      glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(m_texture2DBindings[unit]));
+    }
+    glActiveTexture(static_cast<GLenum>(m_activeTexture));
+    glUseProgram(static_cast<GLuint>(m_program));
   }
 
 private:
@@ -109,6 +125,10 @@ private:
   GLint m_blendEquationRgb = GL_FUNC_ADD;
   GLint m_blendEquationAlpha = GL_FUNC_ADD;
   GLint m_cullFaceMode = GL_BACK;
+  std::array<GLfloat, 4> m_clearColor{};
+  GLint m_activeTexture = GL_TEXTURE0;
+  GLint m_program = 0;
+  std::array<GLint, 3> m_texture2DBindings{};
 };
 
 void drawFullScreenTriangle(MeshAmbientOcclusionResources& resources)
@@ -155,10 +175,41 @@ void resolveOcclusion(const MeshAmbientOcclusionRenderRequest& request, const gl
   request.resolveProgram.setUniform("u_normalTex", static_cast<GLint>(k_normalTextureUnit));
   request.resolveProgram.setUniform("u_depthTex", static_cast<GLint>(k_depthTextureUnit));
   request.resolveProgram.setUniform("u_viewportSize", glm::vec2{size});
-  request.resolveProgram.setUniform("u_radiusPixels", request.plan.radiusPixels);
+  request.resolveProgram.setUniform("u_camera_T_clip", request.context.camera_T_clip);
+  request.resolveProgram.setUniform("u_clip_T_camera", request.context.clip_T_camera);
+  request.resolveProgram.setUniform("u_camera_T_worldNormal", glm::mat3{request.context.camera_T_world});
+  request.resolveProgram.setUniform("u_radiusMm", request.plan.radiusMm);
   request.resolveProgram.setUniform("u_strength", request.plan.strength);
+  request.resolveProgram.setUniform("u_sampleCount", static_cast<GLint>(request.plan.sampleCount));
   drawFullScreenTriangle(request.resources);
   request.resolveProgram.stopUse();
+  request.resources.depthTexture().unbind(k_depthTextureUnit);
+  request.resources.normalTexture().unbind(k_normalTextureUnit);
+}
+
+void filterOcclusion(const MeshAmbientOcclusionRenderRequest& request, const glm::uvec2& size)
+{
+  request.resources.filteredOcclusionFbo().bind(fbo::TargetType::DrawAndRead);
+  glViewport(0, 0, static_cast<GLsizei>(size.x), static_cast<GLsizei>(size.y));
+  glDisable(GL_SCISSOR_TEST);
+  glDrawBuffer(GL_COLOR_ATTACHMENT0);
+  glDisable(GL_DEPTH_TEST);
+  glDepthMask(GL_FALSE);
+  glDisable(GL_BLEND);
+
+  request.resources.normalTexture().bind(k_normalTextureUnit);
+  request.resources.depthTexture().bind(k_depthTextureUnit);
+  request.resources.rawOcclusionTexture().bind(k_rawOcclusionTextureUnit);
+  request.filterProgram.use();
+  request.filterProgram.setUniform("u_normalTex", static_cast<GLint>(k_normalTextureUnit));
+  request.filterProgram.setUniform("u_depthTex", static_cast<GLint>(k_depthTextureUnit));
+  request.filterProgram.setUniform("u_occlusionTex", static_cast<GLint>(k_rawOcclusionTextureUnit));
+  request.filterProgram.setUniform("u_viewportSize", glm::vec2{size});
+  request.filterProgram.setUniform("u_camera_T_clip", request.context.camera_T_clip);
+  request.filterProgram.setUniform("u_radiusMm", request.plan.radiusMm);
+  drawFullScreenTriangle(request.resources);
+  request.filterProgram.stopUse();
+  request.resources.rawOcclusionTexture().unbind(k_rawOcclusionTextureUnit);
   request.resources.depthTexture().unbind(k_depthTextureUnit);
   request.resources.normalTexture().unbind(k_normalTextureUnit);
 }
@@ -179,6 +230,7 @@ bool renderMeshAmbientOcclusion(const MeshAmbientOcclusionRenderRequest& request
 
   renderGeometry(request, size);
   resolveOcclusion(request, size);
+  filterOcclusion(request, size);
   return true;
 }
 

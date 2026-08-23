@@ -7,7 +7,7 @@
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/mesh/MeshCache.h"
-#include "rendering/mesh/MeshAmbientOcclusionResources.h"
+#include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshDdpResources.h"
 #include "rendering/mesh/MeshGpuStore.h"
@@ -344,6 +344,8 @@ private:
   GLShaderProgram m_meshAmbientOcclusionGeometryProgram; //!< Mesh normal/depth shader for screen-space AO
 
   GLShaderProgram m_meshAmbientOcclusionResolveProgram; //!< Full-screen mesh AO resolve shader
+
+  GLShaderProgram m_meshAmbientOcclusionFilterProgram; //!< Edge-preserving mesh AO filter shader
 
   GLShaderProgram m_meshImagePlaneGrayLinearProgram; //!< Mesh image-plane shader for scalar 3D textures
 

@@ -25,6 +25,7 @@ struct MeshAmbientOcclusionRenderRequest
   const MeshRenderer& meshRenderer;     //!< Stateless mesh draw helper
   GLShaderProgram& geometryProgram;     //!< Mesh normal/depth geometry shader
   GLShaderProgram& resolveProgram;      //!< Full-screen AO resolve shader
+  GLShaderProgram& filterProgram;       //!< Edge-preserving AO filter shader
 };
 
 /**

@@ -280,10 +280,16 @@ bool threeDRenderingSettingsEqual(
   return a.m_transparentBackground == b.m_transparentBackground && a.m_imageBoxVisible == b.m_imageBoxVisible &&
          a.m_imagePlanesVisible == b.m_imagePlanesVisible &&
          a.m_imagePlaneViewAngleOpacity == b.m_imagePlaneViewAngleOpacity &&
-         a.m_imagePlaneShading == b.m_imagePlaneShading && a.m_lightingAmbient == b.m_lightingAmbient &&
-         a.m_lightingDiffuse == b.m_lightingDiffuse && a.m_lightingSpecular == b.m_lightingSpecular &&
-         a.m_lightingSpecularPower == b.m_lightingSpecularPower && a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
+         a.m_imagePlaneShading == b.m_imagePlaneShading &&
+         a.m_imagePlaneLightingAmbient == b.m_imagePlaneLightingAmbient &&
+         a.m_imagePlaneLightingDiffuse == b.m_imagePlaneLightingDiffuse &&
+         a.m_imagePlaneLightingSpecular == b.m_imagePlaneLightingSpecular &&
+         a.m_imagePlaneLightingSpecularPower == b.m_imagePlaneLightingSpecularPower &&
+         a.m_lightingAmbient == b.m_lightingAmbient && a.m_lightingDiffuse == b.m_lightingDiffuse &&
+         a.m_lightingSpecular == b.m_lightingSpecular && a.m_lightingSpecularPower == b.m_lightingSpecularPower &&
+         a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
          a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
+         a.m_crosshairs3DGlyphLengthVoxelDiagonals == b.m_crosshairs3DGlyphLengthVoxelDiagonals &&
          a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
          a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&
          a.m_threeDCameraFrustumColor == b.m_threeDCameraFrustumColor;
@@ -308,8 +314,9 @@ bool meshRenderingSettingsEqual(
          a.m_shadowsEnabled == b.m_shadowsEnabled && a.m_shadowMapSizePixels == b.m_shadowMapSizePixels &&
          a.m_shadowStrength == b.m_shadowStrength && a.m_shadowDepthBias == b.m_shadowDepthBias &&
          a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
-         a.m_ambientOcclusionRadiusPixels == b.m_ambientOcclusionRadiusPixels &&
-         a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength;
+         a.m_ambientOcclusionRadiusMm == b.m_ambientOcclusionRadiusMm &&
+         a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength &&
+         a.m_ambientOcclusionSampleCount == b.m_ambientOcclusionSampleCount;
 }
 
 bool intensityProjectionSettingsEqual(

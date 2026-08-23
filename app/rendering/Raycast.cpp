@@ -101,7 +101,6 @@ void Rendering::renderVolumeImagesForView(const View& view)
   {
     setRaycastIsoUniforms(
       program,
-      view,
       imgSegPair,
       *(domainImage ? domainImage : image),
       domainU,

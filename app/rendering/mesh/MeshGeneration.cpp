@@ -1,4 +1,5 @@
 #include "rendering/mesh/MeshGeneration.h"
+#include "rendering/utility/vtk/PolyDataGenerator.h"
 
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -263,6 +264,14 @@ std::optional<MeshData> meshDataFromPolyData(vtkPolyData* polyData, const MeshCo
 }
 
 } // namespace
+
+std::optional<MeshData> generateCrosshairsAxisMesh(const double coneLengthRatio)
+{
+  if (!std::isfinite(coneLengthRatio) || coneLengthRatio <= 0.0 || coneLengthRatio > 1.0) {
+    return std::nullopt;
+  }
+  return meshDataFromPolyData(vtkutils::generatePointyCylinders(coneLengthRatio), MeshCoordinateSpace::World);
+}
 
 std::optional<MeshData>
 generateIsoSurfaceMesh(const ScalarGrid3D& grid, const double isoValue, const MeshGenerationOptions& options)

@@ -305,10 +305,10 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_hasVertexNormals", hasVertexNormals);
   program.setUniform("u_imagePlaneShadingEnabled", renderable.shadingEnabled);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
-  program.setUniform("u_lightingAmbient", renderData.m_lightingAmbient);
-  program.setUniform("u_lightingDiffuse", renderData.m_lightingDiffuse);
-  program.setUniform("u_lightingSpecular", renderData.m_lightingSpecular);
-  program.setUniform("u_lightingSpecularPower", renderData.m_lightingSpecularPower);
+  program.setUniform("u_lightingAmbient", renderData.m_imagePlaneLightingAmbient);
+  program.setUniform("u_lightingDiffuse", renderData.m_imagePlaneLightingDiffuse);
+  program.setUniform("u_lightingSpecular", renderData.m_imagePlaneLightingSpecular);
+  program.setUniform("u_lightingSpecularPower", renderData.m_imagePlaneLightingSpecularPower);
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_numCheckers", checkerboardSquares);
 

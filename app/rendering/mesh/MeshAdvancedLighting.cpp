@@ -11,12 +11,12 @@ namespace
 
 constexpr uint32_t k_minShadowMapSizePixels = 128;
 constexpr uint32_t k_maxShadowMapSizePixels = 8192;
-constexpr uint32_t k_minAmbientOcclusionSamples = 1;
-constexpr uint32_t k_maxAmbientOcclusionSamples = 128;
+constexpr uint32_t k_minAmbientOcclusionSamples = 8;
+constexpr uint32_t k_maxAmbientOcclusionSamples = 64;
 constexpr float k_minDepthBias = 0.0f;
 constexpr float k_maxDepthBias = 0.1f;
-constexpr float k_minAmbientOcclusionRadiusPixels = 1.0f;
-constexpr float k_maxAmbientOcclusionRadiusPixels = 128.0f;
+constexpr float k_minAmbientOcclusionRadiusMm = 0.1f;
+constexpr float k_maxAmbientOcclusionRadiusMm = 1000.0f;
 
 float finiteOr(const float value, const float fallback) noexcept
 {
@@ -58,10 +58,10 @@ MeshAmbientOcclusionPlan meshAmbientOcclusionPlan(
   const MeshAmbientOcclusionSettings defaults;
   return MeshAmbientOcclusionPlan{
     .state = featureState(settings.enabled, capabilities.ambientOcclusionPassAvailable),
-    .radiusPixels = std::clamp(
-      finiteOr(settings.radiusPixels, defaults.radiusPixels),
-      k_minAmbientOcclusionRadiusPixels,
-      k_maxAmbientOcclusionRadiusPixels),
+    .radiusMm = std::clamp(
+      finiteOr(settings.radiusMm, defaults.radiusMm),
+      k_minAmbientOcclusionRadiusMm,
+      k_maxAmbientOcclusionRadiusMm),
     .strength = std::clamp(finiteOr(settings.strength, defaults.strength), 0.0f, 1.0f),
     .sampleCount = std::clamp(settings.sampleCount, k_minAmbientOcclusionSamples, k_maxAmbientOcclusionSamples)};
 }

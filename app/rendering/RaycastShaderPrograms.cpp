@@ -132,10 +132,6 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 
     fsUniforms.insertUniform("u_bgColor", UniformType::Vec4, sk_zeroVec4);
     fsUniforms.insertUniform("u_bgEdgeBrighteningEnabled", UniformType::Bool, true);
-    fsUniforms.insertUniform("u_showCrosshairs3D", UniformType::Bool, false);
-    fsUniforms.insertUniform("u_crosshairsWorldPos", UniformType::Vec3, sk_zeroVec3);
-    fsUniforms.insertUniform("u_crosshairsColor", UniformType::Vec4, sk_zeroVec4);
-    fsUniforms.insertUniform("u_crosshairsRadiusMm", UniformType::Float, 0.5f);
 
     fsUniforms.insertUniform("u_samplingFactor", UniformType::Float, 1.0f);
     fsUniforms.insertUniform("u_imgInvDims", UniformType::Vec3, glm::vec3{1.0f});

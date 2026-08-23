@@ -1,4 +1,4 @@
-#include "rendering/mesh/MeshAmbientOcclusionResources.h"
+#include "rendering/mesh/AmbientOcclusionResources.h"
 
 #include "common/Exception.hpp"
 
@@ -19,7 +19,9 @@ glm::uvec3 textureSize3D(const glm::uvec2& viewportSize) noexcept
 } // namespace
 
 MeshAmbientOcclusionResources::MeshAmbientOcclusionResources()
-  : m_geometryFbo("Mesh ambient occlusion geometry FBO"), m_occlusionFbo("Mesh ambient occlusion resolve FBO")
+  : m_geometryFbo("Mesh ambient occlusion geometry FBO")
+  , m_occlusionFbo("Mesh ambient occlusion resolve FBO")
+  , m_filteredOcclusionFbo("Mesh ambient occlusion filter FBO")
 {
 }
 
@@ -52,9 +54,11 @@ void MeshAmbientOcclusionResources::clear() noexcept
   m_fullScreenVao.destroy();
   m_normalTexture.reset();
   m_depthTexture.reset();
+  m_rawOcclusionTexture.reset();
   m_occlusionTexture.reset();
   m_geometryFbo.destroy();
   m_occlusionFbo.destroy();
+  m_filteredOcclusionFbo.destroy();
   m_size = glm::uvec2{0u, 0u};
   m_initialized = false;
 }
@@ -77,6 +81,11 @@ GLFrameBufferObject& MeshAmbientOcclusionResources::geometryFbo() noexcept
 GLFrameBufferObject& MeshAmbientOcclusionResources::occlusionFbo() noexcept
 {
   return m_occlusionFbo;
+}
+
+GLFrameBufferObject& MeshAmbientOcclusionResources::filteredOcclusionFbo() noexcept
+{
+  return m_filteredOcclusionFbo;
 }
 
 GLTexture& MeshAmbientOcclusionResources::normalTexture()
@@ -104,6 +113,14 @@ GLTexture& MeshAmbientOcclusionResources::occlusionTexture()
   }
 
   return *m_occlusionTexture;
+}
+
+GLTexture& MeshAmbientOcclusionResources::rawOcclusionTexture()
+{
+  if (!m_rawOcclusionTexture) {
+    throwDebug("Mesh raw ambient occlusion texture is not allocated");
+  }
+  return *m_rawOcclusionTexture;
 }
 
 GLVertexArrayObject& MeshAmbientOcclusionResources::fullScreenVao() noexcept
@@ -171,15 +188,17 @@ void MeshAmbientOcclusionResources::allocateTextures(const glm::uvec2& viewportS
   m_fullScreenVao.generate();
   m_normalTexture.emplace(makeNearestTexture());
   m_depthTexture.emplace(makeNearestTexture());
+  m_rawOcclusionTexture.emplace(makeLinearTexture());
   m_occlusionTexture.emplace(makeLinearTexture());
   allocateNormalTexture(*m_normalTexture, viewportSize);
   allocateDepthTexture(*m_depthTexture, viewportSize);
+  allocateOcclusionTexture(*m_rawOcclusionTexture, viewportSize);
   allocateOcclusionTexture(*m_occlusionTexture, viewportSize);
 }
 
 void MeshAmbientOcclusionResources::attachFramebuffers()
 {
-  if (!m_normalTexture || !m_depthTexture || !m_occlusionTexture) {
+  if (!m_normalTexture || !m_depthTexture || !m_rawOcclusionTexture || !m_occlusionTexture) {
     throwDebug("Mesh ambient occlusion resources are incomplete");
   }
 
@@ -190,7 +209,11 @@ void MeshAmbientOcclusionResources::attachFramebuffers()
 
   m_occlusionFbo.generate();
   m_occlusionFbo.bind(fbo::TargetType::DrawAndRead);
-  m_occlusionFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_occlusionTexture, 0);
+  m_occlusionFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_rawOcclusionTexture, 0);
+
+  m_filteredOcclusionFbo.generate();
+  m_filteredOcclusionFbo.bind(fbo::TargetType::DrawAndRead);
+  m_filteredOcclusionFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_occlusionTexture, 0);
 }
 
 } // namespace rendering::mesh

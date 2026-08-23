@@ -622,7 +622,7 @@ void renderViewSettingsComboWindow(
 
               if (modes.getThreeDRenderImageBox && modes.setThreeDRenderImageBox) {
                 bool renderImageBox = modes.getThreeDRenderImageBox();
-                if (ImGui::Checkbox("Show image box", &renderImageBox)) {
+                if (ImGui::Checkbox("Show image volume bounds", &renderImageBox)) {
                   modes.setThreeDRenderImageBox(renderImageBox);
                 }
                 helpTooltip("Render a subtle outline of the raycast image box in 3D views.");

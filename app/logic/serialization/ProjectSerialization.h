@@ -208,12 +208,17 @@ struct ProjectThreeDRenderingSettings
   bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
   bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
   bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
+  float m_imagePlaneLightingAmbient = 0.30f;              //!< Image-plane ADS ambient term
+  float m_imagePlaneLightingDiffuse = 0.50f;              //!< Image-plane ADS diffuse term
+  float m_imagePlaneLightingSpecular = 0.20f;             //!< Image-plane ADS specular term
+  float m_imagePlaneLightingSpecularPower = 16.0f;        //!< Image-plane ADS specular exponent
   float m_lightingAmbient = 0.30f;                        //!< 3D ADS ambient term
   float m_lightingDiffuse = 0.50f;                        //!< 3D ADS diffuse term
   float m_lightingSpecular = 0.20f;                       //!< 3D ADS specular term
   float m_lightingSpecularPower = 16.0f;                  //!< 3D ADS specular exponent
   bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D views
-  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
+  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
+  float m_crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;  //!< Per-axis glyph length in voxel diagonals
   bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views
   bool m_reverseThreeDRotateAboutEye = false;             //!< Reverse POV 3D camera rotation direction
   glm::vec4 m_threeDCameraFrustumColor{
@@ -254,8 +259,9 @@ struct ProjectMeshRenderingSettings
   float m_shadowStrength = 0.35f;                     //!< Mesh shadow contribution in [0, 1]
   float m_shadowDepthBias = 0.001f;                   //!< Mesh shadow depth bias
   bool m_ambientOcclusionEnabled = false;             //!< Render screen-space ambient occlusion for meshes
-  float m_ambientOcclusionRadiusPixels = 8.0f;        //!< Mesh AO screen-space radius in pixels
+  float m_ambientOcclusionRadiusMm = 5.0f;            //!< Mesh AO view-space radius in physical millimetres
   float m_ambientOcclusionStrength = 0.5f;            //!< Mesh AO contribution in [0, 1]
+  uint32_t m_ambientOcclusionSampleCount = 24;        //!< Mesh AO hemisphere samples per pixel
 };
 
 /**

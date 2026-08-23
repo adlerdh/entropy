@@ -107,6 +107,19 @@ TEST_CASE("Project serialization omits default settings", "[project][serializati
   CHECK_FALSE(root.contains("settings"));
   CHECK_FALSE(root.at("images").at(0).contains("settings"));
   CHECK_FALSE(root.at("images").at(0).at("segmentations").at(0).contains("settings"));
+
+  const json defaultThreeD = serialize::ProjectThreeDRenderingSettings{};
+  const json defaultRaycasting = serialize::ProjectRaycastingSettings{};
+  const json defaultMesh = serialize::ProjectMeshRenderingSettings{};
+  const json defaultIntensityProjection = serialize::ProjectIntensityProjectionSettings{};
+  const json defaultSegmentation = serialize::ProjectSegmentationDisplaySettings{};
+  const json defaultIsocontours = serialize::ProjectIsocontourDisplaySettings{};
+  CHECK(defaultThreeD.empty());
+  CHECK(defaultRaycasting.empty());
+  CHECK(defaultMesh.empty());
+  CHECK(defaultIntensityProjection.empty());
+  CHECK(defaultSegmentation.empty());
+  CHECK(defaultIsocontours.empty());
 }
 
 TEST_CASE("Project serialization accepts missing version as current format", "[project][serialization]")
@@ -333,12 +346,17 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_imagePlanesVisible = false;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
+  project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.31f;
+  project.m_threeDRendering.m_imagePlaneLightingDiffuse = 0.62f;
+  project.m_threeDRendering.m_imagePlaneLightingSpecular = 0.47f;
+  project.m_threeDRendering.m_imagePlaneLightingSpecularPower = 36.0f;
   project.m_threeDRendering.m_lightingAmbient = 0.42f;
   project.m_threeDRendering.m_lightingDiffuse = 0.83f;
   project.m_threeDRendering.m_lightingSpecular = 0.51f;
   project.m_threeDRendering.m_lightingSpecularPower = 48.0f;
   project.m_threeDRendering.m_showCrosshairsIn3D = true;
   project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
+  project.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals = 9.5f;
   project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
@@ -353,8 +371,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_shadowStrength = 0.6f;
   project.m_meshRendering.m_shadowDepthBias = 0.002f;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
-  project.m_meshRendering.m_ambientOcclusionRadiusPixels = 12.0f;
+  project.m_meshRendering.m_ambientOcclusionRadiusMm = 12.0f;
   project.m_meshRendering.m_ambientOcclusionStrength = 0.7f;
+  project.m_meshRendering.m_ambientOcclusionSampleCount = 32;
   project.m_meshRendering.m_translucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
   project.m_meshRendering.m_ddpUntilComplete = false;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
@@ -394,12 +413,17 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(threeD.at("imagePlanes").at("visible") == false);
   CHECK(threeD.at("imagePlanes").at("viewAngleOpacity") == false);
   CHECK(threeD.at("imagePlanes").at("shading") == false);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("ambient") == 0.31f);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("diffuse") == 0.62f);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("specular") == 0.47f);
+  CHECK(threeD.at("imagePlanes").at("lighting").at("specularPower") == 36.0f);
   CHECK(threeD.at("lighting").at("ambient") == 0.42f);
   CHECK(threeD.at("lighting").at("diffuse") == 0.83f);
   CHECK(threeD.at("lighting").at("specular") == 0.51f);
   CHECK(threeD.at("lighting").at("specularPower") == 48.0f);
   CHECK_FALSE(threeD.contains("crosshairsGlyphVisible"));
   CHECK(threeD.at("crosshairsGlyphDiameterVox") == 1.75f);
+  CHECK(threeD.at("crosshairsGlyphLengthVox") == 9.5f);
   CHECK(threeD.at("cameraFrustumVisibleIn2DViews") == true);
   CHECK(threeD.at("reverseRotateAboutEye") == true);
   CHECK(threeD.at("cameraFrustumColor").at(0) == 1.0f);
@@ -419,8 +443,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(mesh.at("shadows").at("strength") == 0.6f);
   CHECK(mesh.at("shadows").at("depthBias") == 0.002f);
   CHECK(mesh.at("ambientOcclusion").at("enabled") == true);
-  CHECK(mesh.at("ambientOcclusion").at("radiusPixels") == 12.0f);
+  CHECK(mesh.at("ambientOcclusion").at("radiusMm") == 12.0f);
   CHECK(mesh.at("ambientOcclusion").at("strength") == 0.7f);
+  CHECK(mesh.at("ambientOcclusion").at("sampleCount") == 32);
   CHECK(mesh.at("translucentCompositing") == "multiplicative");
   CHECK(dualDepthPeeling.at("untilComplete") == false);
   CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
@@ -460,12 +485,17 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_imagePlanesVisible == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneViewAngleOpacity == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneShading == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneLightingAmbient == 0.31f);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneLightingDiffuse == 0.62f);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneLightingSpecular == 0.47f);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneLightingSpecularPower == 36.0f);
   CHECK(parsed.m_threeDRendering.m_lightingAmbient == 0.42f);
   CHECK(parsed.m_threeDRendering.m_lightingDiffuse == 0.83f);
   CHECK(parsed.m_threeDRendering.m_lightingSpecular == 0.51f);
   CHECK(parsed.m_threeDRendering.m_lightingSpecularPower == 48.0f);
   CHECK(parsed.m_threeDRendering.m_showCrosshairsIn3D == true);
   CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
+  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals == 9.5f);
   CHECK(parsed.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews == true);
   CHECK(parsed.m_threeDRendering.m_reverseThreeDRotateAboutEye == true);
   CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.x == 1.0f);
@@ -483,8 +513,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_shadowStrength == 0.6f);
   CHECK(parsed.m_meshRendering.m_shadowDepthBias == 0.002f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled == true);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusPixels == 12.0f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 12.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 32);
   CHECK(parsed.m_meshRendering.m_translucentCompositing == serialize::ProjectMeshCompositingMode::Multiplicative);
   CHECK(parsed.m_meshRendering.m_ddpUntilComplete == false);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
@@ -505,6 +536,36 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_isocontours.m_modulateOpacityWithImageOpacity == true);
 }
 
+TEST_CASE("Legacy 3D lighting remains shared with image planes", "[project][serialization]")
+{
+  const json legacyThreeD{
+    {"lighting", {{"ambient", 0.4f}, {"diffuse", 0.7f}, {"specular", 0.3f}, {"specularPower", 40.0f}}}};
+
+  const auto settings = legacyThreeD.get<serialize::ProjectThreeDRenderingSettings>();
+  CHECK(settings.m_imagePlaneLightingAmbient == 0.4f);
+  CHECK(settings.m_imagePlaneLightingDiffuse == 0.7f);
+  CHECK(settings.m_imagePlaneLightingSpecular == 0.3f);
+  CHECK(settings.m_imagePlaneLightingSpecularPower == 40.0f);
+}
+
+TEST_CASE("Independent image-plane defaults are never serialized as values", "[project][serialization]")
+{
+  serialize::ProjectThreeDRenderingSettings settings;
+  settings.m_lightingAmbient = 0.4f;
+
+  const json threeD = settings;
+  REQUIRE(threeD.contains("imagePlanes"));
+  CHECK(threeD.at("imagePlanes").at("lightingMode") == "independent");
+  CHECK_FALSE(threeD.at("imagePlanes").contains("lighting"));
+
+  const auto parsed = threeD.get<serialize::ProjectThreeDRenderingSettings>();
+  CHECK(parsed.m_lightingAmbient == 0.4f);
+  CHECK(parsed.m_imagePlaneLightingAmbient == 0.3f);
+  CHECK(parsed.m_imagePlaneLightingDiffuse == 0.5f);
+  CHECK(parsed.m_imagePlaneLightingSpecular == 0.2f);
+  CHECK(parsed.m_imagePlaneLightingSpecularPower == 16.0f);
+}
+
 TEST_CASE("Saved project rendering settings follow the application settings order", "[project][serialization]")
 {
   const fs::path root = uniqueTempProjectDirectory();
@@ -512,10 +573,26 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_threeDRendering.m_transparentBackground = false;
   project.m_threeDRendering.m_imageBoxVisible = true;
+  project.m_threeDRendering.m_imagePlanesVisible = false;
+  project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
+  project.m_threeDRendering.m_imagePlaneShading = false;
+  project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.4f;
+  project.m_threeDRendering.m_lightingAmbient = 0.6f;
+  project.m_threeDRendering.m_showCrosshairsIn3D = false;
+  project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.5f;
+  project.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals = 12.0f;
+  project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
+  project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
+  project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.0f, 0.0f, 1.0f};
   project.m_raycasting.m_samplingFactor = 1.25f;
+  project.m_raycasting.m_renderFrontFaces = false;
+  project.m_raycasting.m_renderBackFaces = false;
+  project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskIn;
   project.m_meshRendering.m_renderingEnabled = false;
   project.m_meshRendering.m_ddpUntilComplete = false;
+  project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_isocontours.m_modulateOpacityWithImageOpacity = true;
 
   REQUIRE(serialize::save(project, projectFile));
@@ -533,10 +610,44 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   REQUIRE(mesh != std::string::npos);
   REQUIRE(isocontours != std::string::npos);
   REQUIRE(dualDepthPeeling != std::string::npos);
-  CHECK(threeD < raycasting);
-  CHECK(raycasting < mesh);
+  CHECK(threeD < mesh);
   CHECK(mesh < isocontours);
-  CHECK(isocontours < dualDepthPeeling);
+  CHECK(isocontours < raycasting);
+  CHECK(raycasting < dualDepthPeeling);
+
+  const nlohmann::ordered_json ordered = nlohmann::ordered_json::parse(contents);
+  const auto objectKeys = [](const nlohmann::ordered_json& object) {
+    std::vector<std::string> keys;
+    for (const auto& [key, value] : object.items()) {
+      (void)value;
+      keys.push_back(key);
+    }
+    return keys;
+  };
+  const auto& orderedRendering = ordered.at("settings").at("rendering");
+  CHECK(
+    objectKeys(orderedRendering) ==
+    std::vector<std::string>{"threeD", "mesh", "isocontours", "raycasting", "dualDepthPeeling"});
+  CHECK(
+    objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"untilComplete", "maxPeelPasses"});
+  CHECK(
+    objectKeys(orderedRendering.at("threeD")) == std::vector<std::string>{
+                                                   "transparentBackground",
+                                                   "cameraFrustumVisibleIn2DViews",
+                                                   "cameraFrustumColor",
+                                                   "lighting",
+                                                   "imagePlanes",
+                                                   "imageBoxVisible",
+                                                   "reverseRotateAboutEye",
+                                                   "crosshairsGlyphVisible",
+                                                   "crosshairsGlyphDiameterVox",
+                                                   "crosshairsGlyphLengthVox"});
+  CHECK(
+    objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
+    std::vector<std::string>{"visible", "viewAngleOpacity", "shading", "lighting"});
+  CHECK(
+    objectKeys(orderedRendering.at("raycasting")) ==
+    std::vector<std::string>{"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"});
 }
 
 TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh", "[project][serialization]")
@@ -549,6 +660,26 @@ TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh",
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   CHECK_FALSE(parsed.m_meshRendering.m_ddpUntilComplete);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
+}
+
+TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][serialization][ssao]")
+{
+  const json root = {
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings",
+     {{"rendering",
+       {{"mesh", {{"ambientOcclusion", {{"enabled", true}, {"radiusPixels", 12.0f}, {"strength", 0.7f}}}}}}}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 12.0f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 24);
+
+  const json rewritten = parsed;
+  const json& ao = rewritten.at("settings").at("rendering").at("mesh").at("ambientOcclusion");
+  CHECK(ao.at("radiusMm") == 12.0f);
+  CHECK_FALSE(ao.contains("radiusPixels"));
 }
 
 TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")

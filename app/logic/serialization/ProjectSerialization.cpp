@@ -474,6 +474,39 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
     settings.m_imagePlaneViewAngleOpacity,
     defaults.m_imagePlaneViewAngleOpacity);
   addIfChanged(imagePlanes, "shading", settings.m_imagePlaneShading, defaults.m_imagePlaneShading);
+  json imagePlaneLighting = json::object();
+  addIfChanged(
+    imagePlaneLighting,
+    "ambient",
+    settings.m_imagePlaneLightingAmbient,
+    defaults.m_imagePlaneLightingAmbient);
+  addIfChanged(
+    imagePlaneLighting,
+    "diffuse",
+    settings.m_imagePlaneLightingDiffuse,
+    defaults.m_imagePlaneLightingDiffuse);
+  addIfChanged(
+    imagePlaneLighting,
+    "specular",
+    settings.m_imagePlaneLightingSpecular,
+    defaults.m_imagePlaneLightingSpecular);
+  addIfChanged(
+    imagePlaneLighting,
+    "specularPower",
+    settings.m_imagePlaneLightingSpecularPower,
+    defaults.m_imagePlaneLightingSpecularPower);
+  const bool globalLightingDiffers = settings.m_lightingAmbient != defaults.m_lightingAmbient ||
+                                     settings.m_lightingDiffuse != defaults.m_lightingDiffuse ||
+                                     settings.m_lightingSpecular != defaults.m_lightingSpecular ||
+                                     settings.m_lightingSpecularPower != defaults.m_lightingSpecularPower;
+  if (imagePlaneLighting.empty() && globalLightingDiffers) {
+    // Older projects implicitly shared global lighting with image planes. This schema marker distinguishes a new
+    // project that intentionally keeps the independent plane defaults without serializing those default values.
+    imagePlanes["lightingMode"] = "independent";
+  }
+  if (!imagePlaneLighting.empty()) {
+    imagePlanes["lighting"] = std::move(imagePlaneLighting);
+  }
   if (!imagePlanes.empty()) {
     j["imagePlanes"] = std::move(imagePlanes);
   }
@@ -493,6 +526,11 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
     defaults.m_crosshairs3DGlyphDiameterVoxelDiagonals);
   addIfChanged(
     j,
+    "crosshairsGlyphLengthVox",
+    settings.m_crosshairs3DGlyphLengthVoxelDiagonals,
+    defaults.m_crosshairs3DGlyphLengthVoxelDiagonals);
+  addIfChanged(
+    j,
     "cameraFrustumVisibleIn2DViews",
     settings.m_showThreeDCameraFrustumIn2DViews,
     defaults.m_showThreeDCameraFrustumIn2DViews);
@@ -510,6 +548,7 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
 
 void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
 {
+  bool hasImagePlaneLighting = false;
   if (const auto value = j.find("transparentBackground"); value != j.end() && value->is_boolean()) {
     settings.m_transparentBackground = value->get<bool>();
   }
@@ -517,6 +556,7 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     settings.m_imageBoxVisible = value->get<bool>();
   }
   if (const auto imagePlanes = j.find("imagePlanes"); imagePlanes != j.end() && imagePlanes->is_object()) {
+    hasImagePlaneLighting = imagePlanes->value("lightingMode", "") == "independent";
     if (const auto value = imagePlanes->find("visible"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlanesVisible = value->get<bool>();
     }
@@ -525,6 +565,21 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     }
     if (const auto value = imagePlanes->find("shading"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlaneShading = value->get<bool>();
+    }
+    if (const auto lighting = imagePlanes->find("lighting"); lighting != imagePlanes->end() && lighting->is_object()) {
+      hasImagePlaneLighting = true;
+      if (const auto value = lighting->find("ambient"); value != lighting->end() && value->is_number()) {
+        settings.m_imagePlaneLightingAmbient = std::clamp(value->get<float>(), 0.0f, 2.0f);
+      }
+      if (const auto value = lighting->find("diffuse"); value != lighting->end() && value->is_number()) {
+        settings.m_imagePlaneLightingDiffuse = std::clamp(value->get<float>(), 0.0f, 2.0f);
+      }
+      if (const auto value = lighting->find("specular"); value != lighting->end() && value->is_number()) {
+        settings.m_imagePlaneLightingSpecular = std::clamp(value->get<float>(), 0.0f, 2.0f);
+      }
+      if (const auto value = lighting->find("specularPower"); value != lighting->end() && value->is_number()) {
+        settings.m_imagePlaneLightingSpecularPower = std::clamp(value->get<float>(), 1.0f, 128.0f);
+      }
     }
   }
   if (const auto lighting = j.find("lighting"); lighting != j.end() && lighting->is_object()) {
@@ -541,11 +596,20 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
       settings.m_lightingSpecularPower = std::clamp(value->get<float>(), 1.0f, 128.0f);
     }
   }
+  if (!hasImagePlaneLighting) {
+    settings.m_imagePlaneLightingAmbient = settings.m_lightingAmbient;
+    settings.m_imagePlaneLightingDiffuse = settings.m_lightingDiffuse;
+    settings.m_imagePlaneLightingSpecular = settings.m_lightingSpecular;
+    settings.m_imagePlaneLightingSpecularPower = settings.m_lightingSpecularPower;
+  }
   if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();
   }
   if (const auto value = j.find("crosshairsGlyphDiameterVox"); value != j.end() && value->is_number()) {
     settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
+  }
+  if (const auto value = j.find("crosshairsGlyphLengthVox"); value != j.end() && value->is_number()) {
+    settings.m_crosshairs3DGlyphLengthVoxelDiagonals = std::clamp(value->get<float>(), 1.0f, 50.0f);
   }
   if (const auto value = j.find("cameraFrustumVisibleIn2DViews"); value != j.end() && value->is_boolean()) {
     settings.m_showThreeDCameraFrustumIn2DViews = value->get<bool>();
@@ -622,12 +686,13 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
 
   json ambientOcclusion = json::object();
   addIfChanged(ambientOcclusion, "enabled", settings.m_ambientOcclusionEnabled, defaults.m_ambientOcclusionEnabled);
+  addIfChanged(ambientOcclusion, "radiusMm", settings.m_ambientOcclusionRadiusMm, defaults.m_ambientOcclusionRadiusMm);
+  addIfChanged(ambientOcclusion, "strength", settings.m_ambientOcclusionStrength, defaults.m_ambientOcclusionStrength);
   addIfChanged(
     ambientOcclusion,
-    "radiusPixels",
-    settings.m_ambientOcclusionRadiusPixels,
-    defaults.m_ambientOcclusionRadiusPixels);
-  addIfChanged(ambientOcclusion, "strength", settings.m_ambientOcclusionStrength, defaults.m_ambientOcclusionStrength);
+    "sampleCount",
+    settings.m_ambientOcclusionSampleCount,
+    defaults.m_ambientOcclusionSampleCount);
   addIfNotEmpty(j, "ambientOcclusion", std::move(ambientOcclusion));
 }
 
@@ -686,13 +751,22 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
     if (const auto value = ambientOcclusion->find("enabled"); value != ambientOcclusion->end() && value->is_boolean()) {
       settings.m_ambientOcclusionEnabled = value->get<bool>();
     }
-    if (const auto value = ambientOcclusion->find("radiusPixels");
-        value != ambientOcclusion->end() && value->is_number())
+    if (const auto value = ambientOcclusion->find("radiusMm"); value != ambientOcclusion->end() && value->is_number()) {
+      settings.m_ambientOcclusionRadiusMm = std::clamp(value->get<float>(), 0.1f, 1000.0f);
+    }
+    else if (const auto legacy = ambientOcclusion->find("radiusPixels");
+             legacy != ambientOcclusion->end() && legacy->is_number())
     {
-      settings.m_ambientOcclusionRadiusPixels = std::clamp(value->get<float>(), 1.0f, 128.0f);
+      // Legacy projects used a screen-space radius. Preserve the numeric value as a conservative physical radius.
+      settings.m_ambientOcclusionRadiusMm = std::clamp(legacy->get<float>(), 0.1f, 1000.0f);
     }
     if (const auto value = ambientOcclusion->find("strength"); value != ambientOcclusion->end() && value->is_number()) {
       settings.m_ambientOcclusionStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = ambientOcclusion->find("sampleCount");
+        value != ambientOcclusion->end() && value->is_number_unsigned())
+    {
+      settings.m_ambientOcclusionSampleCount = std::clamp(value->get<uint32_t>(), 8u, 64u);
     }
   }
 }
@@ -902,16 +976,17 @@ void to_json(json& j, const EntropyProject& project)
   json rendering = json::object();
   json comparison = project.m_comparison;
   addIfNotEmpty(rendering, "comparison", std::move(comparison));
-  json threeD = project.m_threeDRendering;
-  addIfNotEmpty(rendering, "threeD", std::move(threeD));
-  json raycasting = project.m_raycasting;
-  addIfNotEmpty(rendering, "raycasting", std::move(raycasting));
   json mesh = project.m_meshRendering;
   json dualDepthPeeling = json::object();
   if (const auto ddp = mesh.find("dualDepthPeeling"); ddp != mesh.end()) {
     dualDepthPeeling = *ddp;
     mesh.erase(ddp);
   }
+  addIfNotEmpty(rendering, "dualDepthPeeling", std::move(dualDepthPeeling));
+  json threeD = project.m_threeDRendering;
+  addIfNotEmpty(rendering, "threeD", std::move(threeD));
+  json raycasting = project.m_raycasting;
+  addIfNotEmpty(rendering, "raycasting", std::move(raycasting));
   addIfNotEmpty(rendering, "mesh", std::move(mesh));
   json intensityProjection = project.m_intensityProjection;
   addIfNotEmpty(rendering, "intensityProjection", std::move(intensityProjection));
@@ -919,7 +994,6 @@ void to_json(json& j, const EntropyProject& project)
   addIfNotEmpty(rendering, "segmentation", std::move(segmentation));
   json isocontours = project.m_isocontours;
   addIfNotEmpty(rendering, "isocontours", std::move(isocontours));
-  addIfNotEmpty(rendering, "dualDepthPeeling", std::move(dualDepthPeeling));
   addIfNotEmpty(settings, "rendering", std::move(rendering));
   addIfNotEmpty(j, "settings", std::move(settings));
 

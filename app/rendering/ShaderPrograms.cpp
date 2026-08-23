@@ -151,6 +151,9 @@ void Rendering::createShaderPrograms()
   if (!createMeshAmbientOcclusionResolveProgram(m_meshAmbientOcclusionResolveProgram)) {
     throwDebug("Failed to create mesh ambient occlusion resolve program");
   }
+  if (!createMeshAmbientOcclusionFilterProgram(m_meshAmbientOcclusionFilterProgram)) {
+    throwDebug("Failed to create mesh ambient occlusion filter program");
+  }
   if (!createMeshImagePlaneGrayLinearProgram(m_meshImagePlaneGrayLinearProgram)) {
     throwDebug("Failed to create mesh image-plane grayscale program");
   }

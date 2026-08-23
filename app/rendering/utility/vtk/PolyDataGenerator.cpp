@@ -1,11 +1,6 @@
 #include "rendering/utility/vtk/PolyDataGenerator.h"
 
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/transform.hpp>
 
 #include <vtkAppendPolyData.h>
 #include <vtkCleanPolyData.h>
@@ -18,27 +13,6 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkTriangleFilter.h>
-
-#include <vnl/vnl_matrix_fixed.h>
-
-namespace
-{
-
-template<typename T>
-vnl_matrix_fixed<T, 4, 4> convertMatrix_GLM_to_VNL(const glm::mat<4, 4, T, glm::highp>& m)
-{
-  // Construct row-wise with data from R'
-  return vnl_matrix_fixed<T, 4, 4>(glm::value_ptr(glm::transpose(m)));
-}
-
-vnl_matrix_fixed<double, 4, 4> constructCylinderRotationMatrix()
-{
-  /// @note GLM 0.9.4 docs incorrectly say that angle should be expressed in degrees
-  static const glm::dmat4 R_glm = glm::rotate(glm::half_pi<float>(), glm::vec3{1.0f, 0.0f, 0.0f});
-  return convertMatrix_GLM_to_VNL(R_glm);
-}
-
-} // anonymous namespace
 
 namespace vtkutils
 {
@@ -56,7 +30,7 @@ vtkSmartPointer<vtkPolyData> generateCone()
   vtkNew<vtkCleanPolyData> cleanFilter;
   vtkNew<vtkPolyDataNormals> normalsGenerator;
 
-  rotationTx->SetMatrix(constructCylinderRotationMatrix().data_block());
+  rotationTx->RotateX(90.0);
 
   appendFilter->AddInputConnection(coneSource->GetOutputPort());
 
@@ -117,7 +91,7 @@ vtkSmartPointer<vtkPolyData> generateCylinder(const glm::dvec3& center, double r
   vtkNew<vtkCleanPolyData> cleanFilter;
   vtkNew<vtkPolyDataNormals> normalsGenerator;
 
-  rotationTx->SetMatrix(constructCylinderRotationMatrix().data_block());
+  rotationTx->RotateX(90.0);
 
   appendFilter->AddInputConnection(cylinderSource->GetOutputPort());
 
@@ -188,7 +162,7 @@ vtkSmartPointer<vtkPolyData> generatePointyCylinders(double coneToCylinderLength
   vtkNew<vtkCleanPolyData> cleanFilter;
   vtkNew<vtkPolyDataNormals> normalsGenerator;
 
-  rotationTx->SetMatrix(constructCylinderRotationMatrix().data_block());
+  rotationTx->RotateX(90.0);
 
   appendFilter->AddInputConnection(coneSource1->GetOutputPort());
   appendFilter->AddInputConnection(coneSource2->GetOutputPort());

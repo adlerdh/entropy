@@ -616,6 +616,26 @@ TEST_CASE("mesh DDP policy clamps peel pass counts", "[rendering][mesh]")
   CHECK(mesh::meshDdpPlanForRenderList(list, {.maxPeelPasses = 40}).peelPasses == 32);
 }
 
+TEST_CASE("mesh DDP remains active when image planes are its only renderables", "[rendering][mesh][ddp]")
+{
+  const mesh::MeshRenderList emptyList;
+  const mesh::MeshDdpSettings settings{};
+  const mesh::MeshDdpPlan emptyPlan = mesh::meshDdpPlanForRenderList(emptyList, settings);
+  REQUIRE_FALSE(emptyPlan.active);
+
+  const mesh::MeshDdpPlan imagePlanesOnly = mesh::meshDdpPlanWithExtraRenderables(emptyPlan, settings, 3u);
+  CHECK(imagePlanesOnly.active);
+  CHECK(imagePlanesOnly.untilComplete);
+  CHECK(imagePlanesOnly.peelPasses == 8u);
+  CHECK(imagePlanesOnly.renderableCount == 3u);
+
+  const mesh::MeshDdpPlan disabled =
+    mesh::meshDdpPlanWithExtraRenderables(emptyPlan, mesh::MeshDdpSettings{.enabled = false}, 3u);
+  CHECK_FALSE(disabled.active);
+  CHECK(disabled.peelPasses == 0u);
+  CHECK(disabled.renderableCount == 3u);
+}
+
 TEST_CASE("mesh DDP adaptive peeling stops on completion or its safety limit", "[rendering][mesh]")
 {
   const mesh::MeshDdpPlan adaptivePlan{.active = true, .untilComplete = true, .peelPasses = 8, .renderableCount = 1};
@@ -665,6 +685,9 @@ TEST_CASE("mesh advanced lighting is disabled by default", "[rendering][mesh]")
 
   CHECK(plan.shadows.state == mesh::MeshAdvancedLightingFeatureState::Disabled);
   CHECK(plan.ambientOcclusion.state == mesh::MeshAdvancedLightingFeatureState::Disabled);
+  CHECK(plan.ambientOcclusion.radiusMm == Catch::Approx(5.0f));
+  CHECK(plan.ambientOcclusion.strength == Catch::Approx(0.5f));
+  CHECK(plan.ambientOcclusion.sampleCount == 24);
   CHECK_FALSE(mesh::isRequestedButUnavailable(plan.shadows.state));
   CHECK_FALSE(mesh::isRequestedButUnavailable(plan.ambientOcclusion.state));
 }
@@ -710,7 +733,7 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   lowSettings.shadows.mapSizePixels = 1;
   lowSettings.shadows.strength = -4.0f;
   lowSettings.shadows.depthBias = -1.0f;
-  lowSettings.ambientOcclusion.radiusPixels = -2.0f;
+  lowSettings.ambientOcclusion.radiusMm = -2.0f;
   lowSettings.ambientOcclusion.strength = -1.0f;
   lowSettings.ambientOcclusion.sampleCount = 0;
 
@@ -718,15 +741,15 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   CHECK(lowPlan.shadows.mapSizePixels == 128);
   CHECK(lowPlan.shadows.strength == 0.0f);
   CHECK(lowPlan.shadows.depthBias == 0.0f);
-  CHECK(lowPlan.ambientOcclusion.radiusPixels == Catch::Approx(1.0f));
+  CHECK(lowPlan.ambientOcclusion.radiusMm == Catch::Approx(0.1f));
   CHECK(lowPlan.ambientOcclusion.strength == 0.0f);
-  CHECK(lowPlan.ambientOcclusion.sampleCount == 1);
+  CHECK(lowPlan.ambientOcclusion.sampleCount == 8);
 
   mesh::MeshAdvancedLightingSettings highSettings;
   highSettings.shadows.mapSizePixels = 65536;
   highSettings.shadows.strength = 4.0f;
   highSettings.shadows.depthBias = 1.0f;
-  highSettings.ambientOcclusion.radiusPixels = 2000.0f;
+  highSettings.ambientOcclusion.radiusMm = 2000.0f;
   highSettings.ambientOcclusion.strength = 2.0f;
   highSettings.ambientOcclusion.sampleCount = 1024;
 
@@ -734,9 +757,9 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   CHECK(highPlan.shadows.mapSizePixels == 8192);
   CHECK(highPlan.shadows.strength == 1.0f);
   CHECK(highPlan.shadows.depthBias == Catch::Approx(0.1f));
-  CHECK(highPlan.ambientOcclusion.radiusPixels == Catch::Approx(128.0f));
+  CHECK(highPlan.ambientOcclusion.radiusMm == Catch::Approx(1000.0f));
   CHECK(highPlan.ambientOcclusion.strength == 1.0f);
-  CHECK(highPlan.ambientOcclusion.sampleCount == 128);
+  CHECK(highPlan.ambientOcclusion.sampleCount == 64);
 }
 
 TEST_CASE("isosurface renderable factory preserves style and enables triangle picking", "[rendering][mesh]")
@@ -815,55 +838,54 @@ TEST_CASE("mesh crosshairs glyph policy disables invalid or redundant glyphs", "
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
      .diameterVoxelDiagonals = 2.0f,
-     .voxelDiagonalWorld = 3.0f,
-     .color = glm::vec4{1.0f}}));
+     .lengthVoxelDiagonals = 8.0f,
+     .voxelDiagonalWorld = 3.0f}));
 
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = false,
      .cameraFollowsCrosshairs = false,
      .diameterVoxelDiagonals = 2.0f,
-     .voxelDiagonalWorld = 3.0f,
-     .color = glm::vec4{1.0f}}));
+     .lengthVoxelDiagonals = 8.0f,
+     .voxelDiagonalWorld = 3.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = true,
      .diameterVoxelDiagonals = 2.0f,
-     .voxelDiagonalWorld = 3.0f,
-     .color = glm::vec4{1.0f}}));
+     .lengthVoxelDiagonals = 8.0f,
+     .voxelDiagonalWorld = 3.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
      .diameterVoxelDiagonals = 0.0f,
-     .voxelDiagonalWorld = 3.0f,
-     .color = glm::vec4{1.0f}}));
+     .lengthVoxelDiagonals = 8.0f,
+     .voxelDiagonalWorld = 3.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
      .diameterVoxelDiagonals = 2.0f,
-     .voxelDiagonalWorld = 0.0f,
-     .color = glm::vec4{1.0f}}));
+     .lengthVoxelDiagonals = 8.0f,
+     .voxelDiagonalWorld = 0.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
      .diameterVoxelDiagonals = 2.0f,
-     .voxelDiagonalWorld = 3.0f,
-     .color = glm::vec4{1.0f, 1.0f, 1.0f, 0.0f}}));
+     .lengthVoxelDiagonals = 0.0f,
+     .voxelDiagonalWorld = 3.0f}));
 }
 
-TEST_CASE("mesh crosshairs glyph style converts voxel-diameter units to world radius", "[rendering][mesh]")
+TEST_CASE("mesh crosshairs glyph style converts voxel units to physical dimensions", "[rendering][mesh]")
 {
   const mesh::MeshCrosshairsGlyphInputs inputs{
     .showCrosshairsIn3D = true,
     .cameraFollowsCrosshairs = false,
     .diameterVoxelDiagonals = 2.0f,
-    .voxelDiagonalWorld = 3.0f,
-    .color = glm::vec4{0.1f, 0.2f, 0.3f, 0.4f}};
+    .lengthVoxelDiagonals = 8.0f,
+    .voxelDiagonalWorld = 3.0f};
 
-  const mesh::MeshSphereGlyphStyle style = mesh::meshCrosshairsSphereGlyphStyle(inputs);
+  const mesh::MeshCrosshairsGlyphStyle style = mesh::meshCrosshairsGlyphStyle(inputs);
 
   CHECK(style.radiusWorld == Catch::Approx(3.0f));
-  CHECK(style.color == inputs.color);
-  CHECK(style.compositingMode == mesh::MeshCompositingMode::Opaque);
+  CHECK(style.halfLengthWorld == Catch::Approx(12.0f));
   CHECK(style.visible);
 }
 
@@ -1547,6 +1569,18 @@ TEST_CASE("scalar-grid isosurface extraction rejects invalid grids", "[rendering
   grid.dimensions = glm::uvec3{2, 2, 2};
   CHECK_FALSE(mesh::isValidScalarGrid(grid));
   CHECK_FALSE(mesh::generateIsoSurfaceMesh(grid, 0.5));
+}
+
+TEST_CASE("crosshairs axis generation creates a valid cylinder and cone mesh", "[rendering][mesh][crosshairs]")
+{
+  const std::optional<mesh::MeshData> axis = mesh::generateCrosshairsAxisMesh();
+
+  REQUIRE(axis);
+  CHECK(mesh::isValidMeshData(*axis));
+  CHECK(axis->coordinateSpace == mesh::MeshCoordinateSpace::World);
+  CHECK_FALSE(axis->positions.empty());
+  CHECK_FALSE(mesh::generateCrosshairsAxisMesh(0.0));
+  CHECK_FALSE(mesh::generateCrosshairsAxisMesh(1.01));
 }
 
 TEST_CASE("scalar-grid isosurface extraction creates a planar surface", "[rendering][mesh]")

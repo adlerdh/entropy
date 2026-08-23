@@ -402,12 +402,17 @@ serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData&
     .m_imagePlanesVisible = renderData.m_showImagePlanesIn3D,
     .m_imagePlaneViewAngleOpacity = renderData.m_modulateImagePlaneOpacityWithViewAngle,
     .m_imagePlaneShading = renderData.m_shadeImagePlanesIn3D,
+    .m_imagePlaneLightingAmbient = renderData.m_imagePlaneLightingAmbient,
+    .m_imagePlaneLightingDiffuse = renderData.m_imagePlaneLightingDiffuse,
+    .m_imagePlaneLightingSpecular = renderData.m_imagePlaneLightingSpecular,
+    .m_imagePlaneLightingSpecularPower = renderData.m_imagePlaneLightingSpecularPower,
     .m_lightingAmbient = renderData.m_lightingAmbient,
     .m_lightingDiffuse = renderData.m_lightingDiffuse,
     .m_lightingSpecular = renderData.m_lightingSpecular,
     .m_lightingSpecularPower = renderData.m_lightingSpecularPower,
     .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
     .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+    .m_crosshairs3DGlyphLengthVoxelDiagonals = renderData.m_crosshairs3DGlyphLengthVoxelDiagonals,
     .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
     .m_reverseThreeDRotateAboutEye = renderData.m_reverseThreeDRotateAboutEye,
     .m_threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor};
@@ -421,12 +426,17 @@ void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThre
   renderData.m_showImagePlanesIn3D = settings.m_imagePlanesVisible;
   renderData.m_modulateImagePlaneOpacityWithViewAngle = settings.m_imagePlaneViewAngleOpacity;
   renderData.m_shadeImagePlanesIn3D = settings.m_imagePlaneShading;
+  renderData.m_imagePlaneLightingAmbient = settings.m_imagePlaneLightingAmbient;
+  renderData.m_imagePlaneLightingDiffuse = settings.m_imagePlaneLightingDiffuse;
+  renderData.m_imagePlaneLightingSpecular = settings.m_imagePlaneLightingSpecular;
+  renderData.m_imagePlaneLightingSpecularPower = settings.m_imagePlaneLightingSpecularPower;
   renderData.m_lightingAmbient = settings.m_lightingAmbient;
   renderData.m_lightingDiffuse = settings.m_lightingDiffuse;
   renderData.m_lightingSpecular = settings.m_lightingSpecular;
   renderData.m_lightingSpecularPower = settings.m_lightingSpecularPower;
   renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
   renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
+  renderData.m_crosshairs3DGlyphLengthVoxelDiagonals = settings.m_crosshairs3DGlyphLengthVoxelDiagonals;
   renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
   renderData.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
   renderData.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
@@ -471,8 +481,9 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
     .m_shadowStrength = renderData.m_meshAdvancedLightingSettings.shadows.strength,
     .m_shadowDepthBias = renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
     .m_ambientOcclusionEnabled = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
-    .m_ambientOcclusionRadiusPixels = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels,
-    .m_ambientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength};
+    .m_ambientOcclusionRadiusMm = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm,
+    .m_ambientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
+    .m_ambientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount};
 }
 
 void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRenderingSettings& settings)
@@ -491,8 +502,9 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   renderData.m_meshAdvancedLightingSettings.shadows.strength = settings.m_shadowStrength;
   renderData.m_meshAdvancedLightingSettings.shadows.depthBias = settings.m_shadowDepthBias;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_ambientOcclusionEnabled;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels = settings.m_ambientOcclusionRadiusPixels;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm = settings.m_ambientOcclusionRadiusMm;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_ambientOcclusionStrength;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = settings.m_ambientOcclusionSampleCount;
 }
 
 serialize::ProjectIntensityProjectionSettings intensityProjectionSettings(const AppData& appData)

@@ -330,6 +330,14 @@ struct RenderData
 
   bool m_shadeImagePlanesIn3D; //!< Apply headlight Blinn-Phong shading to 3D image planes
 
+  float m_imagePlaneLightingAmbient; //!< Ambient term for 3D image-plane shading
+
+  float m_imagePlaneLightingDiffuse; //!< Diffuse term for 3D image-plane shading
+
+  float m_imagePlaneLightingSpecular; //!< Specular term for 3D image-plane shading
+
+  float m_imagePlaneLightingSpecularPower; //!< Specular exponent for 3D image-plane shading
+
   float m_lightingAmbient; //!< Ambient term for 3D ADS lighting
 
   float m_lightingDiffuse; //!< Diffuse term for 3D ADS lighting
@@ -360,6 +368,7 @@ struct RenderData
 
   /// Diameter of the 3D crosshairs glyph in image voxel-diagonal units.
   float m_crosshairs3DGlyphDiameterVoxelDiagonals;
+  float m_crosshairs3DGlyphLengthVoxelDiagonals; //!< Per-axis 3D crosshairs glyph length in voxel diagonals
 
   /// Whether the last-interacted 3D camera frustum is rendered as an overlay in 2D views.
   bool m_showThreeDCameraFrustumIn2DViews;

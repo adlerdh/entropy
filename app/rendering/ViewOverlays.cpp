@@ -59,10 +59,12 @@ bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
   return false;
 }
 
-bool canDrawFrustumForThreeDView(const AppData& appData, const View& view)
+bool canDrawFrustumForThreeDView(const View& view)
 {
-  return ViewType::ThreeD == view.viewType() && ViewRenderMode::VolumeRender == view.renderMode() &&
-         hasVisibleIsosurfaceForView(appData, view);
+  // A 3D camera exists independently of the current surface-rendering path. Image planes, segmentation meshes, and
+  // an otherwise empty 3D view must all remain valid frustum sources; requiring a visible isosurface made the setting
+  // appear broken whenever no isosurface mesh was present.
+  return ViewType::ThreeD == view.viewType() && ViewRenderMode::Disabled != view.renderMode();
 }
 
 bool suppressTwoDVectorOverlays(const View& view)
@@ -76,14 +78,14 @@ const View* activeThreeDFrustumSource(const AppData& appData)
   const std::optional<uuid>& lastInteractedViewUid = appData.renderData().m_lastInteractedThreeDViewUid;
   if (lastInteractedViewUid) {
     const View* view = windowData.getCurrentView(*lastInteractedViewUid);
-    if (view && canDrawFrustumForThreeDView(appData, *view)) {
+    if (view && canDrawFrustumForThreeDView(*view)) {
       return view;
     }
   }
 
   for (const uuid& viewUid : windowData.currentViewUids()) {
     const View* view = windowData.getCurrentView(viewUid);
-    if (view && canDrawFrustumForThreeDView(appData, *view)) {
+    if (view && canDrawFrustumForThreeDView(*view)) {
       return view;
     }
   }
@@ -219,15 +221,13 @@ void Rendering::renderVectorOverlays()
         const glm::vec3 planeNormal = helper::worldDirection(view->camera(), Directions::View::Front);
         const camera3d::FrustumSliceOverlay overlay =
           camera3d::frustumSliceOverlay(threeDFrustumSource->threeDCamera(), worldXhairsOffset, planeNormal);
-        if (!overlay.segments.empty()) {
-          drawThreeDCameraFrustumOverlay(
-            m_nvg,
-            miewportViewBounds,
-            windowVP,
-            *view,
-            overlay,
-            R.m_threeDCameraFrustumColor);
-        }
+        drawThreeDCameraFrustumOverlay(
+          m_nvg,
+          miewportViewBounds,
+          windowVP,
+          *view,
+          overlay,
+          R.m_threeDCameraFrustumColor);
       }
 
       const bool showCrosshairsInCurrentLayout =

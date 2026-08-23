@@ -73,6 +73,9 @@ public:
    */
   GLFrameBufferObject& occlusionFbo() noexcept;
 
+  /** @brief FBO used by the edge-preserving AO filter pass. */
+  GLFrameBufferObject& filteredOcclusionFbo() noexcept;
+
   /**
    * @brief Encoded normal texture from the geometry pass
    * @return Normal texture
@@ -90,6 +93,9 @@ public:
    * @return Ambient occlusion texture
    */
   GLTexture& occlusionTexture();
+
+  /** @brief Unfiltered AO texture produced by the hemisphere resolve pass. */
+  GLTexture& rawOcclusionTexture();
 
   /**
    * @brief Empty VAO for full-screen triangle shaders
@@ -110,10 +116,12 @@ private:
   bool m_initialized = false;
   std::optional<GLTexture> m_normalTexture;
   std::optional<GLTexture> m_depthTexture;
+  std::optional<GLTexture> m_rawOcclusionTexture;
   std::optional<GLTexture> m_occlusionTexture;
   GLVertexArrayObject m_fullScreenVao;
   GLFrameBufferObject m_geometryFbo;
   GLFrameBufferObject m_occlusionFbo;
+  GLFrameBufferObject m_filteredOcclusionFbo;
 };
 
 } // namespace rendering::mesh

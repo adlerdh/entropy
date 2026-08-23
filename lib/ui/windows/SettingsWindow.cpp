@@ -2175,12 +2175,64 @@ void render3DRenderingTab(RenderData& renderData)
 {
   ImGui::PushID("3d_rendering"); /*** PushID 3d_rendering ***/
 
-  ImGui::ColorEdit4("Background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
+  ImGui::ColorEdit4("3D view background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   ImGui::SameLine();
   helpMarker("Background color used by 3D views");
 
+  ImGui::Checkbox("Show 3D camera frustum in 2D views", &renderData.m_showThreeDCameraFrustumIn2DViews);
+  ImGui::SameLine();
+  helpMarker("Show the last-interacted 3D camera eye and frustum footprint in 2D views");
+
+  if (renderData.m_showThreeDCameraFrustumIn2DViews) {
+    ImGui::ColorEdit4(
+      "Camera frustum line color",
+      glm::value_ptr(renderData.m_threeDCameraFrustumColor),
+      k_colorAlphaEditFlags);
+    ImGui::SameLine();
+    helpMarker("Color used for the 3D camera eye dot and frustum lines in 2D views");
+  }
+
+  ImGui::Checkbox("Show image volume bounds", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
+  ImGui::SameLine();
+  helpMarker("Draw an outline around the full spatial extent of each visible image in 3D views");
+
+  ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
+  ImGui::SameLine();
+  helpMarker("Reverse drag direction for POV 3D rotation about the current eye position");
+
+  ImGui::Checkbox("Show crosshairs glyphs in 3D", &renderData.m_showCrosshairsIn3D);
+  ImGui::SameLine();
+  helpMarker("Render red, green, and blue axis meshes at the crosshairs position in mesh-rendered 3D views");
+
+  if (renderData.m_showCrosshairsIn3D) {
+    ImGui::DragFloat(
+      "Glyph diameter",
+      &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+      0.05f,
+      0.1f,
+      10.0f,
+      "%0.2f vox diag",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Cylinder diameter as a multiple of the current image voxel diagonal");
+
+    ImGui::DragFloat(
+      "Glyph axis length",
+      &renderData.m_crosshairs3DGlyphLengthVoxelDiagonals,
+      0.1f,
+      1.0f,
+      50.0f,
+      "%0.1f vox diag",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Length of each red, green, and blue axis as a multiple of the current image voxel diagonal");
+  }
+
   ImGui::Spacing();
   ImGui::SeparatorText("3D lighting");
+  disabledTextWrapped(
+    "3D surfaces use the Blinn-Phong shading model. These controls set the ambient, diffuse, and specular lighting "
+    "contributions and the sharpness of specular highlights.");
 
   const float lightingWidth = ImGui::CalcItemWidth();
   ImGui::PushItemWidth(lightingWidth);
@@ -2189,13 +2241,13 @@ void render3DRenderingTab(RenderData& renderData)
     renderData.m_lightingAmbient = std::clamp(renderData.m_lightingAmbient, 0.0f, 2.0f);
   }
   ImGui::SameLine();
-  helpMarker("Base brightness for Blinn-Phong lighting in 3D image planes, raycast isosurfaces, and mesh surfaces");
+  helpMarker("Base brightness for Blinn-Phong lighting on raycast isosurfaces and mesh surfaces");
 
   if (mySliderF32("Diffuse", &renderData.m_lightingDiffuse, 0.0f, 2.0f, "%0.2f")) {
     renderData.m_lightingDiffuse = std::clamp(renderData.m_lightingDiffuse, 0.0f, 2.0f);
   }
   ImGui::SameLine();
-  helpMarker("Brightness that increases as a 3D surface or image plane faces the camera");
+  helpMarker("Brightness that increases as a 3D surface faces the camera");
 
   if (mySliderF32("Specular", &renderData.m_lightingSpecular, 0.0f, 2.0f, "%0.2f")) {
     renderData.m_lightingSpecular = std::clamp(renderData.m_lightingSpecular, 0.0f, 2.0f);
@@ -2219,72 +2271,137 @@ void render3DRenderingTab(RenderData& renderData)
   helpMarker("Show orthogonal image planes through the current crosshairs in 3D views");
 
   ImGui::BeginDisabled(!renderData.m_showImagePlanesIn3D);
-  ImGui::Checkbox("Fade with view angle", &renderData.m_modulateImagePlaneOpacityWithViewAngle);
+  ImGui::Checkbox("Fade opacity with view angle", &renderData.m_modulateImagePlaneOpacityWithViewAngle);
   ImGui::SameLine();
   helpMarker("Make image planes more transparent as their plane becomes parallel to the camera direction");
 
-  ImGui::Checkbox("Blinn-Phong shading", &renderData.m_shadeImagePlanesIn3D);
+  ImGui::Checkbox("Image plane shading", &renderData.m_shadeImagePlanesIn3D);
   ImGui::SameLine();
-  helpMarker("Apply headlight shading to image planes so their orientation is easier to read in 3D");
+  helpMarker(
+    "Apply headlight shading to image planes using the Blinn-Phong model so their orientation is easier to read in "
+    "3D");
+
+  if (renderData.m_shadeImagePlanesIn3D) {
+    ImGui::PushID("image_plane_lighting");
+    if (mySliderF32("Ambient", &renderData.m_imagePlaneLightingAmbient, 0.0f, 2.0f, "%0.2f")) {
+      renderData.m_imagePlaneLightingAmbient = std::clamp(renderData.m_imagePlaneLightingAmbient, 0.0f, 2.0f);
+    }
+    if (mySliderF32("Diffuse", &renderData.m_imagePlaneLightingDiffuse, 0.0f, 2.0f, "%0.2f")) {
+      renderData.m_imagePlaneLightingDiffuse = std::clamp(renderData.m_imagePlaneLightingDiffuse, 0.0f, 2.0f);
+    }
+    if (mySliderF32("Specular", &renderData.m_imagePlaneLightingSpecular, 0.0f, 2.0f, "%0.2f")) {
+      renderData.m_imagePlaneLightingSpecular = std::clamp(renderData.m_imagePlaneLightingSpecular, 0.0f, 2.0f);
+    }
+    if (mySliderF32("Specular power", &renderData.m_imagePlaneLightingSpecularPower, 1.0f, 128.0f, "%0.1f")) {
+      renderData.m_imagePlaneLightingSpecularPower =
+        std::clamp(renderData.m_imagePlaneLightingSpecularPower, 1.0f, 128.0f);
+    }
+    ImGui::PopID();
+  }
   ImGui::EndDisabled();
-
-  ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
-  ImGui::SameLine();
-  helpMarker("Render a subtle outline of the visible image domain in 3D views");
-
-  ImGui::Spacing();
-  ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
-  ImGui::SameLine();
-  helpMarker("Reverse drag direction for POV 3D rotation about the current eye position");
-
-  ImGui::Spacing();
-  ImGui::Checkbox("Show crosshairs glyph in 3D", &renderData.m_showCrosshairsIn3D);
-  ImGui::SameLine();
-  helpMarker("Render a small depth-correct sphere at the crosshairs position in 3D views");
-
-  if (renderData.m_showCrosshairsIn3D) {
-    ImGui::DragFloat(
-      "Glyph diameter",
-      &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-      0.05f,
-      0.1f,
-      10.0f,
-      "%0.2f vox",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Sphere diameter as a multiple of the current image voxel diagonal");
-  }
-
-  ImGui::Spacing();
-  ImGui::Checkbox("Show 3D camera frustum in 2D views", &renderData.m_showThreeDCameraFrustumIn2DViews);
-  ImGui::SameLine();
-  helpMarker("Show the last-interacted 3D raycast camera eye and frustum footprint in 2D views");
-
-  if (renderData.m_showThreeDCameraFrustumIn2DViews) {
-    ImGui::ColorEdit4(
-      "Camera frustum line color",
-      glm::value_ptr(renderData.m_threeDCameraFrustumColor),
-      k_colorAlphaEditFlags);
-    ImGui::SameLine();
-    helpMarker("Color used for the 3D camera eye dot and frustum lines in 2D views");
-  }
 
   ImGui::PopID(); /*** PopID 3d_rendering ***/
 }
 
 /**
- * @brief Render the Mesh Rendering settings section contents.
+ * @brief Render the Surface Rendering settings section contents.
  */
 void renderMeshRenderingTab(RenderData& renderData)
 {
   ImGui::PushID("mesh_rendering"); /*** PushID mesh_rendering ***/
 
-  ImGui::Checkbox("Use mesh rendering when ready", &renderData.m_isosurfaceMeshRenderingEnabled);
+  disabledTextWrapped(
+    "Isosurfaces are rendered using raycasting while their values are being edited. Once editing is complete and "
+    "the surface mesh is ready, rendering automatically switches to the mesh.");
+
+  ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);
   ImGui::SameLine();
   helpMarker(
-    "Render committed opaque isosurfaces as extracted meshes when possible; raycasting is still used while editing");
+    "Double-click a visible surface in a 3D view to move the crosshairs to the selected point on that surface");
 
-  ImGui::BeginDisabled(!renderData.m_isosurfaceMeshRenderingEnabled);
+  ImGui::Checkbox("Clipping plane", &renderData.m_meshClipPlaneEnabled);
+  ImGui::SameLine();
+  helpMarker("Clip mesh surfaces against one world-space plane");
+  if (renderData.m_meshClipPlaneEnabled) {
+    ImGui::DragFloat4("Clip plane", glm::value_ptr(renderData.m_meshClipPlaneWorld), 0.1f, -10000.0f, 10000.0f);
+    ImGui::SameLine();
+    helpMarker("World-space plane as nx, ny, nz, d; visible points satisfy dot(n, position) + d >= 0");
+  }
+
+  ImGui::Checkbox("Shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
+  ImGui::SameLine();
+  helpMarker("Cast simple directional shadows from mesh-rendered surfaces");
+  if (renderData.m_meshAdvancedLightingSettings.shadows.enabled) {
+    int mapSizePixels = static_cast<int>(renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels);
+    if (ImGui::DragInt("Shadow map size", &mapSizePixels, 64.0f, 128, 8192, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
+      renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = static_cast<uint32_t>(mapSizePixels);
+    }
+    ImGui::SameLine();
+    helpMarker("Square depth texture size used for mesh shadows");
+
+    ImGui::DragFloat(
+      "Shadow strength",
+      &renderData.m_meshAdvancedLightingSettings.shadows.strength,
+      0.01f,
+      0.0f,
+      1.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Fraction of direct light removed in shadowed regions");
+
+    ImGui::DragFloat(
+      "Shadow depth bias",
+      &renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
+      0.0001f,
+      0.0f,
+      0.1f,
+      "%0.4f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Depth offset used to reduce self-shadowing artifacts");
+  }
+
+  ImGui::Checkbox("Ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
+  ImGui::SameLine();
+  helpMarker("Darken small screen-space creases and nearby mesh depth discontinuities");
+  if (renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled) {
+    ImGui::DragFloat(
+      "AO radius",
+      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm,
+      0.1f,
+      0.1f,
+      1000.0f,
+      "%0.1f mm",
+      ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+    ImGui::SameLine();
+    helpMarker("Physical radius of the view-space occlusion hemisphere around each opaque surface point");
+
+    ImGui::DragFloat(
+      "AO strength",
+      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
+      0.01f,
+      0.0f,
+      1.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Maximum darkening applied by mesh ambient occlusion");
+
+    int aoSampleCount = static_cast<int>(renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount);
+    if (ImGui::SliderInt("AO samples", &aoSampleCount, 8, 64, "%d", ImGuiSliderFlags_AlwaysClamp)) {
+      renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = static_cast<uint32_t>(aoSampleCount);
+    }
+    ImGui::SameLine();
+    helpMarker("Hemisphere samples per pixel. Higher values reduce noise but increase rendering cost");
+  }
+
+  ImGui::Checkbox("Use transparent raycast background", &renderData.m_3dTransparentIfNoHit);
+  ImGui::SameLine();
+  helpMarker(
+    "Show the underlying view background where a fallback ray does not hit the image volume. This does not change "
+    "surface opacity");
+
   int meshGenerationThreadCount = static_cast<int>(renderData.m_meshGenerationThreadCount);
   if (ImGui::InputInt("Mesh generation threads", &meshGenerationThreadCount)) {
     renderData.m_meshGenerationThreadCount = static_cast<uint32_t>(std::clamp(meshGenerationThreadCount, 0, 64));
@@ -2340,161 +2457,94 @@ void renderMeshRenderingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Compositing path used for translucent mesh surfaces");
 
-  ImGui::Checkbox("Mesh point picking", &renderData.m_meshPickingEnabled);
-  ImGui::SameLine();
-  helpMarker("Use ready mesh geometry for 3D double-click crosshairs placement before falling back to raycasting");
-
-  ImGui::Checkbox("Mesh clipping plane", &renderData.m_meshClipPlaneEnabled);
-  ImGui::SameLine();
-  helpMarker("Clip mesh surfaces against one world-space plane");
-  if (renderData.m_meshClipPlaneEnabled) {
-    ImGui::DragFloat4("Clip plane", glm::value_ptr(renderData.m_meshClipPlaneWorld), 0.1f, -10000.0f, 10000.0f);
-    ImGui::SameLine();
-    helpMarker("World-space plane as nx, ny, nz, d; visible points satisfy dot(n, position) + d >= 0");
-  }
-
-  ImGui::Checkbox("Mesh shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
-  ImGui::SameLine();
-  helpMarker("Cast simple directional shadows from mesh-rendered surfaces");
-  if (renderData.m_meshAdvancedLightingSettings.shadows.enabled) {
-    int mapSizePixels = static_cast<int>(renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels);
-    if (ImGui::DragInt("Shadow map size", &mapSizePixels, 64.0f, 128, 8192, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
-      renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = static_cast<uint32_t>(mapSizePixels);
-    }
-    ImGui::SameLine();
-    helpMarker("Square depth texture size used for mesh shadows");
-
-    ImGui::DragFloat(
-      "Shadow strength",
-      &renderData.m_meshAdvancedLightingSettings.shadows.strength,
-      0.01f,
-      0.0f,
-      1.0f,
-      "%0.2f",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Fraction of direct light removed in shadowed regions");
-
-    ImGui::DragFloat(
-      "Shadow depth bias",
-      &renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
-      0.0001f,
-      0.0f,
-      0.1f,
-      "%0.4f",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Depth offset used to reduce self-shadowing artifacts");
-  }
-
-  ImGui::Checkbox("Mesh ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
-  ImGui::SameLine();
-  helpMarker("Darken small screen-space creases and nearby mesh depth discontinuities");
-  if (renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled) {
-    ImGui::DragFloat(
-      "AO radius",
-      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusPixels,
-      0.25f,
-      1.0f,
-      128.0f,
-      "%0.1f px",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Screen-space sample radius used by mesh ambient occlusion");
-
-    ImGui::DragFloat(
-      "AO strength",
-      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
-      0.01f,
-      0.0f,
-      1.0f,
-      "%0.2f",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Maximum darkening applied by mesh ambient occlusion");
-  }
-  ImGui::EndDisabled();
-
   ImGui::PopID(); /*** PopID mesh_rendering ***/
-}
-
-/**
- * @brief Render the Raycasting settings section contents.
- */
-void renderRaycastingTab(RenderData& renderData)
-{
-  ImGui::PushID("raycasting"); /*** PushID raycasting ***/
-
-  ImGui::Checkbox("Use transparent raycast background", &renderData.m_3dTransparentIfNoHit);
-  ImGui::SameLine();
-  helpMarker(
-    "Show the underlying view background where a ray does not hit the image volume. This does not change the opacity "
-    "of raycast surfaces");
-
-  /// @todo if these are added to the uniforms, then we'll have update uniforms when they
-  /// change
-
-  static constexpr float k_factorStep = 0.1f;
-  static constexpr float k_minFactor = 0.5f;
-  static constexpr float k_maxFactor = 2.0f;
-
-  renderData.m_adaptiveRaycastSamplingEnabled = false;
-  renderData.m_raycastSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, k_minFactor, k_maxFactor);
-  if (ImGui::DragFloat(
-        "Raycast sampling rate",
-        &(renderData.m_raycastSamplingFactor),
-        k_factorStep,
-        k_minFactor,
-        k_maxFactor,
-        "%0.1f vox",
-        ImGuiSliderFlags_AlwaysClamp))
-  {
-    // Update uniforms if m_raycastSamplingFactor gets added to uniforms
-  }
-  ImGui::SameLine();
-  helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
-
-  // Should the front and back faces be rendered in 3D raycasting?
-  ImGui::Spacing();
-  ImGui::Checkbox("Render front faces", &renderData.m_renderFrontFaces);
-  ImGui::SameLine();
-  helpMarker("Render front faces in raycasting");
-
-  ImGui::Checkbox("Render back faces", &renderData.m_renderBackFaces);
-  ImGui::SameLine();
-  helpMarker("Render back faces in raycasting");
-
-  ImGui::Spacing();
-  ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-  ImGui::Text("Masking behavior:");
-
-  if (ImGui::RadioButton("Disable", RenderData::SegMaskingForRaycasting::Disabled == renderData.m_segMasking)) {
-    renderData.m_segMasking = RenderData::SegMaskingForRaycasting::Disabled;
-  }
-
-  ImGui::SameLine();
-  if (ImGui::RadioButton("Mask in", RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking)) {
-    renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksIn;
-  }
-
-  ImGui::SameLine();
-  if (ImGui::RadioButton("Mask out", RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking)) {
-    renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksOut;
-  }
-  ImGui::SameLine();
-  helpMarker(
-    "Controls how the active image segmentation affects 3D raycasting.\n\n"
-    "Disable: ignore segmentation values and raycast the full image volume.\n"
-    "Mask in: render only samples inside non-background segmentation labels.\n"
-    "Mask out: hide samples inside non-background segmentation labels and render the rest of the image");
-
-  ImGui::PopID(); /*** PopID raycasting ***/
 }
 
 /**
  * @brief Render the Rendering settings page contents.
  */
+void renderPerformanceAndQualityTab(RenderData& renderData)
+{
+  ImGui::SeparatorText("Frame rate");
+  ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
+  ImGui::SameLine();
+  helpMarker("Manually limit the rendering frame rate");
+
+  if (renderData.m_manualFramerateLimiter) {
+    constexpr float hzSpeed = 1.0e-1f;
+    constexpr double hzMin = 1.0;
+    constexpr double hzMax = 240.0;
+    constexpr float secSpeed = 1.0e-4f;
+    constexpr double secMin = 1.0 / hzMax;
+    constexpr double secMax = 1.0 / hzMin;
+
+    double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
+    if (ImGui::DragScalar(
+          "Frame rate",
+          ImGuiDataType_Double,
+          &hz,
+          hzSpeed,
+          &hzMin,
+          &hzMax,
+          "%.1f Hz",
+          ImGuiSliderFlags_ClampOnInput))
+    {
+      renderData.m_targetFrameTimeSeconds = 1.0 / hz;
+    }
+
+    double sec = renderData.m_targetFrameTimeSeconds;
+    if (ImGui::DragScalar(
+          "Frame period",
+          ImGuiDataType_Double,
+          &sec,
+          secSpeed,
+          &secMin,
+          &secMax,
+          "%.4f sec",
+          ImGuiSliderFlags_ClampOnInput))
+    {
+      renderData.m_targetFrameTimeSeconds = sec;
+    }
+  }
+
+  ImGui::Spacing();
+  ImGui::SeparatorText("Dual Depth Peeling");
+  disabledTextWrapped(
+    "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
+    "nearest and farthest remaining transparency layers.");
+
+  ImGui::Checkbox("Stop when all transparency layers are resolved", &renderData.m_meshDdpSettings.untilComplete);
+  ImGui::SameLine();
+  helpMarker(
+    "Automatically stop when no unresolved transparency layers remain. The maximum iteration count is still used "
+    "as a safety limit");
+
+  int maxPeelPasses = static_cast<int>(renderData.m_meshDdpSettings.maxPeelPasses);
+  if (ImGui::InputInt("Maximum dual-peel iterations", &maxPeelPasses)) {
+    renderData.m_meshDdpSettings.maxPeelPasses = static_cast<uint32_t>(std::clamp(maxPeelPasses, 1, 32));
+  }
+  ImGui::SameLine();
+  helpMarker("Maximum front/back peel iterations per frame. N iterations resolve up to 2N transparency layers");
+
+  ImGui::Spacing();
+  ImGui::SeparatorText("Sampling");
+  static constexpr float k_factorStep = 0.1f;
+  static constexpr float k_minFactor = 0.5f;
+  static constexpr float k_maxFactor = 2.0f;
+  renderData.m_adaptiveRaycastSamplingEnabled = false;
+  renderData.m_raycastSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, k_minFactor, k_maxFactor);
+  ImGui::DragFloat(
+    "Raycast sampling rate",
+    &renderData.m_raycastSamplingFactor,
+    k_factorStep,
+    k_minFactor,
+    k_maxFactor,
+    "%0.1f vox",
+    ImGuiSliderFlags_AlwaysClamp);
+  ImGui::SameLine();
+  helpMarker("Fallback ray-marching step as a fraction of voxel size. Smaller values improve fidelity but cost more");
+}
+
 void renderRenderingTab(RenderData& renderData)
 {
   RenderData& rd = renderData;
@@ -2505,13 +2555,7 @@ void renderRenderingTab(RenderData& renderData)
   }
   finishSettingsSection(threeDRenderingOpen);
 
-  const bool raycastingOpen = ImGui::CollapsingHeader("Raycasting", ImGuiTreeNodeFlags_DefaultOpen);
-  if (raycastingOpen) {
-    renderRaycastingTab(renderData);
-  }
-  finishSettingsSection(raycastingOpen);
-
-  const bool meshRenderingOpen = ImGui::CollapsingHeader("Mesh Rendering", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool meshRenderingOpen = ImGui::CollapsingHeader("Surface Rendering", ImGuiTreeNodeFlags_DefaultOpen);
   if (meshRenderingOpen) {
     renderMeshRenderingTab(renderData);
   }
@@ -2519,32 +2563,12 @@ void renderRenderingTab(RenderData& renderData)
 
   const bool isosurfacesOpen = ImGui::CollapsingHeader("Isosurfaces", ImGuiTreeNodeFlags_DefaultOpen);
   if (isosurfacesOpen) {
-    ImGui::Checkbox("Modulate opacity with image", &rd.m_modulateIsocontourOpacityWithImageOpacity);
-    ImGui::SameLine();
-    helpMarker("Modulate isocontour opacity with image opacity");
-  }
-  finishSettingsSection(isosurfacesOpen);
-
-  const bool dualDepthPeelingOpen = ImGui::CollapsingHeader("Dual Depth Peeling", ImGuiTreeNodeFlags_DefaultOpen);
-  if (dualDepthPeelingOpen) {
-    disabledTextWrapped(
-      "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
-      "nearest and farthest remaining transparency layers.");
-
-    ImGui::Checkbox("Stop when all transparency layers are resolved", &renderData.m_meshDdpSettings.untilComplete);
+    ImGui::Checkbox("Scale 2D isocontour opacity with image opacity", &rd.m_modulateIsocontourOpacityWithImageOpacity);
     ImGui::SameLine();
     helpMarker(
-      "Automatically stop when no unresolved transparency layers remain. The maximum iteration count is still used "
-      "as a safety limit");
-
-    int maxPeelPasses = static_cast<int>(renderData.m_meshDdpSettings.maxPeelPasses);
-    if (ImGui::InputInt("Maximum dual-peel iterations", &maxPeelPasses)) {
-      renderData.m_meshDdpSettings.maxPeelPasses = static_cast<uint32_t>(std::clamp(maxPeelPasses, 1, 32));
-    }
-    ImGui::SameLine();
-    helpMarker("Maximum front/back peel iterations per frame. N iterations resolve up to 2N transparency layers");
+      "Multiply 2D isocontour opacity by the source image opacity. This does not affect 3D isosurface opacity");
   }
-  finishSettingsSection(dualDepthPeelingOpen);
+  finishSettingsSection(isosurfacesOpen);
 
   const bool asciiOpen = ImGui::CollapsingHeader("ASCII Rendering", ImGuiTreeNodeFlags_DefaultOpen);
   if (asciiOpen) {
@@ -2604,51 +2628,11 @@ void renderRenderingTab(RenderData& renderData)
   }
   finishSettingsSection(asciiOpen);
 
-  const bool frameRateOpen = ImGui::CollapsingHeader("Frame Rate", ImGuiTreeNodeFlags_DefaultOpen);
-  if (frameRateOpen) {
-    ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
-    ImGui::SameLine();
-    helpMarker("Manually limit the rendering frame rate");
-
-    if (renderData.m_manualFramerateLimiter) {
-      constexpr float hzSpeed = 1.0e-1f;
-      constexpr double hzMin = 1.0;
-      constexpr double hzMax = 240.0;
-
-      constexpr float secSpeed = 1.0e-4f;
-      constexpr double secMin = 1.0 / hzMax;
-      constexpr double secMax = 1.0 / hzMin;
-
-      double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
-      if (ImGui::DragScalar(
-            "Frame rate",
-            ImGuiDataType_Double,
-            &hz,
-            hzSpeed,
-            &hzMin,
-            &hzMax,
-            "%.1f Hz",
-            ImGuiSliderFlags_ClampOnInput))
-      {
-        renderData.m_targetFrameTimeSeconds = 1.0 / hz;
-      }
-
-      double sec = renderData.m_targetFrameTimeSeconds;
-      if (ImGui::DragScalar(
-            "Frame period",
-            ImGuiDataType_Double,
-            &sec,
-            secSpeed,
-            &secMin,
-            &secMax,
-            "%.4f sec",
-            ImGuiSliderFlags_ClampOnInput))
-      {
-        renderData.m_targetFrameTimeSeconds = sec;
-      }
-    }
+  const bool performanceOpen = ImGui::CollapsingHeader("Performance & Quality", ImGuiTreeNodeFlags_DefaultOpen);
+  if (performanceOpen) {
+    renderPerformanceAndQualityTab(renderData);
   }
-  finishSettingsSection(frameRateOpen);
+  finishSettingsSection(performanceOpen);
 }
 
 /**

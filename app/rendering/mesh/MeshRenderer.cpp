@@ -208,7 +208,7 @@ void uploadShadowUniforms(const MeshDrawContext& context, GLShaderProgram& progr
 void uploadAmbientOcclusionUniforms(const MeshDrawContext& context, GLShaderProgram& program)
 {
   const bool enabled = ambientOcclusionActive(context);
-  program.setUniform("u_screenAmbientOcclusionEnabled", enabled);
+  program.setUniform("u_screenAmbientOcclusionEnabled", false);
   program.setUniform("u_screenAmbientOcclusionTex", static_cast<GLint>(k_ambientOcclusionTextureUnit));
   program.setUniform("u_viewportOrigin", context.viewportOrigin);
   if (enabled) {
@@ -306,6 +306,9 @@ void MeshRenderer::drawBucket(
     program.setUniform("u_world_T_mesh", renderable.world_T_mesh);
     program.setUniform("u_world_T_meshNormal", world_T_meshNormal);
     const MeshMaterial material = sanitizedMaterial(renderable.material, context.fallbackColor);
+    program.setUniform(
+      "u_screenAmbientOcclusionEnabled",
+      ambientOcclusionActive(context) && renderable.compositingMode == MeshCompositingMode::Opaque);
     program.setUniform("u_baseColor", material.baseColor);
     program.setUniform("u_metallic", material.metallic);
     program.setUniform("u_roughness", material.roughness);

@@ -175,6 +175,7 @@ void AsciiRenderer::registerShaderPrograms(
   fsAsciiPostUniforms.insertUniform("u_cellMeanTex", UniformType::Sampler, Uniforms::SamplerIndexType{4});
   fsAsciiPostUniforms.insertUniform("u_asciiAtlas", UniformType::Sampler, sk_asciiAtlasSampler);
   fsAsciiPostUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostUniforms.insertUniform("u_sceneOriginPx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostUniforms.insertUniform("u_asciiCellSizePx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostUniforms.insertUniform("u_asciiGlyphCount", UniformType::Int, 0);
   fsAsciiPostUniforms.insertUniform("u_asciiFgColor", UniformType::Vec3, glm::vec3{1.f});
@@ -197,6 +198,7 @@ void AsciiRenderer::registerShaderPrograms(
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiAtlas", UniformType::Sampler, sk_asciiAtlasSampler);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiLumLut", UniformType::Sampler, Uniforms::SamplerIndexType{6});
   fsAsciiPostSpatialUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostSpatialUniforms.insertUniform("u_sceneOriginPx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiCellSizePx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiGlyphCount", UniformType::Int, 0);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiFgColor", UniformType::Vec3, glm::vec3{1.f});
@@ -299,8 +301,8 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
   }
 
   const glm::vec4 clip = view.windowClipViewport();
-  const float sceneX = (clip[0] * 0.5f + 0.5f) * deviceVP[2];
-  const float sceneY = (clip[1] * 0.5f + 0.5f) * deviceVP[3];
+  const float sceneX = deviceVP[0] + (clip[0] * 0.5f + 0.5f) * deviceVP[2];
+  const float sceneY = deviceVP[1] + (clip[1] * 0.5f + 0.5f) * deviceVP[3];
   const float sceneW = clip[2] * 0.5f * deviceVP[2];
   const float sceneH = clip[3] * 0.5f * deviceVP[3];
 
@@ -597,13 +599,14 @@ void AsciiRenderer::render(
   const Viewport& windowVP = m_appData.windowData().viewport();
   const glm::vec4 deviceVP = windowVP.getDeviceAsVec4();
   const glm::vec4 logicalVP = windowVP.getAsVec4();
-  const glm::ivec2 deviceSize{static_cast<int>(deviceVP[2]), static_cast<int>(deviceVP[3])};
+  const glm::ivec2 sceneSize = m_appData.windowData().getFramebufferSize();
+  const glm::vec2 sceneSizePx{sceneSize};
   const glm::vec2 viewSizePx{static_cast<float>(deviceVP[2]), static_cast<float>(deviceVP[3])};
   const glm::vec2 dpr{
     (logicalVP[2] > 0.0f) ? (deviceVP[2] / logicalVP[2]) : 1.0f,
     (logicalVP[3] > 0.0f) ? (deviceVP[3] / logicalVP[3]) : 1.0f};
 
-  ensureSceneFboSize(deviceSize);
+  ensureSceneFboSize(sceneSize);
 
   // Lock cell width to atlas slot aspect ratio
   {
@@ -615,7 +618,7 @@ void AsciiRenderer::render(
   }
 
   const glm::vec2 cellPxDev = m_appData.renderData().m_asciiCellSizePx * dpr;
-  ensureAsciiCellFbo(deviceSize, cellPxDev);
+  ensureAsciiCellFbo(sceneSize, cellPxDev);
 
   // Rebuild coverage LUT if cell size changed
   if (cellPxDev != m_asciiLumLutCellPx && m_asciiAtlas.glyphCount() > 0) {
@@ -780,13 +783,17 @@ void AsciiRenderer::render(
 
   // PASS 1: Render all views into scene FBO
   m_sceneFbo.bind(fbo::TargetType::Draw);
-  glViewport(0, 0, static_cast<GLsizei>(deviceVP[2]), static_cast<GLsizei>(deviceVP[3]));
+  glViewport(
+    static_cast<GLint>(deviceVP[0]),
+    static_cast<GLint>(deviceVP[1]),
+    static_cast<GLsizei>(deviceVP[2]),
+    static_cast<GLsizei>(deviceVP[3]));
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   for (const auto& vd : viewDataList) {
     glEnable(GL_SCISSOR_TEST);
-    glScissor(vd.sceneX, vd.sceneY, vd.width, vd.height);
+    glScissor(vd.windowX, vd.windowY, vd.width, vd.height);
     drawImages(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
     glDisable(GL_SCISSOR_TEST);
   }
@@ -806,7 +813,7 @@ void AsciiRenderer::render(
 
   asciiCellMeanProg.use();
   asciiCellMeanProg.setSamplerUniform("u_sceneTex", 3);
-  asciiCellMeanProg.setUniform("u_viewSizePx", viewSizePx);
+  asciiCellMeanProg.setUniform("u_viewSizePx", sceneSizePx);
   asciiCellMeanProg.setUniform("u_cellSizePx", cellPxDev);
   m_asciiPostVao.bind();
   glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -823,7 +830,7 @@ void AsciiRenderer::render(
 
     asciiCellRegionsProg.use();
     asciiCellRegionsProg.setSamplerUniform("u_sceneTex", 3);
-    asciiCellRegionsProg.setUniform("u_viewSizePx", viewSizePx);
+    asciiCellRegionsProg.setUniform("u_viewSizePx", sceneSizePx);
     asciiCellRegionsProg.setUniform("u_cellSizePx", cellPxDev);
     asciiCellRegionsProg.setUniform("u_cellSizePxInt", glm::ivec2(glm::round(cellPxDev)));
     m_asciiPostVao.bind();
@@ -872,6 +879,7 @@ void AsciiRenderer::render(
     }
     asciiPostSpatialProg.setSamplerUniform("u_cellRegionsTexB", 7);
     asciiPostSpatialProg.setUniform("u_viewSizePx", viewSizePx);
+    asciiPostSpatialProg.setUniform("u_sceneOriginPx", glm::vec2{deviceVP[0], deviceVP[1]});
     asciiPostSpatialProg.setUniform("u_asciiCellSizePx", cellPxDev);
     const int safeN = std::min(m_asciiAtlas.glyphCount(), AsciiAtlas::kMaxGlyphs);
     asciiPostSpatialProg.setUniform("u_asciiGlyphCount", safeN);
@@ -978,6 +986,7 @@ void AsciiRenderer::render(
       asciiPostProg.setSamplerUniform("u_asciiLumLut", 5);
     }
     asciiPostProg.setUniform("u_viewSizePx", viewSizePx);
+    asciiPostProg.setUniform("u_sceneOriginPx", glm::vec2{deviceVP[0], deviceVP[1]});
     asciiPostProg.setUniform("u_asciiCellSizePx", cellPxDev);
     asciiPostProg.setUniform("u_asciiGlyphCount", m_asciiAtlas.glyphCount());
     asciiPostProg.setUniform("u_asciiFgColor", R.m_asciiFgColor);

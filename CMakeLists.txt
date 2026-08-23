@@ -455,6 +455,7 @@ set(entropy_VTK_COMPONENTS
   CommonExecutionModel
   FiltersCore
   FiltersGeneral
+  FiltersSources
 )
 
 find_package(VTK ${vtk_VERSION} REQUIRED COMPONENTS ${entropy_VTK_COMPONENTS}
@@ -723,8 +724,8 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/helpers/TextureSetupHelpers.cpp"
   "${entropy_APP_DIR}/rendering/helpers/VectorDrawingHelpers.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshAdvancedLighting.cpp"
-  "${entropy_APP_DIR}/rendering/mesh/MeshAmbientOcclusionPass.cpp"
-  "${entropy_APP_DIR}/rendering/mesh/MeshAmbientOcclusionResources.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/AmbientOcclusionPass.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/AmbientOcclusionResources.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshBounds.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshCache.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshClipPlaneScene.cpp"
@@ -738,6 +739,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionQueue.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionRunner.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGeneration.cpp"
+  "${entropy_APP_DIR}/rendering/utility/vtk/PolyDataGenerator.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGpuData.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGpuStore.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGpuSync.cpp"
@@ -918,8 +920,9 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/Metric.vs"
   "${entropy_APP_DIR}/rendering/shaders/MetricWarped.vs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/FullScreenTriangle.vs"
-  "${entropy_APP_DIR}/rendering/shaders/mesh/MeshAmbientOcclusionGeometry.fs"
-  "${entropy_APP_DIR}/rendering/shaders/mesh/MeshAmbientOcclusionResolve.fs"
+  "${entropy_APP_DIR}/rendering/shaders/mesh/AmbientOcclusionGeometry.fs"
+  "${entropy_APP_DIR}/rendering/shaders/mesh/AmbientOcclusionFilter.fs"
+  "${entropy_APP_DIR}/rendering/shaders/mesh/AmbientOcclusionResolve.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlane.vs"

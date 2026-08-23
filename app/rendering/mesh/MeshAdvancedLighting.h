@@ -43,9 +43,9 @@ struct MeshShadowSettings
 struct MeshAmbientOcclusionSettings
 {
   bool enabled = false;      //!< Request an ambient occlusion pass
-  float radiusPixels = 8.0f; //!< Screen-space occlusion sample radius in pixels
+  float radiusMm = 5.0f;     //!< View-space hemisphere radius in physical world millimetres
   float strength = 0.5f;     //!< Occlusion contribution in [0, 1]
-  uint32_t sampleCount = 16; //!< Requested number of AO samples
+  uint32_t sampleCount = 24; //!< Requested number of AO hemisphere samples
 };
 
 /**
@@ -74,9 +74,9 @@ struct MeshShadowPlan
 struct MeshAmbientOcclusionPlan
 {
   MeshAdvancedLightingFeatureState state = MeshAdvancedLightingFeatureState::Disabled; //!< AO pass state
-  float radiusPixels = 8.0f;                                                           //!< Sanitized radius in pixels
-  float strength = 0.5f;                                                               //!< Sanitized AO strength
-  uint32_t sampleCount = 16;                                                           //!< Sanitized AO sample count
+  float radiusMm = 5.0f;     //!< Sanitized physical radius in millimetres
+  float strength = 0.5f;     //!< Sanitized AO strength
+  uint32_t sampleCount = 24; //!< Sanitized AO sample count
 };
 
 /**

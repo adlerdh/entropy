@@ -24,6 +24,9 @@ namespace rendering::mesh
 struct MeshDrawContext
 {
   glm::mat4 clip_T_world = glm::mat4{1.0f};                        //!< Transform from world to clip coordinates
+  glm::mat4 clip_T_camera = glm::mat4{1.0f};                       //!< Camera projection transform
+  glm::mat4 camera_T_clip = glm::mat4{1.0f};                       //!< Inverse camera projection transform
+  glm::mat4 camera_T_world = glm::mat4{1.0f};                      //!< Transform from world to camera coordinates
   glm::vec3 cameraWorldPosition = glm::vec3{0.0f};                 //!< Camera eye position in world coordinates
   glm::vec3 cameraFrontWorld = glm::vec3{0.0f, 1.0f, 0.0f};        //!< Camera forward direction in world coordinates
   glm::vec3 lightDirectionWorld = glm::vec3{0.4f, 0.6f, 0.7f};     //!< Direction from the surface toward the light

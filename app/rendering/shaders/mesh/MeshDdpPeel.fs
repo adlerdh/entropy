@@ -43,12 +43,14 @@ const int kShadingModelSimpleLit = 1;
 const int kShadingModelPhysicallyBased = 2;
 const float kPi = 3.14159265359;
 
-vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection)
+vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
   vec3 halfVector = normalize(lightDirection + viewDirection);
   float diffuse = abs(dot(normal, lightDirection));
   float specular = pow(abs(dot(normal, halfVector)), max(u_lightingSpecularPower, 0.001));
-  return albedo * (u_lightingAmbient + u_lightingDiffuse * diffuse) + vec3(u_lightingSpecular * specular);
+  vec3 ambient = albedo * u_lightingAmbient * ao;
+  vec3 direct = albedo * u_lightingDiffuse * diffuse + vec3(u_lightingSpecular * specular);
+  return ambient + direct * shadow;
 }
 
 float distributionGgx(vec3 normal, vec3 halfVector, float roughness)
@@ -73,7 +75,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 f0)
   return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection)
+vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
   vec3 halfVector = normalize(lightDirection + viewDirection);
   float nDotL = max(dot(normal, lightDirection), 0.0);
@@ -87,8 +89,8 @@ vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 vi
 
   vec3 specular = (distribution * geometry * fresnel) / max(4.0 * nDotV * nDotL, 0.000001);
   vec3 diffuse = (vec3(1.0) - fresnel) * (1.0 - u_metallic) * albedo / kPi;
-  vec3 ambient = 0.14 * albedo * u_ambientOcclusion;
-  return ambient + (diffuse + specular) * nDotL;
+  vec3 ambient = 0.14 * albedo * u_ambientOcclusion * ao;
+  return ambient + (diffuse + specular) * nDotL * shadow;
 }
 
 float shadowVisibility(vec3 worldPosition)
@@ -142,13 +144,13 @@ vec4 shadedMeshColor()
   vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
   vec3 lightDirection = viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
+  float shadow = shadowVisibility(v_worldPosition);
+  float ao = screenAmbientOcclusion();
   vec3 litColor = u_shadingModel == kShadingModelUnlit
                     ? color.rgb
                     : (u_shadingModel == kShadingModelPhysicallyBased
-                         ? physicallyBasedColor(color.rgb, normal, lightDirection, viewDirection)
-                         : simpleLitColor(color.rgb, normal, lightDirection, viewDirection));
-  litColor *= shadowVisibility(v_worldPosition);
-  litColor *= screenAmbientOcclusion();
+                         ? physicallyBasedColor(color.rgb, normal, lightDirection, viewDirection, ao, shadow)
+                         : simpleLitColor(color.rgb, normal, lightDirection, viewDirection, ao, shadow));
   return applyRimLighting(vec4(litColor, color.a), normal, viewDirection);
 }
 

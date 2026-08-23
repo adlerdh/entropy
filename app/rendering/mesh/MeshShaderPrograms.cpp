@@ -282,7 +282,7 @@ bool Rendering::createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& progr
   attachShaderFile(
     program,
     ShaderType::Fragment,
-    "app/rendering/shaders/mesh/MeshAmbientOcclusionGeometry.fs",
+    "app/rendering/shaders/mesh/AmbientOcclusionGeometry.fs",
     meshClipFragmentUniforms());
   return linkMeshProgram(program);
 }
@@ -293,11 +293,30 @@ bool Rendering::createMeshAmbientOcclusionResolveProgram(GLShaderProgram& progra
   fsUniforms.insertUniform("u_normalTex", UniformType::Sampler, 0, k_optionalUniform);
   fsUniforms.insertUniform("u_depthTex", UniformType::Sampler, 1, k_optionalUniform);
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
-  fsUniforms.insertUniform("u_radiusPixels", UniformType::Float, 8.0f);
+  fsUniforms.insertUniform("u_camera_T_clip", UniformType::Mat4, glm::mat4{1.0f});
+  fsUniforms.insertUniform("u_clip_T_camera", UniformType::Mat4, glm::mat4{1.0f});
+  fsUniforms.insertUniform("u_camera_T_worldNormal", UniformType::Mat3, glm::mat3{1.0f});
+  fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
   fsUniforms.insertUniform("u_strength", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_sampleCount", UniformType::Int, 24);
   return createFullscreenMeshProgram(
     program,
-    "app/rendering/shaders/mesh/MeshAmbientOcclusionResolve.fs",
+    "app/rendering/shaders/mesh/AmbientOcclusionResolve.fs",
+    std::move(fsUniforms));
+}
+
+bool Rendering::createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program)
+{
+  Uniforms fsUniforms;
+  fsUniforms.insertUniform("u_occlusionTex", UniformType::Sampler, 2, k_optionalUniform);
+  fsUniforms.insertUniform("u_normalTex", UniformType::Sampler, 0, k_optionalUniform);
+  fsUniforms.insertUniform("u_depthTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
+  fsUniforms.insertUniform("u_camera_T_clip", UniformType::Mat4, glm::mat4{1.0f});
+  fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
+  return createFullscreenMeshProgram(
+    program,
+    "app/rendering/shaders/mesh/AmbientOcclusionFilter.fs",
     std::move(fsUniforms));
 }
 

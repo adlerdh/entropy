@@ -24,7 +24,6 @@ const Uniforms::SamplerIndexType s_jumpTexSampler{1};
 
 void Rendering::setRaycastIsoUniforms(
   GLShaderProgram& program,
-  const View& view,
   const ImgSegPair& imgSegPair,
   const Image& image,
   const RenderData::ImageUniforms& uniforms,
@@ -60,14 +59,6 @@ void Rendering::setRaycastIsoUniforms(
   program.setUniform("u_bgColor", renderData.m_3dBackgroundColor.a * renderData.m_3dBackgroundColor);
   program.setUniform("u_bgEdgeBrighteningEnabled", renderData.m_raycastBackgroundEdgeBrighteningEnabled);
   program.setUniform("u_noHitTransparent", renderData.m_3dTransparentIfNoHit);
-  program.setUniform(
-    "u_showCrosshairs3D",
-    renderData.m_showCrosshairsIn3D && !view.threeDState().m_viewPositionFollowsCrosshairs);
-  program.setUniform("u_crosshairsWorldPos", m_appData.state().worldCrosshairs().worldOrigin());
-  program.setUniform("u_crosshairsColor", renderData.m_crosshairsColor);
-  program.setUniform(
-    "u_crosshairsRadiusMm",
-    0.5f * renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals * glm::length(image.header().spacing()));
 
   if (renderWarped && deformationUid && imgSegPair.first) {
     const auto sampleUniformsIt = renderData.m_uniforms.find(*imgSegPair.first);

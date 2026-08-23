@@ -42,11 +42,6 @@ uniform float u_lightingSpecularPower;
 uniform vec4 u_bgColor; // premultiplied by alpha
 uniform bool u_bgEdgeBrighteningEnabled;
 
-uniform bool u_showCrosshairs3D;
-uniform vec3 u_crosshairsWorldPos;
-uniform vec4 u_crosshairsColor; // non-premultiplied by alpha
-uniform float u_crosshairsRadiusMm;
-
 uniform bool u_renderFrontFaces;
 uniform bool u_renderBackFaces;
 uniform bool u_noHitTransparent;
@@ -169,29 +164,6 @@ vec2 slabs(vec3 texRayPos, vec3 texRayDir)
   }
 
   return vec2(compMax(tMin), compMin(tMax));
-}
-
-float raySphereFirstHit(vec3 rayPos, vec3 rayDir, vec3 sphereCenter, float sphereRadius)
-{
-  if (sphereRadius <= 0.0) {
-    return -1.0;
-  }
-
-  vec3 oc = rayPos - sphereCenter;
-  float b = dot(oc, rayDir);
-  float c = dot(oc, oc) - sphereRadius * sphereRadius;
-  float discriminant = b * b - c;
-
-  if (discriminant < 0.0) {
-    return -1.0;
-  }
-
-  float root = sqrt(discriminant);
-  float t = -b - root;
-  if (t < 0.0) {
-    t = -b + root;
-  }
-  return t >= 0.0 ? t : -1.0;
 }
 
 vec3 gradient(vec3 texPos)
@@ -378,33 +350,6 @@ void main()
 
   //  float normDistance = abs(oldT - tMin);
   //  float fog = exp(-normDistance*normDistance);
-
-  if (u_showCrosshairs3D) {
-    float crosshairsWorldT =
-      raySphereFirstHit(fs_in.v_worldRayStart, worldRayDir, u_crosshairsWorldPos, u_crosshairsRadiusMm);
-    vec3 crosshairsWorldHitPos = fs_in.v_worldRayStart + crosshairsWorldT * worldRayDir;
-    vec3 crosshairsTexHitPos = vec3(u_tex_T_world * vec4(crosshairsWorldHitPos, 1.0));
-    float crosshairsTexT = dot(crosshairsTexHitPos - texStartPos, texRayDir);
-
-    if (crosshairsWorldT >= 0.0 && crosshairsTexT >= tMin && crosshairsTexT <= tMax) {
-      vec3 sphereNormal = normalize(crosshairsWorldHitPos - u_crosshairsWorldPos);
-      float diffuse = clamp(dot(sphereNormal, -worldRayDir), 0.0, 1.0);
-      float specular = pow(diffuse, 24.0);
-      vec3 glyphRgb = min(u_crosshairsColor.rgb * (0.35 + 0.65 * diffuse) + 0.18 * specular, vec3(1.0));
-
-      if (crosshairsTexT <= firstHitT) {
-        vec4 glyphColor = vec4(glyphRgb * u_crosshairsColor.a, u_crosshairsColor.a);
-        color = glyphColor + (1.0 - glyphColor.a) * color;
-        texFirstHitPos = crosshairsTexHitPos;
-      }
-      else {
-        float rim = pow(1.0 - diffuse, 2.0);
-        float occludedAlpha = u_crosshairsColor.a * mix(0.36, 0.52, rim);
-        vec4 occludedGlyphColor = vec4(glyphRgb * occludedAlpha, occludedAlpha);
-        color = occludedGlyphColor + (1.0 - occludedGlyphColor.a) * color;
-      }
-    }
-  }
 
   FragColor = brightenRaycastResult(color + (1.0 - color.a) * bgColor, frontEdgeAmount);
 
