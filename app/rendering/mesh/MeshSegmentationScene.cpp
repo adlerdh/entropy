@@ -67,6 +67,35 @@ std::string segmentationMeshDescription(
 
 } // namespace
 
+const rendering::mesh::SegmentationLabelSet* Rendering::presentSegmentationLabels(
+  const uuids::uuid& segmentationUid,
+  const Image& segmentation,
+  const uint32_t timePoint)
+{
+  const uint64_t pixelDataRevision = segmentation.pixelDataRevision();
+  if (const auto existing = m_segmentationLabelInventories.find(segmentationUid);
+      existing != m_segmentationLabelInventories.end() && existing->second.pixelDataRevision == pixelDataRevision &&
+      existing->second.timePoint == timePoint)
+  {
+    return &existing->second.presentLabelValues;
+  }
+
+  std::optional<rendering::mesh::SegmentationLabelSet> labels =
+    rendering::mesh::presentSegmentationLabels(segmentation, 0, timePoint);
+  if (!labels) {
+    return nullptr;
+  }
+
+  auto [inventory, inserted] = m_segmentationLabelInventories.insert_or_assign(
+    segmentationUid,
+    SegmentationLabelInventory{
+      .pixelDataRevision = pixelDataRevision,
+      .timePoint = timePoint,
+      .presentLabelValues = std::move(*labels)});
+  static_cast<void>(inserted);
+  return &inventory->second.presentLabelValues;
+}
+
 bool Rendering::renderSegmentationMeshesForView(const View& view)
 {
   consumeCompletedMeshExtractions();
@@ -101,6 +130,10 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
     }
 
     const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
+    const rendering::mesh::SegmentationLabelSet* presentLabels = presentSegmentationLabels(segUid, *seg, timePoint);
+    if (!presentLabels) {
+      continue;
+    }
     const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
     renderables.reserve(renderables.size() + labelTable->numLabels());
     std::shared_ptr<const Image> segmentationSnapshot;
@@ -114,6 +147,9 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
       }
 
       const int64_t labelValue = static_cast<int64_t>(labelIndex);
+      if (!presentLabels->contains(labelValue)) {
+        continue;
+      }
       const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
         segUid,
         seg->pixelDataRevision(),

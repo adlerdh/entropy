@@ -46,6 +46,24 @@ initializedGrid(const Image& image, const uint32_t component, const MeshCoordina
 
 } // namespace
 
+std::optional<SegmentationLabelSet>
+presentSegmentationLabels(const Image& image, const uint32_t component, const uint32_t timePoint)
+{
+  if (!image.hasPixelData() || component >= image.header().numComponentsPerPixel()) {
+    return std::nullopt;
+  }
+
+  SegmentationLabelSet labels;
+  for (std::size_t index = 0; index < image.header().numPixels(); ++index) {
+    const std::optional<int64_t> value = image.value<int64_t>(component, index, timePoint);
+    if (!value) {
+      return std::nullopt;
+    }
+    labels.insert(*value);
+  }
+  return labels;
+}
+
 std::optional<ScalarGrid3D> scalarGridFromImageComponent(
   const Image& image,
   const uint32_t component,

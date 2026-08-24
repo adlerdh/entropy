@@ -170,6 +170,10 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
 
       const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
+      const rendering::mesh::SegmentationLabelSet* presentLabels = presentSegmentationLabels(segUid, *seg, timePoint);
+      if (!presentLabels) {
+        return std::nullopt;
+      }
       const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
         const rendering::mesh::SegmentationLabelMeshState labelState{
@@ -180,6 +184,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         }
 
         const int64_t labelValue = static_cast<int64_t>(labelIndex);
+        if (!presentLabels->contains(labelValue)) {
+          continue;
+        }
         const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
           segUid,
           seg->pixelDataRevision(),

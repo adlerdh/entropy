@@ -26,6 +26,7 @@
 #include <glad/glad.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <array>
 #include <functional>
 #include <optional>
@@ -67,6 +68,8 @@ void Rendering::reconcileExtractedMeshResources()
 {
   rendering::mesh::MeshGeometryKeySet liveKeys;
 
+  std::erase_if(m_segmentationLabelInventories, [this](const auto& entry) { return !m_appData.seg(entry.first); });
+
   for (const uuids::uuid& imageUid : m_appData.imageUidsOrdered()) {
     const Image* image = m_appData.image(imageUid);
     if (!image) {
@@ -100,7 +103,14 @@ void Rendering::reconcileExtractedMeshResources()
       continue;
     }
     const uint32_t timePoint = segmentation->timeAxis().clamp(segmentation->settings().activeTimePoint());
+    const auto inventory = m_segmentationLabelInventories.find(segmentationUid);
+    const bool inventoryIsCurrent = inventory != m_segmentationLabelInventories.end() &&
+                                    inventory->second.pixelDataRevision == segmentation->pixelDataRevision() &&
+                                    inventory->second.timePoint == timePoint;
     for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
+      if (inventoryIsCurrent && !inventory->second.presentLabelValues.contains(static_cast<int64_t>(labelIndex))) {
+        continue;
+      }
       liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridSegmentationRequest(
         segmentationUid,
         segmentation->pixelDataRevision(),

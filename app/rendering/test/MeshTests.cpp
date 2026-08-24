@@ -1757,6 +1757,22 @@ TEST_CASE("image label adapter preserves exact 32-bit label identity", "[renderi
   REQUIRE(mesh::generateLabelMesh(*grid, 1));
 }
 
+TEST_CASE("segmentation label inventory contains only values present in the volume", "[rendering][mesh]")
+{
+  constexpr int64_t targetLabel = 16'777'217;
+  constexpr int64_t adjacentLabel = 16'777'216;
+  const Image image = makeMeshLabelImage();
+
+  const std::optional<mesh::SegmentationLabelSet> labels = mesh::presentSegmentationLabels(image, 0);
+
+  REQUIRE(labels);
+  CHECK(labels->size() == 2);
+  CHECK(labels->contains(targetLabel));
+  CHECK(labels->contains(adjacentLabel));
+  CHECK_FALSE(labels->contains(1));
+  CHECK_FALSE(mesh::presentSegmentationLabels(image, 1));
+}
+
 TEST_CASE("scalar-grid segmentation extraction creates the requested label surface", "[rendering][mesh]")
 {
   const std::optional<mesh::MeshData> meshData = mesh::generateLabelMesh(makeBinaryLabelGrid(), 7);

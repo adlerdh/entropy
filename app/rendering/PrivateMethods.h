@@ -379,6 +379,14 @@ bool renderIsosurfaceMeshesForView(const View& view, const CurrentImages& imageS
 bool renderSegmentationMeshesForView(const View& view);
 
 /**
+ * @brief Return a revision-aware inventory of label values present in a segmentation time point.
+ *
+ * @return Cached label set, or null when the segmentation pixels cannot be read.
+ */
+const rendering::mesh::SegmentationLabelSet*
+presentSegmentationLabels(const uuids::uuid& segmentationUid, const Image& segmentation, uint32_t timePoint);
+
+/**
  * @brief Append the 3D crosshairs glyph to a mesh scene when it is visible for the view.
  *
  * @param view 3D view receiving the mesh draw.

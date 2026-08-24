@@ -13,6 +13,7 @@
 #include "rendering/mesh/MeshGpuStore.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
+#include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshRenderer.h"
 #include "rendering/mesh/MeshResourceLifecycle.h"
@@ -315,6 +316,13 @@ private:
 
   using MeshImagePlaneHandleMap = std::unordered_map<MeshImagePlaneHandleKey, MeshHandle, MeshImagePlaneHandleKeyHash>;
 
+  struct SegmentationLabelInventory
+  {
+    uint64_t pixelDataRevision = 0;                           //!< Pixel revision represented by this inventory
+    uint32_t timePoint = 0;                                   //!< Time point represented by this inventory
+    rendering::mesh::SegmentationLabelSet presentLabelValues; //!< Exact native label values present in the volume
+  };
+
 #include "rendering/PrivateMethods.h"
 
   /// Shared application state. Not owned; Rendering reads and updates render-facing state through this reference.
@@ -389,6 +397,8 @@ private:
   rendering::mesh::MeshGpuStore m_meshGpuStore; //!< Uploaded mesh buffers for the current OpenGL context
 
   MeshHandleMap m_meshHandles; //!< Stable logical mesh handles keyed by geometry-producing inputs
+
+  std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
 
   MeshImagePlaneHandleMap m_meshImagePlaneHandles; //!< Stable handles for dynamic 3D image-plane meshes
 

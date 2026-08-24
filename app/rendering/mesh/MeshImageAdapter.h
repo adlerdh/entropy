@@ -4,11 +4,25 @@
 
 #include <cstdint>
 #include <optional>
+#include <unordered_set>
 
 class Image;
 
 namespace rendering::mesh
 {
+
+using SegmentationLabelSet = std::unordered_set<int64_t>;
+
+/**
+ * @brief Collect the exact label values present in one segmentation time point.
+ *
+ * The image is scanned once using its native integer representation. Callers can cache the result by pixel-data
+ * revision and time point to avoid launching extraction jobs for labels that have no voxels.
+ *
+ * @return Present labels, or empty when the requested image component/time point cannot be read.
+ */
+std::optional<SegmentationLabelSet>
+presentSegmentationLabels(const Image& image, uint32_t component, uint32_t timePoint = 0);
 
 /**
  * @brief Convert one Entropy image component into a scalar grid for mesh extraction
