@@ -80,7 +80,7 @@ Checks: >
   readability-simplify-subscript-expr,
   readability-static-accessed-through-instance,
   readability-use-anyofallof
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 HeaderFilterRegex: '^(app|lib)/'
 SystemHeaders: false
 FormatStyle: file

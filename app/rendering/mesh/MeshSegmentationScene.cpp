@@ -134,9 +134,10 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
           const std::string description = segmentationMeshDescription(*seg, *labelTable, labelIndex);
           if (m_meshExtractionQueue
                 .submit(key, description, [request, key, generationOptions, segmentationSnapshot]() mutable {
-                  std::optional<rendering::mesh::ScalarGrid3D> grid = rendering::mesh::scalarGridFromImageComponent(
+                  std::optional<rendering::mesh::ScalarGrid3D> grid = rendering::mesh::labelMaskGridFromImageComponent(
                     *segmentationSnapshot,
                     0,
+                    request.labelValue,
                     request.timePoint,
                     rendering::mesh::MeshCoordinateSpace::World);
                   if (!grid) {
@@ -147,7 +148,7 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
                   }
 
                   std::optional<rendering::mesh::MeshData> mesh =
-                    rendering::mesh::generateLabelMesh(*grid, request.labelValue, generationOptions);
+                    rendering::mesh::generateLabelMesh(*grid, 1, generationOptions);
                   if (!mesh) {
                     return rendering::mesh::MeshExtractionJobResult{
                       .key = key,

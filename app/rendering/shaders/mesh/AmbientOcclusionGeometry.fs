@@ -16,6 +16,10 @@ void main()
     }
   }
 
-  vec3 normal = normalize(v_worldNormal);
+  vec3 geometricNormal = cross(dFdx(v_worldPosition), dFdy(v_worldPosition));
+  vec3 normal =
+    dot(v_worldNormal, v_worldNormal) > 0.000001
+      ? normalize(v_worldNormal)
+      : (dot(geometricNormal, geometricNormal) > 0.000001 ? normalize(geometricNormal) : vec3(0.0, 0.0, 1.0));
   outNormal = vec4(normal * 0.5 + 0.5, 1.0);
 }

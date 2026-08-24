@@ -41,8 +41,8 @@ generateIsoSurfaceMesh(const ScalarGrid3D& grid, double isoValue, const MeshGene
 /**
  * @brief Generate a label-boundary mesh from a scalar segmentation volume using VTK Discrete Flying Edges 3D
  *
- * Discrete Flying Edges is used instead of thresholding to a floating-point mask so label boundaries remain tied to the
- * integer segmentation data.
+ * Callers adapting integer image labels should first create an exact binary mask with
+ * `labelMaskGridFromImageComponent`; `ScalarGrid3D` itself stores floating-point samples.
  *
  * @param grid Scalar label volume in i-fastest order
  * @param labelValue Label value to extract

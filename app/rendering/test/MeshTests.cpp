@@ -145,6 +145,31 @@ Image makeMeshScalarImage()
     buffers);
 }
 
+Image makeMeshLabelImage()
+{
+  const glm::uvec3 dimensions{2, 2, 2};
+  const ImageIoInfo ioInfo = makeMeshIoInfo(ComponentType::UInt32, 1, dimensions);
+  ImageHeader header(ioInfo, ioInfo, false);
+  constexpr uint32_t targetLabel = 16'777'217u;
+  constexpr uint32_t adjacentLabel = 16'777'216u;
+  const std::vector<uint32_t> values{
+    targetLabel,
+    adjacentLabel,
+    targetLabel,
+    adjacentLabel,
+    targetLabel,
+    adjacentLabel,
+    targetLabel,
+    adjacentLabel};
+  const std::vector<const void*> buffers{values.data()};
+  return Image(
+    header,
+    "mesh-label-test",
+    Image::ImageRepresentation::Segmentation,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+}
+
 void requireVec3(const glm::vec3& value, float x, float y, float z)
 {
   CHECK(value.x == Catch::Approx(x));
@@ -241,6 +266,20 @@ TEST_CASE("mesh validation reports non-finite vertex data", "[rendering][mesh]")
   CHECK(std::ranges::find(errors, mesh::MeshValidationError::NonFiniteNormal) != errors.end());
   CHECK(std::ranges::find(errors, mesh::MeshValidationError::NonFiniteColor) != errors.end());
   CHECK(std::ranges::find(errors, mesh::MeshValidationError::NonFiniteTextureCoord) != errors.end());
+}
+
+TEST_CASE("mesh validation rejects repeated and collinear triangle vertices", "[rendering][mesh]")
+{
+  mesh::MeshData repeated = makeTriangleMesh();
+  repeated.indices = {0u, 1u, 1u};
+  mesh::MeshData collinear = makeTriangleMesh();
+  collinear.positions = {glm::vec3{0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{2.0f, 0.0f, 0.0f}};
+
+  const auto repeatedErrors = mesh::validateMeshData(repeated);
+  const auto collinearErrors = mesh::validateMeshData(collinear);
+
+  CHECK(std::ranges::find(repeatedErrors, mesh::MeshValidationError::DegenerateTriangle) != repeatedErrors.end());
+  CHECK(std::ranges::find(collinearErrors, mesh::MeshValidationError::DegenerateTriangle) != collinearErrors.end());
 }
 
 TEST_CASE("mesh bounds ignore non-finite positions", "[rendering][mesh]")
@@ -1442,7 +1481,8 @@ TEST_CASE("mesh extraction queue application rejects stale or wrong-key results"
   mesh::MeshExtractionJobResult lateResult{
     .key = key,
     .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}};
-  CHECK(mesh::applyExtractionJobResult(std::move(lateResult), cache).status == mesh::MeshExtractionRunStatus::Stale);
+  const mesh::MeshExtractionRunResult lateRunResult = mesh::applyExtractionJobResult(std::move(lateResult), cache);
+  CHECK(lateRunResult.status == mesh::MeshExtractionRunStatus::Stale);
 
   cache.markPending(key);
   mesh::MeshGeometryKey wrongKey = key;
@@ -1646,6 +1686,18 @@ TEST_CASE("image component adapter creates scalar grids with image geometry", "[
   requireVec3(glm::vec3{subjectPoint}, 7.0f, 22.0f, 34.0f);
 
   CHECK_FALSE(mesh::scalarGridFromImageComponent(image, 1));
+}
+
+TEST_CASE("image label adapter preserves exact 32-bit label identity", "[rendering][mesh]")
+{
+  constexpr int64_t targetLabel = 16'777'217;
+  const Image image = makeMeshLabelImage();
+  const std::optional<mesh::ScalarGrid3D> grid = mesh::labelMaskGridFromImageComponent(image, 0, targetLabel);
+
+  REQUIRE(grid);
+  CHECK(grid->values[mesh::scalarGridValueIndex(grid->dimensions, 0, 0, 0)] == 1.0f);
+  CHECK(grid->values[mesh::scalarGridValueIndex(grid->dimensions, 1, 0, 0)] == 0.0f);
+  REQUIRE(mesh::generateLabelMesh(*grid, 1));
 }
 
 TEST_CASE("scalar-grid segmentation extraction creates the requested label surface", "[rendering][mesh]")
@@ -1942,9 +1994,9 @@ TEST_CASE("image box border mesh builds all twelve box edges", "[rendering][mesh
   const std::optional<mesh::MeshData> mesh = mesh::makeImageBoxBorderMesh(boxCorners, 0.1f);
 
   REQUIRE(mesh.has_value());
-  CHECK(mesh->positions.size() == 12u * 8u);
+  CHECK(mesh->positions.size() == static_cast<std::size_t>(12u) * 8u);
   CHECK(mesh->normals.size() == mesh->positions.size());
-  CHECK(mesh->indices.size() == 12u * 36u);
+  CHECK(mesh->indices.size() == static_cast<std::size_t>(12u) * 36u);
 }
 
 TEST_CASE("image plane orientation opacity follows legacy auto-hiding behavior", "[rendering][mesh]")

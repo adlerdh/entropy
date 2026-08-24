@@ -4,10 +4,44 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <ranges>
 
 namespace rendering::mesh
 {
+
+namespace
+{
+
+bool hasDegenerateTriangle(const MeshData& mesh)
+{
+  if (mesh.indices.size() % 3u != 0u) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < mesh.indices.size(); i += 3u) {
+    const std::size_t ia = mesh.indices[i];
+    const std::size_t ib = mesh.indices[i + 1u];
+    const std::size_t ic = mesh.indices[i + 2u];
+    if (ia >= mesh.positions.size() || ib >= mesh.positions.size() || ic >= mesh.positions.size()) {
+      continue;
+    }
+    if (ia == ib || ib == ic || ia == ic) {
+      return true;
+    }
+
+    const glm::dvec3 ab = glm::dvec3{mesh.positions[ib]} - glm::dvec3{mesh.positions[ia]};
+    const glm::dvec3 ac = glm::dvec3{mesh.positions[ic]} - glm::dvec3{mesh.positions[ia]};
+    const double edgeProduct = glm::dot(ab, ab) * glm::dot(ac, ac);
+    const double areaSquared = glm::dot(glm::cross(ab, ac), glm::cross(ab, ac));
+    if (areaSquared <= std::numeric_limits<double>::epsilon() * edgeProduct) {
+      return true;
+    }
+  }
+  return false;
+}
+
+} // namespace
 
 std::vector<MeshValidationError> validateMeshData(const MeshData& mesh)
 {
@@ -61,6 +95,10 @@ std::vector<MeshValidationError> validateMeshData(const MeshData& mesh)
   };
   if (std::ranges::any_of(mesh.indices, outOfRange)) {
     errors.push_back(MeshValidationError::IndexOutOfRange);
+  }
+
+  if (hasDegenerateTriangle(mesh)) {
+    errors.push_back(MeshValidationError::DegenerateTriangle);
   }
 
   return errors;

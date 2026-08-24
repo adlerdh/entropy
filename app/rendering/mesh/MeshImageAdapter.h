@@ -24,4 +24,18 @@ std::optional<ScalarGrid3D> scalarGridFromImageComponent(
   uint32_t timePoint = 0,
   MeshCoordinateSpace coordinateSpace = MeshCoordinateSpace::ImageSubject);
 
+/**
+ * @brief Convert an image label into an exact binary mask for discrete surface extraction
+ *
+ * Label comparison is performed against the image's native integer value before conversion to the
+ * floating-point scalar-grid representation. This avoids aliasing distinct 32-bit labels that cannot
+ * be represented exactly by a float.
+ */
+std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
+  const Image& image,
+  uint32_t component,
+  int64_t labelValue,
+  uint32_t timePoint = 0,
+  MeshCoordinateSpace coordinateSpace = MeshCoordinateSpace::ImageSubject);
+
 } // namespace rendering::mesh

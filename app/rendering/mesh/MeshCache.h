@@ -69,7 +69,7 @@ public:
    * @return True when the failure was accepted
    * @throw Propagates allocation failures
    */
-  bool storeFailedIfPending(MeshGeometryKey key, std::vector<std::string> diagnostics);
+  bool storeFailedIfPending(const MeshGeometryKey& key, std::vector<std::string> diagnostics);
 
   /**
    * @brief Mark matching entries stale without removing their old mesh data

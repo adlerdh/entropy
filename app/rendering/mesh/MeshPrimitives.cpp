@@ -82,8 +82,8 @@ MeshData makeSphereMesh(const float radius, const uint32_t rings, const uint32_t
   mesh.indices.reserve(static_cast<size_t>(segmentCount) * static_cast<size_t>(ringCount) * 6u);
 
   const uint32_t northPole = static_cast<uint32_t>(mesh.positions.size());
-  mesh.positions.push_back(glm::vec3{0.0f, 0.0f, r});
-  mesh.normals.push_back(glm::vec3{0.0f, 0.0f, 1.0f});
+  mesh.positions.emplace_back(0.0f, 0.0f, r);
+  mesh.normals.emplace_back(0.0f, 0.0f, 1.0f);
 
   for (uint32_t ring = 1; ring <= ringCount; ++ring) {
     const float theta = std::numbers::pi_v<float> * static_cast<float>(ring) / static_cast<float>(ringCount + 1u);
@@ -94,14 +94,14 @@ MeshData makeSphereMesh(const float radius, const uint32_t rings, const uint32_t
       const float phi =
         2.0f * std::numbers::pi_v<float> * static_cast<float>(segment) / static_cast<float>(segmentCount);
       const glm::vec3 normal{radial * std::cos(phi), radial * std::sin(phi), z};
-      mesh.positions.push_back(r * normal);
-      mesh.normals.push_back(glm::normalize(normal));
+      mesh.positions.emplace_back(r * normal);
+      mesh.normals.emplace_back(glm::normalize(normal));
     }
   }
 
   const uint32_t southPole = static_cast<uint32_t>(mesh.positions.size());
-  mesh.positions.push_back(glm::vec3{0.0f, 0.0f, -r});
-  mesh.normals.push_back(glm::vec3{0.0f, 0.0f, -1.0f});
+  mesh.positions.emplace_back(0.0f, 0.0f, -r);
+  mesh.normals.emplace_back(0.0f, 0.0f, -1.0f);
 
   const auto ringVertex = [segmentCount](const uint32_t ring, const uint32_t segment) -> uint32_t {
     return 1u + (ring - 1u) * segmentCount + (segment % segmentCount);
@@ -145,28 +145,28 @@ MeshData makeCylinderMesh(const float radius, const float height, const uint32_t
   for (uint32_t segment = 0; segment < segmentCount; ++segment) {
     const float phi = 2.0f * std::numbers::pi_v<float> * static_cast<float>(segment) / static_cast<float>(segmentCount);
     const glm::vec3 normal{std::cos(phi), std::sin(phi), 0.0f};
-    mesh.positions.push_back(glm::vec3{r * normal.x, r * normal.y, -halfHeight});
-    mesh.positions.push_back(glm::vec3{r * normal.x, r * normal.y, halfHeight});
-    mesh.normals.push_back(normal);
-    mesh.normals.push_back(normal);
+    mesh.positions.emplace_back(r * normal.x, r * normal.y, -halfHeight);
+    mesh.positions.emplace_back(r * normal.x, r * normal.y, halfHeight);
+    mesh.normals.emplace_back(normal);
+    mesh.normals.emplace_back(normal);
   }
 
   const uint32_t topCenter = static_cast<uint32_t>(mesh.positions.size());
-  mesh.positions.push_back(glm::vec3{0.0f, 0.0f, halfHeight});
-  mesh.normals.push_back(glm::vec3{0.0f, 0.0f, 1.0f});
+  mesh.positions.emplace_back(0.0f, 0.0f, halfHeight);
+  mesh.normals.emplace_back(0.0f, 0.0f, 1.0f);
   const uint32_t bottomCenter = static_cast<uint32_t>(mesh.positions.size());
-  mesh.positions.push_back(glm::vec3{0.0f, 0.0f, -halfHeight});
-  mesh.normals.push_back(glm::vec3{0.0f, 0.0f, -1.0f});
+  mesh.positions.emplace_back(0.0f, 0.0f, -halfHeight);
+  mesh.normals.emplace_back(0.0f, 0.0f, -1.0f);
 
   const uint32_t capStart = static_cast<uint32_t>(mesh.positions.size());
   for (uint32_t segment = 0; segment < segmentCount; ++segment) {
     const float phi = 2.0f * std::numbers::pi_v<float> * static_cast<float>(segment) / static_cast<float>(segmentCount);
     const float x = r * std::cos(phi);
     const float y = r * std::sin(phi);
-    mesh.positions.push_back(glm::vec3{x, y, halfHeight});
-    mesh.positions.push_back(glm::vec3{x, y, -halfHeight});
-    mesh.normals.push_back(glm::vec3{0.0f, 0.0f, 1.0f});
-    mesh.normals.push_back(glm::vec3{0.0f, 0.0f, -1.0f});
+    mesh.positions.emplace_back(x, y, halfHeight);
+    mesh.positions.emplace_back(x, y, -halfHeight);
+    mesh.normals.emplace_back(0.0f, 0.0f, 1.0f);
+    mesh.normals.emplace_back(0.0f, 0.0f, -1.0f);
   }
 
   for (uint32_t segment = 0; segment < segmentCount; ++segment) {

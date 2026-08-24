@@ -17,7 +17,8 @@ void main()
 {
   vec4 worldPosition = u_world_T_mesh * vec4(a_position, 1.0);
   v_worldPosition = worldPosition.xyz;
-  v_worldNormal = u_hasVertexNormals ? normalize(u_world_T_meshNormal * a_normal) : vec3(0.0, 0.0, 1.0);
+  // A zero vector tells the fragment shader to reconstruct a flat geometric normal from screen-space derivatives.
+  v_worldNormal = u_hasVertexNormals ? normalize(u_world_T_meshNormal * a_normal) : vec3(0.0);
   v_color = a_color;
   gl_Position = u_clip_T_world * worldPosition;
 }

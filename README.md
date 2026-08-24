@@ -79,9 +79,7 @@ space, plus any number of additional images.
   - Minimum, mean, and maximum intensity projections and X-ray simulation
   - Tiled lightbox views
   - Rotatable crosshairs
-  - 3D surface rendering
-    - Image isosurfaces
-    - Segmentation meshes
+  - 3D rendering of image isosurfaces and segmentations
 - Rendering modes
   - Layered images with opacity blending
   - Horizontal and vertical swiping comparison

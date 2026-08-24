@@ -27,18 +27,13 @@ float signedDistanceToPlane(const glm::vec4& normalizedWorldPlane, const glm::ve
 
 bool pointInsideEnabledClipPlanes(const glm::vec3& worldPosition, std::span<const MeshClipPlane> clipPlanes) noexcept
 {
-  for (const MeshClipPlane& clipPlane : clipPlanes) {
+  return std::ranges::all_of(clipPlanes, [&worldPosition](const MeshClipPlane& clipPlane) {
     if (!clipPlane.enabled) {
-      continue;
+      return true;
     }
-
     const std::optional<glm::vec4> normalizedPlane = normalizedClipPlane(clipPlane.worldPlane);
-    if (!normalizedPlane || signedDistanceToPlane(*normalizedPlane, worldPosition) < 0.0f) {
-      return false;
-    }
-  }
-
-  return true;
+    return normalizedPlane && signedDistanceToPlane(*normalizedPlane, worldPosition) >= 0.0f;
+  });
 }
 
 std::vector<glm::vec4> enabledNormalizedClipPlanes(

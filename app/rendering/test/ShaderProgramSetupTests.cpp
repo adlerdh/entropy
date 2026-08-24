@@ -192,3 +192,19 @@ TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering
   CHECK(init.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
   CHECK(peel.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
 }
+
+TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[rendering][shaders][mesh]")
+{
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.vs");
+  const std::string opaque = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpPeel.fs");
+
+  CHECK(
+    vertex.find("u_hasVertexNormals ? normalize(u_world_T_meshNormal * a_normal) : vec3(0.0)") != std::string::npos);
+  CHECK(opaque.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
+  CHECK(peel.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
+  CHECK(opaque.find("occludedSamples / 9.0") != std::string::npos);
+  CHECK(peel.find("occludedSamples / 9.0") != std::string::npos);
+  CHECK(opaque.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
+  CHECK(peel.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
+}

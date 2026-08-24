@@ -20,7 +20,7 @@ MeshExtractionRunResult
 failedOrStale(const MeshGeometryKey& key, std::vector<std::string> diagnostics, MeshCache& cache)
 {
   if (diagnostics.empty()) {
-    diagnostics.push_back("Extractor returned no mesh");
+    diagnostics.emplace_back("Extractor returned no mesh");
   }
 
   const bool accepted = cache.storeFailedIfPending(key, diagnostics);
@@ -105,7 +105,7 @@ MeshExtractionRunResult applyExtractionJobResult(MeshExtractionJobResult jobResu
 
   if (jobResult.result->key != jobResult.key) {
     std::vector<std::string> diagnostics = std::move(jobResult.diagnostics);
-    diagnostics.push_back("Extractor returned a mesh for a different geometry key");
+    diagnostics.emplace_back("Extractor returned a mesh for a different geometry key");
     return failedOrStale(jobResult.key, std::move(diagnostics), cache);
   }
 

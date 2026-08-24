@@ -104,6 +104,16 @@ vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 vi
   return ambient + keyLighting + fillLighting;
 }
 
+vec3 surfaceNormal()
+{
+  if (dot(v_worldNormal, v_worldNormal) > 0.000001) {
+    return normalize(v_worldNormal);
+  }
+
+  vec3 geometricNormal = cross(dFdx(v_worldPosition), dFdy(v_worldPosition));
+  return dot(geometricNormal, geometricNormal) > 0.000001 ? normalize(geometricNormal) : vec3(0.0, 0.0, 1.0);
+}
+
 float shadowVisibility(vec3 worldPosition)
 {
   if (!u_shadowMapEnabled) {
@@ -120,9 +130,16 @@ float shadowVisibility(vec3 worldPosition)
     return 1.0;
   }
 
-  float closestDepth = texture(u_shadowMapTex, shadowCoord.xy).r;
   float currentDepth = shadowCoord.z;
-  return currentDepth - u_shadowDepthBias > closestDepth ? 1.0 - u_shadowStrength : 1.0;
+  vec2 texelSize = 1.0 / vec2(textureSize(u_shadowMapTex, 0));
+  float occludedSamples = 0.0;
+  for (int y = -1; y <= 1; ++y) {
+    for (int x = -1; x <= 1; ++x) {
+      float closestDepth = texture(u_shadowMapTex, shadowCoord.xy + vec2(x, y) * texelSize).r;
+      occludedSamples += currentDepth - u_shadowDepthBias > closestDepth ? 1.0 : 0.0;
+    }
+  }
+  return 1.0 - u_shadowStrength * occludedSamples / 9.0;
 }
 
 float screenAmbientOcclusion()
@@ -132,6 +149,7 @@ float screenAmbientOcclusion()
   }
 
   ivec2 pixelCoord = ivec2(gl_FragCoord.xy) - u_viewportOrigin;
+  pixelCoord = clamp(pixelCoord, ivec2(0), textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1));
   return texelFetch(u_screenAmbientOcclusionTex, pixelCoord, 0).r;
 }
 
@@ -157,7 +175,7 @@ void main()
     }
   }
 
-  vec3 normal = normalize(v_worldNormal);
+  vec3 normal = surfaceNormal();
   vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
   vec3 shadingNormal = faceforward(normal, -viewDirection, normal);
   vec3 lightDirection = viewDirection;

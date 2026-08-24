@@ -16,6 +16,7 @@ enum class MeshValidationError
   EmptyIndices,
   IndicesNotTriangles,
   IndexOutOfRange,
+  DegenerateTriangle,
   NonFinitePosition,
   NonFiniteNormal,
   NonFiniteColor,
@@ -26,7 +27,7 @@ enum class MeshValidationError
 };
 
 /**
- * @brief Validate mesh array sizes, indices, and finite values
+ * @brief Validate mesh array sizes, indices, finite values, and triangle geometry
  * @param mesh Mesh to validate
  * @return List of validation errors, empty when the mesh is valid
  * @throw Propagates allocation failures from the returned vector

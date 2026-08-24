@@ -42,7 +42,7 @@ void MeshCache::storeFailed(MeshGeometryKey key, std::vector<std::string> diagno
   m_entries.insert_or_assign(std::move(key), std::move(entry));
 }
 
-bool MeshCache::storeFailedIfPending(MeshGeometryKey key, std::vector<std::string> diagnostics)
+bool MeshCache::storeFailedIfPending(const MeshGeometryKey& key, std::vector<std::string> diagnostics)
 {
   const auto it = m_entries.find(key);
   if (it == m_entries.end() || it->second.state != MeshCacheState::Pending) {
