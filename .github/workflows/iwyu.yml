@@ -83,6 +83,7 @@ jobs:
             build-iwyu/external/imgui-*
             build-iwyu/external/implot-*
             build-iwyu/external/itk-*
+            build-iwyu/external/vtk-*
             build-iwyu/external/nanovg-*
             build-iwyu/external/nativefiledialog-*
             build-iwyu/external/nlohmann_json-*

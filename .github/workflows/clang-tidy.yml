@@ -83,6 +83,7 @@ jobs:
             build-clang-tidy/external/imgui-*
             build-clang-tidy/external/implot-*
             build-clang-tidy/external/itk-*
+            build-clang-tidy/external/vtk-*
             build-clang-tidy/external/nanovg-*
             build-clang-tidy/external/nativefiledialog-*
             build-clang-tidy/external/nlohmann_json-*

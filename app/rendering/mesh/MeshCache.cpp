@@ -85,6 +85,11 @@ std::size_t MeshCache::evictSource(const uuids::uuid& sourceUid)
   return count;
 }
 
+bool MeshCache::erase(const MeshGeometryKey& key) noexcept
+{
+  return m_entries.erase(key) > 0u;
+}
+
 const MeshCacheEntry* MeshCache::find(const MeshGeometryKey& key) const noexcept
 {
   const auto it = m_entries.find(key);

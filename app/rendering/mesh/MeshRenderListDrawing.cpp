@@ -1,6 +1,9 @@
 #include "rendering/Rendering.h"
 
 #include "logic/app/Data.h"
+#include "logic/app/ParcellationLabelTable.h"
+#include "image/Image.h"
+#include "image/Isosurface.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderData.h"
 #include "rendering/mesh/AmbientOcclusionPass.h"
@@ -9,6 +12,10 @@
 #include "rendering/mesh/MeshDdpPass.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshIsosurfacePolicy.h"
+#include "rendering/mesh/MeshResourceLifecycle.h"
+#include "rendering/mesh/MeshSegmentationPolicy.h"
 #include "rendering/mesh/MeshShadowMapPass.h"
 #include "rendering/mesh/MeshShadowMapProjection.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
@@ -55,6 +62,60 @@ std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> shado
 }
 
 } // namespace
+
+void Rendering::reconcileExtractedMeshResources()
+{
+  rendering::mesh::MeshGeometryKeySet liveKeys;
+
+  for (const uuids::uuid& imageUid : m_appData.imageUidsOrdered()) {
+    const Image* image = m_appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+    const uint32_t component = image->settings().activeComponent();
+    const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
+    for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, component)) {
+      const Isosurface* surface = m_appData.isosurface(imageUid, component, surfaceUid);
+      if (!surface) {
+        continue;
+      }
+      liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridIsosurfaceRequest(
+        imageUid,
+        image->pixelDataRevision(),
+        image->geometryRevision(),
+        component,
+        timePoint,
+        surface->value)));
+    }
+  }
+
+  for (const uuids::uuid& segmentationUid : m_appData.segUidsOrdered()) {
+    const Image* segmentation = m_appData.seg(segmentationUid);
+    if (!segmentation) {
+      continue;
+    }
+    const auto tableUid = m_appData.labelTableUid(segmentation->settings().labelTableIndex());
+    const ParcellationLabelTable* labelTable = tableUid ? m_appData.labelTable(*tableUid) : nullptr;
+    if (!labelTable) {
+      continue;
+    }
+    const uint32_t timePoint = segmentation->timeAxis().clamp(segmentation->settings().activeTimePoint());
+    for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
+      liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridSegmentationRequest(
+        segmentationUid,
+        segmentation->pixelDataRevision(),
+        segmentation->geometryRevision(),
+        static_cast<int64_t>(labelIndex),
+        timePoint)));
+    }
+  }
+
+  rendering::mesh::reconcileExtractedMeshResources(
+    liveKeys,
+    m_meshCpuCache,
+    m_meshHandles,
+    [this](const uuids::uuid& handleUid) { m_meshGpuStore.remove(handleUid); });
+}
 
 void Rendering::consumeCompletedMeshExtractions()
 {

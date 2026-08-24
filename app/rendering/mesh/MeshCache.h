@@ -85,6 +85,9 @@ public:
    */
   std::size_t evictSource(const uuids::uuid& sourceUid);
 
+  /** Remove one cache entry completely. */
+  bool erase(const MeshGeometryKey& key) noexcept;
+
   /**
    * @brief Find an entry by exact geometry key
    * @param key Geometry key

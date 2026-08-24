@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <chrono>
 #include <functional>
+#include <exception>
+#include <string>
 #include <utility>
 
 namespace rendering::mesh
@@ -43,10 +45,29 @@ bool MeshExtractionQueue::submit(MeshGeometryKey key, std::string description, M
     return false;
   }
 
+  const MeshGeometryKey jobKey = key;
+  auto guardedJob = [jobKey, job = std::move(job)]() mutable {
+    try {
+      return job();
+    }
+    catch (const std::exception& e) {
+      return MeshExtractionJobResult{
+        .key = jobKey,
+        .result = std::nullopt,
+        .diagnostics = {std::string{"Mesh extraction threw an exception: "} + e.what()}};
+    }
+    catch (...) {
+      return MeshExtractionJobResult{
+        .key = jobKey,
+        .result = std::nullopt,
+        .diagnostics = {std::string{"Mesh extraction threw an unknown exception"}}};
+    }
+  };
+
   m_activeJobs.push_back(ActiveJob{
     .key = std::move(key),
     .description = std::move(description),
-    .future = std::async(std::launch::async, std::move(job))});
+    .future = std::async(std::launch::async, std::move(guardedJob))});
   return true;
 }
 
@@ -60,7 +81,21 @@ std::vector<MeshExtractionJobResult> MeshExtractionQueue::takeCompleted()
       continue;
     }
 
-    completed.push_back(it->future.get());
+    try {
+      completed.push_back(it->future.get());
+    }
+    catch (const std::exception& e) {
+      completed.push_back(MeshExtractionJobResult{
+        .key = it->key,
+        .result = std::nullopt,
+        .diagnostics = {std::string{"Unable to collect mesh extraction result: "} + e.what()}});
+    }
+    catch (...) {
+      completed.push_back(MeshExtractionJobResult{
+        .key = it->key,
+        .result = std::nullopt,
+        .diagnostics = {std::string{"Unable to collect mesh extraction result: unknown exception"}}});
+    }
     it = m_activeJobs.erase(it);
   }
 

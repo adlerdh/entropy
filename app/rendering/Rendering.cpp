@@ -224,8 +224,6 @@ Rendering::Rendering(AppData& appData)
 
 Rendering::~Rendering()
 {
-  prepareForShutdown();
-
   if (m_nvg) {
     nvgDeleteGL3(m_nvg);
     m_nvg = nullptr;
@@ -383,6 +381,7 @@ void Rendering::render()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   try {
+    reconcileExtractedMeshResources();
     renderImageData();
     updateMeshExtractionStatus();
     logTextureUnitZeroStateIfChanged("renderImageData");

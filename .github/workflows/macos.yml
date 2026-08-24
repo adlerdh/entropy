@@ -135,6 +135,7 @@ jobs:
             build-debug/external/imgui-*
             build-debug/external/implot-*
             build-debug/external/itk-*
+            build-debug/external/vtk-*
             build-debug/external/nanovg-*
             build-debug/external/nativefiledialog-*
             build-debug/external/nlohmann_json-*
@@ -237,6 +238,7 @@ jobs:
             build-debug/external/imgui-*
             build-debug/external/implot-*
             build-debug/external/itk-*
+            build-debug/external/vtk-*
             build-debug/external/nanovg-*
             build-debug/external/nativefiledialog-*
             build-debug/external/nlohmann_json-*
@@ -336,6 +338,7 @@ jobs:
             build-coverage/external/imgui-*
             build-coverage/external/implot-*
             build-coverage/external/itk-*
+            build-coverage/external/vtk-*
             build-coverage/external/nanovg-*
             build-coverage/external/nativefiledialog-*
             build-coverage/external/nlohmann_json-*
@@ -456,6 +459,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*
@@ -578,6 +582,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*
@@ -699,6 +704,7 @@ jobs:
             build-debug/external/imgui-*
             build-debug/external/implot-*
             build-debug/external/itk-*
+            build-debug/external/vtk-*
             build-debug/external/nanovg-*
             build-debug/external/nativefiledialog-*
             build-debug/external/nlohmann_json-*

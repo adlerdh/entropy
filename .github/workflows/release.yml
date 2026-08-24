@@ -101,6 +101,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*
@@ -249,6 +250,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*
@@ -382,6 +384,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*
@@ -520,6 +523,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*
@@ -689,6 +693,7 @@ jobs:
             build-release/external/imgui-*
             build-release/external/implot-*
             build-release/external/itk-*
+            build-release/external/vtk-*
             build-release/external/nanovg-*
             build-release/external/nativefiledialog-*
             build-release/external/nlohmann_json-*

@@ -762,6 +762,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/mesh/MeshPrimitives.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshRenderableFactory.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshRenderer.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshResourceLifecycle.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshRenderList.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshRenderListDrawing.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshScalarGrid.cpp"

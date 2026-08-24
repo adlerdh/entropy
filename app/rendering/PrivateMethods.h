@@ -277,6 +277,9 @@ void renderVolumeImagesForView(const View& view);
  */
 void consumeCompletedMeshExtractions();
 
+/** Release extracted meshes whose geometry keys are no longer represented by current application state. */
+void reconcileExtractedMeshResources();
+
 /**
  * @brief Publish the current background mesh extraction count to the UI status popup.
  */

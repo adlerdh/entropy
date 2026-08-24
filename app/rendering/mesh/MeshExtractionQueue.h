@@ -59,7 +59,7 @@ public:
   /**
    * @brief Move finished job results out of the queue
    * @return Completed results in submission order where possible
-   * @throw Propagates exceptions thrown by finished jobs
+   * Exceptions thrown by jobs are converted to failed results with diagnostics.
    */
   std::vector<MeshExtractionJobResult> takeCompleted();
 

@@ -153,6 +153,10 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showImagePlanesIn3D = false;
   preferences.modulateImagePlaneOpacityWithViewAngle = false;
   preferences.shadeImagePlanesIn3D = false;
+  preferences.imagePlaneLightingAmbient = 0.11f;
+  preferences.imagePlaneLightingDiffuse = 0.22f;
+  preferences.imagePlaneLightingSpecular = 0.33f;
+  preferences.imagePlaneLightingSpecularPower = 64.0f;
   preferences.lightingAmbient = 0.42f;
   preferences.lightingDiffuse = 0.83f;
   preferences.lightingSpecular = 0.51f;
@@ -160,7 +164,25 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.renderFrontFaces = false;
   preferences.renderBackFaces = true;
   preferences.reversePovRotation = true;
+  preferences.showCrosshairsIn3D = false;
+  preferences.crosshairs3DGlyphDiameterVoxelDiagonals = 2.5f;
+  preferences.crosshairs3DGlyphLengthVoxelDiagonals = 24.0f;
+  preferences.showThreeDCameraFrustumIn2DViews = true;
+  preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.meshGenerationThreadCount = 3;
+  preferences.meshPickingEnabled = false;
+  preferences.meshClipPlaneEnabled = true;
+  preferences.meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.0f};
+  preferences.meshShadowsEnabled = true;
+  preferences.meshShadowMapSizePixels = 2048;
+  preferences.meshShadowStrength = 0.7f;
+  preferences.meshShadowDepthBias = 0.002f;
+  preferences.meshAmbientOcclusionEnabled = true;
+  preferences.meshAmbientOcclusionRadiusMm = 12.0f;
+  preferences.meshAmbientOcclusionStrength = 0.8f;
+  preferences.meshAmbientOcclusionPower = 2.0f;
+  preferences.meshAmbientOcclusionContrast = 3.0f;
+  preferences.meshAmbientOcclusionSampleCount = 32;
   preferences.ddpUntilComplete = false;
   preferences.ddpMaxPeelPasses = 12;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
@@ -335,6 +357,10 @@ void requireRenderPreferencesEqual(
   CHECK(actual.showImagePlanesIn3D == expected.showImagePlanesIn3D);
   CHECK(actual.modulateImagePlaneOpacityWithViewAngle == expected.modulateImagePlaneOpacityWithViewAngle);
   CHECK(actual.shadeImagePlanesIn3D == expected.shadeImagePlanesIn3D);
+  CHECK(actual.imagePlaneLightingAmbient == Catch::Approx(expected.imagePlaneLightingAmbient));
+  CHECK(actual.imagePlaneLightingDiffuse == Catch::Approx(expected.imagePlaneLightingDiffuse));
+  CHECK(actual.imagePlaneLightingSpecular == Catch::Approx(expected.imagePlaneLightingSpecular));
+  CHECK(actual.imagePlaneLightingSpecularPower == Catch::Approx(expected.imagePlaneLightingSpecularPower));
   CHECK(actual.lightingAmbient == Catch::Approx(expected.lightingAmbient));
   CHECK(actual.lightingDiffuse == Catch::Approx(expected.lightingDiffuse));
   CHECK(actual.lightingSpecular == Catch::Approx(expected.lightingSpecular));
@@ -342,7 +368,26 @@ void requireRenderPreferencesEqual(
   CHECK(actual.renderFrontFaces == expected.renderFrontFaces);
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
+  CHECK(actual.showCrosshairsIn3D == expected.showCrosshairsIn3D);
+  CHECK(
+    actual.crosshairs3DGlyphDiameterVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphDiameterVoxelDiagonals));
+  CHECK(actual.crosshairs3DGlyphLengthVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphLengthVoxelDiagonals));
+  CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
+  CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
   CHECK(actual.meshGenerationThreadCount == expected.meshGenerationThreadCount);
+  CHECK(actual.meshPickingEnabled == expected.meshPickingEnabled);
+  CHECK(actual.meshClipPlaneEnabled == expected.meshClipPlaneEnabled);
+  CHECK(actual.meshClipPlaneWorld == expected.meshClipPlaneWorld);
+  CHECK(actual.meshShadowsEnabled == expected.meshShadowsEnabled);
+  CHECK(actual.meshShadowMapSizePixels == expected.meshShadowMapSizePixels);
+  CHECK(actual.meshShadowStrength == Catch::Approx(expected.meshShadowStrength));
+  CHECK(actual.meshShadowDepthBias == Catch::Approx(expected.meshShadowDepthBias));
+  CHECK(actual.meshAmbientOcclusionEnabled == expected.meshAmbientOcclusionEnabled);
+  CHECK(actual.meshAmbientOcclusionRadiusMm == Catch::Approx(expected.meshAmbientOcclusionRadiusMm));
+  CHECK(actual.meshAmbientOcclusionStrength == Catch::Approx(expected.meshAmbientOcclusionStrength));
+  CHECK(actual.meshAmbientOcclusionPower == Catch::Approx(expected.meshAmbientOcclusionPower));
+  CHECK(actual.meshAmbientOcclusionContrast == Catch::Approx(expected.meshAmbientOcclusionContrast));
+  CHECK(actual.meshAmbientOcclusionSampleCount == expected.meshAmbientOcclusionSampleCount);
   CHECK(actual.ddpUntilComplete == expected.ddpUntilComplete);
   CHECK(actual.ddpMaxPeelPasses == expected.ddpMaxPeelPasses);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
@@ -407,23 +452,13 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.xrayEnergyKeV = defaults.xrayEnergyKeV;
   renderPreferences.xrayWindow = defaults.xrayWindow;
   renderPreferences.xrayLevel = defaults.xrayLevel;
-  renderPreferences.raycastSamplingFactor = defaults.raycastSamplingFactor;
-  renderPreferences.transparent3DBackground = defaults.transparent3DBackground;
-  renderPreferences.imageBoxVisible = defaults.imageBoxVisible;
-  renderPreferences.showImagePlanesIn3D = defaults.showImagePlanesIn3D;
-  renderPreferences.modulateImagePlaneOpacityWithViewAngle = defaults.modulateImagePlaneOpacityWithViewAngle;
-  renderPreferences.shadeImagePlanesIn3D = defaults.shadeImagePlanesIn3D;
-  renderPreferences.lightingAmbient = defaults.lightingAmbient;
-  renderPreferences.lightingDiffuse = defaults.lightingDiffuse;
-  renderPreferences.lightingSpecular = defaults.lightingSpecular;
-  renderPreferences.lightingSpecularPower = defaults.lightingSpecularPower;
-  renderPreferences.renderFrontFaces = defaults.renderFrontFaces;
-  renderPreferences.renderBackFaces = defaults.renderBackFaces;
-  renderPreferences.segmentationMasking = defaults.segmentationMasking;
   renderPreferences.modulateSegmentationOpacityWithImageOpacity = defaults.modulateSegmentationOpacityWithImageOpacity;
   renderPreferences.segmentationOutlineStyle = defaults.segmentationOutlineStyle;
   renderPreferences.segmentationInteriorOpacity = defaults.segmentationInteriorOpacity;
   renderPreferences.segmentationErosionFactor = defaults.segmentationErosionFactor;
+  renderPreferences.renderFrontFaces = defaults.renderFrontFaces;
+  renderPreferences.renderBackFaces = defaults.renderBackFaces;
+  renderPreferences.segmentationMasking = defaults.segmentationMasking;
   renderPreferences.annotationsOnTop = defaults.annotationsOnTop;
   renderPreferences.landmarksOnTop = defaults.landmarksOnTop;
   renderPreferences.hideAnnotationVertices = defaults.hideAnnotationVertices;
@@ -523,7 +558,7 @@ TEST_CASE("user preferences save creates parent directories and load restores th
   requirePrecisionPreferencesEqual(actualPrecisionPreferences, expectedPrecisionPreferences);
 }
 
-TEST_CASE("application render preferences ignore project-owned presentation settings", "[app][settings]")
+TEST_CASE("application render preferences retain rendering controls but ignore view presentation", "[app][settings]")
 {
   user_preferences::RenderPreferences preferences;
   preferences.raycastSamplingFactor = 0.25f;
@@ -538,7 +573,7 @@ TEST_CASE("application render preferences ignore project-owned presentation sett
   const user_preferences::RenderPreferences appPreferences =
     user_preferences::applicationRenderPreferences(preferences);
 
-  CHECK(appPreferences.raycastSamplingFactor == user_preferences::RenderPreferences{}.raycastSamplingFactor);
+  CHECK(appPreferences.raycastSamplingFactor == Catch::Approx(0.25f));
   CHECK(appPreferences.showCrosshairs == user_preferences::RenderPreferences{}.showCrosshairs);
   CHECK(
     appPreferences.showCrosshairsInLightboxViews ==
@@ -711,9 +746,7 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
     user_preferences::RenderPreferences{}.localLinearResidualInvalidStyle);
   CHECK(renderPreferences.checkerboardSquares == user_preferences::RenderPreferences{}.checkerboardSquares);
   CHECK(renderPreferences.targetFrameTimeSeconds == Catch::Approx(1.0));
-  CHECK(
-    renderPreferences.raycastSamplingFactor ==
-    Catch::Approx(user_preferences::RenderPreferences{}.raycastSamplingFactor));
+  CHECK(renderPreferences.raycastSamplingFactor == Catch::Approx(0.5f));
   CHECK(renderPreferences.asciiCharsetIndex == 2);
   CHECK(renderPreferences.asciiBackgroundAlpha == Catch::Approx(1.0f));
   CHECK(renderPreferences.asciiSpatialExponent == Catch::Approx(4.0f));
@@ -753,7 +786,9 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.contains("comparison"));
   CHECK_FALSE(root.at("images").contains("intensityProjectionDefaults"));
   CHECK_FALSE(root.at("segmentation").contains("display"));
-  CHECK_FALSE(root.at("rendering").contains("raycasting"));
+  CHECK(
+    root.at("rendering").at("raycasting").at("samplingFactor").get<float>() ==
+    Catch::Approx(renderPreferences.raycastSamplingFactor));
   CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
   CHECK(root.at("rendering").at("dualDepthPeeling").at("untilComplete") == true);
   CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 8u);

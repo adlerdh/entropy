@@ -5,6 +5,7 @@ add_executable(TestRendering
   LocalLinearResidualMetricTests.cpp
   LocalNccMetricTests.cpp
   MeshTests.cpp
+  MeshOpenGlResourceTests.cpp
   PixelEdgeGeometryTests.cpp
   PipelineHelpersTests.cpp
   ShaderProgramSetupTests.cpp
@@ -24,11 +25,13 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/helpers/TextureSetupHelpers.cpp"
   "${entropy_APP_DIR}/rendering/helpers/VectorDrawingHelpers.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshAdvancedLighting.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/AmbientOcclusionResources.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshBounds.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshCache.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshClipPlanes.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshCrosshairsPolicy.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshDdpPolicy.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshDdpResources.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtraction.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionQueue.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionRunner.cpp"
@@ -48,10 +51,12 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/mesh/MeshPrimitives.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshRenderableFactory.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshRenderList.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshResourceLifecycle.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshScalarGrid.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshScene.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshSegmentationPolicy.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshShadowMapProjection.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshShadowMapResources.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshValidation.cpp"
   "${entropy_APP_DIR}/rendering/metrics/LocalLinearResidualMetric.cpp"
   "${entropy_APP_DIR}/rendering/metrics/LocalNccMetric.cpp"
@@ -62,9 +67,14 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/ShaderUniformSetup.cpp"
   "${entropy_APP_DIR}/rendering/common/ShaderType.cpp"
   "${entropy_APP_DIR}/rendering/utility/containers/Uniforms.cpp"
+  "${entropy_APP_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp"
+  "${entropy_APP_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp"
   "${entropy_APP_DIR}/rendering/utility/gl/GLErrorChecker.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp"
   "${entropy_APP_DIR}/rendering/utility/gl/GLShader.cpp"
   "${entropy_APP_DIR}/rendering/utility/gl/GLShaderProgram.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLTexture.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp"
   "${entropy_APP_DIR}/rendering/utility/math/SliceIntersector.cpp"
 )
 
@@ -74,6 +84,7 @@ target_link_libraries(TestRendering PRIVATE
   Entropy::Image
   entropy::shaders
   glad
+  glfw
   entropy_warnings
   ${VTK_LIBRARIES}
 )

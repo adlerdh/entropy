@@ -12,6 +12,8 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 namespace rendering::mesh
 {
@@ -201,7 +203,7 @@ void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t 
   }
 }
 
-bool blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId, const GLuint completionQuery)
+void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId, const GLuint completionQuery)
 {
   request.resources.backBlendFbo().bind(fbo::TargetType::DrawAndRead);
   glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -222,13 +224,19 @@ bool blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentI
   }
   request.backBlendProgram.stopUse();
   request.resources.backTempTexture(currentId).unbind(k_backTempTextureUnit);
+}
 
-  if (completionQuery == 0u) {
-    return true;
+std::optional<bool> completedQueryHasSamples(const GLuint query)
+{
+  GLuint available = GL_FALSE;
+  glGetQueryObjectuiv(query, GL_QUERY_RESULT_AVAILABLE, &available);
+  if (available != GL_TRUE) {
+    return std::nullopt;
   }
+
   GLuint anySamplesPassed = GL_FALSE;
-  glGetQueryObjectuiv(completionQuery, GL_QUERY_RESULT, &anySamplesPassed);
-  return GL_TRUE == anySamplesPassed;
+  glGetQueryObjectuiv(query, GL_QUERY_RESULT, &anySamplesPassed);
+  return anySamplesPassed == GL_TRUE;
 }
 
 void resolveDdp(const MeshDdpRenderRequest& request, const ScopedDdpGlState& scopedState, const uint32_t currentId)
@@ -280,24 +288,41 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
   clearDdpTargets(request.resources, 0u);
   initializeDepthBounds(request);
 
-  GLuint completionQuery = 0u;
+  std::vector<GLuint> completionQueries;
   if (request.plan.untilComplete) {
-    glGenQueries(1, &completionQuery);
+    completionQueries.resize(request.plan.peelPasses, 0u);
+    glGenQueries(static_cast<GLsizei>(completionQueries.size()), completionQueries.data());
   }
 
   uint32_t currentId = 0u;
   uint32_t completedPasses = 0u;
-  bool anySamplesPassed = true;
-  while (shouldContinueDdpPeeling(completedPasses, request.plan, anySamplesPassed)) {
+  uint32_t nextQueryToPoll = 0u;
+  bool transparencyComplete = false;
+  while (request.plan.active && completedPasses < request.plan.peelPasses && !transparencyComplete) {
+    while (!completionQueries.empty() && nextQueryToPoll < completedPasses) {
+      const std::optional<bool> hasSamples = completedQueryHasSamples(completionQueries[nextQueryToPoll]);
+      if (!hasSamples) {
+        break;
+      }
+      ++nextQueryToPoll;
+      if (!*hasSamples) {
+        transparencyComplete = true;
+        break;
+      }
+    }
+    if (transparencyComplete) {
+      break;
+    }
+
     currentId = (completedPasses + 1u) % 2u;
     clearDdpTargets(request.resources, currentId);
     peelFrontAndBackLayers(request, currentId);
-    anySamplesPassed = blendBackLayer(request, currentId, completionQuery);
+    blendBackLayer(request, currentId, completionQueries.empty() ? 0u : completionQueries[completedPasses]);
     ++completedPasses;
   }
 
-  if (completionQuery != 0u) {
-    glDeleteQueries(1, &completionQuery);
+  if (!completionQueries.empty()) {
+    glDeleteQueries(static_cast<GLsizei>(completionQueries.size()), completionQueries.data());
   }
 
   resolveDdp(request, scopedState, currentId);

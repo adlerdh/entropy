@@ -15,6 +15,7 @@
 #include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshRenderer.h"
+#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -296,7 +297,7 @@ private:
   using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
   using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
   using MeshHandle = rendering::mesh::MeshHandle;
-  using MeshHandleMap = std::unordered_map<MeshGeometryKey, MeshHandle, MeshGeometryKeyHash>;
+  using MeshHandleMap = rendering::mesh::MeshHandleMap;
 
   struct MeshImagePlaneHandleKey
   {

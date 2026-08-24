@@ -396,8 +396,47 @@ json toJson(
         {"showWhilePainting", settings.brushPreviewWhilePainting()},
         {"outlineStyle", enumToName(settings.brushPreviewOutlineStyle(), sk_segmentationOutlineNames)}}}}},
     {"rendering",
-     {{"camera", {{"reversePovRotation", renderPreferences.reversePovRotation}}},
-      {"mesh", {{"generationThreads", renderPreferences.meshGenerationThreadCount}}},
+     {{"camera",
+       {{"reversePovRotation", renderPreferences.reversePovRotation},
+        {"showFrustumIn2DViews", renderPreferences.showThreeDCameraFrustumIn2DViews},
+        {"frustumColor", vec4ToJson(renderPreferences.threeDCameraFrustumColor)}}},
+      {"threeD",
+       {{"transparentBackground", renderPreferences.transparent3DBackground},
+        {"imageBoxVisible", renderPreferences.imageBoxVisible},
+        {"imagePlanesVisible", renderPreferences.showImagePlanesIn3D},
+        {"imagePlaneViewAngleOpacity", renderPreferences.modulateImagePlaneOpacityWithViewAngle},
+        {"imagePlaneShading", renderPreferences.shadeImagePlanesIn3D},
+        {"lighting",
+         {{"ambient", renderPreferences.lightingAmbient},
+          {"diffuse", renderPreferences.lightingDiffuse},
+          {"specular", renderPreferences.lightingSpecular},
+          {"specularPower", renderPreferences.lightingSpecularPower}}},
+        {"showCrosshairs", renderPreferences.showCrosshairsIn3D},
+        {"crosshairsDiameterVox", renderPreferences.crosshairs3DGlyphDiameterVoxelDiagonals},
+        {"crosshairsLengthVox", renderPreferences.crosshairs3DGlyphLengthVoxelDiagonals},
+        {"imagePlaneLighting",
+         {{"ambient", renderPreferences.imagePlaneLightingAmbient},
+          {"diffuse", renderPreferences.imagePlaneLightingDiffuse},
+          {"specular", renderPreferences.imagePlaneLightingSpecular},
+          {"specularPower", renderPreferences.imagePlaneLightingSpecularPower}}}}},
+      {"mesh",
+       {{"generationThreads", renderPreferences.meshGenerationThreadCount},
+        {"pointPicking", renderPreferences.meshPickingEnabled},
+        {"clipPlane",
+         {{"enabled", renderPreferences.meshClipPlaneEnabled},
+          {"worldPlane", vec4ToJson(renderPreferences.meshClipPlaneWorld)}}},
+        {"shadows",
+         {{"enabled", renderPreferences.meshShadowsEnabled},
+          {"mapSizePixels", renderPreferences.meshShadowMapSizePixels},
+          {"strength", renderPreferences.meshShadowStrength},
+          {"depthBias", renderPreferences.meshShadowDepthBias}}},
+        {"ambientOcclusion",
+         {{"enabled", renderPreferences.meshAmbientOcclusionEnabled},
+          {"radiusMm", renderPreferences.meshAmbientOcclusionRadiusMm},
+          {"strength", renderPreferences.meshAmbientOcclusionStrength},
+          {"power", renderPreferences.meshAmbientOcclusionPower},
+          {"contrast", renderPreferences.meshAmbientOcclusionContrast},
+          {"sampleCount", renderPreferences.meshAmbientOcclusionSampleCount}}}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
         {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
@@ -411,6 +450,7 @@ json toJson(
       {"frameRate",
        {{"limit", renderPreferences.limitFrameRate},
         {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
+      {"raycasting", {{"samplingFactor", renderPreferences.raycastSamplingFactor}}},
       {"dualDepthPeeling",
        {{"untilComplete", renderPreferences.ddpUntilComplete},
         {"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
@@ -614,13 +654,76 @@ void applyJson(
         1.0 / 240.0,
         1.0);
     }
+    if (const auto raycasting = rendering->find("raycasting");
+        raycasting != rendering->end() && raycasting->is_object())
+    {
+      setFloatFromJson(renderPreferences.raycastSamplingFactor, *raycasting, "samplingFactor", 0.5f, 2.0f);
+    }
     if (const auto camera = rendering->find("camera"); camera != rendering->end() && camera->is_object()) {
       setFromJson(renderPreferences.reversePovRotation, *camera, "reversePovRotation");
+      setFromJson(renderPreferences.showThreeDCameraFrustumIn2DViews, *camera, "showFrustumIn2DViews");
+      setVec4FromJson(renderPreferences.threeDCameraFrustumColor, *camera, "frustumColor");
+    }
+    if (const auto threeD = rendering->find("threeD"); threeD != rendering->end() && threeD->is_object()) {
+      setFromJson(renderPreferences.transparent3DBackground, *threeD, "transparentBackground");
+      setFromJson(renderPreferences.imageBoxVisible, *threeD, "imageBoxVisible");
+      setFromJson(renderPreferences.showImagePlanesIn3D, *threeD, "imagePlanesVisible");
+      setFromJson(renderPreferences.modulateImagePlaneOpacityWithViewAngle, *threeD, "imagePlaneViewAngleOpacity");
+      setFromJson(renderPreferences.shadeImagePlanesIn3D, *threeD, "imagePlaneShading");
+      if (const auto lighting = threeD->find("lighting"); lighting != threeD->end() && lighting->is_object()) {
+        setFloatFromJson(renderPreferences.lightingAmbient, *lighting, "ambient", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.lightingDiffuse, *lighting, "diffuse", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.lightingSpecular, *lighting, "specular", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.lightingSpecularPower, *lighting, "specularPower", 1.0f, 128.0f);
+      }
+      setFromJson(renderPreferences.showCrosshairsIn3D, *threeD, "showCrosshairs");
+      setFloatFromJson(
+        renderPreferences.crosshairs3DGlyphDiameterVoxelDiagonals,
+        *threeD,
+        "crosshairsDiameterVox",
+        0.01f,
+        100.0f);
+      setFloatFromJson(
+        renderPreferences.crosshairs3DGlyphLengthVoxelDiagonals,
+        *threeD,
+        "crosshairsLengthVox",
+        0.01f,
+        1000.0f);
+      if (const auto lighting = threeD->find("imagePlaneLighting"); lighting != threeD->end() && lighting->is_object())
+      {
+        setFloatFromJson(renderPreferences.imagePlaneLightingAmbient, *lighting, "ambient", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.imagePlaneLightingDiffuse, *lighting, "diffuse", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.imagePlaneLightingSpecular, *lighting, "specular", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.imagePlaneLightingSpecularPower, *lighting, "specularPower", 1.0f, 128.0f);
+      }
     }
     if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
       if (const auto threads = mesh->find("generationThreads"); threads != mesh->end() && threads->is_number_unsigned())
       {
         renderPreferences.meshGenerationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
+      }
+      setFromJson(renderPreferences.meshPickingEnabled, *mesh, "pointPicking");
+      if (const auto clipPlane = mesh->find("clipPlane"); clipPlane != mesh->end() && clipPlane->is_object()) {
+        setFromJson(renderPreferences.meshClipPlaneEnabled, *clipPlane, "enabled");
+        setVec4FromJson(renderPreferences.meshClipPlaneWorld, *clipPlane, "worldPlane");
+      }
+      if (const auto shadows = mesh->find("shadows"); shadows != mesh->end() && shadows->is_object()) {
+        setFromJson(renderPreferences.meshShadowsEnabled, *shadows, "enabled");
+        if (const auto size = shadows->find("mapSizePixels"); size != shadows->end() && size->is_number_unsigned()) {
+          renderPreferences.meshShadowMapSizePixels = std::clamp<uint32_t>(size->get<uint32_t>(), 128u, 8192u);
+        }
+        setFloatFromJson(renderPreferences.meshShadowStrength, *shadows, "strength", 0.0f, 1.0f);
+        setFloatFromJson(renderPreferences.meshShadowDepthBias, *shadows, "depthBias", 0.0f, 0.1f);
+      }
+      if (const auto ao = mesh->find("ambientOcclusion"); ao != mesh->end() && ao->is_object()) {
+        setFromJson(renderPreferences.meshAmbientOcclusionEnabled, *ao, "enabled");
+        setFloatFromJson(renderPreferences.meshAmbientOcclusionRadiusMm, *ao, "radiusMm", 0.1f, 1000.0f);
+        setFloatFromJson(renderPreferences.meshAmbientOcclusionStrength, *ao, "strength", 0.0f, 1.0f);
+        setFloatFromJson(renderPreferences.meshAmbientOcclusionPower, *ao, "power", 0.1f, 8.0f);
+        setFloatFromJson(renderPreferences.meshAmbientOcclusionContrast, *ao, "contrast", 0.1f, 8.0f);
+        if (const auto samples = ao->find("sampleCount"); samples != ao->end() && samples->is_number_unsigned()) {
+          renderPreferences.meshAmbientOcclusionSampleCount = std::clamp<uint32_t>(samples->get<uint32_t>(), 8u, 64u);
+        }
       }
     }
     if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
@@ -765,6 +868,9 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.segmentationOutlineStyle = currentPreferences.segmentationOutlineStyle;
   preferences.segmentationInteriorOpacity = currentPreferences.segmentationInteriorOpacity;
   preferences.segmentationErosionFactor = currentPreferences.segmentationErosionFactor;
+  preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
+  preferences.renderBackFaces = currentPreferences.renderBackFaces;
+  preferences.segmentationMasking = currentPreferences.segmentationMasking;
   preferences.squaredDifference = currentPreferences.squaredDifference;
   preferences.squaredDifferenceMetric = currentPreferences.squaredDifferenceMetric;
   preferences.localNccMetric = currentPreferences.localNccMetric;
@@ -786,19 +892,6 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.checkerboardSquares = currentPreferences.checkerboardSquares;
   preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
   preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
-  preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
-  preferences.transparent3DBackground = currentPreferences.transparent3DBackground;
-  preferences.imageBoxVisible = currentPreferences.imageBoxVisible;
-  preferences.showImagePlanesIn3D = currentPreferences.showImagePlanesIn3D;
-  preferences.modulateImagePlaneOpacityWithViewAngle = currentPreferences.modulateImagePlaneOpacityWithViewAngle;
-  preferences.shadeImagePlanesIn3D = currentPreferences.shadeImagePlanesIn3D;
-  preferences.lightingAmbient = currentPreferences.lightingAmbient;
-  preferences.lightingDiffuse = currentPreferences.lightingDiffuse;
-  preferences.lightingSpecular = currentPreferences.lightingSpecular;
-  preferences.lightingSpecularPower = currentPreferences.lightingSpecularPower;
-  preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
-  preferences.renderBackFaces = currentPreferences.renderBackFaces;
-  preferences.segmentationMasking = currentPreferences.segmentationMasking;
   preferences.annotationsOnTop = currentPreferences.annotationsOnTop;
   preferences.landmarksOnTop = currentPreferences.landmarksOnTop;
   preferences.hideAnnotationVertices = currentPreferences.hideAnnotationVertices;

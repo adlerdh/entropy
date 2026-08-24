@@ -26,6 +26,7 @@
 #include "rendering/mesh/MeshPrimitives.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshRenderList.h"
+#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshScalarGrid.h"
 #include "rendering/mesh/MeshScene.h"
 #include "rendering/mesh/MeshSegmentationPolicy.h"
@@ -42,6 +43,7 @@
 #include <chrono>
 #include <limits>
 #include <ranges>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -1320,6 +1322,42 @@ TEST_CASE("mesh cache stores pending, ready, failed, stale, and evicted states",
   CHECK(!evictedEntry->mesh);
 }
 
+TEST_CASE("mesh resource reconciliation releases only obsolete extracted geometry", "[rendering][mesh]")
+{
+  mesh::MeshGeometryKey retainedKey;
+  retainedKey.sourceUid = generateRandomUuid();
+  retainedKey.isoValue = 1.0;
+  mesh::MeshGeometryKey obsoleteKey = retainedKey;
+  obsoleteKey.isoValue = 2.0;
+
+  mesh::MeshCache cache;
+  cache.markPending(retainedKey);
+  cache.markPending(obsoleteKey);
+  const mesh::MeshHandle retainedHandle{.uid = generateRandomUuid(), .geometryVersion = 1};
+  const mesh::MeshHandle obsoleteHandle{.uid = generateRandomUuid(), .geometryVersion = 2};
+  mesh::MeshHandleMap handles{{retainedKey, retainedHandle}, {obsoleteKey, obsoleteHandle}};
+  std::vector<uuids::uuid> released;
+
+  const std::size_t removed = mesh::reconcileExtractedMeshResources(
+    mesh::MeshGeometryKeySet{retainedKey},
+    cache,
+    handles,
+    [&released](const uuids::uuid& uid) { released.push_back(uid); });
+
+  CHECK(removed == 1u);
+  CHECK(handles.contains(retainedKey));
+  CHECK_FALSE(handles.contains(obsoleteKey));
+  CHECK(cache.contains(retainedKey));
+  CHECK_FALSE(cache.contains(obsoleteKey));
+  CHECK(released == std::vector<uuids::uuid>{obsoleteHandle.uid});
+
+  const mesh::MeshExtractionRunResult stale = mesh::applyExtractionJobResult(
+    {.key = obsoleteKey, .result = mesh::MeshExtractionResult{.key = obsoleteKey, .mesh = makeTriangleMesh()}},
+    cache);
+  CHECK(stale.status == mesh::MeshExtractionRunStatus::Stale);
+  CHECK_FALSE(cache.contains(obsoleteKey));
+}
+
 TEST_CASE("mesh cache failed entries preserve diagnostics without ready mesh data", "[rendering][mesh]")
 {
   mesh::MeshGeometryKey key;
@@ -1440,6 +1478,25 @@ TEST_CASE("mesh extraction queue respects the active job limit", "[rendering][me
       .key = secondKey,
       .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh()}};
   }));
+}
+
+TEST_CASE("mesh extraction queue converts worker exceptions into failed results", "[rendering][mesh]")
+{
+  mesh::MeshGeometryKey key;
+  key.sourceUid = generateRandomUuid();
+  key.extractionAlgorithm = "throwing-test";
+
+  mesh::MeshExtractionQueue queue;
+  REQUIRE(queue.submit(key, "throwing mesh", []() -> mesh::MeshExtractionJobResult {
+    throw std::runtime_error{"synthetic extraction failure"};
+  }));
+
+  const std::vector<mesh::MeshExtractionJobResult> completed = waitForCompleted(queue);
+  REQUIRE(completed.size() == 1u);
+  CHECK(completed.front().key == key);
+  CHECK_FALSE(completed.front().result);
+  REQUIRE(completed.front().diagnostics.size() == 1u);
+  CHECK(completed.front().diagnostics.front().find("synthetic extraction failure") != std::string::npos);
 }
 
 TEST_CASE("mesh extraction queue results are applied to pending cache entries", "[rendering][mesh]")
