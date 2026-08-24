@@ -373,8 +373,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
   project.m_meshRendering.m_ambientOcclusionRadiusMm = 12.0f;
   project.m_meshRendering.m_ambientOcclusionStrength = 0.7f;
+  project.m_meshRendering.m_ambientOcclusionPower = 1.8f;
+  project.m_meshRendering.m_ambientOcclusionContrast = 2.2f;
   project.m_meshRendering.m_ambientOcclusionSampleCount = 32;
-  project.m_meshRendering.m_translucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
   project.m_meshRendering.m_ddpUntilComplete = false;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_meshRendering.m_pickingEnabled = false;
@@ -390,7 +391,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_segmentationDisplay.m_interiorOpacity = 0.4f;
   project.m_segmentationDisplay.m_erosionFactor = 0.8f;
   project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
-  project.m_isocontours.m_modulateOpacityWithImageOpacity = true;
 
   const json root = project;
 
@@ -445,8 +445,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(mesh.at("ambientOcclusion").at("enabled") == true);
   CHECK(mesh.at("ambientOcclusion").at("radiusMm") == 12.0f);
   CHECK(mesh.at("ambientOcclusion").at("strength") == 0.7f);
+  CHECK(mesh.at("ambientOcclusion").at("power") == 1.8f);
+  CHECK(mesh.at("ambientOcclusion").at("contrast") == 2.2f);
   CHECK(mesh.at("ambientOcclusion").at("sampleCount") == 32);
-  CHECK(mesh.at("translucentCompositing") == "multiplicative");
   CHECK(dualDepthPeeling.at("untilComplete") == false);
   CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
   CHECK_FALSE(mesh.contains("dualDepthPeeling"));
@@ -474,7 +475,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(rendering.at("segmentation").at("outlineStyle") == "voxel");
   CHECK(rendering.at("segmentation").at("erosionFactor") == 0.8f);
   CHECK(rendering.at("isocontours").at("floatingPointInterpolationPolicy") == "floatingPoint");
-  CHECK(rendering.at("isocontours").at("modulateOpacityWithImageOpacity") == true);
   CHECK_FALSE(settings.contains("annotations"));
   CHECK_FALSE(rendering.contains("isosurfaces"));
 
@@ -515,8 +515,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled == true);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 12.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.8f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 2.2f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 32);
-  CHECK(parsed.m_meshRendering.m_translucentCompositing == serialize::ProjectMeshCompositingMode::Multiplicative);
   CHECK(parsed.m_meshRendering.m_ddpUntilComplete == false);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
@@ -533,7 +534,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.8f);
   CHECK(
     parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
-  CHECK(parsed.m_isocontours.m_modulateOpacityWithImageOpacity == true);
 }
 
 TEST_CASE("Legacy 3D lighting remains shared with image planes", "[project][serialization]")
@@ -593,7 +593,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_meshRendering.m_renderingEnabled = false;
   project.m_meshRendering.m_ddpUntilComplete = false;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
-  project.m_isocontours.m_modulateOpacityWithImageOpacity = true;
+  project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
 
   REQUIRE(serialize::save(project, projectFile));
 
@@ -662,6 +662,21 @@ TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh",
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
 }
 
+TEST_CASE("Project serialization ignores obsolete translucent mesh compositing", "[project][serialization]")
+{
+  const json root = {
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings", {{"rendering", {{"mesh", {{"enabled", false}, {"translucentCompositing", "additive"}}}}}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK_FALSE(parsed.m_meshRendering.m_renderingEnabled);
+
+  const json rewritten = parsed;
+  const json& mesh = rewritten.at("settings").at("rendering").at("mesh");
+  CHECK(mesh.at("enabled") == false);
+  CHECK_FALSE(mesh.contains("translucentCompositing"));
+}
+
 TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][serialization][ssao]")
 {
   const json root = {
@@ -674,6 +689,8 @@ TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][se
   CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 12.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.0f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 1.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 24);
 
   const json rewritten = parsed;
@@ -686,7 +703,8 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
 {
   const json root = {
     {"version", {{"major", 1}, {"minor", 0}}},
-    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"images",
+     json::array({{{"path", "image.nii.gz"}, {"settings", {{"display", {{"name", "Preserved image settings"}}}}}}})},
     {"settings",
      {
        {"rendering",
@@ -729,7 +747,9 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
   CHECK(
     parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
-  CHECK(parsed.m_isocontours.m_modulateOpacityWithImageOpacity == true);
+  REQUIRE(parsed.m_referenceImage.m_settings);
+  CHECK(parsed.m_referenceImage.m_settings->m_displayName == "Preserved image settings");
+  CHECK(parsed.m_referenceImage.m_settings->m_modulateIsocontourOpacityWithImageOpacity);
   CHECK(parsed.m_view.m_annotationsOnTop == true);
   CHECK(parsed.m_view.m_landmarksOnTop == true);
   CHECK(parsed.m_view.m_hideAnnotationVertices == true);
@@ -1178,6 +1198,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_useDistanceMapForRaycasting = false,
     .m_isosurfacesVisible = false,
     .m_applyImageColormapToIsosurfaces = true,
+    .m_modulateIsocontourOpacityWithImageOpacity = true,
     .m_showIsocontoursIn2D = false,
     .m_showIsosurfacesIn3D = false,
     .m_isocontourLineWidthIn2D = 3.5,
@@ -1283,6 +1304,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(raycasting.at("useDistanceMap") == false);
   CHECK(isosurfaces.at("visible") == false);
   CHECK(isosurfaces.at("applyImageColormap") == true);
+  CHECK(isosurfaces.at("modulateContourOpacityWithImageOpacity") == true);
   CHECK(isosurfaces.at("showContours2D") == false);
   CHECK(isosurfaces.at("showSurfaces3D") == false);
   CHECK(isosurfaces.at("contourLineWidth2D") == 3.5);
@@ -1375,6 +1397,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_useDistanceMapForRaycasting);
   CHECK_FALSE(parsedSettings.m_isosurfacesVisible);
   CHECK(parsedSettings.m_applyImageColormapToIsosurfaces);
+  CHECK(parsedSettings.m_modulateIsocontourOpacityWithImageOpacity);
   CHECK_FALSE(parsedSettings.m_showIsocontoursIn2D);
   CHECK_FALSE(parsedSettings.m_showIsosurfacesIn3D);
   CHECK(parsedSettings.m_isocontourLineWidthIn2D == 3.5);
@@ -1448,6 +1471,26 @@ TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project]
   CHECK(parsed.rimOpacityStrength == 0.8f);
   CHECK(parsed.rimEmissionStrength == 1.25f);
   CHECK(parsed.rimPower == 3.5f);
+}
+
+TEST_CASE("Isosurface serialization omits default PBR coefficients", "[project][serialization][isosurface]")
+{
+  Isosurface surface;
+  surface.material.usePbrShading = true;
+
+  const json root = surface;
+  const json& pbr = root.at("material").at("pbr");
+
+  CHECK(pbr.at("enabled") == true);
+  CHECK_FALSE(pbr.contains("metallic"));
+  CHECK_FALSE(pbr.contains("roughness"));
+  CHECK_FALSE(pbr.contains("ambientOcclusion"));
+
+  const Isosurface parsed = root.get<Isosurface>();
+  CHECK(parsed.material.usePbrShading);
+  CHECK(parsed.material.metallic == 0.25f);
+  CHECK(parsed.material.roughness == 0.5f);
+  CHECK(parsed.material.ambientOcclusion == 1.0f);
 }
 
 TEST_CASE("Project serialization preserves image isosurfaces", "[project][serialization][isosurface]")

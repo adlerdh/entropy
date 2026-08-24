@@ -36,10 +36,13 @@ const int kShadingModelUnlit = 0;
 const int kShadingModelSimpleLit = 1;
 const int kShadingModelPhysicallyBased = 2;
 const float kPi = 3.14159265359;
+const vec3 kPbrFillLightDirection = vec3(-0.43643578, 0.21821789, 0.87287156);
+const float kPbrFillLightStrength = 0.18;
 
 vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
-  vec3 halfVector = normalize(lightDirection + viewDirection);
+  vec3 halfDirection = lightDirection + viewDirection;
+  vec3 halfVector = dot(halfDirection, halfDirection) > 0.000001 ? normalize(halfDirection) : normal;
   float diffuse = abs(dot(normal, lightDirection));
   float specular = pow(abs(dot(normal, halfVector)), max(u_lightingSpecularPower, 0.001));
   vec3 ambient = albedo * u_lightingAmbient * ao;
@@ -69,9 +72,10 @@ vec3 fresnelSchlick(float cosTheta, vec3 f0)
   return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
+vec3 physicallyBasedDirectColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float lightStrength)
 {
-  vec3 halfVector = normalize(lightDirection + viewDirection);
+  vec3 halfDirection = lightDirection + viewDirection;
+  vec3 halfVector = dot(halfDirection, halfDirection) > 0.000001 ? normalize(halfDirection) : normal;
   float nDotL = max(dot(normal, lightDirection), 0.0);
   float nDotV = max(dot(normal, viewDirection), 0.0);
   float hDotV = max(dot(halfVector, viewDirection), 0.0);
@@ -83,8 +87,21 @@ vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 vi
 
   vec3 specular = (distribution * geometry * fresnel) / max(4.0 * nDotV * nDotL, 0.000001);
   vec3 diffuse = (vec3(1.0) - fresnel) * (1.0 - u_metallic) * albedo / kPi;
-  vec3 ambient = 0.14 * albedo * u_ambientOcclusion * ao;
-  return ambient + (diffuse + specular) * nDotL * shadow;
+  // Match the application's ADS controls while retaining energy-conserving BRDF terms.
+  // Multiplying the Lambertian term by pi treats u_lightingDiffuse as irradiance,
+  // keeping its brightness comparable to the simple shading path.
+  vec3 diffuseLighting = diffuse * (kPi * u_lightingDiffuse);
+  vec3 specularLighting = specular * (kPi * u_lightingSpecular);
+  return (diffuseLighting + specularLighting) * nDotL * lightStrength;
+}
+
+vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
+{
+  vec3 ambient = albedo * u_lightingAmbient * u_ambientOcclusion * ao;
+  vec3 keyLighting = physicallyBasedDirectColor(albedo, normal, lightDirection, viewDirection, shadow);
+  vec3 fillLighting =
+    physicallyBasedDirectColor(albedo, normal, kPbrFillLightDirection, viewDirection, kPbrFillLightStrength);
+  return ambient + keyLighting + fillLighting;
 }
 
 float shadowVisibility(vec3 worldPosition)
@@ -142,6 +159,7 @@ void main()
 
   vec3 normal = normalize(v_worldNormal);
   vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
+  vec3 shadingNormal = faceforward(normal, -viewDirection, normal);
   vec3 lightDirection = viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
   float shadow = shadowVisibility(v_worldPosition);
@@ -149,8 +167,8 @@ void main()
   vec3 litColor = u_shadingModel == kShadingModelUnlit
                     ? color.rgb
                     : (u_shadingModel == kShadingModelPhysicallyBased
-                         ? physicallyBasedColor(color.rgb, normal, lightDirection, viewDirection, ao, shadow)
-                         : simpleLitColor(color.rgb, normal, lightDirection, viewDirection, ao, shadow));
+                         ? physicallyBasedColor(color.rgb, shadingNormal, lightDirection, viewDirection, ao, shadow)
+                         : simpleLitColor(color.rgb, shadingNormal, lightDirection, viewDirection, ao, shadow));
 
   fragColor = applyRimLighting(vec4(litColor, color.a), normal, viewDirection);
 }

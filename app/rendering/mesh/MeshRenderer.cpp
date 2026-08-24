@@ -43,7 +43,9 @@ class ScopedMeshRasterState
 public:
   ScopedMeshRasterState()
   {
-    glGetIntegerv(GL_POLYGON_MODE, m_polygonModes.data());
+    std::array<GLint, 2> polygonModes{};
+    glGetIntegerv(GL_POLYGON_MODE, polygonModes.data());
+    m_polygonMode = polygonModes[0];
     m_cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
     glGetIntegerv(GL_CULL_FACE_MODE, &m_cullFaceMode);
   }
@@ -53,14 +55,14 @@ public:
 
   ~ScopedMeshRasterState()
   {
-    glPolygonMode(GL_FRONT, m_polygonModes[0]);
-    glPolygonMode(GL_BACK, m_polygonModes[1]);
+    // Core-profile OpenGL only accepts GL_FRONT_AND_BACK here. GL_FRONT and GL_BACK queue GL_INVALID_ENUM on macOS.
+    glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(m_polygonMode));
     glCullFace(static_cast<GLenum>(m_cullFaceMode));
     m_cullFaceEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
   }
 
 private:
-  std::array<GLint, 2> m_polygonModes{};
+  GLint m_polygonMode = GL_FILL;
   GLboolean m_cullFaceEnabled = GL_FALSE;
   GLint m_cullFaceMode = GL_BACK;
 };

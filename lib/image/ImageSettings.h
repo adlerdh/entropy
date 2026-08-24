@@ -377,6 +377,12 @@ public:
   /// @brief Return whether isosurfaces use the image colormap instead of per-surface colors.
   bool applyImageColormapToIsosurfaces() const;
 
+  /// @brief Set whether 2D isocontour opacity is scaled by this image's opacity.
+  void setModulateIsocontourOpacityWithImageOpacity(bool modulate);
+
+  /// @brief Return whether 2D isocontour opacity is scaled by this image's opacity.
+  bool modulateIsocontourOpacityWithImageOpacity() const;
+
   /// @brief Set whether isocontours are shown in 2D slice views.
   void setShowIsoscontoursIn2D(bool show);
 
@@ -1005,10 +1011,11 @@ private:
   // These apply to the image's isosurfaces:
   bool m_useDistanceMapForRaycasting{true}; //!< Use the distance map to accelerate raycasting of the image
 
-  bool m_isosurfacesVisible{true};               //!< Visibility of image isosurfaces
-  bool m_applyImageColormapToIsosurfaces{false}; //!< Color image isosurfaces using the image colormap
-  bool m_showIsocontoursIn2D{true};              //!< Visibility of isosurface edges in 2D image slices
-  bool m_showIsosurfacesIn3D{true};              //!< Visibility of isosurfaces in 3D views
+  bool m_isosurfacesVisible{true};                         //!< Visibility of image isosurfaces
+  bool m_applyImageColormapToIsosurfaces{false};           //!< Color image isosurfaces using the image colormap
+  bool m_modulateIsocontourOpacityWithImageOpacity{false}; //!< Scale 2D isocontour opacity by image opacity
+  bool m_showIsocontoursIn2D{true};                        //!< Visibility of isosurface edges in 2D image slices
+  bool m_showIsosurfacesIn3D{true};                        //!< Visibility of isosurfaces in 3D views
 
   /// Width of isovalue lines in 2D, roughly in terms of pixels
   double m_isocontourLineWidthIn2D{2.0};

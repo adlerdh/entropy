@@ -116,6 +116,23 @@ TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributio
   CHECK(raycast.find("uniform vec3 u_specular") == std::string::npos);
 }
 
+TEST_CASE("mesh PBR shading honors scene lighting in opaque and DDP paths", "[rendering][shaders][pbr]")
+{
+  const std::array shaderPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("albedo * u_lightingAmbient * u_ambientOcclusion * ao") != std::string::npos);
+    CHECK(shader.find("diffuse * (kPi * u_lightingDiffuse)") != std::string::npos);
+    CHECK(shader.find("specular * (kPi * u_lightingSpecular)") != std::string::npos);
+    CHECK(shader.find("kPbrFillLightDirection") != std::string::npos);
+    CHECK(shader.find("kPbrFillLightStrength") != std::string::npos);
+    CHECK(shader.find("ambient + keyLighting + fillLighting") != std::string::npos);
+    CHECK(shader.find("faceforward(normal, -viewDirection, normal)") != std::string::npos);
+    CHECK(shader.find("0.14 * albedo") == std::string::npos);
+  }
+}
+
 TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
 {
   const std::string resolve =
@@ -131,6 +148,8 @@ TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter",
   CHECK(resolve.find("smoothstep(u_radiusMm * 0.5, u_radiusMm, separation)") != std::string::npos);
   CHECK(filter.find("normalWeight") != std::string::npos);
   CHECK(filter.find("depthWeight") != std::string::npos);
+  CHECK(filter.find("pow(clamp(filtered, 0.0, 1.0), u_power)") != std::string::npos);
+  CHECK(filter.find("(1.0 - powered) * u_contrast") != std::string::npos);
 }
 
 TEST_CASE("ASCII compositing addresses the full framebuffer from the render viewport", "[rendering][shaders][ascii]")

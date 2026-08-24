@@ -19,7 +19,10 @@ static const glm::vec4 sk_winClipFullWindowViewport{-1.0f, -1.0f, 2.0f, 2.0f};
 ViewRenderMode reconcileRenderModeForViewType(ViewType viewType, ViewRenderMode renderMode)
 {
   if (ViewType::ThreeD == viewType) {
-    return ViewRenderMode::VolumeRender;
+    return (ViewRenderMode::SegmentationMesh == renderMode || ViewRenderMode::VolumeRender == renderMode ||
+            ViewRenderMode::Disabled == renderMode)
+             ? renderMode
+             : ViewRenderMode::SegmentationMesh;
   }
 
   return (ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationMesh == renderMode)
@@ -95,14 +98,27 @@ void Layout::updateImageOrdering(const uuid_range_t& orderedImageUids)
 
 void Layout::setViewType(const ViewType& viewType)
 {
+  if (ViewType::ThreeD == m_viewType) {
+    m_last3dRenderMode = m_renderMode;
+  }
+  else {
+    m_last2dRenderMode = m_renderMode;
+  }
   ControlFrame::setViewType(viewType);
-  ControlFrame::setRenderMode(reconcileRenderModeForViewType(viewType, renderMode()));
+  ControlFrame::setRenderMode(ViewType::ThreeD == viewType ? m_last3dRenderMode : m_last2dRenderMode);
   updateAllViewsInLayout();
 }
 
 void Layout::setRenderMode(const ViewRenderMode& renderMode)
 {
-  ControlFrame::setRenderMode(reconcileRenderModeForViewType(viewType(), renderMode));
+  const ViewRenderMode reconciled = reconcileRenderModeForViewType(viewType(), renderMode);
+  ControlFrame::setRenderMode(reconciled);
+  if (ViewType::ThreeD == viewType()) {
+    m_last3dRenderMode = reconciled;
+  }
+  else {
+    m_last2dRenderMode = reconciled;
+  }
   updateAllViewsInLayout();
 }
 

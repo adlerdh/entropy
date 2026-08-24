@@ -228,7 +228,11 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
-  changedMeshRendering.m_meshRendering.m_translucentCompositing = serialize::ProjectMeshCompositingMode::Multiplicative;
+  changedMeshRendering.m_meshRendering.m_ambientOcclusionPower = 2.0f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_ambientOcclusionContrast = 2.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
@@ -251,6 +255,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedMeshRendering.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
+  auto changedImageIsocontours = project;
+  changedImageIsocontours.m_referenceImage.m_settings->m_modulateIsocontourOpacityWithImageOpacity = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedImageIsocontours));
+
   auto changedIntensityProjection = project;
   changedIntensityProjection.m_intensityProjection.m_slabThicknessMm = 12.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedIntensityProjection));
@@ -258,10 +266,6 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   auto changedSegmentationDisplay = project;
   changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ViewPixel;
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
-
-  auto changedIsocontours = project;
-  changedIsocontours.m_isocontours.m_modulateOpacityWithImageOpacity = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedIsocontours));
 }
 
 TEST_CASE("Project snapshot comparison detects registration result changes", "[ProjectSnapshotComparison]")

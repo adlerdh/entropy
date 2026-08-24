@@ -25,15 +25,14 @@ inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 1;
  */
 struct SegmentationLabelMeshState
 {
-  bool visible = true;  //!< Global label visibility
   bool showMesh = true; //!< 3D mesh visibility
   float opacity = 1.0f; //!< Effective label opacity after segmentation-level modulation
 };
 
 /**
  * @brief Return whether a segmentation label should produce and render a mesh
- * @param state Label visibility and opacity state
- * @return True when a visible, non-transparent label mesh should be rendered
+ * @param state Label mesh visibility and segmentation opacity state
+ * @return True when a non-transparent label mesh is enabled in 3D
  */
 bool shouldRenderSegmentationLabelMesh(const SegmentationLabelMeshState& state) noexcept;
 

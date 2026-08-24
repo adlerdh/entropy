@@ -542,6 +542,7 @@ void renderViewSettingsComboWindow(
               ImGui::Spacing();
               ImGui::Separator();
               ImGui::Spacing();
+              ImGui::TextDisabled("Per-view settings:");
 
               ProjectionType projectionType = ProjectionType::Perspective;
               if (modes.getThreeDProjectionType && modes.setThreeDProjectionType) {
@@ -620,20 +621,19 @@ void renderViewSettingsComboWindow(
                 helpTooltip("Move the 3D camera eye to the crosshairs position when the crosshairs move.");
               }
 
-              if (modes.getThreeDRenderImageBox && modes.setThreeDRenderImageBox) {
-                bool renderImageBox = modes.getThreeDRenderImageBox();
-                if (ImGui::Checkbox("Show image volume bounds", &renderImageBox)) {
-                  modes.setThreeDRenderImageBox(renderImageBox);
-                }
-                helpTooltip("Render a subtle outline of the raycast image box in 3D views.");
-              }
-
               if (modes.getThreeDImagePlanesVisible && modes.setThreeDImagePlanesVisible) {
                 bool showImagePlanes = modes.getThreeDImagePlanesVisible();
-                if (ImGui::Checkbox("Show image planes", &showImagePlanes)) {
+                const bool globallyEnabled =
+                  !modes.areThreeDImagePlanesGloballyEnabled || modes.areThreeDImagePlanesGloballyEnabled();
+                ImGui::BeginDisabled(!globallyEnabled);
+                if (ImGui::Checkbox("Show image planes in this view", &showImagePlanes)) {
                   modes.setThreeDImagePlanesVisible(showImagePlanes);
                 }
-                helpTooltip("Show axial, coronal, and sagittal image planes through the current crosshairs in 3D");
+                ImGui::EndDisabled();
+                helpTooltip(
+                  globallyEnabled
+                    ? "Show axial, coronal, and sagittal image planes through the current crosshairs in this 3D view"
+                    : "Enable image planes globally in Rendering settings before showing them in this view");
               }
             }
           }

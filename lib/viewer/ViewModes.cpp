@@ -22,9 +22,9 @@ std::string typeString(const ViewRenderMode& mode)
     case ViewRenderMode::JointHistogram:
       return "Joint histogram";
     case ViewRenderMode::VolumeRender:
-      return "Volume render isosurfaces";
+      return "Isosurfaces";
     case ViewRenderMode::SegmentationMesh:
-      return "Render segmentation meshes";
+      return "Segmentations";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:

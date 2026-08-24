@@ -93,8 +93,6 @@ struct RenderPreferences
 
   FloatingPointLinearInterpolationPolicy isocontourFloatingPointInterpolationPolicy =
     FloatingPointLinearInterpolationPolicy::Automatic;
-  bool modulateIsocontourOpacityWithImageOpacity = true;
-
   bool modulateSegmentationOpacityWithImageOpacity = true;
   SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::Disabled;
   float segmentationInteriorOpacity = 0.2f;

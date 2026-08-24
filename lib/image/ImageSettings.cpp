@@ -533,6 +533,16 @@ bool ImageSettings::applyImageColormapToIsosurfaces() const
   return m_applyImageColormapToIsosurfaces;
 }
 
+void ImageSettings::setModulateIsocontourOpacityWithImageOpacity(bool modulate)
+{
+  m_modulateIsocontourOpacityWithImageOpacity = modulate;
+}
+
+bool ImageSettings::modulateIsocontourOpacityWithImageOpacity() const
+{
+  return m_modulateIsocontourOpacityWithImageOpacity;
+}
+
 void ImageSettings::setShowIsoscontoursIn2D(bool show)
 {
   m_showIsocontoursIn2D = show;

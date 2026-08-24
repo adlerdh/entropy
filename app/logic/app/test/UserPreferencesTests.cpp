@@ -108,7 +108,6 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.xrayWindow = 0.35f;
   preferences.xrayLevel = 0.65f;
   preferences.isocontourFloatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
-  preferences.modulateIsocontourOpacityWithImageOpacity = false;
   preferences.modulateSegmentationOpacityWithImageOpacity = false;
   preferences.segmentationOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
   preferences.segmentationInteriorOpacity = 0.73f;
@@ -291,7 +290,6 @@ void requireRenderPreferencesEqual(
   CHECK(actual.xrayWindow == Catch::Approx(expected.xrayWindow));
   CHECK(actual.xrayLevel == Catch::Approx(expected.xrayLevel));
   CHECK(actual.isocontourFloatingPointInterpolationPolicy == expected.isocontourFloatingPointInterpolationPolicy);
-  CHECK(actual.modulateIsocontourOpacityWithImageOpacity == expected.modulateIsocontourOpacityWithImageOpacity);
   CHECK(actual.modulateSegmentationOpacityWithImageOpacity == expected.modulateSegmentationOpacityWithImageOpacity);
   CHECK(actual.segmentationOutlineStyle == expected.segmentationOutlineStyle);
   CHECK(actual.segmentationInteriorOpacity == Catch::Approx(expected.segmentationInteriorOpacity));
@@ -426,7 +424,6 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.segmentationOutlineStyle = defaults.segmentationOutlineStyle;
   renderPreferences.segmentationInteriorOpacity = defaults.segmentationInteriorOpacity;
   renderPreferences.segmentationErosionFactor = defaults.segmentationErosionFactor;
-  renderPreferences.modulateIsocontourOpacityWithImageOpacity = defaults.modulateIsocontourOpacityWithImageOpacity;
   renderPreferences.annotationsOnTop = defaults.annotationsOnTop;
   renderPreferences.landmarksOnTop = defaults.landmarksOnTop;
   renderPreferences.hideAnnotationVertices = defaults.hideAnnotationVertices;

@@ -117,13 +117,6 @@ enum class ProjectSegmentationRaycastMasking : std::uint8_t
 };
 
 /// @brief Serialized compositing mode for translucent mesh surfaces.
-enum class ProjectMeshCompositingMode : std::uint8_t
-{
-  AlphaOver,
-  Additive,
-  Multiplicative
-};
-
 /// @brief Serialized coordinate space for landmark point positions.
 enum class ProjectLandmarkCoordinateSpace : std::uint8_t
 {
@@ -245,10 +238,8 @@ struct ProjectRaycastingSettings
  */
 struct ProjectMeshRenderingSettings
 {
-  bool m_renderingEnabled = true;       //!< Render committed opaque isosurfaces as meshes when ready
-  uint32_t m_generationThreadCount = 0; //!< Maximum VTK threads for one CPU mesh extraction job
-  ProjectMeshCompositingMode m_translucentCompositing =
-    ProjectMeshCompositingMode::AlphaOver;            //!< Translucent mesh compositing path
+  bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
+  uint32_t m_generationThreadCount = 0;               //!< Maximum VTK threads for one CPU mesh extraction job
   bool m_ddpUntilComplete = true;                     //!< Stop DDP when no newly peeled fragments remain
   uint32_t m_ddpMaxPeelPasses = 8;                    //!< DDP safety/fixed front-back peel iteration count
   bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
@@ -261,6 +252,8 @@ struct ProjectMeshRenderingSettings
   bool m_ambientOcclusionEnabled = false;             //!< Render screen-space ambient occlusion for meshes
   float m_ambientOcclusionRadiusMm = 5.0f;            //!< Mesh AO view-space radius in physical millimetres
   float m_ambientOcclusionStrength = 0.5f;            //!< Mesh AO contribution in [0, 1]
+  float m_ambientOcclusionPower = 1.0f;               //!< Mesh AO nonlinear response exponent
+  float m_ambientOcclusionContrast = 1.0f;            //!< Mesh AO shaped occlusion scale
   uint32_t m_ambientOcclusionSampleCount = 24;        //!< Mesh AO hemisphere samples per pixel
 };
 
@@ -294,7 +287,6 @@ struct ProjectIsocontourDisplaySettings
 {
   FloatingPointLinearInterpolationPolicy m_floatingPointInterpolationPolicy =
     FloatingPointLinearInterpolationPolicy::Automatic; //!< Isocontour interpolation policy
-  bool m_modulateOpacityWithImageOpacity = false;      //!< Scale isocontour opacity by image opacity
 };
 
 /**
@@ -428,13 +420,14 @@ struct ImageSettings
   double m_edgeOpacity = 1.0;              //!< Solid edge opacity
   bool m_hasEdgeColor = false;             //!< Edge color was present in the serialized settings
 
-  bool m_useDistanceMapForRaycasting = true;      //!< Use distance maps for image raycasting
-  bool m_isosurfacesVisible = true;               //!< Show image isosurfaces
-  bool m_applyImageColormapToIsosurfaces = false; //!< Color isosurfaces with the image colormap
-  bool m_showIsocontoursIn2D = true;              //!< Show 2D isocontours
-  bool m_showIsosurfacesIn3D = true;              //!< Show 3D isosurfaces
-  double m_isocontourLineWidthIn2D = 2.0;         //!< 2D isocontour line width
-  float m_isosurfaceOpacityModulator = 1.0f;      //!< Isosurface opacity multiplier
+  bool m_useDistanceMapForRaycasting = true;                //!< Use distance maps for image raycasting
+  bool m_isosurfacesVisible = true;                         //!< Show image isosurfaces
+  bool m_applyImageColormapToIsosurfaces = false;           //!< Color isosurfaces with the image colormap
+  bool m_modulateIsocontourOpacityWithImageOpacity = false; //!< Scale 2D contour opacity by image opacity
+  bool m_showIsocontoursIn2D = true;                        //!< Show 2D isocontours
+  bool m_showIsosurfacesIn3D = true;                        //!< Show 3D isosurfaces
+  double m_isocontourLineWidthIn2D = 2.0;                   //!< 2D isocontour line width
+  float m_isosurfaceOpacityModulator = 1.0f;                //!< Isosurface opacity multiplier
 };
 
 /**

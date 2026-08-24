@@ -17,6 +17,8 @@ constexpr float k_minDepthBias = 0.0f;
 constexpr float k_maxDepthBias = 0.1f;
 constexpr float k_minAmbientOcclusionRadiusMm = 0.1f;
 constexpr float k_maxAmbientOcclusionRadiusMm = 1000.0f;
+constexpr float k_minAmbientOcclusionShaping = 0.1f;
+constexpr float k_maxAmbientOcclusionShaping = 8.0f;
 
 float finiteOr(const float value, const float fallback) noexcept
 {
@@ -63,6 +65,12 @@ MeshAmbientOcclusionPlan meshAmbientOcclusionPlan(
       k_minAmbientOcclusionRadiusMm,
       k_maxAmbientOcclusionRadiusMm),
     .strength = std::clamp(finiteOr(settings.strength, defaults.strength), 0.0f, 1.0f),
+    .power =
+      std::clamp(finiteOr(settings.power, defaults.power), k_minAmbientOcclusionShaping, k_maxAmbientOcclusionShaping),
+    .contrast = std::clamp(
+      finiteOr(settings.contrast, defaults.contrast),
+      k_minAmbientOcclusionShaping,
+      k_maxAmbientOcclusionShaping),
     .sampleCount = std::clamp(settings.sampleCount, k_minAmbientOcclusionSamples, k_maxAmbientOcclusionSamples)};
 }
 

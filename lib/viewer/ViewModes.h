@@ -58,14 +58,14 @@ inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes = {ViewRender
 
 /** @brief Render modes for 3D views with two or more images, in UI order. */
 inline std::vector<ViewRenderMode> const All3dViewRenderModes = {
-  ViewRenderMode::VolumeRender,
   ViewRenderMode::SegmentationMesh,
+  ViewRenderMode::VolumeRender,
   ViewRenderMode::Disabled};
 
 /** @brief Render modes for 3D views with one image, in UI order. */
 inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes = {
-  ViewRenderMode::VolumeRender,
   ViewRenderMode::SegmentationMesh,
+  ViewRenderMode::VolumeRender,
   ViewRenderMode::Disabled};
 
 /** @brief Intensity projection modes in UI order. */

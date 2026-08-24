@@ -597,6 +597,7 @@ set(_vtk_module_args
   -DVTK_MODULE_ENABLE_VTK_CommonExecutionModel:STRING=YES
   -DVTK_MODULE_ENABLE_VTK_FiltersCore:STRING=YES
   -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_FiltersSources:STRING=YES
 )
 
 ExternalProject_Add(VTK

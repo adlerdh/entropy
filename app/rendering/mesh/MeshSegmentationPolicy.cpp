@@ -5,7 +5,7 @@ namespace rendering::mesh
 
 bool shouldRenderSegmentationLabelMesh(const SegmentationLabelMeshState& state) noexcept
 {
-  return state.visible && state.showMesh && state.opacity > 0.0f;
+  return state.showMesh && state.opacity > 0.0f;
 }
 
 MeshCompositingMode compositingModeForLabelAlpha(const float alpha, const MeshCompositingMode translucentMode) noexcept

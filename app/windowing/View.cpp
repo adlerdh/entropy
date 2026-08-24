@@ -64,28 +64,6 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
       {ViewType::Oblique, CameraStartFrameType::Crosshairs_Axial_RAS},
       {ViewType::ThreeD, CameraStartFrameType::Crosshairs_Coronal_LSA}}}};
 
-ViewRenderMode reconcileRenderModeForViewType(const ViewType& newViewType, const ViewRenderMode& currentRenderMode)
-{
-  /// @todo Write this function properly by accounting for
-  /// All2dViewRenderModes, All3dViewRenderModes, All2dNonMetricRenderModes,
-  /// All3dNonMetricRenderModes
-
-  if (ViewType::ThreeD == newViewType) {
-    // If switching to ViewType::ThreeD, then switch to ViewRenderMode::VolumeRender:
-    return ViewRenderMode::VolumeRender;
-  }
-  else if (ViewRenderMode::VolumeRender == currentRenderMode) {
-    // If NOT switching to ViewType::ThreeD and currently using ViewRenderMode::VolumeRender,
-    // then switch to ViewRenderMode::Image:
-    return ViewRenderMode::Image;
-  }
-  else if (ViewRenderMode::SegmentationMesh == currentRenderMode) {
-    return ViewRenderMode::Image;
-  }
-
-  return currentRenderMode;
-}
-
 bool isRenderModeCompatibleWithViewType(const ViewType& viewType, const ViewRenderMode& renderMode)
 {
   const auto& modes = (ViewType::ThreeD == viewType) ? All3dViewRenderModes : All2dViewRenderModes;
@@ -146,6 +124,12 @@ View::View(
   , m_clipPlaneDepth(0.0f)
   , m_anatomy_T_start(get_anatomy_T_start(windowing::initialSliceViewType(m_viewType)))
 {
+  if (ViewType::ThreeD == viewType && isRenderModeCompatibleWithViewType(viewType, renderMode)) {
+    m_last3dRenderMode = renderMode;
+  }
+  else if (ViewType::ThreeD != viewType && isRenderModeCompatibleWithViewType(viewType, renderMode)) {
+    m_last2dRenderMode = renderMode;
+  }
   m_camera.set_anatomy_T_start_provider([this]() { return m_anatomy_T_start; });
   m_sliceCameraActivated = ViewType::ThreeD != m_viewType;
 }
@@ -320,9 +304,13 @@ void View::setViewType(const ViewType& newViewType)
     m_projectionType = newProjType;
   }
 
-  // Since different view types have different allowable render modes, the render mode must be
-  // reconciled with the change in view type:
-  ControlFrame::setRenderMode(reconcileRenderModeForViewType(newViewType, m_renderMode));
+  if (wasThreeD) {
+    m_last3dRenderMode = m_renderMode;
+  }
+  else {
+    m_last2dRenderMode = m_renderMode;
+  }
+  ControlFrame::setRenderMode(ViewType::ThreeD == newViewType ? m_last3dRenderMode : m_last2dRenderMode);
 
   if (ViewType::Oblique == newViewType) {
     // Transitioning to an Oblique view type from an Orthogonal view type:
@@ -361,10 +349,16 @@ void View::setRenderMode(const ViewRenderMode& renderMode)
 {
   if (isRenderModeCompatibleWithViewType(m_viewType, renderMode)) {
     ControlFrame::setRenderMode(renderMode);
+    if (ViewType::ThreeD == m_viewType) {
+      m_last3dRenderMode = renderMode;
+    }
+    else {
+      m_last2dRenderMode = renderMode;
+    }
     return;
   }
 
-  ControlFrame::setRenderMode(reconcileRenderModeForViewType(m_viewType, renderMode));
+  ControlFrame::setRenderMode(ViewType::ThreeD == m_viewType ? m_last3dRenderMode : m_last2dRenderMode);
 }
 
 std::optional<uuid> View::cameraRotationSyncGroupUid() const

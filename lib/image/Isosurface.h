@@ -14,8 +14,8 @@ struct SurfaceMaterial
   float specular = 0.10f;        //!< Specular reflection lighting contribution
   float shininess = 8.0f;        //!< Specular reflection coefficient
   bool usePbrShading = false;    //!< Use physically based shading for mesh rendering
-  float metallic = 0.0f;         //!< Physically based metallic factor for mesh rendering
-  float roughness = 0.55f;       //!< Physically based roughness factor for mesh rendering
+  float metallic = 0.25f;        //!< Physically based metallic factor for mesh rendering
+  float roughness = 0.5f;        //!< Physically based roughness factor for mesh rendering
   float ambientOcclusion = 1.0f; //!< Physically based ambient occlusion factor for mesh rendering
 };
 

@@ -60,8 +60,8 @@ GLTexture createBlankRgbaTexture(tex::Target target, uint8_t value)
 
   T.setData(
     sk_mipmapLevel,
-    GLTexture::getSizedInternalRGBAFormat(compType),
-    GLTexture::getBufferPixelRGBAFormat(compType),
+    GLTexture::getSizedInternalNormalizedRGBAFormat(compType),
+    GLTexture::getBufferPixelNormalizedRGBAFormat(compType),
     GLTexture::getBufferPixelDataType(compType),
     sk_data_U8.data());
 
@@ -80,20 +80,46 @@ GLTexture createBlank2DRgbaTexture(uint8_t value)
   return createBlankRgbaTexture(tex::Target::Texture2D, value);
 }
 
+GLTexture createBlankSegTexture(tex::Target target)
+{
+  static constexpr ComponentType sk_componentType = ComponentType::UInt8;
+  static constexpr uint8_t sk_zero = 0;
+  static constexpr GLint sk_mipmapLevel = 0;
+  static constexpr GLint sk_alignment = 1;
+  static const glm::uvec3 sk_size{1, 1, 1};
+
+  GLTexture::PixelStoreSettings pixelStoreSettings;
+  pixelStoreSettings.m_alignment = sk_alignment;
+  GLTexture texture(target, GLTexture::MultisampleSettings(), pixelStoreSettings, pixelStoreSettings);
+  texture.generate();
+  texture.setMinificationFilter(tex::MinificationFilter::Nearest);
+  texture.setMagnificationFilter(tex::MagnificationFilter::Nearest);
+  texture.setWrapMode(tex::WrapMode::ClampToEdge);
+  texture.setAutoGenerateMipmaps(false);
+  texture.setSize(sk_size);
+  texture.setData(
+    sk_mipmapLevel,
+    GLTexture::getSizedInternalRedFormat(sk_componentType),
+    GLTexture::getBufferPixelRedFormat(sk_componentType),
+    GLTexture::getBufferPixelDataType(sk_componentType),
+    &sk_zero);
+  return texture;
+}
+
 } // namespace
 
 RenderData::RenderData()
   : m_blankImageBlackTransparentTexture(createBlank3DRgbaTexture(0))
   , m_blankImageBlackTransparentTexture2D(createBlank2DRgbaTexture(0))
   , m_blankImageWhiteOpaqueTexture(createBlank3DRgbaTexture(255))
-  , m_blankSegTexture(createBlank3DRgbaTexture(0))
+  , m_blankSegTexture(createBlankSegTexture(tex::Target::Texture3D))
+  , m_blankSegTexture2D(createBlankSegTexture(tex::Target::Texture2D))
   , m_blankDistMapTexture(createBlank3DRgbaTexture(0))
 
   ,
 
   m_snapCrosshairs(CrosshairsSnapping::Disabled)
   , m_modulateSegOpacityWithImageOpacity(true)
-  , m_modulateIsocontourOpacityWithImageOpacity(false)
   , m_imageGrayFloatingPointInterpolationPolicy(FloatingPointLinearInterpolationPolicy::FixedFunction)
   , m_isocontourFloatingPointInterpolationPolicy(FloatingPointLinearInterpolationPolicy::Automatic)
   , m_opacityMixMode(false)
@@ -147,7 +173,6 @@ RenderData::RenderData()
   , m_lightingSpecularPower(16.0f)
   , m_isosurfaceMeshRenderingEnabled(true)
   , m_meshGenerationThreadCount(0)
-  , m_meshTranslucentCompositingMode(rendering::mesh::MeshCompositingMode::AlphaOverDdp)
   , m_meshPickingEnabled(true)
   , m_meshClipPlaneEnabled(false)
   , m_meshClipPlaneWorld(1.0f, 0.0f, 0.0f, 0.0f)

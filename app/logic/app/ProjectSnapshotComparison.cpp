@@ -88,6 +88,7 @@ bool imageSettingsEqual(
          a->m_useDistanceMapForRaycasting == b->m_useDistanceMapForRaycasting &&
          a->m_isosurfacesVisible == b->m_isosurfacesVisible &&
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
+         a->m_modulateIsocontourOpacityWithImageOpacity == b->m_modulateIsocontourOpacityWithImageOpacity &&
          a->m_showIsocontoursIn2D == b->m_showIsocontoursIn2D && a->m_showIsosurfacesIn3D == b->m_showIsosurfacesIn3D &&
          a->m_isocontourLineWidthIn2D == b->m_isocontourLineWidthIn2D &&
          a->m_isosurfaceOpacityModulator == b->m_isosurfaceOpacityModulator;
@@ -308,14 +309,15 @@ bool meshRenderingSettingsEqual(
   const serialize::ProjectMeshRenderingSettings& b)
 {
   return a.m_renderingEnabled == b.m_renderingEnabled && a.m_generationThreadCount == b.m_generationThreadCount &&
-         a.m_translucentCompositing == b.m_translucentCompositing && a.m_ddpUntilComplete == b.m_ddpUntilComplete &&
-         a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses && a.m_pickingEnabled == b.m_pickingEnabled &&
-         a.m_clipPlaneEnabled == b.m_clipPlaneEnabled && a.m_clipPlaneWorld == b.m_clipPlaneWorld &&
-         a.m_shadowsEnabled == b.m_shadowsEnabled && a.m_shadowMapSizePixels == b.m_shadowMapSizePixels &&
-         a.m_shadowStrength == b.m_shadowStrength && a.m_shadowDepthBias == b.m_shadowDepthBias &&
-         a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
+         a.m_ddpUntilComplete == b.m_ddpUntilComplete && a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses &&
+         a.m_pickingEnabled == b.m_pickingEnabled && a.m_clipPlaneEnabled == b.m_clipPlaneEnabled &&
+         a.m_clipPlaneWorld == b.m_clipPlaneWorld && a.m_shadowsEnabled == b.m_shadowsEnabled &&
+         a.m_shadowMapSizePixels == b.m_shadowMapSizePixels && a.m_shadowStrength == b.m_shadowStrength &&
+         a.m_shadowDepthBias == b.m_shadowDepthBias && a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
          a.m_ambientOcclusionRadiusMm == b.m_ambientOcclusionRadiusMm &&
          a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength &&
+         a.m_ambientOcclusionPower == b.m_ambientOcclusionPower &&
+         a.m_ambientOcclusionContrast == b.m_ambientOcclusionContrast &&
          a.m_ambientOcclusionSampleCount == b.m_ambientOcclusionSampleCount;
 }
 
@@ -340,8 +342,7 @@ bool isocontourDisplaySettingsEqual(
   const serialize::ProjectIsocontourDisplaySettings& a,
   const serialize::ProjectIsocontourDisplaySettings& b)
 {
-  return a.m_floatingPointInterpolationPolicy == b.m_floatingPointInterpolationPolicy &&
-         a.m_modulateOpacityWithImageOpacity == b.m_modulateOpacityWithImageOpacity;
+  return a.m_floatingPointInterpolationPolicy == b.m_floatingPointInterpolationPolicy;
 }
 
 bool registrationResultsEqual(const serialize::RegistrationResult& a, const serialize::RegistrationResult& b)

@@ -662,11 +662,6 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   j = json::object();
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
   addIfChanged(j, "generationThreads", settings.m_generationThreadCount, defaults.m_generationThreadCount);
-  addIfChanged(
-    j,
-    "translucentCompositing",
-    enumToName(settings.m_translucentCompositing, k_meshCompositingModeNames),
-    enumToName(defaults.m_translucentCompositing, k_meshCompositingModeNames));
   json dualDepthPeeling = json::object();
   addIfChanged(dualDepthPeeling, "untilComplete", settings.m_ddpUntilComplete, defaults.m_ddpUntilComplete);
   addIfChanged(dualDepthPeeling, "maxPeelPasses", settings.m_ddpMaxPeelPasses, defaults.m_ddpMaxPeelPasses);
@@ -688,6 +683,8 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   addIfChanged(ambientOcclusion, "enabled", settings.m_ambientOcclusionEnabled, defaults.m_ambientOcclusionEnabled);
   addIfChanged(ambientOcclusion, "radiusMm", settings.m_ambientOcclusionRadiusMm, defaults.m_ambientOcclusionRadiusMm);
   addIfChanged(ambientOcclusion, "strength", settings.m_ambientOcclusionStrength, defaults.m_ambientOcclusionStrength);
+  addIfChanged(ambientOcclusion, "power", settings.m_ambientOcclusionPower, defaults.m_ambientOcclusionPower);
+  addIfChanged(ambientOcclusion, "contrast", settings.m_ambientOcclusionContrast, defaults.m_ambientOcclusionContrast);
   addIfChanged(
     ambientOcclusion,
     "sampleCount",
@@ -703,12 +700,6 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
   }
   if (const auto threads = j.find("generationThreads"); threads != j.end() && threads->is_number_unsigned()) {
     settings.m_generationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
-  }
-  if (
-    const auto parsed =
-      enumFromName<ProjectMeshCompositingMode>(j.value("translucentCompositing", ""), k_meshCompositingModeNames))
-  {
-    settings.m_translucentCompositing = *parsed;
   }
   if (const auto ddp = j.find("dualDepthPeeling"); ddp != j.end() && ddp->is_object()) {
     if (const auto value = ddp->find("untilComplete"); value != ddp->end() && value->is_boolean()) {
@@ -762,6 +753,12 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
     }
     if (const auto value = ambientOcclusion->find("strength"); value != ambientOcclusion->end() && value->is_number()) {
       settings.m_ambientOcclusionStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = ambientOcclusion->find("power"); value != ambientOcclusion->end() && value->is_number()) {
+      settings.m_ambientOcclusionPower = std::clamp(value->get<float>(), 0.1f, 8.0f);
+    }
+    if (const auto value = ambientOcclusion->find("contrast"); value != ambientOcclusion->end() && value->is_number()) {
+      settings.m_ambientOcclusionContrast = std::clamp(value->get<float>(), 0.1f, 8.0f);
     }
     if (const auto value = ambientOcclusion->find("sampleCount");
         value != ambientOcclusion->end() && value->is_number_unsigned())
@@ -846,11 +843,6 @@ void to_json(json& j, const ProjectIsocontourDisplaySettings& settings)
     "floatingPointInterpolationPolicy",
     enumToName(settings.m_floatingPointInterpolationPolicy, k_floatingPointInterpolationPolicyNames),
     enumToName(defaults.m_floatingPointInterpolationPolicy, k_floatingPointInterpolationPolicyNames));
-  addIfChanged(
-    j,
-    "modulateOpacityWithImageOpacity",
-    settings.m_modulateOpacityWithImageOpacity,
-    defaults.m_modulateOpacityWithImageOpacity);
 }
 
 void from_json(const json& j, ProjectIsocontourDisplaySettings& settings)
@@ -863,9 +855,6 @@ void from_json(const json& j, ProjectIsocontourDisplaySettings& settings)
     {
       settings.m_floatingPointInterpolationPolicy = *parsed;
     }
-  }
-  if (const auto value = j.find("modulateOpacityWithImageOpacity"); value != j.end() && value->is_boolean()) {
-    settings.m_modulateOpacityWithImageOpacity = value->get<bool>();
   }
 }
 
@@ -1016,6 +1005,38 @@ void from_json(const json& j, EntropyProject& project)
   std::vector<Image> images = j.at("images").get<std::vector<Image>>();
   if (images.empty()) {
     throwDebug("Entropy project JSON must contain at least one image");
+  }
+
+  // Migrate the former project-wide option to every image that does not already
+  // provide the replacement per-image setting. The legacy key is read-only and
+  // is never emitted by current project serialization.
+  bool legacyModulateIsocontourOpacity = false;
+  if (const auto settings = j.find("settings"); settings != j.end() && settings->is_object()) {
+    if (const auto rendering = settings->find("rendering"); rendering != settings->end() && rendering->is_object()) {
+      if (const auto isocontours = rendering->find("isocontours");
+          isocontours != rendering->end() && isocontours->is_object())
+      {
+        if (const auto legacy = isocontours->find("modulateOpacityWithImageOpacity");
+            legacy != isocontours->end() && legacy->is_boolean())
+        {
+          legacyModulateIsocontourOpacity = legacy->get<bool>();
+        }
+      }
+    }
+  }
+  if (legacyModulateIsocontourOpacity) {
+    const auto& imageJson = j.at("images");
+    for (std::size_t i = 0; i < images.size(); ++i) {
+      const bool hasPerImageSetting =
+        imageJson.at(i).contains("settings") && imageJson.at(i).at("settings").contains("isosurfaces") &&
+        imageJson.at(i).at("settings").at("isosurfaces").contains("modulateContourOpacityWithImageOpacity");
+      if (!hasPerImageSetting) {
+        if (!images[i].m_settings) {
+          images[i].m_settings.emplace();
+        }
+        images[i].m_settings->m_modulateIsocontourOpacityWithImageOpacity = true;
+      }
+    }
   }
 
   project.m_referenceImage = std::move(images.front());

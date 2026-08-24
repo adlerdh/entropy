@@ -13,37 +13,6 @@
 
 namespace
 {
-serialize::ProjectMeshCompositingMode projectMeshCompositingMode(
-  const rendering::mesh::MeshCompositingMode compositingMode) noexcept
-{
-  switch (compositingMode) {
-    case rendering::mesh::MeshCompositingMode::Additive:
-      return serialize::ProjectMeshCompositingMode::Additive;
-    case rendering::mesh::MeshCompositingMode::Multiplicative:
-      return serialize::ProjectMeshCompositingMode::Multiplicative;
-    case rendering::mesh::MeshCompositingMode::Opaque:
-    case rendering::mesh::MeshCompositingMode::AlphaOverDdp:
-      return serialize::ProjectMeshCompositingMode::AlphaOver;
-  }
-
-  return serialize::ProjectMeshCompositingMode::AlphaOver;
-}
-
-rendering::mesh::MeshCompositingMode meshCompositingMode(
-  const serialize::ProjectMeshCompositingMode compositingMode) noexcept
-{
-  switch (compositingMode) {
-    case serialize::ProjectMeshCompositingMode::Additive:
-      return rendering::mesh::MeshCompositingMode::Additive;
-    case serialize::ProjectMeshCompositingMode::Multiplicative:
-      return rendering::mesh::MeshCompositingMode::Multiplicative;
-    case serialize::ProjectMeshCompositingMode::AlphaOver:
-      return rendering::mesh::MeshCompositingMode::AlphaOverDdp;
-  }
-
-  return rendering::mesh::MeshCompositingMode::AlphaOverDdp;
-}
-
 GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
 {
   return UiLayoutTabPlacement::Bottom == placement ? GuiData::LayoutTabPlacement::Bottom
@@ -470,7 +439,6 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
   return serialize::ProjectMeshRenderingSettings{
     .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
     .m_generationThreadCount = renderData.m_meshGenerationThreadCount,
-    .m_translucentCompositing = projectMeshCompositingMode(renderData.m_meshTranslucentCompositingMode),
     .m_ddpUntilComplete = renderData.m_meshDdpSettings.untilComplete,
     .m_ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses,
     .m_pickingEnabled = renderData.m_meshPickingEnabled,
@@ -483,6 +451,8 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
     .m_ambientOcclusionEnabled = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
     .m_ambientOcclusionRadiusMm = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm,
     .m_ambientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
+    .m_ambientOcclusionPower = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power,
+    .m_ambientOcclusionContrast = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast,
     .m_ambientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount};
 }
 
@@ -491,7 +461,6 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   auto& renderData = appData.renderData();
   renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
   renderData.m_meshGenerationThreadCount = std::min<uint32_t>(settings.m_generationThreadCount, 64);
-  renderData.m_meshTranslucentCompositingMode = meshCompositingMode(settings.m_translucentCompositing);
   renderData.m_meshDdpSettings.untilComplete = settings.m_ddpUntilComplete;
   renderData.m_meshDdpSettings.maxPeelPasses = std::clamp(settings.m_ddpMaxPeelPasses, 1u, 32u);
   renderData.m_meshPickingEnabled = settings.m_pickingEnabled;
@@ -504,6 +473,8 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_ambientOcclusionEnabled;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm = settings.m_ambientOcclusionRadiusMm;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_ambientOcclusionStrength;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power = settings.m_ambientOcclusionPower;
+  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast = settings.m_ambientOcclusionContrast;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = settings.m_ambientOcclusionSampleCount;
 }
 
@@ -551,15 +522,13 @@ serialize::ProjectIsocontourDisplaySettings isocontourDisplaySettings(const AppD
 {
   const auto& renderData = appData.renderData();
   return serialize::ProjectIsocontourDisplaySettings{
-    .m_floatingPointInterpolationPolicy = renderData.m_isocontourFloatingPointInterpolationPolicy,
-    .m_modulateOpacityWithImageOpacity = renderData.m_modulateIsocontourOpacityWithImageOpacity};
+    .m_floatingPointInterpolationPolicy = renderData.m_isocontourFloatingPointInterpolationPolicy};
 }
 
 void applyIsocontourDisplaySettings(AppData& appData, const serialize::ProjectIsocontourDisplaySettings& settings)
 {
   auto& renderData = appData.renderData();
   renderData.m_isocontourFloatingPointInterpolationPolicy = settings.m_floatingPointInterpolationPolicy;
-  renderData.m_modulateIsocontourOpacityWithImageOpacity = settings.m_modulateOpacityWithImageOpacity;
 }
 
 // Project-wide reset.
@@ -821,6 +790,7 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
   settings.m_useDistanceMapForRaycasting = imageSettings.useDistanceMapForRaycasting();
   settings.m_isosurfacesVisible = imageSettings.isosurfacesVisible();
   settings.m_applyImageColormapToIsosurfaces = imageSettings.applyImageColormapToIsosurfaces();
+  settings.m_modulateIsocontourOpacityWithImageOpacity = imageSettings.modulateIsocontourOpacityWithImageOpacity();
   settings.m_showIsocontoursIn2D = imageSettings.showIsocontoursIn2D();
   settings.m_showIsosurfacesIn3D = imageSettings.showIsosurfacesIn3D();
   settings.m_isocontourLineWidthIn2D = imageSettings.isoContourLineWidthIn2D();
@@ -1055,6 +1025,7 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setUseDistanceMapForRaycasting(settings.m_useDistanceMapForRaycasting);
   imageSettings.setIsosurfacesVisible(settings.m_isosurfacesVisible);
   imageSettings.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
+  imageSettings.setModulateIsocontourOpacityWithImageOpacity(settings.m_modulateIsocontourOpacityWithImageOpacity);
   imageSettings.setShowIsoscontoursIn2D(settings.m_showIsocontoursIn2D);
   imageSettings.setShowIsosurfacesIn3D(settings.m_showIsosurfacesIn3D);
   imageSettings.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);

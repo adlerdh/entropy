@@ -367,7 +367,7 @@ void renderSegmentationHeader(
     ImGui::TreePop();
   }
 
-  if (ImGui::TreeNode("Segmentation Labels")) {
+  if (ImGui::TreeNodeEx("Segmentation Labels", ImGuiTreeNodeFlags_DefaultOpen)) {
     renderSegLabelsChildWindow(
       segSettings.labelTableIndex(),
       getLabelTable(segSettings.labelTableIndex()),

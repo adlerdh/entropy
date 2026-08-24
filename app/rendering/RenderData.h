@@ -218,7 +218,9 @@ struct RenderData
   /// White opaque fallback image texture bound when a shader needs an opaque empty image input.
   GLTexture m_blankImageWhiteOpaqueTexture;
 
-  GLTexture m_blankSegTexture; //!< Empty fallback segmentation texture bound when no segmentation texture is available
+  /// Empty integer fallback segmentation textures for 3D and oversized planar image shader variants.
+  GLTexture m_blankSegTexture;
+  GLTexture m_blankSegTexture2D;
 
   GLTexture m_blankDistMapTexture; //!< Empty fallback distance-map texture bound when no distance map is available
 
@@ -229,9 +231,6 @@ struct RenderData
 
   /// Whether segmentation opacity is multiplied by the corresponding image opacity.
   bool m_modulateSegOpacityWithImageOpacity;
-
-  /// Whether isocontour opacity is multiplied by the corresponding image opacity.
-  bool m_modulateIsocontourOpacityWithImageOpacity;
 
   /// Policy for grayscale image floating-point linear interpolation.
   FloatingPointLinearInterpolationPolicy m_imageGrayFloatingPointInterpolationPolicy;
@@ -353,8 +352,6 @@ struct RenderData
   rendering::mesh::MeshAdvancedLightingSettings m_meshAdvancedLightingSettings;
 
   uint32_t m_meshGenerationThreadCount; //!< Maximum VTK threads for one CPU mesh extraction job, or zero for auto
-
-  rendering::mesh::MeshCompositingMode m_meshTranslucentCompositingMode; //!< Translucent mesh compositing path
 
   rendering::mesh::MeshDdpSettings m_meshDdpSettings; //!< Dual-depth-peeling termination and safety limit
 

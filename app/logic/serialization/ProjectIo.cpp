@@ -82,14 +82,7 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
   }
   else if (path == "settings/rendering/mesh") {
-    preferredKeys = {
-      "enabled",
-      "generationThreads",
-      "translucentCompositing",
-      "pointPicking",
-      "clipPlane",
-      "shadows",
-      "ambientOcclusion"};
+    preferredKeys = {"enabled", "generationThreads", "pointPicking", "clipPlane", "shadows", "ambientOcclusion"};
   }
   else if (path == "settings/rendering/mesh/clipPlane") {
     preferredKeys = {"enabled", "worldPlane"};
@@ -98,10 +91,20 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"enabled", "mapSizePixels", "strength", "depthBias"};
   }
   else if (path == "settings/rendering/mesh/ambientOcclusion") {
-    preferredKeys = {"enabled", "radiusMm", "strength", "sampleCount", "radiusPixels"};
+    preferredKeys = {"enabled", "radiusMm", "strength", "power", "contrast", "sampleCount", "radiusPixels"};
   }
   else if (path == "settings/rendering/isocontours") {
-    preferredKeys = {"floatingPointInterpolationPolicy", "modulateOpacityWithImageOpacity"};
+    preferredKeys = {"floatingPointInterpolationPolicy"};
+  }
+  else if (path.ends_with("/settings/isosurfaces")) {
+    preferredKeys = {
+      "visible",
+      "applyImageColormap",
+      "modulateContourOpacityWithImageOpacity",
+      "showContours2D",
+      "showSurfaces3D",
+      "contourLineWidth2D",
+      "opacityModulator"};
   }
 
   const auto append = [&](const std::string& key) {

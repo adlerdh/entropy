@@ -271,7 +271,7 @@ std::optional<uuid> CallbackHandler::createBlankSeg(const uuid& matchImageUid, c
     imageData);
 
   seg.setHeaderOverrides(matchImg->getHeaderOverrides());
-  seg.settings().setOpacity(0.5); // Default opacity
+  seg.settings().setOpacity(1.0); // Default opacity
 
   spdlog::info("Created segmentation matching header of image {}", matchImageUid);
   spdlog::debug("Header:\n{}", seg.header());

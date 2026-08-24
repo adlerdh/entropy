@@ -107,8 +107,8 @@ Uniforms meshFragmentUniforms()
 {
   Uniforms uniforms;
   uniforms.insertUniform("u_baseColor", UniformType::Vec4, glm::vec4{0.8f, 0.8f, 0.8f, 1.0f});
-  uniforms.insertUniform("u_metallic", UniformType::Float, 0.0f);
-  uniforms.insertUniform("u_roughness", UniformType::Float, 0.55f);
+  uniforms.insertUniform("u_metallic", UniformType::Float, 0.25f);
+  uniforms.insertUniform("u_roughness", UniformType::Float, 0.5f);
   uniforms.insertUniform("u_ambientOcclusion", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
   uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);
@@ -314,6 +314,8 @@ bool Rendering::createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_camera_T_clip", UniformType::Mat4, glm::mat4{1.0f});
   fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
+  fsUniforms.insertUniform("u_power", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_contrast", UniformType::Float, 1.0f);
   return createFullscreenMeshProgram(
     program,
     "app/rendering/shaders/mesh/AmbientOcclusionFilter.fs",

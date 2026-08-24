@@ -45,6 +45,8 @@ struct MeshAmbientOcclusionSettings
   bool enabled = false;      //!< Request an ambient occlusion pass
   float radiusMm = 5.0f;     //!< View-space hemisphere radius in physical world millimetres
   float strength = 0.5f;     //!< Occlusion contribution in [0, 1]
+  float power = 1.0f;        //!< Nonlinear AO response exponent
+  float contrast = 1.0f;     //!< Scale applied to the shaped occlusion amount
   uint32_t sampleCount = 24; //!< Requested number of AO hemisphere samples
 };
 
@@ -76,6 +78,8 @@ struct MeshAmbientOcclusionPlan
   MeshAdvancedLightingFeatureState state = MeshAdvancedLightingFeatureState::Disabled; //!< AO pass state
   float radiusMm = 5.0f;     //!< Sanitized physical radius in millimetres
   float strength = 0.5f;     //!< Sanitized AO strength
+  float power = 1.0f;        //!< Sanitized AO response exponent
+  float contrast = 1.0f;     //!< Sanitized AO contrast
   uint32_t sampleCount = 24; //!< Sanitized AO sample count
 };
 

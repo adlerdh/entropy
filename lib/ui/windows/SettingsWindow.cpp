@@ -2266,7 +2266,7 @@ void render3DRenderingTab(RenderData& renderData)
   ImGui::Spacing();
   ImGui::SeparatorText("3D image planes");
 
-  ImGui::Checkbox("Show image planes in 3D", &renderData.m_showImagePlanesIn3D);
+  ImGui::Checkbox("Enable image planes in 3D views", &renderData.m_showImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker("Show orthogonal image planes through the current crosshairs in 3D views");
 
@@ -2388,6 +2388,28 @@ void renderMeshRenderingTab(RenderData& renderData)
     ImGui::SameLine();
     helpMarker("Maximum darkening applied by mesh ambient occlusion");
 
+    ImGui::DragFloat(
+      "AO power",
+      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power,
+      0.01f,
+      0.1f,
+      8.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+    ImGui::SameLine();
+    helpMarker("Nonlinear response exponent. Values above one deepen occlusion while preserving unoccluded regions");
+
+    ImGui::DragFloat(
+      "AO contrast",
+      &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast,
+      0.01f,
+      0.1f,
+      8.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic);
+    ImGui::SameLine();
+    helpMarker("Scales the shaped occlusion range. Values above one produce stronger separation and darker creases");
+
     int aoSampleCount = static_cast<int>(renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount);
     if (ImGui::SliderInt("AO samples", &aoSampleCount, 8, 64, "%d", ImGuiSliderFlags_AlwaysClamp)) {
       renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = static_cast<uint32_t>(aoSampleCount);
@@ -2395,19 +2417,6 @@ void renderMeshRenderingTab(RenderData& renderData)
     ImGui::SameLine();
     helpMarker("Hemisphere samples per pixel. Higher values reduce noise but increase rendering cost");
   }
-
-  ImGui::Checkbox("Use transparent raycast background", &renderData.m_3dTransparentIfNoHit);
-  ImGui::SameLine();
-  helpMarker(
-    "Show the underlying view background where a fallback ray does not hit the image volume. This does not change "
-    "surface opacity");
-
-  int meshGenerationThreadCount = static_cast<int>(renderData.m_meshGenerationThreadCount);
-  if (ImGui::InputInt("Mesh generation threads", &meshGenerationThreadCount)) {
-    renderData.m_meshGenerationThreadCount = static_cast<uint32_t>(std::clamp(meshGenerationThreadCount, 0, 64));
-  }
-  ImGui::SameLine();
-  helpMarker("Maximum VTK CPU threads used by one mesh extraction job. Zero uses a conservative automatic value");
 
   const auto meshLightingPlan = rendering::mesh::meshAdvancedLightingPlan(
     renderData.m_meshAdvancedLightingSettings,
@@ -2419,43 +2428,6 @@ void renderMeshRenderingTab(RenderData& renderData)
   for (const std::string& diagnostic : meshLightingDiagnostics) {
     disabledTextWrapped(diagnostic.c_str());
   }
-
-  const char* meshCompositingPreview = "Alpha over";
-  switch (renderData.m_meshTranslucentCompositingMode) {
-    case rendering::mesh::MeshCompositingMode::Additive:
-      meshCompositingPreview = "Additive";
-      break;
-    case rendering::mesh::MeshCompositingMode::Multiplicative:
-      meshCompositingPreview = "Multiplicative";
-      break;
-    case rendering::mesh::MeshCompositingMode::Opaque:
-    case rendering::mesh::MeshCompositingMode::AlphaOverDdp:
-      meshCompositingPreview = "Alpha over";
-      break;
-  }
-  if (ImGui::BeginCombo("Translucent mesh compositing", meshCompositingPreview)) {
-    if (ImGui::Selectable(
-          "Alpha over",
-          renderData.m_meshTranslucentCompositingMode == rendering::mesh::MeshCompositingMode::AlphaOverDdp))
-    {
-      renderData.m_meshTranslucentCompositingMode = rendering::mesh::MeshCompositingMode::AlphaOverDdp;
-    }
-    if (ImGui::Selectable(
-          "Additive",
-          renderData.m_meshTranslucentCompositingMode == rendering::mesh::MeshCompositingMode::Additive))
-    {
-      renderData.m_meshTranslucentCompositingMode = rendering::mesh::MeshCompositingMode::Additive;
-    }
-    if (ImGui::Selectable(
-          "Multiplicative",
-          renderData.m_meshTranslucentCompositingMode == rendering::mesh::MeshCompositingMode::Multiplicative))
-    {
-      renderData.m_meshTranslucentCompositingMode = rendering::mesh::MeshCompositingMode::Multiplicative;
-    }
-    ImGui::EndCombo();
-  }
-  ImGui::SameLine();
-  helpMarker("Compositing path used for translucent mesh surfaces");
 
   ImGui::PopID(); /*** PopID mesh_rendering ***/
 }
@@ -2543,6 +2515,15 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
     ImGuiSliderFlags_AlwaysClamp);
   ImGui::SameLine();
   helpMarker("Fallback ray-marching step as a fraction of voxel size. Smaller values improve fidelity but cost more");
+
+  ImGui::Spacing();
+  ImGui::SeparatorText("Mesh generation");
+  int meshGenerationThreadCount = static_cast<int>(renderData.m_meshGenerationThreadCount);
+  if (ImGui::InputInt("Mesh generation threads", &meshGenerationThreadCount)) {
+    renderData.m_meshGenerationThreadCount = static_cast<uint32_t>(std::clamp(meshGenerationThreadCount, 0, 64));
+  }
+  ImGui::SameLine();
+  helpMarker("Maximum VTK CPU threads used by one mesh extraction job. Zero uses a conservative automatic value");
 }
 
 void renderRenderingTab(RenderData& renderData)
@@ -2560,15 +2541,6 @@ void renderRenderingTab(RenderData& renderData)
     renderMeshRenderingTab(renderData);
   }
   finishSettingsSection(meshRenderingOpen);
-
-  const bool isosurfacesOpen = ImGui::CollapsingHeader("Isosurfaces", ImGuiTreeNodeFlags_DefaultOpen);
-  if (isosurfacesOpen) {
-    ImGui::Checkbox("Scale 2D isocontour opacity with image opacity", &rd.m_modulateIsocontourOpacityWithImageOpacity);
-    ImGui::SameLine();
-    helpMarker(
-      "Multiply 2D isocontour opacity by the source image opacity. This does not affect 3D isosurface opacity");
-  }
-  finishSettingsSection(isosurfacesOpen);
 
   const bool asciiOpen = ImGui::CollapsingHeader("ASCII Rendering", ImGuiTreeNodeFlags_DefaultOpen);
   if (asciiOpen) {

@@ -207,6 +207,8 @@ void filterOcclusion(const MeshAmbientOcclusionRenderRequest& request, const glm
   request.filterProgram.setUniform("u_viewportSize", glm::vec2{size});
   request.filterProgram.setUniform("u_camera_T_clip", request.context.camera_T_clip);
   request.filterProgram.setUniform("u_radiusMm", request.plan.radiusMm);
+  request.filterProgram.setUniform("u_power", request.plan.power);
+  request.filterProgram.setUniform("u_contrast", request.plan.contrast);
   drawFullScreenTriangle(request.resources);
   request.filterProgram.stopUse();
   request.resources.rawOcclusionTexture().unbind(k_rawOcclusionTextureUnit);

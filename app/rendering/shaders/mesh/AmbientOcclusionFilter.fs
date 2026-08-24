@@ -6,6 +6,8 @@ uniform sampler2D u_depthTex;
 uniform vec2 u_viewportSize;
 uniform mat4 u_camera_T_clip;
 uniform float u_radiusMm;
+uniform float u_power;
+uniform float u_contrast;
 
 layout(location = 0) out float outOcclusion;
 
@@ -48,5 +50,7 @@ void main()
       totalWeight += weight;
     }
   }
-  outOcclusion = totalWeight > 0.0 ? weightedOcclusion / totalWeight : 1.0;
+  float filtered = totalWeight > 0.0 ? weightedOcclusion / totalWeight : 1.0;
+  float powered = pow(clamp(filtered, 0.0, 1.0), u_power);
+  outOcclusion = 1.0 - clamp((1.0 - powered) * u_contrast, 0.0, 1.0);
 }

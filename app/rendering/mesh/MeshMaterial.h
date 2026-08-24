@@ -23,8 +23,8 @@ enum class MeshShadingModel
 struct MeshMaterial
 {
   glm::vec4 baseColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f};     //!< Normalized non-premultiplied RGBA
-  float metallic = 0.0f;                                       //!< PBR metallic factor
-  float roughness = 0.55f;                                     //!< PBR roughness factor
+  float metallic = 0.25f;                                      //!< PBR metallic factor
+  float roughness = 0.5f;                                      //!< PBR roughness factor
   float ambientOcclusion = 1.0f;                               //!< PBR ambient occlusion factor
   MeshShadingModel shadingModel = MeshShadingModel::SimpleLit; //!< Selected lighting model
   bool rimLightingEnabled = false;                             //!< Enable view-angle rim opacity and glow

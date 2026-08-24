@@ -52,7 +52,8 @@ const rendering::mesh::MeshData* meshDataForHandle(
 
 glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const std::size_t labelIndex)
 {
-  return glm::vec4{labelTable.color_RGBA_nonpremult_U8(labelIndex)} / 255.0f;
+  return glm::vec4{glm::vec3{labelTable.getColor(labelIndex)}, static_cast<float>(labelTable.getAlpha(labelIndex))} /
+         255.0f;
 }
 
 rendering::mesh::MeshMaterial meshMaterialForIsosurface(const Isosurface& surface, const glm::vec4& color)
@@ -172,7 +173,6 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
         const rendering::mesh::SegmentationLabelMeshState labelState{
-          .visible = labelTable->getVisible(labelIndex),
           .showMesh = labelTable->getShowMesh(labelIndex),
           .opacity = segmentationOpacity};
         if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
@@ -198,8 +198,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           rendering::mesh::segmentationLabelMeshStyle(
             labelValue,
             normalizedLabelColor(*labelTable, labelIndex),
-            labelState,
-            m_appData.renderData().m_meshTranslucentCompositingMode));
+            labelState));
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));
       }

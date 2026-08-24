@@ -223,6 +223,11 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     "applyImageColormap",
     settings.m_applyImageColormapToIsosurfaces,
     defaults.m_applyImageColormapToIsosurfaces);
+  addIfChanged(
+    isosurfaces,
+    "modulateContourOpacityWithImageOpacity",
+    settings.m_modulateIsocontourOpacityWithImageOpacity,
+    defaults.m_modulateIsocontourOpacityWithImageOpacity);
   addIfChanged(isosurfaces, "showContours2D", settings.m_showIsocontoursIn2D, defaults.m_showIsocontoursIn2D);
   addIfChanged(isosurfaces, "showSurfaces3D", settings.m_showIsosurfacesIn3D, defaults.m_showIsosurfacesIn3D);
   addIfChanged(
@@ -676,6 +681,11 @@ void from_json(const json& j, serialize::ImageSettings& settings)
         colormap != isosurfaces->end() && colormap->is_boolean())
     {
       settings.m_applyImageColormapToIsosurfaces = colormap->get<bool>();
+    }
+    if (const auto modulate = isosurfaces->find("modulateContourOpacityWithImageOpacity");
+        modulate != isosurfaces->end() && modulate->is_boolean())
+    {
+      settings.m_modulateIsocontourOpacityWithImageOpacity = modulate->get<bool>();
     }
     if (const auto contours = isosurfaces->find("showContours2D");
         contours != isosurfaces->end() && contours->is_boolean())

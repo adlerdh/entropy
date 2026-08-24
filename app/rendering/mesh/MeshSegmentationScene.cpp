@@ -49,7 +49,8 @@ MeshHandle meshHandleForKey(const MeshGeometryKey& key, MeshHandleMap& handles)
 
 glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const std::size_t labelIndex)
 {
-  return glm::vec4{labelTable.color_RGBA_nonpremult_U8(labelIndex)} / 255.0f;
+  return glm::vec4{glm::vec3{labelTable.getColor(labelIndex)}, static_cast<float>(labelTable.getAlpha(labelIndex))} /
+         255.0f;
 }
 
 std::string segmentationMeshDescription(
@@ -106,7 +107,6 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
 
     for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
       const rendering::mesh::SegmentationLabelMeshState labelState{
-        .visible = labelTable->getVisible(labelIndex),
         .showMesh = labelTable->getShowMesh(labelIndex),
         .opacity = segmentationOpacity};
       if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
@@ -179,8 +179,7 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
       const rendering::mesh::SegmentationLabelMeshStyle style = rendering::mesh::segmentationLabelMeshStyle(
         labelValue,
         normalizedLabelColor(*labelTable, labelIndex),
-        labelState,
-        m_appData.renderData().m_meshTranslucentCompositingMode);
+        labelState);
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeSegmentationLabelRenderable(handle, glm::mat4{1.0f}, style);
       renderable.drawOptions.clipPlanes = clipPlanes;

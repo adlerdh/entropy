@@ -352,6 +352,8 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
   CHECK_FALSE(settings.isosurfacesVisible());
   settings.setApplyImageColormapToIsosurfaces(true);
   CHECK(settings.applyImageColormapToIsosurfaces());
+  settings.setModulateIsocontourOpacityWithImageOpacity(true);
+  CHECK(settings.modulateIsocontourOpacityWithImageOpacity());
   settings.setShowIsoscontoursIn2D(false);
   CHECK_FALSE(settings.showIsocontoursIn2D());
   settings.setShowIsosurfacesIn3D(false);

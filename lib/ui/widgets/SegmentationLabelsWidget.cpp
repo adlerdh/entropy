@@ -66,7 +66,9 @@ void renderSegLabelsChildWindow(
 
     if (ImGui::MenuItem(sk_showAll.c_str())) {
       for (std::size_t i = 0; i < labelTable->numLabels(); ++i) {
-        labelTable->setVisible(i, true);
+        const bool show = i != 0;
+        labelTable->setVisible(i, show);
+        labelTable->setShowMesh(i, show);
       }
       updateLabelColorTableTexture(tableIndex);
     }
@@ -74,12 +76,35 @@ void renderSegLabelsChildWindow(
     if (ImGui::MenuItem(sk_hideAll.c_str())) {
       for (std::size_t i = 0; i < labelTable->numLabels(); ++i) {
         labelTable->setVisible(i, false);
+        labelTable->setShowMesh(i, false);
       }
       updateLabelColorTableTexture(tableIndex);
     }
 
     ImGui::EndMenuBar();
   }
+
+  // Preserve the compact row layout while identifying its otherwise-anonymous columns.
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float headerStart = ImGui::GetCursorPosX();
+  const float frameWidth = ImGui::GetFrameHeight();
+  const float showMeshHeaderX = headerStart + frameWidth + style.ItemSpacing.x;
+  const float colorControlX = showMeshHeaderX + frameWidth + style.ItemSpacing.x;
+  const float indexHeaderX = colorControlX + frameWidth + style.ItemInnerSpacing.x;
+  const float indexControlWidth = frameWidth + style.ItemInnerSpacing.x + ImGui::CalcTextSize("000").x;
+  const float moveButtonX = colorControlX + indexControlWidth + style.ItemSpacing.x;
+  const float regionLabelHeaderX = moveButtonX + frameWidth + style.ItemSpacing.x;
+  ImGui::AlignTextToFramePadding();
+  ImGui::TextDisabled("2D");
+  ImGui::SameLine(showMeshHeaderX);
+  ImGui::TextDisabled("3D");
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("The first checkbox controls 2D label visibility; the second controls the 3D label mesh");
+  }
+  ImGui::SameLine(indexHeaderX);
+  ImGui::TextDisabled("Index");
+  ImGui::SameLine(regionLabelHeaderX);
+  ImGui::TextDisabled("Region label");
 
   for (std::size_t i = 0; i < labelTable->numLabels(); ++i) {
     char labelIndexBuffer[32];

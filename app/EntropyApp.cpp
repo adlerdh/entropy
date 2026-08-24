@@ -381,8 +381,8 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
   // suitable unsigned integer type
   Image seg(fileName, Image::ImageRepresentation::Segmentation, Image::MultiComponentBufferType::SeparateImages);
 
-  // Set the default opacity:
-  seg.settings().setOpacity(0.5);
+  // Segmentation labels and their 3D meshes are fully opaque by default.
+  seg.settings().setOpacity(1.0);
 
   spdlog::info("Read segmentation image from file {}", fileName);
 

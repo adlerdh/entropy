@@ -687,6 +687,8 @@ TEST_CASE("mesh advanced lighting is disabled by default", "[rendering][mesh]")
   CHECK(plan.ambientOcclusion.state == mesh::MeshAdvancedLightingFeatureState::Disabled);
   CHECK(plan.ambientOcclusion.radiusMm == Catch::Approx(5.0f));
   CHECK(plan.ambientOcclusion.strength == Catch::Approx(0.5f));
+  CHECK(plan.ambientOcclusion.power == Catch::Approx(1.0f));
+  CHECK(plan.ambientOcclusion.contrast == Catch::Approx(1.0f));
   CHECK(plan.ambientOcclusion.sampleCount == 24);
   CHECK_FALSE(mesh::isRequestedButUnavailable(plan.shadows.state));
   CHECK_FALSE(mesh::isRequestedButUnavailable(plan.ambientOcclusion.state));
@@ -735,6 +737,8 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   lowSettings.shadows.depthBias = -1.0f;
   lowSettings.ambientOcclusion.radiusMm = -2.0f;
   lowSettings.ambientOcclusion.strength = -1.0f;
+  lowSettings.ambientOcclusion.power = -1.0f;
+  lowSettings.ambientOcclusion.contrast = -1.0f;
   lowSettings.ambientOcclusion.sampleCount = 0;
 
   const mesh::MeshAdvancedLightingPlan lowPlan = mesh::meshAdvancedLightingPlan(lowSettings, {});
@@ -743,6 +747,8 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   CHECK(lowPlan.shadows.depthBias == 0.0f);
   CHECK(lowPlan.ambientOcclusion.radiusMm == Catch::Approx(0.1f));
   CHECK(lowPlan.ambientOcclusion.strength == 0.0f);
+  CHECK(lowPlan.ambientOcclusion.power == Catch::Approx(0.1f));
+  CHECK(lowPlan.ambientOcclusion.contrast == Catch::Approx(0.1f));
   CHECK(lowPlan.ambientOcclusion.sampleCount == 8);
 
   mesh::MeshAdvancedLightingSettings highSettings;
@@ -751,6 +757,8 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   highSettings.shadows.depthBias = 1.0f;
   highSettings.ambientOcclusion.radiusMm = 2000.0f;
   highSettings.ambientOcclusion.strength = 2.0f;
+  highSettings.ambientOcclusion.power = 10.0f;
+  highSettings.ambientOcclusion.contrast = 10.0f;
   highSettings.ambientOcclusion.sampleCount = 1024;
 
   const mesh::MeshAdvancedLightingPlan highPlan = mesh::meshAdvancedLightingPlan(highSettings, {});
@@ -759,6 +767,8 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   CHECK(highPlan.shadows.depthBias == Catch::Approx(0.1f));
   CHECK(highPlan.ambientOcclusion.radiusMm == Catch::Approx(1000.0f));
   CHECK(highPlan.ambientOcclusion.strength == 1.0f);
+  CHECK(highPlan.ambientOcclusion.power == Catch::Approx(8.0f));
+  CHECK(highPlan.ambientOcclusion.contrast == Catch::Approx(8.0f));
   CHECK(highPlan.ambientOcclusion.sampleCount == 64);
 }
 
@@ -1064,8 +1074,8 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
   const mesh::MeshMaterial sanitized = mesh::sanitizedMaterial(material, glm::vec4{0.25f, 0.5f, 0.75f, 1.0f});
 
   CHECK(sanitized.baseColor == glm::vec4{0.25f, 0.5f, 0.75f, 1.0f});
-  CHECK(sanitized.metallic == Catch::Approx(0.0f));
-  CHECK(sanitized.roughness == Catch::Approx(0.55f));
+  CHECK(sanitized.metallic == Catch::Approx(0.25f));
+  CHECK(sanitized.roughness == Catch::Approx(0.5f));
   CHECK(sanitized.ambientOcclusion == Catch::Approx(1.0f));
   CHECK(sanitized.rimOpacityStrength == Catch::Approx(1.0f));
   CHECK(sanitized.rimEmissionStrength == Catch::Approx(1.0f));
@@ -1171,13 +1181,12 @@ TEST_CASE("scalar-grid isosurface policy builds stable extraction requests", "[r
   CHECK(key.extractionAlgorithmVersion == mesh::kScalarGridIsosurfaceAlgorithmVersion);
 }
 
-TEST_CASE("segmentation mesh policy respects label visibility and opacity", "[rendering][mesh]")
+TEST_CASE("segmentation mesh policy respects independent 3D visibility and opacity", "[rendering][mesh]")
 {
-  CHECK(mesh::shouldRenderSegmentationLabelMesh({.visible = true, .showMesh = true, .opacity = 1.0f}));
+  CHECK(mesh::shouldRenderSegmentationLabelMesh({.showMesh = true, .opacity = 1.0f}));
 
-  CHECK_FALSE(mesh::shouldRenderSegmentationLabelMesh({.visible = false, .showMesh = true, .opacity = 1.0f}));
-  CHECK_FALSE(mesh::shouldRenderSegmentationLabelMesh({.visible = true, .showMesh = false, .opacity = 1.0f}));
-  CHECK_FALSE(mesh::shouldRenderSegmentationLabelMesh({.visible = true, .showMesh = true, .opacity = 0.0f}));
+  CHECK_FALSE(mesh::shouldRenderSegmentationLabelMesh({.showMesh = false, .opacity = 1.0f}));
+  CHECK_FALSE(mesh::shouldRenderSegmentationLabelMesh({.showMesh = true, .opacity = 0.0f}));
 }
 
 TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "[rendering][mesh]")
@@ -1195,7 +1204,7 @@ TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "
   const mesh::SegmentationLabelMeshStyle style = mesh::segmentationLabelMeshStyle(
     4,
     glm::vec4{0.1f, 0.2f, 0.3f, 0.5f},
-    {.visible = true, .showMesh = true, .opacity = 0.25f},
+    {.showMesh = true, .opacity = 0.25f},
     mesh::MeshCompositingMode::Multiplicative);
 
   CHECK(style.labelValue == 4);

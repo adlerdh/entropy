@@ -24,7 +24,7 @@ TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")
 
 TEST_CASE("3D render mode choices stay in stable UI order", "[viewer][modes]")
 {
-  const std::vector expected{ViewRenderMode::VolumeRender, ViewRenderMode::SegmentationMesh, ViewRenderMode::Disabled};
+  const std::vector expected{ViewRenderMode::SegmentationMesh, ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
 
   CHECK(All3dViewRenderModes == expected);
   CHECK(All3dNonMetricRenderModes == expected);
@@ -87,6 +87,8 @@ TEST_CASE("viewer mode labels cover all public choices", "[viewer][modes]")
   }
 
   CHECK(typeString(ViewRenderMode::Image) == "Layers");
+  CHECK(typeString(ViewRenderMode::SegmentationMesh) == "Segmentations");
+  CHECK(typeString(ViewRenderMode::VolumeRender) == "Isosurfaces");
   CHECK(typeString(IntensityProjectionMode::Xray) == "X-ray projection");
 }
 

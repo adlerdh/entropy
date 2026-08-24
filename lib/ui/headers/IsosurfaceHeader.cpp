@@ -944,33 +944,29 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
-      if (ImGui::TreeNode("3D rim lighting")) {
+      if (ImGui::TreeNode("Rim lighting")) {
         ImGui::Checkbox("Enable", &surface->rimLightingEnabled);
         ImGui::SameLine();
         helpMarker("Enable view-angle rim opacity modulation and glow for this surface in 3D");
 
-        if (!surface->rimLightingEnabled) {
-          ImGui::BeginDisabled();
-        }
-        if (mySliderF32("Opacity", &surface->rimOpacityStrength, 0.0f, 1.0f, "%0.2f")) {
-          surface->rimOpacityStrength = std::clamp(surface->rimOpacityStrength, 0.0f, 1.0f);
-        }
-        ImGui::SameLine();
-        helpMarker("Modulate surface opacity by view angle so silhouettes remain more visible in 3D");
+        if (surface->rimLightingEnabled) {
+          if (mySliderF32("Opacity", &surface->rimOpacityStrength, 0.0f, 1.0f, "%0.2f")) {
+            surface->rimOpacityStrength = std::clamp(surface->rimOpacityStrength, 0.0f, 1.0f);
+          }
+          ImGui::SameLine();
+          helpMarker("Modulate surface opacity by view angle so silhouettes remain more visible in 3D");
 
-        if (mySliderF32("Glow", &surface->rimEmissionStrength, 0.0f, 2.0f, "%0.2f")) {
-          surface->rimEmissionStrength = std::max(surface->rimEmissionStrength, 0.0f);
-        }
-        ImGui::SameLine();
-        helpMarker("Add view-angle rim light at silhouettes in 3D");
+          if (mySliderF32("Glow", &surface->rimEmissionStrength, 0.0f, 2.0f, "%0.2f")) {
+            surface->rimEmissionStrength = std::max(surface->rimEmissionStrength, 0.0f);
+          }
+          ImGui::SameLine();
+          helpMarker("Add view-angle rim light at silhouettes in 3D");
 
-        if (mySliderF32("Falloff", &surface->rimPower, 0.25f, 8.0f, "%0.2f")) {
-          surface->rimPower = std::max(surface->rimPower, 0.25f);
-        }
-        ImGui::SameLine();
-        helpMarker("Controls rim width; higher values make a narrower rim");
-        if (!surface->rimLightingEnabled) {
-          ImGui::EndDisabled();
+          if (mySliderF32("Falloff", &surface->rimPower, 0.25f, 8.0f, "%0.2f")) {
+            surface->rimPower = std::max(surface->rimPower, 0.25f);
+          }
+          ImGui::SameLine();
+          helpMarker("Controls rim width; higher values make a narrower rim");
         }
 
         ImGui::Spacing();
@@ -979,33 +975,29 @@ void renderIsosurfacesHeader(
         ImGui::TreePop();
       }
 
-      if (ImGui::TreeNode("3D mesh material")) {
+      if (ImGui::TreeNode("Surface material")) {
         ImGui::Checkbox("PBR shading", &surface->material.usePbrShading);
         ImGui::SameLine();
-        helpMarker("Use physically based shading for mesh-rendered isosurfaces");
+        helpMarker("Use physically based shading for this mesh-rendered isosurface");
 
-        if (!surface->material.usePbrShading) {
-          ImGui::BeginDisabled();
-        }
-        if (mySliderF32("Metallic", &surface->material.metallic, 0.0f, 1.0f, "%0.2f")) {
-          surface->material.metallic = std::clamp(surface->material.metallic, 0.0f, 1.0f);
-        }
-        ImGui::SameLine();
-        helpMarker("Controls how strongly the mesh behaves like a metal surface");
+        if (surface->material.usePbrShading) {
+          if (mySliderF32("Metallic", &surface->material.metallic, 0.0f, 1.0f, "%0.2f")) {
+            surface->material.metallic = std::clamp(surface->material.metallic, 0.0f, 1.0f);
+          }
+          ImGui::SameLine();
+          helpMarker("Controls how strongly the surface behaves like a metal");
 
-        if (mySliderF32("Roughness", &surface->material.roughness, 0.001f, 1.0f, "%0.2f")) {
-          surface->material.roughness = std::clamp(surface->material.roughness, 0.001f, 1.0f);
-        }
-        ImGui::SameLine();
-        helpMarker("Controls highlight sharpness for physically based mesh shading");
+          if (mySliderF32("Roughness", &surface->material.roughness, 0.001f, 1.0f, "%0.2f")) {
+            surface->material.roughness = std::clamp(surface->material.roughness, 0.001f, 1.0f);
+          }
+          ImGui::SameLine();
+          helpMarker("Controls highlight sharpness for physically based mesh shading");
 
-        if (mySliderF32("Ambient occlusion", &surface->material.ambientOcclusion, 0.0f, 1.0f, "%0.2f")) {
-          surface->material.ambientOcclusion = std::clamp(surface->material.ambientOcclusion, 0.0f, 1.0f);
-        }
-        ImGui::SameLine();
-        helpMarker("Darkens indirect lighting for physically based mesh shading");
-        if (!surface->material.usePbrShading) {
-          ImGui::EndDisabled();
+          if (mySliderF32("Indirect-light occlusion", &surface->material.ambientOcclusion, 0.0f, 1.0f, "%0.2f")) {
+            surface->material.ambientOcclusion = std::clamp(surface->material.ambientOcclusion, 0.0f, 1.0f);
+          }
+          ImGui::SameLine();
+          helpMarker("Scales this material's indirect lighting; separate from screen-space ambient occlusion");
         }
 
         ImGui::Spacing();
@@ -1042,6 +1034,13 @@ void renderIsosurfacesHeader(
         }
         ImGui::SameLine();
         helpMarker("Color isosurfaces using the image colormap");
+
+        bool modulateContourOpacity = imgSettings.modulateIsocontourOpacityWithImageOpacity();
+        if (ImGui::Checkbox("Link 2D contour opacity to image", &modulateContourOpacity)) {
+          imgSettings.setModulateIsocontourOpacityWithImageOpacity(modulateContourOpacity);
+        }
+        ImGui::SameLine();
+        helpMarker("Scale this image's 2D isocontour opacity by the image opacity");
 
         float opacityMod = imgSettings.isosurfaceOpacityModulator();
         if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {

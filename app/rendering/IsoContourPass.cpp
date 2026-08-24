@@ -140,7 +140,7 @@ void Rendering::renderIsoContoursForImage(
     static constexpr bool premultipliedAlpha = false;
     const glm::vec3 color =
       glm::vec3{getIsosurfaceColor(m_appData, *surface, imageSettings, activeComponent, premultipliedAlpha)};
-    const float imageOpacity = renderData.m_modulateIsocontourOpacityWithImageOpacity ? uniforms.imgOpacity : 1.0f;
+    const float imageOpacity = imageSettings.modulateIsocontourOpacityWithImageOpacity() ? uniforms.imgOpacity : 1.0f;
     const float isosurfaceOpacity = imageSettings.isosurfaceOpacityModulator() * imageOpacity;
 
     program->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);

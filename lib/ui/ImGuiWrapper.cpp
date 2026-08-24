@@ -74,6 +74,7 @@
 #include <format>
 #include <iomanip>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <sstream>
@@ -995,31 +996,31 @@ void renderMeshExtractionStatusWindow(const GuiData& guiData)
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   const float margin = ui::scaledPixel(12.0f);
-  const ImVec2 size = ui::scaledSize(360.0f, 112.0f);
+  const float width = ui::scaledPixel(360.0f);
   const ImVec2 pos{viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - margin};
 
   ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2{0.0f, 1.0f});
-  ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+  ImGui::SetNextWindowSizeConstraints(ImVec2{width, 0.0f}, ImVec2{width, std::numeric_limits<float>::max()});
 
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
                                      ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing |
-                                     ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize;
+                                     ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize |
+                                     ImGuiWindowFlags_AlwaysAutoResize;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ui::scaledSize(12.0f, 10.0f));
 
   const std::string windowTitle = (title.empty() ? "Computing Meshes" : title) + "###MeshExtractionStatus";
   if (ImGui::Begin(windowTitle.c_str(), nullptr, flags)) {
     const int dotCount = static_cast<int>(ImGui::GetTime() * 3.0) % 4;
-    std::string text = title.empty() ? "Computing meshes" : title;
-    text.append(static_cast<std::size_t>(dotCount), '.');
-    ImGui::TextUnformatted(text.c_str());
-    ImGui::TextDisabled("%zu active job%s", activeJobs, activeJobs == 1 ? "" : "s");
     if (!descriptions.empty()) {
-      ImGui::Separator();
       ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
       ImGui::TextUnformatted(descriptions.front().c_str());
       ImGui::PopTextWrapPos();
     }
+    std::string status =
+      activeJobs == 1 ? "1 extraction in progress" : std::format("{} extractions in progress", activeJobs);
+    status.append(static_cast<std::size_t>(dotCount), '.');
+    ImGui::TextDisabled("%s", status.c_str());
   }
 
   ImGui::End();
@@ -4877,11 +4878,6 @@ void ImGuiWrapper::render()
             m_appData.guiData().m_requestedIsosurfacesImageUid = currentLayout.visibleImages().front();
           }
         },
-      .getThreeDRenderImageBox = [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
-      .setThreeDRenderImageBox =
-        [this](bool renderImageBox) {
-          m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = renderImageBox;
-        },
       .selectableViewTypes = LayoutKind::Lightbox == currentLayout.kind()
                                ? std::vector<ViewType>{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}
                                : std::vector<ViewType>{}};
@@ -5053,14 +5049,9 @@ void ImGuiWrapper::render()
             view->threeDState().m_orbitTargetMode = mode;
             view->threeDState().m_userMovedCamera = false;
           },
+        .areThreeDImagePlanesGloballyEnabled = [this]() { return m_appData.renderData().m_showImagePlanesIn3D; },
         .getThreeDImagePlanesVisible = [view]() { return view->threeDState().m_showImagePlanes; },
         .setThreeDImagePlanesVisible = [view](bool visible) { view->threeDState().m_showImagePlanes = visible; },
-        .getThreeDRenderImageBox =
-          [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
-        .setThreeDRenderImageBox =
-          [this](bool renderImageBox) {
-            m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = renderImageBox;
-          },
         .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
                                          ? std::function<std::optional<ClipboardPayload>()>([this, viewUid]() {
                                              return m_exportAsciiClipboardPayloadForView(viewUid);

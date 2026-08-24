@@ -153,24 +153,32 @@ std::list<std::reference_wrapper<GLTexture>> bindImagePlaneTextures(
   return boundTextures;
 }
 
-std::list<std::reference_wrapper<GLTexture>> bindImagePlaneSegmentationTextures(
-  AppData& appData,
-  const std::optional<uuids::uuid>& segmentationUid)
+struct BoundImagePlaneSegmentationTexture
 {
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
-  if (!segmentationUid) {
-    return boundTextures;
-  }
+  std::reference_wrapper<GLTexture> texture;
+  bool hasSegmentation;
+};
 
+BoundImagePlaneSegmentationTexture bindImagePlaneSegmentationTexture(
+  AppData& appData,
+  const std::optional<uuids::uuid>& segmentationUid,
+  RenderData::TextureDimension textureDimension)
+{
   auto& renderData = appData.renderData();
-  const auto textureIt = renderData.m_segTextures.find(*segmentationUid);
-  if (std::end(renderData.m_segTextures) == textureIt) {
-    return boundTextures;
+  GLTexture* texture = textureDimension == RenderData::TextureDimension::Texture2D ? &renderData.m_blankSegTexture2D
+                                                                                   : &renderData.m_blankSegTexture;
+  bool hasSegmentation = false;
+
+  if (segmentationUid) {
+    const auto textureIt = renderData.m_segTextures.find(*segmentationUid);
+    if (std::end(renderData.m_segTextures) != textureIt) {
+      texture = &textureIt->second;
+      hasSegmentation = true;
+    }
   }
 
-  textureIt->second.bind(sk_segTexSampler.index);
-  boundTextures.emplace_back(textureIt->second);
-  return boundTextures;
+  texture->bind(sk_segTexSampler.index);
+  return {*texture, hasSegmentation};
 }
 
 std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLabelTableTextures(
@@ -442,7 +450,8 @@ void drawImagePlaneRenderablesWithProgram(
       shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
     const auto boundTextures =
       bindImagePlaneTextures(appData, imagePlane.texture.imageUid, imagePlane.texture.component, textureLayout);
-    const auto boundSegTextures = bindImagePlaneSegmentationTextures(appData, imagePlane.texture.segmentationUid);
+    const auto boundSegTexture =
+      bindImagePlaneSegmentationTexture(appData, imagePlane.texture.segmentationUid, textureLayout.dimension);
     const auto boundSegBufferTextures =
       bindImagePlaneSegmentationLabelTableTextures(appData, imagePlane.texture.segmentationUid);
 
@@ -462,7 +471,7 @@ void drawImagePlaneRenderablesWithProgram(
       appData,
       imagePlane,
       uniformsIt->second,
-      !boundSegTextures.empty() && !boundSegBufferTextures.empty());
+      boundSegTexture.hasSegmentation && !boundSegBufferTextures.empty());
     if (previousTexturesProgram) {
       program.setSamplerUniform("u_previousDepthBoundsTex", sk_previousDepthBoundsSampler.index);
       program.setSamplerUniform("u_previousFrontColorTex", sk_previousFrontColorSampler.index);
@@ -473,9 +482,7 @@ void drawImagePlaneRenderablesWithProgram(
     for (std::reference_wrapper<GLTexture> texture : boundTextures) {
       texture.get().unbind();
     }
-    for (std::reference_wrapper<GLTexture> texture : boundSegTextures) {
-      texture.get().unbind();
-    }
+    boundSegTexture.texture.get().unbind();
     unbindImagePlaneSegmentationLabelTableTextures(boundSegBufferTextures);
   }
 

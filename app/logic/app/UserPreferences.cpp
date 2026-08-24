@@ -760,7 +760,6 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;
   preferences.xrayWindow = currentPreferences.xrayWindow;
   preferences.xrayLevel = currentPreferences.xrayLevel;
-  preferences.modulateIsocontourOpacityWithImageOpacity = currentPreferences.modulateIsocontourOpacityWithImageOpacity;
   preferences.modulateSegmentationOpacityWithImageOpacity =
     currentPreferences.modulateSegmentationOpacityWithImageOpacity;
   preferences.segmentationOutlineStyle = currentPreferences.segmentationOutlineStyle;
