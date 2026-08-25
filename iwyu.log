@@ -1,0 +1,259 @@
+[  0%] Built target glad
+[  1%] Built target nanovg
+[ 13%] Built target entropy-colormaps
+[ 16%] Built target entropy-fonts
+[ 25%] Built target entropy-licenses
+[ 26%] Built target imgui
+[ 41%] Built target entropy-shaders
+[ 41%] Built target entropy-icons
+[ 41%] Built target TestInteraction
+[ 42%] Built target ImageGeneratorCore
+[ 43%] Built target EntropyCommon
+[ 44%] Built target WarpFieldGeneratorCore
+[ 46%] Built target EntropyRegistration
+[ 46%] Built target implot
+[ 46%] Built target ImageGenerator
+[ 46%] Built target Large2DImageGenerator
+[ 46%] Built target TestImageGenerator
+[ 46%] Built target WarpFieldGenerator
+[ 46%] Built target TestWarpFieldGenerator
+[ 47%] Built target EntropyViewer
+[ 48%] Built target TestCommon
+[ 50%] Built target TestRegistration
+[ 52%] Built target EntropyImage
+[ 52%] Built target TestSync
+[ 52%] Built target EntropyLayout
+[ 54%] Built target TestCamera
+[ 54%] Building CXX object lib/ui/test/CMakeFiles/TestUi.dir/UiHeaderIncludeTests.cpp.o
+[ 56%] Built target TestViewer
+[ 57%] Built target TestLayout
+[ 59%] Built target TestImage
+[ 59%] Building CXX object app/logic/serialization/test/CMakeFiles/TestSerialization.dir/__/ProjectSerialization.cpp.o
+[ 60%] Building CXX object app/logic/app/test/CMakeFiles/TestAppSettings.dir/__/ProjectSnapshotComparison.cpp.o
+[ 60%] Building CXX object app/rendering/test/CMakeFiles/TestRendering.dir/MeshTests.cpp.o
+[ 60%] Linking CXX executable ../../../bin/TestUi
+[ 63%] Built target TestUi
+[ 63%] Built target TestWindowing
+[ 63%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/headers/AnnotationHeader.cpp.o
+Warning: include-what-you-use reported diagnostics:
+
+(/Users/danadler/Dev/entropy/app/logic/app/ProjectSnapshotComparison.h has correct #includes/fwd-decls)
+
+/Users/danadler/Dev/entropy/app/logic/app/ProjectSnapshotComparison.cpp should add these lines:
+#include <glm/detail/qualifier.hpp>       // for qualifier
+#include <glm/detail/setup.hpp>           // for length_t
+#include <glm/detail/type_mat3x3.inl>     // for operator==
+#include <glm/detail/type_mat4x4.hpp>     // for mat
+#include <glm/detail/type_mat4x4.inl>     // for mat<>::operator[]
+#include <glm/detail/type_vec2.inl>       // for operator==
+#include <glm/detail/type_vec3.inl>       // for operator==
+#include <glm/detail/type_vec4.inl>       // for operator==, vec<>::operator[]
+#include <glm/fwd.hpp>                    // for mat4
+
+/Users/danadler/Dev/entropy/app/logic/app/ProjectSnapshotComparison.cpp should remove these lines:
+
+The full include-list for /Users/danadler/Dev/entropy/app/logic/app/ProjectSnapshotComparison.cpp:
+#include "logic/app/ProjectSnapshotComparison.h"
+#include "image/ImageSpatialMetadata.h"   // for ImageSpatialMetadata
+#include "image/Isosurface.h"             // for Isosurface, SurfaceMaterial
+#include "layout/LayoutSpec.h"            // for LayoutSpec
+#include "logic/annotation/Annotation.h"  // for Annotation
+#include <algorithm>                      // for equal
+#include <filesystem>                     // for path, operator==
+#include <glm/detail/qualifier.hpp>       // for qualifier
+#include <glm/detail/setup.hpp>           // for length_t
+#include <glm/detail/type_mat3x3.inl>     // for operator==
+#include <glm/detail/type_mat4x4.hpp>     // for mat
+#include <glm/detail/type_mat4x4.inl>     // for mat<>::operator[]
+#include <glm/detail/type_vec2.inl>       // for operator==
+#include <glm/detail/type_vec3.inl>       // for operator==
+#include <glm/detail/type_vec4.inl>       // for operator==, vec<>::operator[]
+#include <glm/fwd.hpp>                    // for mat4
+#include <optional>                       // for optional, operator==
+#include <set>                            // for operator==, set
+#include <string>                         // for basic_string, operator==
+#include <vector>                         // for vector, operator==
+---
+
+gmake[2]: *** [app/rendering/test/CMakeFiles/TestRendering.dir/build.make:149: app/rendering/test/CMakeFiles/TestRendering.dir/MeshTests.cpp.o] Error 1
+gmake[2]: Target 'app/rendering/test/CMakeFiles/TestRendering.dir/build' not remade because of errors.
+gmake[1]: *** [CMakeFiles/Makefile2:2436: app/rendering/test/CMakeFiles/TestRendering.dir/all] Error 2
+[ 63%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/headers/ImageHeader.cpp.o
+[ 63%] Building CXX object app/logic/app/test/CMakeFiles/TestAppSettings.dir/__/UserPreferences.cpp.o
+[ 63%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/headers/ImageHeaderInformation.cpp.o
+[ 63%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/headers/LandmarkHeader.cpp.o
+Warning: include-what-you-use reported diagnostics:
+
+/Users/danadler/Dev/entropy/app/logic/serialization/ProjectSerialization.h should add these lines:
+#include <glm/detail/type_vec2.inl>        // for vec<>::vec<2, T, Q>
+#include <glm/detail/type_vec3.hpp>        // for vec
+#include <glm/detail/type_vec3.inl>        // for vec<>::vec<3, T, Q>
+#include <glm/detail/type_vec4.hpp>        // for vec
+#include <glm/detail/type_vec4.inl>        // for vec<>::vec<4, T, Q>
+#include <glm/fwd.hpp>                     // for vec3, vec4, dmat4, mat4, ivec2, vec2
+#include <nlohmann/json_fwd.hpp>           // for json
+
+/Users/danadler/Dev/entropy/app/logic/serialization/ProjectSerialization.h should remove these lines:
+- #include <glm/mat4x4.hpp>  // lines 13-13
+- #include <glm/vec2.hpp>  // lines 14-14
+- #include <glm/vec3.hpp>  // lines 15-15
+- #include <glm/vec4.hpp>  // lines 16-16
+- #include <nlohmann/json.hpp>  // lines 11-11
+
+The full include-list for /Users/danadler/Dev/entropy/app/logic/serialization/ProjectSerialization.h:
+#include "common/InputParams.h"            // for InputParams
+#include "common/Types.h"                  // for InterpolationMode, AnatomicalLabelType, CrosshairsSnapping, Floati...
+#include "image/ImageSpatialMetadata.h"    // for ImageSpatialMetadata
+#include "image/Isosurface.h"              // for Isosurface, SurfaceMaterial
+#include "layout/LayoutSpec.h"             // for LayoutSpec
+#include "logic/annotation/Annotation.h"   // for Annotation
+#include "logic/annotation/PointRecord.h"  // for PointRecord
+#include <cstddef>                         // for size_t
+#include <cstdint>                         // for uint8_t, uint32_t
+#include <filesystem>                      // for path
+#include <glm/detail/type_vec2.inl>        // for vec<>::vec<2, T, Q>
+#include <glm/detail/type_vec3.hpp>        // for vec
+#include <glm/detail/type_vec3.inl>        // for vec<>::vec<3, T, Q>
+#include <glm/detail/type_vec4.hpp>        // for vec
+#include <glm/detail/type_vec4.inl>        // for vec<>::vec<4, T, Q>
+#include <glm/fwd.hpp>                     // for vec3, vec4, dmat4, mat4, ivec2, vec2
+#include <map>                             // for map
+#include <nlohmann/json_fwd.hpp>           // for json
+#include <optional>                        // for optional, nullopt, nullopt_t
+#include <set>                             // for set
+#include <string>                          // for basic_string, string
+#include <vector>                          // for vector
+---
+
+/Users/danadler/Dev/entropy/app/logic/serialization/ProjectSerialization.cpp should add these lines:
+#include <glm/detail/func_common.inl>                  // for clamp
+#include <nlohmann/detail/json_ref.hpp>                // for json_ref
+
+/Users/danadler/Dev/entropy/app/logic/serialization/ProjectSerialization.cpp should remove these lines:
+- #include "logic/annotation/SerializeAnnot.h"  // lines 2-2
+- #include "logic/serialization/JsonSerializers.h"  // lines 3-3
+- #include <spdlog/spdlog.h>  // lines 13-13
+- #include <array>  // lines 16-16
+- #include <glm/gtx/string_cast.hpp>  // lines 10-10
+- #include <set>  // lines 19-19
+- #include <string_view>  // lines 21-21
+
+The full include-list for /Users/danadler/Dev/entropy/app/logic/serialization/ProjectSerialization.cpp:
+#include "logic/serialization/ProjectSerialization.h"
+#include "common/Exception.hpp"                        // for throwDebug
+#include "layout/LayoutSpecJson.h"                     // for from_json, to_json
+#include "logic/serialization/SerializationHelpers.h"  // for addIfChanged, addIfNotEmpty, enumToName, enumFromName
+#include <algorithm>                                   // for clamp, max, min
+#include <cstdint>                                     // for uint32_t
+#include <glm/detail/func_common.inl>                  // for clamp
+#include <nlohmann/detail/json_ref.hpp>                // for json_ref
+#include <nlohmann/json.hpp>                           // for basic_json
+#include <optional>                                    // for optional
+#include <string>                                      // for basic_string, allocator, char_traits, string, operator+
+#include <utility>                                     // for move
+#include <vector>                                      // for vector
+---
+
+[ 63%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/headers/SegmentationHeader.cpp.o
+[ 64%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/toolbars/AnnotationToolbar.cpp.o
+[ 64%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/toolbars/ModeToolbar.cpp.o
+[ 64%] Linking CXX executable ../../../../bin/TestSerialization
+[ 65%] Built target TestSerialization
+[ 65%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/toolbars/SegmentationToolbar.cpp.o
+[ 65%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/widgets/ActiveImageSelection.cpp.o
+[ 65%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/widgets/LandmarkWidget.cpp.o
+[ 65%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/widgets/PaletteWidget.cpp.o
+[ 66%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/widgets/SegmentationLabelsWidget.cpp.o
+[ 66%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/windows/ImagePropertiesWindow.cpp.o
+[ 66%] Building CXX object lib/ui/CMakeFiles/EntropyUI.dir/windows/SettingsWindow.cpp.o
+Warning: include-what-you-use reported diagnostics:
+
+/Users/danadler/Dev/entropy/app/logic/app/UserPreferences.h should add these lines:
+#include <glm/detail/qualifier.hpp>   // for qualifier
+#include <glm/detail/type_vec2.hpp>   // for vec
+#include <glm/detail/type_vec2.inl>   // for vec<>::vec<2, T, Q>
+#include <glm/detail/type_vec3.inl>   // for vec<>::vec<3, T, Q>
+#include <glm/detail/type_vec4.inl>   // for vec<>::vec<4, T, Q>
+#include <glm/ext/vector_float2.hpp>  // for vec2
+#include <glm/ext/vector_float3.hpp>  // for vec3
+#include <glm/ext/vector_float4.hpp>  // for vec4
+#include <glm/ext/vector_int2.hpp>    // for ivec2
+
+/Users/danadler/Dev/entropy/app/logic/app/UserPreferences.h should remove these lines:
+- #include <glm/vec2.hpp>  // lines 7-7
+- #include <glm/vec3.hpp>  // lines 8-8
+- #include <glm/vec4.hpp>  // lines 9-9
+
+The full include-list for /Users/danadler/Dev/entropy/app/logic/app/UserPreferences.h:
+#include "common/Types.h"             // for FloatingPointLinearInterpolationPolicy, AnatomicalLabelType, Crosshairs...
+#include "logic/app/Settings.h"       // for AppSettings
+#include <cstddef>                    // for size_t
+#include <cstdint>                    // for uint32_t
+#include <filesystem>                 // for path
+#include <glm/detail/qualifier.hpp>   // for qualifier
+#include <glm/detail/type_vec2.hpp>   // for vec
+#include <glm/detail/type_vec2.inl>   // for vec<>::vec<2, T, Q>
+#include <glm/detail/type_vec3.inl>   // for vec<>::vec<3, T, Q>
+#include <glm/detail/type_vec4.inl>   // for vec<>::vec<4, T, Q>
+#include <glm/ext/vector_float2.hpp>  // for vec2
+#include <glm/ext/vector_float3.hpp>  // for vec3
+#include <glm/ext/vector_float4.hpp>  // for vec4
+#include <glm/ext/vector_int2.hpp>    // for ivec2
+#include <string>                     // for string
+struct GuiData;  // lines 17-17
+struct RenderData;  // lines 16-16
+---
+
+/Users/danadler/Dev/entropy/app/logic/app/UserPreferences.cpp should add these lines:
+#include <spdlog/fmt/bundled/base.h>     // for make_format_args, vformat_to
+#include <spdlog/fmt/bundled/format.h>   // for format
+#include <nlohmann/detail/json_ref.hpp>  // for json_ref
+#include <nlohmann/json_fwd.hpp>         // for json
+
+/Users/danadler/Dev/entropy/app/logic/app/UserPreferences.cpp should remove these lines:
+- #include <spdlog/fmt/std.h>  // lines 10-10
+- #include <glm/vec2.hpp>  // lines 6-6
+- #include <glm/vec3.hpp>  // lines 7-7
+- #include <glm/vec4.hpp>  // lines 8-8
+
+The full include-list for /Users/danadler/Dev/entropy/app/logic/app/UserPreferences.cpp:
+#include "logic/app/UserPreferences.h"
+#include "common/LoggingSettings.h"      // for defaultLoggerSinkLevel, logLevelLabel, LogLevelChoice, allLogLevelCh...
+#include "registration/Config.h"         // for BackendConfig
+#include "registration/Json.h"           // for to_json, from_json
+#include <spdlog/fmt/bundled/base.h>     // for make_format_args, vformat_to
+#include <spdlog/fmt/bundled/format.h>   // for format
+#include <spdlog/spdlog.h>               // for debug, error, info
+#include <algorithm>                     // for find_if, clamp, min
+#include <array>                         // for array
+#include <exception>                     // for exception
+#include <filesystem>                    // for path, create_directories, exists
+#include <fstream>                       // for basic_ios, basic_ofstream, basic_ifstream, ios, basic_filebuf, basic...
+#include <map>                           // for operator!=, operator==
+#include <nlohmann/detail/json_ref.hpp>  // for json_ref
+#include <nlohmann/json.hpp>             // for basic_json
+#include <nlohmann/json_fwd.hpp>         // for json
+#include <optional>                      // for optional, nullopt, nullopt_t
+#include <span>                          // for span
+#include <sstream>                       // for basic_ostringstream
+#include <string_view>                   // for basic_string_view, operator==, string_view
+#include <system_error>                  // for error_code
+#include <utility>                       // for move
+#include <vector>                        // for vector
+---
+
+[ 66%] Linking CXX static library ../libEntropyUI.a
+[ 71%] Built target EntropyUI
+[ 71%] Building CXX object CMakeFiles/entropy.dir/app/logic/app/ProjectSnapshotComparison.cpp.o
+[ 72%] Building CXX object CMakeFiles/entropy.dir/app/logic/app/UserPreferences.cpp.o
+[ 72%] Building CXX object CMakeFiles/entropy.dir/app/logic/app/ProjectSnapshotSettings.cpp.o
+[ 72%] Linking CXX executable ../../../../bin/TestAppSettings
+[ 73%] Built target TestAppSettings
+[ 73%] Building CXX object CMakeFiles/entropy.dir/app/logic/app/UserPreferencesRenderData.cpp.o
+[ 73%] Building CXX object CMakeFiles/entropy.dir/app/logic/serialization/ProjectSerialization.cpp.o
+[ 73%] Building CXX object CMakeFiles/entropy.dir/app/rendering/mesh/MeshImagePlaneScenePass.cpp.o
+[ 73%] Linking CXX executable bin/Entropy.app/Contents/MacOS/Entropy
+[ 92%] Built target entropy
+gmake[1]: Target 'all' not remade because of errors.
+gmake: *** [Makefile:166: all] Error 2
+gmake: Target 'default_target' not remade because of errors.

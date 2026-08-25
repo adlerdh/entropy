@@ -327,6 +327,8 @@ struct RenderData
 
   bool m_modulateImagePlaneOpacityWithViewAngle; //!< Fade 3D image planes according to their view angle
 
+  bool m_showSegmentationsOnImagePlanesIn3D; //!< Whether segmentation overlays are visible on 3D image planes
+
   bool m_shadeImagePlanesIn3D; //!< Apply headlight Blinn-Phong shading to 3D image planes
 
   float m_imagePlaneLightingAmbient; //!< Ambient term for 3D image-plane shading

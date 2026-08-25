@@ -113,7 +113,7 @@ void applyImageSelectionSpec(
   frame.setRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
   frame.setVolumeRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_volumeRenderedImageIndices));
   if (
-    (ViewRenderMode::VolumeRender == frame.renderMode() || ViewRenderMode::SegmentationMesh == frame.renderMode()) &&
+    is3dRenderMode(frame.renderMode()) && ViewRenderMode::Disabled != frame.renderMode() &&
     frame.volumeRenderedImages().empty())
   {
     frame.setVolumeRenderedImages(frame.renderedImages());
@@ -692,7 +692,7 @@ Layout instantiateLayoutSpec(
   layout.ControlFrame::setVolumeRenderedImages(
     imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_volumeRenderedImageIndices));
   if (
-    (ViewRenderMode::VolumeRender == layout.renderMode() || ViewRenderMode::SegmentationMesh == layout.renderMode()) &&
+    is3dRenderMode(layout.renderMode()) && ViewRenderMode::Disabled != layout.renderMode() &&
     layout.volumeRenderedImages().empty())
   {
     layout.ControlFrame::setVolumeRenderedImages(layout.renderedImages());

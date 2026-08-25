@@ -11,18 +11,19 @@
  */
 enum class ViewRenderMode
 {
-  Image,               //!< Images rendered in 2D using color maps
-  Checkerboard,        //!< Image pair rendered in 2D using checkerboard pattern
-  Quadrants,           //!< Image pair rendered in 2D, with each image occupying opposing view quadrants
-  Flashlight,          //!< Image pair rendered in 2D, with moving image appearing under the crosshairs
-  Overlay,             //!< Image pair rendered in 2D with overlap highlighted
-  Difference,          //!< Absolute or squared difference of the image pair rendered in 2D
-  JointHistogram,      //!< Joint intensity histogram of the image pair
-  VolumeRender,        //!< Volume rendering of one image using raycasting
-  Disabled,            //!< Disabled (no rendering)
-  LocalNcc,            //!< Local normalized cross-correlation metric for the image pair
-  LocalLinearResidual, //!< Residual after fitting a local linear intensity model
-  SegmentationMesh,    //!< Segmentation labels rendered as 3D meshes
+  Image,                      //!< Images rendered in 2D using color maps
+  Checkerboard,               //!< Image pair rendered in 2D using checkerboard pattern
+  Quadrants,                  //!< Image pair rendered in 2D, with each image occupying opposing view quadrants
+  Flashlight,                 //!< Image pair rendered in 2D, with moving image appearing under the crosshairs
+  Overlay,                    //!< Image pair rendered in 2D with overlap highlighted
+  Difference,                 //!< Absolute or squared difference of the image pair rendered in 2D
+  JointHistogram,             //!< Joint intensity histogram of the image pair
+  VolumeRender,               //!< Volume rendering of one image using raycasting
+  Disabled,                   //!< Disabled (no rendering)
+  LocalNcc,                   //!< Local normalized cross-correlation metric for the image pair
+  LocalLinearResidual,        //!< Residual after fitting a local linear intensity model
+  SegmentationMesh,           //!< Segmentation labels rendered as 3D meshes
+  SegmentationAndIsosurfaces, //!< Segmentation meshes and image isosurfaces rendered together
   NumElements
 };
 
@@ -60,12 +61,14 @@ inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes = {ViewRender
 inline std::vector<ViewRenderMode> const All3dViewRenderModes = {
   ViewRenderMode::SegmentationMesh,
   ViewRenderMode::VolumeRender,
+  ViewRenderMode::SegmentationAndIsosurfaces,
   ViewRenderMode::Disabled};
 
 /** @brief Render modes for 3D views with one image, in UI order. */
 inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes = {
   ViewRenderMode::SegmentationMesh,
   ViewRenderMode::VolumeRender,
+  ViewRenderMode::SegmentationAndIsosurfaces,
   ViewRenderMode::Disabled};
 
 /** @brief Intensity projection modes in UI order. */
@@ -96,6 +99,25 @@ std::string typeString(const IntensityProjectionMode& ipMode);
  * @return Description.
  */
 std::string descriptionString(const ViewRenderMode& renderMode);
+
+/** @brief Return whether the mode is available in a 3D view. */
+constexpr bool is3dRenderMode(const ViewRenderMode renderMode)
+{
+  return ViewRenderMode::SegmentationMesh == renderMode || ViewRenderMode::VolumeRender == renderMode ||
+         ViewRenderMode::SegmentationAndIsosurfaces == renderMode || ViewRenderMode::Disabled == renderMode;
+}
+
+/** @brief Return whether the mode includes segmentation meshes. */
+constexpr bool rendersSegmentations(const ViewRenderMode renderMode)
+{
+  return ViewRenderMode::SegmentationMesh == renderMode || ViewRenderMode::SegmentationAndIsosurfaces == renderMode;
+}
+
+/** @brief Return whether the mode includes image isosurfaces. */
+constexpr bool rendersIsosurfaces(const ViewRenderMode renderMode)
+{
+  return ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationAndIsosurfaces == renderMode;
+}
 
 /**
  * @brief Return a longer intensity projection mode description for tooltips/help text.

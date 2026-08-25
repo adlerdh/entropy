@@ -179,7 +179,7 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
   changedView = project;
-  changedView.m_view.m_showScaleBars = true;
+  changedView.m_view.m_showScaleBars = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
   changedView = project;
@@ -217,6 +217,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
 
   changedThreeDRendering = project;
   changedThreeDRendering.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
+
+  changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   auto changedMeshRendering = project;

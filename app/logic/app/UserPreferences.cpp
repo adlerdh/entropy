@@ -1,6 +1,7 @@
 #include "logic/app/UserPreferences.h"
 
 #include "common/LoggingSettings.h"
+#include "registration/Config.h"
 #include "registration/Json.h"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -11,13 +12,17 @@
 
 #include <algorithm>
 #include <array>
+#include <exception>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -405,6 +410,7 @@ json toJson(
         {"imageBoxVisible", renderPreferences.imageBoxVisible},
         {"imagePlanesVisible", renderPreferences.showImagePlanesIn3D},
         {"imagePlaneViewAngleOpacity", renderPreferences.modulateImagePlaneOpacityWithViewAngle},
+        {"imagePlaneSegmentationsVisible", renderPreferences.showSegmentationsOnImagePlanesIn3D},
         {"imagePlaneShading", renderPreferences.shadeImagePlanesIn3D},
         {"lighting",
          {{"ambient", renderPreferences.lightingAmbient},
@@ -669,6 +675,7 @@ void applyJson(
       setFromJson(renderPreferences.imageBoxVisible, *threeD, "imageBoxVisible");
       setFromJson(renderPreferences.showImagePlanesIn3D, *threeD, "imagePlanesVisible");
       setFromJson(renderPreferences.modulateImagePlaneOpacityWithViewAngle, *threeD, "imagePlaneViewAngleOpacity");
+      setFromJson(renderPreferences.showSegmentationsOnImagePlanesIn3D, *threeD, "imagePlaneSegmentationsVisible");
       setFromJson(renderPreferences.shadeImagePlanesIn3D, *threeD, "imagePlaneShading");
       if (const auto lighting = threeD->find("lighting"); lighting != threeD->end() && lighting->is_object()) {
         setFloatFromJson(renderPreferences.lightingAmbient, *lighting, "ambient", 0.0f, 2.0f);

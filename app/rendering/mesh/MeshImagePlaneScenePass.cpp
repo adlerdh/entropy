@@ -1,19 +1,34 @@
 #include "rendering/Rendering.h"
 
+#include "common/CoordinateFrame.h"
+#include "common/DirectionMaps.h"
 #include "common/UuidUtility.h"
 #include "image/Image.h"
+#include "image/ImageHeader.h"
+#include "image/ImageSettings.h"
+#include "image/ImageTimeAxis.h"
+#include "image/ImageTransformations.h"
 #include "logic/app/Data.h"
+#include "logic/app/State.h"
+#include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraHelpers.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderData.h"
+#include "rendering/mesh/MeshCompositing.h"
+#include "rendering/mesh/MeshData.h"
+#include "rendering/mesh/MeshGpuStore.h"
+#include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImagePlane.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
+#include "rendering/mesh/MeshMaterial.h"
+#include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshRenderList.h"
 #include "rendering/mesh/MeshScene.h"
 #include "rendering/utility/gl/GLBufferTypes.h"
+#include "viewer/ViewTypes.h"
 #include "windowing/View.h"
 
 #include <glm/geometric.hpp>
@@ -23,9 +38,14 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <optional>
+#include <span>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace
@@ -233,7 +253,8 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           meshPositionCenter(mesh.mesh),
           rendering::mesh::MeshImagePlaneTexture{
             .imageUid = imageUid,
-            .segmentationUid = imgSegPair.second,
+            .segmentationUid =
+              m_appData.renderData().m_showSegmentationsOnImagePlanesIn3D ? imgSegPair.second : std::nullopt,
             .component = activeComponent,
             .timePoint = activeTimePoint},
           opacityMultiplier,

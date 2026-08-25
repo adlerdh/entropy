@@ -34,7 +34,8 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
       return ShaderGroup::Volume;
     }
 
-    case ViewRenderMode::SegmentationMesh: {
+    case ViewRenderMode::SegmentationMesh:
+    case ViewRenderMode::SegmentationAndIsosurfaces: {
       return ShaderGroup::Mesh;
     }
 

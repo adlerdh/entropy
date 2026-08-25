@@ -1,18 +1,8 @@
 #pragma once
 
-#include "common/PublicTypes.h"
-
-#include <glm/fwd.hpp>
-
 #include <cstddef>
 #include <functional>
-#include <string>
-#include <utility>
 
-class AppData;
-class ImageColorMap;
-class ImageTransformations;
-class LandmarkGroup;
 class ParcellationLabelTable;
 
 /**

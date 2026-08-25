@@ -127,6 +127,7 @@ struct RenderPreferences
   bool imageBoxVisible = false;
   bool showImagePlanesIn3D = true;
   bool modulateImagePlaneOpacityWithViewAngle = true;
+  bool showSegmentationsOnImagePlanesIn3D = true;
   bool shadeImagePlanesIn3D = true;
   float imagePlaneLightingAmbient = 0.30f;
   float imagePlaneLightingDiffuse = 0.50f;

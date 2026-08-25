@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -96,7 +97,9 @@ const rendering::mesh::SegmentationLabelSet* Rendering::presentSegmentationLabel
   return &inventory->second.presentLabelValues;
 }
 
-bool Rendering::renderSegmentationMeshesForView(const View& view)
+bool Rendering::renderSegmentationMeshesForView(
+  const View& view,
+  std::vector<rendering::mesh::MeshRenderable>* accumulatedRenderables)
 {
   consumeCompletedMeshExtractions();
 
@@ -108,8 +111,10 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
-  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
-    collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
+  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
+  if (!accumulatedRenderables) {
+    imagePlaneRenderables = collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
+  }
 
   for (const ImgSegPair& imgSegPair : imageSegPairs) {
     if (!imgSegPair.second) {
@@ -222,6 +227,15 @@ bool Rendering::renderSegmentationMeshesForView(const View& view)
       renderable.drawOptions.clipPlanes = clipPlanes;
       renderables.push_back(std::move(renderable));
     }
+  }
+
+  if (accumulatedRenderables) {
+    const bool hasRenderables = !renderables.empty();
+    accumulatedRenderables->insert(
+      accumulatedRenderables->end(),
+      std::make_move_iterator(renderables.begin()),
+      std::make_move_iterator(renderables.end()));
+    return hasRenderables;
   }
 
   renderables.insert(renderables.end(), imagePlaneBorderRenderables.begin(), imagePlaneBorderRenderables.end());

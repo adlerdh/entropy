@@ -1,5 +1,7 @@
 #include "logic/serialization/ProjectSerialization.h"
 
+#include "common/InputParams.h"
+
 #include <safeclib/strerrorlen_s.h>
 
 #include <spdlog/fmt/std.h>
@@ -9,12 +11,17 @@
 #include <cerrno>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #if !defined(_MSC_VER)
@@ -49,9 +56,9 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {
       "threeD",
       "mesh",
-      "isocontours",
-      "raycasting",
       "dualDepthPeeling",
+      "raycasting",
+      "isocontours",
       "comparison",
       "intensityProjection",
       "segmentation"};
@@ -64,25 +71,25 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "transparentBackground",
       "cameraFrustumVisibleIn2DViews",
       "cameraFrustumColor",
-      "lighting",
-      "imagePlanes",
       "imageBoxVisible",
       "reverseRotateAboutEye",
       "crosshairsGlyphVisible",
       "crosshairsGlyphDiameterVox",
-      "crosshairsGlyphLengthVox"};
+      "crosshairsGlyphLengthVox",
+      "lighting",
+      "imagePlanes"};
   }
   else if (path == "settings/rendering/threeD/lighting" || path == "settings/rendering/threeD/imagePlanes/lighting") {
     preferredKeys = {"ambient", "diffuse", "specular", "specularPower"};
   }
   else if (path == "settings/rendering/threeD/imagePlanes") {
-    preferredKeys = {"visible", "viewAngleOpacity", "shading", "lightingMode", "lighting"};
+    preferredKeys = {"visible", "viewAngleOpacity", "segmentationsVisible", "shading", "lightingMode", "lighting"};
   }
   else if (path == "settings/rendering/raycasting") {
     preferredKeys = {"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
   }
   else if (path == "settings/rendering/mesh") {
-    preferredKeys = {"enabled", "generationThreads", "pointPicking", "clipPlane", "shadows", "ambientOcclusion"};
+    preferredKeys = {"pointPicking", "clipPlane", "shadows", "ambientOcclusion", "enabled", "generationThreads"};
   }
   else if (path == "settings/rendering/mesh/clipPlane") {
     preferredKeys = {"enabled", "worldPlane"};

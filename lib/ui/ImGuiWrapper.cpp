@@ -4808,9 +4808,9 @@ void ImGuiWrapper::render()
       m_appData.state().worldCrosshairs(),
       m_appData.windowData().getContentScaleRatios()};
 
-    const bool useThreeDImageSelection =
-      ViewType::ThreeD == currentLayout.viewType() && (ViewRenderMode::VolumeRender == currentLayout.renderMode() ||
-                                                       ViewRenderMode::SegmentationMesh == currentLayout.renderMode());
+    const bool useThreeDImageSelection = ViewType::ThreeD == currentLayout.viewType() &&
+                                         is3dRenderMode(currentLayout.renderMode()) &&
+                                         ViewRenderMode::Disabled != currentLayout.renderMode();
     auto canImageBeVolumeRendered = [this](std::size_t index) {
       const auto imageUid = m_appData.imageUid(index);
       if (!imageUid) {
@@ -4944,9 +4944,8 @@ void ImGuiWrapper::render()
         m_appData.state().worldCrosshairs(),
         m_appData.windowData().getContentScaleRatios()};
 
-      const bool useThreeDImageSelection =
-        ViewType::ThreeD == view->viewType() &&
-        (ViewRenderMode::VolumeRender == view->renderMode() || ViewRenderMode::SegmentationMesh == view->renderMode());
+      const bool useThreeDImageSelection = ViewType::ThreeD == view->viewType() && is3dRenderMode(view->renderMode()) &&
+                                           ViewRenderMode::Disabled != view->renderMode();
       auto canImageBeVolumeRendered = [this](std::size_t index) {
         const auto imageUid = m_appData.imageUid(index);
         if (!imageUid) {

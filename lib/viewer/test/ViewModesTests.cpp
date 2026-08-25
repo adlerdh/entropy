@@ -24,7 +24,11 @@ TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")
 
 TEST_CASE("3D render mode choices stay in stable UI order", "[viewer][modes]")
 {
-  const std::vector expected{ViewRenderMode::SegmentationMesh, ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
+  const std::vector expected{
+    ViewRenderMode::SegmentationMesh,
+    ViewRenderMode::VolumeRender,
+    ViewRenderMode::SegmentationAndIsosurfaces,
+    ViewRenderMode::Disabled};
 
   CHECK(All3dViewRenderModes == expected);
   CHECK(All3dNonMetricRenderModes == expected);
@@ -44,7 +48,8 @@ TEST_CASE("view render mode enum ordinals remain stable for serialized layout sp
   CHECK(static_cast<int>(ViewRenderMode::LocalNcc) == 9);
   CHECK(static_cast<int>(ViewRenderMode::LocalLinearResidual) == 10);
   CHECK(static_cast<int>(ViewRenderMode::SegmentationMesh) == 11);
-  CHECK(static_cast<int>(ViewRenderMode::NumElements) == 12);
+  CHECK(static_cast<int>(ViewRenderMode::SegmentationAndIsosurfaces) == 12);
+  CHECK(static_cast<int>(ViewRenderMode::NumElements) == 13);
 }
 
 TEST_CASE("intensity projection modes stay in stable UI order", "[viewer][modes]")
@@ -89,7 +94,26 @@ TEST_CASE("viewer mode labels cover all public choices", "[viewer][modes]")
   CHECK(typeString(ViewRenderMode::Image) == "Layers");
   CHECK(typeString(ViewRenderMode::SegmentationMesh) == "Segmentations");
   CHECK(typeString(ViewRenderMode::VolumeRender) == "Isosurfaces");
+  CHECK(typeString(ViewRenderMode::SegmentationAndIsosurfaces) == "Both");
+  CHECK(
+    descriptionString(ViewRenderMode::SegmentationMesh) == "Render visible segmentation labels as 3D surface meshes");
+  CHECK(descriptionString(ViewRenderMode::VolumeRender) == "Render visible image isosurfaces in 3D");
+  CHECK(
+    descriptionString(ViewRenderMode::SegmentationAndIsosurfaces) ==
+    "Render visible segmentation meshes and image isosurfaces together");
   CHECK(typeString(IntensityProjectionMode::Xray) == "X-ray projection");
+}
+
+TEST_CASE("3D surface mode capabilities distinguish individual and combined rendering", "[viewer][modes]")
+{
+  CHECK(rendersSegmentations(ViewRenderMode::SegmentationMesh));
+  CHECK_FALSE(rendersIsosurfaces(ViewRenderMode::SegmentationMesh));
+  CHECK(rendersIsosurfaces(ViewRenderMode::VolumeRender));
+  CHECK_FALSE(rendersSegmentations(ViewRenderMode::VolumeRender));
+  CHECK(rendersSegmentations(ViewRenderMode::SegmentationAndIsosurfaces));
+  CHECK(rendersIsosurfaces(ViewRenderMode::SegmentationAndIsosurfaces));
+  CHECK(is3dRenderMode(ViewRenderMode::SegmentationAndIsosurfaces));
+  CHECK_FALSE(is3dRenderMode(ViewRenderMode::Image));
 }
 
 TEST_CASE("viewer mode labels tolerate sentinel values", "[viewer][modes]")

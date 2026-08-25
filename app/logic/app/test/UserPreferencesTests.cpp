@@ -152,6 +152,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.imageBoxVisible = true;
   preferences.showImagePlanesIn3D = false;
   preferences.modulateImagePlaneOpacityWithViewAngle = false;
+  preferences.showSegmentationsOnImagePlanesIn3D = false;
   preferences.shadeImagePlanesIn3D = false;
   preferences.imagePlaneLightingAmbient = 0.11f;
   preferences.imagePlaneLightingDiffuse = 0.22f;
@@ -356,6 +357,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.imageBoxVisible == expected.imageBoxVisible);
   CHECK(actual.showImagePlanesIn3D == expected.showImagePlanesIn3D);
   CHECK(actual.modulateImagePlaneOpacityWithViewAngle == expected.modulateImagePlaneOpacityWithViewAngle);
+  CHECK(actual.showSegmentationsOnImagePlanesIn3D == expected.showSegmentationsOnImagePlanesIn3D);
   CHECK(actual.shadeImagePlanesIn3D == expected.shadeImagePlanesIn3D);
   CHECK(actual.imagePlaneLightingAmbient == Catch::Approx(expected.imagePlaneLightingAmbient));
   CHECK(actual.imagePlaneLightingDiffuse == Catch::Approx(expected.imagePlaneLightingDiffuse));

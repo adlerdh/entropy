@@ -371,12 +371,20 @@ std::vector<rendering::mesh::MeshClipPlane> meshClipPlanes() const;
  * @param imageSegPairs Image/segmentation pairs selected for 3D rendering.
  * @return True when at least one isosurface mesh was rendered and raycasting can be skipped.
  */
-bool renderIsosurfaceMeshesForView(const View& view, const CurrentImages& imageSegPairs);
+bool renderIsosurfaceMeshesForView(
+  const View& view,
+  const CurrentImages& imageSegPairs,
+  std::vector<rendering::mesh::MeshRenderable>* accumulatedRenderables = nullptr);
 
 /**
  * @brief Render the active segmentation of the selected 3D image as label meshes.
  */
-bool renderSegmentationMeshesForView(const View& view);
+bool renderSegmentationMeshesForView(
+  const View& view,
+  std::vector<rendering::mesh::MeshRenderable>* accumulatedRenderables = nullptr);
+
+/** @brief Render segmentation meshes and isosurfaces in one depth-peeled mesh scene. */
+bool renderCombinedSurfaceMeshesForView(const View& view);
 
 /**
  * @brief Return a revision-aware inventory of label values present in a segmentation time point.

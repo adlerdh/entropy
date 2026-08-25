@@ -86,7 +86,8 @@ const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
     {ViewRenderMode::Disabled, "disabled"},
     {ViewRenderMode::LocalNcc, "localNcc"},
     {ViewRenderMode::LocalLinearResidual, "localLinearResidual"},
-    {ViewRenderMode::SegmentationMesh, "segmentationMesh"}};
+    {ViewRenderMode::SegmentationMesh, "segmentationMesh"},
+    {ViewRenderMode::SegmentationAndIsosurfaces, "both"}};
   return names;
 }
 

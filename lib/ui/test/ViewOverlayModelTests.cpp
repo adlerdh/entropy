@@ -9,6 +9,7 @@ TEST_CASE("view overlay chooses image or metric selection by render mode", "[ui]
   CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::Image));
   CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::VolumeRender));
   CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::SegmentationMesh));
+  CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::SegmentationAndIsosurfaces));
 
   CHECK(view_overlay::usesMetricImageSelection(ViewRenderMode::Overlay));
   CHECK(view_overlay::usesMetricImageSelection(ViewRenderMode::Difference));
@@ -18,6 +19,7 @@ TEST_CASE("view overlay chooses image or metric selection by render mode", "[ui]
 
   CHECK_FALSE(view_overlay::usesMetricImageSelection(ViewRenderMode::Image));
   CHECK_FALSE(view_overlay::usesMetricImageSelection(ViewRenderMode::SegmentationMesh));
+  CHECK_FALSE(view_overlay::usesMetricImageSelection(ViewRenderMode::SegmentationAndIsosurfaces));
   CHECK_FALSE(view_overlay::usesMetricImageSelection(ViewRenderMode::Disabled));
 
   CHECK(view_overlay::usesDisabledVisibilityIcon(ViewRenderMode::Disabled));

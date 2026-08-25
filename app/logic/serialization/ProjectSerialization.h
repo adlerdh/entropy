@@ -200,6 +200,7 @@ struct ProjectThreeDRenderingSettings
   bool m_imageBoxVisible = false;                         //!< Show the image-domain outline in 3D views
   bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
   bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
+  bool m_imagePlaneSegmentationsVisible = true;           //!< Show segmentation overlays on 3D image planes
   bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
   float m_imagePlaneLightingAmbient = 0.30f;              //!< Image-plane ADS ambient term
   float m_imagePlaneLightingDiffuse = 0.50f;              //!< Image-plane ADS diffuse term
@@ -636,7 +637,7 @@ struct ProjectViewSettings
   bool m_showCrosshairsInLightboxViews = true;       //!< Show crosshairs in lightbox layout tiles
   bool m_showAnatomicalLabels = true;                //!< Show anatomical direction labels in all views
   bool m_showAnatomicalLabelsInLightboxViews = true; //!< Show anatomical direction labels in lightbox layout tiles
-  bool m_showScaleBars = false;                      //!< Show scale bars in all views
+  bool m_showScaleBars = true;                       //!< Show scale bars in all views
   bool m_showScaleBarsInLightboxViews = false;       //!< Show scale bars in lightbox layout tiles
   bool m_annotationsOnTop = false;                   //!< Render annotations over all image planes
   bool m_landmarksOnTop = false;                     //!< Render landmarks over all image planes

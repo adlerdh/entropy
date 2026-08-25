@@ -19,15 +19,10 @@ static const glm::vec4 sk_winClipFullWindowViewport{-1.0f, -1.0f, 2.0f, 2.0f};
 ViewRenderMode reconcileRenderModeForViewType(ViewType viewType, ViewRenderMode renderMode)
 {
   if (ViewType::ThreeD == viewType) {
-    return (ViewRenderMode::SegmentationMesh == renderMode || ViewRenderMode::VolumeRender == renderMode ||
-            ViewRenderMode::Disabled == renderMode)
-             ? renderMode
-             : ViewRenderMode::SegmentationMesh;
+    return is3dRenderMode(renderMode) ? renderMode : ViewRenderMode::SegmentationMesh;
   }
 
-  return (ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationMesh == renderMode)
-           ? ViewRenderMode::Image
-           : renderMode;
+  return is3dRenderMode(renderMode) && ViewRenderMode::Disabled != renderMode ? ViewRenderMode::Image : renderMode;
 }
 } // namespace
 

@@ -1,8 +1,15 @@
 #include "logic/app/ProjectSnapshotComparison.h"
 
+#include "image/ImageSpatialMetadata.h"
+#include "image/Isosurface.h"
+#include "layout/LayoutSpec.h"
+#include "logic/annotation/Annotation.h"
+
 #include <algorithm>
-#include <cmath>
+#include <filesystem>
 #include <optional>
+#include <set>
+#include <string>
 #include <vector>
 
 namespace
@@ -281,6 +288,7 @@ bool threeDRenderingSettingsEqual(
   return a.m_transparentBackground == b.m_transparentBackground && a.m_imageBoxVisible == b.m_imageBoxVisible &&
          a.m_imagePlanesVisible == b.m_imagePlanesVisible &&
          a.m_imagePlaneViewAngleOpacity == b.m_imagePlaneViewAngleOpacity &&
+         a.m_imagePlaneSegmentationsVisible == b.m_imagePlaneSegmentationsVisible &&
          a.m_imagePlaneShading == b.m_imagePlaneShading &&
          a.m_imagePlaneLightingAmbient == b.m_imagePlaneLightingAmbient &&
          a.m_imagePlaneLightingDiffuse == b.m_imagePlaneLightingDiffuse &&

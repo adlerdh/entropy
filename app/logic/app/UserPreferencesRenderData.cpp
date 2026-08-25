@@ -1,10 +1,15 @@
 #include "logic/app/UserPreferences.h"
 
+#include "common/LoggingDefaults.h"
 #include "common/LoggingSettings.h"
+#include "logic/app/Settings.h"
 #include "rendering/RenderData.h"
+#include "rendering/mesh/MeshAdvancedLighting.h"
+#include "rendering/mesh/MeshDdpPolicy.h"
 #include "ui/GuiData.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <system_error>
@@ -148,6 +153,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.imageBoxVisible = renderData.m_raycastBackgroundEdgeBrighteningEnabled;
   preferences.showImagePlanesIn3D = renderData.m_showImagePlanesIn3D;
   preferences.modulateImagePlaneOpacityWithViewAngle = renderData.m_modulateImagePlaneOpacityWithViewAngle;
+  preferences.showSegmentationsOnImagePlanesIn3D = renderData.m_showSegmentationsOnImagePlanesIn3D;
   preferences.shadeImagePlanesIn3D = renderData.m_shadeImagePlanesIn3D;
   preferences.imagePlaneLightingAmbient = renderData.m_imagePlaneLightingAmbient;
   preferences.imagePlaneLightingDiffuse = renderData.m_imagePlaneLightingDiffuse;
@@ -281,6 +287,7 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_raycastBackgroundEdgeBrighteningEnabled = preferences.imageBoxVisible;
   renderData.m_showImagePlanesIn3D = preferences.showImagePlanesIn3D;
   renderData.m_modulateImagePlaneOpacityWithViewAngle = preferences.modulateImagePlaneOpacityWithViewAngle;
+  renderData.m_showSegmentationsOnImagePlanesIn3D = preferences.showSegmentationsOnImagePlanesIn3D;
   renderData.m_shadeImagePlanesIn3D = preferences.shadeImagePlanesIn3D;
   renderData.m_imagePlaneLightingAmbient = preferences.imagePlaneLightingAmbient;
   renderData.m_imagePlaneLightingDiffuse = preferences.imagePlaneLightingDiffuse;

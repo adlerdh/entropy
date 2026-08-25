@@ -25,6 +25,8 @@ std::string typeString(const ViewRenderMode& mode)
       return "Isosurfaces";
     case ViewRenderMode::SegmentationMesh:
       return "Segmentations";
+    case ViewRenderMode::SegmentationAndIsosurfaces:
+      return "Both";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:
@@ -76,9 +78,11 @@ std::string descriptionString(const ViewRenderMode& mode)
     case ViewRenderMode::JointHistogram:
       return "Joint histogram metric";
     case ViewRenderMode::VolumeRender:
-      return "Iso-surface volume rendering";
+      return "Render visible image isosurfaces in 3D";
     case ViewRenderMode::SegmentationMesh:
-      return "Segmentation labels rendered as 3D meshes";
+      return "Render visible segmentation labels as 3D surface meshes";
+    case ViewRenderMode::SegmentationAndIsosurfaces:
+      return "Render visible segmentation meshes and image isosurfaces together";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:

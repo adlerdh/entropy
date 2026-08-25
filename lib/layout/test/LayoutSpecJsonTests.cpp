@@ -171,6 +171,18 @@ TEST_CASE("layout spec JSON supports segmentation mesh render mode", "[layout][s
   CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::SegmentationMesh));
 }
 
+TEST_CASE("layout spec JSON supports combined 3D render mode", "[layout][serialization]")
+{
+  layout::ViewSpec view;
+  view.m_renderMode = static_cast<int>(ViewRenderMode::SegmentationAndIsosurfaces);
+
+  const nlohmann::json json = view;
+  CHECK(json.at("renderMode") == "both");
+
+  const layout::ViewSpec restored = json.get<layout::ViewSpec>();
+  CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::SegmentationAndIsosurfaces));
+}
+
 TEST_CASE("layout spec JSON writes compact regular grids without expanded views", "[layout][serialization]")
 {
   layout::LayoutSpec spec;

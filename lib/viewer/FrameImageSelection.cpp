@@ -184,7 +184,8 @@ const std::list<uuids::uuid>& FrameImageSelection::visibleImages(ViewRenderMode 
       return renderedImages();
     }
     case ViewRenderMode::VolumeRender:
-    case ViewRenderMode::SegmentationMesh: {
+    case ViewRenderMode::SegmentationMesh:
+    case ViewRenderMode::SegmentationAndIsosurfaces: {
       return volumeRenderedImages();
     }
     case ViewRenderMode::Disabled: {

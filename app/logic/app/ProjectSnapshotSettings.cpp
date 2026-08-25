@@ -1,14 +1,26 @@
 #include "logic/app/ProjectSnapshotSettings.h"
 
+#include "common/Types.h"
 #include "image/Image.h"
 #include "image/ImageDerivedData.h"
+#include "image/ImageHeader.h"
+#include "image/ImageTimeAxis.h"
 #include "logic/app/Data.h"
 #include "logic/app/ParcellationLabelTable.h"
+#include "logic/app/Settings.h"
+#include "rendering/RenderData.h"
+#include "rendering/mesh/MeshAdvancedLighting.h"
+#include "rendering/mesh/MeshDdpPolicy.h"
+#include "ui/GuiData.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -370,6 +382,7 @@ serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData&
     .m_imageBoxVisible = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
     .m_imagePlanesVisible = renderData.m_showImagePlanesIn3D,
     .m_imagePlaneViewAngleOpacity = renderData.m_modulateImagePlaneOpacityWithViewAngle,
+    .m_imagePlaneSegmentationsVisible = renderData.m_showSegmentationsOnImagePlanesIn3D,
     .m_imagePlaneShading = renderData.m_shadeImagePlanesIn3D,
     .m_imagePlaneLightingAmbient = renderData.m_imagePlaneLightingAmbient,
     .m_imagePlaneLightingDiffuse = renderData.m_imagePlaneLightingDiffuse,
@@ -394,6 +407,7 @@ void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThre
   renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_imageBoxVisible;
   renderData.m_showImagePlanesIn3D = settings.m_imagePlanesVisible;
   renderData.m_modulateImagePlaneOpacityWithViewAngle = settings.m_imagePlaneViewAngleOpacity;
+  renderData.m_showSegmentationsOnImagePlanesIn3D = settings.m_imagePlaneSegmentationsVisible;
   renderData.m_shadeImagePlanesIn3D = settings.m_imagePlaneShading;
   renderData.m_imagePlaneLightingAmbient = settings.m_imagePlaneLightingAmbient;
   renderData.m_imagePlaneLightingDiffuse = settings.m_imagePlaneLightingDiffuse;

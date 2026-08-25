@@ -104,8 +104,7 @@ void renderViewSettingsComboWindow(
   const auto& setXrayProjectionEnergy = projection.setXrayProjectionEnergy;
 
   const bool usesThreeDImageSelection =
-    ViewType::ThreeD == viewType &&
-    (ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationMesh == renderMode);
+    ViewType::ThreeD == viewType && is3dRenderMode(renderMode) && ViewRenderMode::Disabled != renderMode;
 
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -310,6 +309,10 @@ void renderViewSettingsComboWindow(
               const bool isSelected = (st == renderMode);
               if (ImGui::Selectable(typeString(st).c_str(), isSelected)) {
                 setRenderMode(st);
+              }
+
+              if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("%s", descriptionString(st).c_str());
               }
 
               if (isSelected) {
@@ -656,7 +659,7 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      if (ViewType::ThreeD == viewType && ViewRenderMode::VolumeRender == renderMode && modes.showIsosurfacesPanel) {
+      if (ViewType::ThreeD == viewType && rendersIsosurfaces(renderMode) && modes.showIsosurfacesPanel) {
         ImGui::SameLine();
         const bool isosurfacesPanelVisible =
           modes.isIsosurfacesPanelVisible ? modes.isIsosurfacesPanelVisible() : false;

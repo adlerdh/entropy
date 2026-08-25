@@ -8,6 +8,7 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
+#include <nlohmann/json.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -18,6 +19,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 using json = nlohmann::json;
@@ -473,6 +475,11 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
     "viewAngleOpacity",
     settings.m_imagePlaneViewAngleOpacity,
     defaults.m_imagePlaneViewAngleOpacity);
+  addIfChanged(
+    imagePlanes,
+    "segmentationsVisible",
+    settings.m_imagePlaneSegmentationsVisible,
+    defaults.m_imagePlaneSegmentationsVisible);
   addIfChanged(imagePlanes, "shading", settings.m_imagePlaneShading, defaults.m_imagePlaneShading);
   json imagePlaneLighting = json::object();
   addIfChanged(
@@ -562,6 +569,11 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     }
     if (const auto value = imagePlanes->find("viewAngleOpacity"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlaneViewAngleOpacity = value->get<bool>();
+    }
+    if (const auto value = imagePlanes->find("segmentationsVisible");
+        value != imagePlanes->end() && value->is_boolean())
+    {
+      settings.m_imagePlaneSegmentationsVisible = value->get<bool>();
     }
     if (const auto value = imagePlanes->find("shading"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlaneShading = value->get<bool>();

@@ -200,13 +200,13 @@ const std::array<SettingsPageChoice, 9>& settingsPageChoices()
 {
   static constexpr std::array<SettingsPageChoice, 9> sk_choices{
     SettingsPageChoice{GuiData::SettingsTab::Views, "Views"},
+    SettingsPageChoice{GuiData::SettingsTab::Rendering, "3D Rendering"},
     SettingsPageChoice{GuiData::SettingsTab::Interface, "Interface"},
     SettingsPageChoice{GuiData::SettingsTab::Images, "Images"},
     SettingsPageChoice{GuiData::SettingsTab::Segmentation, "Segmentation"},
     SettingsPageChoice{GuiData::SettingsTab::Registration, "Registration"},
     SettingsPageChoice{GuiData::SettingsTab::Comparison, "Comparison"},
     SettingsPageChoice{GuiData::SettingsTab::Synchronization, "Synchronization"},
-    SettingsPageChoice{GuiData::SettingsTab::Rendering, "Rendering"},
     SettingsPageChoice{GuiData::SettingsTab::System, "System"}};
 
   return sk_choices;

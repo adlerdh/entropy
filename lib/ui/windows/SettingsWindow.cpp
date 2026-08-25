@@ -6,14 +6,23 @@
 #include "ui/Scaling.h"
 #include "ui/Style.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
-#include "ui/widgets/Widgets.h"
 #include "ui/settings/SettingsModel.h"
+#include "ui/widgets/PaletteWidget.h"
+#include "ui/widgets/Widgets.h"
 
 #include "common/LoggingSettings.h"
+#include "common/Types.h"
+#include "image/ImageColorMap.h"
 #include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
-#include "rendering/mesh/MeshAdvancedLighting.h"
+#include "logic/app/State.h"
 #include "registration/Config.h"
+#include "registration/Types.h"
+#include "rendering/RenderData.h"
+#include "rendering/mesh/MeshAdvancedLighting.h"
+#include "rendering/mesh/MeshDdpPolicy.h"
+#include "ui/GuiData.h"
+#include "windowing/WindowData.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,9 +34,14 @@
 #include <array>
 #include <cstdio>
 #include <filesystem>
+#include <iterator>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace ui_settings = ui::settings;
@@ -671,6 +685,8 @@ void renderAnnotationViewSettings(RenderData& renderData)
   ImGui::PopID(); /*** PopID annotations ***/
 }
 
+void renderAsciiShadingSettings(RenderData& renderData);
+
 /**
  * @brief Render the Views settings page contents.
  */
@@ -1084,7 +1100,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   }
   finishSettingsSection(annotationsOpen);
 
-  if (ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool lightboxViewsOpen = ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen);
+  if (lightboxViewsOpen) {
     const bool globalImageBordersShown =
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
     if (!globalImageBordersShown) {
@@ -1151,6 +1168,12 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
         glm::value_ptr(renderData.m_lightboxOffsetLabelColor),
         k_colorAlphaEditFlags);
     }
+  }
+  finishSettingsSection(lightboxViewsOpen);
+
+  const bool asciiOpen = ImGui::CollapsingHeader("ASCII Shading", ImGuiTreeNodeFlags_DefaultOpen);
+  if (asciiOpen) {
+    renderAsciiShadingSettings(renderData);
   }
 }
 
@@ -1323,8 +1346,16 @@ void renderInterfaceTab(
 /**
  * @brief Render the System settings page contents.
  */
+void renderFrameRateSettings(RenderData& renderData);
+
 void renderSystemTab(AppData& appData)
 {
+  const bool performanceOpen = ImGui::CollapsingHeader("Performance", ImGuiTreeNodeFlags_DefaultOpen);
+  if (performanceOpen) {
+    renderFrameRateSettings(appData.renderData());
+  }
+  finishSettingsSection(performanceOpen);
+
   const bool updatesOpen = ImGui::CollapsingHeader("Updates", ImGuiTreeNodeFlags_DefaultOpen);
   if (updatesOpen) {
     bool automaticChecks = appData.settings().automaticUpdateChecksEnabled();
@@ -2169,9 +2200,9 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
 }
 
 /**
- * @brief Render the general 3D Rendering settings section contents.
+ * @brief Render 3D scene and camera settings.
  */
-void render3DRenderingTab(RenderData& renderData)
+void renderSceneAndCameraTab(RenderData& renderData)
 {
   ImGui::PushID("3d_rendering"); /*** PushID 3d_rendering ***/
 
@@ -2228,15 +2259,18 @@ void render3DRenderingTab(RenderData& renderData)
     helpMarker("Length of each red, green, and blue axis as a multiple of the current image voxel diagonal");
   }
 
-  ImGui::Spacing();
-  ImGui::SeparatorText("3D lighting");
+  ImGui::PopID(); /*** PopID 3d_rendering ***/
+}
+
+void renderSurfaceLightingSettings(RenderData& renderData)
+{
+  ImGui::SeparatorText("Lighting");
   disabledTextWrapped(
     "3D surfaces use the Blinn-Phong shading model. These controls set the ambient, diffuse, and specular lighting "
     "contributions and the sharpness of specular highlights.");
 
   const float lightingWidth = ImGui::CalcItemWidth();
   ImGui::PushItemWidth(lightingWidth);
-
   if (mySliderF32("Ambient", &renderData.m_lightingAmbient, 0.0f, 2.0f, "%0.2f")) {
     renderData.m_lightingAmbient = std::clamp(renderData.m_lightingAmbient, 0.0f, 2.0f);
   }
@@ -2260,11 +2294,13 @@ void render3DRenderingTab(RenderData& renderData)
   }
   ImGui::SameLine();
   helpMarker("Higher values make the specular highlight smaller and sharper");
-
   ImGui::PopItemWidth();
+}
 
-  ImGui::Spacing();
-  ImGui::SeparatorText("3D image planes");
+void renderImagePlanesTab(RenderData& renderData)
+{
+  ImGui::PushID("image_planes");
+  disabledTextWrapped("Image planes show the current orthogonal image slices at the 3D crosshairs position");
 
   ImGui::Checkbox("Enable image planes in 3D views", &renderData.m_showImagePlanesIn3D);
   ImGui::SameLine();
@@ -2274,6 +2310,10 @@ void render3DRenderingTab(RenderData& renderData)
   ImGui::Checkbox("Fade opacity with view angle", &renderData.m_modulateImagePlaneOpacityWithViewAngle);
   ImGui::SameLine();
   helpMarker("Make image planes more transparent as their plane becomes parallel to the camera direction");
+
+  ImGui::Checkbox("Show segmentations", &renderData.m_showSegmentationsOnImagePlanesIn3D);
+  ImGui::SameLine();
+  helpMarker("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
 
   ImGui::Checkbox("Image plane shading", &renderData.m_shadeImagePlanesIn3D);
   ImGui::SameLine();
@@ -2299,12 +2339,11 @@ void render3DRenderingTab(RenderData& renderData)
     ImGui::PopID();
   }
   ImGui::EndDisabled();
-
-  ImGui::PopID(); /*** PopID 3d_rendering ***/
+  ImGui::PopID();
 }
 
 /**
- * @brief Render the Surface Rendering settings section contents.
+ * @brief Render the Surfaces settings section contents.
  */
 void renderMeshRenderingTab(RenderData& renderData)
 {
@@ -2314,19 +2353,10 @@ void renderMeshRenderingTab(RenderData& renderData)
     "Isosurfaces are rendered using raycasting while their values are being edited. Once editing is complete and "
     "the surface mesh is ready, rendering automatically switches to the mesh.");
 
-  ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);
-  ImGui::SameLine();
-  helpMarker(
-    "Double-click a visible surface in a 3D view to move the crosshairs to the selected point on that surface");
+  renderSurfaceLightingSettings(renderData);
 
-  ImGui::Checkbox("Clipping plane", &renderData.m_meshClipPlaneEnabled);
-  ImGui::SameLine();
-  helpMarker("Clip mesh surfaces against one world-space plane");
-  if (renderData.m_meshClipPlaneEnabled) {
-    ImGui::DragFloat4("Clip plane", glm::value_ptr(renderData.m_meshClipPlaneWorld), 0.1f, -10000.0f, 10000.0f);
-    ImGui::SameLine();
-    helpMarker("World-space plane as nx, ny, nz, d; visible points satisfy dot(n, position) + d >= 0");
-  }
+  ImGui::Spacing();
+  ImGui::SeparatorText("Lighting Effects");
 
   ImGui::Checkbox("Shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
   ImGui::SameLine();
@@ -2429,15 +2459,28 @@ void renderMeshRenderingTab(RenderData& renderData)
     disabledTextWrapped(diagnostic.c_str());
   }
 
+  ImGui::Spacing();
+  ImGui::SeparatorText("Interaction");
+
+  ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);
+  ImGui::SameLine();
+  helpMarker(
+    "Double-click a visible surface in a 3D view to move the crosshairs to the selected point on that surface");
+
+  ImGui::Checkbox("Clipping plane", &renderData.m_meshClipPlaneEnabled);
+  ImGui::SameLine();
+  helpMarker("Clip mesh surfaces against one world-space plane");
+  if (renderData.m_meshClipPlaneEnabled) {
+    ImGui::DragFloat4("Clip plane", glm::value_ptr(renderData.m_meshClipPlaneWorld), 0.1f, -10000.0f, 10000.0f);
+    ImGui::SameLine();
+    helpMarker("World-space plane as nx, ny, nz, d; visible points satisfy dot(n, position) + d >= 0");
+  }
+
   ImGui::PopID(); /*** PopID mesh_rendering ***/
 }
 
-/**
- * @brief Render the Rendering settings page contents.
- */
-void renderPerformanceAndQualityTab(RenderData& renderData)
+void renderFrameRateSettings(RenderData& renderData)
 {
-  ImGui::SeparatorText("Frame rate");
   ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
   ImGui::SameLine();
   helpMarker("Manually limit the rendering frame rate");
@@ -2478,8 +2521,13 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
       renderData.m_targetFrameTimeSeconds = sec;
     }
   }
+}
 
-  ImGui::Spacing();
+/**
+ * @brief Render 3D rendering performance and quality settings.
+ */
+void renderPerformanceAndQualityTab(RenderData& renderData)
+{
   ImGui::SeparatorText("Dual Depth Peeling");
   disabledTextWrapped(
     "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
@@ -2499,7 +2547,7 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
   helpMarker("Maximum front/back peel iterations per frame. N iterations resolve up to 2N transparency layers");
 
   ImGui::Spacing();
-  ImGui::SeparatorText("Sampling");
+  ImGui::SeparatorText("Raycasting");
   static constexpr float k_factorStep = 0.1f;
   static constexpr float k_minFactor = 0.5f;
   static constexpr float k_maxFactor = 2.0f;
@@ -2517,7 +2565,7 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
   helpMarker("Fallback ray-marching step as a fraction of voxel size. Smaller values improve fidelity but cost more");
 
   ImGui::Spacing();
-  ImGui::SeparatorText("Mesh generation");
+  ImGui::SeparatorText("Mesh Generation");
   int meshGenerationThreadCount = static_cast<int>(renderData.m_meshGenerationThreadCount);
   if (ImGui::InputInt("Mesh generation threads", &meshGenerationThreadCount)) {
     renderData.m_meshGenerationThreadCount = static_cast<uint32_t>(std::clamp(meshGenerationThreadCount, 0, 64));
@@ -2526,79 +2574,83 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
   helpMarker("Maximum VTK CPU threads used by one mesh extraction job. Zero uses a conservative automatic value");
 }
 
-void renderRenderingTab(RenderData& renderData)
+void renderAsciiShadingSettings(RenderData& renderData)
 {
   RenderData& rd = renderData;
+  ImGui::PushID("ascii");
 
-  const bool threeDRenderingOpen = ImGui::CollapsingHeader("3D Rendering", ImGuiTreeNodeFlags_DefaultOpen);
-  if (threeDRenderingOpen) {
-    render3DRenderingTab(renderData);
+  ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
+  ImGui::SameLine();
+  helpMarker("Render grayscale images as ASCII art");
+
+  if (rd.m_asciiEnabled) {
+    static const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
+    if (ImGui::Combo("Character set", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
+      // Signal that the atlas needs to be rebuilt — caller checks this flag
+      rd.m_asciiAtlasNeedsRebuild = true;
+    }
+    ImGui::SameLine();
+    helpMarker("Character ramp used to represent image brightness");
+
+    ImGui::SliderFloat("Cell size", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f px");
+    ImGui::SameLine();
+    helpMarker(
+      "Size of each ASCII character cell in screen pixels. Larger cells produce coarser, more readable ASCII "
+      "shading");
+
+    ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
+    ImGui::SameLine();
+    helpMarker("Replace the foreground color with the image colormap color");
+
+    if (!rd.m_asciiUseColormap) {
+      ImGui::ColorEdit3("Foreground color", &rd.m_asciiFgColor.x);
+      ImGui::SameLine();
+      helpMarker("Color used for ASCII characters when colormap foreground is off");
+    }
+    ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
+    ImGui::SameLine();
+    helpMarker("Color drawn behind ASCII characters");
+    ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
+    ImGui::SameLine();
+    helpMarker("Opacity of the ASCII background color");
+
+    ImGui::Spacing();
+    ImGui::Checkbox("Spatial matching", &rd.m_asciiSpatialMode);
+    ImGui::SameLine();
+    helpMarker(
+      "Choose ASCII characters by comparing a 3 by 2 regional luminance pattern within each cell, rather than using "
+      "only the cell's average brightness. This can preserve local structure better, but costs more GPU work");
+    if (rd.m_asciiSpatialMode) {
+      ImGui::SliderFloat("Spatial Exponent", &rd.m_asciiSpatialExponent, 0.25f, 4.0f, "%.2f");
+      ImGui::SameLine();
+      helpMarker(
+        "Controls how strongly regional luminance differences influence spatial glyph matching. Higher values favor "
+        "sharper local structure; lower values behave more like average-brightness matching");
+    }
   }
-  finishSettingsSection(threeDRenderingOpen);
 
-  const bool meshRenderingOpen = ImGui::CollapsingHeader("Surface Rendering", ImGuiTreeNodeFlags_DefaultOpen);
-  if (meshRenderingOpen) {
+  ImGui::PopID(); /*** PopID ascii ***/
+}
+
+void renderRenderingTab(RenderData& renderData)
+{
+  const bool sceneAndCameraOpen = ImGui::CollapsingHeader("Scene & Camera", ImGuiTreeNodeFlags_DefaultOpen);
+  if (sceneAndCameraOpen) {
+    renderSceneAndCameraTab(renderData);
+  }
+  finishSettingsSection(sceneAndCameraOpen);
+
+  const bool surfacesOpen = ImGui::CollapsingHeader("Surfaces", ImGuiTreeNodeFlags_DefaultOpen);
+  if (surfacesOpen) {
     renderMeshRenderingTab(renderData);
   }
-  finishSettingsSection(meshRenderingOpen);
+  finishSettingsSection(surfacesOpen);
 
-  const bool asciiOpen = ImGui::CollapsingHeader("ASCII Rendering", ImGuiTreeNodeFlags_DefaultOpen);
-  if (asciiOpen) {
-    ImGui::PushID("ascii");
-
-    ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
-    ImGui::SameLine();
-    helpMarker("Render grayscale images as ASCII art");
-
-    if (rd.m_asciiEnabled) {
-      static const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
-      if (ImGui::Combo("Character set", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
-        // Signal that the atlas needs to be rebuilt — caller checks this flag
-        rd.m_asciiAtlasNeedsRebuild = true;
-      }
-      ImGui::SameLine();
-      helpMarker("Character ramp used to represent image brightness");
-
-      ImGui::SliderFloat("Cell size", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f px");
-      ImGui::SameLine();
-      helpMarker(
-        "Size of each ASCII character cell in screen pixels. Larger cells produce coarser, more readable ASCII "
-        "shading");
-
-      ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
-      ImGui::SameLine();
-      helpMarker("Replace the foreground color with the image colormap color");
-
-      if (!rd.m_asciiUseColormap) {
-        ImGui::ColorEdit3("Foreground color", &rd.m_asciiFgColor.x);
-        ImGui::SameLine();
-        helpMarker("Color used for ASCII characters when colormap foreground is off");
-      }
-      ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
-      ImGui::SameLine();
-      helpMarker("Color drawn behind ASCII characters");
-      ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
-      ImGui::SameLine();
-      helpMarker("Opacity of the ASCII background color");
-
-      ImGui::Spacing();
-      ImGui::Checkbox("Spatial matching", &rd.m_asciiSpatialMode);
-      ImGui::SameLine();
-      helpMarker(
-        "Choose ASCII characters by comparing a 3 by 2 regional luminance pattern within each cell, rather than using "
-        "only the cell's average brightness. This can preserve local structure better, but costs more GPU work");
-      if (rd.m_asciiSpatialMode) {
-        ImGui::SliderFloat("Spatial Exponent", &rd.m_asciiSpatialExponent, 0.25f, 4.0f, "%.2f");
-        ImGui::SameLine();
-        helpMarker(
-          "Controls how strongly regional luminance differences influence spatial glyph matching. Higher values favor "
-          "sharper local structure; lower values behave more like average-brightness matching");
-      }
-    }
-
-    ImGui::PopID(); /*** PopID ascii ***/
+  const bool imagePlanesOpen = ImGui::CollapsingHeader("Image Planes", ImGuiTreeNodeFlags_DefaultOpen);
+  if (imagePlanesOpen) {
+    renderImagePlanesTab(renderData);
   }
-  finishSettingsSection(asciiOpen);
+  finishSettingsSection(imagePlanesOpen);
 
   const bool performanceOpen = ImGui::CollapsingHeader("Performance & Quality", ImGuiTreeNodeFlags_DefaultOpen);
   if (performanceOpen) {

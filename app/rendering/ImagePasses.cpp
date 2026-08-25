@@ -263,7 +263,14 @@ void Rendering::renderAllImagesForView(
 
     case ShaderGroup::Mesh: {
       clearMeshViewBackgroundForView(view);
-      if (!renderSegmentationMeshesForView(view)) {
+      bool renderedSurface = false;
+      if (ViewRenderMode::SegmentationAndIsosurfaces == view.renderMode()) {
+        renderedSurface = renderCombinedSurfaceMeshesForView(view);
+      }
+      else if (rendersSegmentations(view.renderMode())) {
+        renderedSurface = renderSegmentationMeshesForView(view);
+      }
+      if (!renderedSurface) {
         renderMeshCrosshairsForView(view);
       }
       renderMeshLandmarksForView(view);

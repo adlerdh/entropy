@@ -56,7 +56,7 @@ const std::list<uuids::uuid>& ControlFrame::renderedImages() const
 void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults)
 {
   m_imageSelection.setRenderedImages(imageUids, filterByDefaults);
-  if (ViewRenderMode::VolumeRender == m_renderMode || ViewRenderMode::SegmentationMesh == m_renderMode) {
+  if (is3dRenderMode(m_renderMode) && ViewRenderMode::Disabled != m_renderMode) {
     m_imageSelection.ensureVolumeRenderedImageSelected();
   }
 }
@@ -201,7 +201,7 @@ ViewRenderMode ControlFrame::renderMode() const
 void ControlFrame::setRenderMode(const ViewRenderMode& shaderType)
 {
   m_renderMode = shaderType;
-  if (ViewRenderMode::VolumeRender == m_renderMode || ViewRenderMode::SegmentationMesh == m_renderMode) {
+  if (is3dRenderMode(m_renderMode) && ViewRenderMode::Disabled != m_renderMode) {
     m_imageSelection.ensureVolumeRenderedImageSelected();
   }
 }

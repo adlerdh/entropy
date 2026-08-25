@@ -120,6 +120,35 @@ TEST_CASE("Project serialization omits default settings", "[project][serializati
   CHECK(defaultIntensityProjection.empty());
   CHECK(defaultSegmentation.empty());
   CHECK(defaultIsocontours.empty());
+
+  const serialize::ProjectViewSettings defaultView = json::object().get<serialize::ProjectViewSettings>();
+  CHECK(defaultView.m_showScaleBars);
+  CHECK(json(defaultView).empty());
+}
+
+TEST_CASE("Saving an all-default project writes only required entries", "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path projectFile = root / "minimal-project.json";
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = root / "image.nii.gz";
+
+  REQUIRE(serialize::save(project, projectFile));
+
+  std::ifstream input{projectFile};
+  const nlohmann::ordered_json saved = nlohmann::ordered_json::parse(input);
+  CHECK(saved.size() == 2);
+  CHECK(saved.contains("version"));
+  REQUIRE(saved.contains("images"));
+  CHECK_FALSE(saved.contains("settings"));
+  CHECK_FALSE(saved.contains("layouts"));
+  CHECK_FALSE(saved.contains("registrationResults"));
+
+  REQUIRE(saved.at("images").size() == 1);
+  const auto& image = saved.at("images").front();
+  CHECK(image.size() == 1);
+  CHECK(image.at("path") == "image.nii.gz");
 }
 
 TEST_CASE("Project serialization accepts missing version as current format", "[project][serialization]")
@@ -229,7 +258,7 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(view.at("anatomicalLabels").at("visibleInLightboxes") == false);
   CHECK(view.at("anatomicalLabels").at("type") == "rodent");
   CHECK(view.at("anatomicalLabels").at("lockDirectionsToReferenceImage") == true);
-  CHECK(view.at("scaleBars").at("visible") == true);
+  CHECK_FALSE(view.at("scaleBars").contains("visible"));
   CHECK(view.at("scaleBars").at("visibleInLightboxes") == true);
   CHECK(view.at("annotations").at("renderOnTop") == true);
   CHECK(view.at("annotations").at("verticesHidden") == true);
@@ -345,6 +374,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
+  project.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.31f;
   project.m_threeDRendering.m_imagePlaneLightingDiffuse = 0.62f;
@@ -412,6 +442,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(threeD.at("imageBoxVisible") == true);
   CHECK(threeD.at("imagePlanes").at("visible") == false);
   CHECK(threeD.at("imagePlanes").at("viewAngleOpacity") == false);
+  CHECK(threeD.at("imagePlanes").at("segmentationsVisible") == false);
   CHECK(threeD.at("imagePlanes").at("shading") == false);
   CHECK(threeD.at("imagePlanes").at("lighting").at("ambient") == 0.31f);
   CHECK(threeD.at("imagePlanes").at("lighting").at("diffuse") == 0.62f);
@@ -484,6 +515,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_imageBoxVisible == true);
   CHECK(parsed.m_threeDRendering.m_imagePlanesVisible == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneViewAngleOpacity == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneSegmentationsVisible == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneShading == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneLightingAmbient == 0.31f);
   CHECK(parsed.m_threeDRendering.m_imagePlaneLightingDiffuse == 0.62f);
@@ -577,6 +609,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
+  project.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.4f;
   project.m_threeDRendering.m_lightingAmbient = 0.6f;
@@ -591,6 +624,11 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_raycasting.m_renderBackFaces = false;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskIn;
   project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_generationThreadCount = 3;
+  project.m_meshRendering.m_pickingEnabled = false;
+  project.m_meshRendering.m_clipPlaneEnabled = true;
+  project.m_meshRendering.m_shadowsEnabled = true;
+  project.m_meshRendering.m_ambientOcclusionEnabled = true;
   project.m_meshRendering.m_ddpUntilComplete = false;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
@@ -611,9 +649,9 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   REQUIRE(isocontours != std::string::npos);
   REQUIRE(dualDepthPeeling != std::string::npos);
   CHECK(threeD < mesh);
-  CHECK(mesh < isocontours);
-  CHECK(isocontours < raycasting);
-  CHECK(raycasting < dualDepthPeeling);
+  CHECK(mesh < dualDepthPeeling);
+  CHECK(dualDepthPeeling < raycasting);
+  CHECK(raycasting < isocontours);
 
   const nlohmann::ordered_json ordered = nlohmann::ordered_json::parse(contents);
   const auto objectKeys = [](const nlohmann::ordered_json& object) {
@@ -627,7 +665,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   const auto& orderedRendering = ordered.at("settings").at("rendering");
   CHECK(
     objectKeys(orderedRendering) ==
-    std::vector<std::string>{"threeD", "mesh", "isocontours", "raycasting", "dualDepthPeeling"});
+    std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours"});
   CHECK(
     objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"untilComplete", "maxPeelPasses"});
   CHECK(
@@ -635,16 +673,24 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                    "transparentBackground",
                                                    "cameraFrustumVisibleIn2DViews",
                                                    "cameraFrustumColor",
-                                                   "lighting",
-                                                   "imagePlanes",
                                                    "imageBoxVisible",
                                                    "reverseRotateAboutEye",
                                                    "crosshairsGlyphVisible",
                                                    "crosshairsGlyphDiameterVox",
-                                                   "crosshairsGlyphLengthVox"});
+                                                   "crosshairsGlyphLengthVox",
+                                                   "lighting",
+                                                   "imagePlanes"});
+  CHECK(
+    objectKeys(orderedRendering.at("mesh")) == std::vector<std::string>{
+                                                 "pointPicking",
+                                                 "clipPlane",
+                                                 "shadows",
+                                                 "ambientOcclusion",
+                                                 "enabled",
+                                                 "generationThreads"});
   CHECK(
     objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
-    std::vector<std::string>{"visible", "viewAngleOpacity", "shading", "lighting"});
+    std::vector<std::string>{"visible", "viewAngleOpacity", "segmentationsVisible", "shading", "lighting"});
   CHECK(
     objectKeys(orderedRendering.at("raycasting")) ==
     std::vector<std::string>{"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"});

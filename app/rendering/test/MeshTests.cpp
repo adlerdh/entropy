@@ -1,3 +1,5 @@
+#include "common/IntersectionTypes.h"
+#include "common/Types.h"
 #include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "image/ImageHeader.h"
@@ -7,13 +9,17 @@
 #include "rendering/mesh/MeshBounds.h"
 #include "rendering/mesh/MeshCache.h"
 #include "rendering/mesh/MeshClipPlanes.h"
+#include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshCrosshairsPolicy.h"
+#include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
+#include "rendering/mesh/MeshDrawOptions.h"
 #include "rendering/mesh/MeshExtraction.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionRunner.h"
 #include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshGlyphs.h"
+#include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlane.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
@@ -22,8 +28,10 @@
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
 #include "rendering/mesh/MeshLandmarkPolicy.h"
 #include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshMaterial.h"
 #include "rendering/mesh/MeshPicking.h"
 #include "rendering/mesh/MeshPrimitives.h"
+#include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshRenderList.h"
 #include "rendering/mesh/MeshResourceLifecycle.h"
@@ -39,14 +47,23 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
 #include <limits>
+#include <optional>
 #include <ranges>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace mesh = rendering::mesh;
@@ -59,7 +76,10 @@ mesh::MeshData makeTriangleMesh()
   return mesh::MeshData{
     .positions = {glm::vec3{-1.0f, -1.0f, 0.0f}, glm::vec3{1.0f, -1.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}},
     .normals = {glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f, 0.0f, 1.0f}},
-    .indices = {0, 1, 2}};
+    .indices = {0, 1, 2},
+    .colors = std::nullopt,
+    .textureCoords = std::nullopt,
+    .coordinateSpace = mesh::MeshCoordinateSpace::ImageSubject};
 }
 
 mesh::ScalarGrid3D makePlanarScalarGrid()
@@ -1352,7 +1372,9 @@ TEST_CASE("mesh resource reconciliation releases only obsolete extracted geometr
   CHECK(released == std::vector<uuids::uuid>{obsoleteHandle.uid});
 
   const mesh::MeshExtractionRunResult stale = mesh::applyExtractionJobResult(
-    {.key = obsoleteKey, .result = mesh::MeshExtractionResult{.key = obsoleteKey, .mesh = makeTriangleMesh()}},
+    {.key = obsoleteKey,
+     .result = mesh::MeshExtractionResult{.key = obsoleteKey, .mesh = makeTriangleMesh(), .diagnostics = {}},
+     .diagnostics = {}},
     cache);
   CHECK(stale.status == mesh::MeshExtractionRunStatus::Stale);
   CHECK_FALSE(cache.contains(obsoleteKey));
@@ -1385,7 +1407,8 @@ TEST_CASE("mesh cache rejects stale async completion results", "[rendering][mesh
   cache.markPending(key);
   CHECK(cache.markSourceStale(key.sourceUid) == 1);
 
-  CHECK_FALSE(cache.storeReadyIfPending(mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}));
+  CHECK_FALSE(
+    cache.storeReadyIfPending(mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}}));
 
   const mesh::MeshCacheEntry* staleEntry = cache.find(key);
   REQUIRE(staleEntry);
@@ -1393,7 +1416,8 @@ TEST_CASE("mesh cache rejects stale async completion results", "[rendering][mesh
   CHECK(!staleEntry->mesh);
 
   cache.markPending(key);
-  CHECK(cache.storeReadyIfPending(mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}));
+  CHECK(
+    cache.storeReadyIfPending(mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}}));
   REQUIRE(cache.readyMesh(key));
 }
 
@@ -1425,12 +1449,14 @@ TEST_CASE("mesh extraction queue suppresses duplicate active keys", "[rendering]
   CHECK(queue.submit(key, "first mesh", [key] {
     return mesh::MeshExtractionJobResult{
       .key = key,
-      .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}};
+      .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
   CHECK_FALSE(queue.submit(key, "duplicate mesh", [key] {
     return mesh::MeshExtractionJobResult{
       .key = key,
-      .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}};
+      .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
   CHECK(queue.active(key));
   CHECK(queue.activeCount() == 1);
@@ -1461,12 +1487,14 @@ TEST_CASE("mesh extraction queue respects the active job limit", "[rendering][me
     std::this_thread::sleep_for(std::chrono::milliseconds{5});
     return mesh::MeshExtractionJobResult{
       .key = firstKey,
-      .result = mesh::MeshExtractionResult{.key = firstKey, .mesh = makeTriangleMesh()}};
+      .result = mesh::MeshExtractionResult{.key = firstKey, .mesh = makeTriangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
   CHECK_FALSE(queue.submit(secondKey, "second mesh", [secondKey] {
     return mesh::MeshExtractionJobResult{
       .key = secondKey,
-      .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh()}};
+      .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
 
   const std::vector<mesh::MeshExtractionJobResult> completed = waitForCompleted(queue);
@@ -1476,7 +1504,8 @@ TEST_CASE("mesh extraction queue respects the active job limit", "[rendering][me
   CHECK(queue.submit(secondKey, "second mesh", [secondKey] {
     return mesh::MeshExtractionJobResult{
       .key = secondKey,
-      .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh()}};
+      .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
 }
 
@@ -1512,7 +1541,8 @@ TEST_CASE("mesh extraction queue results are applied to pending cache entries", 
   REQUIRE(queue.submit(key, "ready mesh", [key] {
     return mesh::MeshExtractionJobResult{
       .key = key,
-      .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {"ready"}}};
+      .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {"ready"}},
+      .diagnostics = {}};
   }));
 
   std::vector<mesh::MeshExtractionJobResult> completed = waitForCompleted(queue);
@@ -1537,7 +1567,8 @@ TEST_CASE("mesh extraction queue application rejects stale or wrong-key results"
 
   mesh::MeshExtractionJobResult lateResult{
     .key = key,
-    .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()}};
+    .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}},
+    .diagnostics = {}};
   const mesh::MeshExtractionRunResult lateRunResult = mesh::applyExtractionJobResult(std::move(lateResult), cache);
   CHECK(lateRunResult.status == mesh::MeshExtractionRunStatus::Stale);
 
@@ -1546,7 +1577,8 @@ TEST_CASE("mesh extraction queue application rejects stale or wrong-key results"
   wrongKey.sourceDataVersion = key.sourceDataVersion + 1;
   mesh::MeshExtractionJobResult wrongKeyResult{
     .key = key,
-    .result = mesh::MeshExtractionResult{.key = wrongKey, .mesh = makeTriangleMesh()}};
+    .result = mesh::MeshExtractionResult{.key = wrongKey, .mesh = makeTriangleMesh(), .diagnostics = {}},
+    .diagnostics = {}};
   const mesh::MeshExtractionRunResult runResult = mesh::applyExtractionJobResult(std::move(wrongKeyResult), cache);
 
   CHECK(runResult.status == mesh::MeshExtractionRunStatus::Failed);
@@ -1608,7 +1640,7 @@ TEST_CASE("isosurface extraction runner rejects wrong-key backend results", "[re
   FakeIsosurfaceExtractor extractor;
   mesh::MeshGeometryKey wrongKey = key;
   wrongKey.isoValue = 99.0;
-  extractor.result = mesh::MeshExtractionResult{.key = wrongKey, .mesh = makeTriangleMesh()};
+  extractor.result = mesh::MeshExtractionResult{.key = wrongKey, .mesh = makeTriangleMesh(), .diagnostics = {}};
 
   mesh::MeshCache cache;
   const mesh::MeshExtractionRunResult runResult = mesh::runIsosurfaceExtraction(request, extractor, cache);
@@ -1630,7 +1662,7 @@ TEST_CASE("isosurface extraction runner discards results when request becomes st
   FakeIsosurfaceExtractor extractor;
   extractor.cache = &cache;
   extractor.staleBeforeReturning = true;
-  extractor.result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()};
+  extractor.result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}};
 
   const mesh::MeshExtractionRunResult runResult = mesh::runIsosurfaceExtraction(request, extractor, cache);
 
@@ -1654,7 +1686,7 @@ TEST_CASE("segmentation extraction runner stores label mesh results", "[renderin
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   FakeSegmentationExtractor extractor;
-  extractor.result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh()};
+  extractor.result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}};
 
   mesh::MeshCache cache;
   const mesh::MeshExtractionRunResult runResult = mesh::runSegmentationExtraction(request, extractor, cache);
@@ -1882,7 +1914,11 @@ TEST_CASE("image plane renderables keep texture binding state separate from mate
   const uuids::uuid meshUid = generateRandomUuid();
   const uuids::uuid imageUid = generateRandomUuid();
   const mesh::MeshHandle handle{.uid = meshUid, .geometryVersion = 17};
-  const mesh::MeshImagePlaneTexture texture{.imageUid = imageUid, .component = 2, .timePoint = 3};
+  const mesh::MeshImagePlaneTexture texture{
+    .imageUid = imageUid,
+    .segmentationUid = std::nullopt,
+    .component = 2,
+    .timePoint = 3};
   const glm::mat4 world_T_mesh = glm::translate(glm::mat4{1.0f}, glm::vec3{4.0f, 5.0f, 6.0f});
   const glm::vec3 centerWorld{7.0f, 8.0f, 9.0f};
 
@@ -1926,7 +1962,7 @@ TEST_CASE("image plane render list filters non-drawable image planes", "[renderi
     mesh::MeshHandle{.uid = meshUid, .geometryVersion = 1},
     glm::mat4{1.0f},
     glm::vec3{0.0f},
-    mesh::MeshImagePlaneTexture{.imageUid = imageUid});
+    mesh::MeshImagePlaneTexture{.imageUid = imageUid, .segmentationUid = std::nullopt, .component = 0, .timePoint = 0});
   mesh::MeshImagePlaneRenderable hidden = drawable;
   hidden.visible = false;
   mesh::MeshImagePlaneRenderable missingImage = drawable;

@@ -10,6 +10,7 @@
 #include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
+#include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshScene.h"
@@ -20,6 +21,7 @@
 #include <spdlog/spdlog.h>
 
 #include <format>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -72,7 +74,10 @@ std::string isosurfaceMeshDescription(const Image& image, const Isosurface& surf
 
 } // namespace
 
-bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentImages& imageSegPairs)
+bool Rendering::renderIsosurfaceMeshesForView(
+  const View& view,
+  const CurrentImages& imageSegPairs,
+  std::vector<rendering::mesh::MeshRenderable>* accumulatedRenderables)
 {
   consumeCompletedMeshExtractions();
 
@@ -83,8 +88,10 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
-  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
-    collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
+  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
+  if (!accumulatedRenderables) {
+    imagePlaneRenderables = collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
+  }
 
   for (const ImgSegPair& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
@@ -206,6 +213,15 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
     }
   }
 
+  if (accumulatedRenderables) {
+    const bool hasRenderables = !renderables.empty();
+    accumulatedRenderables->insert(
+      accumulatedRenderables->end(),
+      std::make_move_iterator(renderables.begin()),
+      std::make_move_iterator(renderables.end()));
+    return hasRenderables;
+  }
+
   renderables.insert(renderables.end(), imagePlaneBorderRenderables.begin(), imagePlaneBorderRenderables.end());
 
   rendering::mesh::MeshScene imagePlaneScene;
@@ -228,6 +244,38 @@ bool Rendering::renderIsosurfaceMeshesForView(const View& view, const CurrentIma
     return false;
   }
 
+  drawMeshRenderListForView(view, list, &imagePlaneList);
+  return true;
+}
+
+bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
+{
+  std::vector<rendering::mesh::MeshRenderable> renderables;
+  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
+  renderSegmentationMeshesForView(view, &renderables);
+
+  std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
+  std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
+    collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
+  renderables.insert(
+    renderables.end(),
+    std::make_move_iterator(imagePlaneBorderRenderables.begin()),
+    std::make_move_iterator(imagePlaneBorderRenderables.end()));
+  appendMeshCrosshairsRenderableForView(view, renderables);
+
+  rendering::mesh::MeshScene imagePlaneScene;
+  imagePlaneScene.setImagePlaneRenderables(std::move(imagePlaneRenderables));
+  const rendering::mesh::MeshImagePlaneRenderList imagePlaneList =
+    rendering::mesh::buildImagePlaneRenderList(imagePlaneScene.imagePlaneRenderables());
+
+  if (renderables.empty() && imagePlaneList.imagePlanes.empty()) {
+    return false;
+  }
+
+  rendering::mesh::MeshScene scene;
+  scene.setRenderables(std::move(renderables));
+  const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
   drawMeshRenderListForView(view, list, &imagePlaneList);
   return true;
 }

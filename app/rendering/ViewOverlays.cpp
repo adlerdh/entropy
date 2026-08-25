@@ -69,7 +69,7 @@ bool canDrawFrustumForThreeDView(const View& view)
 
 bool suppressTwoDVectorOverlays(const View& view)
 {
-  return ViewRenderMode::VolumeRender == view.renderMode() || ViewRenderMode::SegmentationMesh == view.renderMode();
+  return is3dRenderMode(view.renderMode()) && ViewRenderMode::Disabled != view.renderMode();
 }
 
 const View* activeThreeDFrustumSource(const AppData& appData)
