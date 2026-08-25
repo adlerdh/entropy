@@ -15,8 +15,7 @@ namespace rendering::mesh
 struct MeshDdpSettings
 {
   bool enabled = true;        //!< Whether alpha-over order-independent transparency is allowed
-  bool untilComplete = true;  //!< Stop early when an occlusion query reports no newly peeled back fragments
-  uint32_t maxPeelPasses = 8; //!< Maximum front/back peel iterations executed in one frame
+  uint32_t maxPeelPasses = 5; //!< Maximum front/back peel iterations executed in one frame
 };
 
 /**
@@ -25,7 +24,6 @@ struct MeshDdpSettings
 struct MeshDdpPlan
 {
   bool active = false;          //!< True when a DDP pass should run
-  bool untilComplete = true;    //!< Whether an occlusion query may terminate peeling early
   uint32_t peelPasses = 0;      //!< Number of front/back peel iterations to execute
   uint32_t renderableCount = 0; //!< Number of alpha-over renderables that require DDP
 };

@@ -25,6 +25,7 @@ MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View&
     .lightDirectionWorld = -cameraFrontWorld,
     .lighting = lighting,
     .fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f},
+    .shadowDepthPass = false,
     .meshLookup = [&gpuStore](const MeshHandle& handle) -> const MeshGpuData* {
       return gpuStore.lookup(handle);
     }};

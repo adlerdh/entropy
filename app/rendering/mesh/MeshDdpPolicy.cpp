@@ -23,7 +23,6 @@ MeshDdpPlan meshDdpPlanForRenderList(const MeshRenderList& list, const MeshDdpSe
   const uint32_t peelPasses = sanitizedDdpPeelPasses(settings.maxPeelPasses, k_hardMaxPeelPasses);
   return MeshDdpPlan{
     .active = settings.enabled && renderableCount > 0 && peelPasses > 0,
-    .untilComplete = settings.untilComplete,
     .peelPasses = settings.enabled && renderableCount > 0 ? peelPasses : 0,
     .renderableCount = renderableCount};
 }
@@ -42,7 +41,6 @@ MeshDdpPlan meshDdpPlanWithExtraRenderables(
   const uint32_t peelPasses = sanitizedDdpPeelPasses(settings.maxPeelPasses, k_hardMaxPeelPasses);
   return MeshDdpPlan{
     .active = settings.enabled && peelPasses > 0u,
-    .untilComplete = settings.untilComplete,
     .peelPasses = settings.enabled ? peelPasses : 0u,
     .renderableCount = renderableCount};
 }
@@ -52,7 +50,7 @@ bool shouldContinueDdpPeeling(
   const MeshDdpPlan& plan,
   const bool anySamplesPassed) noexcept
 {
-  return plan.active && completedPasses < plan.peelPasses && (!plan.untilComplete || anySamplesPassed);
+  return plan.active && completedPasses < plan.peelPasses && anySamplesPassed;
 }
 
 std::vector<std::string> meshDdpDiagnostics(const MeshDdpPlan& plan, const MeshDdpSettings& settings)

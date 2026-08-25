@@ -52,16 +52,6 @@ bool hasImagePlaneDdpRenderables(const rendering::mesh::MeshImagePlaneRenderList
   return imagePlaneList && !imagePlaneList->imagePlanes.empty();
 }
 
-std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> shadowCastingRenderables(
-  const rendering::mesh::MeshRenderList& list)
-{
-  std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> renderables;
-  renderables.reserve(list.opaque.size() + list.alphaOverDdp.size());
-  renderables.insert(renderables.end(), list.opaque.begin(), list.opaque.end());
-  renderables.insert(renderables.end(), list.alphaOverDdp.begin(), list.alphaOverDdp.end());
-  return renderables;
-}
-
 } // namespace
 
 void Rendering::reconcileExtractedMeshResources()
@@ -204,11 +194,13 @@ void Rendering::drawMeshRenderListForView(
     const std::optional<rendering::mesh::MeshShadowMapProjection> projection =
       rendering::mesh::meshShadowMapProjectionForBounds(*sceneBounds, context.lightDirectionWorld);
     const std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> shadowRenderables =
-      shadowCastingRenderables(list);
+      rendering::mesh::shadowCastingRenderables(list);
 
     rendering::mesh::MeshDrawContext shadowContext = context;
     if (projection) {
       shadowContext.clip_T_world = projection->lightClip_T_world;
+      shadowContext.lightDirectionWorld = projection->lightDirectionWorld;
+      shadowContext.shadowDepthPass = true;
       shadowContext.advancedLighting.shadows.state = rendering::mesh::MeshAdvancedLightingFeatureState::Disabled;
       shadowContext.shadowDepthTexture = nullptr;
     }

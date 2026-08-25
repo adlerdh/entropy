@@ -94,7 +94,7 @@ TEST_CASE("viewer mode labels cover all public choices", "[viewer][modes]")
   CHECK(typeString(ViewRenderMode::Image) == "Layers");
   CHECK(typeString(ViewRenderMode::SegmentationMesh) == "Segmentations");
   CHECK(typeString(ViewRenderMode::VolumeRender) == "Isosurfaces");
-  CHECK(typeString(ViewRenderMode::SegmentationAndIsosurfaces) == "Both");
+  CHECK(typeString(ViewRenderMode::SegmentationAndIsosurfaces) == "Both (Seg + Iso)");
   CHECK(
     descriptionString(ViewRenderMode::SegmentationMesh) == "Render visible segmentation labels as 3D surface meshes");
   CHECK(descriptionString(ViewRenderMode::VolumeRender) == "Render visible image isosurfaces in 3D");

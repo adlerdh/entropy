@@ -261,7 +261,7 @@ private:
   /** @brief Most recently selected render mode for a 2D view type */
   ViewRenderMode m_last2dRenderMode = ViewRenderMode::Image;
   /** @brief Most recently selected render mode for the 3D view type */
-  ViewRenderMode m_last3dRenderMode = ViewRenderMode::SegmentationMesh;
+  ViewRenderMode m_last3dRenderMode = ViewRenderMode::SegmentationAndIsosurfaces;
 
   /** @brief Referenced application-level view convention */
   const ViewConvention& m_viewConvention;

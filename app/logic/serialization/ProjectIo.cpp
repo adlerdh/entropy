@@ -64,7 +64,7 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "segmentation"};
   }
   else if (path == "settings/rendering/dualDepthPeeling") {
-    preferredKeys = {"untilComplete", "maxPeelPasses"};
+    preferredKeys = {"maxPeelPasses"};
   }
   else if (path == "settings/rendering/threeD") {
     preferredKeys = {

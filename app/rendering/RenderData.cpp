@@ -133,7 +133,7 @@ RenderData::RenderData()
   , m_airMassAttenCoeff(xray::linearAttenuationCoefficients(xray::defaultEnergyKeV()).air_cmInv)
 
   , m_2dBackgroundColor(0.1f, 0.1f, 0.1f)
-  , m_3dBackgroundColor(22.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f, 1.0f)
+  , m_3dBackgroundColor(0.1f, 0.1f, 0.1f, 1.0f)
   , m_3dTransparentIfNoHit(true)
   , m_crosshairsColor(0.05f, 0.6f, 1.0f, 1.0f)
   , m_showCrosshairs(true)

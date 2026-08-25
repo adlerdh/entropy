@@ -453,7 +453,6 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
   return serialize::ProjectMeshRenderingSettings{
     .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
     .m_generationThreadCount = renderData.m_meshGenerationThreadCount,
-    .m_ddpUntilComplete = renderData.m_meshDdpSettings.untilComplete,
     .m_ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses,
     .m_pickingEnabled = renderData.m_meshPickingEnabled,
     .m_clipPlaneEnabled = renderData.m_meshClipPlaneEnabled,
@@ -475,7 +474,6 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   auto& renderData = appData.renderData();
   renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
   renderData.m_meshGenerationThreadCount = std::min<uint32_t>(settings.m_generationThreadCount, 64);
-  renderData.m_meshDdpSettings.untilComplete = settings.m_ddpUntilComplete;
   renderData.m_meshDdpSettings.maxPeelPasses = std::clamp(settings.m_ddpMaxPeelPasses, 1u, 32u);
   renderData.m_meshPickingEnabled = settings.m_pickingEnabled;
   renderData.m_meshClipPlaneEnabled = settings.m_clipPlaneEnabled;

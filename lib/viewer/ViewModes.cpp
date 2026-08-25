@@ -26,7 +26,7 @@ std::string typeString(const ViewRenderMode& mode)
     case ViewRenderMode::SegmentationMesh:
       return "Segmentations";
     case ViewRenderMode::SegmentationAndIsosurfaces:
-      return "Both";
+      return "Both (Seg + Iso)";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:

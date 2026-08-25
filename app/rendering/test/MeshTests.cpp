@@ -627,6 +627,32 @@ TEST_CASE("mesh render list filters invisible renderables and partitions composi
   CHECK(mesh::requiresDdp(list));
 }
 
+TEST_CASE("mesh shadow caster selection excludes auxiliary geometry", "[rendering][mesh][shadows]")
+{
+  mesh::MeshRenderable surface;
+  surface.mesh.geometryVersion = 1;
+
+  mesh::MeshRenderable imagePlaneBorder;
+  imagePlaneBorder.mesh.geometryVersion = 2;
+  imagePlaneBorder.castsShadow = false;
+
+  mesh::MeshRenderable translucentSurface;
+  translucentSurface.mesh.geometryVersion = 3;
+  translucentSurface.compositingMode = mesh::MeshCompositingMode::AlphaOverDdp;
+
+  mesh::MeshRenderable additive;
+  additive.mesh.geometryVersion = 4;
+  additive.compositingMode = mesh::MeshCompositingMode::Additive;
+
+  const std::vector renderables{surface, imagePlaneBorder, translucentSurface, additive};
+  const mesh::MeshRenderList list = mesh::buildRenderList(renderables);
+  const auto casters = mesh::shadowCastingRenderables(list);
+
+  REQUIRE(casters.size() == 2);
+  CHECK(casters[0].get().mesh.geometryVersion == 1);
+  CHECK(casters[1].get().mesh.geometryVersion == 3);
+}
+
 TEST_CASE("mesh DDP policy activates only for visible alpha-over renderables", "[rendering][mesh]")
 {
   mesh::MeshRenderable opaque;
@@ -644,7 +670,7 @@ TEST_CASE("mesh DDP policy activates only for visible alpha-over renderables", "
 
   const mesh::MeshDdpPlan activePlan = mesh::meshDdpPlanForRenderList(withDdp, {});
   CHECK(activePlan.active);
-  CHECK(activePlan.peelPasses == 8);
+  CHECK(activePlan.peelPasses == 5);
   CHECK(activePlan.renderableCount == 1);
 
   const mesh::MeshDdpPlan disabledPlan = mesh::meshDdpPlanForRenderList(withDdp, {.enabled = false});
@@ -666,12 +692,9 @@ TEST_CASE("mesh DDP policy clamps peel pass counts", "[rendering][mesh]")
   const mesh::MeshRenderList list = mesh::buildRenderList(renderables);
 
   const mesh::MeshDdpPlan defaultPlan = mesh::meshDdpPlanForRenderList(list, {});
-  CHECK(defaultPlan.untilComplete);
-  CHECK(defaultPlan.peelPasses == 8);
+  CHECK(defaultPlan.peelPasses == 5);
 
-  const mesh::MeshDdpPlan fixedPlan =
-    mesh::meshDdpPlanForRenderList(list, {.untilComplete = false, .maxPeelPasses = 4});
-  CHECK_FALSE(fixedPlan.untilComplete);
+  const mesh::MeshDdpPlan fixedPlan = mesh::meshDdpPlanForRenderList(list, {.maxPeelPasses = 4});
   CHECK(fixedPlan.peelPasses == 4);
   CHECK(mesh::meshDdpPlanForRenderList(list, {.maxPeelPasses = 0}).peelPasses == 1);
   CHECK(mesh::meshDdpPlanForRenderList(list, {.maxPeelPasses = 40}).peelPasses == 32);
@@ -686,8 +709,7 @@ TEST_CASE("mesh DDP remains active when image planes are its only renderables", 
 
   const mesh::MeshDdpPlan imagePlanesOnly = mesh::meshDdpPlanWithExtraRenderables(emptyPlan, settings, 3u);
   CHECK(imagePlanesOnly.active);
-  CHECK(imagePlanesOnly.untilComplete);
-  CHECK(imagePlanesOnly.peelPasses == 8u);
+  CHECK(imagePlanesOnly.peelPasses == 5u);
   CHECK(imagePlanesOnly.renderableCount == 3u);
 
   const mesh::MeshDdpPlan disabled =
@@ -699,25 +721,12 @@ TEST_CASE("mesh DDP remains active when image planes are its only renderables", 
 
 TEST_CASE("mesh DDP adaptive peeling stops on completion or its safety limit", "[rendering][mesh]")
 {
-  const mesh::MeshDdpPlan adaptivePlan{.active = true, .untilComplete = true, .peelPasses = 8, .renderableCount = 1};
+  const mesh::MeshDdpPlan adaptivePlan{.active = true, .peelPasses = 8, .renderableCount = 1};
 
   CHECK(mesh::shouldContinueDdpPeeling(0, adaptivePlan, true));
   CHECK(mesh::shouldContinueDdpPeeling(7, adaptivePlan, true));
   CHECK_FALSE(mesh::shouldContinueDdpPeeling(8, adaptivePlan, true));
   CHECK_FALSE(mesh::shouldContinueDdpPeeling(1, adaptivePlan, false));
-}
-
-TEST_CASE("mesh DDP fixed peeling ignores completion until its pass limit", "[rendering][mesh]")
-{
-  const mesh::MeshDdpPlan fixedPlan{.active = true, .untilComplete = false, .peelPasses = 4, .renderableCount = 1};
-
-  CHECK(mesh::shouldContinueDdpPeeling(0, fixedPlan, false));
-  CHECK(mesh::shouldContinueDdpPeeling(3, fixedPlan, false));
-  CHECK_FALSE(mesh::shouldContinueDdpPeeling(4, fixedPlan, true));
-
-  mesh::MeshDdpPlan inactivePlan = fixedPlan;
-  inactivePlan.active = false;
-  CHECK_FALSE(mesh::shouldContinueDdpPeeling(0, inactivePlan, true));
 }
 
 TEST_CASE("mesh DDP diagnostics explain inactive and clamped plans", "[rendering][mesh]")
@@ -747,8 +756,8 @@ TEST_CASE("mesh advanced lighting is disabled by default", "[rendering][mesh]")
   CHECK(plan.shadows.state == mesh::MeshAdvancedLightingFeatureState::Disabled);
   CHECK(plan.ambientOcclusion.state == mesh::MeshAdvancedLightingFeatureState::Disabled);
   CHECK(plan.ambientOcclusion.radiusMm == Catch::Approx(5.0f));
-  CHECK(plan.ambientOcclusion.strength == Catch::Approx(0.5f));
-  CHECK(plan.ambientOcclusion.power == Catch::Approx(1.0f));
+  CHECK(plan.ambientOcclusion.strength == Catch::Approx(1.0f));
+  CHECK(plan.ambientOcclusion.power == Catch::Approx(1.5f));
   CHECK(plan.ambientOcclusion.contrast == Catch::Approx(1.0f));
   CHECK(plan.ambientOcclusion.sampleCount == 24);
   CHECK_FALSE(mesh::isRequestedButUnavailable(plan.shadows.state));
@@ -825,7 +834,7 @@ TEST_CASE("mesh advanced lighting clamps renderer resource settings", "[renderin
   const mesh::MeshAdvancedLightingPlan highPlan = mesh::meshAdvancedLightingPlan(highSettings, {});
   CHECK(highPlan.shadows.mapSizePixels == 8192);
   CHECK(highPlan.shadows.strength == 1.0f);
-  CHECK(highPlan.shadows.depthBias == Catch::Approx(0.1f));
+  CHECK(highPlan.shadows.depthBias == Catch::Approx(0.02f));
   CHECK(highPlan.ambientOcclusion.radiusMm == Catch::Approx(1000.0f));
   CHECK(highPlan.ambientOcclusion.strength == 1.0f);
   CHECK(highPlan.ambientOcclusion.power == Catch::Approx(8.0f));

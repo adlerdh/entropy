@@ -205,6 +205,10 @@ TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[r
   CHECK(peel.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
   CHECK(opaque.find("occludedSamples / 9.0") != std::string::npos);
   CHECK(peel.find("occludedSamples / 9.0") != std::string::npos);
+  CHECK(opaque.find("u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection") != std::string::npos);
+  CHECK(peel.find("u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection") != std::string::npos);
+  CHECK(opaque.find("u_shadowDepthBias * mix(1.0, 3.0, normalOffset)") != std::string::npos);
+  CHECK(peel.find("u_shadowDepthBias * mix(1.0, 3.0, normalOffset)") != std::string::npos);
   CHECK(opaque.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
   CHECK(peel.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
 }

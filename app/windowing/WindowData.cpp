@@ -250,7 +250,7 @@ Layout createFourUpLayout(
       glm::vec4{-1.0f, -1.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::ThreeD,
-      ViewRenderMode::SegmentationMesh,
+      ViewRenderMode::SegmentationAndIsosurfaces,
       IntensityProjectionMode::None,
       uiControls,
       viewConvention,

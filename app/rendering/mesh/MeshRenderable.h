@@ -23,7 +23,8 @@ struct MeshRenderable
   MeshMaterial material;                    //!< Surface appearance
   MeshCompositingMode compositingMode = MeshCompositingMode::Opaque; //!< Compositing path
   MeshDrawOptions drawOptions;                                       //!< Non-geometric draw behavior
-  bool visible = true; //!< Whether this renderable participates in draw lists
+  bool visible = true;     //!< Whether this renderable participates in draw lists
+  bool castsShadow = true; //!< Whether this renderable contributes to the mesh shadow map
 };
 
 } // namespace rendering::mesh

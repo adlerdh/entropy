@@ -457,9 +457,7 @@ json toJson(
        {{"limit", renderPreferences.limitFrameRate},
         {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
       {"raycasting", {{"samplingFactor", renderPreferences.raycastSamplingFactor}}},
-      {"dualDepthPeeling",
-       {{"untilComplete", renderPreferences.ddpUntilComplete},
-        {"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
+      {"dualDepthPeeling", {{"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
     {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"registration", settings.registrationBackendConfig()},
     {"recent",
@@ -720,7 +718,7 @@ void applyJson(
           renderPreferences.meshShadowMapSizePixels = std::clamp<uint32_t>(size->get<uint32_t>(), 128u, 8192u);
         }
         setFloatFromJson(renderPreferences.meshShadowStrength, *shadows, "strength", 0.0f, 1.0f);
-        setFloatFromJson(renderPreferences.meshShadowDepthBias, *shadows, "depthBias", 0.0f, 0.1f);
+        setFloatFromJson(renderPreferences.meshShadowDepthBias, *shadows, "depthBias", 0.0f, 0.02f);
       }
       if (const auto ao = mesh->find("ambientOcclusion"); ao != mesh->end() && ao->is_object()) {
         setFromJson(renderPreferences.meshAmbientOcclusionEnabled, *ao, "enabled");
@@ -734,7 +732,6 @@ void applyJson(
       }
     }
     if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
-      setFromJson(renderPreferences.ddpUntilComplete, *ddp, "untilComplete");
       if (const auto passes = ddp->find("maxPeelPasses"); passes != ddp->end() && passes->is_number_unsigned()) {
         renderPreferences.ddpMaxPeelPasses = std::clamp<uint32_t>(passes->get<uint32_t>(), 1u, 32u);
       }

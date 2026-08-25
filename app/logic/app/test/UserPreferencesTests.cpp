@@ -184,7 +184,6 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.meshAmbientOcclusionPower = 2.0f;
   preferences.meshAmbientOcclusionContrast = 3.0f;
   preferences.meshAmbientOcclusionSampleCount = 32;
-  preferences.ddpUntilComplete = false;
   preferences.ddpMaxPeelPasses = 12;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
   preferences.asciiEnabled = true;
@@ -390,7 +389,6 @@ void requireRenderPreferencesEqual(
   CHECK(actual.meshAmbientOcclusionPower == Catch::Approx(expected.meshAmbientOcclusionPower));
   CHECK(actual.meshAmbientOcclusionContrast == Catch::Approx(expected.meshAmbientOcclusionContrast));
   CHECK(actual.meshAmbientOcclusionSampleCount == expected.meshAmbientOcclusionSampleCount);
-  CHECK(actual.ddpUntilComplete == expected.ddpUntilComplete);
   CHECK(actual.ddpMaxPeelPasses == expected.ddpMaxPeelPasses);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
   CHECK(actual.asciiEnabled == expected.asciiEnabled);
@@ -569,7 +567,6 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   preferences.showImageBorders = false;
   preferences.asciiEnabled = true;
   preferences.reversePovRotation = true;
-  preferences.ddpUntilComplete = false;
   preferences.ddpMaxPeelPasses = 12;
 
   const user_preferences::RenderPreferences appPreferences =
@@ -583,7 +580,6 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
   CHECK(appPreferences.asciiEnabled == true);
   CHECK(appPreferences.reversePovRotation == true);
-  CHECK_FALSE(appPreferences.ddpUntilComplete);
   CHECK(appPreferences.ddpMaxPeelPasses == 12u);
 }
 
@@ -592,11 +588,6 @@ TEST_CASE("DDP changes modify the application settings fingerprint", "[app][sett
   const AppSettings settings;
   const user_preferences::RenderPreferences defaults;
   user_preferences::RenderPreferences changed = defaults;
-  changed.ddpUntilComplete = !defaults.ddpUntilComplete;
-
-  CHECK(user_preferences::toJsonString(settings, changed) != user_preferences::toJsonString(settings, defaults));
-
-  changed = defaults;
   ++changed.ddpMaxPeelPasses;
   CHECK(user_preferences::toJsonString(settings, changed) != user_preferences::toJsonString(settings, defaults));
 }
@@ -792,8 +783,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
     root.at("rendering").at("raycasting").at("samplingFactor").get<float>() ==
     Catch::Approx(renderPreferences.raycastSamplingFactor));
   CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
-  CHECK(root.at("rendering").at("dualDepthPeeling").at("untilComplete") == true);
-  CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 8u);
+  CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
   CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));

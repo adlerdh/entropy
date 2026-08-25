@@ -83,128 +83,137 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
     return std::nullopt;
   }
 
-  const std::optional<ImgSegPair> maybeImgSegPair = raycastImageForView(view);
-  if (!maybeImgSegPair || !maybeImgSegPair->first) {
+  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  if (imageSegPairs.empty()) {
     return std::nullopt;
   }
 
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
   if (rendersIsosurfaces(view.renderMode())) {
-    const uuids::uuid& imageUid = *maybeImgSegPair->first;
-    const Image* image = m_appData.image(imageUid);
-    if (!image) {
-      return std::nullopt;
-    }
-
-    const ImageSettings& settings = image->settings();
-    if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D() || activeRenderableDeformationUid(imageUid)) {
-      return std::nullopt;
-    }
-
-    const uint32_t activeComponent = settings.activeComponent();
-    const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
-    for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, activeComponent)) {
-      const Isosurface* surface = m_appData.isosurface(imageUid, activeComponent, surfaceUid);
-      if (!surface) {
-        return std::nullopt;
+    for (const ImgSegPair& imageSegPair : imageSegPairs) {
+      if (!imageSegPair.first) {
+        continue;
+      }
+      const uuids::uuid& imageUid = *imageSegPair.first;
+      const Image* image = m_appData.image(imageUid);
+      if (!image) {
+        continue;
       }
 
-      const float effectiveOpacity = surface->opacity * settings.isosurfaceOpacityModulator();
-      if (!rendering::mesh::canRenderIsosurfaceWithMesh(
-            {.renderWarped = false,
-             .valueEditInProgress = surface->valueEditInProgress,
-             .opacity = effectiveOpacity,
-             .visible = surface->visible && surface->showIn3d}))
+      const ImageSettings& settings = image->settings();
+      if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D() || activeRenderableDeformationUid(imageUid))
       {
-        return std::nullopt;
+        continue;
       }
 
-      const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
-        imageUid,
-        image->pixelDataRevision(),
-        image->geometryRevision(),
-        activeComponent,
-        activeTimePoint,
-        surface->value);
-      const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-      const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
-      if (!handle || !m_meshCpuCache.readyMesh(key)) {
-        return std::nullopt;
-      }
+      const uint32_t activeComponent = settings.activeComponent();
+      const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
+      for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, activeComponent)) {
+        const Isosurface* surface = m_appData.isosurface(imageUid, activeComponent, surfaceUid);
+        if (!surface) {
+          continue;
+        }
 
-      glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
-      color.a = effectiveOpacity;
-      rendering::mesh::MeshRenderable renderable = rendering::mesh::makeIsosurfaceRenderable(
-        *handle,
-        glm::mat4{1.0f},
-        rendering::mesh::IsosurfaceMeshStyle{
-          .material = meshMaterialForIsosurface(*surface, color),
-          .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
-            effectiveOpacity,
-            surface->rimLightingEnabled,
-            surface->rimOpacityStrength),
-          .visible = surface->visible});
-      renderable.drawOptions.clipPlanes = clipPlanes;
-      renderables.push_back(std::move(renderable));
+        const float effectiveOpacity = surface->opacity * settings.isosurfaceOpacityModulator();
+        if (!rendering::mesh::canRenderIsosurfaceWithMesh(
+              {.renderWarped = false,
+               .valueEditInProgress = surface->valueEditInProgress,
+               .opacity = effectiveOpacity,
+               .visible = surface->visible && surface->showIn3d}))
+        {
+          continue;
+        }
+
+        const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
+          imageUid,
+          image->pixelDataRevision(),
+          image->geometryRevision(),
+          activeComponent,
+          activeTimePoint,
+          surface->value);
+        const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
+        const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
+        if (!handle || !m_meshCpuCache.readyMesh(key)) {
+          continue;
+        }
+
+        glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
+        color.a = effectiveOpacity;
+        rendering::mesh::MeshRenderable renderable = rendering::mesh::makeIsosurfaceRenderable(
+          *handle,
+          glm::mat4{1.0f},
+          rendering::mesh::IsosurfaceMeshStyle{
+            .material = meshMaterialForIsosurface(*surface, color),
+            .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
+              effectiveOpacity,
+              surface->rimLightingEnabled,
+              surface->rimOpacityStrength),
+            .visible = surface->visible});
+        renderable.drawOptions.clipPlanes = clipPlanes;
+        renderables.push_back(std::move(renderable));
+      }
     }
   }
   if (rendersSegmentations(view.renderMode())) {
-    if (!maybeImgSegPair->second) {
-      return std::nullopt;
-    }
-
-    const uuids::uuid& segUid = *maybeImgSegPair->second;
-    const Image* seg = m_appData.seg(segUid);
-    if (!seg || !seg->settings().visibility()) {
-      return std::nullopt;
-    }
-
-    const auto tableUid = m_appData.labelTableUid(seg->settings().labelTableIndex());
-    const ParcellationLabelTable* labelTable = tableUid ? m_appData.labelTable(*tableUid) : nullptr;
-    if (!labelTable) {
-      return std::nullopt;
-    }
-
-    const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
-    const rendering::mesh::SegmentationLabelSet* presentLabels = presentSegmentationLabels(segUid, *seg, timePoint);
-    if (!presentLabels) {
-      return std::nullopt;
-    }
-    const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
-    for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
-      const rendering::mesh::SegmentationLabelMeshState labelState{
-        .showMesh = labelTable->getShowMesh(labelIndex),
-        .opacity = segmentationOpacity};
-      if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
+    for (const ImgSegPair& imageSegPair : imageSegPairs) {
+      if (!imageSegPair.second) {
         continue;
       }
 
-      const int64_t labelValue = static_cast<int64_t>(labelIndex);
-      if (!presentLabels->contains(labelValue)) {
-        continue;
-      }
-      const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
-        segUid,
-        seg->pixelDataRevision(),
-        seg->geometryRevision(),
-        labelValue,
-        timePoint);
-      const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-      const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
-      if (!handle || !m_meshCpuCache.readyMesh(key)) {
+      const uuids::uuid& segUid = *imageSegPair.second;
+      const Image* seg = m_appData.seg(segUid);
+      if (!seg || !seg->settings().visibility()) {
         continue;
       }
 
-      rendering::mesh::MeshRenderable renderable = rendering::mesh::makeSegmentationLabelRenderable(
-        *handle,
-        glm::mat4{1.0f},
-        rendering::mesh::segmentationLabelMeshStyle(
+      const auto tableUid = m_appData.labelTableUid(seg->settings().labelTableIndex());
+      const ParcellationLabelTable* labelTable = tableUid ? m_appData.labelTable(*tableUid) : nullptr;
+      if (!labelTable) {
+        continue;
+      }
+
+      const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
+      const rendering::mesh::SegmentationLabelSet* presentLabels = presentSegmentationLabels(segUid, *seg, timePoint);
+      if (!presentLabels) {
+        continue;
+      }
+
+      const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
+      for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
+        const rendering::mesh::SegmentationLabelMeshState labelState{
+          .showMesh = labelTable->getShowMesh(labelIndex),
+          .opacity = segmentationOpacity};
+        if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
+          continue;
+        }
+
+        const int64_t labelValue = static_cast<int64_t>(labelIndex);
+        if (!presentLabels->contains(labelValue)) {
+          continue;
+        }
+        const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
+          segUid,
+          seg->pixelDataRevision(),
+          seg->geometryRevision(),
           labelValue,
-          normalizedLabelColor(*labelTable, labelIndex),
-          labelState));
-      renderable.drawOptions.clipPlanes = clipPlanes;
-      renderables.push_back(std::move(renderable));
+          timePoint);
+        const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
+        const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
+        if (!handle || !m_meshCpuCache.readyMesh(key)) {
+          continue;
+        }
+
+        rendering::mesh::MeshRenderable renderable = rendering::mesh::makeSegmentationLabelRenderable(
+          *handle,
+          glm::mat4{1.0f},
+          rendering::mesh::segmentationLabelMeshStyle(
+            labelValue,
+            normalizedLabelColor(*labelTable, labelIndex),
+            labelState));
+        renderable.drawOptions.clipPlanes = clipPlanes;
+        renderables.push_back(std::move(renderable));
+      }
     }
   }
   if (!rendersIsosurfaces(view.renderMode()) && !rendersSegmentations(view.renderMode())) {

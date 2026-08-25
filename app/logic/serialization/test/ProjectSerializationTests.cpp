@@ -406,7 +406,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_ambientOcclusionPower = 1.8f;
   project.m_meshRendering.m_ambientOcclusionContrast = 2.2f;
   project.m_meshRendering.m_ambientOcclusionSampleCount = 32;
-  project.m_meshRendering.m_ddpUntilComplete = false;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
@@ -479,7 +478,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(mesh.at("ambientOcclusion").at("power") == 1.8f);
   CHECK(mesh.at("ambientOcclusion").at("contrast") == 2.2f);
   CHECK(mesh.at("ambientOcclusion").at("sampleCount") == 32);
-  CHECK(dualDepthPeeling.at("untilComplete") == false);
   CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
   CHECK_FALSE(mesh.contains("dualDepthPeeling"));
   CHECK(mesh.at("pointPicking") == false);
@@ -550,7 +548,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.8f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 2.2f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 32);
-  CHECK(parsed.m_meshRendering.m_ddpUntilComplete == false);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
   CHECK(parsed.m_meshRendering.m_clipPlaneEnabled == true);
@@ -629,7 +626,6 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_meshRendering.m_clipPlaneEnabled = true;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
-  project.m_meshRendering.m_ddpUntilComplete = false;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
 
@@ -666,8 +662,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   CHECK(
     objectKeys(orderedRendering) ==
     std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours"});
-  CHECK(
-    objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"untilComplete", "maxPeelPasses"});
+  CHECK(objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"maxPeelPasses"});
   CHECK(
     objectKeys(orderedRendering.at("threeD")) == std::vector<std::string>{
                                                    "transparentBackground",
@@ -704,7 +699,6 @@ TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh",
      {{"rendering", {{"mesh", {{"dualDepthPeeling", {{"untilComplete", false}, {"maxPeelPasses", 12u}}}}}}}}}};
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK_FALSE(parsed.m_meshRendering.m_ddpUntilComplete);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
 }
 
@@ -735,7 +729,7 @@ TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][se
   CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 12.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.0f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.5f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 1.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 24);
 

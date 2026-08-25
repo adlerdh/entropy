@@ -288,11 +288,8 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
   clearDdpTargets(request.resources, 0u);
   initializeDepthBounds(request);
 
-  std::vector<GLuint> completionQueries;
-  if (request.plan.untilComplete) {
-    completionQueries.resize(request.plan.peelPasses, 0u);
-    glGenQueries(static_cast<GLsizei>(completionQueries.size()), completionQueries.data());
-  }
+  std::vector<GLuint> completionQueries(request.plan.peelPasses, 0u);
+  glGenQueries(static_cast<GLsizei>(completionQueries.size()), completionQueries.data());
 
   uint32_t currentId = 0u;
   uint32_t completedPasses = 0u;

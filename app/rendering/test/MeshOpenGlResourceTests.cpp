@@ -102,6 +102,14 @@ TEST_CASE("mesh framebuffer resources allocate, resize, and release in an OpenGL
     CHECK(resources.ensureSize(32u));
     CHECK(resources.initialized());
     CHECK(resources.sizePixels() == 32u);
+    resources.depthTexture().bind(0u);
+    GLint minFilter = 0;
+    GLint magFilter = 0;
+    glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &minFilter);
+    glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &magFilter);
+    CHECK(minFilter == GL_NEAREST);
+    CHECK(magFilter == GL_NEAREST);
+    resources.depthTexture().unbind(0u);
     CHECK(resources.ensureSize(16u));
     resources.clear();
     CHECK_FALSE(resources.initialized());

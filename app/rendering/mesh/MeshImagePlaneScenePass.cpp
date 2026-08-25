@@ -221,13 +221,15 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       const rendering::mesh::MeshCompositingMode compositingMode =
         opacity >= 0.999f ? rendering::mesh::MeshCompositingMode::Opaque
                           : rendering::mesh::MeshCompositingMode::AlphaOverDdp;
-      borderRenderables.push_back(rendering::mesh::makeIsosurfaceRenderable(
+      rendering::mesh::MeshRenderable borderRenderable = rendering::mesh::makeIsosurfaceRenderable(
         borderHandle,
         world_T_border,
         rendering::mesh::IsosurfaceMeshStyle{
           .material = borderMaterial,
           .compositingMode = compositingMode,
-          .visible = opacity > 0.0f}));
+          .visible = opacity > 0.0f});
+      borderRenderable.castsShadow = false;
+      borderRenderables.push_back(std::move(borderRenderable));
     };
 
     if (showImagePlanes) {

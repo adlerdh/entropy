@@ -33,6 +33,7 @@ struct MeshDrawContext
   glm::vec4 lighting = glm::vec4{0.30f, 0.50f, 0.20f, 16.0f};      //!< ADS terms plus specular power
   glm::vec4 fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f};     //!< Color used when material color is invalid
   glm::ivec2 viewportOrigin = glm::ivec2{0};                       //!< Lower-left origin of the active view viewport
+  bool shadowDepthPass = false;                                    //!< Force filled two-sided depth rasterization
   MeshAdvancedLightingPlan advancedLighting;                       //!< Sanitized optional lighting pass decisions
   glm::mat4 shadowLightClip_T_world = glm::mat4{1.0f};             //!< Transform from world to shadow-map clip space
   GLTexture* shadowDepthTexture = nullptr;                         //!< Shadow-map depth texture, if available

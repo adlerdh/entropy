@@ -64,7 +64,7 @@ struct RenderPreferences
   bool showCrosshairs = true;
   bool showCrosshairsInLightboxViews = true;
   glm::vec3 background2dColor{0.1f, 0.1f, 0.1f};
-  glm::vec4 background3dColor{22.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f, 1.0f};
+  glm::vec4 background3dColor{0.1f, 0.1f, 0.1f, 1.0f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
   bool showAnatomicalLabels = true;
   bool showAnatomicalLabelsInLightboxViews = true;
@@ -155,12 +155,11 @@ struct RenderPreferences
   float meshShadowDepthBias = 0.001f;
   bool meshAmbientOcclusionEnabled = false;
   float meshAmbientOcclusionRadiusMm = 5.0f;
-  float meshAmbientOcclusionStrength = 0.5f;
-  float meshAmbientOcclusionPower = 1.0f;
+  float meshAmbientOcclusionStrength = 1.0f;
+  float meshAmbientOcclusionPower = 1.5f;
   float meshAmbientOcclusionContrast = 1.0f;
   uint32_t meshAmbientOcclusionSampleCount = 24;
-  bool ddpUntilComplete = true;
-  uint32_t ddpMaxPeelPasses = 8;
+  uint32_t ddpMaxPeelPasses = 5;
   SegMaskingForRaycasting segmentationMasking = SegMaskingForRaycasting::Disabled;
 
   bool asciiEnabled = false;

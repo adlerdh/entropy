@@ -20,4 +20,5 @@ CMakeCache.txt
 CMakeLists.txt.user*
 entropy_ui.ini
 settings.json
+iwyu.log
 CMakeUserPresets.json

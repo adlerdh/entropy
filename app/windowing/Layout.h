@@ -267,7 +267,7 @@ private:
   /** @brief Most recently selected layout-level render mode for 2D views */
   ViewRenderMode m_last2dRenderMode = ViewRenderMode::Image;
   /** @brief Most recently selected layout-level render mode for 3D views */
-  ViewRenderMode m_last3dRenderMode = ViewRenderMode::SegmentationMesh;
+  ViewRenderMode m_last3dRenderMode = ViewRenderMode::SegmentationAndIsosurfaces;
 
   /** @brief Owned views keyed by UID */
   std::unordered_map<uuid, std::unique_ptr<View>> m_views;

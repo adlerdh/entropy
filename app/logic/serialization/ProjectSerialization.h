@@ -241,8 +241,7 @@ struct ProjectMeshRenderingSettings
 {
   bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
   uint32_t m_generationThreadCount = 0;               //!< Maximum VTK threads for one CPU mesh extraction job
-  bool m_ddpUntilComplete = true;                     //!< Stop DDP when no newly peeled fragments remain
-  uint32_t m_ddpMaxPeelPasses = 8;                    //!< DDP safety/fixed front-back peel iteration count
+  uint32_t m_ddpMaxPeelPasses = 5;                    //!< DDP safety/fixed front-back peel iteration count
   bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
   bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
   glm::vec4 m_clipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane
@@ -252,8 +251,8 @@ struct ProjectMeshRenderingSettings
   float m_shadowDepthBias = 0.001f;                   //!< Mesh shadow depth bias
   bool m_ambientOcclusionEnabled = false;             //!< Render screen-space ambient occlusion for meshes
   float m_ambientOcclusionRadiusMm = 5.0f;            //!< Mesh AO view-space radius in physical millimetres
-  float m_ambientOcclusionStrength = 0.5f;            //!< Mesh AO contribution in [0, 1]
-  float m_ambientOcclusionPower = 1.0f;               //!< Mesh AO nonlinear response exponent
+  float m_ambientOcclusionStrength = 1.0f;            //!< Mesh AO contribution in [0, 1]
+  float m_ambientOcclusionPower = 1.5f;               //!< Mesh AO nonlinear response exponent
   float m_ambientOcclusionContrast = 1.0f;            //!< Mesh AO shaped occlusion scale
   uint32_t m_ambientOcclusionSampleCount = 24;        //!< Mesh AO hemisphere samples per pixel
 };

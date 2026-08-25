@@ -126,6 +126,7 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_lightClip_T_world", UniformType::Mat4, glm::mat4{1.0f});
   uniforms.insertUniform("u_shadowStrength", UniformType::Float, 0.35f);
   uniforms.insertUniform("u_shadowDepthBias", UniformType::Float, 0.001f);
+  uniforms.insertUniform("u_lightDirectionWorld", UniformType::Vec3, glm::vec3{0.0f, 0.0f, 1.0f});
   uniforms.insertUniform("u_screenAmbientOcclusionEnabled", UniformType::Bool, false);
   uniforms.insertUniform("u_screenAmbientOcclusionTex", UniformType::Sampler, 6, k_optionalUniform);
   uniforms.insertUniform("u_viewportOrigin", UniformType::IVec2, glm::ivec2{0});
@@ -297,7 +298,7 @@ bool Rendering::createMeshAmbientOcclusionResolveProgram(GLShaderProgram& progra
   fsUniforms.insertUniform("u_clip_T_camera", UniformType::Mat4, glm::mat4{1.0f});
   fsUniforms.insertUniform("u_camera_T_worldNormal", UniformType::Mat3, glm::mat3{1.0f});
   fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
-  fsUniforms.insertUniform("u_strength", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_strength", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_sampleCount", UniformType::Int, 24);
   return createFullscreenMeshProgram(
     program,
@@ -314,7 +315,7 @@ bool Rendering::createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_camera_T_clip", UniformType::Mat4, glm::mat4{1.0f});
   fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
-  fsUniforms.insertUniform("u_power", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_power", UniformType::Float, 1.5f);
   fsUniforms.insertUniform("u_contrast", UniformType::Float, 1.0f);
   return createFullscreenMeshProgram(
     program,

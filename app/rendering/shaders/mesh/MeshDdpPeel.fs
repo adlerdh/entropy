@@ -24,6 +24,7 @@ uniform sampler2D u_shadowMapTex;
 uniform mat4 u_lightClip_T_world;
 uniform float u_shadowStrength;
 uniform float u_shadowDepthBias;
+uniform vec3 u_lightDirectionWorld;
 uniform bool u_screenAmbientOcclusionEnabled;
 uniform sampler2D u_screenAmbientOcclusionTex;
 uniform ivec2 u_viewportOrigin;
@@ -120,7 +121,7 @@ vec3 surfaceNormal()
   return dot(geometricNormal, geometricNormal) > 0.000001 ? normalize(geometricNormal) : vec3(0.0, 0.0, 1.0);
 }
 
-float shadowVisibility(vec3 worldPosition)
+float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
 {
   if (!u_shadowMapEnabled) {
     return 1.0;
@@ -137,12 +138,14 @@ float shadowVisibility(vec3 worldPosition)
   }
 
   float currentDepth = shadowCoord.z;
+  float normalOffset = 1.0 - clamp(abs(dot(normal, lightDirection)), 0.0, 1.0);
+  float receiverBias = u_shadowDepthBias * mix(1.0, 3.0, normalOffset);
   vec2 texelSize = 1.0 / vec2(textureSize(u_shadowMapTex, 0));
   float occludedSamples = 0.0;
   for (int y = -1; y <= 1; ++y) {
     for (int x = -1; x <= 1; ++x) {
       float closestDepth = texture(u_shadowMapTex, shadowCoord.xy + vec2(x, y) * texelSize).r;
-      occludedSamples += currentDepth - u_shadowDepthBias > closestDepth ? 1.0 : 0.0;
+      occludedSamples += currentDepth - receiverBias > closestDepth ? 1.0 : 0.0;
     }
   }
   return 1.0 - u_shadowStrength * occludedSamples / 9.0;
@@ -178,9 +181,9 @@ vec4 shadedMeshColor()
   vec3 normal = surfaceNormal();
   vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
   vec3 shadingNormal = faceforward(normal, -viewDirection, normal);
-  vec3 lightDirection = viewDirection;
+  vec3 lightDirection = u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
-  float shadow = shadowVisibility(v_worldPosition);
+  float shadow = shadowVisibility(v_worldPosition, shadingNormal, lightDirection);
   float ao = screenAmbientOcclusion();
   vec3 litColor = u_shadingModel == kShadingModelUnlit
                     ? color.rgb

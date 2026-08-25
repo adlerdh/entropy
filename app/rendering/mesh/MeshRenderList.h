@@ -45,4 +45,7 @@ bool requiresDdp(const MeshRenderList& list) noexcept;
  */
 std::size_t visibleRenderableCount(const MeshRenderList& list) noexcept;
 
+/** @brief Return opaque and alpha-over renderables that contribute to the mesh shadow map. */
+std::vector<std::reference_wrapper<const MeshRenderable>> shadowCastingRenderables(const MeshRenderList& list);
+
 } // namespace rendering::mesh

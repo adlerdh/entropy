@@ -41,4 +41,20 @@ std::size_t visibleRenderableCount(const MeshRenderList& list) noexcept
   return list.opaque.size() + list.alphaOverDdp.size() + list.additive.size() + list.multiplicative.size();
 }
 
+std::vector<std::reference_wrapper<const MeshRenderable>> shadowCastingRenderables(const MeshRenderList& list)
+{
+  std::vector<std::reference_wrapper<const MeshRenderable>> renderables;
+  renderables.reserve(list.opaque.size() + list.alphaOverDdp.size());
+  const auto appendCasters = [&renderables](const auto& bucket) {
+    for (const std::reference_wrapper<const MeshRenderable> renderable : bucket) {
+      if (renderable.get().castsShadow) {
+        renderables.push_back(renderable);
+      }
+    }
+  };
+  appendCasters(list.opaque);
+  appendCasters(list.alphaOverDdp);
+  return renderables;
+}
+
 } // namespace rendering::mesh

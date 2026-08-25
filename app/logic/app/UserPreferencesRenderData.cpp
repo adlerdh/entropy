@@ -185,7 +185,6 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.meshAmbientOcclusionPower = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power;
   preferences.meshAmbientOcclusionContrast = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast;
   preferences.meshAmbientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount;
-  preferences.ddpUntilComplete = renderData.m_meshDdpSettings.untilComplete;
   preferences.ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses;
   preferences.segmentationMasking =
     static_cast<user_preferences::RenderPreferences::SegMaskingForRaycasting>(renderData.m_segMasking);
@@ -319,7 +318,6 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power = preferences.meshAmbientOcclusionPower;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast = preferences.meshAmbientOcclusionContrast;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = preferences.meshAmbientOcclusionSampleCount;
-  renderData.m_meshDdpSettings.untilComplete = preferences.ddpUntilComplete;
   renderData.m_meshDdpSettings.maxPeelPasses = std::clamp<uint32_t>(preferences.ddpMaxPeelPasses, 1u, 32u);
   renderData.m_segMasking = static_cast<RenderData::SegMaskingForRaycasting>(preferences.segmentationMasking);
   renderData.m_asciiEnabled = preferences.asciiEnabled;

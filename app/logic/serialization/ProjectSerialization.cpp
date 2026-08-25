@@ -675,7 +675,6 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
   addIfChanged(j, "generationThreads", settings.m_generationThreadCount, defaults.m_generationThreadCount);
   json dualDepthPeeling = json::object();
-  addIfChanged(dualDepthPeeling, "untilComplete", settings.m_ddpUntilComplete, defaults.m_ddpUntilComplete);
   addIfChanged(dualDepthPeeling, "maxPeelPasses", settings.m_ddpMaxPeelPasses, defaults.m_ddpMaxPeelPasses);
   addIfNotEmpty(j, "dualDepthPeeling", std::move(dualDepthPeeling));
   addIfChanged(j, "pointPicking", settings.m_pickingEnabled, defaults.m_pickingEnabled);
@@ -714,9 +713,6 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
     settings.m_generationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
   }
   if (const auto ddp = j.find("dualDepthPeeling"); ddp != j.end() && ddp->is_object()) {
-    if (const auto value = ddp->find("untilComplete"); value != ddp->end() && value->is_boolean()) {
-      settings.m_ddpUntilComplete = value->get<bool>();
-    }
     if (const auto value = ddp->find("maxPeelPasses"); value != ddp->end() && value->is_number_unsigned()) {
       settings.m_ddpMaxPeelPasses = std::clamp(value->get<uint32_t>(), 1u, 32u);
     }
@@ -745,7 +741,7 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
       settings.m_shadowStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
     }
     if (const auto value = shadows->find("depthBias"); value != shadows->end() && value->is_number()) {
-      settings.m_shadowDepthBias = std::clamp(value->get<float>(), 0.0f, 0.1f);
+      settings.m_shadowDepthBias = std::clamp(value->get<float>(), 0.0f, 0.02f);
     }
   }
   if (const auto ambientOcclusion = j.find("ambientOcclusion");

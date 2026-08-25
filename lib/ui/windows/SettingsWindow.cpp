@@ -2302,18 +2302,18 @@ void renderImagePlanesTab(RenderData& renderData)
   ImGui::PushID("image_planes");
   disabledTextWrapped("Image planes show the current orthogonal image slices at the 3D crosshairs position");
 
-  ImGui::Checkbox("Enable image planes in 3D views", &renderData.m_showImagePlanesIn3D);
+  ImGui::Checkbox("Show image planes", &renderData.m_showImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker("Show orthogonal image planes through the current crosshairs in 3D views");
 
   ImGui::BeginDisabled(!renderData.m_showImagePlanesIn3D);
+  ImGui::Checkbox("Show segmentations on planes", &renderData.m_showSegmentationsOnImagePlanesIn3D);
+  ImGui::SameLine();
+  helpMarker("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
+
   ImGui::Checkbox("Fade opacity with view angle", &renderData.m_modulateImagePlaneOpacityWithViewAngle);
   ImGui::SameLine();
   helpMarker("Make image planes more transparent as their plane becomes parallel to the camera direction");
-
-  ImGui::Checkbox("Show segmentations", &renderData.m_showSegmentationsOnImagePlanesIn3D);
-  ImGui::SameLine();
-  helpMarker("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
 
   ImGui::Checkbox("Image plane shading", &renderData.m_shadeImagePlanesIn3D);
   ImGui::SameLine();
@@ -2385,11 +2385,11 @@ void renderMeshRenderingTab(RenderData& renderData)
       &renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
       0.0001f,
       0.0f,
-      0.1f,
+      0.02f,
       "%0.4f",
       ImGuiSliderFlags_AlwaysClamp);
     ImGui::SameLine();
-    helpMarker("Depth offset used to reduce self-shadowing artifacts");
+    helpMarker("Depth offset used to reduce self-shadowing artifacts; excessive values detach or remove shadows");
   }
 
   ImGui::Checkbox("Ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
@@ -2533,11 +2533,8 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
     "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
     "nearest and farthest remaining transparency layers.");
 
-  ImGui::Checkbox("Stop when all transparency layers are resolved", &renderData.m_meshDdpSettings.untilComplete);
-  ImGui::SameLine();
-  helpMarker(
-    "Automatically stop when no unresolved transparency layers remain. The maximum iteration count is still used "
-    "as a safety limit");
+  disabledTextWrapped(
+    "Rendering stops automatically when all transparency layers are resolved. The maximum remains a safety limit.");
 
   int maxPeelPasses = static_cast<int>(renderData.m_meshDdpSettings.maxPeelPasses);
   if (ImGui::InputInt("Maximum dual-peel iterations", &maxPeelPasses)) {

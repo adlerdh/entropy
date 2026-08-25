@@ -73,8 +73,10 @@ GLTexture MeshShadowMapResources::makeDepthTexture()
   GLTexture texture(tex::Target::Texture2D);
   texture.generate();
   texture.setAutoGenerateMipmaps(false);
-  texture.setMinificationFilter(tex::MinificationFilter::Linear);
-  texture.setMagnificationFilter(tex::MagnificationFilter::Linear);
+  // The fragment shader performs explicit 3x3 percentage-closer filtering. Interpolating raw depth values before
+  // those comparisons creates false intermediate blockers, so each tap must read one unfiltered depth texel.
+  texture.setMinificationFilter(tex::MinificationFilter::Nearest);
+  texture.setMagnificationFilter(tex::MagnificationFilter::Nearest);
   texture.setWrapMode(tex::WrapMode::ClampToBorder);
   texture.setBorderColor(glm::vec4{1.0f});
   return texture;

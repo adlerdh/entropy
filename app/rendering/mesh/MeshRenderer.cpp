@@ -152,6 +152,14 @@ void applyRasterState(const MeshDrawOptions& drawOptions)
   }
 }
 
+void applyShadowDepthRasterState()
+{
+  // Shadow casters may be open surfaces, and their visible style may be wireframe or points. A complete, two-sided
+  // filled depth map is required regardless of those presentation settings.
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glDisable(GL_CULL_FACE);
+}
+
 void uploadClipPlanes(const MeshDrawOptions& drawOptions, GLShaderProgram& program)
 {
   const std::vector<glm::vec4> clipPlanes = enabledNormalizedClipPlanes(drawOptions.clipPlanes);
@@ -201,6 +209,7 @@ void uploadShadowUniforms(const MeshDrawContext& context, GLShaderProgram& progr
   program.setUniform("u_lightClip_T_world", context.shadowLightClip_T_world);
   program.setUniform("u_shadowStrength", context.advancedLighting.shadows.strength);
   program.setUniform("u_shadowDepthBias", context.advancedLighting.shadows.depthBias);
+  program.setUniform("u_lightDirectionWorld", context.lightDirectionWorld);
   program.setUniform("u_shadowMapTex", static_cast<GLint>(k_shadowMapTextureUnit));
   if (enabled) {
     context.shadowDepthTexture->bind(k_shadowMapTextureUnit);
@@ -324,10 +333,10 @@ void MeshRenderer::drawBucket(
     program.setUniform("u_hasVertexColors", gpuData->hasColors());
     uploadClipPlanes(renderable.drawOptions, program);
 
-    applyRasterState(renderable.drawOptions);
+    context.shadowDepthPass ? applyShadowDepthRasterState() : applyRasterState(renderable.drawOptions);
     drawUploadedMesh(*gpuData);
 
-    if (renderable.drawOptions.fillMode == MeshFillMode::SurfaceWithWireframe) {
+    if (!context.shadowDepthPass && renderable.drawOptions.fillMode == MeshFillMode::SurfaceWithWireframe) {
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       drawUploadedMesh(*gpuData);
     }
