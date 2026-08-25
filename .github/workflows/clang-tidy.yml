@@ -96,9 +96,13 @@ jobs:
             ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Debug dependencies
-        run: cmake --preset deps-debug -B build-clang-tidy -D Entropy_USE_CCACHE=ON
+        run: >-
+          cmake --preset deps-debug -B build-clang-tidy
+          -D Entropy_USE_CCACHE=ON
+          -D Entropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Build Debug dependencies
+        timeout-minutes: 90
         run: cmake --build build-clang-tidy --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app with clang-tidy

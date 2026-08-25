@@ -145,7 +145,7 @@ place point landmarks:
 
 Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image formats:
 
-- [Neuroimaging Informatics Technology Initiative (NIfTI)](https://nifti.nimh.nih.gov/nifti-1/) and Analyze header/image pairs (`.nii`, `.nii.gz`, `.hdr`, `.img`)
+- [Neuroimaging Informatics Technology Initiative (NIfTI)](https://nifti-imaging.github.io/nifti1_overview.html) and Analyze header/image pairs (`.nii`, `.nii.gz`, `.hdr`, `.img`)
 - [Nearly Raw Raster Data (NRRD)](https://teem.sourceforge.net/nrrd/format.html) (`.nrrd`, `.nhdr`)
 - [MetaImage](https://insightsoftwareconsortium.github.io/ITKWikiArchive/Wiki/ITK/MetaIO/Documentation/) (`.mha`, `.mhd`, with companion raw data `.raw`, `.zraw`, or `.raw.gz`)
 - [DICOM](https://www.dicomstandard.org/current/) via [GDCM](https://gdcm.sourceforge.net/) (`.dcm` and DICOM series)

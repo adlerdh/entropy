@@ -640,6 +640,10 @@ ExternalProject_Add(VTK
   CMAKE_GENERATOR ${gen}
 )
 
+# ITK and VTK are both memory-intensive template-heavy builds. Keep them from compiling concurrently while allowing
+# unrelated lightweight ExternalProjects to continue making progress in parallel.
+add_dependencies(VTK ITK)
+
 
 message(STATUS "Adding external library NanoVG in ${nanovg_PREFIX}")
 
@@ -833,6 +837,10 @@ ExternalProject_Add(qtbase
     ${CMAKE_COMMAND} --install <BINARY_DIR>
     COMMAND ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include
 )
+
+# Qt's bootstrap and core builds are also memory-intensive. Chaining only the three heavyweight dependencies avoids
+# multiplying their internal parallelism without serializing the entire superbuild.
+add_dependencies(qtbase VTK)
 
 
 

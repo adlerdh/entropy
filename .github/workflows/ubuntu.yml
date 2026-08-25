@@ -163,9 +163,13 @@ jobs:
             ubuntu2204-gcc13-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Debug Dependencies
-        run: cmake --preset deps-debug -D Entropy_USE_CCACHE=ON
+        run: >
+          cmake --preset deps-debug
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Build Debug Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app
@@ -286,8 +290,10 @@ jobs:
           -DEntropy_USE_CCACHE=ON
           -DEntropy_SUPERBUILD=ON
           -DEntropy_SUPERBUILD_CONFIG=Debug
+          -DEntropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Build Coverage Dependencies
+        timeout-minutes: 90
         run: cmake --build build-coverage --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Coverage app
@@ -435,9 +441,12 @@ jobs:
             ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Release Dependencies
-        run: cmake --preset deps-release
+        run: >
+          cmake --preset deps-release
+          -DEntropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Build Release Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
