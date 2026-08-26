@@ -137,7 +137,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     return {};
   }
 
-  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  const CurrentImages imageSegPairs = meshSceneImagesForView(view);
   if (imageSegPairs.empty()) {
     return {};
   }

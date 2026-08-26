@@ -30,6 +30,13 @@ struct TextureUploadLayout
   glm::uvec3 uploadSize{1u};  //!< OpenGL upload size; 2D textures use z = 1
 };
 
+/** @brief A voxel update mapped into the coordinate system of an uploaded OpenGL texture. */
+struct TextureUploadRegion
+{
+  glm::uvec3 offset{0u}; //!< Texture-space update origin; z is zero for GL_TEXTURE_2D
+  glm::uvec3 size{0u};   //!< Texture-space update extent; z is one for GL_TEXTURE_2D
+};
+
 /**
  * @brief Return axes whose image dimension is greater than one.
  */
@@ -52,6 +59,19 @@ bool fitsMax2DTextureSize(const glm::uvec2& size, const TextureLimits& limits);
  * fall back to GL_TEXTURE_2D when their two non-singleton axes fit within the reported 2D texture limit.
  */
 std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3& size, const TextureLimits& limits);
+
+/**
+ * @brief Map and validate an image-space subregion for its selected texture layout.
+ *
+ * Three-dimensional layouts preserve the image offset and extent. For planar layouts, the omitted image axis must be
+ * singleton and is removed from the returned texture coordinates. The returned region can be passed directly to
+ * GLTexture::setSubData.
+ */
+std::optional<TextureUploadRegion> textureUploadRegion(
+  const PlanarTextureLayout& layout,
+  const glm::uvec3& imageSize,
+  const glm::uvec3& imageOffset,
+  const glm::uvec3& imageRegionSize);
 
 /**
  * @brief Return a user-facing explanation for why a texture exceeds the available OpenGL limits.

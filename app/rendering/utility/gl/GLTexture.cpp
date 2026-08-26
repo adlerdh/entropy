@@ -884,25 +884,34 @@ void GLTexture::setSubData(
   {
     throwDebug("Invalid texture target type ");
   }
+  if (level < 0) {
+    throwDebug("Texture sub-data mipmap level cannot be negative");
+  }
+  if (!data) {
+    throwDebug("Texture sub-data pointer cannot be null");
+  }
+  if (!m_hasAllocatedStorage) {
+    throwDebug("Cannot write texture sub-data before allocating texture storage");
+  }
+  if (glm::any(glm::equal(size, glm::uvec3{0u}))) {
+    throwDebug("Texture sub-data dimensions must all be greater than zero");
+  }
+  for (int axis = 0; axis < 3; ++axis) {
+    if (offset[axis] > m_size[axis] || size[axis] > m_size[axis] - offset[axis]) {
+      throwDebug("Texture sub-data region exceeds allocated texture bounds");
+    }
+  }
+  if (Target::Texture1D == m_target && (offset.y != 0u || offset.z != 0u || size.y != 1u || size.z != 1u)) {
+    throwDebug("One-dimensional texture sub-data must use singleton y and z extents");
+  }
+  if ((Target::Texture2D == m_target || Target::Texture1DArray == m_target) && (offset.z != 0u || size.z != 1u)) {
+    throwDebug("Two-dimensional texture sub-data must use a singleton z extent");
+  }
 
   const GLenum _format = underlyingType(format);
   const GLenum _type = underlyingType(type);
   const glm::ivec3 _offset(offset);
   const glm::ivec3 _size(size);
-
-  if (!m_hasAllocatedStorage) {
-    spdlog::warn(
-      "Writing sub-data to GL texture without known storage: id={}, target={} ({}), level={}, offset={}, size={}, "
-      "format={}, type={}",
-      m_id,
-      m_targetEnum,
-      textureTargetName(m_target),
-      level,
-      glm::to_string(glm::ivec3{offset}),
-      glm::to_string(_size),
-      _format,
-      _type);
-  }
 
   Binder binder(*this);
 

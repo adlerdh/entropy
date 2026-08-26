@@ -77,6 +77,7 @@ $$UINT_TEXTURE_LOOKUP_FUNCTION$$
 $$SAMPLE_TEX_COORD_FUNCTION$$
 $$DO_RENDER_FUNCTION$$
 $$IP_FUNCTION$$
+$$IMAGE_PLANE_DISPLAY_FUNCTIONS$$
 
 int when_lt(int x, int y)
 {
@@ -221,21 +222,7 @@ float imagePlaneAlpha()
   }
 
   vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
-  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
-  img = computeProjection(sampleTc, fs_in.v_worldPos, img);
-  float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
-  float cmapCoord = mix(
-    floor(float(u_cmapQuantLevels) * imgNorm) / max(float(u_cmapQuantLevels - 1), 1.0),
-    imgNorm,
-    float(0 == u_cmapQuantLevels));
-  cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1];
-  vec4 imgColor = texture(u_cmapTex, cmapCoord);
-  vec3 imgColorHsv = rgb2hsv(imgColor.rgb);
-  imgColorHsv.x += u_cmapHsvModFactors.x;
-  imgColorHsv.yz *= u_cmapHsvModFactors.yz;
-  vec3 mappedColor = mix(imgColor.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod));
-  float mask = float(isInsideTexture(sampleTc));
-  float imageAlpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds) * imgColor.a + 0.0 * mappedColor.r;
+  float imageAlpha = displayedImagePlaneColor(sampleTc, fs_in.v_worldPos).a;
   float segmentationAlpha = segmentationPlaneAlpha(sampleTc);
   vec2 fragmentPixels = 0.5 * (fs_in.v_clipPos + vec2(1.0)) * u_viewportSize;
   float borderDistancePixels = 1e20;

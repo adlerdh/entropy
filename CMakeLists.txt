@@ -926,6 +926,7 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/mesh/AmbientOcclusionResolve.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs"
+  "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl"
   "${entropy_APP_DIR}/rendering/shaders/mesh/MeshImagePlane.vs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/Mesh.fs"
   "${entropy_APP_DIR}/rendering/shaders/mesh/Mesh.vs"

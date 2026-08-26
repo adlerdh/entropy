@@ -88,6 +88,7 @@ $$UINT_TEXTURE_LOOKUP_FUNCTION$$
 $$SAMPLE_TEX_COORD_FUNCTION$$
 $$DO_RENDER_FUNCTION$$
 $$IP_FUNCTION$$
+$$IMAGE_PLANE_DISPLAY_FUNCTIONS$$
 
 int when_lt(int x, int y)
 {
@@ -254,27 +255,8 @@ vec4 imagePlaneColor()
   }
 
   vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
-  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
-  img = computeProjection(sampleTc, fs_in.v_worldPos, img);
-
-  float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
-  float cmapCoord = mix(
-    floor(float(u_cmapQuantLevels) * imgNorm) / max(float(u_cmapQuantLevels - 1), 1.0),
-    imgNorm,
-    float(0 == u_cmapQuantLevels));
-  cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1];
-
-  vec4 imgColorOrig = texture(u_cmapTex, cmapCoord);
-  vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
-  imgColorHsv.x += u_cmapHsvModFactors.x;
-  imgColorHsv.yz *= u_cmapHsvModFactors.yz;
-
-  float mask = float(isInsideTexture(sampleTc));
-  float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds) * imgColorOrig.a;
-
-  vec3 mappedColor = mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod));
-  mappedColor *= blinnPhongImagePlaneLighting(fs_in.v_worldPos, fs_in.v_worldNormal);
-  vec4 imageColor = alpha > 0.0 ? vec4(mappedColor * alpha, alpha) : vec4(0.0);
+  vec4 imageColor = displayedImagePlaneColor(sampleTc, fs_in.v_worldPos);
+  imageColor.rgb *= blinnPhongImagePlaneLighting(fs_in.v_worldPos, fs_in.v_worldNormal);
   vec4 segmentationColor = segmentationPlaneColor(sampleTc);
   vec4 contentColor = segmentationColor + imageColor * (1.0 - segmentationColor.a);
 

@@ -91,16 +91,21 @@ glm::ivec2 textureAxesForProgramSlot(const PlanarTextureLayout& layout);
 /**
  * @brief Return true when an image texture layout can be used by the 3D raycast renderer.
  *
- * Missing layout entries are treated as legacy/default 3D textures.
+ * Missing layout entries are rejected because the actual OpenGL texture target is unknown.
  */
 bool imageHasRaycastableTextureLayout(
+  const std::unordered_map<uuids::uuid, PlanarTextureLayout>& textureLayouts,
+  const uuids::uuid& imageUid);
+
+/** Return true for either supported texture target used by mesh-rendered 3D scene features. */
+bool imageHasMeshSceneTextureLayout(
   const std::unordered_map<uuids::uuid, PlanarTextureLayout>& textureLayouts,
   const uuids::uuid& imageUid);
 
 /**
  * @brief Filter a list of image ids down to the images whose uploaded texture layout supports 3D raycasting.
  *
- * Missing layout entries are treated as legacy/default 3D textures.
+ * Missing layout entries are rejected because the actual OpenGL texture target is unknown.
  */
 std::list<uuids::uuid> raycastableImageUids(
   const std::list<uuids::uuid>& imageUids,

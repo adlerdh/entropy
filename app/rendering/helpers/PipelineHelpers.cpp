@@ -109,7 +109,16 @@ bool imageHasRaycastableTextureLayout(
   const uuids::uuid& imageUid)
 {
   const auto layoutIt = textureLayouts.find(imageUid);
-  return layoutIt == std::end(textureLayouts) || TextureDimension::Texture3D == layoutIt->second.dimension;
+  return layoutIt != std::end(textureLayouts) && TextureDimension::Texture3D == layoutIt->second.dimension;
+}
+
+bool imageHasMeshSceneTextureLayout(
+  const std::unordered_map<uuids::uuid, PlanarTextureLayout>& textureLayouts,
+  const uuids::uuid& imageUid)
+{
+  const auto layoutIt = textureLayouts.find(imageUid);
+  return layoutIt != std::end(textureLayouts) && (TextureDimension::Texture2D == layoutIt->second.dimension ||
+                                                  TextureDimension::Texture3D == layoutIt->second.dimension);
 }
 
 std::list<uuids::uuid> raycastableImageUids(

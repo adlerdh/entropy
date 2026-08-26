@@ -63,15 +63,6 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
     return boundTextures;
   }
 
-  if (textureIt->second.size() == 1u) {
-    GLTexture& texture = textureIt->second.front();
-    for (const auto samplerUnit : samplers.indices) {
-      texture.bind(samplerUnit);
-    }
-    boundTextures.emplace_back(texture);
-    return boundTextures;
-  }
-
   for (std::size_t component = 0; component < 3; ++component) {
     GLTexture& texture = textureIt->second.at(component);
     texture.bind(samplers.indices[component]);
@@ -89,27 +80,28 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
   }
 
   const auto textureLayoutIsUsable = [def](const std::vector<GLTexture>& textures) {
-    return def->header().numComponentsPerPixel() >= 3u && (1u == textures.size() || textures.size() >= 3u);
+    return def->header().numComponentsPerPixel() >= 3u && textures.size() >= 3u;
   };
 
   auto& renderData = m_appData.renderData();
   auto textureIt = renderData.m_imageTextures.find(defUid);
-  if (textureIt != std::end(renderData.m_imageTextures) && textureLayoutIsUsable(textureIt->second)) {
+  const auto layoutIt = renderData.m_imageTextureLayouts.find(defUid);
+  if (
+    textureIt != std::end(renderData.m_imageTextures) && layoutIt != std::end(renderData.m_imageTextureLayouts) &&
+    textureLayoutIsUsable(textureIt->second))
+  {
     return true;
   }
 
-  if (textureIt != std::end(renderData.m_imageTextures)) {
-    renderData.m_imageTextures.erase(textureIt);
-    renderData.m_imageTextureLayouts.erase(defUid);
-  }
-
+  // Texture creation is transactional: retain any existing GPU resources until replacement succeeds.
   const std::vector<uuid> createdTextureUids = createImageTextures(m_appData, uuid_range_t{defUid});
   if (std::find(std::begin(createdTextureUids), std::end(createdTextureUids), defUid) == std::end(createdTextureUids)) {
     return false;
   }
 
   textureIt = renderData.m_imageTextures.find(defUid);
-  return textureIt != std::end(renderData.m_imageTextures) && textureLayoutIsUsable(textureIt->second);
+  return textureIt != std::end(renderData.m_imageTextures) && renderData.m_imageTextureLayouts.contains(defUid) &&
+         textureLayoutIsUsable(textureIt->second);
 }
 
 std::optional<uuid> Rendering::activeRenderableDeformationUid(const uuid& imageUid)

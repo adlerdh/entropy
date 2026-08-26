@@ -10,6 +10,7 @@
 #include "rendering/TextureLayout.h"
 #include "rendering/TextureSetup.h"
 #include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/helpers/TextureSetupHelpers.h"
 #include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLBufferTypes.h"
 #include "rendering/utility/gl/GLTexture.h"
@@ -161,6 +162,11 @@ void Rendering::updateSegTexture(
   // Load seg data into first mipmap level
   static constexpr GLint sk_mipmapLevel = 0;
 
+  if (!data) {
+    spdlog::error("Cannot update segmentation {} from a null data pointer", segUid);
+    return;
+  }
+
   auto it = m_appData.renderData().m_segTextures.find(segUid);
   if (std::end(m_appData.renderData().m_segTextures) == it) {
     spdlog::error("Cannot update segmentation {}: texture not found.", segUid);
@@ -173,22 +179,26 @@ void Rendering::updateSegTexture(
     return;
   }
 
-  const auto layoutIt = m_appData.renderData().m_segTextureLayouts.find(segUid);
-  if (
-    layoutIt != std::end(m_appData.renderData().m_segTextureLayouts) &&
-    RenderData::TextureDimension::Texture2D == layoutIt->second.dimension)
-  {
-    m_appData.renderData().m_segTextures.erase(segUid);
-    m_appData.renderData().m_segTextureLayouts.erase(segUid);
-    createSegTextures(m_appData, uuid_range_t{segUid});
+  if (compType != seg->header().memoryComponentType()) {
+    spdlog::error("Cannot update segmentation {} using a mismatched component type", segUid);
     return;
   }
 
-  GLTexture& T = it->second;
-  T.setSubData(
-    sk_mipmapLevel,
+  const RenderData::PlanarTextureLayout layout =
+    rendering::textureLayoutOrDefault(m_appData.renderData().m_segTextureLayouts, segUid);
+  const auto region = rendering::texture_setup::textureUploadRegion(
+    layout,
+    seg->header().pixelDimensions(),
     startOffsetVoxel,
-    sizeInVoxels,
+    sizeInVoxels);
+  if (!region) {
+    spdlog::error("Cannot map segmentation {} update region into its texture", segUid);
+    return;
+  }
+  it->second.setSubData(
+    sk_mipmapLevel,
+    region->offset,
+    region->size,
     GLTexture::getBufferPixelRedFormat(compType),
     GLTexture::getBufferPixelDataType(compType),
     data);
@@ -364,6 +374,11 @@ void Rendering::updateImageTexture(
   // Load data into first mipmap level
   static constexpr GLint sk_mipmapLevel = 0;
 
+  if (!data) {
+    spdlog::error("Cannot update image {} from a null data pointer", imageUid);
+    return;
+  }
+
   auto it = m_appData.renderData().m_imageTextures.find(imageUid);
   if (std::end(m_appData.renderData().m_imageTextures) == it) {
     spdlog::error("Cannot update image {}: texture not found.", imageUid);
@@ -378,25 +393,30 @@ void Rendering::updateImageTexture(
 
   const auto* img = m_appData.image(imageUid);
   if (!img) {
-    spdlog::warn("Segmentation {} is invalid", imageUid);
+    spdlog::warn("Image {} is invalid", imageUid);
     return;
   }
 
-  const auto layoutIt = m_appData.renderData().m_imageTextureLayouts.find(imageUid);
-  if (
-    layoutIt != std::end(m_appData.renderData().m_imageTextureLayouts) &&
-    RenderData::TextureDimension::Texture2D == layoutIt->second.dimension)
-  {
-    m_appData.renderData().m_imageTextures.erase(imageUid);
-    m_appData.renderData().m_imageTextureLayouts.erase(imageUid);
-    createImageTextures(m_appData, uuid_range_t{imageUid});
+  if (compType != img->header().memoryComponentType()) {
+    spdlog::error("Cannot update image {} using a mismatched component type", imageUid);
     return;
   }
 
+  const RenderData::PlanarTextureLayout layout =
+    rendering::textureLayoutOrDefault(m_appData.renderData().m_imageTextureLayouts, imageUid);
+  const auto region = rendering::texture_setup::textureUploadRegion(
+    layout,
+    img->header().pixelDimensions(),
+    startOffsetVoxel,
+    sizeInVoxels);
+  if (!region) {
+    spdlog::error("Cannot map image {} update region into its texture", imageUid);
+    return;
+  }
   T.at(component).setSubData(
     sk_mipmapLevel,
-    startOffsetVoxel,
-    sizeInVoxels,
+    region->offset,
+    region->size,
     GLTexture::getBufferPixelRedFormat(compType),
     GLTexture::getBufferPixelDataType(compType),
     data);

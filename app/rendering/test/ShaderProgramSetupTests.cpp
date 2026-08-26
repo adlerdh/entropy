@@ -193,6 +193,26 @@ TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering
   CHECK(peel.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
 }
 
+TEST_CASE("3D image planes use the same multi-component display modes as 2D images", "[rendering][shaders][ddp]")
+{
+  const std::string display =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::string init =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  CHECK(display.find("u_imgRgbaTex[4]") != std::string::npos);
+  CHECK(display.find("colorImagePlaneColor") != std::string::npos);
+  CHECK(display.find("vectorImagePlaneColor") != std::string::npos);
+  CHECK(display.find("scalarImagePlaneColor") != std::string::npos);
+  CHECK(display.find("u_imgSlopeInterceptRgba") != std::string::npos);
+  CHECK(display.find("u_imgThresholdsRgba") != std::string::npos);
+  CHECK(display.find("u_imgOpacityRgba") != std::string::npos);
+  CHECK(init.find("displayedImagePlaneColor(sampleTc, fs_in.v_worldPos).a") != std::string::npos);
+  CHECK(peel.find("displayedImagePlaneColor(sampleTc, fs_in.v_worldPos)") != std::string::npos);
+}
+
 TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[rendering][shaders][mesh]")
 {
   const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.vs");

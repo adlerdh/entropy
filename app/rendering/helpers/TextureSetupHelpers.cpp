@@ -19,6 +19,9 @@ std::vector<int> nonSingletonAxes(const glm::uvec3& size)
 
 bool fitsMax3DTextureSize(const glm::uvec3& size, const TextureLimits& limits)
 {
+  if (limits.max3DTextureSize <= 0 || size.x == 0u || size.y == 0u || size.z == 0u) {
+    return false;
+  }
   return size.x <= static_cast<uint32_t>(limits.max3DTextureSize) &&
          size.y <= static_cast<uint32_t>(limits.max3DTextureSize) &&
          size.z <= static_cast<uint32_t>(limits.max3DTextureSize);
@@ -26,12 +29,58 @@ bool fitsMax3DTextureSize(const glm::uvec3& size, const TextureLimits& limits)
 
 bool fitsMax2DTextureSize(const glm::uvec2& size, const TextureLimits& limits)
 {
+  if (limits.maxTextureSize <= 0 || size.x == 0u || size.y == 0u) {
+    return false;
+  }
   return size.x <= static_cast<uint32_t>(limits.maxTextureSize) &&
          size.y <= static_cast<uint32_t>(limits.maxTextureSize);
 }
 
+std::optional<TextureUploadRegion> textureUploadRegion(
+  const PlanarTextureLayout& layout,
+  const glm::uvec3& imageSize,
+  const glm::uvec3& imageOffset,
+  const glm::uvec3& imageRegionSize)
+{
+  if (imageSize.x == 0u || imageSize.y == 0u || imageSize.z == 0u) {
+    return std::nullopt;
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (
+      imageRegionSize[axis] == 0u || imageOffset[axis] > imageSize[axis] ||
+      imageRegionSize[axis] > imageSize[axis] - imageOffset[axis])
+    {
+      return std::nullopt;
+    }
+  }
+
+  if (TextureDimension::Texture3D == layout.dimension) {
+    return TextureUploadRegion{.offset = imageOffset, .size = imageRegionSize};
+  }
+
+  const int axis0 = layout.axes.x;
+  const int axis1 = layout.axes.y;
+  if (axis0 < 0 || axis0 > 2 || axis1 < 0 || axis1 > 2 || axis0 >= axis1) {
+    return std::nullopt;
+  }
+
+  const int omittedAxis = 3 - axis0 - axis1;
+  if (imageSize[omittedAxis] != 1u || imageOffset[omittedAxis] != 0u || imageRegionSize[omittedAxis] != 1u) {
+    return std::nullopt;
+  }
+
+  return TextureUploadRegion{
+    .offset = {imageOffset[axis0], imageOffset[axis1], 0u},
+    .size = {imageRegionSize[axis0], imageRegionSize[axis1], 1u}};
+}
+
 std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3& size, const TextureLimits& limits)
 {
+  if (size.x == 0u || size.y == 0u || size.z == 0u || limits.maxTextureSize <= 0 || limits.max3DTextureSize <= 0) {
+    return std::nullopt;
+  }
+
   if (fitsMax3DTextureSize(size, limits)) {
     TextureUploadLayout uploadLayout;
     uploadLayout.layout.dimension = TextureDimension::Texture3D;
@@ -58,6 +107,12 @@ std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3&
 
 std::string textureLimitReason(const glm::uvec3& size, const TextureLimits& limits)
 {
+  if (size.x == 0u || size.y == 0u || size.z == 0u) {
+    return "Image texture dimensions must all be greater than zero.";
+  }
+  if (limits.maxTextureSize <= 0 || limits.max3DTextureSize <= 0) {
+    return "The OpenGL context did not report valid 2D and 3D texture size limits.";
+  }
   const std::vector<int> axes = nonSingletonAxes(size);
   if (axes.size() == 2u) {
     return "This OpenGL context reports GL_MAX_3D_TEXTURE_SIZE = " + std::to_string(limits.max3DTextureSize) +

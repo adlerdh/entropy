@@ -103,7 +103,7 @@ bool Rendering::renderSegmentationMeshesForView(
 {
   consumeCompletedMeshExtractions();
 
-  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  const CurrentImages imageSegPairs = meshSceneImagesForView(view);
   if (imageSegPairs.empty()) {
     return false;
   }

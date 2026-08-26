@@ -251,7 +251,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
 bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
 {
   std::vector<rendering::mesh::MeshRenderable> renderables;
-  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  const CurrentImages imageSegPairs = meshSceneImagesForView(view);
   renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
   renderSegmentationMeshesForView(view, &renderables);
 

@@ -428,6 +428,16 @@ std::optional<ImgSegPair> raycastImageForView(const View& view);
  */
 CurrentImages raycastImagesForView(const View& view);
 
+/** Return the first texture-backed image available to mesh-rendered 3D scene features. */
+std::optional<ImgSegPair> meshSceneImageForView(const View& view);
+
+/**
+ * Return visible images with uploaded 2D or 3D textures for mesh-rendered 3D scene features.
+ *
+ * Unlike raycastImagesForView(), planar GL_TEXTURE_2D fallback images are intentionally included.
+ */
+CurrentImages meshSceneImagesForView(const View& view);
+
 /**
  * @brief Return the selected isosurface currently being interactively edited, if any.
  *

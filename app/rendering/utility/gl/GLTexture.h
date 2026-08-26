@@ -171,6 +171,9 @@ public:
 
   /**
    * @brief Write pixel data to a subregion of an existing texture level.
+   *
+   * Storage must already have been allocated by `setData()`. The data pointer and every region extent must be
+   * non-null/nonzero, and the complete region must lie within `size()`.
    **/
   void setSubData(
     GLint level,

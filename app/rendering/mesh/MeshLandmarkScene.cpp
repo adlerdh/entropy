@@ -39,7 +39,7 @@ glm::mat4 world_T_landmarkSpace(const Image& image, const LandmarkGroup& group)
 
 void Rendering::renderMeshLandmarksForView(const View& view)
 {
-  const std::optional<ImgSegPair> maybeImgSegPair = raycastImageForView(view);
+  const std::optional<ImgSegPair> maybeImgSegPair = meshSceneImageForView(view);
   if (!maybeImgSegPair || !maybeImgSegPair->first) {
     return;
   }

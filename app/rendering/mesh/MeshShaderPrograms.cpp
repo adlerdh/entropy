@@ -218,6 +218,9 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   std::unordered_map<std::string, std::string> replacements = imageShaderInfo.fsReplacements;
   replacements["$$UINT_TEXTURE_LOOKUP_FUNCTION$$"] = sources.uintTextureLinear3D;
   std::string fsSource = loadShaderFile(fragmentShaderPath);
+  fsSource = rendering::replacePlaceholders(
+    fsSource,
+    {{"$$IMAGE_PLANE_DISPLAY_FUNCTIONS$$", loadShaderFile("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl")}});
   std::unordered_map<std::string, std::string> dimensionReplacements =
     rendering::shaderReplacementsForTextureDimension(replacements, textureDimension, setup.lookupReplacementSources);
   if (RenderData::TextureDimension::Texture2D == textureDimension) {
@@ -226,9 +229,24 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   fsSource = rendering::replacePlaceholders(fsSource, dimensionReplacements);
 
   Uniforms fsUniforms = imageShaderInfo.fsUniforms;
+  fsUniforms.insertUniform("u_imgRgbaTex", UniformType::SamplerVector, Uniforms::SamplerIndexVectorType{{0, 1, 2, 3}});
+  fsUniforms.insertUniform("u_componentRenderMode", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_imgSlopeInterceptRgba", UniformType::Vec2Vector, std::vector<glm::vec2>(4));
+  fsUniforms.insertUniform("u_imgThresholdsRgba", UniformType::Vec2Vector, std::vector<glm::vec2>(4));
+  fsUniforms.insertUniform("u_imgMinMaxRgba", UniformType::Vec2Vector, std::vector<glm::vec2>(4));
+  fsUniforms.insertUniform("u_imgOpacityRgba", UniformType::FloatVector, std::vector<float>(4));
+  fsUniforms.insertUniform("u_alphaIsOne", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_tex2DAxes[2]", UniformType::IVec2, glm::ivec2{0}, k_optionalUniform);
+  fsUniforms.insertUniform("u_tex2DAxes[3]", UniformType::IVec2, glm::ivec2{0}, k_optionalUniform);
+  fsUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_projectionScale", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_planeNormal_subject", UniformType::Vec3, glm::vec3{0.0f, 0.0f, 1.0f});
+  fsUniforms.insertUniform("u_planeRight_subject", UniformType::Vec3, glm::vec3{1.0f, 0.0f, 0.0f});
+  fsUniforms.insertUniform("u_planeUp_subject", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 0.0f});
+  fsUniforms.insertUniform("u_vectorSignedColors", UniformType::Bool, true);
   fsUniforms.insertUniform("u_segVisible", UniformType::Bool, false);
-  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, 2);
-  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, 3);
+  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, 5);
+  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, 6);
   fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
   fsUniforms.insertUniform("u_segFillOpacity", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
@@ -241,8 +259,8 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
   if (peelShader) {
-    fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 4, k_optionalUniform);
-    fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 5, k_optionalUniform);
+    fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 7, k_optionalUniform);
+    fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 8, k_optionalUniform);
   }
 
   attachShaderFile(

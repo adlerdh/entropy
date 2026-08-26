@@ -1,6 +1,8 @@
 #include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/mesh/MeshDdpResources.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
+#include "rendering/helpers/TextureSetupHelpers.h"
+#include "rendering/utility/gl/GLTexture.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -10,6 +12,8 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/vec2.hpp>
+
+#include <vector>
 
 namespace mesh = rendering::mesh;
 
@@ -69,7 +73,7 @@ private:
 
 } // namespace
 
-TEST_CASE("mesh framebuffer resources allocate, resize, and release in an OpenGL context", "[rendering][mesh][gl]")
+TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL context", "[rendering][mesh][gl]")
 {
   HiddenOpenGlContext context;
   if (!context.ready()) {
@@ -113,6 +117,79 @@ TEST_CASE("mesh framebuffer resources allocate, resize, and release in an OpenGL
     CHECK(resources.ensureSize(16u));
     resources.clear();
     CHECK_FALSE(resources.initialized());
+  }
+
+  {
+    GLTexture::PixelStoreSettings pixelStore;
+    pixelStore.m_alignment = 1;
+    GLTexture texture(tex::Target::Texture2D, GLTexture::MultisampleSettings{}, pixelStore, pixelStore);
+    texture.generate();
+    texture.setSize({5u, 4u, 1u});
+
+    std::vector<uint8_t> pixels(20u, 0u);
+    texture.setData(
+      0,
+      GLTexture::getSizedInternalNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelDataType(ComponentType::UInt8),
+      pixels.data());
+
+    const auto region = rendering::texture_setup::textureUploadRegion(
+      {.dimension = rendering::TextureDimension::Texture2D, .axes = {1, 2}},
+      {1u, 5u, 4u},
+      {0u, 2u, 1u},
+      {1u, 2u, 2u});
+    REQUIRE(region);
+    const std::vector<uint8_t> update{1u, 2u, 3u, 4u};
+    texture.setSubData(
+      0,
+      region->offset,
+      region->size,
+      GLTexture::getBufferPixelNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelDataType(ComponentType::UInt8),
+      update.data());
+
+    CHECK(glGetError() == GL_NO_ERROR);
+  }
+
+  {
+    GLTexture::PixelStoreSettings pixelStore;
+    pixelStore.m_alignment = 1;
+    GLTexture texture(tex::Target::Texture3D, GLTexture::MultisampleSettings{}, pixelStore, pixelStore);
+    texture.generate();
+    texture.setSize({4u, 3u, 2u});
+
+    std::vector<uint8_t> voxels(24u, 0u);
+    texture.setData(
+      0,
+      GLTexture::getSizedInternalNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelDataType(ComponentType::UInt8),
+      voxels.data());
+
+    const auto region = rendering::texture_setup::textureUploadRegion(
+      {.dimension = rendering::TextureDimension::Texture3D},
+      {4u, 3u, 2u},
+      {1u, 1u, 0u},
+      {2u, 2u, 2u});
+    REQUIRE(region);
+    const std::vector<uint8_t> update(8u, 7u);
+    texture.setSubData(
+      0,
+      region->offset,
+      region->size,
+      GLTexture::getBufferPixelNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelDataType(ComponentType::UInt8),
+      update.data());
+
+    CHECK_THROWS(texture.setSubData(
+      0,
+      {3u, 0u, 0u},
+      {2u, 1u, 1u},
+      GLTexture::getBufferPixelNormalizedRedFormat(ComponentType::UInt8),
+      GLTexture::getBufferPixelDataType(ComponentType::UInt8),
+      update.data()));
+    CHECK(glGetError() == GL_NO_ERROR);
   }
 
   CHECK(glGetError() == GL_NO_ERROR);

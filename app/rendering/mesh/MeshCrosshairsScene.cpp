@@ -36,7 +36,7 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
   std::vector<rendering::mesh::MeshRenderable>& renderables)
 {
   const RenderData& renderData = m_appData.renderData();
-  const std::optional<ImgSegPair> maybeImgSegPair = raycastImageForView(view);
+  const std::optional<ImgSegPair> maybeImgSegPair = meshSceneImageForView(view);
   if (!maybeImgSegPair || !maybeImgSegPair->first) {
     return false;
   }

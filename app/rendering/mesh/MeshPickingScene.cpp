@@ -83,7 +83,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
     return std::nullopt;
   }
 
-  const CurrentImages imageSegPairs = raycastImagesForView(view);
+  const CurrentImages imageSegPairs = meshSceneImagesForView(view);
   if (imageSegPairs.empty()) {
     return std::nullopt;
   }

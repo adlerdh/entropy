@@ -165,11 +165,14 @@ TEST_CASE("rendering helpers classify raycastable texture layouts", "[rendering]
     {volumeUid, {.dimension = rendering::TextureDimension::Texture3D}},
     {planarUid, {.dimension = rendering::TextureDimension::Texture2D, .axes = glm::ivec2{0, 1}}}};
 
-  REQUIRE(rendering::imageHasRaycastableTextureLayout(layouts, missingUid));
+  REQUIRE_FALSE(rendering::imageHasRaycastableTextureLayout(layouts, missingUid));
   REQUIRE(rendering::imageHasRaycastableTextureLayout(layouts, volumeUid));
   REQUIRE_FALSE(rendering::imageHasRaycastableTextureLayout(layouts, planarUid));
+  REQUIRE_FALSE(rendering::imageHasMeshSceneTextureLayout(layouts, missingUid));
+  REQUIRE(rendering::imageHasMeshSceneTextureLayout(layouts, volumeUid));
+  REQUIRE(rendering::imageHasMeshSceneTextureLayout(layouts, planarUid));
 
   const std::list<uuids::uuid> inputUids{missingUid, planarUid, volumeUid};
-  const std::list<uuids::uuid> expectedUids{missingUid, volumeUid};
+  const std::list<uuids::uuid> expectedUids{volumeUid};
   REQUIRE(rendering::raycastableImageUids(inputUids, layouts) == expectedUids);
 }

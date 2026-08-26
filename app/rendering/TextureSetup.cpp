@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -51,18 +52,19 @@ bool shouldLogPlanarSegUpload(const uuids::uuid& segUid)
   return loggedSegUids.insert(segUid).second;
 }
 
-bool imageUsesPlanar2DTexture(const AppData& appData, const uuids::uuid& imageUid)
+bool imageUsesVolumeTexture(const AppData& appData, const uuids::uuid& imageUid)
 {
   const auto layoutIt = appData.renderData().m_imageTextureLayouts.find(imageUid);
   return layoutIt != std::end(appData.renderData().m_imageTextureLayouts) &&
-         RenderData::TextureDimension::Texture2D == layoutIt->second.dimension;
+         RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
 }
 
-TextureCreationFailure makeTextureSizeFailure(
+TextureCreationFailure makeTextureFailure(
   TextureCreationFailure::Resource resource,
   const uuids::uuid& uid,
   const std::string& displayName,
   const glm::uvec3& dimensions,
+  int maxTextureSize,
   int max3DTextureSize,
   std::string reason)
 {
@@ -71,23 +73,7 @@ TextureCreationFailure makeTextureSizeFailure(
     .uid = uid,
     .displayName = displayName,
     .dimensions = {dimensions.x, dimensions.y, dimensions.z},
-    .max3DTextureSize = max3DTextureSize,
-    .reason = std::move(reason)};
-}
-
-TextureCreationFailure makeTextureUploadFailure(
-  TextureCreationFailure::Resource resource,
-  const uuids::uuid& uid,
-  const std::string& displayName,
-  const glm::uvec3& dimensions,
-  int max3DTextureSize,
-  std::string reason)
-{
-  return TextureCreationFailure{
-    .resource = resource,
-    .uid = uid,
-    .displayName = displayName,
-    .dimensions = {dimensions.x, dimensions.y, dimensions.z},
+    .maxTextureSize = maxTextureSize,
     .max3DTextureSize = max3DTextureSize,
     .reason = std::move(reason)};
 }
@@ -124,18 +110,17 @@ std::string unloadButtonLabel(TextureCreationFailure::Resource resource)
 bool userWantsToUnloadTextureFailure(const TextureCreationFailure& failure)
 {
   const std::string resource = resourceLabel(failure.resource);
-  const std::string message =
-    "The " + resource + " '" + failure.displayName + "' was loaded, but Entropy cannot create a 3D texture for it.";
+  const std::string message = "The " + resource + " '" + failure.displayName +
+                              "' was loaded, but Entropy cannot create a renderable OpenGL texture for it.";
   const std::string informativeText =
-    "Image dimensions are " + dimensionsLabel(failure.dimensions) + ". " + failure.reason +
+    "Dimensions are " + dimensionsLabel(failure.dimensions) + ". " + failure.reason +
     "\n\n"
     "You can keep the " +
     resource +
-    " loaded for metadata/project inspection, but it will not be renderable until Entropy supports a "
-    "true 2D texture rendering path or a downsampled texture fallback.";
+    " loaded for metadata/project inspection, but it will not be renderable with the current GPU texture limits.";
 
   const auto result = native_dialog::showMessageDialog(
-    {"Texture Size Exceeds OpenGL Limit",
+    {"Unable to Create Rendering Texture",
      message,
      informativeText,
      "Keep Loaded",
@@ -221,49 +206,6 @@ std::vector<T> copyComponentFrameValues(const Image& image, uint32_t component, 
   return values;
 }
 
-std::size_t flatImageIndex(const glm::uvec3& coord, const glm::uvec3& size)
-{
-  return static_cast<std::size_t>(coord.x) +
-         static_cast<std::size_t>(size.x) *
-           (static_cast<std::size_t>(coord.y) + static_cast<std::size_t>(size.y) * static_cast<std::size_t>(coord.z));
-}
-
-template<typename T>
-std::vector<T>
-copyPlanarComponentFrameValues(const Image& image, uint32_t component, uint32_t timePoint, const glm::ivec2& axes)
-{
-  const glm::uvec3 size = image.header().pixelDimensions();
-  std::vector<T> values;
-  values.reserve(static_cast<std::size_t>(size[axes.x]) * static_cast<std::size_t>(size[axes.y]));
-
-  glm::uvec3 coord{0u};
-  for (uint32_t y = 0; y < size[axes.y]; ++y) {
-    coord[axes.y] = y;
-    for (uint32_t x = 0; x < size[axes.x]; ++x) {
-      coord[axes.x] = x;
-      const std::optional<T> value = image.value<T>(component, flatImageIndex(coord, size), timePoint);
-      if (!value) {
-        return {};
-      }
-      values.push_back(*value);
-    }
-  }
-
-  return values;
-}
-
-template<typename T>
-std::vector<T> copyPlanarComponentFrameValues(
-  const Image& image,
-  uint32_t component,
-  uint32_t timePoint,
-  const RenderData::PlanarTextureLayout& layout)
-{
-  return RenderData::TextureDimension::Texture2D == layout.dimension
-           ? copyPlanarComponentFrameValues<T>(image, component, timePoint, layout.axes)
-           : copyComponentFrameValues<T>(image, component, timePoint);
-}
-
 template<typename T>
 bool appendScalarComponentTexture(
   std::vector<GLTexture>& componentTextures,
@@ -327,7 +269,7 @@ bool appendDeinterleavedComponentTexture(
   const GLTexture::PixelStoreSettings& pixelUnpackSettings,
   tex::WrapMode wrapMode)
 {
-  const std::vector<T> values = copyPlanarComponentFrameValues<T>(image, component, timePoint, uploadLayout.layout);
+  const std::vector<T> values = copyComponentFrameValues<T>(image, component, timePoint);
   return values.size() == image.header().numPixels() && appendScalarComponentTexture(
                                                           componentTextures,
                                                           image,
@@ -426,39 +368,31 @@ bool appendDeinterleavedComponentTexture(
 }
 
 template<typename T>
-std::vector<std::byte> copyComponentFrameValuesBytes(
-  const Image& image,
-  uint32_t component,
-  uint32_t timePoint,
-  const RenderData::PlanarTextureLayout& layout)
+std::vector<std::byte> copyComponentFrameValuesBytes(const Image& image, uint32_t component, uint32_t timePoint)
 {
-  const std::vector<T> values = copyPlanarComponentFrameValues<T>(image, component, timePoint, layout);
+  const std::vector<T> values = copyComponentFrameValues<T>(image, component, timePoint);
   return {
     reinterpret_cast<const std::byte*>(values.data()),
     reinterpret_cast<const std::byte*>(values.data() + values.size())};
 }
 
-std::vector<std::byte> copyComponentFrameValuesBytes(
-  const Image& image,
-  uint32_t component,
-  uint32_t timePoint,
-  const RenderData::PlanarTextureLayout& layout)
+std::vector<std::byte> copyComponentFrameValuesBytes(const Image& image, uint32_t component, uint32_t timePoint)
 {
   switch (image.header().memoryComponentType()) {
     case ComponentType::Int8:
-      return copyComponentFrameValuesBytes<int8_t>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<int8_t>(image, component, timePoint);
     case ComponentType::UInt8:
-      return copyComponentFrameValuesBytes<uint8_t>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<uint8_t>(image, component, timePoint);
     case ComponentType::Int16:
-      return copyComponentFrameValuesBytes<int16_t>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<int16_t>(image, component, timePoint);
     case ComponentType::UInt16:
-      return copyComponentFrameValuesBytes<uint16_t>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<uint16_t>(image, component, timePoint);
     case ComponentType::Int32:
-      return copyComponentFrameValuesBytes<int32_t>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<int32_t>(image, component, timePoint);
     case ComponentType::UInt32:
-      return copyComponentFrameValuesBytes<uint32_t>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<uint32_t>(image, component, timePoint);
     case ComponentType::Float32:
-      return copyComponentFrameValuesBytes<float>(image, component, timePoint, layout);
+      return copyComponentFrameValuesBytes<float>(image, component, timePoint);
     default:
       return {};
   }
@@ -468,17 +402,15 @@ bool uploadActiveTimePointToExistingTexture(
   GLTexture& texture,
   const Image& image,
   uint32_t component,
-  uint32_t timePoint,
-  const RenderData::PlanarTextureLayout& layout)
+  uint32_t timePoint)
 {
   static constexpr GLint k_mipmapLevel = 0;
-  const bool canUseNativeFrameBuffer = RenderData::TextureDimension::Texture3D == layout.dimension &&
-                                       Image::MultiComponentBufferType::SeparateImages == image.bufferType();
+  const bool canUseNativeFrameBuffer = Image::MultiComponentBufferType::SeparateImages == image.bufferType();
 
   const void* uploadData = canUseNativeFrameBuffer ? image.bufferAsVoid(component, timePoint) : nullptr;
   std::vector<std::byte> copiedValues;
   if (!uploadData) {
-    copiedValues = copyComponentFrameValuesBytes(image, component, timePoint, layout);
+    copiedValues = copyComponentFrameValuesBytes(image, component, timePoint);
     const std::size_t expectedBytes =
       static_cast<std::size_t>(texture.size().x) * static_cast<std::size_t>(texture.size().y) *
       static_cast<std::size_t>(texture.size().z) * image.header().memoryComponentSizeInBytes();
@@ -500,56 +432,6 @@ bool uploadActiveTimePointToExistingTexture(
     GLTexture::getBufferPixelDataType(image.header().memoryComponentType()),
     uploadData);
   return true;
-}
-
-template<typename T>
-std::vector<T> copyPlanarSegValues(const Image& seg, const RenderData::PlanarTextureLayout& layout)
-{
-  return copyPlanarComponentFrameValues<T>(seg, 0u, 0u, layout);
-}
-
-std::vector<std::byte> copyPlanarSegValuesBytes(const Image& seg, const RenderData::PlanarTextureLayout& layout)
-{
-  switch (seg.header().memoryComponentType()) {
-    case ComponentType::UInt8: {
-      const auto values = copyPlanarSegValues<uint8_t>(seg, layout);
-      return {
-        reinterpret_cast<const std::byte*>(values.data()),
-        reinterpret_cast<const std::byte*>(values.data() + values.size())};
-    }
-    case ComponentType::UInt16: {
-      const auto values = copyPlanarSegValues<uint16_t>(seg, layout);
-      return {
-        reinterpret_cast<const std::byte*>(values.data()),
-        reinterpret_cast<const std::byte*>(values.data() + values.size())};
-    }
-    case ComponentType::UInt32: {
-      const auto values = copyPlanarSegValues<uint32_t>(seg, layout);
-      return {
-        reinterpret_cast<const std::byte*>(values.data()),
-        reinterpret_cast<const std::byte*>(values.data() + values.size())};
-    }
-    case ComponentType::Int8: {
-      const auto values = copyPlanarSegValues<int8_t>(seg, layout);
-      return {
-        reinterpret_cast<const std::byte*>(values.data()),
-        reinterpret_cast<const std::byte*>(values.data() + values.size())};
-    }
-    case ComponentType::Int16: {
-      const auto values = copyPlanarSegValues<int16_t>(seg, layout);
-      return {
-        reinterpret_cast<const std::byte*>(values.data()),
-        reinterpret_cast<const std::byte*>(values.data() + values.size())};
-    }
-    case ComponentType::Int32: {
-      const auto values = copyPlanarSegValues<int32_t>(seg, layout);
-      return {
-        reinterpret_cast<const std::byte*>(values.data()),
-        reinterpret_cast<const std::byte*>(values.data() + values.size())};
-    }
-    default:
-      return {};
-  }
 }
 
 } // namespace
@@ -604,11 +486,12 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
         image->settings().displayName(),
         glm::to_string(textureSize),
         texture_setup::textureLimitReason(textureSize, textureLimits));
-      result.failures.push_back(makeTextureSizeFailure(
+      result.failures.push_back(makeTextureFailure(
         TextureCreationFailure::Resource::Image,
         imageUid,
         image->settings().displayName(),
         textureSize,
+        textureLimits.maxTextureSize,
         textureLimits.max3DTextureSize,
         texture_setup::textureLimitReason(textureSize, textureLimits)));
       continue;
@@ -685,51 +568,34 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
             const tex::BufferPixelFormat bufferPixelNormalizedFormat =
               GLTexture::getBufferPixelNormalizedRedFormat(compType);
 
-            if (RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension) {
-              if (!appendDeinterleavedComponentTexture(
-                    componentTextures,
-                    *image,
-                    comp,
-                    activeTimePoint,
-                    *uploadLayout,
-                    pixelPackSettings,
-                    pixelUnpackSettings,
-                    sk_wrapModeClampToEdge))
-              {
-                spdlog::warn("Image {} could not create a planar scalar texture for component {}", imageUid, comp);
-                componentTextures.clear();
-                break;
-              }
+            // A planar image's retained axes are ascending and its omitted axis is singleton, so the native
+            // x-fastest component buffer is also contiguous in GL_TEXTURE_2D row order. No planar copy is needed.
+            GLTexture& texture = componentTextures.emplace_back(
+              RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
+                                                                                        : tex::Target::Texture3D,
+              GLTexture::MultisampleSettings(),
+              pixelPackSettings,
+              pixelUnpackSettings);
+            texture.generate();
+            texture.setMinificationFilter(minFilter);
+            texture.setMagnificationFilter(maxFilter);
+            texture.setWrapMode(sk_wrapModeClampToEdge);
+            texture.setAutoGenerateMipmaps(false);
+            texture.setSize(uploadLayout->uploadSize);
+
+            const void* imageBuffer = image->bufferAsVoid(comp, activeTimePoint);
+            if (!imageBuffer) {
+              spdlog::warn("Image {} has no texture data for component {}", imageUid, comp);
+              componentTextures.clear();
+              break;
             }
-            else {
-              GLTexture& T = componentTextures.emplace_back(
-                tex::Target::Texture3D,
-                GLTexture::MultisampleSettings(),
-                pixelPackSettings,
-                pixelUnpackSettings);
 
-              T.generate();
-              T.setMinificationFilter(minFilter);
-              T.setMagnificationFilter(maxFilter);
-              //                T.setBorderColor( sk_border );
-              T.setWrapMode(sk_wrapModeClampToEdge);
-              T.setAutoGenerateMipmaps(false); // no mipmapping for images
-              T.setSize(textureSize);
-
-              const void* imageBuffer = image->bufferAsVoid(comp, activeTimePoint);
-              if (!imageBuffer) {
-                spdlog::warn("Image {} has no texture data for component {}", imageUid, comp);
-                componentTextures.clear();
-                break;
-              }
-
-              T.setData(
-                sk_mipmapLevel,
-                sizedInternalNormalizedFormat,
-                bufferPixelNormalizedFormat,
-                GLTexture::getBufferPixelDataType(compType),
-                imageBuffer);
-            }
+            texture.setData(
+              sk_mipmapLevel,
+              sizedInternalNormalizedFormat,
+              bufferPixelNormalizedFormat,
+              GLTexture::getBufferPixelDataType(compType),
+              imageBuffer);
           }
 
           spdlog::debug("Done creating {} image component textures", componentTextures.size());
@@ -739,11 +605,12 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
     }
     catch (const std::exception& e) {
       spdlog::error("Image {} ('{}') texture upload failed: {}", imageUid, image->settings().displayName(), e.what());
-      result.failures.push_back(makeTextureUploadFailure(
+      result.failures.push_back(makeTextureFailure(
         TextureCreationFailure::Resource::Image,
         imageUid,
         image->settings().displayName(),
         textureSize,
+        textureLimits.maxTextureSize,
         textureLimits.max3DTextureSize,
         e.what()));
       componentTextures.clear();
@@ -751,10 +618,20 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
 
     if (componentTextures.empty()) {
       spdlog::warn("No image textures were created for image {}", imageUid);
+      if (result.failures.empty() || result.failures.back().uid != imageUid) {
+        result.failures.push_back(makeTextureFailure(
+          TextureCreationFailure::Resource::Image,
+          imageUid,
+          image->settings().displayName(),
+          textureSize,
+          textureLimits.maxTextureSize,
+          textureLimits.max3DTextureSize,
+          "The image pixel buffer could not be converted into component textures."));
+      }
       continue;
     }
 
-    appData.renderData().m_imageTextures.emplace(imageUid, std::move(componentTextures));
+    appData.renderData().m_imageTextures.insert_or_assign(imageUid, std::move(componentTextures));
     appData.renderData().m_imageTextureLayouts[imageUid] = uploadLayout->layout;
 
     result.createdUids.push_back(imageUid);
@@ -784,13 +661,18 @@ bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid&
     return false;
   }
 
+  const auto recreateTextures = [&appData, &imageUid]() {
+    const std::vector<uuids::uuid> created = createImageTextures(appData, uuid_range_t{imageUid});
+    return std::find(created.begin(), created.end(), imageUid) != created.end();
+  };
+
   const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
   const std::optional<TextureUploadLayout> uploadLayout =
     texture_setup::textureUploadLayoutForImage(image->header().pixelDimensions(), textureLimits);
   if (!uploadLayout) {
     appData.renderData().m_imageTextures.erase(imageUid);
     appData.renderData().m_imageTextureLayouts.erase(imageUid);
-    createImageTextures(appData, uuid_range_t{imageUid});
+    recreateTextures();
     return false;
   }
 
@@ -807,27 +689,15 @@ bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid&
     });
 
   if (!canUpdateExisting) {
-    appData.renderData().m_imageTextures.erase(imageUid);
-    appData.renderData().m_imageTextureLayouts.erase(imageUid);
-    createImageTextures(appData, uuid_range_t{imageUid});
-    return false;
+    return recreateTextures();
   }
 
   const uint32_t activeTimePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
   std::vector<GLTexture>& textures = textureIt->second;
   for (uint32_t component = 0; component < image->header().numComponentsPerPixel(); ++component) {
-    if (!uploadActiveTimePointToExistingTexture(
-          textures.at(component),
-          *image,
-          component,
-          activeTimePoint,
-          layoutIt->second))
-    {
+    if (!uploadActiveTimePointToExistingTexture(textures.at(component), *image, component, activeTimePoint)) {
       spdlog::warn("Could not refresh texture for component {} of image {}", component, imageUid);
-      appData.renderData().m_imageTextures.erase(imageUid);
-      appData.renderData().m_imageTextureLayouts.erase(imageUid);
-      createImageTextures(appData, uuid_range_t{imageUid});
-      return false;
+      return recreateTextures();
     }
   }
 
@@ -869,6 +739,7 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createD
   }
 
   spdlog::debug("Begin creating 3D distance map textures for image components");
+  const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
 
   GLTexture::PixelStoreSettings pixelPackSettings;
   pixelPackSettings.m_alignment = sk_alignment;
@@ -892,9 +763,9 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createD
     const Image& image = result->get();
     const uint32_t numComp = image.header().numComponentsPerPixel();
 
-    if (imageUsesPlanar2DTexture(appData, imageUid)) {
+    if (!imageUsesVolumeTexture(appData, imageUid)) {
       spdlog::debug(
-        "Skipping 3D distance map texture creation for image {} because the image is uploaded as GL_TEXTURE_2D",
+        "Skipping 3D distance map texture creation for image {} because it has no 3D image texture",
         imageUid);
       continue;
     }
@@ -911,29 +782,45 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createD
 
       // Get the first map:
       const Image& map = maps.begin()->second;
+      const auto uploadLayout =
+        texture_setup::textureUploadLayoutForImage(map.header().pixelDimensions(), textureLimits);
+      const void* mapBuffer = map.bufferAsVoid(0);
+      if (
+        !uploadLayout || RenderData::TextureDimension::Texture3D != uploadLayout->layout.dimension || !mapBuffer ||
+        ComponentType::UInt8 != map.header().memoryComponentType() ||
+        map.header().pixelDimensions() != image.header().pixelDimensions())
+      {
+        spdlog::warn("Skipping invalid or non-volume distance map for component {} of image {}", comp, imageUid);
+        continue;
+      }
 
-      auto it = componentTextures.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(comp),
-        std::forward_as_tuple(
+      try {
+        GLTexture texture(
           tex::Target::Texture3D,
           GLTexture::MultisampleSettings(),
           pixelPackSettings,
-          pixelUnpackSettings));
-
-      it.first->second.generate();
-      it.first->second.setMinificationFilter(sk_minFilter);
-      it.first->second.setMagnificationFilter(sk_maxFilter);
-      it.first->second.setWrapMode(sk_wrapModeClampToEdge);
-      it.first->second.setAutoGenerateMipmaps(false);
-      it.first->second.setSize(map.header().pixelDimensions());
-
-      it.first->second.setData(
-        sk_mipmapLevel,
-        k_sizedInternalNormalizedFormat,
-        k_bufferPixelNormalizedFormat,
-        GLTexture::getBufferPixelDataType(sk_compType),
-        map.bufferAsVoid(0));
+          pixelUnpackSettings);
+        texture.generate();
+        texture.setMinificationFilter(sk_minFilter);
+        texture.setMagnificationFilter(sk_maxFilter);
+        texture.setWrapMode(sk_wrapModeClampToEdge);
+        texture.setAutoGenerateMipmaps(false);
+        texture.setSize(uploadLayout->uploadSize);
+        texture.setData(
+          sk_mipmapLevel,
+          k_sizedInternalNormalizedFormat,
+          k_bufferPixelNormalizedFormat,
+          GLTexture::getBufferPixelDataType(sk_compType),
+          mapBuffer);
+        componentTextures.insert_or_assign(comp, std::move(texture));
+      }
+      catch (const std::exception& e) {
+        spdlog::warn(
+          "Could not create distance map texture for component {} of image {}: {}",
+          comp,
+          imageUid,
+          e.what());
+      }
     }
 
     spdlog::debug("Done creating {} distance map textures for image components", componentTextures.size());
@@ -960,8 +847,6 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
   static const tex::MinificationFilter sk_minFilter = tex::MinificationFilter::Nearest;
   static const tex::MagnificationFilter sk_maxFilter = tex::MagnificationFilter::Nearest;
 
-  std::unordered_map<uuids::uuid, GLTexture> textures;
-
   TextureCreationResult result;
 
   spdlog::debug("Begin creating 3D segmentation textures");
@@ -986,6 +871,21 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
 
     const ComponentType compType = seg->header().memoryComponentType();
     const glm::uvec3 textureSize = seg->header().pixelDimensions();
+    if (seg->header().numComponentsPerPixel() != 1u || !isValidSegmentationComponentType(compType)) {
+      const std::string reason = seg->header().numComponentsPerPixel() != 1u
+                                   ? "Segmentations must contain exactly one component per voxel"
+                                   : "The segmentation component type is not supported for rendering";
+      spdlog::error("Segmentation {} ('{}') cannot be uploaded: {}", segUid, seg->settings().displayName(), reason);
+      result.failures.push_back(makeTextureFailure(
+        TextureCreationFailure::Resource::Segmentation,
+        segUid,
+        seg->settings().displayName(),
+        textureSize,
+        textureLimits.maxTextureSize,
+        textureLimits.max3DTextureSize,
+        reason));
+      continue;
+    }
     const std::optional<texture_setup::TextureUploadLayout> uploadLayout =
       texture_setup::textureUploadLayoutForImage(textureSize, textureLimits);
     if (!uploadLayout) {
@@ -995,11 +895,12 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
         seg->settings().displayName(),
         glm::to_string(textureSize),
         texture_setup::textureLimitReason(textureSize, textureLimits));
-      result.failures.push_back(makeTextureSizeFailure(
+      result.failures.push_back(makeTextureFailure(
         TextureCreationFailure::Resource::Segmentation,
         segUid,
         seg->settings().displayName(),
         textureSize,
+        textureLimits.maxTextureSize,
         textureLimits.max3DTextureSize,
         texture_setup::textureLimitReason(textureSize, textureLimits)));
       continue;
@@ -1016,53 +917,47 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
     }
 
     try {
-      auto it = appData.renderData().m_segTextures.try_emplace(
-        segUid,
+      GLTexture texture(
         RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
                                                                                   : tex::Target::Texture3D,
         GLTexture::MultisampleSettings(),
         pixelPackSettings,
         pixelUnpackSettings);
+      texture.generate();
+      texture.setMinificationFilter(sk_minFilter);
+      texture.setMagnificationFilter(sk_maxFilter);
+      texture.setBorderColor(sk_border);
+      texture.setWrapMode(sk_wrapMode);
+      texture.setAutoGenerateMipmaps(false); // no mipmapping for segmentations
+      texture.setSize(uploadLayout->uploadSize);
 
-      if (!it.second) continue;
-      GLTexture& T = it.first->second;
-
-      T.generate();
-      T.setMinificationFilter(sk_minFilter);
-      T.setMagnificationFilter(sk_maxFilter);
-      T.setBorderColor(sk_border);
-      T.setWrapMode(sk_wrapMode);
-      T.setAutoGenerateMipmaps(false); // no mipmapping for segmentations
-      T.setSize(uploadLayout->uploadSize);
-
-      std::vector<std::byte> planarValues;
+      // Segmentations have one component; the native buffer has the same planar row order described above.
       const void* segBuffer = seg->bufferAsVoid(k_comp0);
-      if (RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension) {
-        planarValues = copyPlanarSegValuesBytes(*seg, uploadLayout->layout);
-        segBuffer = planarValues.data();
+      if (!segBuffer) {
+        throw std::runtime_error("The segmentation pixel buffer is incomplete");
       }
 
-      T.setData(
+      texture.setData(
         k_mipmapLevel,
         GLTexture::getSizedInternalRedFormat(compType),
         GLTexture::getBufferPixelRedFormat(compType),
         GLTexture::getBufferPixelDataType(compType),
         segBuffer);
+      appData.renderData().m_segTextures.insert_or_assign(segUid, std::move(texture));
       appData.renderData().m_segTextureLayouts[segUid] = uploadLayout->layout;
     }
     catch (const std::exception& e) {
-      appData.renderData().m_segTextures.erase(segUid);
-      appData.renderData().m_segTextureLayouts.erase(segUid);
       spdlog::error(
         "Segmentation {} ('{}') texture upload failed: {}",
         segUid,
         seg->settings().displayName(),
         e.what());
-      result.failures.push_back(makeTextureUploadFailure(
+      result.failures.push_back(makeTextureFailure(
         TextureCreationFailure::Resource::Segmentation,
         segUid,
         seg->settings().displayName(),
         textureSize,
+        textureLimits.maxTextureSize,
         textureLimits.max3DTextureSize,
         e.what()));
       continue;
