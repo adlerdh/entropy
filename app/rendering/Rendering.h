@@ -25,6 +25,7 @@
 #include <uuid.h>
 
 #include <chrono>
+#include <future>
 #include <list>
 #include <memory>
 #include <optional>
@@ -318,9 +319,16 @@ private:
 
   struct SegmentationLabelInventory
   {
-    uint64_t pixelDataRevision = 0;                           //!< Pixel revision represented by this inventory
-    uint32_t timePoint = 0;                                   //!< Time point represented by this inventory
-    rendering::mesh::SegmentationLabelSet presentLabelValues; //!< Exact native label values present in the volume
+    uint64_t pixelDataRevision = 0;                     //!< Pixel revision represented by this inventory
+    uint32_t timePoint = 0;                             //!< Time point represented by this inventory
+    rendering::mesh::SegmentationLabelInventory labels; //!< Exact labels and their occupied voxel bounds
+  };
+
+  struct PendingSegmentationLabelInventory
+  {
+    uint64_t pixelDataRevision = 0;
+    uint32_t timePoint = 0;
+    std::future<std::optional<rendering::mesh::SegmentationLabelInventory>> future;
   };
 
 #include "rendering/PrivateMethods.h"
@@ -399,6 +407,7 @@ private:
   MeshHandleMap m_meshHandles; //!< Stable logical mesh handles keyed by geometry-producing inputs
 
   std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
+  std::unordered_map<uuids::uuid, PendingSegmentationLabelInventory> m_pendingSegmentationLabelInventories;
 
   MeshImagePlaneHandleMap m_meshImagePlaneHandles; //!< Stable handles for dynamic 3D image-plane meshes
 

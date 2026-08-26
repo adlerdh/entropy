@@ -396,6 +396,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
   project.m_meshRendering.m_renderingEnabled = false;
   project.m_meshRendering.m_generationThreadCount = 3;
+  project.m_meshRendering.m_smoothSegmentationMeshes = false;
+  project.m_meshRendering.m_segmentationSmoothingIterations = 40;
+  project.m_meshRendering.m_segmentationSmoothingPassBand = 0.2f;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_shadowMapSizePixels = 2048;
   project.m_meshRendering.m_shadowStrength = 0.6f;
@@ -468,6 +471,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
   CHECK(mesh.at("enabled") == false);
   CHECK(mesh.at("generationThreads") == 3);
+  CHECK(mesh.at("segmentationSmoothing").at("enabled") == false);
+  CHECK(mesh.at("segmentationSmoothing").at("iterations") == 40);
+  CHECK(mesh.at("segmentationSmoothing").at("passBand") == 0.2f);
   CHECK(mesh.at("shadows").at("enabled") == true);
   CHECK(mesh.at("shadows").at("mapSizePixels") == 2048);
   CHECK(mesh.at("shadows").at("strength") == 0.6f);
@@ -538,6 +544,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
   CHECK(parsed.m_meshRendering.m_renderingEnabled == false);
   CHECK(parsed.m_meshRendering.m_generationThreadCount == 3);
+  CHECK(parsed.m_meshRendering.m_smoothSegmentationMeshes == false);
+  CHECK(parsed.m_meshRendering.m_segmentationSmoothingIterations == 40);
+  CHECK(parsed.m_meshRendering.m_segmentationSmoothingPassBand == 0.2f);
   CHECK(parsed.m_meshRendering.m_shadowsEnabled == true);
   CHECK(parsed.m_meshRendering.m_shadowMapSizePixels == 2048);
   CHECK(parsed.m_meshRendering.m_shadowStrength == 0.6f);

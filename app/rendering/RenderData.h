@@ -355,6 +355,10 @@ struct RenderData
 
   uint32_t m_meshGenerationThreadCount; //!< Maximum VTK threads for one CPU mesh extraction job, or zero for auto
 
+  bool m_smoothSegmentationMeshes;                //!< Apply boundary-preserving smoothing to segmentation meshes
+  uint32_t m_segmentationMeshSmoothingIterations; //!< Windowed-sinc smoothing iterations
+  float m_segmentationMeshSmoothingPassBand;      //!< Windowed-sinc smoothing pass band
+
   rendering::mesh::MeshDdpSettings m_meshDdpSettings; //!< Dual-depth-peeling termination and safety limit
 
   bool m_meshPickingEnabled; //!< Whether mesh surfaces participate in 3D point picking

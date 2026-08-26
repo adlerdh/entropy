@@ -22,6 +22,10 @@ struct MeshGenerationOptions
    * other background work.
    */
   std::size_t threadCount = 0;
+
+  bool smoothLabelMeshes = true;     //!< Apply boundary-preserving smoothing to discrete label surfaces
+  uint32_t smoothingIterations = 25; //!< Windowed-sinc iterations when label smoothing is enabled
+  double smoothingPassBand = 0.1;    //!< Windowed-sinc pass band in the open interval (0, 2]
 };
 
 /**
@@ -50,7 +54,10 @@ generateIsoSurfaceMesh(const ScalarGrid3D& grid, double isoValue, const MeshGene
  * @return Triangle mesh, or empty when no surface can be extracted
  */
 std::optional<MeshData>
-generateLabelMesh(const ScalarGrid3D& grid, int64_t labelValue, const MeshGenerationOptions& options = {});
+generateDiscreteLabelSurface(const ScalarGrid3D& grid, int64_t labelValue, const MeshGenerationOptions& options = {});
+
+/** Generate the surface of a binary zero/one mask without exposing an ambiguous label-value parameter. */
+std::optional<MeshData> generateBinaryMaskSurface(const ScalarGrid3D& grid, const MeshGenerationOptions& options = {});
 
 /** Generate the canonical two-ended cylinder-and-cone mesh used for one 3D crosshair axis. */
 std::optional<MeshData> generateCrosshairsAxisMesh(double coneLengthRatio = 0.15);

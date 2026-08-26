@@ -674,6 +674,23 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   j = json::object();
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
   addIfChanged(j, "generationThreads", settings.m_generationThreadCount, defaults.m_generationThreadCount);
+  json segmentationSmoothing = json::object();
+  addIfChanged(
+    segmentationSmoothing,
+    "enabled",
+    settings.m_smoothSegmentationMeshes,
+    defaults.m_smoothSegmentationMeshes);
+  addIfChanged(
+    segmentationSmoothing,
+    "iterations",
+    settings.m_segmentationSmoothingIterations,
+    defaults.m_segmentationSmoothingIterations);
+  addIfChanged(
+    segmentationSmoothing,
+    "passBand",
+    settings.m_segmentationSmoothingPassBand,
+    defaults.m_segmentationSmoothingPassBand);
+  addIfNotEmpty(j, "segmentationSmoothing", std::move(segmentationSmoothing));
   json dualDepthPeeling = json::object();
   addIfChanged(dualDepthPeeling, "maxPeelPasses", settings.m_ddpMaxPeelPasses, defaults.m_ddpMaxPeelPasses);
   addIfNotEmpty(j, "dualDepthPeeling", std::move(dualDepthPeeling));
@@ -711,6 +728,17 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
   }
   if (const auto threads = j.find("generationThreads"); threads != j.end() && threads->is_number_unsigned()) {
     settings.m_generationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
+  }
+  if (const auto smoothing = j.find("segmentationSmoothing"); smoothing != j.end() && smoothing->is_object()) {
+    if (const auto value = smoothing->find("enabled"); value != smoothing->end() && value->is_boolean()) {
+      settings.m_smoothSegmentationMeshes = value->get<bool>();
+    }
+    if (const auto value = smoothing->find("iterations"); value != smoothing->end() && value->is_number_unsigned()) {
+      settings.m_segmentationSmoothingIterations = std::clamp(value->get<uint32_t>(), 1u, 1000u);
+    }
+    if (const auto value = smoothing->find("passBand"); value != smoothing->end() && value->is_number()) {
+      settings.m_segmentationSmoothingPassBand = std::clamp(value->get<float>(), 0.001f, 2.0f);
+    }
   }
   if (const auto ddp = j.find("dualDepthPeeling"); ddp != j.end() && ddp->is_object()) {
     if (const auto value = ddp->find("maxPeelPasses"); value != ddp->end() && value->is_number_unsigned()) {

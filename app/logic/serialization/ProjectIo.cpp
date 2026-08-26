@@ -89,7 +89,17 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
   }
   else if (path == "settings/rendering/mesh") {
-    preferredKeys = {"pointPicking", "clipPlane", "shadows", "ambientOcclusion", "enabled", "generationThreads"};
+    preferredKeys = {
+      "pointPicking",
+      "clipPlane",
+      "shadows",
+      "ambientOcclusion",
+      "enabled",
+      "generationThreads",
+      "segmentationSmoothing"};
+  }
+  else if (path == "settings/rendering/mesh/segmentationSmoothing") {
+    preferredKeys = {"enabled", "iterations", "passBand"};
   }
   else if (path == "settings/rendering/mesh/clipPlane") {
     preferredKeys = {"enabled", "worldPlane"};

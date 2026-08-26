@@ -36,6 +36,9 @@ struct IsosurfaceMeshEligibility
  */
 bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) noexcept;
 
+/** Return whether a render mode must use the live raycast preview for an actively edited isosurface. */
+bool useRaycastPreviewDuringIsosurfaceEdit(bool renderModeIncludesIsosurfaces, bool activeEdit) noexcept;
+
 /**
  * @brief Select the mesh compositing path for an isosurface appearance
  * @param alpha Effective non-premultiplied surface alpha

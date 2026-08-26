@@ -5,11 +5,21 @@
 namespace rendering::mesh
 {
 
-void MeshCache::markPending(MeshGeometryKey key)
+void MeshCache::markPending(MeshGeometryKey key, const uint32_t priorFailureCount)
 {
   m_entries.insert_or_assign(
     std::move(key),
-    MeshCacheEntry{.state = MeshCacheState::Pending, .mesh = std::nullopt, .diagnostics = {}});
+    MeshCacheEntry{
+      .state = MeshCacheState::Pending,
+      .mesh = std::nullopt,
+      .diagnostics = {},
+      .failureCount = priorFailureCount});
+}
+
+bool MeshCache::canRetry(const MeshGeometryKey& key, const uint32_t maximumFailureCount) const noexcept
+{
+  const MeshCacheEntry* entry = find(key);
+  return entry && entry->state == MeshCacheState::Failed && entry->failureCount < maximumFailureCount;
 }
 
 void MeshCache::storeReady(MeshExtractionResult result)
@@ -36,9 +46,24 @@ bool MeshCache::storeReadyIfPending(MeshExtractionResult result)
   return true;
 }
 
+bool MeshCache::storeEmptyIfPending(const MeshGeometryKey& key, std::vector<std::string> diagnostics)
+{
+  const auto it = m_entries.find(key);
+  if (it == m_entries.end() || it->second.state != MeshCacheState::Pending) {
+    return false;
+  }
+  it->second =
+    MeshCacheEntry{.state = MeshCacheState::Empty, .mesh = std::nullopt, .diagnostics = std::move(diagnostics)};
+  return true;
+}
+
 void MeshCache::storeFailed(MeshGeometryKey key, std::vector<std::string> diagnostics)
 {
-  MeshCacheEntry entry{.state = MeshCacheState::Failed, .mesh = std::nullopt, .diagnostics = std::move(diagnostics)};
+  MeshCacheEntry entry{
+    .state = MeshCacheState::Failed,
+    .mesh = std::nullopt,
+    .diagnostics = std::move(diagnostics),
+    .failureCount = 1};
   m_entries.insert_or_assign(std::move(key), std::move(entry));
 }
 
@@ -49,8 +74,11 @@ bool MeshCache::storeFailedIfPending(const MeshGeometryKey& key, std::vector<std
     return false;
   }
 
-  it->second =
-    MeshCacheEntry{.state = MeshCacheState::Failed, .mesh = std::nullopt, .diagnostics = std::move(diagnostics)};
+  it->second = MeshCacheEntry{
+    .state = MeshCacheState::Failed,
+    .mesh = std::nullopt,
+    .diagnostics = std::move(diagnostics),
+    .failureCount = it->second.failureCount + 1};
   return true;
 }
 

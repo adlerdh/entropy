@@ -4,14 +4,20 @@
 
 #include <cstdint>
 #include <optional>
-#include <unordered_set>
+#include <unordered_map>
 
 class Image;
 
 namespace rendering::mesh
 {
 
-using SegmentationLabelSet = std::unordered_set<int64_t>;
+struct SegmentationLabelBounds
+{
+  glm::uvec3 minVoxel{0u}; //!< Inclusive minimum source voxel containing the label
+  glm::uvec3 maxVoxel{0u}; //!< Inclusive maximum source voxel containing the label
+};
+
+using SegmentationLabelInventory = std::unordered_map<int64_t, SegmentationLabelBounds>;
 
 /**
  * @brief Collect the exact label values present in one segmentation time point.
@@ -21,8 +27,8 @@ using SegmentationLabelSet = std::unordered_set<int64_t>;
  *
  * @return Present labels, or empty when the requested image component/time point cannot be read.
  */
-std::optional<SegmentationLabelSet>
-presentSegmentationLabels(const Image& image, uint32_t component, uint32_t timePoint = 0);
+std::optional<SegmentationLabelInventory>
+segmentationLabelInventory(const Image& image, uint32_t component, uint32_t timePoint = 0);
 
 /**
  * @brief Convert one Entropy image component into a scalar grid for mesh extraction
@@ -43,12 +49,13 @@ std::optional<ScalarGrid3D> scalarGridFromImageComponent(
  *
  * Label comparison is performed against the image's native integer value before conversion to the
  * floating-point scalar-grid representation. This avoids aliasing distinct 32-bit labels that cannot
- * be represented exactly by a float.
+ * be represented exactly by a float. Only the supplied label bounds plus a one-voxel background border are allocated.
  */
 std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
   const Image& image,
   uint32_t component,
   int64_t labelValue,
+  const SegmentationLabelBounds& bounds,
   uint32_t timePoint = 0,
   MeshCoordinateSpace coordinateSpace = MeshCoordinateSpace::ImageSubject);
 

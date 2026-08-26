@@ -24,6 +24,7 @@
 #include "windowing/View.h"
 
 #include <glad/glad.h>
+#include <spdlog/fmt/ranges.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -59,6 +60,10 @@ void Rendering::reconcileExtractedMeshResources()
   rendering::mesh::MeshGeometryKeySet liveKeys;
 
   std::erase_if(m_segmentationLabelInventories, [this](const auto& entry) { return !m_appData.seg(entry.first); });
+  std::erase_if(m_pendingSegmentationLabelInventories, [this](auto& entry) {
+    return !m_appData.seg(entry.first) &&
+           entry.second.future.wait_for(std::chrono::seconds{0}) == std::future_status::ready;
+  });
 
   for (const uuids::uuid& imageUid : m_appData.imageUidsOrdered()) {
     const Image* image = m_appData.image(imageUid);
@@ -98,15 +103,21 @@ void Rendering::reconcileExtractedMeshResources()
                                     inventory->second.pixelDataRevision == segmentation->pixelDataRevision() &&
                                     inventory->second.timePoint == timePoint;
     for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
-      if (inventoryIsCurrent && !inventory->second.presentLabelValues.contains(static_cast<int64_t>(labelIndex))) {
+      if (inventoryIsCurrent && !inventory->second.labels.contains(static_cast<int64_t>(labelIndex))) {
         continue;
       }
+      const rendering::mesh::MeshGenerationOptions generationOptions{
+        .threadCount = m_appData.renderData().m_meshGenerationThreadCount,
+        .smoothLabelMeshes = m_appData.renderData().m_smoothSegmentationMeshes,
+        .smoothingIterations = m_appData.renderData().m_segmentationMeshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderData().m_segmentationMeshSmoothingPassBand};
       liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridSegmentationRequest(
         segmentationUid,
         segmentation->pixelDataRevision(),
         segmentation->geometryRevision(),
         static_cast<int64_t>(labelIndex),
-        timePoint)));
+        timePoint,
+        generationOptions)));
     }
   }
 
@@ -115,12 +126,20 @@ void Rendering::reconcileExtractedMeshResources()
     m_meshCpuCache,
     m_meshHandles,
     [this](const uuids::uuid& handleUid) { m_meshGpuStore.remove(handleUid); });
+  m_meshExtractionQueue.cancelNotIn(liveKeys);
 }
 
 void Rendering::consumeCompletedMeshExtractions()
 {
   for (rendering::mesh::MeshExtractionJobResult& result : m_meshExtractionQueue.takeCompleted()) {
-    rendering::mesh::applyExtractionJobResult(std::move(result), m_meshCpuCache);
+    const rendering::mesh::MeshExtractionRunResult applied =
+      rendering::mesh::applyExtractionJobResult(std::move(result), m_meshCpuCache);
+    if (rendering::mesh::MeshExtractionRunStatus::Failed == applied.status) {
+      spdlog::error("Mesh extraction failed for {}: {}", applied.key.sourceUid, fmt::join(applied.diagnostics, "; "));
+    }
+    else if (rendering::mesh::MeshExtractionRunStatus::Empty == applied.status) {
+      spdlog::debug("Mesh extraction produced no contour for {}", applied.key.sourceUid);
+    }
   }
 }
 

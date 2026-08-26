@@ -142,7 +142,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         color.a = effectiveOpacity;
         rendering::mesh::MeshRenderable renderable = rendering::mesh::makeIsosurfaceRenderable(
           *handle,
-          glm::mat4{1.0f},
+          image->transformations().worldDef_T_subject(),
           rendering::mesh::IsosurfaceMeshStyle{
             .material = meshMaterialForIsosurface(*surface, color),
             .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
@@ -174,7 +174,8 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
 
       const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
-      const rendering::mesh::SegmentationLabelSet* presentLabels = presentSegmentationLabels(segUid, *seg, timePoint);
+      const rendering::mesh::SegmentationLabelInventory* presentLabels =
+        presentSegmentationLabels(segUid, *seg, timePoint);
       if (!presentLabels) {
         continue;
       }
@@ -192,12 +193,18 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         if (!presentLabels->contains(labelValue)) {
           continue;
         }
+        const rendering::mesh::MeshGenerationOptions generationOptions{
+          .threadCount = m_appData.renderData().m_meshGenerationThreadCount,
+          .smoothLabelMeshes = m_appData.renderData().m_smoothSegmentationMeshes,
+          .smoothingIterations = m_appData.renderData().m_segmentationMeshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderData().m_segmentationMeshSmoothingPassBand};
         const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
           segUid,
           seg->pixelDataRevision(),
           seg->geometryRevision(),
           labelValue,
-          timePoint);
+          timePoint,
+          generationOptions);
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
         const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
         if (!handle || !m_meshCpuCache.readyMesh(key)) {
@@ -206,7 +213,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
         rendering::mesh::MeshRenderable renderable = rendering::mesh::makeSegmentationLabelRenderable(
           *handle,
-          glm::mat4{1.0f},
+          seg->transformations().worldDef_T_subject(),
           rendering::mesh::segmentationLabelMeshStyle(
             labelValue,
             normalizedLabelColor(*labelTable, labelIndex),

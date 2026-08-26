@@ -14,7 +14,6 @@
 #include <vtkFlyingEdges3D.h>
 #include <vtkImageData.h>
 #include <vtkMatrix4x4.h>
-#include <vtkMultiThreader.h>
 #include <vtkNew.h>
 #include <vtkPointData.h>
 #include <vtkPoints.h>
@@ -33,6 +32,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <mutex>
 #include <thread>
@@ -66,17 +66,35 @@ int boundedThreadCount(const std::size_t requestedThreadCount)
   return std::clamp(static_cast<int>(hardwareThreads - 2), k_minMeshGenerationThreads, halfHardwareThreads);
 }
 
-void configureVtkThreading(const MeshGenerationOptions& options)
+bool isFiniteInvertibleAffine(const glm::mat4& transform)
+{
+  for (int column = 0; column < 4; ++column) {
+    for (int row = 0; row < 4; ++row) {
+      if (!std::isfinite(transform[column][row])) {
+        return false;
+      }
+    }
+  }
+  return std::abs(glm::determinant(glm::mat3{transform})) > std::numeric_limits<float>::epsilon();
+}
+
+template<typename Callable>
+auto withVtkThreading(const MeshGenerationOptions& options, Callable&& callable) -> std::invoke_result_t<Callable>
 {
   const int threadCount = boundedThreadCount(options.threadCount);
-  vtkMultiThreader::SetGlobalMaximumNumberOfThreads(threadCount);
-  vtkMultiThreader::SetGlobalDefaultNumberOfThreads(threadCount);
-  vtkSMPTools::Initialize(threadCount);
+  std::invoke_result_t<Callable> result;
+  vtkSMPTools::LocalScope(vtkSMPTools::Config{threadCount}, [&] { result = callable(); });
+  return result;
 }
 
 vtkSmartPointer<vtkImageData> makeVtkImageData(const ScalarGrid3D& grid)
 {
-  if (!isValidScalarGrid(grid)) {
+  if (
+    !isValidScalarGrid(grid) || grid.dimensions.x > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
+    grid.dimensions.y > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
+    grid.dimensions.z > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
+    !isFiniteInvertibleAffine(grid.grid_T_voxelIndex))
+  {
     return nullptr;
   }
 
@@ -141,8 +159,10 @@ vtkAlgorithmOutput* transformToGridOutput(
   return output;
 }
 
-vtkSmartPointer<vtkPolyData>
-finalizeSurface(vtkAlgorithmOutput* sourceOutput, const ScalarGrid3D& grid, const bool smoothMesh)
+vtkSmartPointer<vtkPolyData> finalizeSurface(
+  vtkAlgorithmOutput* sourceOutput,
+  const ScalarGrid3D& grid,
+  const MeshGenerationOptions* const smoothingOptions)
 {
   if (!sourceOutput) {
     return nullptr;
@@ -164,12 +184,12 @@ finalizeSurface(vtkAlgorithmOutput* sourceOutput, const ScalarGrid3D& grid, cons
   cleanFilter->SetInputConnection(pipelineTail);
   pipelineTail = cleanFilter->GetOutputPort();
 
-  if (smoothMesh) {
+  if (smoothingOptions && smoothingOptions->smoothLabelMeshes && smoothingOptions->smoothingIterations > 0u) {
     windowedSincSmoother->SetInputConnection(pipelineTail);
-    windowedSincSmoother->SetNumberOfIterations(25);
+    windowedSincSmoother->SetNumberOfIterations(static_cast<int>(smoothingOptions->smoothingIterations));
     windowedSincSmoother->SetFeatureEdgeSmoothing(1);
     windowedSincSmoother->SetFeatureAngle(120.0);
-    windowedSincSmoother->SetPassBand(0.1);
+    windowedSincSmoother->SetPassBand(smoothingOptions->smoothingPassBand);
     windowedSincSmoother->BoundarySmoothingOff();
     windowedSincSmoother->NonManifoldSmoothingOn();
     windowedSincSmoother->NormalizeCoordinatesOn();
@@ -217,6 +237,9 @@ std::optional<MeshData> meshDataFromPolyData(vtkPolyData* polyData, const MeshCo
   for (vtkIdType pointIndex = 0; pointIndex < numPoints; ++pointIndex) {
     double point[3] = {};
     polyData->GetPoint(pointIndex, point);
+    if (!std::isfinite(point[0]) || !std::isfinite(point[1]) || !std::isfinite(point[2])) {
+      return std::nullopt;
+    }
     mesh.positions.emplace_back(
       static_cast<float>(point[0]),
       static_cast<float>(point[1]),
@@ -225,6 +248,9 @@ std::optional<MeshData> meshDataFromPolyData(vtkPolyData* polyData, const MeshCo
     if (normals && normals->GetNumberOfTuples() > pointIndex) {
       double normal[3] = {};
       normals->GetTuple(pointIndex, normal);
+      if (!std::isfinite(normal[0]) || !std::isfinite(normal[1]) || !std::isfinite(normal[2])) {
+        return std::nullopt;
+      }
       glm::vec3 n{static_cast<float>(normal[0]), static_cast<float>(normal[1]), static_cast<float>(normal[2])};
       const float length = glm::length(n);
       mesh.normals.push_back(length > 0.0f ? n / length : glm::vec3{0.0f, 0.0f, 1.0f});
@@ -249,6 +275,14 @@ std::optional<MeshData> meshDataFromPolyData(vtkPolyData* polyData, const MeshCo
       cellPoints[1] >= numPoints || cellPoints[2] >= numPoints)
     {
       return std::nullopt;
+    }
+
+    const glm::vec3 edge01 =
+      mesh.positions[static_cast<std::size_t>(cellPoints[1])] - mesh.positions[static_cast<std::size_t>(cellPoints[0])];
+    const glm::vec3 edge02 =
+      mesh.positions[static_cast<std::size_t>(cellPoints[2])] - mesh.positions[static_cast<std::size_t>(cellPoints[0])];
+    if (glm::length(glm::cross(edge01, edge02)) <= std::numeric_limits<float>::epsilon()) {
+      continue;
     }
 
     mesh.indices.push_back(static_cast<uint32_t>(cellPoints[0]));
@@ -276,68 +310,75 @@ std::optional<MeshData> generateCrosshairsAxisMesh(const double coneLengthRatio)
 std::optional<MeshData>
 generateIsoSurfaceMesh(const ScalarGrid3D& grid, const double isoValue, const MeshGenerationOptions& options)
 {
+  if (!std::isfinite(isoValue)) {
+    return std::nullopt;
+  }
   std::scoped_lock lock(vtkMeshGenerationMutex());
-  configureVtkThreading(options);
+  return withVtkThreading(options, [&]() -> std::optional<MeshData> {
+    vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(grid);
+    if (!imageData) {
+      return std::nullopt;
+    }
 
-  vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(grid);
-  if (!imageData) {
-    return std::nullopt;
-  }
+    vtkNew<vtkFlyingEdges3D> flyingEdges;
+    flyingEdges->SetInputData(imageData);
+    flyingEdges->ComputeNormalsOff();
+    flyingEdges->ComputeScalarsOff();
+    flyingEdges->ComputeGradientsOff();
+    flyingEdges->SetNumberOfContours(1);
+    flyingEdges->SetValue(0, isoValue);
+    flyingEdges->Update();
+    if (!flyingEdges->GetOutput() || flyingEdges->GetOutput()->GetNumberOfPolys() <= 0) {
+      return std::nullopt;
+    }
 
-  vtkNew<vtkFlyingEdges3D> flyingEdges;
-  flyingEdges->SetInputData(imageData);
-  flyingEdges->ComputeNormalsOff();
-  flyingEdges->ComputeScalarsOff();
-  flyingEdges->ComputeGradientsOff();
-  flyingEdges->SetNumberOfContours(1);
-  flyingEdges->SetValue(0, isoValue);
-  flyingEdges->Update();
-  if (!flyingEdges->GetOutput() || flyingEdges->GetOutput()->GetNumberOfPolys() <= 0) {
-    return std::nullopt;
-  }
-
-  vtkNew<vtkTrivialProducer> source;
-  source->SetOutput(flyingEdges->GetOutput());
-
-  vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, false);
-  return meshDataFromPolyData(polyData, grid.coordinateSpace);
+    vtkNew<vtkTrivialProducer> source;
+    source->SetOutput(flyingEdges->GetOutput());
+    vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, nullptr);
+    return meshDataFromPolyData(polyData, grid.coordinateSpace);
+  });
 }
 
 std::optional<MeshData>
-generateLabelMesh(const ScalarGrid3D& grid, const int64_t labelValue, const MeshGenerationOptions& options)
+generateDiscreteLabelSurface(const ScalarGrid3D& grid, const int64_t labelValue, const MeshGenerationOptions& options)
 {
   if (
     labelValue < static_cast<int64_t>(std::numeric_limits<int>::min()) ||
-    labelValue > static_cast<int64_t>(std::numeric_limits<int>::max()))
+    labelValue > static_cast<int64_t>(std::numeric_limits<int>::max()) || options.smoothingIterations > 1000u ||
+    !std::isfinite(options.smoothingPassBand) || options.smoothingPassBand <= 0.0 || options.smoothingPassBand > 2.0)
   {
     return std::nullopt;
   }
 
   std::scoped_lock lock(vtkMeshGenerationMutex());
-  configureVtkThreading(options);
+  return withVtkThreading(options, [&]() -> std::optional<MeshData> {
+    vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(grid);
+    if (!imageData) {
+      return std::nullopt;
+    }
 
-  vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(grid);
-  if (!imageData) {
-    return std::nullopt;
-  }
+    vtkNew<vtkDiscreteFlyingEdges3D> flyingEdges;
+    flyingEdges->SetInputData(imageData);
+    flyingEdges->ComputeNormalsOff();
+    flyingEdges->ComputeScalarsOff();
+    flyingEdges->ComputeGradientsOff();
+    flyingEdges->SetNumberOfContours(1);
+    flyingEdges->SetValue(0, static_cast<double>(labelValue));
+    flyingEdges->Update();
+    if (!flyingEdges->GetOutput() || flyingEdges->GetOutput()->GetNumberOfPolys() <= 0) {
+      return std::nullopt;
+    }
 
-  vtkNew<vtkDiscreteFlyingEdges3D> flyingEdges;
-  flyingEdges->SetInputData(imageData);
-  flyingEdges->ComputeNormalsOff();
-  flyingEdges->ComputeScalarsOff();
-  flyingEdges->ComputeGradientsOff();
-  flyingEdges->SetNumberOfContours(1);
-  flyingEdges->SetValue(0, static_cast<double>(labelValue));
-  flyingEdges->Update();
-  if (!flyingEdges->GetOutput() || flyingEdges->GetOutput()->GetNumberOfPolys() <= 0) {
-    return std::nullopt;
-  }
+    vtkNew<vtkTrivialProducer> source;
+    source->SetOutput(flyingEdges->GetOutput());
+    vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, &options);
+    return meshDataFromPolyData(polyData, grid.coordinateSpace);
+  });
+}
 
-  vtkNew<vtkTrivialProducer> source;
-  source->SetOutput(flyingEdges->GetOutput());
-
-  vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, true);
-  return meshDataFromPolyData(polyData, grid.coordinateSpace);
+std::optional<MeshData> generateBinaryMaskSurface(const ScalarGrid3D& grid, const MeshGenerationOptions& options)
+{
+  return generateDiscreteLabelSurface(grid, 1, options);
 }
 
 } // namespace rendering::mesh

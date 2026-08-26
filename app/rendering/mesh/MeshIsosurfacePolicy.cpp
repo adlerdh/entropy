@@ -14,6 +14,11 @@ bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) n
   return !eligibility.renderWarped && !eligibility.valueEditInProgress;
 }
 
+bool useRaycastPreviewDuringIsosurfaceEdit(const bool renderModeIncludesIsosurfaces, const bool activeEdit) noexcept
+{
+  return renderModeIncludesIsosurfaces && activeEdit;
+}
+
 MeshCompositingMode compositingModeForIsosurfaceAlpha(
   const float alpha,
   const bool rimLightingEnabled,

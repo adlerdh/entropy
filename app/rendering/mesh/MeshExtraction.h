@@ -19,6 +19,7 @@ enum class MeshCacheState
 {
   Pending,
   Ready,
+  Empty,
   Failed,
   Stale,
   Evicted

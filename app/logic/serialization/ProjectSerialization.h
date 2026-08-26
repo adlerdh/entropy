@@ -241,6 +241,9 @@ struct ProjectMeshRenderingSettings
 {
   bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
   uint32_t m_generationThreadCount = 0;               //!< Maximum VTK threads for one CPU mesh extraction job
+  bool m_smoothSegmentationMeshes = true;             //!< Smooth extracted segmentation-label surfaces
+  uint32_t m_segmentationSmoothingIterations = 25;    //!< Windowed-sinc smoothing iterations
+  float m_segmentationSmoothingPassBand = 0.1f;       //!< Windowed-sinc smoothing pass band
   uint32_t m_ddpMaxPeelPasses = 5;                    //!< DDP safety/fixed front-back peel iteration count
   bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
   bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane

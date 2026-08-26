@@ -4,6 +4,7 @@
 #include "image/Image.h"
 #include "image/ImageHeader.h"
 #include "image/ImageIoInfo.h"
+#include "image/ImageTransformations.h"
 #include "image/ImageTypes.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshBounds.h"
@@ -47,21 +48,26 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <vtkMultiThreader.h>
+
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <limits>
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -80,6 +86,23 @@ mesh::MeshData makeTriangleMesh()
     .colors = std::nullopt,
     .textureCoords = std::nullopt,
     .coordinateSpace = mesh::MeshCoordinateSpace::ImageSubject};
+}
+
+bool isClosedTriangleMesh(const mesh::MeshData& meshData)
+{
+  std::unordered_map<uint64_t, std::size_t> edgeUseCounts;
+  const auto addEdge = [&edgeUseCounts](const uint32_t a, const uint32_t b) {
+    const uint32_t low = std::min(a, b);
+    const uint32_t high = std::max(a, b);
+    ++edgeUseCounts[(static_cast<uint64_t>(low) << 32u) | high];
+  };
+  for (std::size_t i = 0; i + 2u < meshData.indices.size(); i += 3u) {
+    addEdge(meshData.indices[i], meshData.indices[i + 1u]);
+    addEdge(meshData.indices[i + 1u], meshData.indices[i + 2u]);
+    addEdge(meshData.indices[i + 2u], meshData.indices[i]);
+  }
+  return !edgeUseCounts.empty() &&
+         std::ranges::all_of(edgeUseCounts, [](const auto& edge) { return edge.second == 2u; });
 }
 
 mesh::ScalarGrid3D makePlanarScalarGrid()
@@ -1212,6 +1235,13 @@ TEST_CASE("isosurface mesh policy keeps raycast-only states on the raycast path"
   CHECK_FALSE(mesh::canRenderIsosurfaceWithMesh({.opacity = 1.0f, .visible = false}));
 }
 
+TEST_CASE("active isosurface edits retain a raycast preview in combined surface mode", "[rendering][mesh]")
+{
+  CHECK(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, true));
+  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, false));
+  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(false, true));
+}
+
 TEST_CASE("isosurface mesh policy uses DDP for translucent surfaces", "[rendering][mesh]")
 {
   CHECK(mesh::compositingModeForIsosurfaceAlpha(1.0f) == mesh::MeshCompositingMode::Opaque);
@@ -1298,7 +1328,7 @@ TEST_CASE("scalar-grid segmentation policy builds stable extraction requests", "
   CHECK(request.labelValue == 5);
   CHECK(request.timePoint == 7);
   CHECK(request.algorithm == mesh::kScalarGridSegmentationAlgorithm);
-  CHECK(request.algorithmVersion == mesh::kScalarGridSegmentationAlgorithmVersion);
+  CHECK(request.algorithmVersion != 0u);
 
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
   CHECK(key.sourceUid == segmentationUid);
@@ -1308,7 +1338,13 @@ TEST_CASE("scalar-grid segmentation policy builds stable extraction requests", "
   CHECK(*key.labelValue == 5);
   CHECK(key.timePoint == 7);
   CHECK(key.extractionAlgorithm == mesh::kScalarGridSegmentationAlgorithm);
-  CHECK(key.extractionAlgorithmVersion == mesh::kScalarGridSegmentationAlgorithmVersion);
+  CHECK(key.extractionAlgorithmVersion == request.algorithmVersion);
+
+  const mesh::SegmentationMeshRequest same = mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7);
+  const mesh::SegmentationMeshRequest differentSmoothing =
+    mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7, {.smoothingIterations = 40});
+  CHECK(same.algorithmVersion == request.algorithmVersion);
+  CHECK(differentSmoothing.algorithmVersion != request.algorithmVersion);
 }
 
 TEST_CASE("mesh cache stores pending, ready, failed, stale, and evicted states", "[rendering][mesh]")
@@ -1404,6 +1440,24 @@ TEST_CASE("mesh cache failed entries preserve diagnostics without ready mesh dat
   CHECK(!entry->mesh);
   CHECK(!cache.readyMesh(key));
   CHECK(entry->diagnostics == std::vector<std::string>{"empty contour", "threshold outside data range"});
+}
+
+TEST_CASE("mesh cache bounds automatic retries and preserves the attempt count", "[rendering][mesh]")
+{
+  mesh::MeshGeometryKey key{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "retry-test"};
+  mesh::MeshCache cache;
+
+  cache.markPending(key);
+  REQUIRE(cache.storeFailedIfPending(key, {"first failure"}));
+  REQUIRE(cache.canRetry(key));
+  REQUIRE(cache.find(key));
+  CHECK(cache.find(key)->failureCount == 1u);
+
+  cache.markPending(key, cache.find(key)->failureCount);
+  REQUIRE(cache.storeFailedIfPending(key, {"second failure"}));
+  CHECK_FALSE(cache.canRetry(key));
+  REQUIRE(cache.find(key));
+  CHECK(cache.find(key)->failureCount == 2u);
 }
 
 TEST_CASE("mesh cache rejects stale async completion results", "[rendering][mesh]")
@@ -1516,6 +1570,78 @@ TEST_CASE("mesh extraction queue respects the active job limit", "[rendering][me
       .result = mesh::MeshExtractionResult{.key = secondKey, .mesh = makeTriangleMesh(), .diagnostics = {}},
       .diagnostics = {}};
   }));
+}
+
+TEST_CASE("mesh extraction scheduler serializes jobs and cancels obsolete pending work", "[rendering][mesh]")
+{
+  mesh::MeshGeometryKey firstKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "first"};
+  mesh::MeshGeometryKey cancelledKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "cancelled"};
+  mesh::MeshGeometryKey retainedKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "retained"};
+  mesh::MeshGeometryKey rejectedKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "rejected"};
+
+  std::mutex mutex;
+  std::condition_variable condition;
+  bool firstStarted = false;
+  bool releaseFirst = false;
+  int concurrentJobs = 0;
+  int maxConcurrentJobs = 0;
+  const auto job = [&](const mesh::MeshGeometryKey& key, const bool wait) {
+    return [&, key, wait] {
+      std::unique_lock lock(mutex);
+      ++concurrentJobs;
+      maxConcurrentJobs = std::max(maxConcurrentJobs, concurrentJobs);
+      if (wait) {
+        firstStarted = true;
+        condition.notify_all();
+        condition.wait(lock, [&] { return releaseFirst; });
+      }
+      --concurrentJobs;
+      return mesh::MeshExtractionJobResult{
+        .key = key,
+        .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}}};
+    };
+  };
+
+  mesh::MeshExtractionQueue queue{3};
+  REQUIRE(queue.submit(firstKey, "first", job(firstKey, true)));
+  {
+    std::unique_lock lock(mutex);
+    REQUIRE(condition.wait_for(lock, std::chrono::seconds{1}, [&] { return firstStarted; }));
+  }
+  REQUIRE(queue.submit(cancelledKey, "cancelled", job(cancelledKey, false)));
+  REQUIRE(queue.submit(retainedKey, "retained", job(retainedKey, false)));
+  CHECK_FALSE(queue.canSubmit(rejectedKey));
+  CHECK(queue.cancelNotIn(mesh::MeshGeometryKeySet{firstKey, retainedKey}) == 1u);
+  CHECK_FALSE(queue.active(cancelledKey));
+
+  {
+    std::scoped_lock lock(mutex);
+    releaseFirst = true;
+  }
+  condition.notify_all();
+
+  const std::vector<mesh::MeshExtractionJobResult> completed = waitForCompleted(queue);
+  CHECK(completed.size() == 2u);
+  CHECK(maxConcurrentJobs == 1);
+  CHECK(std::ranges::none_of(completed, [&](const auto& result) { return result.key == cancelledKey; }));
+}
+
+TEST_CASE("mesh extraction cache distinguishes an empty contour from failure", "[rendering][mesh]")
+{
+  mesh::MeshGeometryKey key{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "empty"};
+  mesh::MeshCache cache;
+  cache.markPending(key);
+  const mesh::MeshExtractionRunResult result = mesh::applyExtractionJobResult(
+    {.key = key, .result = std::nullopt, .empty = true, .diagnostics = {"outside scalar range"}},
+    cache);
+
+  CHECK(result.status == mesh::MeshExtractionRunStatus::Empty);
+  const mesh::MeshCacheEntry* entry = cache.find(key);
+  REQUIRE(entry);
+  CHECK(entry->state == mesh::MeshCacheState::Empty);
+  CHECK_FALSE(cache.readyMesh(key));
+  CHECK_FALSE(cache.canRetry(key));
+  CHECK(entry->diagnostics == std::vector<std::string>{"outside scalar range"});
 }
 
 TEST_CASE("mesh extraction queue converts worker exceptions into failed results", "[rendering][mesh]")
@@ -1786,16 +1912,64 @@ TEST_CASE("image component adapter creates scalar grids with image geometry", "[
   CHECK_FALSE(mesh::scalarGridFromImageComponent(image, 1));
 }
 
+TEST_CASE("image mesh geometry stays in subject space while live transforms map it to world", "[rendering][mesh]")
+{
+  Image image = makeMeshScalarImage();
+  const std::optional<mesh::ScalarGrid3D> subjectGridBefore =
+    mesh::scalarGridFromImageComponent(image, 0, 0, mesh::MeshCoordinateSpace::ImageSubject);
+  REQUIRE(subjectGridBefore);
+
+  image.transformations().set_enable_worldDef_T_affine(true);
+  image.transformations().set_worldDef_T_affine_translation(glm::vec3{100.0f, -50.0f, 25.0f});
+
+  const std::optional<mesh::ScalarGrid3D> subjectGridAfter =
+    mesh::scalarGridFromImageComponent(image, 0, 0, mesh::MeshCoordinateSpace::ImageSubject);
+  const std::optional<mesh::ScalarGrid3D> worldGrid =
+    mesh::scalarGridFromImageComponent(image, 0, 0, mesh::MeshCoordinateSpace::World);
+  REQUIRE(subjectGridAfter);
+  REQUIRE(worldGrid);
+  CHECK(subjectGridAfter->grid_T_voxelIndex == subjectGridBefore->grid_T_voxelIndex);
+  CHECK(worldGrid->grid_T_voxelIndex == image.transformations().worldDef_T_pixel());
+
+  const glm::vec4 subjectPoint = subjectGridAfter->grid_T_voxelIndex * glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  const glm::vec4 transformedByRenderable = image.transformations().worldDef_T_subject() * subjectPoint;
+  const glm::vec4 directlyInWorld = worldGrid->grid_T_voxelIndex * glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  requireVec3(glm::vec3{transformedByRenderable}, directlyInWorld.x, directlyInWorld.y, directlyInWorld.z);
+}
+
 TEST_CASE("image label adapter preserves exact 32-bit label identity", "[rendering][mesh]")
 {
   constexpr int64_t targetLabel = 16'777'217;
   const Image image = makeMeshLabelImage();
-  const std::optional<mesh::ScalarGrid3D> grid = mesh::labelMaskGridFromImageComponent(image, 0, targetLabel);
+  const std::optional<mesh::SegmentationLabelInventory> inventory = mesh::segmentationLabelInventory(image, 0);
+  REQUIRE(inventory);
+  REQUIRE(inventory->contains(targetLabel));
+  const std::optional<mesh::ScalarGrid3D> grid =
+    mesh::labelMaskGridFromImageComponent(image, 0, targetLabel, inventory->at(targetLabel));
 
   REQUIRE(grid);
-  CHECK(grid->values[mesh::scalarGridValueIndex(grid->dimensions, 0, 0, 0)] == 1.0f);
-  CHECK(grid->values[mesh::scalarGridValueIndex(grid->dimensions, 1, 0, 0)] == 0.0f);
-  REQUIRE(mesh::generateLabelMesh(*grid, 1));
+  CHECK(grid->dimensions == glm::uvec3{3, 4, 4});
+  CHECK(grid->values[mesh::scalarGridValueIndex(grid->dimensions, 1, 1, 1)] == 1.0f);
+  CHECK(grid->values[mesh::scalarGridValueIndex(grid->dimensions, 0, 1, 1)] == 0.0f);
+  REQUIRE(mesh::generateBinaryMaskSurface(*grid));
+}
+
+TEST_CASE("cropped segmentation masks add background padding and close volume-edge labels", "[rendering][mesh]")
+{
+  constexpr int64_t targetLabel = 16'777'217;
+  const Image image = makeMeshLabelImage();
+  const auto inventory = mesh::segmentationLabelInventory(image, 0);
+  REQUIRE(inventory);
+  REQUIRE(inventory->contains(targetLabel));
+  const auto grid = mesh::labelMaskGridFromImageComponent(image, 0, targetLabel, inventory->at(targetLabel));
+  REQUIRE(grid);
+
+  mesh::MeshGenerationOptions options;
+  options.smoothLabelMeshes = false;
+  const std::optional<mesh::MeshData> meshData = mesh::generateBinaryMaskSurface(*grid, options);
+  REQUIRE(meshData);
+  CHECK(mesh::isValidMeshData(*meshData));
+  CHECK(isClosedTriangleMesh(*meshData));
 }
 
 TEST_CASE("segmentation label inventory contains only values present in the volume", "[rendering][mesh]")
@@ -1804,19 +1978,21 @@ TEST_CASE("segmentation label inventory contains only values present in the volu
   constexpr int64_t adjacentLabel = 16'777'216;
   const Image image = makeMeshLabelImage();
 
-  const std::optional<mesh::SegmentationLabelSet> labels = mesh::presentSegmentationLabels(image, 0);
+  const std::optional<mesh::SegmentationLabelInventory> labels = mesh::segmentationLabelInventory(image, 0);
 
   REQUIRE(labels);
   CHECK(labels->size() == 2);
   CHECK(labels->contains(targetLabel));
   CHECK(labels->contains(adjacentLabel));
   CHECK_FALSE(labels->contains(1));
-  CHECK_FALSE(mesh::presentSegmentationLabels(image, 1));
+  CHECK(labels->at(targetLabel).minVoxel == glm::uvec3{0, 0, 0});
+  CHECK(labels->at(targetLabel).maxVoxel == glm::uvec3{0, 1, 1});
+  CHECK_FALSE(mesh::segmentationLabelInventory(image, 1));
 }
 
 TEST_CASE("scalar-grid segmentation extraction creates the requested label surface", "[rendering][mesh]")
 {
-  const std::optional<mesh::MeshData> meshData = mesh::generateLabelMesh(makeBinaryLabelGrid(), 7);
+  const std::optional<mesh::MeshData> meshData = mesh::generateDiscreteLabelSurface(makeBinaryLabelGrid(), 7);
 
   REQUIRE(meshData);
   CHECK(mesh::isValidMeshData(*meshData));
@@ -1825,7 +2001,37 @@ TEST_CASE("scalar-grid segmentation extraction creates the requested label surfa
     CHECK(position.x == Catch::Approx(0.5f));
   }
 
-  CHECK_FALSE(mesh::generateLabelMesh(makeBinaryLabelGrid(), 99));
+  CHECK_FALSE(mesh::generateDiscreteLabelSurface(makeBinaryLabelGrid(), 99));
+}
+
+TEST_CASE("mesh generation rejects invalid numerical and smoothing options", "[rendering][mesh]")
+{
+  CHECK_FALSE(mesh::generateIsoSurfaceMesh(makePlanarScalarGrid(), std::numeric_limits<double>::quiet_NaN()));
+
+  mesh::ScalarGrid3D singularGrid = makePlanarScalarGrid();
+  singularGrid.grid_T_voxelIndex = glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f, 0.0f, 1.0f});
+  CHECK_FALSE(mesh::generateIsoSurfaceMesh(singularGrid, 0.5));
+  mesh::ScalarGrid3D nonFiniteGrid = makePlanarScalarGrid();
+  nonFiniteGrid.grid_T_voxelIndex[0][0] = std::numeric_limits<float>::infinity();
+  CHECK_FALSE(mesh::generateIsoSurfaceMesh(nonFiniteGrid, 0.5));
+
+  mesh::MeshGenerationOptions options;
+  options.smoothingPassBand = 0.0;
+  CHECK_FALSE(mesh::generateDiscreteLabelSurface(makeBinaryLabelGrid(), 7, options));
+  options.smoothingPassBand = 0.1;
+  options.smoothingIterations = 1001;
+  CHECK_FALSE(mesh::generateDiscreteLabelSurface(makeBinaryLabelGrid(), 7, options));
+}
+
+TEST_CASE("mesh generation thread limits do not mutate process-global VTK thread settings", "[rendering][mesh]")
+{
+  const int maximumBefore = vtkMultiThreader::GetGlobalMaximumNumberOfThreads();
+  const int defaultBefore = vtkMultiThreader::GetGlobalDefaultNumberOfThreads();
+  mesh::MeshGenerationOptions options;
+  options.threadCount = 1;
+  REQUIRE(mesh::generateIsoSurfaceMesh(makePlanarScalarGrid(), 0.5, options));
+  CHECK(vtkMultiThreader::GetGlobalMaximumNumberOfThreads() == maximumBefore);
+  CHECK(vtkMultiThreader::GetGlobalDefaultNumberOfThreads() == defaultBefore);
 }
 
 TEST_CASE("mesh cube primitive creates valid flat-shaded geometry", "[rendering][mesh]")

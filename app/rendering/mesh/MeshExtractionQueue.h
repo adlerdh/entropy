@@ -4,10 +4,15 @@
 #include "rendering/mesh/MeshExtractionRunner.h"
 
 #include <cstddef>
+#include <condition_variable>
+#include <deque>
 #include <functional>
-#include <future>
+#include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace rendering::mesh
@@ -23,6 +28,7 @@ struct MeshExtractionJobResult
 {
   MeshGeometryKey key;                        //!< Geometry key requested by the owner
   std::optional<MeshExtractionResult> result; //!< Extracted mesh, or empty on failure
+  bool empty = false;                         //!< Successful extraction with no contour for the requested value
   std::vector<std::string> diagnostics;       //!< Failure or warning messages
 };
 
@@ -32,7 +38,7 @@ struct MeshExtractionJobResult
 using MeshExtractionJob = std::function<MeshExtractionJobResult()>;
 
 /**
- * @brief Small CPU extraction queue with duplicate-key suppression
+ * @brief Bounded single-worker CPU extraction scheduler with duplicate-key suppression
  *
  * The queue owns asynchronous CPU jobs only. It does not own OpenGL objects and does not mutate the mesh cache from
  * worker threads.
@@ -44,7 +50,11 @@ public:
    * @brief Construct a queue with a conservative active-job limit
    * @param maxActiveJobs Maximum queued/running jobs. Values below one are clamped to one.
    */
-  explicit MeshExtractionQueue(std::size_t maxActiveJobs = 1);
+  explicit MeshExtractionQueue(std::size_t maxActiveJobs = 64);
+  ~MeshExtractionQueue();
+
+  MeshExtractionQueue(const MeshExtractionQueue&) = delete;
+  MeshExtractionQueue& operator=(const MeshExtractionQueue&) = delete;
 
   /**
    * @brief Queue one extraction job unless the key is already active
@@ -55,6 +65,12 @@ public:
    * @throw Propagates allocation failures or `std::async` launch failures
    */
   bool submit(MeshGeometryKey key, std::string description, MeshExtractionJob job);
+
+  /** Return whether a distinct job can be accepted before its expensive snapshot is constructed. */
+  bool canSubmit(const MeshGeometryKey& key) const;
+
+  /** Cancel queued work whose geometry is no longer represented by application state. */
+  std::size_t cancelNotIn(const std::unordered_set<MeshGeometryKey, MeshGeometryKeyHash>& liveKeys);
 
   /**
    * @brief Move finished job results out of the queue
@@ -74,7 +90,7 @@ public:
    * @brief Return the number of queued or running jobs
    * @return Active job count
    */
-  std::size_t activeCount() const noexcept;
+  std::size_t activeCount() const;
 
   /**
    * @brief Return descriptions for queued or running jobs
@@ -87,24 +103,33 @@ public:
    * @brief Return the maximum number of queued or running jobs
    * @return Active-job limit
    */
-  std::size_t maxActiveJobs() const noexcept;
+  std::size_t maxActiveJobs() const;
 
   /**
    * @brief Set the maximum number of queued or running jobs
    * @param maxActiveJobs Active-job limit. Values below one are clamped to one.
    */
-  void setMaxActiveJobs(std::size_t maxActiveJobs) noexcept;
+  void setMaxActiveJobs(std::size_t maxActiveJobs);
 
 private:
-  struct ActiveJob
+  struct ScheduledJob
   {
     MeshGeometryKey key;
     std::string description;
-    std::future<MeshExtractionJobResult> future;
+    MeshExtractionJob job;
   };
 
-  std::vector<ActiveJob> m_activeJobs;
-  std::size_t m_maxActiveJobs = 1;
+  void run();
+
+  mutable std::mutex m_mutex;
+  std::condition_variable_any m_workAvailable;
+  std::deque<ScheduledJob> m_pendingJobs;
+  std::deque<MeshExtractionJobResult> m_completedJobs;
+  std::unordered_map<MeshGeometryKey, std::string, MeshGeometryKeyHash> m_activeJobs;
+  std::optional<MeshGeometryKey> m_runningKey;
+  std::size_t m_maxActiveJobs = 64;
+  bool m_stopping = false;
+  std::thread m_worker;
 };
 
 /**

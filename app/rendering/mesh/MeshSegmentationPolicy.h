@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 
 #include <glm/vec4.hpp>
@@ -18,7 +19,7 @@ inline constexpr const char* kScalarGridSegmentationAlgorithm = "scalar-grid-vtk
 /**
  * @brief Version for the built-in scalar-grid segmentation-label extractor
  */
-inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 1;
+inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 2;
 
 /**
  * @brief User-facing label-table state needed to decide if a segmentation label should render as a mesh
@@ -74,6 +75,7 @@ SegmentationMeshRequest makeScalarGridSegmentationRequest(
   uint64_t segmentationDataVersion,
   uint64_t segmentationGeometryVersion,
   int64_t labelValue,
-  uint32_t timePoint);
+  uint32_t timePoint,
+  const MeshGenerationOptions& generationOptions = {});
 
 } // namespace rendering::mesh

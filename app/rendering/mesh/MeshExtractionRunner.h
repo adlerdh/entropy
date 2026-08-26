@@ -15,6 +15,7 @@ namespace rendering::mesh
 enum class MeshExtractionRunStatus
 {
   Ready,
+  Empty,
   Failed,
   Stale
 };

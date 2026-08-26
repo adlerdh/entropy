@@ -736,6 +736,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/mesh/MeshDdpPolicy.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshDdpResources.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtraction.cpp"
+  "${entropy_APP_DIR}/rendering/mesh/MeshExtractionJobs.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionQueue.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionRunner.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshGeneration.cpp"

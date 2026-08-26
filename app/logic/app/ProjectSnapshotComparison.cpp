@@ -317,6 +317,9 @@ bool meshRenderingSettingsEqual(
   const serialize::ProjectMeshRenderingSettings& b)
 {
   return a.m_renderingEnabled == b.m_renderingEnabled && a.m_generationThreadCount == b.m_generationThreadCount &&
+         a.m_smoothSegmentationMeshes == b.m_smoothSegmentationMeshes &&
+         a.m_segmentationSmoothingIterations == b.m_segmentationSmoothingIterations &&
+         a.m_segmentationSmoothingPassBand == b.m_segmentationSmoothingPassBand &&
          a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses && a.m_pickingEnabled == b.m_pickingEnabled &&
          a.m_clipPlaneEnabled == b.m_clipPlaneEnabled && a.m_clipPlaneWorld == b.m_clipPlaneWorld &&
          a.m_shadowsEnabled == b.m_shadowsEnabled && a.m_shadowMapSizePixels == b.m_shadowMapSizePixels &&

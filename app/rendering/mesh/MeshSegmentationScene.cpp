@@ -6,6 +6,7 @@
 #include "logic/app/ParcellationLabelTable.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtractionJobs.h"
 #include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
@@ -20,7 +21,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <chrono>
 #include <format>
+#include <future>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -68,7 +71,7 @@ std::string segmentationMeshDescription(
 
 } // namespace
 
-const rendering::mesh::SegmentationLabelSet* Rendering::presentSegmentationLabels(
+const rendering::mesh::SegmentationLabelInventory* Rendering::presentSegmentationLabels(
   const uuids::uuid& segmentationUid,
   const Image& segmentation,
   const uint32_t timePoint)
@@ -78,23 +81,42 @@ const rendering::mesh::SegmentationLabelSet* Rendering::presentSegmentationLabel
       existing != m_segmentationLabelInventories.end() && existing->second.pixelDataRevision == pixelDataRevision &&
       existing->second.timePoint == timePoint)
   {
-    return &existing->second.presentLabelValues;
+    return &existing->second.labels;
   }
 
-  std::optional<rendering::mesh::SegmentationLabelSet> labels =
-    rendering::mesh::presentSegmentationLabels(segmentation, 0, timePoint);
-  if (!labels) {
-    return nullptr;
+  if (auto pending = m_pendingSegmentationLabelInventories.find(segmentationUid);
+      pending != m_pendingSegmentationLabelInventories.end())
+  {
+    if (pending->second.future.wait_for(std::chrono::seconds{0}) != std::future_status::ready) {
+      return nullptr;
+    }
+
+    std::optional<rendering::mesh::SegmentationLabelInventory> labels = pending->second.future.get();
+    const bool isCurrent =
+      pending->second.pixelDataRevision == pixelDataRevision && pending->second.timePoint == timePoint;
+    m_pendingSegmentationLabelInventories.erase(pending);
+    if (isCurrent && labels) {
+      auto [inventory, inserted] = m_segmentationLabelInventories.insert_or_assign(
+        segmentationUid,
+        SegmentationLabelInventory{
+          .pixelDataRevision = pixelDataRevision,
+          .timePoint = timePoint,
+          .labels = std::move(*labels)});
+      static_cast<void>(inserted);
+      return &inventory->second.labels;
+    }
   }
 
-  auto [inventory, inserted] = m_segmentationLabelInventories.insert_or_assign(
+  std::shared_ptr<const Image> snapshot = std::make_shared<Image>(segmentation);
+  m_pendingSegmentationLabelInventories.insert_or_assign(
     segmentationUid,
-    SegmentationLabelInventory{
+    PendingSegmentationLabelInventory{
       .pixelDataRevision = pixelDataRevision,
       .timePoint = timePoint,
-      .presentLabelValues = std::move(*labels)});
-  static_cast<void>(inserted);
-  return &inventory->second.presentLabelValues;
+      .future = std::async(std::launch::async, [snapshot, timePoint] {
+        return rendering::mesh::segmentationLabelInventory(*snapshot, 0, timePoint);
+      })});
+  return nullptr;
 }
 
 bool Rendering::renderSegmentationMeshesForView(
@@ -135,7 +157,8 @@ bool Rendering::renderSegmentationMeshesForView(
     }
 
     const uint32_t timePoint = seg->timeAxis().clamp(seg->settings().activeTimePoint());
-    const rendering::mesh::SegmentationLabelSet* presentLabels = presentSegmentationLabels(segUid, *seg, timePoint);
+    const rendering::mesh::SegmentationLabelInventory* presentLabels =
+      presentSegmentationLabels(segUid, *seg, timePoint);
     if (!presentLabels) {
       continue;
     }
@@ -152,57 +175,44 @@ bool Rendering::renderSegmentationMeshesForView(
       }
 
       const int64_t labelValue = static_cast<int64_t>(labelIndex);
-      if (!presentLabels->contains(labelValue)) {
+      const auto labelInfo = presentLabels->find(labelValue);
+      if (labelInfo == presentLabels->end()) {
         continue;
       }
+      const rendering::mesh::MeshGenerationOptions generationOptions{
+        .threadCount = m_appData.renderData().m_meshGenerationThreadCount,
+        .smoothLabelMeshes = m_appData.renderData().m_smoothSegmentationMeshes,
+        .smoothingIterations = m_appData.renderData().m_segmentationMeshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderData().m_segmentationMeshSmoothingPassBand};
       const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
         segUid,
         seg->pixelDataRevision(),
         seg->geometryRevision(),
         labelValue,
-        timePoint);
-      const rendering::mesh::MeshGenerationOptions generationOptions{
-        .threadCount = m_appData.renderData().m_meshGenerationThreadCount};
+        timePoint,
+        generationOptions);
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
       const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
 
       if (!m_meshCpuCache.readyMesh(key)) {
-        if (!m_meshCpuCache.contains(key) && !m_meshExtractionQueue.active(key)) {
+        const rendering::mesh::MeshCacheEntry* cacheEntry = m_meshCpuCache.find(key);
+        const bool retry = m_meshCpuCache.canRetry(key);
+        if ((!cacheEntry || retry) && m_meshExtractionQueue.canSubmit(key)) {
           if (!segmentationSnapshot) {
             segmentationSnapshot = std::make_shared<Image>(*seg);
           }
 
           const std::string description = segmentationMeshDescription(*seg, *labelTable, labelIndex);
-          if (m_meshExtractionQueue
-                .submit(key, description, [request, key, generationOptions, segmentationSnapshot]() mutable {
-                  std::optional<rendering::mesh::ScalarGrid3D> grid = rendering::mesh::labelMaskGridFromImageComponent(
-                    *segmentationSnapshot,
-                    0,
-                    request.labelValue,
-                    request.timePoint,
-                    rendering::mesh::MeshCoordinateSpace::World);
-                  if (!grid) {
-                    return rendering::mesh::MeshExtractionJobResult{
-                      .key = key,
-                      .result = std::nullopt,
-                      .diagnostics = {std::string{"No segmentation label grid could be created"}}};
-                  }
-
-                  std::optional<rendering::mesh::MeshData> mesh =
-                    rendering::mesh::generateLabelMesh(*grid, 1, generationOptions);
-                  if (!mesh) {
-                    return rendering::mesh::MeshExtractionJobResult{
-                      .key = key,
-                      .result = std::nullopt,
-                      .diagnostics = {std::string{"No segmentation label mesh could be extracted"}}};
-                  }
-
-                  return rendering::mesh::MeshExtractionJobResult{
-                    .key = key,
-                    .result = rendering::mesh::MeshExtractionResult{.key = key, .mesh = std::move(*mesh)}};
-                }))
+          if (m_meshExtractionQueue.submit(
+                key,
+                description,
+                rendering::mesh::makeSegmentationExtractionJob(
+                  request,
+                  labelInfo->second,
+                  generationOptions,
+                  segmentationSnapshot)))
           {
-            m_meshCpuCache.markPending(key);
+            m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
           }
         }
 
@@ -223,7 +233,7 @@ bool Rendering::renderSegmentationMeshesForView(
         normalizedLabelColor(*labelTable, labelIndex),
         labelState);
       rendering::mesh::MeshRenderable renderable =
-        rendering::mesh::makeSegmentationLabelRenderable(handle, glm::mat4{1.0f}, style);
+        rendering::mesh::makeSegmentationLabelRenderable(handle, seg->transformations().worldDef_T_subject(), style);
       renderable.drawOptions.clipPlanes = clipPlanes;
       renderables.push_back(std::move(renderable));
     }

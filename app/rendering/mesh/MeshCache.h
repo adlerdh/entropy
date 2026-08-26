@@ -21,6 +21,7 @@ struct MeshCacheEntry
   MeshCacheState state = MeshCacheState::Pending; //!< Current cache state
   std::optional<MeshData> mesh;                   //!< Extracted CPU mesh when ready
   std::vector<std::string> diagnostics;           //!< Non-fatal diagnostics or failure reasons
+  uint32_t failureCount = 0;                      //!< Failed attempts for bounded automatic retry
 };
 
 /**
@@ -37,7 +38,10 @@ public:
    * @param key Geometry key
    * @throw Propagates allocation failures
    */
-  void markPending(MeshGeometryKey key);
+  void markPending(MeshGeometryKey key, uint32_t priorFailureCount = 0);
+
+  /** Return whether a failed entry is eligible for another extraction attempt. */
+  bool canRetry(const MeshGeometryKey& key, uint32_t maximumFailureCount = 2) const noexcept;
 
   /**
    * @brief Store a successful extraction result
@@ -53,6 +57,9 @@ public:
    * @throw Propagates allocation failures
    */
   bool storeReadyIfPending(MeshExtractionResult result);
+
+  /** Store a successful no-contour result only if the matching entry remains pending. */
+  bool storeEmptyIfPending(const MeshGeometryKey& key, std::vector<std::string> diagnostics = {});
 
   /**
    * @brief Store a failed extraction state

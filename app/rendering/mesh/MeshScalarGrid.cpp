@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshScalarGrid.h"
 
+#include <limits>
+
 namespace rendering::mesh
 {
 
@@ -9,7 +11,15 @@ bool isValidScalarGrid(const ScalarGrid3D& grid)
     return false;
   }
 
-  const std::size_t expectedSize = static_cast<std::size_t>(grid.dimensions.x) * grid.dimensions.y * grid.dimensions.z;
+  std::size_t expectedSize = grid.dimensions.x;
+  if (grid.dimensions.y > std::numeric_limits<std::size_t>::max() / expectedSize) {
+    return false;
+  }
+  expectedSize *= grid.dimensions.y;
+  if (grid.dimensions.z > std::numeric_limits<std::size_t>::max() / expectedSize) {
+    return false;
+  }
+  expectedSize *= grid.dimensions.z;
   return grid.values.size() == expectedSize;
 }
 

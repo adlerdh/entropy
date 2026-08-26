@@ -427,6 +427,10 @@ json toJson(
           {"specularPower", renderPreferences.imagePlaneLightingSpecularPower}}}}},
       {"mesh",
        {{"generationThreads", renderPreferences.meshGenerationThreadCount},
+        {"segmentationSmoothing",
+         {{"enabled", renderPreferences.smoothSegmentationMeshes},
+          {"iterations", renderPreferences.segmentationMeshSmoothingIterations},
+          {"passBand", renderPreferences.segmentationMeshSmoothingPassBand}}},
         {"pointPicking", renderPreferences.meshPickingEnabled},
         {"clipPlane",
          {{"enabled", renderPreferences.meshClipPlaneEnabled},
@@ -706,6 +710,16 @@ void applyJson(
       if (const auto threads = mesh->find("generationThreads"); threads != mesh->end() && threads->is_number_unsigned())
       {
         renderPreferences.meshGenerationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
+      }
+      if (const auto smoothing = mesh->find("segmentationSmoothing");
+          smoothing != mesh->end() && smoothing->is_object())
+      {
+        setFromJson(renderPreferences.smoothSegmentationMeshes, *smoothing, "enabled");
+        if (const auto value = smoothing->find("iterations"); value != smoothing->end() && value->is_number_unsigned())
+        {
+          renderPreferences.segmentationMeshSmoothingIterations = std::clamp(value->get<uint32_t>(), 1u, 1000u);
+        }
+        setFloatFromJson(renderPreferences.segmentationMeshSmoothingPassBand, *smoothing, "passBand", 0.001f, 2.0f);
       }
       setFromJson(renderPreferences.meshPickingEnabled, *mesh, "pointPicking");
       if (const auto clipPlane = mesh->find("clipPlane"); clipPlane != mesh->end() && clipPlane->is_object()) {

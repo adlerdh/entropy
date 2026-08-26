@@ -270,7 +270,7 @@ void renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXha
 /**
  * @brief Render the volume/raycast mode for one 3D view.
  */
-void renderVolumeImagesForView(const View& view);
+void renderVolumeImagesForView(const View& view, bool interactiveOverlay = false);
 
 /**
  * @brief Apply completed background mesh extraction jobs to the CPU mesh cache.
@@ -391,7 +391,7 @@ bool renderCombinedSurfaceMeshesForView(const View& view);
  *
  * @return Cached label set, or null when the segmentation pixels cannot be read.
  */
-const rendering::mesh::SegmentationLabelSet*
+const rendering::mesh::SegmentationLabelInventory*
 presentSegmentationLabels(const uuids::uuid& segmentationUid, const Image& segmentation, uint32_t timePoint);
 
 /**

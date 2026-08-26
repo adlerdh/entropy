@@ -31,7 +31,7 @@ void Rendering::volumeRenderOneImage(
   setupOpenGLState();
 }
 
-void Rendering::renderVolumeImagesForView(const View& view)
+void Rendering::renderVolumeImagesForView(const View& view, const bool interactiveOverlay)
 {
   const CurrentImages imageSegPairs = raycastImagesForView(view);
   if (imageSegPairs.empty() || !imageSegPairs.front().first) {
@@ -106,6 +106,13 @@ void Rendering::renderVolumeImagesForView(const View& view)
       domainU,
       renderWarped,
       deformationUid);
+    if (interactiveOverlay) {
+      // The live edit preview is composited after the mesh scene. Do not paint the raycast background over it: only
+      // fragments contributed by the edited isosurface should change the existing framebuffer color.
+      program.setUniform("u_bgColor", glm::vec4{0.0f});
+      program.setUniform("u_bgEdgeBrighteningEnabled", false);
+      program.setUniform("u_noHitTransparent", true);
+    }
 
     volumeRenderOneImage(
       view,

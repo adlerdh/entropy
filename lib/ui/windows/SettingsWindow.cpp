@@ -2569,6 +2569,29 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
   }
   ImGui::SameLine();
   helpMarker("Maximum VTK CPU threads used by one mesh extraction job. Zero uses a conservative automatic value");
+
+  ImGui::Checkbox("Smooth segmentation meshes", &renderData.m_smoothSegmentationMeshes);
+  ImGui::SameLine();
+  helpMarker("Apply boundary-preserving windowed-sinc smoothing to extracted segmentation surfaces");
+  if (renderData.m_smoothSegmentationMeshes) {
+    int iterations = static_cast<int>(renderData.m_segmentationMeshSmoothingIterations);
+    if (ImGui::InputInt("Smoothing iterations", &iterations)) {
+      renderData.m_segmentationMeshSmoothingIterations = static_cast<uint32_t>(std::clamp(iterations, 1, 1000));
+    }
+    ImGui::SameLine();
+    helpMarker("More iterations produce smoother segmentation surfaces but take longer to generate");
+
+    ImGui::DragFloat(
+      "Smoothing pass band",
+      &renderData.m_segmentationMeshSmoothingPassBand,
+      0.005f,
+      0.001f,
+      2.0f,
+      "%.3f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Lower values smooth more strongly while preserving the overall surface shape");
+  }
 }
 
 void renderAsciiShadingSettings(RenderData& renderData)

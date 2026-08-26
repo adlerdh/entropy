@@ -7,6 +7,7 @@
 #include "logic/app/Data.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtractionJobs.h"
 #include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
@@ -20,10 +21,12 @@
 #include <glm/vec4.hpp>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <format>
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -147,41 +150,20 @@ bool Rendering::renderIsosurfaceMeshesForView(
       const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
 
       if (!m_meshCpuCache.readyMesh(key)) {
-        if (!m_meshCpuCache.contains(key) && !m_meshExtractionQueue.active(key)) {
+        const rendering::mesh::MeshCacheEntry* cacheEntry = m_meshCpuCache.find(key);
+        const bool retry = m_meshCpuCache.canRetry(key);
+        if ((!cacheEntry || retry) && m_meshExtractionQueue.canSubmit(key)) {
           if (!imageSnapshot) {
             imageSnapshot = std::make_shared<Image>(*image);
           }
 
           const std::string description = isosurfaceMeshDescription(*image, *surface, surfaceIndex);
-          if (m_meshExtractionQueue
-                .submit(key, description, [request, key, generationOptions, imageSnapshot]() mutable {
-                  std::optional<rendering::mesh::ScalarGrid3D> grid = rendering::mesh::scalarGridFromImageComponent(
-                    *imageSnapshot,
-                    request.component,
-                    request.timePoint,
-                    rendering::mesh::MeshCoordinateSpace::World);
-                  if (!grid) {
-                    return rendering::mesh::MeshExtractionJobResult{
-                      .key = key,
-                      .result = std::nullopt,
-                      .diagnostics = {std::string{"No isosurface scalar grid could be created"}}};
-                  }
-
-                  std::optional<rendering::mesh::MeshData> mesh =
-                    rendering::mesh::generateIsoSurfaceMesh(*grid, request.isoValue, generationOptions);
-                  if (!mesh) {
-                    return rendering::mesh::MeshExtractionJobResult{
-                      .key = key,
-                      .result = std::nullopt,
-                      .diagnostics = {std::string{"No isosurface mesh could be extracted"}}};
-                  }
-
-                  return rendering::mesh::MeshExtractionJobResult{
-                    .key = key,
-                    .result = rendering::mesh::MeshExtractionResult{.key = key, .mesh = std::move(*mesh)}};
-                }))
+          if (m_meshExtractionQueue.submit(
+                key,
+                description,
+                rendering::mesh::makeIsosurfaceExtractionJob(request, generationOptions, imageSnapshot)))
           {
-            m_meshCpuCache.markPending(key);
+            m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
           }
         }
 
@@ -207,7 +189,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
           surface->rimOpacityStrength),
         .visible = surface->visible && surface->showIn3d};
       rendering::mesh::MeshRenderable renderable =
-        rendering::mesh::makeIsosurfaceRenderable(handle, glm::mat4{1.0f}, style);
+        rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);
       renderable.drawOptions.clipPlanes = clipPlanes;
       renderables.push_back(std::move(renderable));
     }
@@ -250,6 +232,17 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
 bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
 {
+  // The combined Seg + Iso mode is a mesh shader group, so it does not pass through the normal volume-rendering
+  // branch. Preserve the interactive contract explicitly: draw segmentation meshes, image planes, and crosshairs,
+  // then composite only the changing raycast surface over them with a transparent no-hit background.
+  const CurrentImages raycastImageSegPairs = raycastImagesForView(view);
+  const bool activeEdit = activeIsosurfaceEdit(raycastImageSegPairs).has_value();
+  if (rendering::mesh::useRaycastPreviewDuringIsosurfaceEdit(rendersIsosurfaces(view.renderMode()), activeEdit)) {
+    renderSegmentationMeshesForView(view);
+    renderVolumeImagesForView(view, true);
+    return true;
+  }
+
   std::vector<rendering::mesh::MeshRenderable> renderables;
   const CurrentImages imageSegPairs = meshSceneImagesForView(view);
   renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
