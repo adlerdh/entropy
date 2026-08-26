@@ -282,11 +282,15 @@ glm::dmat3 computeClosestOrthogonalDirectionMatrix(const glm::dmat3& directions)
 
 void rotateFrameAboutWorldPos(CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter)
 {
+  // CoordinateFrame validates and normalizes rotations. Normalize the delta before applying it to both orientation and
+  // position so a non-unit caller quaternion cannot scale the orbit about the rotation center.
+  const CoordinateFrame rotationFrame{{0.0f, 0.0f, 0.0f}, rotation};
+  const glm::quat unitRotation = rotationFrame.world_T_frame_rotation();
   const glm::quat oldRotation = frame.world_T_frame_rotation();
   const glm::vec3 oldOrigin = frame.worldOrigin();
 
-  frame.setFrameToWorldRotation(rotation * oldRotation);
-  frame.setWorldOrigin(rotation * (oldOrigin - worldCenter) + worldCenter);
+  frame.setFrameToWorldRotation(unitRotation * oldRotation);
+  frame.setWorldOrigin(unitRotation * (oldOrigin - worldCenter) + worldCenter);
 }
 
 float computeRayAABBoxIntersection(

@@ -2225,7 +2225,7 @@ TEST_CASE("orthogonal image plane scene meshes are clipped to the image box", "[
     glm::vec3{1.0f, 1.0f, 1.0f}};
 
   const mesh::MeshImagePlaneSceneInputs inputs{
-    .worldCrosshairs = glm::vec3{0.5f},
+    .world_T_crosshairs = glm::translate(glm::mat4{1.0f}, glm::vec3{0.5f}),
     .world_T_pixel = glm::mat4{1.0f},
     .pixel_T_world = glm::mat4{1.0f},
     .texture_T_world = glm::mat4{1.0f},
@@ -2252,13 +2252,13 @@ TEST_CASE("orthogonal image plane scene meshes are clipped to the image box", "[
       CHECK(position.z <= 1.0f);
       switch (plane.orientation) {
         case mesh::MeshImagePlaneOrientation::Axial:
-          CHECK(position.z == inputs.worldCrosshairs.z);
+          CHECK(position.z == Catch::Approx(0.5f));
           break;
         case mesh::MeshImagePlaneOrientation::Coronal:
-          CHECK(position.y == inputs.worldCrosshairs.y);
+          CHECK(position.y == Catch::Approx(0.5f));
           break;
         case mesh::MeshImagePlaneOrientation::Sagittal:
-          CHECK(position.x == inputs.worldCrosshairs.x);
+          CHECK(position.x == Catch::Approx(0.5f));
           break;
       }
     }
@@ -2287,7 +2287,7 @@ TEST_CASE("orthogonal image plane scene can build boundary meshes", "[rendering]
     glm::vec3{1.0f, 1.0f, 1.0f}};
 
   const mesh::MeshImagePlaneSceneInputs inputs{
-    .worldCrosshairs = glm::vec3{0.5f},
+    .world_T_crosshairs = glm::translate(glm::mat4{1.0f}, glm::vec3{0.5f}),
     .world_T_pixel = glm::mat4{1.0f},
     .pixel_T_world = glm::mat4{1.0f},
     .texture_T_world = glm::mat4{1.0f},
@@ -2301,6 +2301,126 @@ TEST_CASE("orthogonal image plane scene can build boundary meshes", "[rendering]
   REQUIRE(planes.front().borderMesh.has_value());
   CHECK(planes.front().borderMesh->positions.size() == 8u);
   CHECK(planes.front().borderMesh->indices.size() == 24u);
+}
+
+TEST_CASE("3D image planes follow the rotated crosshairs frame", "[rendering][mesh][crosshairs]")
+{
+  const std::array<glm::vec3, 8> boxCorners{
+    glm::vec3{0.0f, 0.0f, 0.0f},
+    glm::vec3{1.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 1.0f, 0.0f},
+    glm::vec3{1.0f, 1.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 1.0f},
+    glm::vec3{1.0f, 0.0f, 1.0f},
+    glm::vec3{0.0f, 1.0f, 1.0f},
+    glm::vec3{1.0f, 1.0f, 1.0f}};
+  const glm::vec3 origin{0.5f};
+  const glm::mat4 world_T_crosshairs =
+    glm::translate(glm::mat4{1.0f}, origin) *
+    glm::rotate(glm::mat4{1.0f}, glm::quarter_pi<float>(), glm::vec3{0.0f, 0.0f, 1.0f});
+  const mesh::MeshImagePlaneSceneInputs inputs{
+    .world_T_crosshairs = world_T_crosshairs,
+    .world_T_pixel = glm::mat4{1.0f},
+    .pixel_T_world = glm::mat4{1.0f},
+    .texture_T_world = glm::mat4{1.0f},
+    .pixelBoxCorners = boxCorners,
+    .orientations = {
+      mesh::MeshImagePlaneOrientation::Axial,
+      mesh::MeshImagePlaneOrientation::Coronal,
+      mesh::MeshImagePlaneOrientation::Sagittal}};
+
+  const std::vector<mesh::MeshImagePlaneSceneMesh> planes = mesh::buildOrthogonalImagePlaneSceneMeshes(inputs);
+  REQUIRE(planes.size() == 3u);
+  for (const mesh::MeshImagePlaneSceneMesh& plane : planes) {
+    const glm::vec3 normal = mesh::imagePlaneWorldNormal(plane.orientation, world_T_crosshairs);
+    for (const glm::vec3& position : plane.mesh.positions) {
+      CHECK(glm::dot(normal, position - origin) == Catch::Approx(0.0f).margin(1.0e-5f));
+    }
+  }
+
+  requireVec3(
+    mesh::imagePlaneWorldNormal(mesh::MeshImagePlaneOrientation::Sagittal, world_T_crosshairs),
+    std::sqrt(0.5f),
+    std::sqrt(0.5f),
+    0.0f);
+}
+
+TEST_CASE("3D image-plane cache versions include all affine geometry inputs", "[rendering][mesh][transform]")
+{
+  mesh::MeshImagePlaneSceneInputs inputs{
+    .world_T_crosshairs = glm::mat4{1.0f},
+    .world_T_pixel = glm::mat4{1.0f},
+    .pixel_T_world = glm::mat4{1.0f},
+    .texture_T_world = glm::mat4{1.0f},
+    .pixelBoxCorners =
+      {glm::vec3{0.0f, 0.0f, 0.0f},
+       glm::vec3{1.0f, 0.0f, 0.0f},
+       glm::vec3{0.0f, 1.0f, 0.0f},
+       glm::vec3{1.0f, 1.0f, 0.0f},
+       glm::vec3{0.0f, 0.0f, 1.0f},
+       glm::vec3{1.0f, 0.0f, 1.0f},
+       glm::vec3{0.0f, 1.0f, 1.0f},
+       glm::vec3{1.0f, 1.0f, 1.0f}},
+    .orientations = {mesh::MeshImagePlaneOrientation::Axial}};
+  const auto orientation = mesh::MeshImagePlaneOrientation::Axial;
+  const std::uint64_t original = mesh::imagePlaneSceneGeometryVersion(inputs, orientation);
+
+  inputs.world_T_pixel = glm::translate(glm::mat4{1.0f}, glm::vec3{4.0f, -2.0f, 1.0f});
+  inputs.pixel_T_world = glm::inverse(inputs.world_T_pixel);
+  inputs.texture_T_world = inputs.pixel_T_world;
+  CHECK(mesh::imagePlaneSceneGeometryVersion(inputs, orientation) != original);
+
+  const std::uint64_t translated = mesh::imagePlaneSceneGeometryVersion(inputs, orientation);
+  inputs.world_T_pixel =
+    inputs.world_T_pixel * glm::rotate(glm::mat4{1.0f}, glm::quarter_pi<float>(), glm::vec3{0.0f, 0.0f, 1.0f});
+  inputs.pixel_T_world = glm::inverse(inputs.world_T_pixel);
+  inputs.texture_T_world = inputs.pixel_T_world;
+  CHECK(mesh::imagePlaneSceneGeometryVersion(inputs, orientation) != translated);
+
+  const std::uint64_t rotated = mesh::imagePlaneSceneGeometryVersion(inputs, orientation);
+  inputs.world_T_pixel = inputs.world_T_pixel * glm::scale(glm::mat4{1.0f}, glm::vec3{1.5f, 0.75f, 2.0f});
+  inputs.pixel_T_world = glm::inverse(inputs.world_T_pixel);
+  inputs.texture_T_world = inputs.pixel_T_world;
+  CHECK(mesh::imagePlaneSceneGeometryVersion(inputs, orientation) != rotated);
+}
+
+TEST_CASE("3D image-volume bounds cache versions include transformed corners and width", "[rendering][mesh][transform]")
+{
+  std::array<glm::vec3, 8> worldCorners{
+    glm::vec3{0.0f, 0.0f, 0.0f},
+    glm::vec3{1.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 1.0f, 0.0f},
+    glm::vec3{1.0f, 1.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 1.0f},
+    glm::vec3{1.0f, 0.0f, 1.0f},
+    glm::vec3{0.0f, 1.0f, 1.0f},
+    glm::vec3{1.0f, 1.0f, 1.0f}};
+  const std::uint64_t original = mesh::imageBoxSceneGeometryVersion(worldCorners, 0.25f);
+
+  worldCorners.front().x += 2.0f;
+  CHECK(mesh::imageBoxSceneGeometryVersion(worldCorners, 0.25f) != original);
+  CHECK(mesh::imageBoxSceneGeometryVersion(worldCorners, 0.5f) != original);
+}
+
+TEST_CASE("3D crosshairs glyph axes follow the rotated crosshairs frame", "[rendering][mesh][crosshairs]")
+{
+  const glm::vec3 origin{2.0f, 3.0f, 4.0f};
+  const glm::mat4 world_T_crosshairs = glm::translate(glm::mat4{1.0f}, origin) *
+                                       glm::rotate(glm::mat4{1.0f}, glm::half_pi<float>(), glm::vec3{0.0f, 0.0f, 1.0f});
+  const mesh::MeshCrosshairsGlyphStyle style{.radiusWorld = 0.25f, .halfLengthWorld = 8.0f, .visible = true};
+
+  const auto transforms = mesh::meshCrosshairsAxisWorldTransforms(world_T_crosshairs, style);
+  for (const glm::mat4& transform : transforms) {
+    requireVec3(glm::vec3{transform[3]}, origin.x, origin.y, origin.z);
+  }
+  const std::array expectedDirections{
+    glm::vec3{0.0f, 1.0f, 0.0f},
+    glm::vec3{-1.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 1.0f}};
+  for (std::size_t axis = 0; axis < transforms.size(); ++axis) {
+    const glm::vec3 direction = glm::normalize(glm::vec3{transforms[axis][2]});
+    CHECK(glm::length(direction - expectedDirections[axis]) < 1.0e-5f);
+  }
 }
 
 TEST_CASE("image box border mesh builds all twelve box edges", "[rendering][mesh]")
@@ -2347,7 +2467,7 @@ TEST_CASE("orthogonal image plane scene omits planes outside the image box", "[r
     glm::vec3{1.0f, 1.0f, 1.0f}};
 
   const mesh::MeshImagePlaneSceneInputs inputs{
-    .worldCrosshairs = glm::vec3{2.0f},
+    .world_T_crosshairs = glm::translate(glm::mat4{1.0f}, glm::vec3{2.0f}),
     .world_T_pixel = glm::mat4{1.0f},
     .pixel_T_world = glm::mat4{1.0f},
     .texture_T_world = glm::mat4{1.0f},

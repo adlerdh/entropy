@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 
 #include <array>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -28,7 +29,7 @@ enum class MeshImagePlaneOrientation
  */
 struct MeshImagePlaneSceneInputs
 {
-  glm::vec3 worldCrosshairs{0.0f};                          //!< Plane origin in world/LPS coordinates
+  glm::mat4 world_T_crosshairs{1.0f};                       //!< Crosshairs frame transform in world/LPS coordinates
   glm::mat4 world_T_pixel{1.0f};                            //!< Transform from image pixel to world coordinates
   glm::mat4 pixel_T_world{1.0f};                            //!< Transform from world coordinates to image pixel
   glm::mat4 texture_T_world{1.0f};                          //!< Transform from world to normalized image texture
@@ -52,7 +53,9 @@ struct MeshImagePlaneSceneMesh
  * @param orientation Plane orientation
  * @return Unit normal in world/LPS coordinates
  */
-glm::vec3 imagePlaneWorldNormal(MeshImagePlaneOrientation orientation) noexcept;
+glm::vec3 imagePlaneWorldNormal(
+  MeshImagePlaneOrientation orientation,
+  const glm::mat4& world_T_crosshairs = glm::mat4{1.0f}) noexcept;
 
 /**
  * @brief Opacity multiplier used to fade image planes by view angle
@@ -61,6 +64,21 @@ glm::vec3 imagePlaneWorldNormal(MeshImagePlaneOrientation orientation) noexcept;
  * @return Clamped opacity multiplier in `[0, 1]`
  */
 float imagePlaneViewOpacityMultiplier(const glm::vec3& planeNormalWorld, const glm::vec3& viewDirectionWorld) noexcept;
+
+/**
+ * @brief Version key for cached image-plane geometry.
+ *
+ * The plane vertices and texture coordinates are baked in world space, so every input that affects either must be
+ * represented in the cache version. In particular, this includes the image's manual and loaded affine transforms.
+ */
+std::uint64_t imagePlaneSceneGeometryVersion(
+  const MeshImagePlaneSceneInputs& inputs,
+  MeshImagePlaneOrientation orientation) noexcept;
+
+/** @brief Version key for cached world-space image-volume bounds geometry. */
+std::uint64_t imageBoxSceneGeometryVersion(
+  const std::array<glm::vec3, 8>& worldCorners,
+  float borderWidthWorld) noexcept;
 
 /**
  * @brief Build clipped world-space meshes for requested orthogonal image planes.

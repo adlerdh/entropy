@@ -57,13 +57,6 @@ void hashCombine(std::size_t& seed, const Value& value)
   seed ^= std::hash<Value>{}(value) + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
 }
 
-void hashVec3(std::size_t& seed, const glm::vec3& value)
-{
-  hashCombine(seed, value.x);
-  hashCombine(seed, value.y);
-  hashCombine(seed, value.z);
-}
-
 std::array<glm::vec3, 8> transformedCorners(const std::array<glm::vec3, 8>& corners, const glm::mat4& transform)
 {
   std::array<glm::vec3, 8> transformed{};
@@ -72,26 +65,6 @@ std::array<glm::vec3, 8> transformedCorners(const std::array<glm::vec3, 8>& corn
     return std::abs(value.w) > 1.0e-6f ? glm::vec3{value / value.w} : glm::vec3{value};
   });
   return transformed;
-}
-
-std::uint64_t geometryVersionForImagePlane(
-  const Image& image,
-  const rendering::mesh::MeshImagePlaneOrientation orientation,
-  const glm::vec3& worldCrosshairs)
-{
-  std::size_t seed = 0;
-  hashCombine(seed, image.geometryRevision());
-  hashCombine(seed, static_cast<int>(orientation));
-  hashVec3(seed, worldCrosshairs);
-  return seed;
-}
-
-std::uint64_t geometryVersionForImageBox(const Image& image)
-{
-  std::size_t seed = 0;
-  hashCombine(seed, image.geometryRevision());
-  hashCombine(seed, 0x4b7d2a31u);
-  return seed;
 }
 
 float imagePlaneBorderWidthWorld(const RenderData::ImageUniforms& uniforms) noexcept
@@ -147,7 +120,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     rendering::mesh::MeshImagePlaneOrientation::Coronal,
     rendering::mesh::MeshImagePlaneOrientation::Sagittal};
 
-  const glm::vec3 worldCrosshairs = m_appData.state().worldCrosshairs().worldOrigin();
+  const glm::mat4 world_T_crosshairs = m_appData.state().worldCrosshairs().world_T_frame();
   const glm::vec3 viewDirectionWorld = helper::worldDirection(view.threeDCamera(), Directions::View::Back);
 
   std::vector<rendering::mesh::MeshImagePlaneRenderable> renderables;
@@ -197,7 +170,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       transformedCorners(image->header().pixelBBoxCorners(), image->transformations().worldDef_T_pixel());
 
     const rendering::mesh::MeshImagePlaneSceneInputs inputs{
-      .worldCrosshairs = worldCrosshairs,
+      .world_T_crosshairs = world_T_crosshairs,
       .world_T_pixel = image->transformations().worldDef_T_pixel(),
       .pixel_T_world = image->transformations().pixel_T_worldDef(),
       .texture_T_world = uniformsIt->second.imgTexture_T_world,
@@ -234,12 +207,13 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
 
     if (showImagePlanes) {
       for (const rendering::mesh::MeshImagePlaneSceneMesh& mesh : meshes) {
-        const std::uint64_t geometryVersion = geometryVersionForImagePlane(*image, mesh.orientation, worldCrosshairs);
-        const float opacityMultiplier = m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle
-                                          ? rendering::mesh::imagePlaneViewOpacityMultiplier(
-                                              rendering::mesh::imagePlaneWorldNormal(mesh.orientation),
-                                              viewDirectionWorld)
-                                          : 1.0f;
+        const std::uint64_t geometryVersion = rendering::mesh::imagePlaneSceneGeometryVersion(inputs, mesh.orientation);
+        const float opacityMultiplier =
+          m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle
+            ? rendering::mesh::imagePlaneViewOpacityMultiplier(
+                rendering::mesh::imagePlaneWorldNormal(mesh.orientation, world_T_crosshairs),
+                viewDirectionWorld)
+            : 1.0f;
 
         const std::optional<rendering::mesh::MeshHandle> handle = uploadImagePlaneMesh(
           mesh.mesh,
@@ -282,13 +256,14 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     }
 
     if (showImageBox && uniformsIt->second.imgOpacity > 0.0f) {
+      const float borderWidthWorld = imagePlaneBorderWidthWorld(uniformsIt->second);
       const std::optional<rendering::mesh::MeshData> boxMesh =
-        rendering::mesh::makeImageBoxBorderMesh(worldCorners, imagePlaneBorderWidthWorld(uniformsIt->second));
+        rendering::mesh::makeImageBoxBorderMesh(worldCorners, borderWidthWorld);
       if (boxMesh) {
         const std::optional<rendering::mesh::MeshHandle> boxHandle = uploadImagePlaneMesh(
           *boxMesh,
           MeshImagePlaneHandleKey{.imageUid = imageUid, .imageBox = true},
-          geometryVersionForImageBox(*image));
+          rendering::mesh::imageBoxSceneGeometryVersion(worldCorners, borderWidthWorld));
         if (boxHandle) {
           appendBorderRenderable(*boxHandle, glm::mat4{1.0f}, 1.0f);
         }

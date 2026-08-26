@@ -12,9 +12,6 @@
 #include "windowing/View.h"
 
 #include <glm/geometric.hpp>
-#include <glm/gtc/constants.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <array>
 #include <optional>
 #include <utility>
@@ -65,24 +62,18 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
   }
 
   const rendering::mesh::MeshCrosshairsGlyphStyle style = rendering::mesh::meshCrosshairsGlyphStyle(inputs);
-  const glm::vec3 center = m_appData.state().worldCrosshairs().worldOrigin();
-  const glm::mat4 base = glm::translate(glm::mat4{1.0f}, center);
-  const std::array rotations{
-    glm::rotate(glm::mat4{1.0f}, glm::half_pi<float>(), glm::vec3{0.0f, 1.0f, 0.0f}),
-    glm::rotate(glm::mat4{1.0f}, -glm::half_pi<float>(), glm::vec3{1.0f, 0.0f, 0.0f}),
-    glm::mat4{1.0f}};
+  const std::array transforms =
+    rendering::mesh::meshCrosshairsAxisWorldTransforms(m_appData.state().worldCrosshairs().world_T_frame(), style);
   const std::array colors{
     glm::vec4{1.0f, 0.0f, 0.0f, 1.0f},
     glm::vec4{0.0f, 1.0f, 0.0f, 1.0f},
     glm::vec4{0.0f, 0.0f, 1.0f, 1.0f}};
-  const glm::mat4 scale =
-    glm::scale(glm::mat4{1.0f}, glm::vec3{style.radiusWorld, style.radiusWorld, style.halfLengthWorld});
-  for (std::size_t axis = 0u; axis < rotations.size(); ++axis) {
+  for (std::size_t axis = 0u; axis < transforms.size(); ++axis) {
     rendering::mesh::MeshMaterial material;
     material.baseColor = colors[axis];
     renderables.push_back(rendering::mesh::makeIsosurfaceRenderable(
       handle,
-      base * rotations[axis] * scale,
+      transforms[axis],
       rendering::mesh::IsosurfaceMeshStyle{
         .material = material,
         .compositingMode = rendering::mesh::MeshCompositingMode::Opaque,

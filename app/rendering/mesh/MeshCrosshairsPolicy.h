@@ -1,5 +1,9 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
+#include <array>
+
 namespace rendering::mesh
 {
 
@@ -35,5 +39,10 @@ bool shouldRenderMeshCrosshairsGlyph(const MeshCrosshairsGlyphInputs& inputs) no
  * @return Sphere glyph style with radius in world units
  */
 MeshCrosshairsGlyphStyle meshCrosshairsGlyphStyle(const MeshCrosshairsGlyphInputs& inputs) noexcept;
+
+/** Build the three scaled axis transforms from the complete rotated crosshairs frame. */
+std::array<glm::mat4, 3> meshCrosshairsAxisWorldTransforms(
+  const glm::mat4& world_T_crosshairs,
+  const MeshCrosshairsGlyphStyle& style) noexcept;
 
 } // namespace rendering::mesh

@@ -7,6 +7,8 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include <cmath>
+
 namespace
 {
 
@@ -32,6 +34,36 @@ TEST_CASE("camera reset helpers restore zoom and view transform", "[camera][rece
 
   CHECK(camera.getZoom() == Catch::Approx(1.0f));
   CHECK(camera.camera_T_anatomy() == glm::mat4{1.0f});
+}
+
+TEST_CASE("2D crosshairs rotation helpers return unit rotations and handle a centered drag", "[camera][crosshairs]")
+{
+  Camera camera(ProjectionType::Orthographic);
+  const glm::vec2 center{0.0f};
+
+  const glm::quat rotation =
+    helper::rotation2dInCameraPlane(camera, glm::vec2{1.0f, 0.0f}, glm::vec2{0.0f, 1.0f}, center);
+  CHECK(glm::length(rotation) == Catch::Approx(1.0f).margin(1.0e-6f));
+
+  const glm::quat snapped = helper::rotation2dInCameraPlaneWithSnapping(
+    camera,
+    glm::vec2{1.0f, 0.0f},
+    glm::vec2{1.0f, 0.0f},
+    glm::vec2{std::sqrt(0.5f), std::sqrt(0.5f)},
+    15.0f,
+    7.5f,
+    center);
+  CHECK(glm::length(snapped) == Catch::Approx(1.0f).margin(1.0e-6f));
+
+  const glm::quat centeredStart = helper::rotation2dInCameraPlaneWithSnapping(
+    camera,
+    center,
+    glm::vec2{1.0f, 0.0f},
+    glm::vec2{0.0f, 1.0f},
+    15.0f,
+    7.5f,
+    center);
+  CHECK(centeredStart == glm::quat{1.0f, 0.0f, 0.0f, 0.0f});
 }
 
 TEST_CASE("camera positioning centers the target in clip space", "[camera][recenter]")
