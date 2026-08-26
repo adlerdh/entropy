@@ -145,7 +145,6 @@ struct RenderPreferences
   float crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
-  uint32_t meshGenerationThreadCount = 0;
   bool smoothSegmentationMeshes = true;
   uint32_t segmentationMeshSmoothingIterations = 25;
   float segmentationMeshSmoothingPassBand = 0.1f;

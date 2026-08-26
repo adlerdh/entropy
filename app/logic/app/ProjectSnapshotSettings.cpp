@@ -452,7 +452,6 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
   const auto& renderData = appData.renderData();
   return serialize::ProjectMeshRenderingSettings{
     .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
-    .m_generationThreadCount = renderData.m_meshGenerationThreadCount,
     .m_smoothSegmentationMeshes = renderData.m_smoothSegmentationMeshes,
     .m_segmentationSmoothingIterations = renderData.m_segmentationMeshSmoothingIterations,
     .m_segmentationSmoothingPassBand = renderData.m_segmentationMeshSmoothingPassBand,
@@ -476,7 +475,6 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
 {
   auto& renderData = appData.renderData();
   renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
-  renderData.m_meshGenerationThreadCount = std::min<uint32_t>(settings.m_generationThreadCount, 64);
   renderData.m_smoothSegmentationMeshes = settings.m_smoothSegmentationMeshes;
   renderData.m_segmentationMeshSmoothingIterations = std::clamp(settings.m_segmentationSmoothingIterations, 1u, 1000u);
   renderData.m_segmentationMeshSmoothingPassBand = std::clamp(settings.m_segmentationSmoothingPassBand, 0.001f, 2.0f);

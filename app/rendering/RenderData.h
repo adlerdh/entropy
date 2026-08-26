@@ -353,8 +353,6 @@ struct RenderData
   /// Optional advanced mesh-lighting settings for mesh-rendered 3D surfaces.
   rendering::mesh::MeshAdvancedLightingSettings m_meshAdvancedLightingSettings;
 
-  uint32_t m_meshGenerationThreadCount; //!< Maximum VTK threads for one CPU mesh extraction job, or zero for auto
-
   bool m_smoothSegmentationMeshes;                //!< Apply boundary-preserving smoothing to segmentation meshes
   uint32_t m_segmentationMeshSmoothingIterations; //!< Windowed-sinc smoothing iterations
   float m_segmentationMeshSmoothingPassBand;      //!< Windowed-sinc smoothing pass band

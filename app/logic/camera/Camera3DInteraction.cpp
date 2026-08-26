@@ -9,6 +9,28 @@ bool mouseModeAllowsCameraInteraction(MouseMode mouseMode) noexcept
   return true;
 }
 
+bool mouseModeAllowsPointPicking(const MouseMode mouseMode) noexcept
+{
+  switch (mouseMode) {
+    case MouseMode::Pointer:
+    case MouseMode::CameraZoom:
+    case MouseMode::WindowLevel:
+    case MouseMode::CameraTranslate:
+    case MouseMode::Segment:
+      return true;
+
+    case MouseMode::CameraRotate:
+    case MouseMode::CrosshairsRotate:
+    case MouseMode::Annotate:
+    case MouseMode::ImageTranslate:
+    case MouseMode::ImageRotate:
+    case MouseMode::ImageScale:
+      return false;
+  }
+
+  return false;
+}
+
 std::optional<DragAction> dragActionForInput(
   MouseMode mouseMode,
   const ButtonState& buttons,

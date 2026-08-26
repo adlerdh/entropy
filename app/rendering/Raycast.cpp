@@ -39,20 +39,27 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   }
 
   const std::optional<ActiveIsosurfaceEdit> activeEdit = activeIsosurfaceEdit(imageSegPairs);
+  if (activeEdit) {
+    m_isosurfaceRaycastHandoff = activeEdit;
+  }
 
-  if (
-    !activeEdit && m_appData.renderData().m_isosurfaceMeshRenderingEnabled &&
-    renderIsosurfaceMeshesForView(view, imageSegPairs))
-  {
-    renderMeshLandmarksForView(view);
-    return;
+  bool meshSceneWasRendered = false;
+  if (!interactiveOverlay && m_appData.renderData().m_isosurfaceMeshRenderingEnabled) {
+    const bool allMeshesReady = renderIsosurfaceMeshesForView(view, imageSegPairs);
+    meshSceneWasRendered = true;
+    if (allMeshesReady) {
+      m_isosurfaceRaycastHandoff.reset();
+      renderMeshLandmarksForView(view);
+      return;
+    }
   }
 
   // The raycast shader remains a single-volume fallback. During isovalue edits, render only the edited surface through
   // this live path so all committed meshes are hidden until the edit finishes.
-  const ImgSegPair imgSegPair = activeEdit ? activeEdit->imageSegPair : imageSegPairs.front();
+  const std::optional<ActiveIsosurfaceEdit> handoffSurface = activeEdit ? activeEdit : m_isosurfaceRaycastHandoff;
+  const ImgSegPair imgSegPair = handoffSurface ? handoffSurface->imageSegPair : imageSegPairs.front();
   const std::optional<uuid> onlyIsosurfaceUid =
-    activeEdit ? std::optional<uuid>{activeEdit->isosurfaceUid} : std::nullopt;
+    handoffSurface ? std::optional<uuid>{handoffSurface->isosurfaceUid} : std::nullopt;
   if (!imgSegPair.first) {
     return;
   }
@@ -106,7 +113,7 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
       domainU,
       renderWarped,
       deformationUid);
-    if (interactiveOverlay) {
+    if (interactiveOverlay || meshSceneWasRendered) {
       // The live edit preview is composited after the mesh scene. Do not paint the raycast background over it: only
       // fragments contributed by the edited isosurface should change the existing framebuffer color.
       program.setUniform("u_bgColor", glm::vec4{0.0f});

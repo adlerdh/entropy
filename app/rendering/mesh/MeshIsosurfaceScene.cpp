@@ -92,6 +92,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
+  bool allVisibleIsosurfacesHaveReadyMeshes = true;
   if (!accumulatedRenderables) {
     imagePlaneRenderables = collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
   }
@@ -134,6 +135,9 @@ bool Rendering::renderIsosurfaceMeshesForView(
         .opacity = effectiveOpacity,
         .visible = surface->visible && surface->showIn3d};
       if (!rendering::mesh::canRenderIsosurfaceWithMesh(eligibility)) {
+        if (eligibility.visible && eligibility.opacity > 0.0f) {
+          allVisibleIsosurfacesHaveReadyMeshes = false;
+        }
         continue;
       }
 
@@ -144,12 +148,12 @@ bool Rendering::renderIsosurfaceMeshesForView(
         activeComponent,
         activeTimePoint,
         surface->value);
-      const rendering::mesh::MeshGenerationOptions generationOptions{
-        .threadCount = m_appData.renderData().m_meshGenerationThreadCount};
+      const rendering::mesh::MeshGenerationOptions generationOptions{.threadCount = 0};
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
       const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
 
       if (!m_meshCpuCache.readyMesh(key)) {
+        allVisibleIsosurfacesHaveReadyMeshes = false;
         const rendering::mesh::MeshCacheEntry* cacheEntry = m_meshCpuCache.find(key);
         const bool retry = m_meshCpuCache.canRetry(key);
         if ((!cacheEntry || retry) && m_meshExtractionQueue.canSubmit(key)) {
@@ -176,6 +180,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
         syncStatus != rendering::mesh::MeshGpuSyncStatus::Uploaded &&
         syncStatus != rendering::mesh::MeshGpuSyncStatus::AlreadyCurrent)
       {
+        allVisibleIsosurfacesHaveReadyMeshes = false;
         continue;
       }
 
@@ -196,12 +201,11 @@ bool Rendering::renderIsosurfaceMeshesForView(
   }
 
   if (accumulatedRenderables) {
-    const bool hasRenderables = !renderables.empty();
     accumulatedRenderables->insert(
       accumulatedRenderables->end(),
       std::make_move_iterator(renderables.begin()),
       std::make_move_iterator(renderables.end()));
-    return hasRenderables;
+    return allVisibleIsosurfacesHaveReadyMeshes;
   }
 
   renderables.insert(renderables.end(), imagePlaneBorderRenderables.begin(), imagePlaneBorderRenderables.end());
@@ -216,7 +220,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
   appendMeshCrosshairsRenderableForView(view, renderables);
 
   if (renderables.empty() && imagePlaneList.imagePlanes.empty()) {
-    return false;
+    return allVisibleIsosurfacesHaveReadyMeshes;
   }
 
   rendering::mesh::MeshScene scene;
@@ -227,7 +231,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
   }
 
   drawMeshRenderListForView(view, list, &imagePlaneList);
-  return true;
+  return allVisibleIsosurfacesHaveReadyMeshes;
 }
 
 bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
@@ -235,17 +239,9 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
   // The combined Seg + Iso mode is a mesh shader group, so it does not pass through the normal volume-rendering
   // branch. Preserve the interactive contract explicitly: draw segmentation meshes, image planes, and crosshairs,
   // then composite only the changing raycast surface over them with a transparent no-hit background.
-  const CurrentImages raycastImageSegPairs = raycastImagesForView(view);
-  const bool activeEdit = activeIsosurfaceEdit(raycastImageSegPairs).has_value();
-  if (rendering::mesh::useRaycastPreviewDuringIsosurfaceEdit(rendersIsosurfaces(view.renderMode()), activeEdit)) {
-    renderSegmentationMeshesForView(view);
-    renderVolumeImagesForView(view, true);
-    return true;
-  }
-
   std::vector<rendering::mesh::MeshRenderable> renderables;
   const CurrentImages imageSegPairs = meshSceneImagesForView(view);
-  renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
+  const bool isosurfaceMeshesReady = renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
   renderSegmentationMeshesForView(view, &renderables);
 
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
@@ -262,13 +258,18 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
   const rendering::mesh::MeshImagePlaneRenderList imagePlaneList =
     rendering::mesh::buildImagePlaneRenderList(imagePlaneScene.imagePlaneRenderables());
 
-  if (renderables.empty() && imagePlaneList.imagePlanes.empty()) {
-    return false;
+  const bool hasMeshSceneContent = !renderables.empty() || !imagePlaneList.imagePlanes.empty();
+  if (hasMeshSceneContent) {
+    rendering::mesh::MeshScene scene;
+    scene.setRenderables(std::move(renderables));
+    const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
+    drawMeshRenderListForView(view, list, &imagePlaneList);
   }
-
-  rendering::mesh::MeshScene scene;
-  scene.setRenderables(std::move(renderables));
-  const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
-  drawMeshRenderListForView(view, list, &imagePlaneList);
-  return true;
+  if (!isosurfaceMeshesReady) {
+    renderVolumeImagesForView(view, true);
+  }
+  else {
+    m_isosurfaceRaycastHandoff.reset();
+  }
+  return hasMeshSceneContent || !isosurfaceMeshesReady;
 }

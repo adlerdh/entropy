@@ -28,6 +28,78 @@ namespace
 {
 
 using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
+ordered_json orderedUserPreferencesJson(const json& value, const std::string_view path = {})
+{
+  if (value.is_array()) {
+    ordered_json result = ordered_json::array();
+    for (const json& element : value) {
+      result.push_back(orderedUserPreferencesJson(element, path));
+    }
+    return result;
+  }
+  if (!value.is_object()) {
+    return value;
+  }
+
+  ordered_json result = ordered_json::object();
+  std::vector<std::string_view> preferredKeys;
+  if (path.empty()) {
+    preferredKeys = {
+      "format",
+      "version",
+      "views",
+      "rendering",
+      "interface",
+      "images",
+      "segmentation",
+      "registration",
+      "comparison",
+      "synchronization",
+      "system",
+      "annotations",
+      "recent"};
+  }
+  else if (path == "views") {
+    preferredKeys = {
+      "showImageBorders",
+      "showOverlays",
+      "crosshairs",
+      "synchronizeViewZooms",
+      "backgrounds",
+      "anatomicalLabels",
+      "scaleBars",
+      "lightbox",
+      "asciiShading"};
+  }
+  else if (path == "rendering") {
+    preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
+  }
+  else if (path == "rendering/mesh") {
+    preferredKeys = {"shadows", "ambientOcclusion", "segmentationSmoothing", "pointPicking", "clipPlane"};
+  }
+  else if (path == "system") {
+    preferredKeys = {"performance", "updates", "diagnostics"};
+  }
+
+  const auto append = [&](const std::string& key) {
+    const std::string childPath = path.empty() ? key : std::string{path} + "/" + key;
+    result[key] = orderedUserPreferencesJson(value.at(key), childPath);
+  };
+  for (const std::string_view key : preferredKeys) {
+    if (value.contains(key)) {
+      append(std::string{key});
+    }
+  }
+  for (const auto& [key, child] : value.items()) {
+    (void)child;
+    if (!result.contains(key)) {
+      append(key);
+    }
+  }
+  return result;
+}
 
 template<typename Enum>
 struct EnumName
@@ -375,7 +447,17 @@ json toJson(
       {"lightbox",
        {{"showImageBorders", renderPreferences.showImageBordersInLightboxViews},
         {"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
-        {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}}}},
+        {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}},
+      {"asciiShading",
+       {{"enabled", renderPreferences.asciiEnabled},
+        {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
+        {"charsetIndex", renderPreferences.asciiCharsetIndex},
+        {"foregroundColor", vec3ToJson(renderPreferences.asciiForegroundColor)},
+        {"backgroundColor", vec3ToJson(renderPreferences.asciiBackgroundColor)},
+        {"backgroundAlpha", renderPreferences.asciiBackgroundAlpha},
+        {"useColormapAsForeground", renderPreferences.asciiUseColormapAsForeground},
+        {"spatialMatching", renderPreferences.asciiSpatialMatching},
+        {"spatialExponent", renderPreferences.asciiSpatialExponent}}}}},
     {"images",
      {{"floatingPointLinearInterpolationPolicy",
        enumToName(renderPreferences.floatingPointLinearInterpolationPolicy, sk_floatingPointInterpolationPolicyNames)},
@@ -426,16 +508,7 @@ json toJson(
           {"specular", renderPreferences.imagePlaneLightingSpecular},
           {"specularPower", renderPreferences.imagePlaneLightingSpecularPower}}}}},
       {"mesh",
-       {{"generationThreads", renderPreferences.meshGenerationThreadCount},
-        {"segmentationSmoothing",
-         {{"enabled", renderPreferences.smoothSegmentationMeshes},
-          {"iterations", renderPreferences.segmentationMeshSmoothingIterations},
-          {"passBand", renderPreferences.segmentationMeshSmoothingPassBand}}},
-        {"pointPicking", renderPreferences.meshPickingEnabled},
-        {"clipPlane",
-         {{"enabled", renderPreferences.meshClipPlaneEnabled},
-          {"worldPlane", vec4ToJson(renderPreferences.meshClipPlaneWorld)}}},
-        {"shadows",
+       {{"shadows",
          {{"enabled", renderPreferences.meshShadowsEnabled},
           {"mapSizePixels", renderPreferences.meshShadowMapSizePixels},
           {"strength", renderPreferences.meshShadowStrength},
@@ -446,20 +519,15 @@ json toJson(
           {"strength", renderPreferences.meshAmbientOcclusionStrength},
           {"power", renderPreferences.meshAmbientOcclusionPower},
           {"contrast", renderPreferences.meshAmbientOcclusionContrast},
-          {"sampleCount", renderPreferences.meshAmbientOcclusionSampleCount}}}}},
-      {"asciiShading",
-       {{"enabled", renderPreferences.asciiEnabled},
-        {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
-        {"charsetIndex", renderPreferences.asciiCharsetIndex},
-        {"foregroundColor", vec3ToJson(renderPreferences.asciiForegroundColor)},
-        {"backgroundColor", vec3ToJson(renderPreferences.asciiBackgroundColor)},
-        {"backgroundAlpha", renderPreferences.asciiBackgroundAlpha},
-        {"useColormapAsForeground", renderPreferences.asciiUseColormapAsForeground},
-        {"spatialMatching", renderPreferences.asciiSpatialMatching},
-        {"spatialExponent", renderPreferences.asciiSpatialExponent}}},
-      {"frameRate",
-       {{"limit", renderPreferences.limitFrameRate},
-        {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
+          {"sampleCount", renderPreferences.meshAmbientOcclusionSampleCount}}},
+        {"segmentationSmoothing",
+         {{"enabled", renderPreferences.smoothSegmentationMeshes},
+          {"iterations", renderPreferences.segmentationMeshSmoothingIterations},
+          {"passBand", renderPreferences.segmentationMeshSmoothingPassBand}}},
+        {"pointPicking", renderPreferences.meshPickingEnabled},
+        {"clipPlane",
+         {{"enabled", renderPreferences.meshClipPlaneEnabled},
+          {"worldPlane", vec4ToJson(renderPreferences.meshClipPlaneWorld)}}}}},
       {"raycasting", {{"samplingFactor", renderPreferences.raycastSamplingFactor}}},
       {"dualDepthPeeling", {{"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
     {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
@@ -479,7 +547,11 @@ json toJson(
         {"receivePan", settings.receivePanSync()}}},
       {"entropyInstances", {{"enabled", settings.entropyInstanceSyncEnabled()}}}}},
     {"system",
-     {{"diagnostics", {{"logVerbosity", std::string{logging::logLevelLabel(logging::defaultLoggerSinkLevel())}}}},
+     {{"performance",
+       {{"frameRate",
+         {{"limit", renderPreferences.limitFrameRate},
+          {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}}}},
+      {"diagnostics", {{"logVerbosity", std::string{logging::logLevelLabel(logging::defaultLoggerSinkLevel())}}}},
       {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
 }
 
@@ -580,6 +652,18 @@ void applyJson(
       setFromJson(renderPreferences.showLightboxOffsetLabels, *lightbox, "showOffsetLabels");
       setVec4FromJson(renderPreferences.lightboxOffsetLabelColor, *lightbox, "offsetLabelColor");
     }
+    if (const auto ascii = views->find("asciiShading"); ascii != views->end() && ascii->is_object()) {
+      setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");
+      setVec2FromJson(renderPreferences.asciiCellSizePx, *ascii, "cellSizePx");
+      setFromJson(renderPreferences.asciiCharsetIndex, *ascii, "charsetIndex");
+      renderPreferences.asciiCharsetIndex = std::clamp(renderPreferences.asciiCharsetIndex, 0, 2);
+      setVec3FromJson(renderPreferences.asciiForegroundColor, *ascii, "foregroundColor");
+      setVec3FromJson(renderPreferences.asciiBackgroundColor, *ascii, "backgroundColor");
+      setFloatFromJson(renderPreferences.asciiBackgroundAlpha, *ascii, "backgroundAlpha", 0.0f, 1.0f);
+      setFromJson(renderPreferences.asciiUseColormapAsForeground, *ascii, "useColormapAsForeground");
+      setFromJson(renderPreferences.asciiSpatialMatching, *ascii, "spatialMatching");
+      setFloatFromJson(renderPreferences.asciiSpatialExponent, *ascii, "spatialExponent", 0.25f, 4.0f);
+    }
   }
 
   if (const auto images = root.find("images"); images != root.end() && images->is_object()) {
@@ -653,15 +737,6 @@ void applyJson(
   }
 
   if (const auto rendering = root.find("rendering"); rendering != root.end() && rendering->is_object()) {
-    if (const auto frameRate = rendering->find("frameRate"); frameRate != rendering->end() && frameRate->is_object()) {
-      setFromJson(renderPreferences.limitFrameRate, *frameRate, "limit");
-      setDoubleFromJson(
-        renderPreferences.targetFrameTimeSeconds,
-        *frameRate,
-        "targetFrameTimeSeconds",
-        1.0 / 240.0,
-        1.0);
-    }
     if (const auto raycasting = rendering->find("raycasting");
         raycasting != rendering->end() && raycasting->is_object())
     {
@@ -707,10 +782,6 @@ void applyJson(
       }
     }
     if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
-      if (const auto threads = mesh->find("generationThreads"); threads != mesh->end() && threads->is_number_unsigned())
-      {
-        renderPreferences.meshGenerationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
-      }
       if (const auto smoothing = mesh->find("segmentationSmoothing");
           smoothing != mesh->end() && smoothing->is_object())
       {
@@ -749,18 +820,6 @@ void applyJson(
       if (const auto passes = ddp->find("maxPeelPasses"); passes != ddp->end() && passes->is_number_unsigned()) {
         renderPreferences.ddpMaxPeelPasses = std::clamp<uint32_t>(passes->get<uint32_t>(), 1u, 32u);
       }
-    }
-    if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {
-      setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");
-      setVec2FromJson(renderPreferences.asciiCellSizePx, *ascii, "cellSizePx");
-      setFromJson(renderPreferences.asciiCharsetIndex, *ascii, "charsetIndex");
-      renderPreferences.asciiCharsetIndex = std::clamp(renderPreferences.asciiCharsetIndex, 0, 2);
-      setVec3FromJson(renderPreferences.asciiForegroundColor, *ascii, "foregroundColor");
-      setVec3FromJson(renderPreferences.asciiBackgroundColor, *ascii, "backgroundColor");
-      setFloatFromJson(renderPreferences.asciiBackgroundAlpha, *ascii, "backgroundAlpha", 0.0f, 1.0f);
-      setFromJson(renderPreferences.asciiUseColormapAsForeground, *ascii, "useColormapAsForeground");
-      setFromJson(renderPreferences.asciiSpatialMatching, *ascii, "spatialMatching");
-      setFloatFromJson(renderPreferences.asciiSpatialExponent, *ascii, "spatialExponent", 0.25f, 4.0f);
     }
   }
 
@@ -815,9 +874,6 @@ void applyJson(
       }
     };
 
-    // Backward-compatible reader for settings files written before ITK-SNAP and
-    // Entropy-instance synchronization had separate sections.
-    applyItkSnapSync(*sync);
     if (const auto itkSnap = sync->find("itkSnap"); itkSnap != sync->end() && itkSnap->is_object()) {
       applyItkSnapSync(*itkSnap);
     }
@@ -833,6 +889,20 @@ void applyJson(
   }
 
   if (const auto system = root.find("system"); system != root.end() && system->is_object()) {
+    if (const auto performance = system->find("performance"); performance != system->end() && performance->is_object())
+    {
+      if (const auto frameRate = performance->find("frameRate");
+          frameRate != performance->end() && frameRate->is_object())
+      {
+        setFromJson(renderPreferences.limitFrameRate, *frameRate, "limit");
+        setDoubleFromJson(
+          renderPreferences.targetFrameTimeSeconds,
+          *frameRate,
+          "targetFrameTimeSeconds",
+          1.0 / 240.0,
+          1.0);
+      }
+    }
     if (const auto diagnostics = system->find("diagnostics"); diagnostics != system->end() && diagnostics->is_object())
     {
       if (const auto level = diagnostics->find("logVerbosity"); level != diagnostics->end() && level->is_string()) {
@@ -926,7 +996,7 @@ std::string toJsonString(
   const RenderPreferences& renderPreferences,
   const PrecisionPreferences& precisionPreferences)
 {
-  return toJson(settings, renderPreferences, precisionPreferences).dump(2);
+  return orderedUserPreferencesJson(toJson(settings, renderPreferences, precisionPreferences)).dump(2);
 }
 
 bool applyJsonString(

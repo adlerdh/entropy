@@ -31,6 +31,14 @@ enum class DragAction
 bool mouseModeAllowsCameraInteraction(MouseMode mouseMode) noexcept;
 
 /**
+ * @brief Check whether a mouse mode permits double-click surface picking in a 3D view.
+ *
+ * Picking is available in the general pointer/navigation/display-adjustment modes whose double-click gesture is not
+ * otherwise assigned. Transformation, annotation, and crosshairs-rotation modes remain excluded.
+ */
+bool mouseModeAllowsPointPicking(MouseMode mouseMode) noexcept;
+
+/**
  * @brief Resolve the 3D camera drag action for the current input state
  * @param mouseMode Active application mouse mode
  * @param buttons Current mouse button state

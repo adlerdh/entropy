@@ -14,6 +14,11 @@ bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) n
   return !eligibility.renderWarped && !eligibility.valueEditInProgress;
 }
 
+bool isosurfaceMeshReadyForHandoff(const IsosurfaceMeshEligibility& eligibility, const bool gpuMeshReady) noexcept
+{
+  return canRenderIsosurfaceWithMesh(eligibility) && gpuMeshReady;
+}
+
 bool useRaycastPreviewDuringIsosurfaceEdit(const bool renderModeIncludesIsosurfaces, const bool activeEdit) noexcept
 {
   return renderModeIncludesIsosurfaces && activeEdit;

@@ -170,7 +170,6 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.crosshairs3DGlyphLengthVoxelDiagonals = 24.0f;
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
-  preferences.meshGenerationThreadCount = 3;
   preferences.smoothSegmentationMeshes = false;
   preferences.segmentationMeshSmoothingIterations = 40;
   preferences.segmentationMeshSmoothingPassBand = 0.2f;
@@ -378,7 +377,6 @@ void requireRenderPreferencesEqual(
   CHECK(actual.crosshairs3DGlyphLengthVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphLengthVoxelDiagonals));
   CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
   CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
-  CHECK(actual.meshGenerationThreadCount == expected.meshGenerationThreadCount);
   CHECK(actual.smoothSegmentationMeshes == expected.smoothSegmentationMeshes);
   CHECK(actual.segmentationMeshSmoothingIterations == expected.segmentationMeshSmoothingIterations);
   CHECK(actual.segmentationMeshSmoothingPassBand == Catch::Approx(expected.segmentationMeshSmoothingPassBand));
@@ -649,6 +647,11 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
       "scaleBars": {
         "targetLengthFraction": 10,
         "marginPixels": 1
+      },
+      "asciiShading": {
+        "charsetIndex": 99,
+        "backgroundAlpha": 3,
+        "spatialExponent": 99
       }
     },
     "segmentation": {
@@ -680,21 +683,20 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
       }
     },
     "rendering": {
-      "frameRate": {
-        "targetFrameTimeSeconds": 100
-      },
       "raycasting": {
         "samplingFactor": 0
-      },
-      "asciiShading": {
-        "charsetIndex": 99,
-        "backgroundAlpha": 3,
-        "spatialExponent": 99
       }
     },
     "synchronization": {
       "enabled": true,
       "sendCursor": false
+    },
+    "system": {
+      "performance": {
+        "frameRate": {
+          "targetFrameTimeSeconds": 100
+        }
+      }
     }
   })";
 
@@ -749,8 +751,8 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
   CHECK(renderPreferences.asciiCharsetIndex == 2);
   CHECK(renderPreferences.asciiBackgroundAlpha == Catch::Approx(1.0f));
   CHECK(renderPreferences.asciiSpatialExponent == Catch::Approx(4.0f));
-  CHECK(settings.cursorSyncEnabled());
-  CHECK_FALSE(settings.sendCursorSync());
+  CHECK_FALSE(settings.cursorSyncEnabled());
+  CHECK(settings.sendCursorSync());
 }
 
 TEST_CASE("default user preference JSON documents built-in defaults", "[app][settings]")
@@ -782,6 +784,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("anatomicalLabels").at("scale").get<float>() == Catch::Approx(1.0f));
   CHECK(root.at("views").at("scaleBars").at("show") == true);
   CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
+  CHECK(root.at("views").at("asciiShading").at("enabled") == false);
   CHECK_FALSE(root.contains("comparison"));
   CHECK_FALSE(root.at("images").contains("intensityProjectionDefaults"));
   CHECK_FALSE(root.at("segmentation").contains("display"));
@@ -789,6 +792,8 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
     root.at("rendering").at("raycasting").at("samplingFactor").get<float>() ==
     Catch::Approx(renderPreferences.raycastSamplingFactor));
   CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
+  CHECK_FALSE(root.at("rendering").contains("asciiShading"));
+  CHECK_FALSE(root.at("rendering").contains("frameRate"));
   CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
@@ -798,4 +803,35 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
   CHECK(root.at("system").at("updates").at("automaticChecks") == false);
+  CHECK(root.at("system").at("performance").at("frameRate").at("limit") == false);
+}
+
+TEST_CASE("user preference JSON follows the settings-window order", "[app][settings]")
+{
+  const std::string text = user_preferences::toJsonString(
+    AppSettings{},
+    user_preferences::defaultRenderPreferences(),
+    user_preferences::PrecisionPreferences{});
+
+  const auto views = text.find("\"views\"");
+  const auto rendering = text.find("\"rendering\"");
+  const auto interface = text.find("\"interface\"");
+  const auto surfaces = text.find("\"mesh\"");
+  const auto ddp = text.find("\"dualDepthPeeling\"");
+  const auto raycasting = text.find("\"raycasting\"");
+  const auto ascii = text.find("\"asciiShading\"");
+
+  REQUIRE(views != std::string::npos);
+  REQUIRE(rendering != std::string::npos);
+  REQUIRE(interface != std::string::npos);
+  REQUIRE(surfaces != std::string::npos);
+  REQUIRE(ddp != std::string::npos);
+  REQUIRE(raycasting != std::string::npos);
+  REQUIRE(ascii != std::string::npos);
+  CHECK(views < rendering);
+  CHECK(rendering < interface);
+  CHECK(surfaces < ddp);
+  CHECK(ddp < raycasting);
+  CHECK(views < ascii);
+  CHECK(ascii < rendering);
 }

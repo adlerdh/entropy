@@ -316,8 +316,7 @@ bool meshRenderingSettingsEqual(
   const serialize::ProjectMeshRenderingSettings& a,
   const serialize::ProjectMeshRenderingSettings& b)
 {
-  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_generationThreadCount == b.m_generationThreadCount &&
-         a.m_smoothSegmentationMeshes == b.m_smoothSegmentationMeshes &&
+  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_smoothSegmentationMeshes == b.m_smoothSegmentationMeshes &&
          a.m_segmentationSmoothingIterations == b.m_segmentationSmoothingIterations &&
          a.m_segmentationSmoothingPassBand == b.m_segmentationSmoothingPassBand &&
          a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses && a.m_pickingEnabled == b.m_pickingEnabled &&

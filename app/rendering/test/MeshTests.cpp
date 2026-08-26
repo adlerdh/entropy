@@ -1242,6 +1242,18 @@ TEST_CASE("active isosurface edits retain a raycast preview in combined surface 
   CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(false, true));
 }
 
+TEST_CASE("isosurface raycasting hands off only after the exact mesh is GPU-ready", "[rendering][mesh]")
+{
+  const mesh::IsosurfaceMeshEligibility eligible{.opacity = 1.0f, .visible = true};
+  CHECK_FALSE(mesh::isosurfaceMeshReadyForHandoff(eligible, false));
+  CHECK(mesh::isosurfaceMeshReadyForHandoff(eligible, true));
+
+  CHECK_FALSE(
+    mesh::isosurfaceMeshReadyForHandoff({.valueEditInProgress = true, .opacity = 1.0f, .visible = true}, true));
+  CHECK_FALSE(mesh::isosurfaceMeshReadyForHandoff({.renderWarped = true, .opacity = 1.0f, .visible = true}, true));
+  CHECK_FALSE(mesh::isosurfaceMeshReadyForHandoff({.opacity = 0.0f, .visible = true}, true));
+}
+
 TEST_CASE("isosurface mesh policy uses DDP for translucent surfaces", "[rendering][mesh]")
 {
   CHECK(mesh::compositingModeForIsosurfaceAlpha(1.0f) == mesh::MeshCompositingMode::Opaque);

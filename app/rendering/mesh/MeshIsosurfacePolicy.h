@@ -36,6 +36,13 @@ struct IsosurfaceMeshEligibility
  */
 bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) noexcept;
 
+/**
+ * @brief Return whether raycasting can be replaced by the exact current mesh.
+ *
+ * Eligibility alone is insufficient: the extracted geometry must also have reached the GPU before the handoff.
+ */
+bool isosurfaceMeshReadyForHandoff(const IsosurfaceMeshEligibility& eligibility, bool gpuMeshReady) noexcept;
+
 /** Return whether a render mode must use the live raycast preview for an actively edited isosurface. */
 bool useRaycastPreviewDuringIsosurfaceEdit(bool renderModeIncludesIsosurfaces, bool activeEdit) noexcept;
 

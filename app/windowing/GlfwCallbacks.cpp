@@ -622,7 +622,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   CallbackHandler& H = app->callbackHandler();
 
   if (
-    isLeftDoubleClick(button, action, windowCursorPos) && MouseMode::Pointer == app->appData().state().mouseMode() &&
+    isLeftDoubleClick(button, action, windowCursorPos) &&
+    camera3d::mouseModeAllowsPointPicking(app->appData().state().mouseMode()) &&
     ViewType::ThreeD == hit_invalidOutsideView->view->viewType())
   {
     H.doThreeDIsosurfacePick(*hit_invalidOutsideView);

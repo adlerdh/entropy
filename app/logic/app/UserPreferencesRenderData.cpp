@@ -171,7 +171,6 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.crosshairs3DGlyphLengthVoxelDiagonals = renderData.m_crosshairs3DGlyphLengthVoxelDiagonals;
   preferences.showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews;
   preferences.threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor;
-  preferences.meshGenerationThreadCount = renderData.m_meshGenerationThreadCount;
   preferences.smoothSegmentationMeshes = renderData.m_smoothSegmentationMeshes;
   preferences.segmentationMeshSmoothingIterations = renderData.m_segmentationMeshSmoothingIterations;
   preferences.segmentationMeshSmoothingPassBand = renderData.m_segmentationMeshSmoothingPassBand;
@@ -307,7 +306,6 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_crosshairs3DGlyphLengthVoxelDiagonals = preferences.crosshairs3DGlyphLengthVoxelDiagonals;
   renderData.m_showThreeDCameraFrustumIn2DViews = preferences.showThreeDCameraFrustumIn2DViews;
   renderData.m_threeDCameraFrustumColor = preferences.threeDCameraFrustumColor;
-  renderData.m_meshGenerationThreadCount = std::min<uint32_t>(preferences.meshGenerationThreadCount, 64);
   renderData.m_smoothSegmentationMeshes = preferences.smoothSegmentationMeshes;
   renderData.m_segmentationMeshSmoothingIterations =
     std::clamp(preferences.segmentationMeshSmoothingIterations, 1u, 1000u);

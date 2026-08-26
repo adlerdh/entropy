@@ -502,15 +502,6 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
     "specularPower",
     settings.m_imagePlaneLightingSpecularPower,
     defaults.m_imagePlaneLightingSpecularPower);
-  const bool globalLightingDiffers = settings.m_lightingAmbient != defaults.m_lightingAmbient ||
-                                     settings.m_lightingDiffuse != defaults.m_lightingDiffuse ||
-                                     settings.m_lightingSpecular != defaults.m_lightingSpecular ||
-                                     settings.m_lightingSpecularPower != defaults.m_lightingSpecularPower;
-  if (imagePlaneLighting.empty() && globalLightingDiffers) {
-    // Older projects implicitly shared global lighting with image planes. This schema marker distinguishes a new
-    // project that intentionally keeps the independent plane defaults without serializing those default values.
-    imagePlanes["lightingMode"] = "independent";
-  }
   if (!imagePlaneLighting.empty()) {
     imagePlanes["lighting"] = std::move(imagePlaneLighting);
   }
@@ -555,7 +546,6 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
 
 void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
 {
-  bool hasImagePlaneLighting = false;
   if (const auto value = j.find("transparentBackground"); value != j.end() && value->is_boolean()) {
     settings.m_transparentBackground = value->get<bool>();
   }
@@ -563,7 +553,6 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     settings.m_imageBoxVisible = value->get<bool>();
   }
   if (const auto imagePlanes = j.find("imagePlanes"); imagePlanes != j.end() && imagePlanes->is_object()) {
-    hasImagePlaneLighting = imagePlanes->value("lightingMode", "") == "independent";
     if (const auto value = imagePlanes->find("visible"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlanesVisible = value->get<bool>();
     }
@@ -579,7 +568,6 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
       settings.m_imagePlaneShading = value->get<bool>();
     }
     if (const auto lighting = imagePlanes->find("lighting"); lighting != imagePlanes->end() && lighting->is_object()) {
-      hasImagePlaneLighting = true;
       if (const auto value = lighting->find("ambient"); value != lighting->end() && value->is_number()) {
         settings.m_imagePlaneLightingAmbient = std::clamp(value->get<float>(), 0.0f, 2.0f);
       }
@@ -607,12 +595,6 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     if (const auto value = lighting->find("specularPower"); value != lighting->end() && value->is_number()) {
       settings.m_lightingSpecularPower = std::clamp(value->get<float>(), 1.0f, 128.0f);
     }
-  }
-  if (!hasImagePlaneLighting) {
-    settings.m_imagePlaneLightingAmbient = settings.m_lightingAmbient;
-    settings.m_imagePlaneLightingDiffuse = settings.m_lightingDiffuse;
-    settings.m_imagePlaneLightingSpecular = settings.m_lightingSpecular;
-    settings.m_imagePlaneLightingSpecularPower = settings.m_lightingSpecularPower;
   }
   if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();
@@ -673,7 +655,6 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   const ProjectMeshRenderingSettings defaults;
   j = json::object();
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
-  addIfChanged(j, "generationThreads", settings.m_generationThreadCount, defaults.m_generationThreadCount);
   json segmentationSmoothing = json::object();
   addIfChanged(
     segmentationSmoothing,
@@ -691,9 +672,6 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
     settings.m_segmentationSmoothingPassBand,
     defaults.m_segmentationSmoothingPassBand);
   addIfNotEmpty(j, "segmentationSmoothing", std::move(segmentationSmoothing));
-  json dualDepthPeeling = json::object();
-  addIfChanged(dualDepthPeeling, "maxPeelPasses", settings.m_ddpMaxPeelPasses, defaults.m_ddpMaxPeelPasses);
-  addIfNotEmpty(j, "dualDepthPeeling", std::move(dualDepthPeeling));
   addIfChanged(j, "pointPicking", settings.m_pickingEnabled, defaults.m_pickingEnabled);
   json clipPlane = json::object();
   addIfChanged(clipPlane, "enabled", settings.m_clipPlaneEnabled, defaults.m_clipPlaneEnabled);
@@ -726,9 +704,6 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
   if (const auto value = j.find("enabled"); value != j.end() && value->is_boolean()) {
     settings.m_renderingEnabled = value->get<bool>();
   }
-  if (const auto threads = j.find("generationThreads"); threads != j.end() && threads->is_number_unsigned()) {
-    settings.m_generationThreadCount = std::min<uint32_t>(threads->get<uint32_t>(), 64);
-  }
   if (const auto smoothing = j.find("segmentationSmoothing"); smoothing != j.end() && smoothing->is_object()) {
     if (const auto value = smoothing->find("enabled"); value != smoothing->end() && value->is_boolean()) {
       settings.m_smoothSegmentationMeshes = value->get<bool>();
@@ -738,11 +713,6 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
     }
     if (const auto value = smoothing->find("passBand"); value != smoothing->end() && value->is_number()) {
       settings.m_segmentationSmoothingPassBand = std::clamp(value->get<float>(), 0.001f, 2.0f);
-    }
-  }
-  if (const auto ddp = j.find("dualDepthPeeling"); ddp != j.end() && ddp->is_object()) {
-    if (const auto value = ddp->find("maxPeelPasses"); value != ddp->end() && value->is_number_unsigned()) {
-      settings.m_ddpMaxPeelPasses = std::clamp(value->get<uint32_t>(), 1u, 32u);
     }
   }
   if (const auto value = j.find("pointPicking"); value != j.end() && value->is_boolean()) {
@@ -780,12 +750,6 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
     }
     if (const auto value = ambientOcclusion->find("radiusMm"); value != ambientOcclusion->end() && value->is_number()) {
       settings.m_ambientOcclusionRadiusMm = std::clamp(value->get<float>(), 0.1f, 1000.0f);
-    }
-    else if (const auto legacy = ambientOcclusion->find("radiusPixels");
-             legacy != ambientOcclusion->end() && legacy->is_number())
-    {
-      // Legacy projects used a screen-space radius. Preserve the numeric value as a conservative physical radius.
-      settings.m_ambientOcclusionRadiusMm = std::clamp(legacy->get<float>(), 0.1f, 1000.0f);
     }
     if (const auto value = ambientOcclusion->find("strength"); value != ambientOcclusion->end() && value->is_number()) {
       settings.m_ambientOcclusionStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
@@ -1003,10 +967,12 @@ void to_json(json& j, const EntropyProject& project)
   addIfNotEmpty(rendering, "comparison", std::move(comparison));
   json mesh = project.m_meshRendering;
   json dualDepthPeeling = json::object();
-  if (const auto ddp = mesh.find("dualDepthPeeling"); ddp != mesh.end()) {
-    dualDepthPeeling = *ddp;
-    mesh.erase(ddp);
-  }
+  const ProjectMeshRenderingSettings meshDefaults;
+  addIfChanged(
+    dualDepthPeeling,
+    "maxPeelPasses",
+    project.m_meshRendering.m_ddpMaxPeelPasses,
+    meshDefaults.m_ddpMaxPeelPasses);
   addIfNotEmpty(rendering, "dualDepthPeeling", std::move(dualDepthPeeling));
   json threeD = project.m_threeDRendering;
   addIfNotEmpty(rendering, "threeD", std::move(threeD));
@@ -1041,38 +1007,6 @@ void from_json(const json& j, EntropyProject& project)
   std::vector<Image> images = j.at("images").get<std::vector<Image>>();
   if (images.empty()) {
     throwDebug("Entropy project JSON must contain at least one image");
-  }
-
-  // Migrate the former project-wide option to every image that does not already
-  // provide the replacement per-image setting. The legacy key is read-only and
-  // is never emitted by current project serialization.
-  bool legacyModulateIsocontourOpacity = false;
-  if (const auto settings = j.find("settings"); settings != j.end() && settings->is_object()) {
-    if (const auto rendering = settings->find("rendering"); rendering != settings->end() && rendering->is_object()) {
-      if (const auto isocontours = rendering->find("isocontours");
-          isocontours != rendering->end() && isocontours->is_object())
-      {
-        if (const auto legacy = isocontours->find("modulateOpacityWithImageOpacity");
-            legacy != isocontours->end() && legacy->is_boolean())
-        {
-          legacyModulateIsocontourOpacity = legacy->get<bool>();
-        }
-      }
-    }
-  }
-  if (legacyModulateIsocontourOpacity) {
-    const auto& imageJson = j.at("images");
-    for (std::size_t i = 0; i < images.size(); ++i) {
-      const bool hasPerImageSetting =
-        imageJson.at(i).contains("settings") && imageJson.at(i).at("settings").contains("isosurfaces") &&
-        imageJson.at(i).at("settings").at("isosurfaces").contains("modulateContourOpacityWithImageOpacity");
-      if (!hasPerImageSetting) {
-        if (!images[i].m_settings) {
-          images[i].m_settings.emplace();
-        }
-        images[i].m_settings->m_modulateIsocontourOpacityWithImageOpacity = true;
-      }
-    }
   }
 
   project.m_referenceImage = std::move(images.front());
@@ -1128,7 +1062,9 @@ void from_json(const json& j, EntropyProject& project)
         mesh->get_to(project.m_meshRendering);
       }
       if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
-        from_json(json{{"dualDepthPeeling", *ddp}}, project.m_meshRendering);
+        if (const auto value = ddp->find("maxPeelPasses"); value != ddp->end() && value->is_number_unsigned()) {
+          project.m_meshRendering.m_ddpMaxPeelPasses = std::clamp(value->get<uint32_t>(), 1u, 32u);
+        }
       }
       if (const auto intensityProjection = rendering->find("intensityProjection");
           intensityProjection != rendering->end() && intensityProjection->is_object())

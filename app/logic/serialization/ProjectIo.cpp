@@ -83,20 +83,13 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"ambient", "diffuse", "specular", "specularPower"};
   }
   else if (path == "settings/rendering/threeD/imagePlanes") {
-    preferredKeys = {"visible", "viewAngleOpacity", "segmentationsVisible", "shading", "lightingMode", "lighting"};
+    preferredKeys = {"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"};
   }
   else if (path == "settings/rendering/raycasting") {
     preferredKeys = {"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
   }
   else if (path == "settings/rendering/mesh") {
-    preferredKeys = {
-      "pointPicking",
-      "clipPlane",
-      "shadows",
-      "ambientOcclusion",
-      "enabled",
-      "generationThreads",
-      "segmentationSmoothing"};
+    preferredKeys = {"shadows", "ambientOcclusion", "segmentationSmoothing", "pointPicking", "clipPlane", "enabled"};
   }
   else if (path == "settings/rendering/mesh/segmentationSmoothing") {
     preferredKeys = {"enabled", "iterations", "passBand"};
@@ -108,7 +101,7 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"enabled", "mapSizePixels", "strength", "depthBias"};
   }
   else if (path == "settings/rendering/mesh/ambientOcclusion") {
-    preferredKeys = {"enabled", "radiusMm", "strength", "power", "contrast", "sampleCount", "radiusPixels"};
+    preferredKeys = {"enabled", "radiusMm", "strength", "power", "contrast", "sampleCount"};
   }
   else if (path == "settings/rendering/isocontours") {
     preferredKeys = {"floatingPointInterpolationPolicy"};

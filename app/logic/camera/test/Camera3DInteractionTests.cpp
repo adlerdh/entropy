@@ -32,6 +32,22 @@ TEST_CASE("3D camera interaction is allowed in every mouse mode", "[camera][3d]"
   CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::ImageScale));
 }
 
+TEST_CASE("3D point picking is allowed in general interaction modes", "[camera][3d][picking]")
+{
+  CHECK(camera3d::mouseModeAllowsPointPicking(MouseMode::Pointer));
+  CHECK(camera3d::mouseModeAllowsPointPicking(MouseMode::CameraZoom));
+  CHECK(camera3d::mouseModeAllowsPointPicking(MouseMode::WindowLevel));
+  CHECK(camera3d::mouseModeAllowsPointPicking(MouseMode::CameraTranslate));
+  CHECK(camera3d::mouseModeAllowsPointPicking(MouseMode::Segment));
+
+  CHECK_FALSE(camera3d::mouseModeAllowsPointPicking(MouseMode::CameraRotate));
+  CHECK_FALSE(camera3d::mouseModeAllowsPointPicking(MouseMode::CrosshairsRotate));
+  CHECK_FALSE(camera3d::mouseModeAllowsPointPicking(MouseMode::Annotate));
+  CHECK_FALSE(camera3d::mouseModeAllowsPointPicking(MouseMode::ImageTranslate));
+  CHECK_FALSE(camera3d::mouseModeAllowsPointPicking(MouseMode::ImageRotate));
+  CHECK_FALSE(camera3d::mouseModeAllowsPointPicking(MouseMode::ImageScale));
+}
+
 TEST_CASE("3D camera interaction maps buttons and modifiers to drag actions", "[camera][3d]")
 {
   CHECK(

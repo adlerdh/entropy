@@ -20,6 +20,7 @@ namespace mesh = rendering::mesh;
 namespace
 {
 
+#if !defined(__APPLE__)
 class HiddenOpenGlContext
 {
 public:
@@ -70,11 +71,15 @@ public:
 private:
   GLFWwindow* m_window = nullptr;
 };
+#endif
 
 } // namespace
 
 TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL context", "[rendering][mesh][gl]")
 {
+#if defined(__APPLE__)
+  SKIP("Headless GLFW initialization can deadlock in non-interactive macOS test workers");
+#else
   HiddenOpenGlContext context;
   if (!context.ready()) {
     SKIP("No OpenGL context is available on this test worker");
@@ -193,4 +198,5 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
   }
 
   CHECK(glGetError() == GL_NO_ERROR);
+#endif
 }

@@ -411,6 +411,9 @@ private:
 
   MeshImagePlaneHandleMap m_meshImagePlaneHandles; //!< Stable handles for dynamic 3D image-plane meshes
 
+  /// Most recently edited surface retained on the raycast path until its replacement mesh is ready.
+  std::optional<ActiveIsosurfaceEdit> m_isosurfaceRaycastHandoff;
+
   bool m_isAppDoneLoadingImages; //!< True once the application has finished the startup/image-loading phase
 
   bool m_showOverlays; //!< Global runtime overlay switch used by the view overlay cycling actions

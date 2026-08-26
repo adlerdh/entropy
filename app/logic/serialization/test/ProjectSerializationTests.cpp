@@ -395,7 +395,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_raycasting.m_renderBackFaces = true;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
   project.m_meshRendering.m_renderingEnabled = false;
-  project.m_meshRendering.m_generationThreadCount = 3;
   project.m_meshRendering.m_smoothSegmentationMeshes = false;
   project.m_meshRendering.m_segmentationSmoothingIterations = 40;
   project.m_meshRendering.m_segmentationSmoothingPassBand = 0.2f;
@@ -470,7 +469,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("renderBackFaces"));
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
   CHECK(mesh.at("enabled") == false);
-  CHECK(mesh.at("generationThreads") == 3);
   CHECK(mesh.at("segmentationSmoothing").at("enabled") == false);
   CHECK(mesh.at("segmentationSmoothing").at("iterations") == 40);
   CHECK(mesh.at("segmentationSmoothing").at("passBand") == 0.2f);
@@ -543,7 +541,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_raycasting.m_renderBackFaces == true);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
   CHECK(parsed.m_meshRendering.m_renderingEnabled == false);
-  CHECK(parsed.m_meshRendering.m_generationThreadCount == 3);
   CHECK(parsed.m_meshRendering.m_smoothSegmentationMeshes == false);
   CHECK(parsed.m_meshRendering.m_segmentationSmoothingIterations == 40);
   CHECK(parsed.m_meshRendering.m_segmentationSmoothingPassBand == 0.2f);
@@ -574,27 +571,24 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
     parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
 }
 
-TEST_CASE("Legacy 3D lighting remains shared with image planes", "[project][serialization]")
+TEST_CASE("Global 3D lighting does not override independent image-plane lighting", "[project][serialization]")
 {
-  const json legacyThreeD{
-    {"lighting", {{"ambient", 0.4f}, {"diffuse", 0.7f}, {"specular", 0.3f}, {"specularPower", 40.0f}}}};
+  const json threeD{{"lighting", {{"ambient", 0.4f}, {"diffuse", 0.7f}, {"specular", 0.3f}, {"specularPower", 40.0f}}}};
 
-  const auto settings = legacyThreeD.get<serialize::ProjectThreeDRenderingSettings>();
-  CHECK(settings.m_imagePlaneLightingAmbient == 0.4f);
-  CHECK(settings.m_imagePlaneLightingDiffuse == 0.7f);
-  CHECK(settings.m_imagePlaneLightingSpecular == 0.3f);
-  CHECK(settings.m_imagePlaneLightingSpecularPower == 40.0f);
+  const auto settings = threeD.get<serialize::ProjectThreeDRenderingSettings>();
+  CHECK(settings.m_imagePlaneLightingAmbient == 0.3f);
+  CHECK(settings.m_imagePlaneLightingDiffuse == 0.5f);
+  CHECK(settings.m_imagePlaneLightingSpecular == 0.2f);
+  CHECK(settings.m_imagePlaneLightingSpecularPower == 16.0f);
 }
 
-TEST_CASE("Independent image-plane defaults are never serialized as values", "[project][serialization]")
+TEST_CASE("Independent image-plane defaults are not serialized", "[project][serialization]")
 {
   serialize::ProjectThreeDRenderingSettings settings;
   settings.m_lightingAmbient = 0.4f;
 
   const json threeD = settings;
-  REQUIRE(threeD.contains("imagePlanes"));
-  CHECK(threeD.at("imagePlanes").at("lightingMode") == "independent");
-  CHECK_FALSE(threeD.at("imagePlanes").contains("lighting"));
+  CHECK_FALSE(threeD.contains("imagePlanes"));
 
   const auto parsed = threeD.get<serialize::ProjectThreeDRenderingSettings>();
   CHECK(parsed.m_lightingAmbient == 0.4f);
@@ -630,11 +624,11 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_raycasting.m_renderBackFaces = false;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskIn;
   project.m_meshRendering.m_renderingEnabled = false;
-  project.m_meshRendering.m_generationThreadCount = 3;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
+  project.m_meshRendering.m_segmentationSmoothingIterations = 40;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
 
@@ -686,21 +680,21 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                    "imagePlanes"});
   CHECK(
     objectKeys(orderedRendering.at("mesh")) == std::vector<std::string>{
-                                                 "pointPicking",
-                                                 "clipPlane",
                                                  "shadows",
                                                  "ambientOcclusion",
-                                                 "enabled",
-                                                 "generationThreads"});
+                                                 "segmentationSmoothing",
+                                                 "pointPicking",
+                                                 "clipPlane",
+                                                 "enabled"});
   CHECK(
     objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
-    std::vector<std::string>{"visible", "viewAngleOpacity", "segmentationsVisible", "shading", "lighting"});
+    std::vector<std::string>{"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"});
   CHECK(
     objectKeys(orderedRendering.at("raycasting")) ==
     std::vector<std::string>{"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"});
 }
 
-TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh", "[project][serialization]")
+TEST_CASE("Project serialization ignores obsolete DDP settings nested under mesh", "[project][serialization]")
 {
   const json root = {
     {"images", json::array({{{"path", "image.nii.gz"}}})},
@@ -708,7 +702,7 @@ TEST_CASE("Project serialization accepts legacy DDP settings nested under mesh",
      {{"rendering", {{"mesh", {{"dualDepthPeeling", {{"untilComplete", false}, {"maxPeelPasses", 12u}}}}}}}}}};
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
+  CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 5);
 }
 
 TEST_CASE("Project serialization ignores obsolete translucent mesh compositing", "[project][serialization]")
@@ -726,7 +720,7 @@ TEST_CASE("Project serialization ignores obsolete translucent mesh compositing",
   CHECK_FALSE(mesh.contains("translucentCompositing"));
 }
 
-TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][serialization][ssao]")
+TEST_CASE("Project serialization ignores obsolete pixel AO radius", "[project][serialization][ssao]")
 {
   const json root = {
     {"images", json::array({{{"path", "image.nii.gz"}}})},
@@ -736,7 +730,7 @@ TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][se
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 12.0f);
+  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 5.0f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.5f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 1.0f);
@@ -744,7 +738,7 @@ TEST_CASE("Project serialization migrates legacy pixel AO radius", "[project][se
 
   const json rewritten = parsed;
   const json& ao = rewritten.at("settings").at("rendering").at("mesh").at("ambientOcclusion");
-  CHECK(ao.at("radiusMm") == 12.0f);
+  CHECK_FALSE(ao.contains("radiusMm"));
   CHECK_FALSE(ao.contains("radiusPixels"));
 }
 
@@ -798,7 +792,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
     parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
   REQUIRE(parsed.m_referenceImage.m_settings);
   CHECK(parsed.m_referenceImage.m_settings->m_displayName == "Preserved image settings");
-  CHECK(parsed.m_referenceImage.m_settings->m_modulateIsocontourOpacityWithImageOpacity);
+  CHECK_FALSE(parsed.m_referenceImage.m_settings->m_modulateIsocontourOpacityWithImageOpacity);
   CHECK(parsed.m_view.m_annotationsOnTop == true);
   CHECK(parsed.m_view.m_landmarksOnTop == true);
   CHECK(parsed.m_view.m_hideAnnotationVertices == true);

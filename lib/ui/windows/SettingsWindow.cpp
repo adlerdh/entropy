@@ -2460,6 +2460,37 @@ void renderMeshRenderingTab(RenderData& renderData)
   }
 
   ImGui::Spacing();
+  ImGui::SeparatorText("Smoothing");
+  disabledTextWrapped(
+    "Segmentation surfaces are extracted from the original label voxels, then smoothed with a boundary-preserving "
+    "windowed-sinc surface filter. The segmentation data itself is not modified.");
+
+  ImGui::Checkbox("Smooth segmentation meshes", &renderData.m_smoothSegmentationMeshes);
+  ImGui::SameLine();
+  helpMarker("Apply boundary-preserving windowed-sinc smoothing to extracted segmentation surfaces");
+  if (renderData.m_smoothSegmentationMeshes) {
+    int iterations = static_cast<int>(renderData.m_segmentationMeshSmoothingIterations);
+    if (ImGui::InputInt("Smoothing iterations", &iterations)) {
+      renderData.m_segmentationMeshSmoothingIterations = static_cast<uint32_t>(std::clamp(iterations, 1, 1000));
+    }
+    ImGui::SameLine();
+    helpMarker("More iterations produce smoother segmentation surfaces but take longer to generate");
+
+    ImGui::DragFloat(
+      "Smoothing pass band",
+      &renderData.m_segmentationMeshSmoothingPassBand,
+      0.005f,
+      0.001f,
+      2.0f,
+      "%.3f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker(
+      "Controls how much surface detail passes through the smoothing filter. Lower values suppress more detail and "
+      "produce stronger smoothing; higher values preserve more detail and approach the unsmoothed surface");
+  }
+
+  ImGui::Spacing();
   ImGui::SeparatorText("Interaction");
 
   ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);
@@ -2560,38 +2591,6 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
     ImGuiSliderFlags_AlwaysClamp);
   ImGui::SameLine();
   helpMarker("Fallback ray-marching step as a fraction of voxel size. Smaller values improve fidelity but cost more");
-
-  ImGui::Spacing();
-  ImGui::SeparatorText("Mesh Generation");
-  int meshGenerationThreadCount = static_cast<int>(renderData.m_meshGenerationThreadCount);
-  if (ImGui::InputInt("Mesh generation threads", &meshGenerationThreadCount)) {
-    renderData.m_meshGenerationThreadCount = static_cast<uint32_t>(std::clamp(meshGenerationThreadCount, 0, 64));
-  }
-  ImGui::SameLine();
-  helpMarker("Maximum VTK CPU threads used by one mesh extraction job. Zero uses a conservative automatic value");
-
-  ImGui::Checkbox("Smooth segmentation meshes", &renderData.m_smoothSegmentationMeshes);
-  ImGui::SameLine();
-  helpMarker("Apply boundary-preserving windowed-sinc smoothing to extracted segmentation surfaces");
-  if (renderData.m_smoothSegmentationMeshes) {
-    int iterations = static_cast<int>(renderData.m_segmentationMeshSmoothingIterations);
-    if (ImGui::InputInt("Smoothing iterations", &iterations)) {
-      renderData.m_segmentationMeshSmoothingIterations = static_cast<uint32_t>(std::clamp(iterations, 1, 1000));
-    }
-    ImGui::SameLine();
-    helpMarker("More iterations produce smoother segmentation surfaces but take longer to generate");
-
-    ImGui::DragFloat(
-      "Smoothing pass band",
-      &renderData.m_segmentationMeshSmoothingPassBand,
-      0.005f,
-      0.001f,
-      2.0f,
-      "%.3f",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Lower values smooth more strongly while preserving the overall surface shape");
-  }
 }
 
 void renderAsciiShadingSettings(RenderData& renderData)
