@@ -30,18 +30,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
+
 option(Entropy_ENABLE_IWYU "Run Include What You Use during C++ compilation" OFF)
 set(Entropy_IWYU_OPTIONS
   "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--max_line_length=120;-Xiwyu;--error=0"
   CACHE STRING "Additional options passed to Include What You Use")
+
 option(Entropy_ENABLE_CLANG_TIDY "Run clang-tidy during C++ compilation" OFF)
 set(Entropy_CLANG_TIDY_OPTIONS
   "--quiet"
   CACHE STRING "Additional options passed to clang-tidy")
+
 option(Entropy_ENABLE_CPPCHECK "Add the cppcheck static-analysis target" OFF)
 set(Entropy_CPPCHECK_OPTIONS
   "--enable=warning,style,performance,portability;--addon=threadsafety;--inline-suppr;--error-exitcode=1;--quiet;--template=gcc"
   CACHE STRING "Options passed to cppcheck")
+
 set(Entropy_CPPCHECK_JOBS "4" CACHE STRING "Parallel cppcheck analysis jobs")
 option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
 
@@ -520,7 +524,6 @@ if(ENTROPY_HAVE_STD_EXPECTED)
 else()
   message(FATAL_ERROR "std::expected is required. Use a C++23 standard library that provides <expected>.")
 endif()
-
 
 
 #--------------------------------------------------------------------------------
@@ -1103,6 +1106,19 @@ cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADE
 cmrc_add_resource_library(entropy-icons ALIAS entropy::icons "${entropy_ABOUT_ICON_SOURCE}" NAMESPACE icons
   WHENCE "${CMAKE_CURRENT_SOURCE_DIR}"
 )
+
+if(Entropy_ENABLE_CPPCHECK)
+  # Older cppcheck releases validate that every compilation-database source exists before honoring exclusions.
+  # Generate CMakeRC translation units so the cppcheck target also works in a clean build directory.
+  add_dependencies(cppcheck
+    entropy-colormaps
+    entropy-fonts
+    entropy-icons
+    entropy-licenses
+    entropy-shaders
+  )
+endif()
+
 entropy_disable_linting_for_targets(
   entropy-colormaps
   entropy-fonts
