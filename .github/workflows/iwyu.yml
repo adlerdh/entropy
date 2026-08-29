@@ -69,6 +69,11 @@ jobs:
           restore-keys: |
             ubuntu2204-gcc13-iwyu-ccache-v1-
 
+      - name: Configure Debug ccache
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
       - name: Restore Debug Dependencies cache
         uses: actions/cache@v6
         with:

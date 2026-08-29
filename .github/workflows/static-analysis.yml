@@ -1,0 +1,253 @@
+name: Static Analysis
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "24 10 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-analysis-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CC: gcc-13
+  CXX: g++-13
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  CTEST_PARALLEL_LEVEL: 3
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 2G
+  DEPS_CACHE_VERSION: v1
+
+jobs:
+  clang-tidy:
+    name: Clang-Tidy Analysis (Ubuntu x86_64)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Install build and clang-tidy dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ccache \
+            clang-tidy \
+            gcc-13 \
+            g++-13 \
+            libdbus-1-dev \
+            libssl-dev \
+            libgl1-mesa-dev \
+            libwayland-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            xorg-dev
+
+      - name: Validate runner tools
+        run: |
+          lsb_release -a
+          cmake --version
+          ccache --version
+          clang-tidy --version
+          "${CC}" --version
+          "${CXX}" --version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v6
+        with:
+          path: .ccache
+          key: ubuntu2404-gcc13-clang-tidy-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            ubuntu2404-gcc13-clang-tidy-ccache-v1-
+
+      - name: Configure Debug ccache
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Debug Dependencies cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            build-clang-tidy/external/catch2-*
+            build-clang-tidy/external/cli11-*
+            build-clang-tidy/external/cmakerc-*
+            build-clang-tidy/external/curl-*
+            build-clang-tidy/external/glfw-*
+            build-clang-tidy/external/glm-*
+            build-clang-tidy/external/iconfont-*
+            build-clang-tidy/external/imgui-*
+            build-clang-tidy/external/implot-*
+            build-clang-tidy/external/itk-*
+            build-clang-tidy/external/vtk-*
+            build-clang-tidy/external/nanovg-*
+            build-clang-tidy/external/nativefiledialog-*
+            build-clang-tidy/external/nlohmann_json-*
+            build-clang-tidy/external/qtbase-*
+            build-clang-tidy/external/spdlog-*
+            build-clang-tidy/external/stduuid-*
+            build-clang-tidy/external/tinyfsm-*
+          key: ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-
+
+      - name: Configure Debug dependencies
+        run: >-
+          cmake --preset deps-debug -B build-clang-tidy
+          -D Entropy_USE_CCACHE=ON
+          -D Entropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Build Debug dependencies
+        timeout-minutes: 90
+        run: cmake --build build-clang-tidy --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Configure Debug app with clang-tidy
+        run: cmake --preset app-debug -B build-clang-tidy -D Entropy_USE_CCACHE=ON -D Entropy_ENABLE_CLANG_TIDY=ON
+
+      - name: Run clang-tidy during Debug app build
+        run: |
+          set -o pipefail
+          cmake --build build-clang-tidy --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}" -- -k 2>&1 | tee clang-tidy.log
+
+      - name: Run Debug tests
+        run: ctest --test-dir build-clang-tidy --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
+
+      - name: Upload clang-tidy log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: clang-tidy-log
+          path: clang-tidy.log
+          if-no-files-found: ignore
+
+      - name: Show ccache stats
+        if: always()
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi
+
+  cppcheck:
+    name: Cppcheck Analysis (Ubuntu x86_64)
+    runs-on: ubuntu-24.04
+    # Keep the initial rollout advisory while the existing diagnostic baseline is triaged.
+    continue-on-error: true
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Install build and cppcheck dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ccache \
+            cppcheck \
+            gcc-13 \
+            g++-13 \
+            libdbus-1-dev \
+            libssl-dev \
+            libgl1-mesa-dev \
+            libwayland-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            xorg-dev
+
+      - name: Validate runner tools
+        run: |
+          lsb_release -a
+          cmake --version
+          ccache --version
+          cppcheck --version
+          "${CC}" --version
+          "${CXX}" --version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v6
+        with:
+          path: .ccache
+          key: ubuntu2404-gcc13-cppcheck-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            ubuntu2404-gcc13-cppcheck-ccache-v1-
+
+      - name: Configure Debug ccache
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Debug Dependencies cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            build-cppcheck/external/catch2-*
+            build-cppcheck/external/cli11-*
+            build-cppcheck/external/cmakerc-*
+            build-cppcheck/external/curl-*
+            build-cppcheck/external/glfw-*
+            build-cppcheck/external/glm-*
+            build-cppcheck/external/iconfont-*
+            build-cppcheck/external/imgui-*
+            build-cppcheck/external/implot-*
+            build-cppcheck/external/itk-*
+            build-cppcheck/external/vtk-*
+            build-cppcheck/external/nanovg-*
+            build-cppcheck/external/nativefiledialog-*
+            build-cppcheck/external/nlohmann_json-*
+            build-cppcheck/external/qtbase-*
+            build-cppcheck/external/spdlog-*
+            build-cppcheck/external/stduuid-*
+            build-cppcheck/external/tinyfsm-*
+          key: ubuntu2404-gcc13-cppcheck-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            ubuntu2404-gcc13-cppcheck-deps-${{ env.DEPS_CACHE_VERSION }}-
+
+      - name: Configure Debug dependencies
+        run: >-
+          cmake --preset deps-debug -B build-cppcheck
+          -D Entropy_USE_CCACHE=ON
+          -D Entropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Build Debug dependencies
+        timeout-minutes: 90
+        run: cmake --build build-cppcheck --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Configure Debug app with cppcheck
+        run: cmake --preset app-debug -B build-cppcheck -D Entropy_USE_CCACHE=ON -D Entropy_ENABLE_CPPCHECK=ON
+
+      - name: Run cppcheck
+        timeout-minutes: 30
+        run: |
+          set -o pipefail
+          cmake --build build-cppcheck --target cppcheck 2>&1 | tee cppcheck.log
+
+      - name: Upload cppcheck log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cppcheck-log
+          path: cppcheck.log
+          if-no-files-found: ignore
+
+      - name: Show ccache stats
+        if: always()
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi

@@ -39,6 +39,11 @@ if(NOT Entropy_STATIC_BUNDLED_DEPENDENCIES)
 endif()
 
 install(CODE "
+    cmake_policy(PUSH)
+    if(POLICY CMP0009)
+      cmake_policy(SET CMP0009 NEW)
+    endif()
+
     include(BundleUtilities)
     set(BU_CHMOD_BUNDLE_ITEMS ON)
     get_filename_component(entropy_INSTALL_PREFIX_ABSOLUTE \"\${CMAKE_INSTALL_PREFIX}\" ABSOLUTE)
@@ -110,6 +115,8 @@ install(CODE "
         message(FATAL_ERROR \"Failed to sign \${entropy_INSTALLED_BUNDLE}\")
       endif()
     endif()
+
+    cmake_policy(POP)
 ")
 
 set(CPACK_GENERATOR "DragNDrop;ZIP")

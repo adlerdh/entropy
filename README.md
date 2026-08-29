@@ -5,62 +5,43 @@
 [![Ubuntu CI](https://github.com/adlerdh/entropy/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/ubuntu.yml)
 [![Release](https://github.com/adlerdh/entropy/actions/workflows/release.yml/badge.svg)](https://github.com/adlerdh/entropy/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/adlerdh/entropy)](https://github.com/adlerdh/entropy/releases)
-[![Clang-Tidy](https://github.com/adlerdh/entropy/actions/workflows/clang-tidy.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/clang-tidy.yml)
+[![Static Analysis](https://github.com/adlerdh/entropy/actions/workflows/static-analysis.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/static-analysis.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE.txt)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
 
 <img src="res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png" alt="Entropy icon" align="left" width="128" hspace="16" vspace="4">
 
-Entropy is a cross-platform tool for visualizing, comparing, registering, segmenting, annotating, and inspecting medical
-images.
+Entropy is a cross-platform desktop application for visualizing, comparing, registering, segmenting, annotating, and
+inspecting medical images.
 
-It is built to handle projects with multiple images in a common reference space. It can load any number of images,
-arrange them in flexible layouts, render them with shader-based MPR views, and display their values, coordinates, and
-transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
+It is designed for projects containing multiple images in a common reference space. Flexible layouts, interactive 2D
+and 3D views, and several comparison modes make it easier to inspect images and evaluate their spatial alignment.
 
-Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor [James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656)
+Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor
+[James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656).
 
 Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of
 Pennsylvania. All rights reserved.
 
-## Building
+## Get Entropy
 
-Entropy uses CMake and C++23. Build the pinned third-party libraries first, then configure and build Entropy against
-them following the "superbuild" pattern:
+Download the latest packages for macOS, Windows, Ubuntu, and Fedora from
+[GitHub Releases](https://github.com/adlerdh/entropy/releases).
 
-```sh
-BUILD_TYPE=release # or debug
+### Build from Source
 
-# Dependencies
-cmake --preset deps-${BUILD_TYPE}
-cmake --build --preset deps-${BUILD_TYPE} --parallel
-
-# Application
-cmake --preset app-${BUILD_TYPE}
-cmake --build --preset app-${BUILD_TYPE} --parallel
-
-# Unit tests
-ctest --test-dir build-${BUILD_TYPE} --parallel --output-on-failure
-```
-
-Adjust the parallel job count for your machine, lowering it if you run out of memory. Run with:
+Entropy uses CMake and C++23. A two-stage build first compiles the pinned dependencies and then the application:
 
 ```sh
-build-${BUILD_TYPE}/bin/entropy # macOS and Linux
-.\build-${BUILD_TYPE}\bin\entropy.exe # Windows
+cmake --preset deps-release
+cmake --build --preset deps-release --parallel
+cmake --preset app-release
+cmake --build --preset app-release --parallel
+ctest --test-dir build-release --parallel --output-on-failure
 ```
 
-Release packages are generated with preset `package-release` for:
-
-- macOS Apple Silicon, arm64
-- macOS Intel, x86_64
-- Windows, x86_64
-- Ubuntu Linux, x86_64
-- Fedora Linux, x86_64
-
-See [BUILDING.md](BUILDING.md) for detailed platform and build requirements, compiler versions, Linux development
-packages, build options, tests, and coverage instructions. Packaging commands and artifact layouts are detailed in
-[PACKAGING.md](PACKAGING.md).
+Start with [BUILDING.md](BUILDING.md) for prerequisites, platform-specific commands, tests, static analysis, and
+troubleshooting. See [PACKAGING.md](PACKAGING.md) to create release packages for macOS, Windows, Ubuntu, or Fedora.
 
 ## Overview
 
@@ -79,7 +60,7 @@ space, plus any number of additional images.
   - Minimum, mean, and maximum intensity projections and X-ray simulation
   - Tiled lightbox views
   - Rotatable crosshairs
-  - 3D rendering of image isosurfaces and segmentations
+  - 3D image planes, image isosurfaces, and segmentation surfaces
 - Rendering modes
   - Layered images with opacity blending
   - Horizontal and vertical swiping comparison
@@ -157,7 +138,7 @@ segmentations, landmarks, annotations, affine transforms, deformation warp field
 
 ### Multi-Component and Time Series Images
 
-Entropy supports 2D, 3D, and 4D (time series) images with any number of components per pixel/voxel.
+Entropy supports 2D, 3D, and 4D (time series) scalar and multi-component images.
 
 Component types:
 - Integer (signed/unsigned 8, 16, and 32 bits)
@@ -185,7 +166,7 @@ dependencies are pinned from source.
 | Language | C++23 |
 | Build system | CMake presets with separate dependency and app stages |
 | Toolchains | Apple Clang, MSVC/Visual Studio, and GCC in CI |
-| Tests | Unit tests and coverage reports run with GitHub Actions |
+| Tests | Unit tests, static analysis, and coverage reports run with GitHub Actions |
 | Rendering | OpenGL 3.3 Core with GLSL shaders |
 | Image I/O | Medical image loading through [ITK](https://itk.org/) and [GDCM](https://gdcm.sourceforge.net/) |
 | UI | [Dear ImGui](https://github.com/ocornut/imgui) with [Docking support](https://github.com/ocornut/imgui/wiki/Docking) and native platform menus and dialog integration |
@@ -196,9 +177,9 @@ Detailed compiler versions, operating system versions, development packages, and
 
 ### Continuous Integration
 
-GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu, and Fedora. Current CI coverage includes macOS
-14.6.1, 15.3.1, 15.6.1, and 26.0.1; Windows 10 and 11; Ubuntu 22.04 and 24.04; and Fedora 43. The CI toolchains are
-Apple Clang 15.0.0+, MSVC/Visual Studio 2022 17.3.4+, and GCC 13.3.0+.
+GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu 22.04 and 24.04, and Fedora. It also checks formatting,
+spelling, include hygiene, and static-analysis findings. See [BUILDING.md](BUILDING.md) for the current CI matrix and
+tooling.
 
 ## Core Concepts
 
@@ -238,22 +219,18 @@ display defaults, and transformation assignments.
 
 ## Quick Start
 
-One typical workflow is to load a reference image and other images to compare against it:
+One typical workflow is to load a reference image and one or more images to compare with it:
 
-1. Open one or more images from the menus (*File -> Open Image(s) / Project / DICOM Series*), the opening screen, or
-   the command line. Multiple images will be loaded in a list that appears across all window panels (menu:
-   *Window -> Images / Segmentations / Registration / Landmarks, Annotations / Isosurfaces*).
-2. By convention, the first image (number 0) is the **Reference** image. It defines the reference/common coordinate
-   space in which all images are displayed. Any other image can be designated as Reference (menu:
-   *Image -> Set as Reference*).
-3. By default, the last image in the list is the **Active** image. View and transformation interactions are applied to
-   the Active image using the mouse and keyboard controls. Set the Active image using menu *Image -> Select Active
-   Image*, the drop-down list in the Images panel, or the [keyboard shortcuts](#keyboard-shortcuts).
+1. Open images, a DICOM series, or an existing project from the opening screen, the **File** menu, or the command line.
+2. The first image becomes the **reference image** and defines the common coordinate space. You can select a different
+   reference image later.
+3. The most recently loaded image becomes the **active image**. Many display, editing, and transformation actions apply
+   to this image. Choose another active image from the Images panel or with a [keyboard shortcut](#keyboard-shortcuts).
 4. Choose a layout and view types for the review or analysis task.
 5. Use image visibility, opacity, comparison modes, and the opacity mixer to compare images.
 6. Use the voxel inspector to verify coordinates and sampled values.
 7. Add segmentations, annotations, landmarks, affine transformations, or warp fields as needed.
-8. Save the work as an Entropy JSON project file. This file will persist the project image list, derived data,
+8. Save the work as an Entropy JSON project file. The file preserves the image list, derived data,
    transformations, layouts, and non-default project settings.
 
 ### Command Line
@@ -275,15 +252,15 @@ entropy -i ref.nii.gz -s ref_seg.nii.gz -i moving.nii.gz
 entropy -p project.json
 ```
 
-Image inputs, DICOM inputs, and `--project` are mutually exclusive. Use `entropy --help` for the complete command-line
-reference.
+Image, DICOM, and project inputs are separate modes and cannot be combined. Positional image paths may be used instead
+of `--image`. Run `entropy --help` for the complete command-line reference.
 
 ### Project Files
 
 Entropy project files preserve all state needed to reopen a review, except for the image data referenced on disk.
 They include a reference image, additional images, segmentations, landmarks, annotations, transformations, layouts, and
 presentation settings. Default values are omitted, so missing settings should be interpreted as Entropy defaults. Image
-entries are stored in `images`; the first entry is the reference image. Project-wide presentation settings are grouped
+entries are stored in `images`. The first entry is the reference image. Project-wide presentation settings are grouped
 under `settings`. Minimal example:
 
 ```json
@@ -293,38 +270,11 @@ under `settings`. Minimal example:
 }
 ```
 
-Including segmentations, landmarks, annotations, and an affine transformation:
-
-```json
-{
-  "version" : {"major": 1, "minor": 0},
-  "images" : [
-    {
-      "path": "ref.nii.gz",
-      "segmentations": [{"path": "ref_seg.nii.gz"}],
-      "landmarks": [{
-        "coordinateSpace": "subject",
-        "points": [{"position": [12.0, 24.0, 36.0], "name": "AC"}],
-        "display": {"name": "Reference landmarks"}
-      }],
-      "annotations": {"path": "ref_annot.json"}
-    },
-    {
-      "path": "mov.nii.gz",
-      "initialAffine": {"path": "mov_affine.txt"},
-      "segmentations": [{"path": "mov_seg.nii.gz"}],
-      "landmarks": [{"path": "mov_landmarks.csv", "coordinateSpace": "subject"}],
-      "annotations": {"path": "mov_annot.json"}
-    }
-  ]
-}
-```
-
 > The project format may evolve as Entropy develops.
 
 ### Keyboard Shortcuts
 
-The complete list is available under menu *Help > Keyboard Shortcuts*.
+The complete, current list is available in **Help > Keyboard Shortcuts**.
 
 | Shortcut | Action |
 | --- | --- |
@@ -353,7 +303,7 @@ The complete list is available under menu *Help > Keyboard Shortcuts*.
 
 ## Runtime Files
 
-Entropy writes a small number of user-level runtime files outside of project files
+Entropy writes a small number of user-level runtime files outside project files.
 
 ### Settings
 

@@ -38,6 +38,11 @@ option(Entropy_ENABLE_CLANG_TIDY "Run clang-tidy during C++ compilation" OFF)
 set(Entropy_CLANG_TIDY_OPTIONS
   "--quiet"
   CACHE STRING "Additional options passed to clang-tidy")
+option(Entropy_ENABLE_CPPCHECK "Add the cppcheck static-analysis target" OFF)
+set(Entropy_CPPCHECK_OPTIONS
+  "--enable=warning,style,performance,portability;--addon=threadsafety;--inconclusive;--inline-suppr;--error-exitcode=1;--quiet;--template=gcc"
+  CACHE STRING "Options passed to cppcheck")
+set(Entropy_CPPCHECK_JOBS "4" CACHE STRING "Parallel cppcheck analysis jobs")
 option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
 
 if(Entropy_USE_CCACHE)
@@ -326,6 +331,36 @@ if(Entropy_SUPERBUILD)
   get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   include(SuperBuild)
   return()
+endif()
+
+if(Entropy_ENABLE_CPPCHECK)
+  find_program(Entropy_CPPCHECK_EXECUTABLE NAMES cppcheck)
+  if(NOT Entropy_CPPCHECK_EXECUTABLE)
+    message(FATAL_ERROR "Entropy_ENABLE_CPPCHECK=ON but cppcheck was not found")
+  endif()
+
+  message(STATUS "Using cppcheck: ${Entropy_CPPCHECK_EXECUTABLE}")
+  add_custom_target(cppcheck
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/cppcheck"
+    COMMAND
+      "${Entropy_CPPCHECK_EXECUTABLE}"
+      ${Entropy_CPPCHECK_OPTIONS}
+      "-j${Entropy_CPPCHECK_JOBS}"
+      "--cppcheck-build-dir=${CMAKE_BINARY_DIR}/cppcheck"
+      "--suppressions-list=${CMAKE_SOURCE_DIR}/.cppcheck-suppressions"
+      "--suppress=*:${CMAKE_SOURCE_DIR}/external/*"
+      "--suppress=*:${CMAKE_BINARY_DIR}/*"
+      "--project=${CMAKE_BINARY_DIR}/compile_commands.json"
+      "-i${CMAKE_SOURCE_DIR}/external"
+      "-i${CMAKE_BINARY_DIR}"
+      "-i${CMAKE_SOURCE_DIR}/app/logic/app/AppPathsMac.mm"
+      "-i${CMAKE_SOURCE_DIR}/lib/ui/ClipboardMac.mm"
+      "-i${CMAKE_SOURCE_DIR}/lib/ui/dialogs/NativeMessageDialogsMac.mm"
+      "-i${CMAKE_SOURCE_DIR}/lib/ui/menus/MacNativeMainMenu.mm"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Running cppcheck static analysis"
+    VERBATIM
+  )
 endif()
 
 

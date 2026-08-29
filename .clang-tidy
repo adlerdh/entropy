@@ -82,6 +82,7 @@ Checks: >
   readability-use-anyofallof
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^(app|lib)/'
+ExcludeHeaderFilterRegex: '(^|/)(external|build-[^/]+)/'
 SystemHeaders: false
 FormatStyle: file
 CheckOptions:

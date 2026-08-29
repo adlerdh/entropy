@@ -6,15 +6,18 @@ build the Entropy app against those dependencies.
 
 For installer, archive, signing, and GitHub release details, see [PACKAGING.md](PACKAGING.md).
 
+Run all commands in this guide from the repository root unless stated otherwise.
+
 ## Requirements
 
 - CMake 3.28 or newer
 - A C++23 compiler and matching native build tool, such as Make, Ninja, Visual Studio, or Xcode
 - Git and network access for the dependency build
-- Disk space for dependencies and build products
+- 8-10 GB of available disk space for a clean build
+- An OpenGL 3.3-capable graphics driver and graphical session to run Entropy
 
-A completed release build tree is roughly 2-3 GB. A clean build needs more temporary space because source archives,
-extracted sources, build trees, and install trees coexist during the dependency build. Allow at least 8-10 GB.
+A completed Release build tree is roughly 2-3 GB. A clean build needs more temporary space because downloaded archives,
+source trees, build trees, and install trees coexist during the dependency stage.
 
 Entropy is developed and tested on:
 
@@ -23,16 +26,27 @@ Entropy is developed and tested on:
 | macOS arm64 and x86_64 | Apple Clang 15.0.0 or newer |
 | Windows x86_64 | Visual Studio 2022 17.3.4 or newer |
 | Ubuntu 22.04 x86_64 | GCC 13 or newer |
+| Ubuntu 24.04 x86_64 | GCC 13 or newer |
 | Fedora 43 x86_64 | GCC 13 or newer |
 
 Other systems may work if they provide a C++23 compiler and the required OpenGL/windowing development libraries.
 
-## Linux Packages
+## Platform Setup
 
-On Debian or Ubuntu, install the development packages needed for OpenGL, windowing, native file dialogs, OpenSSL, and
-the dependency build:
+On macOS, install Xcode and its command-line tools. CMake and Git may be installed with MacPorts, Homebrew, or their
+official installers.
+
+On Windows, install Visual Studio 2022 with the **Desktop development with C++** workload, plus CMake and Git if they
+are not already available on `PATH`.
+
+On Ubuntu 22.04, install the development packages needed for OpenGL, windowing, native file dialogs, OpenSSL, and the
+dependency build. The list includes the optional [ccache](https://ccache.dev/) compiler cache described later in this
+guide. GCC 13 is supplied by the Ubuntu toolchain PPA:
 
 ```sh
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y software-properties-common
+sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get install --no-install-recommends -y \
   ccache \
@@ -49,6 +63,16 @@ sudo apt-get install --no-install-recommends -y \
   libxrandr-dev \
   xorg-dev
 ```
+
+Select GCC 13 for the current shell before configuring:
+
+```sh
+export CC=gcc-13
+export CXX=g++-13
+```
+
+On Ubuntu 24.04, GCC 13 is available from the standard repositories. Skip the `software-properties-common` and
+`add-apt-repository` commands, then install the same build packages and select `gcc-13` and `g++-13` as shown above.
 
 On Fedora, install the equivalent development packages:
 
@@ -84,6 +108,10 @@ sudo dnf install -y \
 The supported local build path is through [CMakePresets.json](CMakePresets.json). Configure and build dependencies
 first, then configure and build the app in the same build directory.
 
+CMake chooses the platform's default generator unless `-G` is specified. Select the compiler and generator before the
+first dependency configure, then use the same choices for the application configure. A configured build directory
+cannot safely switch to a different generator or compiler.
+
 Debug build:
 
 ```sh
@@ -104,20 +132,35 @@ cmake --preset app-release
 cmake --build --preset app-release --parallel
 ```
 
-The presets enable `Entropy_USE_CCACHE=ON`. If `ccache` is installed, CMake uses it as the compiler launcher to speed up
-repeated local builds. If `ccache` is not installed, the build continues normally without caching.
+Each configure command prints the selected compiler and build settings. The presets enable compiler caching when
+ccache is installed, as described below.
 
-If the dependency build runs out of memory, pass a smaller number to `--parallel` (`-j`), e.g. the number of logical
-CPUs minus two, with a minimum of one:
+A good starting point for `--parallel` is the number of logical CPU cores minus two, with a minimum of one. This leaves
+some processing capacity for the operating system and other applications. Calculate the value with:
+
+On Linux:
 
 ```sh
-N=$(( $(nproc) - 2 )); [ "$N" -lt 1 ] && N=1 # Linux
-N=$(( $(sysctl -n hw.logicalcpu) - 2 )); [ "$N" -lt 1 ] && N=1 # macOS
+BUILD_JOBS=$(( $(nproc) - 2 ))
+[ "$BUILD_JOBS" -lt 1 ] && BUILD_JOBS=1
 ```
 
-```powershell
-$N = [Math]::Max(1, [Environment]::ProcessorCount - 2) # Windows
+On macOS:
+
+```sh
+BUILD_JOBS=$(( $(sysctl -n hw.logicalcpu) - 2 ))
+[ "$BUILD_JOBS" -lt 1 ] && BUILD_JOBS=1
 ```
+
+On Windows PowerShell:
+
+```powershell
+$BuildJobs = [Math]::Max(1, [Environment]::ProcessorCount - 2)
+```
+
+Pass the resulting number to builds, for example with `--parallel "$BUILD_JOBS"` in a POSIX shell or
+`--parallel $BuildJobs` in PowerShell. An unqualified `--parallel` uses the native build tool's default parallelism. Use
+a lower value if the dependency build exhausts available memory.
 
 ## CMake Presets
 
@@ -129,8 +172,69 @@ $N = [Math]::Max(1, [Environment]::ProcessorCount - 2) # Windows
 | `app-release` | `build-release` | Configure/build the Release app and tests after `deps-release` |
 | `package-release` | `build-release` | Build the Release package target after `app-release` |
 
-The `deps-*` presets configure with `Entropy_SUPERBUILD=ON`. The `app-*` presets configure the same build directory with
-`Entropy_SUPERBUILD=OFF`.
+The `deps-*` presets configure with `Entropy_SUPERBUILD=ON`. After the dependencies finish, the corresponding `app-*`
+preset reconfigures the same directory with `Entropy_SUPERBUILD=OFF`. Do not configure the application stage in a new
+directory unless that directory already contains a completed dependency build.
+
+## Compiler Caching
+
+A compiler cache reuses object files from previous compilations when the source, compiler, and relevant options have
+not changed. It can greatly shorten repeated Entropy builds, especially while compiling ITK and VTK dependencies. It
+does not change the resulting binaries.
+
+### ccache
+
+[ccache](https://ccache.dev/) is the recommended cache on macOS and Linux. Install it with `sudo port install ccache` or
+`brew install ccache` on macOS, `sudo apt-get install ccache` on Ubuntu, or `sudo dnf install ccache` on Fedora. The
+project presets set `Entropy_USE_CCACHE=ON`, so CMake uses ccache automatically when it is on `PATH`. Disable it with
+`-D Entropy_USE_CCACHE=OFF`.
+
+A 20 GB local cache is a good starting point. Use 40 GB when regularly building both Debug and Release configurations
+or switching among several branches. Smaller caches remain useful but discard reusable dependency objects sooner.
+
+```sh
+ccache --max-size=20G
+ccache --show-stats
+```
+
+ccache stores data in its platform-specific default cache directory. Set `CCACHE_DIR` before configuring to choose a
+different location. Use `ccache --clear` only when the cache must be discarded.
+
+### sccache
+
+[sccache](https://github.com/mozilla/sccache) is the recommended cache for MSVC builds and is used by Entropy's Windows Debug CI job. Install sccache and
+Ninja, and ensure both executables are on `PATH`. Then disable Entropy's ccache integration and select sccache through
+CMake's standard launcher variables during both configure stages:
+
+```powershell
+$env:SCCACHE_CACHE_SIZE = "20G"
+cmake --preset deps-debug -G Ninja `
+  -D Entropy_USE_CCACHE=OFF `
+  -D CMAKE_C_COMPILER_LAUNCHER=sccache `
+  -D CMAKE_CXX_COMPILER_LAUNCHER=sccache
+cmake --build --preset deps-debug --parallel
+
+cmake --preset app-debug -G Ninja `
+  -D Entropy_USE_CCACHE=OFF `
+  -D CMAKE_C_COMPILER_LAUNCHER=sccache `
+  -D CMAKE_CXX_COMPILER_LAUNCHER=sccache
+cmake --build --preset app-debug --parallel
+sccache --show-stats
+```
+
+Set `SCCACHE_DIR` to move the local cache. Do not configure ccache and sccache as launchers at the same time. GitHub
+Actions uses a 2 GB ccache limit for macOS and Linux jobs and a 5 GB sccache limit for the Windows Debug job because CI
+caches have tighter storage constraints than developer machines.
+
+## Reconfiguration and Clean Builds
+
+Rerun the appropriate configure preset after changing CMake files or configuration options. CMake preserves cached
+values in the build directory, so inspect unexpected settings with `cmake -LA -N build-debug`.
+
+Use a fresh build directory after changing the compiler, generator, target architecture, or dependency linkage model.
+A fresh directory is also the most reliable recovery from a stale or interrupted dependency build. The `build-debug`,
+`build-release`, and other `build-*` directories contain generated files only and can be deleted without affecting
+source files. Reconfigure and rebuild the dependency stage before rebuilding the application stage.
 
 ## Windows Path Length
 
@@ -157,19 +261,22 @@ system is already configured for long paths.
 
 ## Run Entropy
 
-Run the app from the build tree:
+Launch the Debug app from the build tree:
 
 ```sh
-build-debug/bin/entropy # macOS
-.\build-debug\bin\entropy.exe # Windows
+open build-debug/bin/Entropy.app # macOS
 build-debug/bin/entropy # Linux
 ```
 
-For release builds, replace `build-debug` with `build-release`.
+```powershell
+.\build-debug\bin\Debug\entropy.exe # Windows with the Visual Studio generator
+```
+
+For a Release build, replace `build-debug` with `build-release` and, on Windows, replace `Debug` with `Release`.
 
 ## Run Tests
 
-The app build also builds the unit tests. Run them with CTest:
+The application build also builds the unit tests. Run the Debug tests with CTest:
 
 ```sh
 ctest --test-dir build-debug --parallel --output-on-failure
@@ -181,12 +288,102 @@ For release builds, use `build-release`:
 ctest --test-dir build-release --parallel --output-on-failure
 ```
 
-On multi-config generators such as Visual Studio, add the configuration:
+On multi-config generators such as Visual Studio, specify the configuration:
 
 ```sh
 ctest --test-dir build-debug -C Debug --parallel --output-on-failure
 ctest --test-dir build-release -C Release --parallel --output-on-failure
 ```
+
+Use the same logical-cores-minus-two value recommended for builds as the CTest `--parallel` level. For example, a
+machine with 14 logical cores would use `--parallel 12`. Lower the value if concurrently running tests compete for
+memory or graphics resources.
+
+## Static Analysis
+
+Entropy runs [cppcheck](https://www.cppcheck.com/) and
+[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) as independent jobs in the
+[Static Analysis](.github/workflows/static-analysis.yml) workflow. Both can also be run locally on macOS and Ubuntu.
+
+### cppcheck
+
+cppcheck performs compiler-independent static analysis, including data-flow and whole-program checks that complement
+the compiler and clang-tidy. It is useful for finding lifetime, initialization, control-flow, portability, performance,
+and concurrency problems.
+
+Install cppcheck on macOS with either MacPorts or Homebrew: `sudo port install cppcheck` or `brew install cppcheck`.
+On Ubuntu: `sudo apt-get install cppcheck`.
+
+Use a dedicated build directory to configure the dependencies and application, generate the compilation database, and
+run the cppcheck target:
+
+```sh
+cmake --preset deps-debug -B build-cppcheck
+cmake --build build-cppcheck --parallel
+cmake --preset app-debug -B build-cppcheck -D Entropy_ENABLE_CPPCHECK=ON
+cmake --build build-cppcheck --target cppcheck
+```
+
+The target enables error, warning, style, performance, and portability analysis, inconclusive diagnostics, inline
+suppressions, and the thread-safety addon. Project-wide reviewed false positives are in
+[.cppcheck-suppressions](.cppcheck-suppressions), scoped as narrowly as practical. Source-local suppressions use
+cppcheck's `cppcheck-suppress` comment syntax. External, generated, and Objective-C++ sources that cppcheck cannot
+meaningfully analyze are excluded by the target in [CMakeLists.txt](CMakeLists.txt).
+
+CI runs cppcheck in its own Ubuntu 24.04 x86_64 job and uploads `cppcheck.log` as the `cppcheck-log` artifact. The job
+is advisory while the initial diagnostic baseline is triaged, although the local target returns an error when it
+reports a finding.
+
+### clang-tidy
+
+clang-tidy analyzes C++ using Clang's compiler model. Entropy uses it for compiler diagnostics, Clang Static Analyzer
+checks, and targeted bug-prone, security, Core Guidelines, modernization, performance, portability, and readability
+checks.
+
+Install clang-tidy on macOS with either MacPorts or Homebrew: `sudo port install clang-19` or `brew install llvm`.
+On Ubuntu: `sudo apt-get install clang-tidy`.
+
+Homebrew installs LLVM keg-only, so ensure `$(brew --prefix llvm)/bin` is on `PATH`. Confirm the intended executable is
+selected with `clang-tidy --version` before configuring.
+
+Use a dedicated build directory to configure and build the dependencies, then enable clang-tidy while configuring and
+building the application:
+
+```sh
+cmake --preset deps-debug -B build-clang-tidy
+cmake --build build-clang-tidy --parallel
+cmake --preset app-debug -B build-clang-tidy -D Entropy_ENABLE_CLANG_TIDY=ON
+cmake --build build-clang-tidy --parallel
+```
+
+The exact checks and analyzer options are defined in [.clang-tidy](.clang-tidy), and every diagnostic is treated as an
+error. External, generated, and system headers are excluded. When a narrowly justified source suppression is necessary,
+use `NOLINT`, `NOLINTNEXTLINE`, or a scoped `NOLINTBEGIN`/`NOLINTEND` with the exact check name. Project-wide check
+configuration and exclusions are in [.clang-tidy](.clang-tidy).
+
+CI runs clang-tidy during a Debug application build in its own Ubuntu 24.04 x86_64 job. Findings fail that job, and the
+full output is uploaded as the `clang-tidy-log` artifact.
+
+## Include Hygiene
+
+[Include What You Use](https://include-what-you-use.org/) reports missing and unnecessary C++ includes. Install it with
+`sudo port install include-what-you-use` or `brew install include-what-you-use` on macOS, or
+`sudo apt-get install iwyu` on Ubuntu.
+
+Run IWYU through a dedicated Debug build:
+
+```sh
+cmake --preset deps-debug -B build-iwyu
+cmake --build build-iwyu --parallel
+cmake --preset app-debug -B build-iwyu -D Entropy_ENABLE_IWYU=ON
+cmake --build build-iwyu --parallel
+```
+
+The default options favor direct quoted includes, avoid forward-declaration recommendations, and report suggestions
+without making the compiler command fail. External and generated targets are excluded in
+[CMakeLists.txt](CMakeLists.txt). The manually dispatched Ubuntu 22.04
+[Include What You Use](.github/workflows/iwyu.yml) workflow is advisory and uploads its full output as the `iwyu-log`
+artifact.
 
 ## Packaging
 
@@ -205,23 +402,19 @@ behavior.
 
 ## Coverage
 
-Coverage builds are optional and should use their own build directory:
+Coverage builds are optional and should use their own build directory. Install the reporting tool required by the
+selected compiler before configuring:
+
+- Clang or Apple Clang requires `llvm-cov` and `llvm-profdata`. Xcode provides both on macOS.
+- GCC requires `gcov` plus either gcovr 7 or newer, or both `lcov` and `genhtml`.
+- MSVC requires [OpenCppCoverage](https://github.com/OpenCppCoverage/OpenCppCoverage) on `PATH`.
+
+Configure the Debug dependencies and application, then run a coverage target:
 
 ```sh
-cmake -S . -B build-coverage \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DBUILD_SHARED_LIBS=ON \
-  -DEntropy_SUPERBUILD=ON \
-  -DEntropy_SUPERBUILD_CONFIG=Debug
-
+cmake --preset deps-debug -B build-coverage
 cmake --build build-coverage --parallel
-
-cmake -S . -B build-coverage \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DBUILD_SHARED_LIBS=ON \
-  -DEntropy_SUPERBUILD=OFF \
-  -DEntropy_ENABLE_COVERAGE=ON
-
+cmake --preset app-debug -B build-coverage -D Entropy_ENABLE_COVERAGE=ON
 cmake --build build-coverage --target coverage --parallel
 ```
 
@@ -233,14 +426,17 @@ Coverage backend selection is automatic by default:
 | GCC | [gcov-compatible coverage](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html) |
 | MSVC | [OpenCppCoverage](https://github.com/OpenCppCoverage/OpenCppCoverage) |
 
-The `coverage` target writes machine-readable output under `build-coverage/coverage/`. The `coverage-html` target writes
-an HTML report under `build-coverage/coverage/html/`.
+Both targets build and run the registered unit tests before producing a report. The `coverage` target writes
+machine-readable output under `build-coverage/coverage/`. Use the `coverage-html` target to additionally write an HTML
+report under `build-coverage/coverage/html/`.
 
 ## Local Hygiene Checks
 
-Entropy uses [pre-commit](https://pre-commit.com/) for lightweight local checks before committing.
-The default hooks run `codespell` and `clang-format`; the Markdown link check is manual because it uses the network and
-can fail when external sites are temporarily unavailable.
+Entropy uses [pre-commit](https://pre-commit.com/) for lightweight checks before committing. The default hooks run
+[codespell](https://github.com/codespell-project/codespell) and
+[clang-format](https://clang.llvm.org/docs/ClangFormat.html). clang-format updates files in place, so review and stage
+any formatting changes. The Markdown link check is a manual local hook because it uses the network and can fail when
+external sites are temporarily unavailable.
 
 Install and enable it:
 
@@ -248,6 +444,9 @@ Install and enable it:
 python3 -m pip install pre-commit
 pre-commit install
 ```
+
+The clang-format hook uses the clang-format executable on `PATH`. Install it separately with your platform package
+manager. pre-commit installs the configured codespell environment automatically.
 
 Run the default hooks manually:
 
@@ -261,34 +460,59 @@ Run the Markdown link check when editing documentation:
 pre-commit run lychee-doc-links --hook-stage manual
 ```
 
-The manual link hook expects `lychee` to be installed and available on `PATH`. (The GitHub Actions text hygiene workflow
-is manual.)
+The manual link hook expects lychee to be installed and available on `PATH`. CI runs codespell and the Markdown link
+check on pull requests, weekly, and on manual dispatch.
 
 ## CMake Options
 
 Pass options at configure time with `-DNAME=value`, or put local overrides in `CMakeUserPresets.json`.
 
+### General Build Options
+
 | Option | Default | Stage | Purpose |
 | --- | --- | --- | --- |
-| `Entropy_SUPERBUILD` | `ON` | Configure | Selects the stage. `ON` builds dependencies; `OFF` builds Entropy against dependencies already in the build tree |
 | `CMAKE_BUILD_TYPE` | `RelWithDebInfo` outside presets | Configure | Selects `Debug`, `Release`, `RelWithDebInfo`, or `MinSizeRel` for single-config generators |
-| `Entropy_SUPERBUILD_CONFIG` | `Release` | Dependencies | Selects dependency build type for multi-config generators such as Visual Studio, Xcode, and Ninja Multi-Config |
-| `BUILD_SHARED_LIBS` | `OFF` outside presets, `ON` in presets | Dependencies | Chooses shared or static libraries for dependencies that honor the standard CMake option |
-| `Entropy_STATIC_BUNDLED_DEPENDENCIES` | `ON` on macOS/Linux; `OFF` on Windows; `ON` in release presets | Dependencies | Builds bundled dependencies as static libraries where practical; Qt and system libraries stay dynamic |
-| `Entropy_SUPERBUILD_PARALLEL` | empty | Dependencies | Sets parallelism for ExternalProject dependency builds; empty lets the native build tool choose |
-| `Entropy_USE_CCACHE` | `ON` | Configure | Uses `ccache` as the compiler launcher when available |
-| `CMAKE_VERBOSE_MAKEFILE` | `OFF` | Application/dependencies | Prints full native build commands for Makefile-style generators |
-| `BUILD_TESTING` | CTest default | Application | Enables unit-test targets |
-| `Entropy_ENABLE_CLANG_TIDY` | `OFF` | Application | Runs `clang-tidy` during C++ compilation |
-| `Entropy_CLANG_TIDY_OPTIONS` | `--quiet` | Application | Extra options passed to `clang-tidy` |
-| `Entropy_ENABLE_IWYU` | `OFF` | Application | Runs Include What You Use during C++ compilation |
-| `Entropy_IWYU_OPTIONS` | project default | Application | Extra options passed to Include What You Use |
-| `Entropy_ENABLE_COVERAGE` | `OFF` | Application | Adds coverage instrumentation and coverage targets |
-| `Entropy_COVERAGE_MODE` | `AUTO` | Application | Selects coverage backend: `AUTO`, `LLVM`, `GCOV`, or `OPENCPPCOVERAGE` |
-| `Entropy_COVERAGE_EXCLUDE_REGEX` | project default | Application | Regex used to exclude external, generated, test, and system files from coverage reports |
-| `Entropy_ENABLE_TRACE_LOGGING` | `OFF` | Application | Compiles trace-level logging calls into Entropy |
-| `Entropy_GLAD_GL_VERSION` | `3.3` | Application | Selects the vendored GLAD OpenGL Core loader version: `3.3`, `4.1`, or `4.6` |
-| `Entropy_GLAD_GL_DEBUG` | `false` | Application | Uses the debug GLAD loader variant |
+| `CMAKE_VERBOSE_MAKEFILE` | `OFF` | Both | Prints full native build commands for Makefile generators |
+| `BUILD_SHARED_LIBS` | `OFF` outside presets, `ON` in presets | Both | Chooses shared or static libraries for targets that honor the standard CMake option |
+| `BUILD_TESTING` | `ON` | Application | Enables unit-test targets |
+| `Entropy_USE_CCACHE` | `ON` | Both | Uses ccache as the compiler launcher when available |
+
+### Dependency Options
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `Entropy_SUPERBUILD` | `ON` | Selects the build stage. `ON` builds dependencies. `OFF` builds Entropy against dependencies already in the build tree |
+| `Entropy_SUPERBUILD_CONFIG` | `Release` | Selects the dependency configuration for multi-config generators such as Visual Studio, Xcode, and Ninja Multi-Config |
+| `Entropy_SUPERBUILD_PARALLEL` | empty | Sets parallelism inside ExternalProject dependency builds. An empty value lets the native build tool choose |
+| `Entropy_STATIC_BUNDLED_DEPENDENCIES` | `ON` on macOS and Linux, `OFF` on Windows | Builds bundled dependencies as static libraries where practical. Qt and system libraries remain dynamic |
+
+### Code-Quality Options
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `Entropy_ENABLE_CPPCHECK` | `OFF` | Adds the cppcheck static-analysis target |
+| `Entropy_CPPCHECK_OPTIONS` | project default | Options passed to cppcheck |
+| `Entropy_CPPCHECK_JOBS` | `4` | Number of parallel cppcheck analysis jobs |
+| `Entropy_ENABLE_CLANG_TIDY` | `OFF` | Runs clang-tidy during C++ compilation |
+| `Entropy_CLANG_TIDY_OPTIONS` | `--quiet` | Extra options passed to clang-tidy |
+| `Entropy_ENABLE_IWYU` | `OFF` | Runs Include What You Use during C++ compilation |
+| `Entropy_IWYU_OPTIONS` | project default | Extra options passed to Include What You Use |
+
+### Coverage Options
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `Entropy_ENABLE_COVERAGE` | `OFF` | Adds coverage instrumentation and report targets |
+| `Entropy_COVERAGE_MODE` | `AUTO` | Selects `AUTO`, `LLVM`, `GCOV`, or `OPENCPPCOVERAGE` |
+| `Entropy_COVERAGE_EXCLUDE_REGEX` | project default | Excludes external, generated, test, and system files from reports |
+
+### Application Options
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `Entropy_ENABLE_TRACE_LOGGING` | `OFF` | Compiles trace-level logging calls into Entropy |
+| `Entropy_GLAD_GL_VERSION` | `3.3` | Selects the vendored GLAD OpenGL Core loader version: `3.3`, `4.1`, or `4.6` |
+| `Entropy_GLAD_GL_DEBUG` | `false` | Uses the debug GLAD loader variant |
 
 Standard CMake variables such as `CMAKE_INSTALL_PREFIX`, `CMAKE_OSX_DEPLOYMENT_TARGET`, `CMAKE_PREFIX_PATH`, and
 generator selection also work normally. Packaging options are documented in [PACKAGING.md](PACKAGING.md).
@@ -298,10 +522,10 @@ generator selection also work normally. Packaging options are documented in [PAC
 CI workflows are under [.github/workflows](.github/workflows). They build and test Entropy on macOS, Windows, Ubuntu,
 and Fedora.
 
-Pull requests and pushes to `main` run formatting checks, debug builds, and unit tests on the primary CI platforms.
-Additional coverage, release-package validation, static analysis, text hygiene, and compatibility jobs are available
-through scheduled or manual workflow runs. Official tag-driven release builds are handled by the release workflow
-described in [PACKAGING.md](PACKAGING.md).
+Pull requests run formatting checks, Debug builds, and unit tests on the primary platforms, plus static analysis and
+text-hygiene checks. Pushes to `main` run the primary platform builds and tests. Scheduled and manually dispatched
+workflows provide broader compatibility, coverage, and package validation. Official tag-driven builds are handled by
+the release workflow described in [PACKAGING.md](PACKAGING.md).
 
 The main CI build matrix is:
 
@@ -313,10 +537,12 @@ The main CI build matrix is:
 | Windows x86_64 | `windows-2022` | Visual Studio 2022 / MSVC v143 | Debug build and tests, release packages, optional coverage |
 | Windows x86_64 compatibility | `windows-2025` | Visual Studio 2026 / MSVC | Scheduled/manual Debug build and tests on a newer Windows runner |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | `gcc-13` / `g++-13` | Debug build and tests, release packages, and primary coverage |
-| Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15.2.1 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
+| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | `gcc-13` / `g++-13` | Debug build and tests with clang-tidy, plus cppcheck analysis |
+| Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
 
-The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA, which currently resolves to GCC
-13.3.0. Ubuntu 24.04 is used as the host runner for Fedora container jobs, not as a separate Ubuntu application build.
+The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA. Ubuntu 24.04 runs a complete
+Debug build and test suite with clang-tidy, runs cppcheck, and hosts the Fedora container jobs. Ubuntu 22.04 remains the
+primary Linux packaging target because release packages should be built on the oldest supported distribution.
 
 macOS release artifacts are built separately for `arm64` and `x86_64`. Entropy does not publish a universal macOS
 binary.
@@ -327,4 +553,6 @@ binary.
 ## Third-Party Dependencies
 
 Entropy builds pinned third-party dependencies from source during the dependency stage. Versions, source URLs, and
-license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The project does not use Git
+submodules. The first dependency build downloads versioned source archives, while subsequent builds reuse archives and
+completed ExternalProject outputs from the same build directory.
