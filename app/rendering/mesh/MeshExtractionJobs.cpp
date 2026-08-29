@@ -12,7 +12,7 @@ namespace rendering::mesh
 
 MeshExtractionJob makeIsosurfaceExtractionJob(
   IsosurfaceMeshRequest request,
-  MeshGenerationOptions options,
+  const MeshGenerationOptions& options,
   std::shared_ptr<const Image> imageSnapshot)
 {
   const MeshGeometryKey key = geometryKeyForRequest(request);
@@ -59,7 +59,7 @@ MeshExtractionJob makeIsosurfaceExtractionJob(
 MeshExtractionJob makeSegmentationExtractionJob(
   SegmentationMeshRequest request,
   SegmentationLabelBounds bounds,
-  MeshGenerationOptions options,
+  const MeshGenerationOptions& options,
   std::shared_ptr<const Image> segmentationSnapshot)
 {
   const MeshGeometryKey key = geometryKeyForRequest(request);

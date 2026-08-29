@@ -17,9 +17,10 @@ public:
    * @param msg Error message.
    * @param location Source location attached to the error.
    */
-  Exception(const char* msg, const std::source_location& location) : std::runtime_error(msg)
+  Exception(const char* msg, const std::source_location& location)
+    : std::runtime_error(msg)
+    , m_msg(makeMessage(msg, location.file_name(), location.function_name(), static_cast<int>(location.line())))
   {
-    m_msg = makeMessage(msg, location.file_name(), location.function_name(), static_cast<int>(location.line()));
   }
 
   /**
@@ -36,9 +37,9 @@ public:
    * @param function Source function name.
    * @param line Source line number.
    */
-  Exception(const char* msg, const char* file, const char* function, int line) : std::runtime_error(msg)
+  Exception(const char* msg, const char* file, const char* function, int line)
+    : std::runtime_error(msg), m_msg(makeMessage(msg, file, function, line))
   {
-    m_msg = makeMessage(msg, file, function, line);
   }
 
   /**

@@ -373,7 +373,7 @@ PixelType ImageHeader::pixelType() const
 {
   return m_pixelType;
 }
-std::string ImageHeader::pixelTypeAsString() const
+const std::string& ImageHeader::pixelTypeAsString() const
 {
   return m_pixelTypeAsString;
 }
@@ -382,7 +382,7 @@ ComponentType ImageHeader::fileComponentType() const
 {
   return m_fileComponentType;
 }
-std::string ImageHeader::fileComponentTypeAsString() const
+const std::string& ImageHeader::fileComponentTypeAsString() const
 {
   return m_fileComponentTypeAsString;
 }
@@ -395,7 +395,7 @@ ComponentType ImageHeader::memoryComponentType() const
 {
   return m_memoryComponentType;
 }
-std::string ImageHeader::memoryComponentTypeAsString() const
+const std::string& ImageHeader::memoryComponentTypeAsString() const
 {
   return m_memoryComponentTypeAsString;
 }

@@ -14,26 +14,26 @@ namespace ui::settings
 
 struct ScaleChoice
 {
-  const char* label;          //!< User-visible scale label
+  const char* label = "";     //!< User-visible scale label
   std::optional<float> scale; //!< Manual UI scale, or nullopt for automatic platform scaling
 };
 
 struct FontChoice
 {
-  const char* label;   //!< User-visible font family label
-  UiFontFamily family; //!< Font family selected by this choice
+  const char* label = "";                    //!< User-visible font family label
+  UiFontFamily family = UiFontFamily::Inter; //!< Font family selected by this choice
 };
 
 struct ScaleBarPositionButton
 {
-  ScaleBarPosition position; //!< Scale bar position selected by this button
-  const char* label;         //!< Compact button label for the visual 3x3 position selector
+  ScaleBarPosition position = ScaleBarPosition::BottomRight; //!< Position selected by this button
+  const char* label = ""; //!< Compact button label for the visual 3x3 position selector
 };
 
 struct SettingsPageChoice
 {
-  GuiData::SettingsTab page; //!< Settings page selected by this navigation choice
-  const char* label;         //!< User-visible page label
+  GuiData::SettingsTab page = GuiData::SettingsTab::Views; //!< Settings page selected by this choice
+  const char* label = "";                                  //!< User-visible page label
 };
 
 /**

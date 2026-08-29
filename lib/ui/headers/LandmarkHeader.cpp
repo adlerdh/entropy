@@ -66,7 +66,7 @@ void renderLandmarkGroupHeader(
   static const std::string importLmsButtonText = std::string(ICON_FK_FOLDER_OPEN_O) + " Import...";
   static const std::string saveLmsButtonText = std::string(ICON_FK_FLOPPY_O) + " Export...";
   static const std::string removeLmsButtonText = std::string(ICON_FK_TRASH_O) + " Remove";
-  static const char* saveLmsDialogTitle("Export Landmark Group");
+  constexpr const char* saveLmsDialogTitle = "Export Landmark Group";
   static const auto saveLmsDialogFilters = native_dialog::landmarkFilters();
 
   Image* image = appData.image(imageUid);

@@ -93,10 +93,10 @@ public:
    * @param context Camera matrices and mesh lookup callback
    * @param program Linked mesh shader program
    */
-  void drawBucket(
+  static void drawBucket(
     std::span<const std::reference_wrapper<const MeshRenderable>> renderables,
     const MeshDrawContext& context,
-    GLShaderProgram& program) const;
+    GLShaderProgram& program);
 };
 
 } // namespace rendering::mesh

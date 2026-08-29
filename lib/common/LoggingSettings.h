@@ -17,8 +17,8 @@ namespace logging
  */
 struct LogLevelChoice
 {
-  std::string_view label;             //!< Display label for UI and diagnostics
-  spdlog::level::level_enum level;    //!< spdlog runtime level represented by this choice
+  std::string_view label;                                       //!< Display label for UI and diagnostics
+  spdlog::level::level_enum level = logging::defaultLogLevel(); //!< Runtime level represented by this choice
   bool requiresCompiledTrace = false; //!< True when the choice only works if trace calls were compiled in
 };
 

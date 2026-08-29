@@ -45,7 +45,7 @@ bool ensureNfdInitialized()
 
 fs::path& lastUsedDirectory()
 {
-  static fs::path directory;
+  static thread_local fs::path directory;
   return directory;
 }
 

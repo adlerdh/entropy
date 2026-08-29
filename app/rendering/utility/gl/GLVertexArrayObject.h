@@ -33,7 +33,7 @@ public:
       const IndexType& indexType,
       std::size_t indexOffset);
 
-    IndexedDrawParams(const VertexIndicesInfo& indicesInfo);
+    explicit IndexedDrawParams(const VertexIndicesInfo& indicesInfo);
 
     GLenum primitiveMode() const;
     std::size_t elementCount() const;

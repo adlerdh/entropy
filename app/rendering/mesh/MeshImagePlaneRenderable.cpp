@@ -4,10 +4,10 @@ namespace rendering::mesh
 {
 
 MeshImagePlaneRenderable makeImagePlaneRenderable(
-  const MeshHandle mesh,
+  const MeshHandle& mesh,
   const glm::mat4& world_T_mesh,
   const glm::vec3& centerWorld,
-  const MeshImagePlaneTexture texture,
+  const MeshImagePlaneTexture& texture,
   const float opacityMultiplier,
   const bool shadingEnabled,
   const bool visible,

@@ -43,10 +43,11 @@ namespace
 {
 
 constexpr int k_minMeshGenerationThreads = 1;
+std::mutex g_vtkMeshGenerationMutex;
+
 std::mutex& vtkMeshGenerationMutex()
 {
-  static std::mutex mutex;
-  return mutex;
+  return g_vtkMeshGenerationMutex;
 }
 
 int boundedThreadCount(const std::size_t requestedThreadCount)

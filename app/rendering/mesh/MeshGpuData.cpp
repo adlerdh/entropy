@@ -28,19 +28,19 @@ MeshGpuData::MeshGpuData(
 {
 }
 
-void MeshGpuData::setNormals(GLBufferObject normalsObject, VertexAttributeInfo normalsInfo)
+void MeshGpuData::setNormals(GLBufferObject normalsObject, const VertexAttributeInfo& normalsInfo)
 {
   m_normalsObject = std::move(normalsObject);
   m_normalsInfo = normalsInfo;
 }
 
-void MeshGpuData::setColors(GLBufferObject colorsObject, VertexAttributeInfo colorsInfo)
+void MeshGpuData::setColors(GLBufferObject colorsObject, const VertexAttributeInfo& colorsInfo)
 {
   m_colorsObject = std::move(colorsObject);
   m_colorsInfo = colorsInfo;
 }
 
-void MeshGpuData::setTextureCoords(GLBufferObject textureCoordsObject, VertexAttributeInfo textureCoordsInfo)
+void MeshGpuData::setTextureCoords(GLBufferObject textureCoordsObject, const VertexAttributeInfo& textureCoordsInfo)
 {
   m_textureCoordsObject = std::move(textureCoordsObject);
   m_textureCoordsInfo = textureCoordsInfo;

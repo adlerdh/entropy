@@ -55,7 +55,7 @@ public:
    *
    * @param programs Shader program map owned by Rendering and indexed by ShaderProgramType
    */
-  void registerShaderPrograms(std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs);
+  static void registerShaderPrograms(std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs);
 
   /**
    * @brief Return true when ASCII rendering is enabled and the glyph atlas texture is usable.
@@ -94,7 +94,7 @@ public:
    * @param drawAnnotations Callback that renders annotations for one view
    */
   void render(
-    std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
+    const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
     const DrawViewFn& drawImages,
     const DrawViewFn& drawImageBorders,
     const DrawViewFn& drawLandmarks,

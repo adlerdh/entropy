@@ -211,10 +211,10 @@ void AsciiRenderer::registerShaderPrograms(
 
   struct AsciiShaderDesc
   {
-    ShaderProgramType type;
-    const char* vsFile;
-    const char* fsFile;
-    const std::unordered_map<std::string, std::string>* fsReplacements;
+    ShaderProgramType type = ShaderProgramType::AsciiCellMean;
+    const char* vsFile = nullptr;
+    const char* fsFile = nullptr;
+    const std::unordered_map<std::string, std::string>* fsReplacements = nullptr;
     Uniforms vsUniforms;
     Uniforms fsUniforms;
   };
@@ -586,7 +586,7 @@ void AsciiRenderer::ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellS
 }
 
 void AsciiRenderer::render(
-  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
+  const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
   const DrawViewFn& drawImages,
   const DrawViewFn& drawImageBorders,
   const DrawViewFn& drawLandmarks,
@@ -749,12 +749,15 @@ void AsciiRenderer::render(
   // Pre-compute per-view data
   struct ViewData
   {
-    View* view;
-    glm::vec3 worldXhairsOffset;
-    FrameBounds miewportViewBounds;
-    GLint sceneX, sceneY;
-    GLint windowX, windowY;
-    GLsizei width, height;
+    View* view = nullptr;
+    glm::vec3 worldXhairsOffset{0.0f};
+    FrameBounds miewportViewBounds{glm::vec4{0.0f}};
+    GLint sceneX = 0;
+    GLint sceneY = 0;
+    GLint windowX = 0;
+    GLint windowY = 0;
+    GLsizei width = 0;
+    GLsizei height = 0;
   };
 
   std::vector<ViewData> viewDataList;
@@ -863,10 +866,8 @@ void AsciiRenderer::render(
     glBindTexture(GL_TEXTURE_2D, m_asciiCellRegionsTex->id());
     glActiveTexture(GL_TEXTURE0 + sk_asciiAtlasSampler.index);
     glBindTexture(GL_TEXTURE_2D, m_asciiAtlas.textureId());
-    if (m_asciiLumLutTex) {
-      glActiveTexture(GL_TEXTURE6);
-      glBindTexture(GL_TEXTURE_2D, m_asciiLumLutTex->id());
-    }
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, m_asciiLumLutTex->id());
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, m_asciiCellRegionsTexB->id());
 
@@ -874,9 +875,7 @@ void AsciiRenderer::render(
     asciiPostSpatialProg.setSamplerUniform("u_cellMeanTex", 4);
     asciiPostSpatialProg.setSamplerUniform("u_cellRegionsTex", 5);
     asciiPostSpatialProg.setSamplerUniform("u_asciiAtlas", sk_asciiAtlasSampler.index);
-    if (m_asciiLumLutTex) {
-      asciiPostSpatialProg.setSamplerUniform("u_asciiLumLut", 6);
-    }
+    asciiPostSpatialProg.setSamplerUniform("u_asciiLumLut", 6);
     asciiPostSpatialProg.setSamplerUniform("u_cellRegionsTexB", 7);
     asciiPostSpatialProg.setUniform("u_viewSizePx", viewSizePx);
     asciiPostSpatialProg.setUniform("u_sceneOriginPx", glm::vec2{deviceVP[0], deviceVP[1]});

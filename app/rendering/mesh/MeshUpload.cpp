@@ -35,7 +35,8 @@ VertexAttributeInfo floatAttributeInfo(int numComponents, std::size_t stride, st
 
 } // namespace
 
-std::optional<MeshGpuData> uploadMeshData(const MeshData& mesh, MeshHandle handle, BufferUsagePattern usagePattern)
+std::optional<MeshGpuData>
+uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePattern usagePattern)
 {
   if (!isValidMeshData(mesh)) {
     return std::nullopt;

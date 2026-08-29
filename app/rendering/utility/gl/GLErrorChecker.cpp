@@ -9,22 +9,24 @@
 #include <sstream>
 #include <string>
 
+namespace
+{
+constexpr const char* k_invalidEnumMessage = "Enumeration parameter not legal for function.";
+constexpr const char* k_invalidValueMessage = "Value parameter not legal for function.";
+constexpr const char* k_invalidOperationMessage = "Set of state not legal for parameters given to command.";
+constexpr const char* k_stackOverflowMessage = "Stack pushing operation would overflow stack size limit.";
+constexpr const char* k_stackUnderflowMessage =
+  "Stack popping operation cannot be done; stack already at lowest point.";
+constexpr const char* k_outOfMemoryMessage = "Memory cannot be allocated for operation.";
+constexpr const char* k_invalidFramebufferOperationMessage =
+  "Attempt to read from or write/render to incomplete framebuffer.";
+constexpr const char* k_tableTooLargeMessage =
+  "Attempt to read from or write/render to a framebuffer that is not complete.";
+constexpr const char* k_unknownMessage = "Unknown error.";
+} // namespace
+
 void GLErrorChecker::operator()(const char* file, const char* function, int line) const
 {
-  static const char* INVALID_ENUM_MSG = "Enumeration parameter not legal for function.";
-  static const char* INVALID_VALUE_MSG = "Value parameter not legal for function.";
-  static const char* INVALID_OPERATION_MSG = "Set of state not legal for parameters given to command.";
-  static const char* STACK_OVERFLOW_MSG = "Stack pushing operation would overflow stack size limit.";
-  static const char* STACK_UNDERFLOW_MSG = "Stack popping operation cannot be done; stack already at lowest point.";
-  static const char* OUT_OF_MEMORY_MSG = "Memory cannot be allocated for operation.";
-  static const char* INVALID_FRAMEBUFFER_OPERATION_MSG =
-    "Attempt to read from or write/render to incomplete framebuffer.";
-  //    static const char* CONTEXT_LOST_MSG = "OpenGL context has been lost due to a graphics card
-  //    reset.";
-  static const char* TABLE_TOO_LARGE_MSG =
-    "Attempt to read from or write/render to a framebuffer that is not complete.";
-  static const char* UNKNOWN_MSG = "Unknown error.";
-
   GLenum error = 0;
 
   while (GL_NO_ERROR != (error = glGetError())) {
@@ -32,32 +34,32 @@ void GLErrorChecker::operator()(const char* file, const char* function, int line
 
     switch (error) {
       case GL_INVALID_ENUM:
-        msg = INVALID_ENUM_MSG;
+        msg = k_invalidEnumMessage;
         break;
       case GL_INVALID_VALUE:
-        msg = INVALID_VALUE_MSG;
+        msg = k_invalidValueMessage;
         break;
       case GL_INVALID_OPERATION:
-        msg = INVALID_OPERATION_MSG;
+        msg = k_invalidOperationMessage;
         break;
       case GL_STACK_OVERFLOW:
-        msg = STACK_OVERFLOW_MSG;
+        msg = k_stackOverflowMessage;
         break;
       case GL_STACK_UNDERFLOW:
-        msg = STACK_UNDERFLOW_MSG;
+        msg = k_stackUnderflowMessage;
         break;
       case GL_OUT_OF_MEMORY:
-        msg = OUT_OF_MEMORY_MSG;
+        msg = k_outOfMemoryMessage;
         break;
       case GL_INVALID_FRAMEBUFFER_OPERATION:
-        msg = INVALID_FRAMEBUFFER_OPERATION_MSG;
+        msg = k_invalidFramebufferOperationMessage;
         break;
         //      case GL_CONTEXT_LOST: msg = CONTEXT_LOST_MSG; break;
       case GL_TABLE_TOO_LARGE:
-        msg = TABLE_TOO_LARGE_MSG;
+        msg = k_tableTooLargeMessage;
         break;
       default:
-        msg = UNKNOWN_MSG;
+        msg = k_unknownMessage;
         break;
     }
 

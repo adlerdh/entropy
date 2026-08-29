@@ -34,7 +34,7 @@ enum class MeshGpuSyncStatus
  */
 MeshGpuSyncStatus syncReadyMeshToGpu(
   const MeshGeometryKey& key,
-  MeshHandle handle,
+  const MeshHandle& handle,
   const MeshCache& cache,
   MeshGpuStore& gpuStore,
   BufferUsagePattern usagePattern = BufferUsagePattern::StaticDraw);

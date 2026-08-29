@@ -31,11 +31,11 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <exception>
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -399,7 +399,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   spdlog::debug("Created GLFW cursors");
 
   // Load all OpenGL function pointers with GLAD
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
     glfwTerminate();
     spdlog::critical("Failed to load OpenGL function pointers with GLAD");
     throwDebug("Failed to load OpenGL function pointers with GLAD");
@@ -506,8 +506,7 @@ void GlfwWrapper::renderLoop(
     }
 
     if (imageLoadFailed) {
-      spdlog::critical("Render loop exiting due to failure to load images");
-      exit(EXIT_FAILURE);
+      throw std::runtime_error("Render loop exiting due to failure to load images");
     }
 
     if (m_framerateLimiter) {
@@ -686,7 +685,7 @@ void GlfwWrapper::toggleFullScreenMode(bool forceWindowMode)
       m_backupWindowHeight,
       GLFW_DONT_CARE);
   }
-  else if (!isFullScreen) {
+  else {
     // Switch to full-screen mode after backing up position and size:
     if (m_platform != GLFW_PLATFORM_WAYLAND && m_platform != GLFW_PLATFORM_NULL) {
       glfwGetWindowPos(m_window, &m_backupWindowPosX, &m_backupWindowPosY);

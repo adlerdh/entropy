@@ -37,10 +37,6 @@ std::optional<DragAction> dragActionForInput(
   const ModifierState& modifiers,
   bool viewPositionFollowsCrosshairs) noexcept
 {
-  if (!mouseModeAllowsCameraInteraction(mouseMode)) {
-    return std::nullopt;
-  }
-
   const auto generalNavigationAction = [&]() -> std::optional<DragAction> {
     if (buttons.middle) {
       return DragAction::Pan;

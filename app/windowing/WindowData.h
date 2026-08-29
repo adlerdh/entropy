@@ -33,7 +33,7 @@ public:
    * @param crosshairs Crosshairs state referenced by all created views
    * @throw Propagates exceptions from layout construction
    */
-  WindowData(const CrosshairsState& crosshairs);
+  explicit WindowData(const CrosshairsState& crosshairs);
   /**
    * @brief Destroy window state and owned layouts
    */

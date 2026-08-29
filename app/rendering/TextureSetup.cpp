@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -42,13 +43,13 @@ texture_setup::TextureLimits queryTextureLimits()
 
 bool shouldLogPlanarImageUpload(const uuids::uuid& imageUid)
 {
-  static std::unordered_set<uuids::uuid> loggedImageUids;
+  static thread_local std::unordered_set<uuids::uuid> loggedImageUids;
   return loggedImageUids.insert(imageUid).second;
 }
 
 bool shouldLogPlanarSegUpload(const uuids::uuid& segUid)
 {
-  static std::unordered_set<uuids::uuid> loggedSegUids;
+  static thread_local std::unordered_set<uuids::uuid> loggedSegUids;
   return loggedSegUids.insert(segUid).second;
 }
 
@@ -172,7 +173,7 @@ void handleTextureCreationFailures(AppData& appData, const std::vector<TextureCr
 
 texture_setup::TextureLimits logTextureLimitsOnce()
 {
-  static bool logged = false;
+  static thread_local bool logged = false;
   const texture_setup::TextureLimits limits = queryTextureLimits();
   if (logged) {
     return limits;
@@ -371,9 +372,13 @@ template<typename T>
 std::vector<std::byte> copyComponentFrameValuesBytes(const Image& image, uint32_t component, uint32_t timePoint)
 {
   const std::vector<T> values = copyComponentFrameValues<T>(image, component, timePoint);
-  return {
-    reinterpret_cast<const std::byte*>(values.data()),
-    reinterpret_cast<const std::byte*>(values.data() + values.size())};
+  if (values.empty()) {
+    return {};
+  }
+
+  std::vector<std::byte> bytes(values.size() * sizeof(T));
+  std::memcpy(bytes.data(), values.data(), bytes.size());
+  return bytes;
 }
 
 std::vector<std::byte> copyComponentFrameValuesBytes(const Image& image, uint32_t component, uint32_t timePoint)

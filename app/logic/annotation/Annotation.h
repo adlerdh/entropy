@@ -187,29 +187,29 @@ private:
   /// Highlighted edge: pairs of { boundary index, {vertex index 1, vertex index 2} }
   std::set<std::pair<size_t, std::pair<size_t, size_t> > > m_highlightedEdges;
 
-  bool m_highlighted;      //!< Is the annotation highlighted?
-  bool m_visible;          //!< Is the annotation visible?
-  bool m_filled;           //!< Is the annotation filled?
-  bool m_vertexVisibility; //!< Are the annotation boundary vertices visible?
-  bool m_dirty;            //!< Does serialized annotation content have unsaved edits?
+  bool m_highlighted = false;     //!< Is the annotation highlighted?
+  bool m_visible = true;          //!< Is the annotation visible?
+  bool m_filled = false;          //!< Is the annotation filled?
+  bool m_vertexVisibility = true; //!< Are the annotation boundary vertices visible?
+  bool m_dirty = false;           //!< Does serialized annotation content have unsaved edits?
 
   /// Overall annotation opacity in [0.0, 1.0] range.
   /// The annotation fill and line colors opacities are modulated by this value
-  float m_opacity;
+  float m_opacity = 1.0f;
 
-  glm::vec4 m_vertexColor; //!< Vertex color (non-premultiplied RGBA)
-  glm::vec4 m_fillColor;   //!< Fill color (non-premultiplied RGBA)
-  glm::vec4 m_lineColor;   //!< Line color (non-premultiplied RGBA)
-  float m_lineThickness;   //!< Line thickness
+  glm::vec4 m_vertexColor{1.0f}; //!< Vertex color (non-premultiplied RGBA)
+  glm::vec4 m_fillColor{1.0f};   //!< Fill color (non-premultiplied RGBA)
+  glm::vec4 m_lineColor{1.0f};   //!< Line color (non-premultiplied RGBA)
+  float m_lineThickness = 2.0f;  //!< Line thickness
 
   /// Equation of the 3D plane containing this annotation. The plane is defined by the
   /// coefficients (A, B, C, D) of equation Ax + By + Cz + D = 0, where (x, y, z) are
   /// coordinates in Subject space
-  glm::vec4 m_subjectPlaneEquation;
+  glm::vec4 m_subjectPlaneEquation{1.0f, 0.0f, 0.0f, 0.0f};
 
   /// 3D origin of the plane in Subject space
-  glm::vec3 m_subjectPlaneOrigin;
+  glm::vec3 m_subjectPlaneOrigin{0.0f};
 
   /// 3D axes of the plane in Subject space
-  std::pair<glm::vec3, glm::vec3> m_subjectPlaneAxes;
+  std::pair<glm::vec3, glm::vec3> m_subjectPlaneAxes{{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
 };

@@ -42,7 +42,7 @@ void renderOpacityBlenderWindow(
 {
   RenderData& renderData = appData.renderData();
 
-  static const char* windowName = "Image Opacity Mixer";
+  constexpr const char* windowName = "Image Opacity Mixer";
 
   if (!appData.guiData().m_showOpacityBlenderWindow) {
     return;
@@ -118,7 +118,7 @@ void renderOpacityBlenderWindow(
     ImGui::PopID();
   }
 
-  static double mix = 0.0;
+  static thread_local double mix = 0.0;
 
   if (appData.numImages() > 1) {
     ImGui::Checkbox("Comparison blender", &(renderData.m_opacityMixMode));

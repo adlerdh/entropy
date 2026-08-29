@@ -22,7 +22,7 @@ MeshDdpPlan meshDdpPlanForRenderList(const MeshRenderList& list, const MeshDdpSe
   const uint32_t renderableCount = static_cast<uint32_t>(list.alphaOverDdp.size());
   const uint32_t peelPasses = sanitizedDdpPeelPasses(settings.maxPeelPasses, k_hardMaxPeelPasses);
   return MeshDdpPlan{
-    .active = settings.enabled && renderableCount > 0 && peelPasses > 0,
+    .active = settings.enabled && renderableCount > 0,
     .peelPasses = settings.enabled && renderableCount > 0 ? peelPasses : 0,
     .renderableCount = renderableCount};
 }
@@ -40,7 +40,7 @@ MeshDdpPlan meshDdpPlanWithExtraRenderables(
   const uint32_t renderableCount = plan.renderableCount + extraRenderableCount;
   const uint32_t peelPasses = sanitizedDdpPeelPasses(settings.maxPeelPasses, k_hardMaxPeelPasses);
   return MeshDdpPlan{
-    .active = settings.enabled && peelPasses > 0u,
+    .active = settings.enabled,
     .peelPasses = settings.enabled ? peelPasses : 0u,
     .renderableCount = renderableCount};
 }

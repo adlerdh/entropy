@@ -44,7 +44,7 @@ public:
   Viewport(float left, float bottom, float width, float height);
 
   /// Construct a viewport from {left, bottom, width, height}.
-  Viewport(glm::vec4 viewportAsVec4);
+  explicit Viewport(glm::vec4 viewportAsVec4);
 
   Viewport(const Viewport&) = default;
   Viewport& operator=(const Viewport&) = default;

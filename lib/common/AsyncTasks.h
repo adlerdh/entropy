@@ -18,9 +18,9 @@ enum class AsyncTasks
  */
 struct AsyncTaskDetails
 {
-  AsyncTasks task;         //!< Type of task
-  std::string description; //!< Description of the task
-  uuids::uuid taskUid;     //!< UID of the task
+  AsyncTasks task = AsyncTasks::IsosurfaceMeshGeneration; //!< Type of task
+  std::string description;                                //!< Description of the task
+  uuids::uuid taskUid;                                    //!< UID of the task
 
   std::optional<uuids::uuid> imageUid = std::nullopt;    //!< UID of image associated with the task
   std::optional<uint32_t> imageComponent = std::nullopt; //!< Image component associated with the task

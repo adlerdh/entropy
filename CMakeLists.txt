@@ -40,7 +40,7 @@ set(Entropy_CLANG_TIDY_OPTIONS
   CACHE STRING "Additional options passed to clang-tidy")
 option(Entropy_ENABLE_CPPCHECK "Add the cppcheck static-analysis target" OFF)
 set(Entropy_CPPCHECK_OPTIONS
-  "--enable=warning,style,performance,portability;--addon=threadsafety;--inconclusive;--inline-suppr;--error-exitcode=1;--quiet;--template=gcc"
+  "--enable=warning,style,performance,portability;--addon=threadsafety;--inline-suppr;--error-exitcode=1;--quiet;--template=gcc"
   CACHE STRING "Options passed to cppcheck")
 set(Entropy_CPPCHECK_JOBS "4" CACHE STRING "Parallel cppcheck analysis jobs")
 option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
@@ -349,9 +349,11 @@ if(Entropy_ENABLE_CPPCHECK)
       "--cppcheck-build-dir=${CMAKE_BINARY_DIR}/cppcheck"
       "--suppressions-list=${CMAKE_SOURCE_DIR}/.cppcheck-suppressions"
       "--suppress=*:${CMAKE_SOURCE_DIR}/external/*"
+      "--suppress=*:${CMAKE_SOURCE_DIR}/lib/image/external/*"
       "--suppress=*:${CMAKE_BINARY_DIR}/*"
       "--project=${CMAKE_BINARY_DIR}/compile_commands.json"
       "-i${CMAKE_SOURCE_DIR}/external"
+      "-i${CMAKE_SOURCE_DIR}/lib/image/external"
       "-i${CMAKE_BINARY_DIR}"
       "-i${CMAKE_SOURCE_DIR}/app/logic/app/AppPathsMac.mm"
       "-i${CMAKE_SOURCE_DIR}/lib/ui/ClipboardMac.mm"

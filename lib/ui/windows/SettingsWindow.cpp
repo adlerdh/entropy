@@ -346,7 +346,7 @@ void renderMetricSettingsPanel(
         &displayWindowHigh,
         showWindowAsSignedCorrelation ? 0.02f : 0.01f,
         showWindowAsSignedCorrelation ? -1.0f : k_windowMin,
-        showWindowAsSignedCorrelation ? 1.0f : k_windowMax,
+        k_windowMax,
         showWindowAsSignedCorrelation ? "Min NCC: %.2f" : "Min: %.2f",
         showWindowAsSignedCorrelation ? "Max NCC: %.2f" : "Max: %.2f",
         ImGuiSliderFlags_AlwaysClamp))
@@ -2522,7 +2522,7 @@ void renderFrameRateSettings(RenderData& renderData)
     constexpr double hzMax = 240.0;
     constexpr float secSpeed = 1.0e-4f;
     constexpr double secMin = 1.0 / hzMax;
-    constexpr double secMax = 1.0 / hzMin;
+    constexpr double secMax = 1.0;
 
     double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
     if (ImGui::DragScalar(
@@ -2603,7 +2603,7 @@ void renderAsciiShadingSettings(RenderData& renderData)
   helpMarker("Render grayscale images as ASCII art");
 
   if (rd.m_asciiEnabled) {
-    static const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
+    constexpr const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
     if (ImGui::Combo("Character set", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
       // Signal that the atlas needs to be rebuilt — caller checks this flag
       rd.m_asciiAtlasNeedsRebuild = true;
@@ -2987,7 +2987,7 @@ void renderSettingsWindow(
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
 {
-  static GuiData::SettingsTab s_selectedPage = GuiData::SettingsTab::Views;
+  static thread_local GuiData::SettingsTab s_selectedPage = GuiData::SettingsTab::Views;
 
   if (appData.guiData().m_requestedSettingsTab) {
     s_selectedPage = *appData.guiData().m_requestedSettingsTab;

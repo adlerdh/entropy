@@ -49,9 +49,9 @@ struct WarpInversionReport
  */
 struct WarpInversionResult
 {
-  Image image;                     //!< Computed 3-component float displacement field
-  WarpInversionReport report;      //!< Inversion quality metrics
-  ComputedWarpDirection direction; //!< Direction of the computed field
+  Image image;                                                      //!< Computed 3-component float displacement field
+  WarpInversionReport report;                                       //!< Inversion quality metrics
+  ComputedWarpDirection direction = ComputedWarpDirection::Inverse; //!< Direction of the computed field
 };
 
 /**

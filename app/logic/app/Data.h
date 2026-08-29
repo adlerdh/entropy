@@ -319,20 +319,20 @@ public:
   /// Move the image backward/forward in layers (decrease/increase its layer order)
   /// @note It is important that these take arguments by value, since imageUids are being swapped
   /// internally. Potential for nasty bugs if a reference is used.
-  bool moveImageBackwards(const uuid imageUid);
-  bool moveImageForwards(const uuid imageUid);
+  bool moveImageBackwards(const uuid& imageUid);
+  bool moveImageForwards(const uuid& imageUid);
 
   /// Move the image to the backmost/frontmost layer
-  bool moveImageToBack(const uuid imageUid);
-  bool moveImageToFront(const uuid imageUid);
+  bool moveImageToBack(const uuid& imageUid);
+  bool moveImageToFront(const uuid& imageUid);
 
   /// Move the image annotation backward/forward in layers (decrease/increase its layer order)
-  bool moveAnnotationBackwards(const uuid imageUid, const uuid annotUid);
-  bool moveAnnotationForwards(const uuid imageUid, const uuid annotUid);
+  bool moveAnnotationBackwards(const uuid& imageUid, const uuid& annotUid);
+  bool moveAnnotationForwards(const uuid& imageUid, const uuid& annotUid);
 
   /// Move the image annotation to the backmost/frontmost layer
-  bool moveAnnotationToBack(const uuid imageUid, const uuid annotUid);
-  bool moveAnnotationToFront(const uuid imageUid, const uuid annotUid);
+  bool moveAnnotationToBack(const uuid& imageUid, const uuid& annotUid);
+  bool moveAnnotationToFront(const uuid& imageUid, const uuid& annotUid);
 
   std::size_t numImages() const;
   std::size_t numSegs() const;
@@ -342,9 +342,9 @@ public:
   std::size_t numLandmarkGroups() const;
   std::size_t numAnnotations() const;
 
-  uuid_range_t imageUidsOrdered() const;
-  uuid_range_t segUidsOrdered() const;
-  uuid_range_t defUidsOrdered() const;
+  const uuid_range_t& imageUidsOrdered() const;
+  const uuid_range_t& segUidsOrdered() const;
+  const uuid_range_t& defUidsOrdered() const;
   /**
    * @brief Return all loaded images that can be selected as warp fields.
    *
@@ -352,9 +352,9 @@ public:
    * 3-component vector-field images.
    */
   uuid_range_t warpFieldCandidateUidsOrdered() const;
-  uuid_range_t imageColorMapUidsOrdered() const;
-  uuid_range_t labelTableUidsOrdered() const;
-  uuid_range_t landmarkGroupUidsOrdered() const;
+  const uuid_range_t& imageColorMapUidsOrdered() const;
+  const uuid_range_t& labelTableUidsOrdered() const;
+  const uuid_range_t& landmarkGroupUidsOrdered() const;
 
   uuid_range_t isosurfaceUids(const uuid& imageUid, ComponentIndexType component) const;
 

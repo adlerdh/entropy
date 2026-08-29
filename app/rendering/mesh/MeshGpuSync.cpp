@@ -5,7 +5,7 @@ namespace rendering::mesh
 
 MeshGpuSyncStatus syncReadyMeshToGpu(
   const MeshGeometryKey& key,
-  const MeshHandle handle,
+  const MeshHandle& handle,
   const MeshCache& cache,
   MeshGpuStore& gpuStore,
   const BufferUsagePattern usagePattern)

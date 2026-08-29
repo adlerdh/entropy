@@ -84,9 +84,9 @@ public:
    * @tparam N Number of array elements
    */
   template<std::uint32_t N>
-  bool setUniform(const std::string& name, const std::array<float, N>& a)
+  bool setUniform(const std::string& uniformName, const std::array<float, N>& a)
   {
-    const GLint loc = getUniformLocation(name);
+    const GLint loc = getUniformLocation(uniformName);
     if (loc < 0) {
       return false;
     }
@@ -130,7 +130,7 @@ private:
   class UniformSetter
   {
   public:
-    UniformSetter(GLShaderProgram& parent);
+    explicit UniformSetter(GLShaderProgram& parent);
     ~UniformSetter() = default;
 
     void setLocation(GLint loc);

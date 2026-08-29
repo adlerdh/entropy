@@ -1620,11 +1620,11 @@ void renderRegistrationSetupWindow(AppData& appData)
     return;
   }
 
-  static bool s_showAdvanced = false;
+  static thread_local bool s_showAdvanced = false;
   registration::BackendConfig& config = appData.settings().registrationBackendConfig();
-  static std::filesystem::path s_lastDefaultOutputDirectory;
-  static std::string s_outputDirectoryText;
-  static std::optional<std::string> s_outputDirectoryWarning;
+  static thread_local std::filesystem::path s_lastDefaultOutputDirectory;
+  static thread_local std::string s_outputDirectoryText;
+  static thread_local std::optional<std::string> s_outputDirectoryWarning;
   if (s_lastDefaultOutputDirectory != config.defaultOutputDirectory) {
     s_outputDirectoryText = config.defaultOutputDirectory.string();
     s_lastDefaultOutputDirectory = config.defaultOutputDirectory;
@@ -1635,8 +1635,8 @@ void renderRegistrationSetupWindow(AppData& appData)
     config.defaultOutputDirectory.empty() ? std::filesystem::temp_directory_path() : config.defaultOutputDirectory;
   const std::vector<registration::SetupImageChoice> choices = imageChoices(appData);
   const std::vector<DataChoice> masks = maskChoices(appData);
-  static std::optional<registration::SetupState> s_state;
-  static std::string s_setupSignature;
+  static thread_local std::optional<registration::SetupState> s_state;
+  static thread_local std::string s_setupSignature;
   const std::string signature = setupSignature(choices, outputDirectory);
   if (!s_state || s_setupSignature != signature) {
     s_state = createSetupStatePreservingSelections(choices, config.defaultBackend, outputDirectory, s_state);
@@ -1902,9 +1902,9 @@ void renderRegistrationJobsWindow(
     return;
   }
 
-  static std::string s_selectedLogJobId;
-  static std::vector<std::filesystem::path> s_temporaryFilesToRemove;
-  static std::string s_temporaryCleanupMessage;
+  static thread_local std::string s_selectedLogJobId;
+  static thread_local std::vector<std::filesystem::path> s_temporaryFilesToRemove;
+  static thread_local std::string s_temporaryCleanupMessage;
   const registration::JobRecord* selectedLogJob = nullptr;
   bool openDetailsPopup = false;
 

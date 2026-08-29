@@ -133,10 +133,7 @@ int parseHttpStatus(std::string_view line)
 
 struct CurlGlobalState
 {
-  CurlGlobalState()
-  {
-    code = curl_global_init(CURL_GLOBAL_DEFAULT);
-  }
+  CurlGlobalState() : code(curl_global_init(CURL_GLOBAL_DEFAULT)) {}
 
   ~CurlGlobalState()
   {

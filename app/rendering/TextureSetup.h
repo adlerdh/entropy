@@ -29,13 +29,13 @@ struct TextureCreationFailure
     Segmentation //!< Segmentation texture upload failed
   };
 
-  Resource resource;                  //!< Resource type
-  uuids::uuid uid;                    //!< Resource UID
-  std::string displayName;            //!< User-facing resource name
-  std::array<uint32_t, 3> dimensions; //!< Resource dimensions in voxels
-  int maxTextureSize;                 //!< GL_MAX_TEXTURE_SIZE reported by the current OpenGL context
-  int max3DTextureSize;               //!< GL_MAX_3D_TEXTURE_SIZE reported by the current OpenGL context
-  std::string reason;                 //!< User-facing explanation of the failure
+  Resource resource = Resource::Image;  //!< Resource type
+  uuids::uuid uid;                      //!< Resource UID
+  std::string displayName;              //!< User-facing resource name
+  std::array<uint32_t, 3> dimensions{}; //!< Resource dimensions in voxels
+  int maxTextureSize = 0;               //!< GL_MAX_TEXTURE_SIZE reported by the current OpenGL context
+  int max3DTextureSize = 0;             //!< GL_MAX_3D_TEXTURE_SIZE reported by the current OpenGL context
+  std::string reason;                   //!< User-facing explanation of the failure
 };
 
 /**

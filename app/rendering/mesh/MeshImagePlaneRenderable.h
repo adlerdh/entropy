@@ -91,10 +91,10 @@ struct MeshImagePlaneRenderable
  * @return Image-plane renderable
  */
 MeshImagePlaneRenderable makeImagePlaneRenderable(
-  MeshHandle mesh,
+  const MeshHandle& mesh,
   const glm::mat4& world_T_mesh,
   const glm::vec3& centerWorld,
-  MeshImagePlaneTexture texture,
+  const MeshImagePlaneTexture& texture,
   float opacityMultiplier = 1.0f,
   bool shadingEnabled = true,
   bool visible = true,

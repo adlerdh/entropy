@@ -33,8 +33,8 @@ static const std::array<uint32_t, sk_numQuadVerts> sk_indicesBuffer = {{0, 1, 2,
 
 GLTexture createBlankRgbaTexture(tex::Target target, uint8_t value)
 {
-  static const ComponentType compType = ComponentType::UInt8;
-  static std::array<uint8_t, 4> sk_data_U8 = {value, value, value, value};
+  static constexpr ComponentType sk_compType = ComponentType::UInt8;
+  const std::array<uint8_t, 4> data{value, value, value, value};
 
   static constexpr GLint sk_mipmapLevel = 0; // Load image data into first mipmap level
   static constexpr GLint sk_alignment = 4;   // Pixel pack/unpack alignment is 4 bytes
@@ -60,10 +60,10 @@ GLTexture createBlankRgbaTexture(tex::Target target, uint8_t value)
 
   T.setData(
     sk_mipmapLevel,
-    GLTexture::getSizedInternalNormalizedRGBAFormat(compType),
-    GLTexture::getBufferPixelNormalizedRGBAFormat(compType),
-    GLTexture::getBufferPixelDataType(compType),
-    sk_data_U8.data());
+    GLTexture::getSizedInternalNormalizedRGBAFormat(sk_compType),
+    GLTexture::getBufferPixelNormalizedRGBAFormat(sk_compType),
+    GLTexture::getBufferPixelDataType(sk_compType),
+    data.data());
 
   spdlog::debug("Created blank RGBA texture for target {}", static_cast<int>(target));
 

@@ -31,13 +31,7 @@ ImageTransformations::ImageTransformations(
   : m_headerOverrides(pixelDimensions, pixelSpacing, pixelOrigin, pixelDirections)
   ,
 
-  m_is_worldDef_T_affine_locked(true)
-  ,
-
   m_invPixelDimensions(math::computeInvPixelDimensions(pixelDimensions))
-  ,
-
-  m_worldDef_T_affine_TxType(ManualTransformationType::Similarity)
   ,
 
   m_subject_T_pixel(math::computeImagePixelToSubjectTransformation(pixelDirections, pixelSpacing, pixelOrigin))
@@ -58,11 +52,9 @@ ImageTransformations::ImageTransformations(
   ,
 
   m_worldDef_T_affine(1.0f)
-  , m_enable_worldDef_T_affine(true)
   ,
 
   m_affine_T_subject(1.0f)
-  , m_enable_affine_T_subject(true)
   , m_affine_T_subject_fileName(std::nullopt)
   ,
 

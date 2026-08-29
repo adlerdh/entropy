@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cerrno>
-#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -18,6 +17,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -228,13 +228,11 @@ serialize::EntropyProject createProjectFromInputParams(const InputParams& params
     const bool valid = serialize::open(project, *params.projectFile);
 
     if (!valid) {
-      spdlog::critical("Invalid input in project file {}", *params.projectFile);
-      exit(EXIT_FAILURE);
+      throw std::runtime_error("Invalid input in project file " + params.projectFile->string());
     }
   }
   else {
-    spdlog::critical("No project file or image arguments were provided");
-    exit(EXIT_FAILURE);
+    throw std::runtime_error("No project file or image arguments were provided");
   }
 
   return project;

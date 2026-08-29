@@ -219,7 +219,7 @@ void Rendering::renderGrayImageForImage(
       [&]() { drawGrayImage(false); },
       bindPixelEdgeColormap);
   }
-  else if (uniforms.showPixelEdges || !uniforms.showEdges || (uniforms.showEdges && uniforms.overlayEdges)) {
+  else if (!uniforms.showEdges || uniforms.overlayEdges) {
     drawGrayImage(uniforms.showEdges);
   }
 

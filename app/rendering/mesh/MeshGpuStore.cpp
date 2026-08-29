@@ -7,7 +7,10 @@
 namespace rendering::mesh
 {
 
-bool MeshGpuStore::uploadOrReplace(const MeshData& mesh, const MeshHandle handle, const BufferUsagePattern usagePattern)
+bool MeshGpuStore::uploadOrReplace(
+  const MeshData& mesh,
+  const MeshHandle& handle,
+  const BufferUsagePattern usagePattern)
 {
   std::optional<MeshGpuData> upload = uploadMeshData(mesh, handle, usagePattern);
   if (!upload) {

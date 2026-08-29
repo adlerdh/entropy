@@ -26,10 +26,10 @@ void renderAnnotationToolbar(
   const std::function<void()>& paintActiveAnnotation)
 {
   // Always keep the toolbar open by setting this to null
-  static bool* toolbarWindowOpen = nullptr;
+  bool* toolbarWindowOpen = nullptr;
 
-  static int corner = 3;
-  static bool isHoriz = true;
+  static thread_local int corner = 3;
+  static thread_local bool isHoriz = true;
 
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
@@ -368,12 +368,8 @@ void renderAnnotationToolbar(
       }
       ImGui::PopID();
 
-      needsSpace = true;
-
-      if (needsSpace) {
-        if (isHoriz) ImGui::SameLine();
-        ImGui::Dummy(buttonSpace);
-      }
+      if (isHoriz) ImGui::SameLine();
+      ImGui::Dummy(buttonSpace);
 
       if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
@@ -410,7 +406,6 @@ void renderAnnotationToolbar(
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Fill the active image segmentation with the selected annotation polygon");
         }
-        ++id;
       }
       ImGui::PopID();
     }

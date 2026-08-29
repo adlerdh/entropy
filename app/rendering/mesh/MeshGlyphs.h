@@ -39,8 +39,10 @@ struct MeshCylinderGlyphStyle
  * @param style World-space glyph style
  * @return Mesh renderable
  */
-MeshRenderable
-makeSphereGlyphRenderable(MeshHandle sphereMesh, const glm::vec3& centerWorld, const MeshSphereGlyphStyle& style);
+MeshRenderable makeSphereGlyphRenderable(
+  const MeshHandle& sphereMesh,
+  const glm::vec3& centerWorld,
+  const MeshSphereGlyphStyle& style);
 
 /**
  * @brief Build a z-axis cylinder glyph renderable from a canonical unit-radius, unit-length cylinder mesh
@@ -50,7 +52,7 @@ makeSphereGlyphRenderable(MeshHandle sphereMesh, const glm::vec3& centerWorld, c
  * @return Mesh renderable
  */
 MeshRenderable makeZAxisCylinderGlyphRenderable(
-  MeshHandle cylinderMesh,
+  const MeshHandle& cylinderMesh,
   const glm::vec3& centerWorld,
   const MeshCylinderGlyphStyle& style);
 

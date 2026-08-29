@@ -11,7 +11,7 @@ namespace
 {
 
 MeshRenderable makeGlyphRenderable(
-  const MeshHandle mesh,
+  const MeshHandle& mesh,
   const glm::mat4& world_T_mesh,
   const glm::vec4& color,
   const MeshCompositingMode compositingMode,
@@ -30,7 +30,7 @@ MeshRenderable makeGlyphRenderable(
 } // namespace
 
 MeshRenderable
-makeSphereGlyphRenderable(const MeshHandle sphereMesh, const glm::vec3& centerWorld, const MeshSphereGlyphStyle& style)
+makeSphereGlyphRenderable(const MeshHandle& sphereMesh, const glm::vec3& centerWorld, const MeshSphereGlyphStyle& style)
 {
   const float radius = std::max(style.radiusWorld, 0.0f);
   const glm::mat4 world_T_mesh =
@@ -39,7 +39,7 @@ makeSphereGlyphRenderable(const MeshHandle sphereMesh, const glm::vec3& centerWo
 }
 
 MeshRenderable makeZAxisCylinderGlyphRenderable(
-  const MeshHandle cylinderMesh,
+  const MeshHandle& cylinderMesh,
   const glm::vec3& centerWorld,
   const MeshCylinderGlyphStyle& style)
 {

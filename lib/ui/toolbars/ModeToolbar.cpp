@@ -38,7 +38,7 @@ void renderModeToolbar(
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
-  static bool s_lastShowState = guiData.m_showModeToolbar;
+  static thread_local bool s_lastShowState = guiData.m_showModeToolbar;
 
   if (!guiData.m_showModeToolbar) {
     readjustViewport();
@@ -47,7 +47,7 @@ void renderModeToolbar(
   }
 
   // Always keep the toolbar open by setting this to null
-  static bool* toolbarWindowOpen = nullptr;
+  bool* toolbarWindowOpen = nullptr;
 
   const ImVec4* colors = ImGui::GetStyle().Colors;
   ImVec4 activeColor = colors[ImGuiCol_ButtonActive];
@@ -409,7 +409,7 @@ void renderModeToolbar(
           const bool resetObliqueOrientation = hardReset;
           static constexpr bool recenterOnCurrentCrosshairsPosition = true;
 
-          const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
+          const bool resetZoom = true;
 
           recenterAllViews(
             recenterCrosshairs,
@@ -445,8 +445,6 @@ void renderModeToolbar(
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
-
-        ++id;
       }
       ImGui::PopID();
 
@@ -508,8 +506,6 @@ void renderModeToolbar(
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
-
-        ++id;
       }
       ImGui::PopID();
     }

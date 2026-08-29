@@ -15,14 +15,14 @@ namespace rendering::mesh
 /** Build a CPU-only isosurface job from an immutable image snapshot. */
 MeshExtractionJob makeIsosurfaceExtractionJob(
   IsosurfaceMeshRequest request,
-  MeshGenerationOptions options,
+  const MeshGenerationOptions& options,
   std::shared_ptr<const Image> imageSnapshot);
 
 /** Build a CPU-only cropped binary-label extraction job from an immutable segmentation snapshot. */
 MeshExtractionJob makeSegmentationExtractionJob(
   SegmentationMeshRequest request,
   SegmentationLabelBounds bounds,
-  MeshGenerationOptions options,
+  const MeshGenerationOptions& options,
   std::shared_ptr<const Image> segmentationSnapshot);
 
 } // namespace rendering::mesh

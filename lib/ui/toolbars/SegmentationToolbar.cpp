@@ -57,7 +57,7 @@ void renderSegToolbar(
   }
 
   // Always keep the toolbar open by setting this to null
-  static bool* toolbarWindowOpen = nullptr;
+  bool* toolbarWindowOpen = nullptr;
 
   const bool isHoriz = guiData.m_isSegToolbarHorizontal;
   const int corner = guiData.m_segToolbarCorner;
@@ -76,7 +76,7 @@ void renderSegToolbar(
 
   const auto activeSegUid = appData.imageToActiveSegUid(*activeImageUid);
   if (!activeSegUid) {
-    static constexpr const char* k_createSegPopupTitle = "Create segmentation?";
+    constexpr const char* k_createSegPopupTitle = "Create segmentation?";
     ImGui::OpenPopup(k_createSegPopupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginPopupModal(

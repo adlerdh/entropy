@@ -42,12 +42,12 @@ std::optional<std::string> parameterValue(const JobSpec& job, std::string_view k
   return it->value;
 }
 
-std::string parameterValueOr(const JobSpec& job, std::string_view key, std::string fallback)
+std::string parameterValueOr(const JobSpec& job, std::string_view key, std::string_view fallback)
 {
   if (const std::optional<std::string> value = parameterValue(job, key)) {
     return *value;
   }
-  return fallback;
+  return std::string{fallback};
 }
 
 int integerParameterValueOr(const JobSpec& job, std::string_view key, int fallback)

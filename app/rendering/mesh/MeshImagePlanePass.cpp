@@ -165,7 +165,7 @@ std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
 struct BoundImagePlaneSegmentationTexture
 {
   std::reference_wrapper<GLTexture> texture;
-  bool hasSegmentation;
+  bool hasSegmentation = false;
 };
 
 BoundImagePlaneSegmentationTexture bindImagePlaneSegmentationTexture(
@@ -534,7 +534,7 @@ void drawImagePlaneRenderablesWithProgram(
   const rendering::mesh::MeshDrawContext& context,
   GLShaderProgram& texture3dProgram,
   GLShaderProgram& texture2dProgram,
-  GLShaderProgram* const previousTexturesProgram = nullptr,
+  const bool usePreviousTextures = false,
   GLTexture* const previousDepthBounds = nullptr,
   GLTexture* const previousFrontColor = nullptr)
 {
@@ -542,7 +542,7 @@ void drawImagePlaneRenderablesWithProgram(
     return;
   }
 
-  if (previousTexturesProgram && previousDepthBounds && previousFrontColor) {
+  if (usePreviousTextures && previousDepthBounds && previousFrontColor) {
     previousDepthBounds->bind(sk_previousDepthBoundsSampler.index);
     previousFrontColor->bind(sk_previousFrontColorSampler.index);
   }
@@ -605,7 +605,7 @@ void drawImagePlaneRenderablesWithProgram(
       imagePlane,
       uniformsIt->second,
       boundSegTexture.hasSegmentation && !boundSegBufferTextures.empty());
-    if (previousTexturesProgram) {
+    if (usePreviousTextures) {
       program.setSamplerUniform("u_previousDepthBoundsTex", sk_previousDepthBoundsSampler.index);
       program.setSamplerUniform("u_previousFrontColorTex", sk_previousFrontColorSampler.index);
     }
@@ -619,7 +619,7 @@ void drawImagePlaneRenderablesWithProgram(
     unbindImagePlaneSegmentationLabelTableTextures(boundSegBufferTextures);
   }
 
-  if (previousTexturesProgram && previousDepthBounds && previousFrontColor) {
+  if (usePreviousTextures && previousDepthBounds && previousFrontColor) {
     previousFrontColor->unbind(sk_previousFrontColorSampler.index);
     previousDepthBounds->unbind(sk_previousDepthBoundsSampler.index);
   }
@@ -798,7 +798,7 @@ void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
     context,
     m_meshImagePlaneDdpPeelProgram,
     m_meshImagePlaneDdpPeelTexture2DProgram,
-    &m_meshImagePlaneDdpPeelProgram,
+    true,
     &previousDepthBounds,
     &previousFrontColor);
 }

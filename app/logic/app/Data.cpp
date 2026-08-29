@@ -38,9 +38,7 @@ bool swapElementsAt(Container& values, const std::size_t first, const std::size_
   std::advance(firstIt, static_cast<typename Container::difference_type>(first));
   std::advance(secondIt, static_cast<typename Container::difference_type>(second));
 
-  auto value = *firstIt;
-  *firstIt = *secondIt;
-  *secondIt = value;
+  std::iter_swap(firstIt, secondIt);
   return true;
 }
 
@@ -1400,9 +1398,8 @@ void AppData::setRainbowColorsForAllImages()
     if (Image* img = image(imageUid)) {
       const float a = (1.0f + sk_startHue + static_cast<float>(i) / N);
 
-      float fractPart = std::numeric_limits<float>::quiet_NaN();
       float intPart = std::numeric_limits<float>::quiet_NaN();
-      fractPart = std::modf(a, &intPart);
+      const float fractPart = std::modf(a, &intPart);
 
       const float hue = 360.0f * fractPart;
       const glm::vec3 color = glm::rgbColor(glm::vec3{hue, sk_colorSat, sk_colorVal});
@@ -1434,7 +1431,7 @@ void AppData::setRainbowColorsForAllLandmarkGroups()
   }
 }
 
-bool AppData::moveImageBackwards(const uuid imageUid)
+bool AppData::moveImageBackwards(const uuid& imageUid)
 {
   const auto index = imageIndex(imageUid);
   if (!index) return false;
@@ -1450,7 +1447,7 @@ bool AppData::moveImageBackwards(const uuid imageUid)
   return false;
 }
 
-bool AppData::moveImageForwards(const uuid imageUid)
+bool AppData::moveImageForwards(const uuid& imageUid)
 {
   const auto index = imageIndex(imageUid);
   if (!index) return false;
@@ -1470,7 +1467,7 @@ bool AppData::moveImageForwards(const uuid imageUid)
   return false;
 }
 
-bool AppData::moveImageToBack(const uuid imageUid)
+bool AppData::moveImageToBack(const uuid& imageUid)
 {
   auto index = imageIndex(imageUid);
   if (!index) return false;
@@ -1486,7 +1483,7 @@ bool AppData::moveImageToBack(const uuid imageUid)
   return true;
 }
 
-bool AppData::moveImageToFront(const uuid imageUid)
+bool AppData::moveImageToFront(const uuid& imageUid)
 {
   auto index = imageIndex(imageUid);
   if (!index) return false;
@@ -1508,7 +1505,7 @@ bool AppData::moveImageToFront(const uuid imageUid)
   return true;
 }
 
-bool AppData::moveAnnotationBackwards(const uuid imageUid, const uuid annotUid)
+bool AppData::moveAnnotationBackwards(const uuid& imageUid, const uuid& annotUid)
 {
   const auto index = annotationIndex(imageUid, annotUid);
   if (!index) return false;
@@ -1520,15 +1517,11 @@ bool AppData::moveAnnotationBackwards(const uuid imageUid, const uuid annotUid)
     // Already the backmost index
     return true;
   }
-  else if (1 <= i) {
-    auto& annotList = m_imageToAnnotations.at(imageUid);
-    return swapElementsAt(annotList, i - 1, i);
-  }
-
-  return false;
+  auto& annotList = m_imageToAnnotations.at(imageUid);
+  return swapElementsAt(annotList, i - 1, i);
 }
 
-bool AppData::moveAnnotationForwards(const uuid imageUid, const uuid annotUid)
+bool AppData::moveAnnotationForwards(const uuid& imageUid, const uuid& annotUid)
 {
   const auto index = annotationIndex(imageUid, annotUid);
   if (!index) return false;
@@ -1549,7 +1542,7 @@ bool AppData::moveAnnotationForwards(const uuid imageUid, const uuid annotUid)
   return false;
 }
 
-bool AppData::moveAnnotationToBack(const uuid imageUid, const uuid annotUid)
+bool AppData::moveAnnotationToBack(const uuid& imageUid, const uuid& annotUid)
 {
   auto index = annotationIndex(imageUid, annotUid);
   if (!index) return false;
@@ -1565,7 +1558,7 @@ bool AppData::moveAnnotationToBack(const uuid imageUid, const uuid annotUid)
   return true;
 }
 
-bool AppData::moveAnnotationToFront(const uuid imageUid, const uuid annotUid)
+bool AppData::moveAnnotationToFront(const uuid& imageUid, const uuid& annotUid)
 {
   auto index = annotationIndex(imageUid, annotUid);
   if (!index) return false;
@@ -1613,17 +1606,17 @@ std::size_t AppData::numAnnotations() const
   return m_annotations.size();
 }
 
-uuid_range_t AppData::imageUidsOrdered() const
+const uuid_range_t& AppData::imageUidsOrdered() const
 {
   return m_imageUidsOrdered;
 }
 
-uuid_range_t AppData::segUidsOrdered() const
+const uuid_range_t& AppData::segUidsOrdered() const
 {
   return m_segUidsOrdered;
 }
 
-uuid_range_t AppData::defUidsOrdered() const
+const uuid_range_t& AppData::defUidsOrdered() const
 {
   return m_defUidsOrdered;
 }
@@ -1646,17 +1639,17 @@ uuid_range_t AppData::warpFieldCandidateUidsOrdered() const
   return candidates;
 }
 
-uuid_range_t AppData::imageColorMapUidsOrdered() const
+const uuid_range_t& AppData::imageColorMapUidsOrdered() const
 {
   return m_imageColorMapUidsOrdered;
 }
 
-uuid_range_t AppData::labelTableUidsOrdered() const
+const uuid_range_t& AppData::labelTableUidsOrdered() const
 {
   return m_labelTablesUidsOrdered;
 }
 
-uuid_range_t AppData::landmarkGroupUidsOrdered() const
+const uuid_range_t& AppData::landmarkGroupUidsOrdered() const
 {
   return m_landmarkGroupUidsOrdered;
 }

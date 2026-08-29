@@ -83,7 +83,7 @@ void renderAnnotationsHeader(
   static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O) + " Remove...";
   static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Fill segmentation";
 
-  static const char* exportAnnotDialogTitle("Export Annotations to JSON");
+  constexpr const char* exportAnnotDialogTitle = "Export Annotations to JSON";
   static const auto annotDialogFilters = native_dialog::annotationFilters();
 
   Image* image = appData.image(imageUid);
@@ -359,7 +359,7 @@ void renderAnnotationsHeader(
 
   // Remove the annotation:
   bool removeAnnot = false;
-  static bool doNotAskAagain = false;
+  static thread_local bool doNotAskAagain = false;
 
   ImGui::Spacing();
   const bool clickedRemoveButton = ImGui::Button(removeAnnotButtonText.c_str());

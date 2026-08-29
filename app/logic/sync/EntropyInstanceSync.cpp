@@ -162,18 +162,16 @@ void closeNativeSocket(NativeSocketHandle socket)
 #endif
 }
 
+#if defined(_WIN32)
 bool ensureWinsockStarted()
 {
-#if defined(_WIN32)
   static const bool started = [] {
     WSADATA data{};
     return 0 == WSAStartup(MAKEWORD(2, 2), &data);
   }();
   return started;
-#else
-  return true;
-#endif
 }
+#endif
 } // namespace
 
 EntropyInstanceSync::EntropyInstanceSync(AppData& appData)
@@ -255,10 +253,12 @@ bool EntropyInstanceSync::openSocket()
   if (sk_invalidSocket != nativeSocket(m_socket)) {
     return true;
   }
+#if defined(_WIN32)
   if (!ensureWinsockStarted()) {
     spdlog::warn("Could not initialize Windows sockets for Entropy instance synchronization");
     return false;
   }
+#endif
 
   NativeSocketHandle socket = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (sk_invalidSocket == socket) {

@@ -97,15 +97,11 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
     const auto& distMaps = m_appData.distanceMaps(textureImageUid, S.activeComponent());
 
     if (distMaps.empty()) {
-      static bool alreadyShowedWarning = false;
-      if (!alreadyShowedWarning) {
-        spdlog::warn("No distance map for component {} of image {}", S.activeComponent(), *imgUid);
-        alreadyShowedWarning = true;
+      spdlog::warn("No distance map for component {} of image {}", S.activeComponent(), *imgUid);
 
-        // Disable use of distance map for this image:
-        if (Image* imageNonConst = (imgUid ? m_appData.image(*imgUid) : nullptr)) {
-          imageNonConst->settings().setUseDistanceMapForRaycasting(false);
-        }
+      // Prevent repeated attempts and warnings for this image when no distance map is available.
+      if (Image* imageNonConst = (imgUid ? m_appData.image(*imgUid) : nullptr)) {
+        imageNonConst->settings().setUseDistanceMapForRaycasting(false);
       }
     }
 

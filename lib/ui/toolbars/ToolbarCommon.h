@@ -13,7 +13,7 @@ inline const ImVec4 k_darkTextColor(0.0f, 0.0f, 0.0f, 1.0f);
 inline const ImVec4 k_lightTextColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 inline const ImGuiWindowFlags k_toolbarWindowFlags =
-  0 | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize |
+  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize |
   ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
 
 /**

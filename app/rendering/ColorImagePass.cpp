@@ -144,7 +144,7 @@ void Rendering::renderColorImageForImage(
       [&]() { drawColorImage(false); },
       bindPixelEdgeColormap);
   }
-  else if (uniforms.showPixelEdges || !uniforms.showEdges || (uniforms.showEdges && uniforms.overlayEdges)) {
+  else if (!uniforms.showEdges || uniforms.overlayEdges) {
     drawColorImage(uniforms.showEdges);
   }
 

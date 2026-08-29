@@ -129,11 +129,9 @@ std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
   grid.coordinateSpace = coordinateSpace;
   const std::size_t voxelCount = static_cast<std::size_t>(grid.dimensions.x) * grid.dimensions.y * grid.dimensions.z;
   grid.values.assign(voxelCount, 0.0f);
-  const glm::mat4 target_T_pixel = MeshCoordinateSpace::World == coordinateSpace
-                                     ? image.transformations().worldDef_T_pixel()
-                                     : image.transformations().subject_T_pixel();
-  grid.grid_T_voxelIndex =
-    target_T_pixel * glm::translate(glm::mat4{1.0f}, glm::vec3{bounds.minVoxel} - glm::vec3{1.0f});
+  grid.grid_T_voxelIndex = (MeshCoordinateSpace::World == coordinateSpace ? image.transformations().worldDef_T_pixel()
+                                                                          : image.transformations().subject_T_pixel()) *
+                           glm::translate(glm::mat4{1.0f}, glm::vec3{bounds.minVoxel} - glm::vec3{1.0f});
 
   for (uint32_t z = 0; z < occupiedSize.z; ++z) {
     for (uint32_t y = 0; y < occupiedSize.y; ++y) {

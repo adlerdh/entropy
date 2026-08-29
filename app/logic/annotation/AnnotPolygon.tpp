@@ -11,6 +11,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <tuple>
 #include <vector>
@@ -321,13 +322,11 @@ public:
   /// Get the total number of vertices among all boundaries, including the outer boundary and holes.
   size_t numVertices() const
   {
-    size_t N = 0;
-
-    for (const auto& boundary : m_vertices) {
-      N += boundary.size();
-    }
-
-    return N;
+    return std::accumulate(
+      m_vertices.cbegin(),
+      m_vertices.cend(),
+      std::size_t{0},
+      [](const std::size_t count, const auto& boundary) { return count + boundary.size(); });
   }
 
   /// Get the i'th vertex of a given boundary, where 0 is the outer boundary and subsequent boundaries
@@ -483,9 +482,7 @@ private:
       return;
     }
 
-    for (const auto& p : outerBoundary) {
-      m_centroid += p;
-    }
+    m_centroid = std::accumulate(outerBoundary.cbegin(), outerBoundary.cend(), m_centroid);
 
     m_centroid /= static_cast<TComp>(N);
     ;

@@ -115,8 +115,8 @@ std::list<uuids::uuid> raycastableImageUids(
  * @brief Select the matching 2D or 3D shader program for an uploaded texture layout.
  */
 GLShaderProgram& shaderProgramForTextureDimension(
-  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms3D,
-  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms2D,
+  const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms3D,
+  const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms2D,
   ShaderProgramType shaderType,
   TextureDimension dimension);
 

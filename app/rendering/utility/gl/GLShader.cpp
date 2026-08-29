@@ -112,8 +112,9 @@ void GLShader::compileFromString(const char* source)
     spdlog::error("Cannot compile shader '{}' due to failed status check", m_name);
     m_isCompiled = false;
   }
-
-  m_isCompiled = true;
+  else {
+    m_isCompiled = true;
+  }
   m_handle = handle;
 
   CHECK_GL_ERROR(m_errorChecker)

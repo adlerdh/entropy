@@ -324,15 +324,14 @@ cmake --preset app-debug -B build-cppcheck -D Entropy_ENABLE_CPPCHECK=ON
 cmake --build build-cppcheck --target cppcheck
 ```
 
-The target enables error, warning, style, performance, and portability analysis, inconclusive diagnostics, inline
-suppressions, and the thread-safety addon. Project-wide reviewed false positives are in
+The target enables error, warning, style, performance, and portability analysis, inline suppressions, and the
+thread-safety addon. Project-wide reviewed false positives are in
 [.cppcheck-suppressions](.cppcheck-suppressions), scoped as narrowly as practical. Source-local suppressions use
 cppcheck's `cppcheck-suppress` comment syntax. External, generated, and Objective-C++ sources that cppcheck cannot
 meaningfully analyze are excluded by the target in [CMakeLists.txt](CMakeLists.txt).
 
-CI runs cppcheck in its own Ubuntu 24.04 x86_64 job and uploads `cppcheck.log` as the `cppcheck-log` artifact. The job
-is advisory while the initial diagnostic baseline is triaged, although the local target returns an error when it
-reports a finding.
+CI runs cppcheck in its own Ubuntu 24.04 x86_64 job and uploads `cppcheck.log` as the `cppcheck-log` artifact. The local
+and CI targets fail when cppcheck reports an unsuppressed finding.
 
 ### clang-tidy
 

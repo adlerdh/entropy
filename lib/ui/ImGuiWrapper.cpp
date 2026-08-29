@@ -790,7 +790,7 @@ void renderLayoutTabs(AppData& appData)
     return;
   }
 
-  static std::optional<uuids::uuid> lastSyncedSelectedLayoutUid;
+  static thread_local std::optional<uuids::uuid> lastSyncedSelectedLayoutUid;
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   if (!viewport) {
@@ -1136,7 +1136,7 @@ std::optional<uuids::uuid> globalTimeControlImageUid(AppData& appData)
 
 void updateTimePlayback(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t activeTimePoint)
 {
-  static std::unordered_map<uuids::uuid, TimePlaybackState> s_playbackStateByImage;
+  static thread_local std::unordered_map<uuids::uuid, TimePlaybackState> s_playbackStateByImage;
 
   if (!image.settings().timePlaybackPlaying()) {
     s_playbackStateByImage.erase(imageUid);
@@ -1198,7 +1198,7 @@ void updateAllTimeSeriesPlayback(AppData& appData)
 
 void renderGlobalTimeControl(AppData& appData)
 {
-  static bool s_timePlaybackWasRunning = false;
+  static thread_local bool s_timePlaybackWasRunning = false;
   auto updatePlaybackAnimationState = [&appData]() {
     const bool playbackRunning = anyTimeSeriesPlaybackRunning(appData);
     if (playbackRunning) {
@@ -1742,7 +1742,7 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   // Setup ImGui platform/renderer bindings:
-  static const char* glsl_version = "#version 150";
+  constexpr const char* glsl_version = "#version 150";
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
@@ -4313,7 +4313,7 @@ void ImGuiWrapper::render()
     return names;
   };
 
-  static std::string s_settingsPersistenceStatus;
+  static thread_local std::string s_settingsPersistenceStatus;
   auto saveUserSettingsToDefault = [this]() {
     const std::filesystem::path settingsFile = app_paths::userSettingsFile();
     std::string error;

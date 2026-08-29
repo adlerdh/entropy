@@ -7,7 +7,7 @@ namespace
 {
 
 MeshRenderable makeRenderable(
-  const MeshHandle mesh,
+  const MeshHandle& mesh,
   const glm::mat4& world_T_mesh,
   const MeshMaterial& material,
   const MeshCompositingMode compositingMode,
@@ -30,7 +30,7 @@ MeshRenderable makeRenderable(
 } // namespace
 
 MeshRenderable
-makeIsosurfaceRenderable(const MeshHandle mesh, const glm::mat4& world_T_mesh, const IsosurfaceMeshStyle& style)
+makeIsosurfaceRenderable(const MeshHandle& mesh, const glm::mat4& world_T_mesh, const IsosurfaceMeshStyle& style)
 {
   return makeRenderable(
     mesh,
@@ -43,7 +43,7 @@ makeIsosurfaceRenderable(const MeshHandle mesh, const glm::mat4& world_T_mesh, c
 }
 
 MeshRenderable makeSegmentationLabelRenderable(
-  const MeshHandle mesh,
+  const MeshHandle& mesh,
   const glm::mat4& world_T_mesh,
   const SegmentationLabelMeshStyle& style)
 {

@@ -32,7 +32,7 @@ public:
    */
   bool uploadOrReplace(
     const MeshData& mesh,
-    MeshHandle handle,
+    const MeshHandle& handle,
     BufferUsagePattern usagePattern = BufferUsagePattern::StaticDraw);
 
   /**

@@ -230,7 +230,7 @@ std::vector<std::string> warpFieldWarnings(const Image& field, const Image& targ
   return warnings;
 }
 
-std::string inverseWarpWarningDetail(std::string warning)
+std::string inverseWarpWarningDetail(std::string_view warning)
 {
   const std::vector<std::pair<std::string, std::string>> replacements{
     {"The selected warp field has fewer than three components per voxel.", "Fewer than three components per voxel"},
@@ -245,7 +245,7 @@ std::string inverseWarpWarningDetail(std::string warning)
       return to;
     }
   }
-  return warning;
+  return std::string{warning};
 }
 
 std::vector<std::string> inverseWarpFieldWarnings(const Image& field, const Image& referenceImage)
@@ -552,7 +552,7 @@ void renderImageDicomMetadata(const AppData& appData, const uuids::uuid& imageUi
     return;
   }
 
-  static std::unordered_map<std::string, HeaderDicomMetadataCache> metadataCache;
+  static thread_local std::unordered_map<std::string, HeaderDicomMetadataCache> metadataCache;
   const std::string cacheKey = dicomCacheKey(imageUid, *dicomSource);
   auto cacheIt = metadataCache.find(cacheKey);
   if (cacheIt == metadataCache.end()) {
@@ -2828,7 +2828,7 @@ void renderImageHeader(
         forwardWarp ? std::nullopt : assignmentInverseWarpReferenceUid());
     };
 
-    static WarpInversionOptions inversionOptions;
+    static thread_local WarpInversionOptions inversionOptions;
     const bool hasAssignedInverseWarp = activeInverseWarpUid.has_value();
     const bool hasBothWarpDirections = activeInverseWarpUid.has_value() && activeForwardWarpUid.has_value();
 
@@ -3273,7 +3273,7 @@ void renderImageHeader(
       ImGui::SameLine();
 
       // Save manual tx to file:
-      static const char* dialogTitle("Select Manual Affine Transformation");
+      constexpr const char* dialogTitle = "Select Manual Affine Transformation";
 
       const auto selectedManualTxFile =
         ImGui::renderFileButtonDialogAndWindow(saveManualAffineButtonText.c_str(), dialogTitle, dialogFilters);
@@ -3314,7 +3314,7 @@ void renderImageHeader(
       // Save effective affine tx to file:
       static const std::string saveEffectiveTxButtonText =
         std::string(ICON_FK_FLOPPY_O) + " Save effective (manual * initial) affine...";
-      static const char* saveEffectiveTxDialogTitle("Select Effective Affine Transformation");
+      constexpr const char* saveEffectiveTxDialogTitle = "Select Effective Affine Transformation";
 
       const auto selectedEffectiveTxFile = ImGui::renderFileButtonDialogAndWindow(
         saveEffectiveTxButtonText.c_str(),

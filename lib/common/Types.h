@@ -107,7 +107,7 @@ struct ComponentStats
   OnlineStats onlineStats;
 
   /// Order statistics
-  std::array<long double, 101> quantiles;
+  std::array<long double, 101> quantiles{};
 };
 
 /**
@@ -430,7 +430,7 @@ enum class ScaleBarTicks
 struct AnatomicalLabelPosInfo
 {
   AnatomicalLabelPosInfo() : labelIndex(0) {}
-  AnatomicalLabelPosInfo(int l) : labelIndex(l) {}
+  explicit AnatomicalLabelPosInfo(int l) : labelIndex(l) {}
 
   /// The anatomical label index (0: L, 1: P, 2: S)
   int labelIndex;

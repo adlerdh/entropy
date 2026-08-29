@@ -91,13 +91,13 @@ public:
   PixelType pixelType() const;
 
   /// @brief Get logical pixel type as a readable string.
-  std::string pixelTypeAsString() const;
+  const std::string& pixelTypeAsString() const;
 
   /// @brief Get source file component type.
   ComponentType fileComponentType() const;
 
   /// @brief Get source file component type as a readable string.
-  std::string fileComponentTypeAsString() const;
+  const std::string& fileComponentTypeAsString() const;
 
   /// @brief Get source file component size in bytes.
   uint32_t fileComponentSizeInBytes() const;
@@ -106,7 +106,7 @@ public:
   ComponentType memoryComponentType() const;
 
   /// @brief Get loaded memory component type as a readable string.
-  std::string memoryComponentTypeAsString() const;
+  const std::string& memoryComponentTypeAsString() const;
 
   /// @brief Get loaded memory component size in bytes.
   uint32_t memoryComponentSizeInBytes() const;
@@ -169,40 +169,40 @@ private:
   bool m_existsOnDisk = true;       //!< Flag that the image exists on disk
   std::filesystem::path m_fileName; //!< File name
 
-  uint32_t m_numComponentsPerPixel; //!< Number of components per pixel
-  uint64_t m_numPixels;             //!< Number of pixels in the image
+  uint32_t m_numComponentsPerPixel = 0; //!< Number of components per pixel
+  uint64_t m_numPixels = 0;             //!< Number of pixels in the image
 
-  uint64_t m_fileImageSizeInBytes;   //!< Image size in bytes (in file on disk)
-  uint64_t m_memoryImageSizeInBytes; //!< Image size in bytes (in memory)
+  uint64_t m_fileImageSizeInBytes = 0;   //!< Image size in bytes (in file on disk)
+  uint64_t m_memoryImageSizeInBytes = 0; //!< Image size in bytes (in memory)
 
-  PixelType m_pixelType; //!< Pixel type
+  PixelType m_pixelType = PixelType::Undefined; //!< Pixel type
   std::string m_pixelTypeAsString;
 
-  ComponentType m_fileComponentType; //!< Original file pixel component type
+  ComponentType m_fileComponentType = ComponentType::Undefined; //!< Original file pixel component type
   std::string m_fileComponentTypeAsString;
-  uint32_t m_fileComponentSizeInBytes; //!< Size of original fie pixel component in bytes
+  uint32_t m_fileComponentSizeInBytes = 0; //!< Size of original file pixel component in bytes
 
-  ComponentType m_memoryComponentType; //!< Pixel component type, as loaded in memory buffer
+  ComponentType m_memoryComponentType = ComponentType::Undefined; //!< Pixel component type, as loaded in memory buffer
   std::string m_memoryComponentTypeAsString;
-  uint32_t m_memoryComponentSizeInBytes; //!< Size of component in bytes, as loaded in memory buffer
+  uint32_t m_memoryComponentSizeInBytes = 0; //!< Size of component in bytes, as loaded in memory buffer
 
-  glm::uvec3 m_pixelDimensions; //!< Pixel matrix dimensions
-  glm::vec3 m_origin;           //!< Origin in physical Subject space
-  glm::vec3 m_spacing;          /// Pixel spacing in physical Subject space
-  glm::mat3 m_directions;       /// Axis directions in physical Subject space, stored column-wise
+  glm::uvec3 m_pixelDimensions{0}; //!< Pixel matrix dimensions
+  glm::vec3 m_origin{0.0f};        //!< Origin in physical Subject space
+  glm::vec3 m_spacing{0.0f};       /// Pixel spacing in physical Subject space
+  glm::mat3 m_directions{1.0f};    /// Axis directions in physical Subject space, stored column-wise
 
   /// All corners of the image's AXIS-ALIGNED bounding box in Pixel space
-  std::array<glm::vec3, 8> m_pixelBBoxCorners;
+  std::array<glm::vec3, 8> m_pixelBBoxCorners{};
 
   /// All corners of the image's bounding box in physical Subject space
   /// @note The bounding box will NOT be axis-aligned when the image directions are oblique
-  std::array<glm::vec3, 8> m_subjectBBoxCorners;
+  std::array<glm::vec3, 8> m_subjectBBoxCorners{};
 
   /// Center of the image's bounding box in physical Subject space
-  glm::vec3 m_subjectBBoxCenter;
+  glm::vec3 m_subjectBBoxCenter{0.0f};
 
   /// Size of the image's bounding box in physical Subject space
-  glm::vec3 m_subjectBBoxSize;
+  glm::vec3 m_subjectBBoxSize{0.0f};
 
   /// Three-character "SPIRAL" code defining the anatomical orientation of the image in Subject
   /// space, where positive X, Y, and Z axes correspond to the physical Left, Posterior, and
@@ -212,7 +212,7 @@ private:
 
   /// Flag indicating whether the image directions are oblique (i.e. skew w.r.t. the physical X, Y,
   /// Z, axes)
-  bool m_isOblique;
+  bool m_isOblique = false;
 
   /// Overrides to the original image header
   ImageHeaderOverrides m_headerOverrides;

@@ -374,12 +374,12 @@ bool compareWithSortSpecs(
     if (delta > 0.0) {
       return spec.SortDirection == ImGuiSortDirection_Ascending;
     }
-    else if (delta <= 0.0) {
+    if (delta < 0.0) {
       return spec.SortDirection != ImGuiSortDirection_Ascending;
     }
   }
 
-  return (a.m_surface->value > b.m_surface->value);
+  return false;
 }
 
 /**
@@ -470,10 +470,9 @@ void renderIsosurfacesHeader(
   static constexpr bool sk_showHeaders = true;
 
   // Force sorting of table items:
-  static bool itemsNeedSort = false;
 
   // UID of the currently selected isosurface in the table
-  static std::unordered_map<uuids::uuid, uuids::uuid> imageToSelectedSurfaceUid;
+  static thread_local std::unordered_map<uuids::uuid, uuids::uuid> imageToSelectedSurfaceUid;
 
   // UID of the currently selected surface:
   std::optional<uuids::uuid> selectedSurfaceUid = std::nullopt;
@@ -530,7 +529,7 @@ void renderIsosurfacesHeader(
   ImGui::Spacing();
 
   // By default, adjust image component 0:
-  static uint32_t componentToAdjust = 0;
+  static thread_local uint32_t componentToAdjust = 0;
 
   const bool showComponentSelection = image->header().numComponentsPerPixel() > 1;
 
@@ -667,7 +666,7 @@ void renderIsosurfacesHeader(
     tableItems.emplace_back(uid, surface);
 
     // The selected UID is valid if there is a surface with this UID
-    validSelectedUid = validSelectedUid | (selectedSurfaceUid && *selectedSurfaceUid == uid);
+    validSelectedUid = validSelectedUid || (selectedSurfaceUid && *selectedSurfaceUid == uid);
   }
 
   if (selectedSurfaceUid && !validSelectedUid) {
@@ -677,7 +676,7 @@ void renderIsosurfacesHeader(
     imageToSelectedSurfaceUid.erase(imageUid);
   }
 
-  const float innerWidthToUse = (sk_isosurfaceTableFlags & ImGuiTableFlags_ScrollX) ? sk_innerWidthWithScroll : 0.0f;
+  const float innerWidthToUse = sk_innerWidthWithScroll;
 
   const ImVec2 outerSize = sk_outerSizeEnabled ? sk_outerSizeValue : ImVec2(0, 0);
 
@@ -690,12 +689,8 @@ void renderIsosurfacesHeader(
 
     // Sort the table items if sort specifications have been changed
     if (ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs()) {
-      // Force the sort to always happen:
-      if (sortSpecs->SpecsDirty | true) {
-        itemsNeedSort = true;
-      }
-
-      if (itemsNeedSort && tableItems.size() > 1) {
+      // Re-sort every frame because isovalues and names can change without changing the table specification.
+      if (tableItems.size() > 1) {
         std::sort(
           std::begin(tableItems),
           std::end(tableItems),
@@ -706,8 +701,6 @@ void renderIsosurfacesHeader(
         sortSpecs->SpecsDirty = false;
       }
     }
-
-    itemsNeedSort = false;
 
     if (sk_showHeaders) {
       ImGui::TableHeadersRow();
@@ -789,7 +782,6 @@ void renderIsosurfacesHeader(
           // To avoid triggering a sort while holding the button;
           // only trigger it when the button has been released
           if (ImGui::IsItemDeactivated()) {
-            itemsNeedSort = true;
           }
         }
         item.m_surface->valueEditInProgress = ImGui::IsItemActive();

@@ -1022,11 +1022,11 @@ private:
   float m_isosurfaceOpacityModulator{1.0f}; //!< Modulator of surface opacity for the image
   /*** End settings for all components ***/
 
-  std::size_t m_numPixels;                            //!< Number of pixels in the image (and hence in each component)
-  uint32_t m_numComponents;                           //!< Number of components per pixel
-  ComponentType m_componentType;                      //!< Component type
-  std::vector<ComponentStats> m_componentStats;       //!< Per-component statistics
-  std::vector<ComponentSettings> m_componentSettings; //!< Per-component settings
+  std::size_t m_numPixels = 0;  //!< Number of pixels in the image (and hence in each component)
+  uint32_t m_numComponents = 0; //!< Number of components per pixel
+  ComponentType m_componentType = ComponentType::Undefined; //!< Component type
+  std::vector<ComponentStats> m_componentStats;             //!< Per-component statistics
+  std::vector<ComponentSettings> m_componentSettings;       //!< Per-component settings
 
   uint32_t m_activeComponent{0};     //!< Active component
   uint32_t m_activeTimePoint{0};     //!< Active time point for time-series display

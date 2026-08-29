@@ -135,8 +135,8 @@ std::list<uuids::uuid> raycastableImageUids(
 }
 
 GLShaderProgram& shaderProgramForTextureDimension(
-  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms3D,
-  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms2D,
+  const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms3D,
+  const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms2D,
   const ShaderProgramType shaderType,
   const TextureDimension dimension)
 {

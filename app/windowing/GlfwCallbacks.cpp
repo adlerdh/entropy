@@ -64,8 +64,8 @@ bool syncZoomsForAllViews(const ModifierState& modState)
 
 bool isLeftDoubleClick(int button, int action, const glm::vec2& windowCursorPos)
 {
-  static double s_lastLeftClickTime = -1.0;
-  static glm::vec2 s_lastLeftClickWindowPos{0.0f};
+  static thread_local double s_lastLeftClickTime = -1.0;
+  static thread_local glm::vec2 s_lastLeftClickWindowPos{0.0f};
 
   if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS) {
     return false;
@@ -475,9 +475,6 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
         H.doCrosshairsRotate2D(*s_startHit, *s_prevHit, *currHit_withOverride, snapCrosshairs);
       }
       else if (s_mouseButtonState.right) {
-        if (!currHit_withOverride) {
-          break;
-        }
         H.doCameraZoomDrag(
           *s_startHit,
           *s_prevHit,
@@ -486,9 +483,6 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
           syncZoomsForAllViews(s_modifierState));
       }
       else if (s_mouseButtonState.middle) {
-        if (!currHit_withOverride) {
-          break;
-        }
         H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
       }
 

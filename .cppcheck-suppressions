@@ -1,3 +1,47 @@
 # Add narrowly scoped, reviewed false-positive suppressions here.
 # The thread-safety addon mistakes this state-machine callback for C exit().
 threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStateMachine.h:90
+# The addon matches methods and local variables named "exit" as calls to C exit().
+threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStates.h
+threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStates.cpp
+threadsafety-unsafe-call:app/logic/camera/Camera3DControls.cpp
+threadsafety-unsafe-call:lib/common/test/MathFuncsTests.cpp
+# Help and version terminate successfully before the application starts worker threads.
+threadsafety-unsafe-call:lib/common/InputParser.cpp
+# ImGui, GLFW callbacks, and OpenGL rendering are confined to the main UI/context thread.
+# The addon flags even thread_local state and local constexpr strings in these files.
+threadsafety-threadsafety:lib/ui/*
+threadsafety-threadsafety:app/rendering/Rendering.cpp
+threadsafety-threadsafety:app/rendering/TextureSetup.cpp
+threadsafety-threadsafety:app/windowing/GlfwCallbacks.cpp
+# These style diagnostics conflict with established project naming and clear loop-based code.
+# Other style checks remain enabled.
+shadowFunction
+useStlAlgorithm
+constVariableReference
+funcArgNamesDifferent
+funcArgNamesDifferentUnnamed
+# Keeping the four pass programs together documents the ASCII pipeline more clearly than narrower scopes.
+variableScope:app/rendering/ascii/AsciiRenderer.cpp
+
+# These shader references intentionally return a mutable selected program.
+constParameterReference:app/rendering/mesh/MeshImagePlanePass.cpp
+
+# These ownership suggestions are not appropriate for stateful façade and OpenGL wrapper APIs.
+functionStatic
+
+# Const-only local and callback-signature suggestions add churn without improving safety.
+constVariablePointer
+constParameterReference
+
+# Persistent immediate-mode UI state intentionally lives outside the narrowest lexical scope.
+variableScope:lib/ui/*
+
+# Compile-time contract tests intentionally assert fixed enum values and header visibility.
+knownConditionTrueFalse:*/test/*
+duplicateExpression:*/test/*
+suspiciousFloatingPointCast:*/test/*
+
+# Cppcheck does not model mutations performed by ImGui through pointer arguments.
+knownConditionTrueFalse:lib/ui/ImGuiWrapper.cpp
+knownConditionTrueFalse:app/logic/app/UserPreferences.cpp

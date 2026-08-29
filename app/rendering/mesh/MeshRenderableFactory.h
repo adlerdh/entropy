@@ -46,7 +46,7 @@ struct SegmentationLabelMeshStyle
  * @return Mesh renderable
  */
 MeshRenderable
-makeIsosurfaceRenderable(MeshHandle mesh, const glm::mat4& world_T_mesh, const IsosurfaceMeshStyle& style);
+makeIsosurfaceRenderable(const MeshHandle& mesh, const glm::mat4& world_T_mesh, const IsosurfaceMeshStyle& style);
 
 /**
  * @brief Build a renderable for one extracted segmentation label mesh
@@ -56,7 +56,7 @@ makeIsosurfaceRenderable(MeshHandle mesh, const glm::mat4& world_T_mesh, const I
  * @return Mesh renderable
  */
 MeshRenderable makeSegmentationLabelRenderable(
-  MeshHandle mesh,
+  const MeshHandle& mesh,
   const glm::mat4& world_T_mesh,
   const SegmentationLabelMeshStyle& style);
 

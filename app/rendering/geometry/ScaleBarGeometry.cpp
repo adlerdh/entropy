@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <initializer_list>
 #include <sstream>
+#include <utility>
 
 namespace rendering::scale_bar
 {
@@ -73,32 +74,14 @@ double computeNiceScaleBarLengthMm(double targetLengthMm, double minLengthMm, do
 
 std::string formatScaleBarLength(double lengthMm, int precision)
 {
-  double value = lengthMm;
-  const char* unit = "mm";
-
-  if (lengthMm >= 1.0e6) {
-    value = lengthMm / 1.0e6;
-    unit = "km";
-  }
-  else if (lengthMm >= 1000.0) {
-    value = lengthMm / 1000.0;
-    unit = "m";
-  }
-  else if (lengthMm >= 10.0) {
-    value = lengthMm / 10.0;
-    unit = "cm";
-  }
-  else if (lengthMm >= 1.0) {
-    value = lengthMm;
-  }
-  else if (lengthMm >= 1.0e-3) {
-    value = lengthMm * 1000.0;
-    unit = "µm";
-  }
-  else {
-    value = lengthMm * 1.0e6;
-    unit = "nm";
-  }
+  const auto [value, unit] = [&]() -> std::pair<double, const char*> {
+    if (lengthMm >= 1.0e6) return {lengthMm / 1.0e6, "km"};
+    if (lengthMm >= 1000.0) return {lengthMm / 1000.0, "m"};
+    if (lengthMm >= 10.0) return {lengthMm / 10.0, "cm"};
+    if (lengthMm >= 1.0) return {lengthMm, "mm"};
+    if (lengthMm >= 1.0e-3) return {lengthMm * 1000.0, "µm"};
+    return {lengthMm * 1.0e6, "nm"};
+  }();
 
   std::ostringstream out;
   if (std::abs(value - std::round(value)) < 1.0e-6) {

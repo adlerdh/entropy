@@ -66,7 +66,9 @@ public:
    * @param anatomy_T_start_provider Optional callback that supplies the linked anatomical start frame
    * @throw Throws `DebugException` when `projection` is null
    */
-  Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
+  explicit Camera(
+    std::unique_ptr<Projection> projection,
+    GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
   /**
    * @brief Construct a camera with a projection of the requested type
@@ -74,7 +76,7 @@ public:
    * @param anatomy_T_start_provider Optional callback that supplies the linked anatomical start frame
    * @throw Propagates exceptions from projection allocation
    */
-  Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
+  explicit Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
   /**
    * @brief Copy a camera and duplicate its projection parameters

@@ -12,7 +12,7 @@ namespace rendering::mesh
 namespace
 {
 
-MeshExtractionJobResult executeGuarded(const MeshGeometryKey& key, MeshExtractionJob& job)
+MeshExtractionJobResult executeGuarded(const MeshGeometryKey& key, const MeshExtractionJob& job)
 {
   try {
     return job();

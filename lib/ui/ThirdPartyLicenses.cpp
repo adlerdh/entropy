@@ -277,7 +277,7 @@ static const LicenseEntry sk_entries[] = {
 
 std::string loadLicenseText(const char* resourcePath)
 {
-  static std::map<std::string, std::string> cache;
+  static thread_local std::map<std::string, std::string> cache;
 
   auto it = cache.find(resourcePath);
   if (it != cache.end()) {

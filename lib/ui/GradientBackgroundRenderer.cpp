@@ -34,14 +34,14 @@ GLuint compileShader(GLenum type, const char* source)
 
 GLuint shaderProgram()
 {
-  static GLuint program = 0;
-  static bool initialized = false;
+  static thread_local GLuint program = 0;
+  static thread_local bool initialized = false;
   if (initialized) {
     return program;
   }
   initialized = true;
 
-  static constexpr const char* k_vertexSource = R"GLSL(
+  constexpr const char* k_vertexSource = R"GLSL(
 #version 330 core
 out vec2 v_ndc;
 void main()
@@ -55,7 +55,7 @@ void main()
 }
 )GLSL";
 
-  static constexpr const char* k_fragmentSource = R"GLSL(
+  constexpr const char* k_fragmentSource = R"GLSL(
 #version 330 core
 in vec2 v_ndc;
 out vec4 fragColor;
@@ -124,7 +124,7 @@ void main()
 
 GLuint vertexArrayObject()
 {
-  static GLuint vao = 0;
+  static thread_local GLuint vao = 0;
   if (vao == 0) {
     glGenVertexArrays(1, &vao);
   }

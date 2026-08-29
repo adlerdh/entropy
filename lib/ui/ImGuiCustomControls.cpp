@@ -74,7 +74,7 @@ bool SliderScalarN_multiComp(
     value_changed |= SliderScalar("", data_type, v, v_min[i], v_max[i], format[i], flags);
     PopID();
     PopItemWidth();
-    v = (void*)((char*)v + type_size);
+    v = static_cast<void*>(static_cast<char*>(v) + type_size);
   }
   PopID();
 

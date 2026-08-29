@@ -136,10 +136,10 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_TabHovered] = ImVec4(0.46f, 0.47f, 0.48f, 1.00f);
   colors[ImGuiCol_Tab] = ImVec4(0.16f, 0.16f, 0.17f, 0.92f);
   colors[ImGuiCol_TabSelected] = ImVec4(51.0f / 255.0f, 105.0f / 255.0f, 173.0f / 255.0f, 1.00f);
-  colors[ImGuiCol_TabSelectedOverline] = ImVec4(75.0f / 255.0f, 155.0f / 255.0f, 255.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TabSelectedOverline] = ImVec4(75.0f / 255.0f, 155.0f / 255.0f, 1.0f, 1.00f);
   colors[ImGuiCol_TabDimmed] = ImVec4(112.0f / 255.0f, 112.0f / 255.0f, 112.0f / 255.0f, 137.0f / 255.0f);
   colors[ImGuiCol_TabDimmedSelected] = ImVec4(51.0f / 255.0f, 105.0f / 255.0f, 173.0f / 255.0f, 1.00f);
-  colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(75.0f / 255.0f, 155.0f / 255.0f, 255.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(75.0f / 255.0f, 155.0f / 255.0f, 1.0f, 1.00f);
   colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
   colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
   colors[ImGuiCol_PlotHistogram] = ImVec4(0.73f, 0.60f, 0.15f, 1.00f);

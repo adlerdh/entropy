@@ -96,7 +96,7 @@ void PixelEdgeRenderer::registerShaderPrograms(
 }
 
 void PixelEdgeRenderer::render(
-  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
+  const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
   glm::ivec4 defaultViewport,
   const ViewRect& viewRect,
   const RenderData::ImageUniforms& uniforms,

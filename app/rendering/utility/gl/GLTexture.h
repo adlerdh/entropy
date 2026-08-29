@@ -112,7 +112,7 @@ public:
     GLboolean m_swapBytes = false;
   };
 
-  GLTexture(
+  explicit GLTexture(
     tex::Target target,
     MultisampleSettings multisampleSettings = MultisampleSettings(),
     std::optional<PixelStoreSettings> pixelPackSettings = std::nullopt,
@@ -351,7 +351,7 @@ private:
   class Binder
   {
   public:
-    Binder(GLTexture& tex);
+    explicit Binder(GLTexture& tex);
     ~Binder();
 
   private:

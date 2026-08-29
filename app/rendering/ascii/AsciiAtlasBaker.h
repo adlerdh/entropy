@@ -45,8 +45,8 @@ std::vector<GlyphProfile> computeGlyphSpatialProfiles(
 struct BakedGlyph
 {
   std::vector<uint8_t> slotPixels; // slotW * slotH bytes, R8 SDF, row 0 = bottom (GL convention)
-  float fillFraction;              // filledPixels / (Gw * Gh)
-  char character;
+  float fillFraction = 0.0f;       // filledPixels / (Gw * Gh)
+  char character = '\0';
 };
 
 /// CPU simulation of a single glyph's rendered coverage at a given screen cell size.

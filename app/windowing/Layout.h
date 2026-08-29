@@ -56,7 +56,7 @@ public:
   /**
    * @brief Destroy the layout and owned views
    */
-  ~Layout() = default;
+  ~Layout() override = default;
 
   /**
    * @brief Replace this layout's contents without changing its UID

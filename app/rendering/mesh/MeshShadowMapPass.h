@@ -23,7 +23,9 @@ struct MeshShadowMapRenderRequest
   const MeshDrawContext& context;   //!< Light-space matrix and mesh lookup state
   const MeshShadowPlan& plan;       //!< Sanitized shadow-map execution plan
   const MeshRenderer& meshRenderer; //!< Stateless mesh draw helper
-  GLShaderProgram& depthProgram;    //!< Depth-only mesh shader program
+  // This required aggregate reference is initialized at every construction site.
+  // cppcheck-suppress uninitMemberVarNoCtor
+  GLShaderProgram& depthProgram; //!< Depth-only mesh shader program
 };
 
 /**

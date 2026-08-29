@@ -313,8 +313,9 @@ void consumeOutput(
   std::size_t size)
 {
   partialLine.append(data, size);
-  std::size_t newlinePos = std::string::npos;
-  while ((newlinePos = partialLine.find('\n')) != std::string::npos) {
+  for (std::size_t newlinePos = partialLine.find('\n'); newlinePos != std::string::npos;
+       newlinePos = partialLine.find('\n'))
+  {
     deliverOutputLine(result, callbacks, stream, partialLine.substr(0, newlinePos));
     partialLine.erase(0, newlinePos + 1);
   }
@@ -329,8 +330,9 @@ void consumeOutput(
   std::size_t size)
 {
   partialLine.append(data, size);
-  std::size_t newlinePos = std::string::npos;
-  while ((newlinePos = partialLine.find('\n')) != std::string::npos) {
+  for (std::size_t newlinePos = partialLine.find('\n'); newlinePos != std::string::npos;
+       newlinePos = partialLine.find('\n'))
+  {
     deliverOutputLine(result, callbacks, stream, partialLine.substr(0, newlinePos));
     partialLine.erase(0, newlinePos + 1);
   }

@@ -58,12 +58,12 @@ void renderAddLayoutModalPopup(
 {
   bool addLayout = false;
 
-  static int columns = 3;
-  static int rows = 3;
-  static bool isLightbox = false;
-  static ViewType lightboxViewType = ViewType::Axial;
-  static float lightboxSliceSpacingMm = 1.0f;
-  static std::string customLayoutName = "Custom";
+  static thread_local int columns = 3;
+  static thread_local int rows = 3;
+  static thread_local bool isLightbox = false;
+  static thread_local ViewType lightboxViewType = ViewType::Axial;
+  static thread_local float lightboxSliceSpacingMm = 1.0f;
+  static thread_local std::string customLayoutName = "Custom";
 
   if (openAddLayoutPopup && !ImGui::IsPopupOpen(sk_addLayoutPopupId)) {
     ImGui::OpenPopup(sk_addLayoutPopupId);

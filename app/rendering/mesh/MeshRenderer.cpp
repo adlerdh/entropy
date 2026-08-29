@@ -289,7 +289,7 @@ void MeshRenderer::drawImplementedBuckets(
 void MeshRenderer::drawBucket(
   std::span<const std::reference_wrapper<const MeshRenderable>> renderables,
   const MeshDrawContext& context,
-  GLShaderProgram& program) const
+  GLShaderProgram& program)
 {
   if (!context.meshLookup) {
     return;

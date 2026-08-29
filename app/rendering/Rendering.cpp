@@ -82,9 +82,9 @@ void logTextureUnitZeroStateIfChanged(const char* phase)
     bool operator==(const UnitZeroState&) const = default;
   };
 
-  static UnitZeroState lastState{};
-  static bool haveLastState = false;
-  static int logCount = 0;
+  static thread_local UnitZeroState lastState{};
+  static thread_local bool haveLastState = false;
+  static thread_local int logCount = 0;
   static constexpr int maxLogs = 64;
 
   if (logCount >= maxLogs) {

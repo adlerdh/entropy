@@ -5,7 +5,9 @@
 namespace layout
 {
 
-std::optional<std::size_t> imageIndexForUid(uuid_range_t orderedImageUids, const std::optional<uuids::uuid>& imageUid)
+std::optional<std::size_t> imageIndexForUid(
+  const uuid_range_t& orderedImageUids,
+  const std::optional<uuids::uuid>& imageUid)
 {
   if (!imageUid) {
     return std::nullopt;
@@ -18,7 +20,9 @@ std::optional<std::size_t> imageIndexForUid(uuid_range_t orderedImageUids, const
   return static_cast<std::size_t>(std::distance(orderedImageUids.begin(), it));
 }
 
-std::vector<std::size_t> imageIndicesForUids(uuid_range_t orderedImageUids, const std::list<uuids::uuid>& imageUids)
+std::vector<std::size_t> imageIndicesForUids(
+  const uuid_range_t& orderedImageUids,
+  const std::list<uuids::uuid>& imageUids)
 {
   std::vector<std::size_t> indices;
   for (const auto& imageUid : imageUids) {
@@ -30,7 +34,9 @@ std::vector<std::size_t> imageIndicesForUids(uuid_range_t orderedImageUids, cons
   return indices;
 }
 
-std::list<uuids::uuid> imageUidsForIndices(uuid_range_t orderedImageUids, const std::vector<std::size_t>& imageIndices)
+std::list<uuids::uuid> imageUidsForIndices(
+  const uuid_range_t& orderedImageUids,
+  const std::vector<std::size_t>& imageIndices)
 {
   std::list<uuids::uuid> imageUids;
   for (const std::size_t imageIndex : imageIndices) {
@@ -41,7 +47,9 @@ std::list<uuids::uuid> imageUidsForIndices(uuid_range_t orderedImageUids, const 
   return imageUids;
 }
 
-std::optional<uuids::uuid> imageUidForIndex(uuid_range_t orderedImageUids, const std::optional<std::size_t>& imageIndex)
+std::optional<uuids::uuid> imageUidForIndex(
+  const uuid_range_t& orderedImageUids,
+  const std::optional<std::size_t>& imageIndex)
 {
   if (!imageIndex || *imageIndex >= orderedImageUids.size()) {
     return std::nullopt;

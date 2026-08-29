@@ -41,15 +41,13 @@ namespace
 
 void initializePotential(const uint8_t* seeds, float* potential, const glm::ivec3& dims, LabelType label)
 {
-  int n = 0;
-
   const int zDelta = dims.x * dims.y;
   const int yDelta = dims.x;
 
   for (int k = 0; k < dims.z; ++k) {
     for (int j = 0; j < dims.y; ++j) {
       for (int i = 0; i < dims.x; ++i) {
-        n = k * zDelta + j * yDelta + i;
+        const int n = k * zDelta + j * yDelta + i;
 
         const uint8_t seed = seeds[n];
 
@@ -67,7 +65,7 @@ void initializePotential(const uint8_t* seeds, float* potential, const glm::ivec
             // Ground potential for all other labels
             potential[n] = 1.0f;
           }
-          else if (0u == seed) {
+          else {
             potential[n] = 0.0f;
           }
         }
@@ -78,15 +76,13 @@ void initializePotential(const uint8_t* seeds, float* potential, const glm::ivec
 
 void computeBinaryResultSeg(const std::array<const float*, 2> potentials, uint8_t* resultSeg, const glm::ivec3& dims)
 {
-  int n = 0;
-
   const int zDelta = dims.x * dims.y;
   const int yDelta = dims.x;
 
   for (int k = 0; k < dims.z; ++k) {
     for (int j = 0; j < dims.y; ++j) {
       for (int i = 0; i < dims.x; ++i) {
-        n = k * zDelta + j * yDelta + i;
+        const int n = k * zDelta + j * yDelta + i;
 
         if (potentials[0][n] > potentials[1][n]) {
           resultSeg[n] = 1u;
@@ -145,8 +141,9 @@ void sor(
 
   const float BETA = 1.0f; // computeBeta( imageNorm.data(), dims );
 
-  int n = 0;
-  int isw = 0, jsw = 0, ksw = 0;
+  int isw;
+  int jsw;
+  int ksw;
 
   float omega = 1.0f;
   float val = std::numeric_limits<float>::quiet_NaN();
@@ -177,7 +174,7 @@ void sor(
 
         for (int j = 0; j < dims.y; ++j) {
           for (int i = isw; i < dims.x; i += 2) {
-            n = k * zDelta + j * yDelta + i;
+            const int n = k * zDelta + j * yDelta + i;
 
             if (0 != seeds[n]) {
               // Do not update nodes on boundary
@@ -261,7 +258,6 @@ void sor(
 
 float computeBeta(const float* image, const glm::ivec3& dims)
 {
-  int n = 0;
   float grad = 0.0f;
 
   const int zDelta = dims.x * dims.y;
@@ -271,7 +267,7 @@ float computeBeta(const float* image, const glm::ivec3& dims)
   for (int k = 0; k < dims.z; ++k) {
     for (int j = 0; j < dims.y; ++j) {
       for (int i = 0; i < dims.x; ++i) {
-        n = k * zDelta + j * yDelta + i;
+        const int n = k * zDelta + j * yDelta + i;
         const float val = image[n];
 
         if (k < dims[2] - 1) {

@@ -196,50 +196,50 @@ private:
   ImageHeaderOverrides m_headerOverrides;
 
   /// When true, prevents the worldDef_T_affine ("manual") transformation from changing
-  bool m_is_worldDef_T_affine_locked;
+  bool m_is_worldDef_T_affine_locked = true;
 
   /// Inverses of the pixel dimensions
-  glm::vec3 m_invPixelDimensions;
+  glm::vec3 m_invPixelDimensions{0.0f};
 
   /// Constraints applied to affine2_T_affine1
-  ManualTransformationType m_worldDef_T_affine_TxType;
+  ManualTransformationType m_worldDef_T_affine_TxType = ManualTransformationType::Similarity;
 
-  glm::mat4 m_subject_T_pixel; //!< Pixel to Subject space
-  glm::mat4 m_pixel_T_subject; //!< Subject to Pixel space (inverse of above)
+  glm::mat4 m_subject_T_pixel{1.0f}; //!< Pixel to Subject space
+  glm::mat4 m_pixel_T_subject{1.0f}; //!< Subject to Pixel space (inverse of above)
 
-  glm::mat4 m_texture_T_pixel; //!< Pixel to Texture space
-  glm::mat4 m_pixel_T_texture; //!< Texture to Pixel space (inverse of above)
+  glm::mat4 m_texture_T_pixel{1.0f}; //!< Pixel to Texture space
+  glm::mat4 m_pixel_T_texture{1.0f}; //!< Texture to Pixel space (inverse of above)
 
-  glm::mat4 m_texture_T_subject; //!< Subject to Texture space
-  glm::mat4 m_subject_T_texture; //!< Texture to Subject space (inverse of above)
+  glm::mat4 m_texture_T_subject{1.0f}; //!< Subject to Texture space
+  glm::mat4 m_subject_T_texture{1.0f}; //!< Texture to Subject space (inverse of above)
 
   // Parameters of the user-applied manual transformation:
-  glm::vec3 m_worldDef_T_affine_translation; //!< Translation component of worldDef_T_affine (applied 3rd)
+  glm::vec3 m_worldDef_T_affine_translation{0.0f}; //!< Translation component (applied 3rd)
   glm::quat m_worldDef_T_affine_rotation{
     1.0f,
     0.0f,
     0.0f,
-    0.0f};                             //!< Rotation component of worldDef_T_affine  (applied 2nd)
-  glm::vec3 m_worldDef_T_affine_scale; //!< Scale component of worldDef_T_affine (applied 1st)
+    0.0f};                                   //!< Rotation component of worldDef_T_affine  (applied 2nd)
+  glm::vec3 m_worldDef_T_affine_scale{1.0f}; //!< Scale component of worldDef_T_affine (applied 1st)
 
-  glm::mat4 m_worldDef_T_affine;   //!< User-applied manual transformation (defined by the above parameters)
-  bool m_enable_worldDef_T_affine; //!< Is the worldDef_T_affine transformation used?
+  glm::mat4 m_worldDef_T_affine{1.0f};    //!< User-applied manual transformation
+  bool m_enable_worldDef_T_affine = true; //!< Is the worldDef_T_affine transformation used?
 
-  glm::mat4 m_affine_T_subject;   //!< Affine matrix loaded from disk, mapping Subject to AffineA space
-  bool m_enable_affine_T_subject; //!< Is the affine_T_subject transformation used?
+  glm::mat4 m_affine_T_subject{1.0f};    //!< Affine matrix mapping Subject to AffineA space
+  bool m_enable_affine_T_subject = true; //!< Is the affine_T_subject transformation used?
 
   std::optional<std::filesystem::path> m_affine_T_subject_fileName; //!< affine_T_subject matrix file name (if used)
 
-  glm::mat4 m_worldDef_T_subject;           //!< Subject to Deformed World space
-  glm::mat4 m_subject_T_worldDef;           //!< Deformed World to Subject space (inverse of above)
-  glm::mat3 m_subject_T_worldDef_invTransp; //!< Inverse-transpose of Deformed World to Subject space tx
+  glm::mat4 m_worldDef_T_subject{1.0f};           //!< Subject to Deformed World space
+  glm::mat4 m_subject_T_worldDef{1.0f};           //!< Deformed World to Subject space (inverse of above)
+  glm::mat3 m_subject_T_worldDef_invTransp{1.0f}; //!< Inverse-transpose of Deformed World to Subject space tx
 
-  glm::mat4 m_worldDef_T_texture; //!< Texture to Deformed World space
-  glm::mat4 m_texture_T_worldDef; //!< Deformed World to Texture space (inverse of above)
+  glm::mat4 m_worldDef_T_texture{1.0f}; //!< Texture to Deformed World space
+  glm::mat4 m_texture_T_worldDef{1.0f}; //!< Deformed World to Texture space (inverse of above)
 
-  glm::mat4 m_worldDef_T_pixel;           //!< Pixel to Deformed World space
-  glm::mat4 m_pixel_T_worldDef;           //!< Deformed World to Pixel space
-  glm::mat3 m_pixel_T_worldDef_invTransp; //!< Inverse-transpose of Deformed World to Pixel space tx
+  glm::mat4 m_worldDef_T_pixel{1.0f};           //!< Pixel to Deformed World space
+  glm::mat4 m_pixel_T_worldDef{1.0f};           //!< Deformed World to Pixel space
+  glm::mat3 m_pixel_T_worldDef_invTransp{1.0f}; //!< Inverse-transpose of Deformed World to Pixel space tx
 };
 
 std::ostream& operator<<(std::ostream&, const ImageTransformations&);

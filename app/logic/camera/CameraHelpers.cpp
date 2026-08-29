@@ -1029,7 +1029,7 @@ glm::quat computeCameraRotationRelativeToWorld(const Camera& camera)
 FrameBounds computeMiewportFrameBounds(const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport)
 {
   const glm::mat4 miewport_T_windowClip =
-    helper::miewport_T_viewport(windowViewport[3]) * helper::viewport_T_windowClip(windowViewport);
+    helper::miewport_T_viewport(windowViewport[3]) * helper::viewport_T_windowClip(Viewport{windowViewport});
 
   const glm::vec4 winClipViewBL{windowClipFrameViewport[0], windowClipFrameViewport[1], 0.0f, 1.0f};
 
@@ -1055,7 +1055,7 @@ FrameBounds computeMindowFrameBounds(
   float wholeWindowHeight)
 {
   const glm::mat4 mindow_T_windowClip =
-    helper::mindow_T_window(wholeWindowHeight) * helper::window_T_windowClip(windowViewport);
+    helper::mindow_T_window(wholeWindowHeight) * helper::window_T_windowClip(Viewport{windowViewport});
 
   const glm::vec4 winClipViewBL{windowClipFrameViewport[0], windowClipFrameViewport[1], 0.0f, 1.0f};
 

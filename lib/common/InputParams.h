@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/LoggingDefaults.h"
+
 #include <spdlog/spdlog.h>
 
 #include <filesystem>
@@ -33,7 +35,7 @@ struct InputParams
   std::optional<std::filesystem::path> layoutsFile;
 
   /// Console logging level
-  spdlog::level::level_enum consoleLogLevel;
+  spdlog::level::level_enum consoleLogLevel = logging::defaultLogLevel();
 
   /// Flag indicating that the parameters have been successfully set
   bool set = false;

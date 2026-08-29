@@ -23,7 +23,7 @@ void createShaderPrograms();
  * @param warped True to build the warped raycast shader variant.
  * @return True when the program compiled and linked successfully.
  */
-bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
+static bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
 
 /**
  * @brief Compile and link the basic mesh shader program.
@@ -31,7 +31,7 @@ bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshProgram(GLShaderProgram& program);
+static bool createMeshProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh shadow-map depth shader program.
@@ -39,7 +39,7 @@ bool createMeshProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshShadowDepthProgram(GLShaderProgram& program);
+static bool createMeshShadowDepthProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh ambient occlusion geometry shader program.
@@ -47,7 +47,7 @@ bool createMeshShadowDepthProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& program);
+static bool createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh ambient occlusion resolve shader program.
@@ -55,10 +55,10 @@ bool createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshAmbientOcclusionResolveProgram(GLShaderProgram& program);
+static bool createMeshAmbientOcclusionResolveProgram(GLShaderProgram& program);
 
 /** @brief Compile and link the edge-preserving mesh ambient occlusion filter. */
-bool createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program);
+static bool createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane grayscale shader for ordinary 3D textures.
@@ -66,7 +66,7 @@ bool createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneGrayLinearProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneGrayLinearProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane grayscale shader for planar 2D fallback textures.
@@ -74,7 +74,7 @@ bool createMeshImagePlaneGrayLinearProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane isocontour shader for ordinary 3D textures.
@@ -82,7 +82,7 @@ bool createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneIsoContourProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneIsoContourProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane isocontour shader for planar 2D fallback textures.
@@ -90,7 +90,7 @@ bool createMeshImagePlaneIsoContourProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneIsoContourTexture2DProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneIsoContourTexture2DProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane DDP initialization shader for ordinary 3D textures.
@@ -98,7 +98,7 @@ bool createMeshImagePlaneIsoContourTexture2DProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneDdpInitProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneDdpInitProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane DDP initialization shader for planar 2D fallback textures.
@@ -106,7 +106,7 @@ bool createMeshImagePlaneDdpInitProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneDdpInitTexture2DProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneDdpInitTexture2DProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane DDP peeling shader for ordinary 3D textures.
@@ -114,7 +114,7 @@ bool createMeshImagePlaneDdpInitTexture2DProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh image-plane DDP peeling shader for planar 2D fallback textures.
@@ -122,7 +122,7 @@ bool createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program);
+static bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP initialization shader program.
@@ -130,7 +130,7 @@ bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshDdpInitProgram(GLShaderProgram& program);
+static bool createMeshDdpInitProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP peeling shader program.
@@ -138,7 +138,7 @@ bool createMeshDdpInitProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshDdpPeelProgram(GLShaderProgram& program);
+static bool createMeshDdpPeelProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP back-color blend shader program.
@@ -146,7 +146,7 @@ bool createMeshDdpPeelProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshDdpBackBlendProgram(GLShaderProgram& program);
+static bool createMeshDdpBackBlendProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP resolve shader program.
@@ -154,7 +154,7 @@ bool createMeshDdpBackBlendProgram(GLShaderProgram& program);
  * @param program Program object to populate.
  * @return True when the program compiled and linked successfully.
  */
-bool createMeshDdpResolveProgram(GLShaderProgram& program);
+static bool createMeshDdpResolveProgram(GLShaderProgram& program);
 
 /// @}
 /// @name Top-level render passes

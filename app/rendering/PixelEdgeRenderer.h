@@ -38,7 +38,7 @@ public:
    * @param programs Rendering-owned shader program map.
    * @throws Debug exception if the shader cannot be loaded, compiled, or linked.
    */
-  void registerShaderPrograms(std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs);
+  static void registerShaderPrograms(std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs);
 
   /**
    * @brief Capture one image pass, run pixel-space edge detection, and composite it.
@@ -50,7 +50,7 @@ public:
    * @param bindPostTextures Callback that binds image resources needed by the post-process shader.
    */
   void render(
-    std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
+    const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
     glm::ivec4 defaultViewport,
     const ViewRect& viewRect,
     const RenderData::ImageUniforms& uniforms,
