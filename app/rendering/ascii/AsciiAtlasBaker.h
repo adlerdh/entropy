@@ -70,8 +70,10 @@ std::vector<int> buildLumLut(const std::vector<float>& coverage);
 // Input coverage is in the same order as fillFractions() / glyphProfiles.
 std::vector<int> buildCoverageRankOrder(const std::vector<float>& coverage);
 
-std::array<float, kSpatialK> computePerRegionMax(const std::vector<GlyphProfile>&);
-void normalizeGlyphProfilesInPlace(std::vector<GlyphProfile>&, const std::array<float, kSpatialK>& perRegionMax);
+std::array<float, kSpatialK> computePerRegionMax(const std::vector<GlyphProfile>& profiles);
+void normalizeGlyphProfilesInPlace(
+  std::vector<GlyphProfile>& profiles,
+  const std::array<float, kSpatialK>& perRegionMax);
 void shapeGlyphProfilesInPlace(std::vector<GlyphProfile>& profiles, float exponent);
 
 // Pure CPU function — no GL, no side effects.

@@ -39,7 +39,7 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings);
  * @param segmentation Segmentation image whose settings should be serialized.
  * @return Project segmentation settings suitable for project JSON serialization.
  */
-serialize::SegSettings segmentationSettings(const AppData& appData, const Image& segmentation);
+serialize::SegSettings segmentationSettings(const AppData& appData, const Image& seg);
 
 /**
  * @brief Apply serialized segmentation settings to a loaded segmentation.
@@ -47,7 +47,7 @@ serialize::SegSettings segmentationSettings(const AppData& appData, const Image&
  * @param segmentation Segmentation image to update.
  * @param settings Serialized settings to restore.
  */
-void applySegmentationSettings(AppData& appData, Image& segmentation, const serialize::SegSettings& settings);
+void applySegmentationSettings(AppData& appData, Image& seg, const serialize::SegSettings& settings);
 
 /// @}
 

@@ -41,7 +41,7 @@ public:
    * @return True when resources were allocated or resized
    * @throw Propagates OpenGL allocation or framebuffer-completeness errors
    */
-  bool ensureSize(uint32_t sizePixels);
+  bool ensureSize(uint32_t sizePixelsArg);
 
   /**
    * @brief Release all owned OpenGL objects

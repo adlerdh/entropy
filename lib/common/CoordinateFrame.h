@@ -80,13 +80,13 @@ public:
    * @brief Set the frame's origin in World space.
    * @param[in] worldOrigin World-space origin position
    */
-  void setWorldOrigin(glm::vec3 worldOrigin);
+  void setWorldOrigin(glm::vec3 origin);
 
   /**
    * @brief Set the frame's rotation relative to World space.
    * @param[in] world_T_frame_rotation Rotation from frame to World (defined by quaternion)
    */
-  void setFrameToWorldRotation(glm::quat world_T_frame_rotation);
+  void setFrameToWorldRotation(glm::quat world_T_frame_rotationArg);
 
   /**
    * @brief Set the frame's rotation relative relative to World space.

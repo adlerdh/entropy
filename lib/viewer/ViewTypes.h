@@ -30,4 +30,4 @@ inline std::array<ViewType, 5> const AllViewTypes{
  * which affects the user-facing label for oblique-capable views.
  * @return User-facing view type label, or `"Unknown"` for invalid sentinel values.
  */
-std::string to_string(const ViewType& viewType, bool crosshairsRotated);
+std::string to_string(const ViewType& type, bool crosshairsRotated);

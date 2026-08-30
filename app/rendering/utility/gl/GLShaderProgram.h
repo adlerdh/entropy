@@ -57,28 +57,28 @@ public:
   /// Unbind the current shader program.
   void stopUse();
 
-  void bindAttribLocation(const std::string& name, GLuint location);
-  void bindFragDataLocation(const std::string& name, GLuint location) const;
+  void bindAttribLocation(const std::string& nameArg, GLuint location);
+  void bindFragDataLocation(const std::string& nameArg, GLuint location) const;
 
-  bool setUniform(const std::string& name, GLboolean val);
-  bool setUniform(const std::string& name, GLint val);
-  bool setUniform(const std::string& name, GLuint val);
-  bool setUniform(const std::string& name, GLfloat val);
-  bool setUniform(const std::string& name, GLfloat x, GLfloat y, GLfloat z);
-  bool setUniform(const std::string& name, const glm::ivec2& vec);
-  bool setUniform(const std::string& name, const glm::vec2& vec);
-  bool setUniform(const std::string& name, const glm::vec3& vec);
-  bool setUniform(const std::string& name, const glm::vec4& vec);
-  bool setUniform(const std::string& name, const glm::mat2& mat);
-  bool setUniform(const std::string& name, const glm::mat3& mat);
-  bool setUniform(const std::string& name, const glm::mat4& mat);
-  bool setSamplerUniform(const std::string& name, GLint sampler);
+  bool setUniform(const std::string& nameArg, GLboolean val);
+  bool setUniform(const std::string& nameArg, GLint val);
+  bool setUniform(const std::string& nameArg, GLuint val);
+  bool setUniform(const std::string& nameArg, GLfloat val);
+  bool setUniform(const std::string& nameArg, GLfloat x, GLfloat y, GLfloat z);
+  bool setUniform(const std::string& nameArg, const glm::ivec2& v);
+  bool setUniform(const std::string& nameArg, const glm::vec2& v);
+  bool setUniform(const std::string& nameArg, const glm::vec3& v);
+  bool setUniform(const std::string& nameArg, const glm::vec4& v);
+  bool setUniform(const std::string& nameArg, const glm::mat2& m);
+  bool setUniform(const std::string& nameArg, const glm::mat3& m);
+  bool setUniform(const std::string& nameArg, const glm::mat4& m);
+  bool setSamplerUniform(const std::string& nameArg, GLint sampler);
 
-  bool setSamplerUniform(const std::string& name, const Uniforms::SamplerIndexVectorType& samplers);
-  bool setUniform(const std::string& name, const std::vector<float>& floats);
-  bool setUniform(const std::string& name, const std::vector<glm::vec2>& vectors);
-  bool setUniform(const std::string& name, const std::vector<glm::vec3>& vectors);
-  bool setUniform(const std::string& name, const std::vector<glm::mat4>& matrices);
+  bool setSamplerUniform(const std::string& nameArg, const Uniforms::SamplerIndexVectorType& samplers);
+  bool setUniform(const std::string& nameArg, const std::vector<float>& floats);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::vec2>& vectors);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::vec3>& vectors);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::mat4>& matrices);
 
   /**
    * @tparam N Number of array elements
@@ -108,10 +108,10 @@ public:
   const Uniforms& getRegisteredUniforms() const;
 
   /// Query an attribute location from the linked program.
-  GLint getAttribLocation(const std::string& name) const;
+  GLint getAttribLocation(const std::string& nameArg) const;
 
   /// Query a uniform location from the linked program.
-  GLint getUniformLocation(const std::string& name);
+  GLint getUniformLocation(const std::string& nameArg);
 
   void printActiveUniforms() const;
   void printActiveUniformBlocks() const;
@@ -130,7 +130,7 @@ private:
   class UniformSetter
   {
   public:
-    explicit UniformSetter(GLShaderProgram& parent);
+    explicit UniformSetter(GLShaderProgram&);
     ~UniformSetter() = default;
 
     void setLocation(GLint loc);
@@ -142,9 +142,9 @@ private:
     void operator()(const glm::vec2& v) const;
     void operator()(const glm::vec3& v) const;
     void operator()(const glm::vec4& v) const;
-    void operator()(const glm::mat2& mat) const;
-    void operator()(const glm::mat3& mat) const;
-    void operator()(const glm::mat4& mat) const;
+    void operator()(const glm::mat2& m) const;
+    void operator()(const glm::mat3& m) const;
+    void operator()(const glm::mat4& m) const;
 
     void operator()(const Uniforms::SamplerIndexType& v) const;
     void operator()(const Uniforms::SamplerIndexVectorType& samplers) const;

@@ -46,12 +46,12 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 /**
  * @brief Dispatch mouse wheel scrolling.
  */
-void scrollCallback(GLFWwindow* window, double offsetX, double offsetY);
+void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffsetY);
 
 /**
  * @brief Dispatch keyboard input.
  */
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void keyCallback(GLFWwindow* window, int key, int, int action, int mods);
 
 /**
  * @brief Dispatch file drops.

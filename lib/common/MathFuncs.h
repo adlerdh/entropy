@@ -88,7 +88,7 @@ std::array<glm::vec3, 8> computeImagePixelAABBoxCorners(const glm::u64vec3& pixe
 std::array<glm::vec3, 8> computeImageSubjectBoundingBoxCorners(
   const glm::u64vec3& pixelDims,
   const glm::mat3& directions,
-  const glm::vec3& pixelSpacing,
+  const glm::vec3& spacing,
   const glm::vec3& origin);
 
 /**

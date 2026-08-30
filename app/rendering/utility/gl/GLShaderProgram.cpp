@@ -677,34 +677,34 @@ void GLShaderProgram::UniformSetter::operator()(float v) const
   glUniform1f(m_loc, v);
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::vec2& vec) const
+void GLShaderProgram::UniformSetter::operator()(const glm::vec2& v) const
 {
-  glUniform2fv(m_loc, 1, glm::value_ptr(vec));
+  glUniform2fv(m_loc, 1, glm::value_ptr(v));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::vec3& vec) const
+void GLShaderProgram::UniformSetter::operator()(const glm::vec3& v) const
 {
-  glUniform3fv(m_loc, 1, glm::value_ptr(vec));
+  glUniform3fv(m_loc, 1, glm::value_ptr(v));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::vec4& vec) const
+void GLShaderProgram::UniformSetter::operator()(const glm::vec4& v) const
 {
-  glUniform4fv(m_loc, 1, glm::value_ptr(vec));
+  glUniform4fv(m_loc, 1, glm::value_ptr(v));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::mat2& mat) const
+void GLShaderProgram::UniformSetter::operator()(const glm::mat2& m) const
 {
-  glUniformMatrix2fv(m_loc, 1, GL_FALSE, glm::value_ptr(mat));
+  glUniformMatrix2fv(m_loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::mat3& mat) const
+void GLShaderProgram::UniformSetter::operator()(const glm::mat3& m) const
 {
-  glUniformMatrix3fv(m_loc, 1, GL_FALSE, glm::value_ptr(mat));
+  glUniformMatrix3fv(m_loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
-void GLShaderProgram::UniformSetter::operator()(const glm::mat4& mat) const
+void GLShaderProgram::UniformSetter::operator()(const glm::mat4& m) const
 {
-  glUniformMatrix4fv(m_loc, 1, GL_FALSE, glm::value_ptr(mat));
+  glUniformMatrix4fv(m_loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
 void GLShaderProgram::UniformSetter::operator()(const Uniforms::SamplerIndexVectorType& samplers) const

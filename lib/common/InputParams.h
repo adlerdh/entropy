@@ -41,7 +41,7 @@ struct InputParams
   bool set = false;
 };
 
-std::ostream& operator<<(std::ostream&, const InputParams&);
+std::ostream& operator<<(std::ostream& os, const InputParams& p);
 
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000

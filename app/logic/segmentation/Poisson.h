@@ -23,13 +23,13 @@ void computeBinaryResultSeg(const std::array<const float*, 2> potentials, uint8_
  */
 void sor(
   const uint8_t* seeds,
-  const float* image,
+  const float*,
   float* potential,
   const glm::ivec3& dims,
   const VoxelDistances& distances,
   float rjac,
   uint32_t maxits,
-  float beta);
+  float);
 
 // Compute a decent value for the 'beta' parameter used in SOR.
 float computeBeta(const float* image, const glm::ivec3& dims);

@@ -81,34 +81,34 @@ public:
   ~AppSettings() = default;
 
   bool synchronizeZooms() const;
-  void setSynchronizeZooms(bool);
+  void setSynchronizeZooms(bool sync);
 
   bool cursorSyncEnabled() const;
-  void setCursorSyncEnabled(bool);
+  void setCursorSyncEnabled(bool set);
 
   bool sendCursorSync() const;
-  void setSendCursorSync(bool);
+  void setSendCursorSync(bool set);
 
   bool receiveCursorSync() const;
-  void setReceiveCursorSync(bool);
+  void setReceiveCursorSync(bool set);
 
   bool sendZoomSync() const;
-  void setSendZoomSync(bool);
+  void setSendZoomSync(bool set);
 
   bool receiveZoomSync() const;
-  void setReceiveZoomSync(bool);
+  void setReceiveZoomSync(bool set);
 
   bool sendPanSync() const;
-  void setSendPanSync(bool);
+  void setSendPanSync(bool set);
 
   bool receivePanSync() const;
-  void setReceivePanSync(bool);
+  void setReceivePanSync(bool set);
 
   bool entropyInstanceSyncEnabled() const;
-  void setEntropyInstanceSyncEnabled(bool);
+  void setEntropyInstanceSyncEnabled(bool set);
 
   bool overlays() const;
-  void setOverlays(bool);
+  void setOverlays(bool set);
 
   /**
    * @brief Return the user-selected ImGui UI scale override.

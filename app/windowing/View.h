@@ -57,8 +57,8 @@ public:
     const CrosshairsState& crosshairs,
     const ViewAlignmentMode& viewAlignment,
     std::optional<uuid> cameraRotationSyncGroupUid,
-    std::optional<uuid> translationSyncGroup,
-    std::optional<uuid> zoomSyncGroup);
+    std::optional<uuid> cameraTranslationSyncGroup,
+    std::optional<uuid> cameraZoomSyncGroup);
 
   /**
    * @brief Get the stable view UID

@@ -42,7 +42,7 @@ void renderImageHeader(
   const std::function<void(void)>& updateAllImageUniforms,
   const std::function<void(void)>& updateImageUniforms,
   const std::function<void(void)>& updateImageInterpolationMode,
-  const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
+  const std::function<void(std::size_t cmapIndex)>&,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(

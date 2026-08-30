@@ -22,13 +22,13 @@ public:
    * @param type OpenGL buffer target this object is bound to.
    * @param usagePattern Expected buffer data usage hint.
    */
-  GLBufferObject(const BufferType& type, const BufferUsagePattern& usagePattern);
+  GLBufferObject(const BufferType& type, const BufferUsagePattern& usage);
 
   GLBufferObject(const GLBufferObject&) = delete;
   GLBufferObject& operator=(const GLBufferObject&) = delete;
 
-  GLBufferObject(GLBufferObject&&) noexcept;
-  GLBufferObject& operator=(GLBufferObject&&) noexcept;
+  GLBufferObject(GLBufferObject&& other) noexcept;
+  GLBufferObject& operator=(GLBufferObject&& other) noexcept;
 
   /// Delete the GL buffer name and GPU storage if still owned.
   ~GLBufferObject();
@@ -71,7 +71,7 @@ public:
    * @param sizeInBytes Number of bytes to read.
    * @param data Destination CPU buffer.
    */
-  void read(std::size_t offset, std::size_t sizeInBytes, GLvoid* data);
+  void read(std::size_t offset, std::size_t sizeArg, GLvoid* data);
 
   /**
    * @brief Map the full buffer into client address space.
@@ -101,7 +101,7 @@ public:
     GLBufferObject& writeBuffer,
     GLintptr readOffset,
     GLintptr writeOffset,
-    GLsizeiptr size);
+    GLsizeiptr sizeArg);
 
   GLuint id() const;
 

@@ -32,7 +32,7 @@ public:
   ~AppState() = default;
 
   void setWorldCrosshairsPos(const glm::vec3& worldPos);
-  void setWorldCrosshairs(CoordinateFrame worldCrosshairs);
+  void setWorldCrosshairs(CoordinateFrame worldCrosshairsArg);
 
   const CoordinateFrame& worldCrosshairs() const;
   const CrosshairsState& crosshairsState() const;
@@ -43,7 +43,7 @@ public:
   void setViewWithRotatingCrosshairs(const std::optional<uuids::uuid>& viewUid);
   std::optional<uuids::uuid> viewWithRotatingCrosshairs() const;
 
-  void setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter);
+  void setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenterArg);
 
   /**
    * @brief Get the rotation center in World space. If no rotation has been explicitly set,
@@ -55,10 +55,10 @@ public:
   void setMouseMode(MouseMode mode);
   MouseMode mouseMode() const;
 
-  void setButtonState(ButtonState);
+  void setButtonState(ButtonState state);
   ButtonState buttonState() const;
 
-  void setRecenteringMode(ImageSelection);
+  void setRecenteringMode(ImageSelection mode);
   ImageSelection recenteringMode() const;
 
   void setAnimating(bool set);

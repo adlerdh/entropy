@@ -64,13 +64,13 @@ public:
   bool existsOnDisk() const;
 
   /// @brief Set whether the source image exists on disk.
-  void setExistsOnDisk(bool);
+  void setExistsOnDisk(bool onDisk);
 
   /// @brief Get the source file name.
   const std::filesystem::path& fileName() const;
 
   /// @brief Set the source file name.
-  void setFileName(std::filesystem::path fileName);
+  void setFileName(std::filesystem::path fileNameArg);
 
   /// @brief Get number of components per pixel in memory.
   uint32_t numComponentsPerPixel() const;
@@ -152,7 +152,7 @@ public:
   /// Are the pixel components interleaved? This flag is always false for 1-component images
   bool interleavedComponents() const;
 
-  friend std::ostream& operator<<(std::ostream&, const ImageHeader&);
+  friend std::ostream& operator<<(std::ostream& os, const ImageHeader& header);
 
 private:
   void setSpace(const SpaceInfo& spaceInfo);
@@ -221,7 +221,7 @@ private:
   std::optional<ImageSpatialMetadata> m_userSpatialMetadata = std::nullopt;
 };
 
-std::ostream& operator<<(std::ostream&, const ImageHeader&);
+std::ostream& operator<<(std::ostream& os, const ImageHeader& header);
 
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000

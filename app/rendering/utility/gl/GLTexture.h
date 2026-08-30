@@ -119,10 +119,10 @@ public:
     std::optional<PixelStoreSettings> pixelUnpackSettings = std::nullopt);
 
   GLTexture(const GLTexture&) = delete;
-  GLTexture(GLTexture&&) noexcept;
+  GLTexture(GLTexture&& other) noexcept;
 
   GLTexture& operator=(const GLTexture&) = delete;
-  GLTexture& operator=(GLTexture&&) noexcept;
+  GLTexture& operator=(GLTexture&& other) noexcept;
 
   ~GLTexture();
 
@@ -157,7 +157,7 @@ public:
   glm::uvec3 size() const;
 
   /// Store logical dimensions used by upload helpers and rendering metadata.
-  void setSize(const glm::uvec3& size);
+  void setSize(const glm::uvec3& sizeArg);
 
   /**
    * @brief Allocate mutable storage for a mipmap level and optionally initialize it with pixel data.
@@ -178,7 +178,7 @@ public:
   void setSubData(
     GLint level,
     const glm::uvec3& offset,
-    const glm::uvec3& size,
+    const glm::uvec3& sizeArg,
     const tex::BufferPixelFormat& format,
     const tex::BufferPixelDataType& type,
     const GLvoid* data);
@@ -351,7 +351,7 @@ private:
   class Binder
   {
   public:
-    explicit Binder(GLTexture& tex);
+    explicit Binder(GLTexture& texture);
     ~Binder();
 
   private:

@@ -57,7 +57,7 @@ struct JobExecutionCallbacks
  */
 JobExecution executeJob(
   const JobSpec& job,
-  const CommandGenerationOptions& commandOptions,
+  const CommandGenerationOptions& commandOptionsArg,
   IProcessRunner& processRunner,
   const JobExecutionCallbacks& callbacks = {});
 

@@ -109,7 +109,7 @@ public:
    * @brief Set the maximum number of queued or running jobs
    * @param maxActiveJobs Active-job limit. Values below one are clamped to one.
    */
-  void setMaxActiveJobs(std::size_t maxActiveJobs);
+  void setMaxActiveJobs(std::size_t maxActiveJobsArg);
 
 private:
   struct ScheduledJob

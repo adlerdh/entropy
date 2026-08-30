@@ -55,16 +55,16 @@ public:
   ~Viewport() = default;
 
   /// Set the left coordinate in device-independent pixel units
-  void setLeft(float left);
+  void setLeft(float l);
 
   /// Set the bottom coordinate in device-independent pixel units
-  void setBottom(float bottom);
+  void setBottom(float b);
 
   /// Set the width in device-independent pixel units
-  void setWidth(float width);
+  void setWidth(float w);
 
   /// Set the height in device-independent pixel units
-  void setHeight(float height);
+  void setHeight(float h);
 
   /// Get the left coordinate in device-independent pixel units
   float left() const;

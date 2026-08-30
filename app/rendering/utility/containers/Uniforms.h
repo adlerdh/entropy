@@ -88,7 +88,7 @@ public:
     ~Decl() = default;
 
     /// Replace the current value and mark the declaration dirty for the next upload.
-    void set(const ValueType& value);
+    void set(const ValueType& valueArg);
 
     UniformType m_type; //!< Expected OpenGL or Entropy-specific uniform type
 
@@ -130,7 +130,7 @@ public:
   void resetAllToDefaults();
 
   /// @throws If a uniform with the given name does not exist.
-  void setValue(const std::string& name, const ValueType& value);
+  void setValue(const std::string& name, const ValueType& valueArg);
 
   /// @throws If a uniform with the given name does not exist.
   ValueType value(const std::string& name) const;
@@ -148,7 +148,7 @@ public:
   int queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter);
 
   /// Mark one uniform declaration dirty or clean.
-  void setDirty(const std::string& name, bool isDirty);
+  void setDirty(const std::string& name, bool isDirtyArg);
 
   /// Return whether a uniform declaration must be uploaded.
   bool isDirty(const std::string& name) const;

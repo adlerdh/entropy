@@ -53,7 +53,7 @@ public:
 
   /// Set/get whether the landmarks are in Voxel space (true) or Subject space (false)
   /// @todo Create enum: LandmarkSpace{ ImageVoxels, ImagePhysicalSubject }
-  void setInVoxelSpace(bool);
+  void setInVoxelSpace(bool inVoxelSpace);
   bool getInVoxelSpace() const;
 
   /// Set/get the landmark visibility

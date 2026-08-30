@@ -16,7 +16,7 @@ public:
   explicit FrameViewport(glm::vec4 windowClipViewport);
 
   /** @brief Set viewport bounds in enclosing-window clip coordinates. */
-  void setWindowClipViewport(glm::vec4 windowClipViewport);
+  void setWindowClipViewport(glm::vec4 windowClipViewportArg);
 
   /** @brief Viewport bounds in enclosing-window clip coordinates. */
   const glm::vec4& windowClipViewport() const;

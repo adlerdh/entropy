@@ -51,7 +51,7 @@ public:
    * @param appData Application data containing image order and selection policy
    * @throw Propagates exceptions from layout image-selection updates
    */
-  void setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData) const;
+  void setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppData& appData) const;
 
   /**
    * @brief Reorder rendered and metric image selections after image order changes
@@ -143,26 +143,26 @@ public:
    * @param viewUid View UID to find
    * @return View pointer, or nullptr when not found
    */
-  const View* getCurrentView(const uuid& viewUid) const;
+  const View* getCurrentView(const uuid& uid) const;
   /**
    * @brief Find a mutable view by UID in the current layout
    * @param viewUid View UID to find
    * @return View pointer, or nullptr when not found
    */
-  View* getCurrentView(const uuid& viewUid);
+  View* getCurrentView(const uuid& uid);
 
   /**
    * @brief Find a const view by UID across all layouts
    * @param viewUid View UID to find
    * @return View pointer, or nullptr when not found
    */
-  const View* getView(const uuid& viewUid) const;
+  const View* getView(const uuid& uid) const;
   /**
    * @brief Find a mutable view by UID across all layouts
    * @param viewUid View UID to find
    * @return View pointer, or nullptr when not found
    */
-  View* getView(const uuid& viewUid);
+  View* getView(const uuid& uid);
 
   /**
    * @brief Get the active view UID
@@ -174,7 +174,7 @@ public:
    * @brief Set the active view UID
    * @param viewUid Active view UID, or `std::nullopt` to clear active view state
    */
-  void setActiveViewUid(const std::optional<uuid>& viewUid);
+  void setActiveViewUid(const std::optional<uuid>& uid);
 
   /**
    * @brief Get the number of layouts
@@ -341,9 +341,9 @@ public:
    * @throw Propagates exceptions from layout reconstruction
    */
   bool applyProjectLayoutSnapshots(
-    const std::vector<layout::LayoutSpec>& layouts,
+    const std::vector<layout::LayoutSpec>& layoutsArg,
     const uuid_range_t& orderedImageUids,
-    std::optional<std::size_t> currentLayoutIndex);
+    std::optional<std::size_t> currentLayoutIndexArg);
 
   /**
    * @brief Append project-specific layouts after regenerated default layouts
@@ -354,9 +354,9 @@ public:
    * @throw Propagates exceptions from layout reconstruction
    */
   bool appendProjectLayoutSnapshots(
-    const std::vector<layout::LayoutSpec>& layouts,
+    const std::vector<layout::LayoutSpec>& layoutsArg,
     const uuid_range_t& orderedImageUids,
-    std::optional<std::size_t> currentLayoutIndex);
+    std::optional<std::size_t> currentLayoutIndexArg);
 
   /**
    * @brief Replace one generated/default layout from a serialized snapshot
@@ -368,7 +368,7 @@ public:
    */
   bool replaceProjectLayoutSnapshot(
     std::size_t index,
-    const layout::LayoutSpec& layout,
+    const layout::LayoutSpec& layoutArg,
     const uuid_range_t& orderedImageUids);
 
   /**

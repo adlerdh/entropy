@@ -111,7 +111,7 @@ public:
   glm::vec3 invPixelDimensions() const;
 
   /// @brief Set manual translation from affine subject space to deformed world space.
-  void set_worldDef_T_affine_translation(glm::vec3 get_worldDef_T_affine_translation);
+  void set_worldDef_T_affine_translation(glm::vec3 worldDef_T_affine_translation);
 
   /// @brief Get manual translation from affine subject space to deformed world space.
   const glm::vec3& get_worldDef_T_affine_translation() const;
@@ -183,7 +183,7 @@ public:
   const glm::mat4& pixel_T_worldDef() const;           //!< Get tx from Deformed World to image Pixel space
   const glm::mat3& pixel_T_worldDef_invTransp() const; /// Get inverse-transpose of tx from World to image Pixel space
 
-  friend std::ostream& operator<<(std::ostream&, const ImageTransformations&);
+  friend std::ostream& operator<<(std::ostream& os, const ImageTransformations& tx);
 
 private:
   void initializeTransformations();
@@ -242,7 +242,7 @@ private:
   glm::mat3 m_pixel_T_worldDef_invTransp{1.0f}; //!< Inverse-transpose of Deformed World to Pixel space tx
 };
 
-std::ostream& operator<<(std::ostream&, const ImageTransformations&);
+std::ostream& operator<<(std::ostream& os, const ImageTransformations& tx);
 
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000

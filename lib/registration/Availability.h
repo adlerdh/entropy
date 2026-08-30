@@ -109,7 +109,7 @@ std::optional<SemanticVersion> parseSemanticVersion(std::string_view text);
  * @param config Backend configuration.
  * @return Arguments for a lightweight version/availability check.
  */
-std::vector<std::string> probeArguments(Backend backend, const BackendConfig& config);
+std::vector<std::string> probeArguments(Backend backend, const BackendConfig&);
 
 /**
  * @brief Check whether a backend is available.

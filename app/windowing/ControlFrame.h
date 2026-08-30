@@ -102,7 +102,7 @@ public:
    * @brief Set the frame view type
    * @param viewType New view type
    */
-  virtual void setViewType(const ViewType& viewType);
+  virtual void setViewType(const ViewType& viewTypeArg);
 
   /**
    * @brief Get the frame render mode

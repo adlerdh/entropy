@@ -84,21 +84,21 @@ inline std::array<IntensityProjectionMode, 5> const AllIntensityProjectionModes 
  * @param renderMode Render mode.
  * @return Display label.
  */
-std::string typeString(const ViewRenderMode& renderMode);
+std::string typeString(const ViewRenderMode& mode);
 
 /**
  * @brief Return a concise user-facing intensity projection mode label.
  * @param ipMode Intensity projection mode.
  * @return Display label.
  */
-std::string typeString(const IntensityProjectionMode& ipMode);
+std::string typeString(const IntensityProjectionMode& mode);
 
 /**
  * @brief Return a longer render mode description for tooltips/help text.
  * @param renderMode Render mode.
  * @return Description.
  */
-std::string descriptionString(const ViewRenderMode& renderMode);
+std::string descriptionString(const ViewRenderMode& mode);
 
 /** @brief Return whether the mode is available in a 3D view. */
 constexpr bool is3dRenderMode(const ViewRenderMode renderMode)
@@ -124,4 +124,4 @@ constexpr bool rendersIsosurfaces(const ViewRenderMode renderMode)
  * @param ipMode Intensity projection mode.
  * @return Description.
  */
-std::string descriptionString(const IntensityProjectionMode& ipMode);
+std::string descriptionString(const IntensityProjectionMode& mode);

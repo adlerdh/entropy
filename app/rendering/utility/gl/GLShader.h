@@ -58,5 +58,5 @@ private:
 
   void compileFromString(const char* source);
 
-  bool checkShaderStatus(GLuint handle);
+  bool checkShaderStatus(GLuint handleArg);
 };

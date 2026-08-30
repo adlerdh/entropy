@@ -26,7 +26,7 @@ class CallbackHandler
   using uuid = uuids::uuid;
 
 public:
-  CallbackHandler(AppData&, GlfwWrapper&, Rendering&);
+  CallbackHandler(AppData& appData, GlfwWrapper& glfwWrapper, Rendering& rendering);
   ~CallbackHandler() = default;
 
   /**
@@ -261,7 +261,7 @@ public:
    * @param resetObliqueOrientation
    */
   void recenterViews(
-    const ImageSelection&,
+    const ImageSelection& imageSelection,
     bool recenterCrosshairs,
     bool realignCrosshairs,
     bool recenterOnCurrentCrosshairsPos,
@@ -273,7 +273,7 @@ public:
    * @brief Recenter one view
    * @param viewUid
    */
-  void recenterView(const ImageSelection&, const uuid& viewUid);
+  void recenterView(const ImageSelection& imageSelection, const uuid& viewUid);
 
   void flipImageInterpolation();
   void toggleImageVisibility();
@@ -319,13 +319,13 @@ public:
   void cycleBrushSize(int i);
 
   bool showOverlays() const;
-  void setShowOverlays(bool);
+  void setShowOverlays(bool show);
   bool showUserInterface() const;
   void setShowUserInterface(bool show);
   void toggleCrosshairs();
   void cycleViewOverlays();
 
-  void setMouseMode(MouseMode);
+  void setMouseMode(MouseMode mode);
 
   void toggleFullScreenMode(bool forceWindowMode = false);
 

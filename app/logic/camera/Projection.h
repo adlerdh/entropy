@@ -98,7 +98,7 @@ public:
    * @brief Set the default field of view of the projection
    * @param defaultFov Horizontal and vertical default field-of-view extents
    */
-  void setDefaultFov(const glm::vec2& defaultFov);
+  void setDefaultFov(const glm::vec2& fov);
   /**
    * @brief Get the default field of view of the projection
    * @return Horizontal and vertical default field-of-view extents

@@ -160,7 +160,7 @@ Pose defaultCoronalPose(const SceneFrame& scene);
  * @param scene Scene frame to keep visible
  * @param eyeToTargetDistance Reserved eye-to-target distance parameter
  */
-void configureClipPlanes(Camera& camera, const SceneFrame& scene, float eyeToTargetDistance);
+void configureClipPlanes(Camera& camera, const SceneFrame& scene, float);
 
 /**
  * @brief Reset to Entropy's default 3D pose

@@ -101,7 +101,7 @@ public:
    * @brief Replace the camera projection
    * @param projection New projection. Null projections are ignored
    */
-  void setProjection(std::unique_ptr<Projection> projection);
+  void setProjection(std::unique_ptr<Projection> projectionArg);
 
   /**
    * @brief Get the camera projection
@@ -113,7 +113,7 @@ public:
    * @brief Set the callback that defines the camera's linked anatomical start frame
    * @param provider Callback returning the current anatomical start frame, or null to unlink the camera
    */
-  void set_anatomy_T_start_provider(GetterType<CoordinateFrame>);
+  void set_anatomy_T_start_provider(GetterType<CoordinateFrame> provider);
 
   /**
    * @brief Get the callback that defines the camera's linked anatomical start frame
@@ -150,13 +150,13 @@ public:
    * @brief Set the transform from World space to the camera's start space
    * @param start_T_world Transform to store
    */
-  void set_start_T_world(glm::mat4 start_T_world);
+  void set_start_T_world(glm::mat4 start_T_worldArg);
 
   /**
    * @brief Set the transform from Anatomy space to Camera space
    * @param camera_T_anatomy Rigid affine transform to store
    */
-  void set_camera_T_anatomy(glm::mat4 camera_T_anatomy);
+  void set_camera_T_anatomy(glm::mat4 camera_T_anatomyArg);
 
   /**
    * @brief Get the transform from Anatomy space to Camera space
@@ -237,13 +237,13 @@ public:
    * @brief Set the near clipping plane distance from the camera origin
    * @param d Near distance. Invalid values are ignored by the projection
    */
-  void setNearDistance(float d);
+  void setNearDistance(float dist);
 
   /**
    * @brief Set the far clipping plane distance from the camera origin
    * @param d Far distance. Invalid values are ignored by the projection
    */
-  void setFarDistance(float d);
+  void setFarDistance(float dist);
 
   /**
    * @brief Get the near clipping plane distance

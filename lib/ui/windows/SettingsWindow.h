@@ -48,8 +48,8 @@ void renderSettingsWindow(
   const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
   const std::function<void()>& requestFontReload,
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
-  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
-  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPresetArg,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacityArg,
   const std::function<void()>& readjustViewport,
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews);

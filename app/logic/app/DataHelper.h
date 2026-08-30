@@ -34,18 +34,18 @@ std::vector<uuids::uuid> selectImages(const AppData& data, const ImageSelection&
  * @param worldCameraFront Normalized front direction of the camera in World space.
  */
 float sliceScrollDistance(
-  const AppData&,
+  const AppData& data,
   const glm::vec3& worldCameraFrontDir,
-  const ImageSelection&,
+  const ImageSelection& imageSelection,
   const View* view);
 
-float sliceScrollDistance(const glm::vec3& worldCameraFrontDir, const Image&);
+float sliceScrollDistance(const glm::vec3& worldCameraFrontDir, const Image& image);
 
 glm::vec2 sliceMoveDistance(
-  const AppData&,
+  const AppData& data,
   const glm::vec3& worldCameraRightDir,
   const glm::vec3& worldCameraUpDir,
-  const ImageSelection&,
+  const ImageSelection& imageSelection,
   const View* view);
 
 float computeViewOffsetDistance(
@@ -90,7 +90,7 @@ std::vector<uuids::uuid> findAnnotationsForImage(
 
 glm::vec3 roundPointToNearestImageVoxelCenter(const Image& image, const glm::vec3& worldPos);
 
-std::string getAnnotationSubjectPlaneName(const Annotation&);
+std::string getAnnotationSubjectPlaneName(const Annotation& annotation);
 
 std::optional<uuids::uuid> getSelectedAnnotation(const AppData& appData);
 

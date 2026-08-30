@@ -40,7 +40,7 @@ public:
     GLenum indexType() const;
     GLvoid* indices() const;
 
-    void setElementCount(std::size_t elementCount);
+    void setElementCount(std::size_t elementCountArg);
 
   private:
     GLenum m_primitiveMode;

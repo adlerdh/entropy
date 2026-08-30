@@ -23,7 +23,7 @@ public:
    * @param renderables View-specific renderables
    * @throw Propagates allocation failures
    */
-  void setRenderables(std::vector<MeshRenderable> renderables);
+  void setRenderables(std::vector<MeshRenderable> renderablesArg);
 
   /**
    * @brief Replace all textured image-plane renderables in the scene

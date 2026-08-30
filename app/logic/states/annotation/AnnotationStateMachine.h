@@ -252,7 +252,7 @@ protected:
    * @brief Flip the active annotation (if it exists) of the active image.
    * If there is no active annotation, then nothing happens.
    */
-  void flipSelectedAnnotation(const FlipDirection& direction);
+  void flipSelectedAnnotation(const FlipDirection& flipDirection);
 
   /**
    * @brief Find vertices in annotations of the active image near the mouse hit

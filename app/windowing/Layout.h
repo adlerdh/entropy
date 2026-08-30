@@ -157,7 +157,7 @@ public:
    * @brief Set the layout kind
    * @param kind New layout kind
    */
-  void setKind(LayoutKind kind);
+  void setKind(LayoutKind kindArg);
 
   /**
    * @brief Get the user-facing layout display name
@@ -170,7 +170,7 @@ public:
    * @param displayName New display name. Empty names are replaced with "Custom"
    * @throw Propagates exceptions from string allocation
    */
-  void setDisplayName(std::string displayName);
+  void setDisplayName(std::string displayNameArg);
 
   /**
    * @brief Add a view and append its UID to the stable display order

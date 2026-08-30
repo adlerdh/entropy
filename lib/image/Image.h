@@ -136,10 +136,10 @@ public:
    * valid raw slot. Prefer value() for logical component access that is independent of buffer
    * layout.
    */
-  const void* bufferAsVoid(uint32_t component, uint32_t timePoint = 0) const;
+  const void* bufferAsVoid(uint32_t comp, uint32_t timePoint = 0) const;
 
   /// @brief Get a non-const void pointer to the raw buffer data of an image component.
-  void* bufferAsVoid(uint32_t component, uint32_t timePoint = 0);
+  void* bufferAsVoid(uint32_t comp, uint32_t timePoint = 0);
 
   /**
    * @brief Get a const void pointer to the sorted buffer data of an image component.
@@ -147,10 +147,10 @@ public:
    * @note Ignores the \c MultiComponentBufferType setting, so that the
    * component must be in the range [0, header().numComponentsPerPixel() - 1]
    */
-  const void* bufferSortedAsVoid(uint32_t component) const;
+  const void* bufferSortedAsVoid(uint32_t comp) const;
 
   /// @brief Get a non-const void pointer to the sorted buffer data of an image component.
-  void* bufferSortedAsVoid(uint32_t component);
+  void* bufferSortedAsVoid(uint32_t comp);
 
   /**
    * @brief Get a component value at a linear pixel index.
@@ -480,10 +480,10 @@ public:
   }
 
   /// @brief Convert an integer component value to its quantile in the image distribution.
-  QuantileOfValue valueToQuantile(uint32_t component, int64_t value) const;
+  QuantileOfValue valueToQuantile(uint32_t comp, int64_t valueArg) const;
 
   /// @brief Convert a floating point component value to its quantile in the image distribution.
-  QuantileOfValue valueToQuantile(uint32_t component, double value) const;
+  QuantileOfValue valueToQuantile(uint32_t comp, double valueArg) const;
 
   /// @brief Convert a quantile in [0, 1] to the corresponding component value.
   double quantileToValue(uint32_t comp, double quantile) const;

@@ -144,7 +144,7 @@ public:
   double timePlaybackSpeed() const;
 
   /// @brief Set the RGB border color used when drawing image bounds.
-  void setBorderColor(glm::vec3 borderColor);
+  void setBorderColor(glm::vec3 borderColorArg);
 
   /// @brief Get the RGB border color used when drawing image bounds.
   const glm::vec3& borderColor() const;
@@ -240,7 +240,7 @@ public:
   float vectorArrowOverlayLineThickness() const;
 
   /// @brief Set vector arrow opacity.
-  void setVectorArrowOverlayOpacity(float opacity);
+  void setVectorArrowOverlayOpacity(float opacityArg);
 
   /// @brief Return vector arrow opacity.
   float vectorArrowOverlayOpacity() const;
@@ -509,9 +509,9 @@ public:
   bool thresholdsActive() const;
 
   /// @brief Set component opacity in [0, 1].
-  void setOpacity(uint32_t i, double opacity);
+  void setOpacity(uint32_t i, double op);
   /// @brief Set opacity for the active component.
-  void setOpacity(double opacity);
+  void setOpacity(double op);
 
   /// @brief Get component opacity in [0, 1].
   double opacity(uint32_t i) const;
@@ -535,7 +535,7 @@ public:
   bool globalVisibility() const;
 
   /// @brief Set global opacity multiplier in [0, 1].
-  void setGlobalOpacity(double opacity);
+  void setGlobalOpacity(double opacityArg);
 
   /// @brief Get global opacity multiplier in [0, 1].
   double globalOpacity() const;
@@ -681,9 +681,9 @@ public:
   bool overlayPixelEdges() const;
 
   /// @brief Set whether edges use the component colormap instead of edgeColor().
-  void setColormapEdges(uint32_t i, bool showEdges);
+  void setColormapEdges(uint32_t i, bool showEdgesArg);
   /// @brief Set edge colormap mode for the active component.
-  void setColormapEdges(bool showEdges);
+  void setColormapEdges(bool showEdgesArg);
 
   /// @brief Return whether edges use the component colormap for a component.
   bool colormapEdges(uint32_t i) const;
@@ -701,9 +701,9 @@ public:
   glm::vec3 edgeColor() const;
 
   /// @brief Set edge opacity in [0, 1] for a component.
-  void setEdgeOpacity(uint32_t i, double opacity);
+  void setEdgeOpacity(uint32_t i, double opacityArg);
   /// @brief Set edge opacity for the active component.
-  void setEdgeOpacity(double opacity);
+  void setEdgeOpacity(double opacityArg);
 
   /// @brief Get edge opacity in [0, 1] for a component.
   double edgeOpacity(uint32_t i) const;
@@ -851,9 +851,9 @@ public:
   const ComponentStats& componentStatistics() const;
 
   /// @brief Get read-only histogram settings for an image component.
-  const HistogramSettings& histogramSettings(uint32_t component) const;
+  const HistogramSettings& histogramSettings(uint32_t comp) const;
   /// @brief Get mutable histogram settings for an image component.
-  HistogramSettings& histogramSettings(uint32_t component);
+  HistogramSettings& histogramSettings(uint32_t comp);
 
   /// @brief Get read-only histogram settings for the active component.
   const HistogramSettings& histogramSettings() const;
@@ -872,7 +872,7 @@ public:
   uint32_t activeComponent() const;
 
   /// @brief Set whether exact quantiles are available for window/level editing.
-  void setUsingExactQuantiles(bool);
+  void setUsingExactQuantiles(bool set);
   /// @brief Return whether exact quantiles are available for window/level editing.
   bool usingExactQuantiles() const;
 
@@ -881,7 +881,7 @@ public:
   /// @see https://www.khronos.org/opengl/wiki/Normalized_Integer
   double mapNativeIntensityToTexture(double nativeImageValue) const;
 
-  friend std::ostream& operator<<(std::ostream&, const ImageSettings&);
+  friend std::ostream& operator<<(std::ostream& os, const ImageSettings& settings);
 
 private:
   void updateInternals();
@@ -1038,7 +1038,7 @@ private:
   bool m_usingExactQuantiles = false;
 };
 
-std::ostream& operator<<(std::ostream&, const ImageSettings&);
+std::ostream& operator<<(std::ostream& os, const ImageSettings& settings);
 
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000

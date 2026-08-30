@@ -169,7 +169,7 @@ public:
    * @throws Propagates image-loading exceptions from the image library.
    */
   bool loadSerializedImage(
-    const serialize::Image& image,
+    const serialize::Image& serializedImage,
     bool isReferenceImage,
     const dicom::SeriesInfo* resolvedDicomSeries = nullptr);
 
@@ -182,7 +182,7 @@ public:
    */
   std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
     const std::filesystem::path& fileName,
-    const std::optional<uuids::uuid>& imageUid = std::nullopt);
+    const std::optional<uuids::uuid>& matchingImageUid = std::nullopt);
 
   /**
    * @brief Load a warp field from disk.
@@ -295,7 +295,7 @@ private:
    * loadingStatusTitle Title for the loading-status popup.
    */
   void startAsyncImageLoad(
-    const std::string& windowTitleStatus,
+    const std::string& windowTitleStatusArg,
     std::function<bool()> loadTask,
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true,
@@ -358,7 +358,7 @@ private:
     bool applyToAll);
 
   /** @brief Load a serialized project snapshot into application data. */
-  bool loadProject(const serialize::EntropyProject& project);
+  bool loadProject(const serialize::EntropyProject& projectToLoad);
 
   /** @brief Create a serialized snapshot of the current project state. */
   serialize::EntropyProject createProjectSnapshot() const;

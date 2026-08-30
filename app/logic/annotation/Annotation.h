@@ -28,7 +28,7 @@ class AppData;
 class Annotation
 {
 public:
-  explicit Annotation(std::string displayName, const glm::vec4& color, const glm::vec4& subjectPlaneEquation);
+  explicit Annotation(std::string name, const glm::vec4& color, const glm::vec4& subjectPlaneEquation);
 
   Annotation();
 

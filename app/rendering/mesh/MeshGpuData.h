@@ -47,21 +47,21 @@ public:
    * @param normalsObject Vertex normal buffer
    * @param normalsInfo Normal attribute descriptor
    */
-  void setNormals(GLBufferObject normalsObject, const VertexAttributeInfo& normalsInfo);
+  void setNormals(GLBufferObject normalsObject, const VertexAttributeInfo& normalsInfoArg);
 
   /**
    * @brief Attach an uploaded color buffer
    * @param colorsObject Vertex color buffer
    * @param colorsInfo Color attribute descriptor
    */
-  void setColors(GLBufferObject colorsObject, const VertexAttributeInfo& colorsInfo);
+  void setColors(GLBufferObject colorsObject, const VertexAttributeInfo& colorsInfoArg);
 
   /**
    * @brief Attach an uploaded texture-coordinate buffer
    * @param textureCoordsObject Vertex texture-coordinate buffer
    * @param textureCoordsInfo Texture-coordinate attribute descriptor
    */
-  void setTextureCoords(GLBufferObject textureCoordsObject, const VertexAttributeInfo& textureCoordsInfo);
+  void setTextureCoords(GLBufferObject textureCoordsObject, const VertexAttributeInfo& textureCoordsInfoArg);
 
   /**
    * @brief Return the mesh geometry handle represented by this upload

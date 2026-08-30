@@ -29,7 +29,7 @@ namespace helper
  * @return Unique pointer to camera projection
  * @throw Propagates exceptions from projection allocation
  */
-std::unique_ptr<Projection> createCameraProjection(const ProjectionType& type);
+std::unique_ptr<Projection> createCameraProjection(const ProjectionType& projectionType);
 
 /**
  * @brief Compute full model-view-projection transformation chain from World to OpenGL Clip space
@@ -204,7 +204,7 @@ void setWorldTarget(Camera& camera, const glm::vec3& worldPos, const std::option
  * @param cameraVec Rotation axis in Camera space
  * @param angle Rotation angle in radians
  */
-void rotateAboutOrigin(Camera& camera, const glm::vec3& cameraVec, float angle);
+void rotateAboutOrigin(Camera& camera, const glm::vec3& cameraVec, float angleRadians);
 
 /**
  * @brief Rotate the camera around its origin using a named view axis
@@ -212,7 +212,7 @@ void rotateAboutOrigin(Camera& camera, const glm::vec3& cameraVec, float angle);
  * @param dir View-axis direction
  * @param angle Rotation angle in radians
  */
-void rotateAboutOrigin(Camera& camera, const Directions::View& dir, float angle);
+void rotateAboutOrigin(Camera& camera, const Directions::View& dir, float angleRadians);
 
 /**
  * @brief Rotate the camera around a Camera-space center using a named view axis
@@ -221,7 +221,7 @@ void rotateAboutOrigin(Camera& camera, const Directions::View& dir, float angle)
  * @param angle Rotation angle in radians
  * @param cameraCenter Rotation center in Camera space
  */
-void rotate(Camera& camera, const Directions::View& eyeAxis, float angle, const glm::vec3& cameraCenter);
+void rotate(Camera& camera, const Directions::View& eyeAxis, float angleRadians, const glm::vec3& cameraCenter);
 
 /**
  * @brief Rotate the camera around a Camera-space center using a Camera-space axis
@@ -230,7 +230,7 @@ void rotate(Camera& camera, const Directions::View& eyeAxis, float angle, const 
  * @param angle Rotation angle in radians
  * @param cameraCenter Rotation center in Camera space
  */
-void rotate(Camera& camera, const glm::vec3& cameraAxis, float angle, const glm::vec3& cameraCenter);
+void rotate(Camera& camera, const glm::vec3& cameraAxis, float angleRadians, const glm::vec3& cameraCenter);
 
 /**
  * @brief Translate the camera along a named Camera-space view direction
@@ -260,7 +260,7 @@ void reflectFront(Camera& camera, const glm::vec3& cameraCenter);
  * @param factor Multiplicative zoom factor
  * @param cameraCenter Center point in Camera space
  */
-void zoom(Camera& camera, float factor, const glm::vec2& cameraCenter);
+void zoom(Camera& camera, float factor, const glm::vec2& cameraCenterPos);
 
 /**
  * @brief Translate the camera in or out using vertical NDC drag distance
@@ -341,7 +341,7 @@ void zoomNdc(Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNew
  * @param magFactor Multiplicative zoom factor
  * @param ndcCenterPos Zoom center in NDC
  */
-void zoomNdc(Camera& camera, float magFactor, const glm::vec2& ndcCenterPos);
+void zoomNdc(Camera& camera, float factor, const glm::vec2& ndcCenterPos);
 
 /**
  * @brief Zoom the camera by an additive drag or scroll delta around an NDC center
@@ -590,7 +590,7 @@ glm::vec2 window_T_windowClip(const Viewport& viewport, const glm::vec2& ndcPos)
  * @param ndcPos Position in window clip coordinates
  * @return Position in viewport coordinates
  */
-glm::vec2 viewport_T_windowClip(const Viewport& viewport, const glm::vec2& ndcPos);
+glm::vec2 viewport_T_windowClip(const Viewport& windowViewport, const glm::vec2& ndcPos);
 
 /**
  * @brief Transform viewport coordinates to window clip coordinates
@@ -598,7 +598,7 @@ glm::vec2 viewport_T_windowClip(const Viewport& viewport, const glm::vec2& ndcPo
  * @param viewportPos Position in viewport coordinates
  * @return Position in window clip coordinates
  */
-glm::vec2 windowClip_T_viewport(const Viewport& viewport, const glm::vec2& viewportPos);
+glm::vec2 windowClip_T_viewport(const Viewport& windowViewport, const glm::vec2& viewportPos);
 
 /**
  * @brief Build the matrix from window clip coordinates to window pixel coordinates
@@ -612,7 +612,7 @@ glm::mat4 window_T_windowClip(const Viewport& viewport);
  * @param viewport Viewport frame
  * @return Viewport coordinate transform
  */
-glm::mat4 viewport_T_windowClip(const Viewport& viewport);
+glm::mat4 viewport_T_windowClip(const Viewport& windowViewport);
 
 /**
  * @brief Convert window coordinates to mindow coordinates by flipping y for mouse input

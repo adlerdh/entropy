@@ -97,7 +97,7 @@ public:
   registration::JobStore& registrationJobs();
 
   /// @todo Put into AppState
-  void setProject(serialize::EntropyProject project);
+  void setProject(serialize::EntropyProject projectArg);
   void setProjectFileName(std::optional<std::filesystem::path> fileName);
   void clearProjectData();
   const serialize::EntropyProject& project() const;
@@ -109,15 +109,15 @@ public:
    * @param[in] image The image.
    * @return The image's newly generated unique identifier
    */
-  uuid addImage(Image image);
-  bool replaceImage(const uuid& imageUid, Image image);
+  uuid addImage(Image imageArg);
+  bool replaceImage(const uuid& imageUidArg, Image imageArg);
 
   /**
    * @brief Add a segmentation.
    * @param[in] seg Segmentation image. The image must have unsigned integer pixel component type.
    * @return If added, the segmentation image's newly generated unique identifier; else nullopt.
    */
-  std::optional<uuid> addSeg(Image seg);
+  std::optional<uuid> addSeg(Image segArg);
 
   /**
    * @brief Add an image warp field.
@@ -125,7 +125,7 @@ public:
    * per pixel.
    * @return If added, warp-field image's newly generated unique identifier; else nullpt.
    */
-  std::optional<uuid> addDef(Image def);
+  std::optional<uuid> addDef(Image defArg);
 
   /**
    * @brief Add a segmentation label color table
@@ -149,7 +149,7 @@ public:
    * @return If the image exists, return the annotation's newly generated unique identifier;
    * otherwise return nullopt.
    */
-  std::optional<uuid> addAnnotation(const uuid& imageUid, const Annotation& annotation);
+  std::optional<uuid> addAnnotation(const uuid& imageUidArg, const Annotation& annotationArg);
 
   /**
    * @brief Add a distance map to an image component. The maps are used to accelerate
@@ -162,7 +162,8 @@ public:
    *
    * @return True iff the distance map was successfully added for the image component.
    */
-  bool addDistanceMap(const uuid& imageUid, ComponentIndexType component, Image distanceMap, double boundaryIsoValue);
+  bool
+  addDistanceMap(const uuid& imageUidArg, ComponentIndexType component, Image distanceMap, double boundaryIsoValue);
 
   /**
    * @brief Remove distance maps for one image component.
@@ -171,9 +172,9 @@ public:
    * @param[in] component Image component whose distance maps should be removed
    * @return True iff component data existed and was cleared.
    */
-  bool removeDistanceMaps(const uuid& imageUid, ComponentIndexType component);
+  bool removeDistanceMaps(const uuid& imageUidArg, ComponentIndexType component);
 
-  bool addNoiseEstimate(const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius);
+  bool addNoiseEstimate(const uuid& imageUidArg, ComponentIndexType component, Image noiseEstimate, uint32_t radius);
 
   /**
    * @brief Add an isosurface to an image component.
@@ -185,11 +186,11 @@ public:
    * @return Unique ID of the isosurface iff it was successfully added for the image component;
    * otherwise \c std::nullpt
    */
-  std::optional<uuid> addIsosurface(const uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
+  std::optional<uuid> addIsosurface(const uuid& imageUidArg, ComponentIndexType comp, Isosurface isosurfaceArg);
 
-  bool removeImage(const uuid& imageUid);
-  bool removeSeg(const uuid& segUid);
-  bool removeDef(const uuid& defUid);
+  bool removeImage(const uuid& imageUidArg);
+  bool removeSeg(const uuid& segUidArg);
+  bool removeDef(const uuid& defUidArg);
   bool removeAnnotation(const uuid& annotUid);
   bool removeLandmarkGroup(const uuid& lmGroupUid);
 
@@ -202,10 +203,10 @@ public:
    *
    * @return True iff the isosurface was successfully removed.
    */
-  bool removeIsosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
+  bool removeIsosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid);
 
-  const Image* image(const uuid& imageUid) const;
-  Image* image(const uuid& imageUid);
+  const Image* image(const uuid& imageUidArg) const;
+  Image* image(const uuid& imageUidArg);
 
   /**
    * @brief Add or replace a cached scalar projection for a multi-component source image.
@@ -215,8 +216,11 @@ public:
    * @param image Derived scalar image.
    * @return UID of the cached projection, or std::nullopt when the source image is invalid.
    */
-  std::optional<uuid>
-  setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint, Image image);
+  std::optional<uuid> setComponentProjectionImage(
+    const uuid& imageUidArg,
+    ComponentProjectionMode mode,
+    uint32_t timePoint,
+    Image imageArg);
 
   /**
    * @brief Get the UID of a cached scalar component projection.
@@ -226,7 +230,7 @@ public:
    * @return Cached projection UID, or std::nullopt when the projection does not exist.
    */
   std::optional<uuid>
-  componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint) const;
+  componentProjectionImageUid(const uuid& imageUidArg, ComponentProjectionMode mode, uint32_t timePoint) const;
 
   /**
    * @brief Get the source image UID for a cached scalar component projection.
@@ -240,16 +244,16 @@ public:
    * @param imageUid Source image UID selected by the view/layout.
    * @return Source UID, or a cached projection UID when that projection should be rendered.
    */
-  uuid effectiveImageUidForRendering(const uuid& imageUid) const;
+  uuid effectiveImageUidForRendering(const uuid& imageUidArg) const;
 
-  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
-  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
+  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUidArg) const;
+  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUidArg);
 
-  const Image* seg(const uuid& segUid) const;
-  Image* seg(const uuid& segUid);
+  const Image* seg(const uuid& segUidArg) const;
+  Image* seg(const uuid& segUidArg);
 
-  const Image* def(const uuid& defUid) const;
-  Image* def(const uuid& defUid);
+  const Image* def(const uuid& defUidArg) const;
+  Image* def(const uuid& defUidArg);
 
   /**
    * @brief Resolve a UID that can be used as a warp field.
@@ -264,10 +268,10 @@ public:
   Image* warpField(const uuid& warpUid);
 
   /// Get the distance maps (keyed by isosurface value) associated with an image component
-  const std::map<double, Image>& distanceMaps(const uuid& imageUid, ComponentIndexType component) const;
+  const std::map<double, Image>& distanceMaps(const uuid& imageUidArg, ComponentIndexType component) const;
 
   /// Get the noise estimate images (keyed by radius value) associated with an image component
-  const std::map<uint32_t, Image>& noiseEstimates(const uuid& imageUid, ComponentIndexType component) const;
+  const std::map<uint32_t, Image>& noiseEstimates(const uuid& imageUidArg, ComponentIndexType component) const;
 
   /**
    * @brief Get an isosurface of an image component.
@@ -278,12 +282,12 @@ public:
    *
    * @return Pointer to the isosurface if it exists; otherwise nullptr
    */
-  const Isosurface* isosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid) const;
+  const Isosurface* isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid) const;
 
-  Isosurface* isosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
+  Isosurface* isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid);
 
-  const ImageColorMap* imageColorMap(const uuid& mapUid) const;
-  ImageColorMap* imageColorMap(const uuid& mapUid);
+  const ImageColorMap* imageColorMap(const uuid& colorMapUid) const;
+  ImageColorMap* imageColorMap(const uuid& colorMapUid);
 
   const ParcellationLabelTable* labelTable(const uuid& tableUid) const;
   ParcellationLabelTable* labelTable(const uuid& tableUid);
@@ -301,12 +305,12 @@ public:
   Annotation* annotation(const uuid& annotUid);
 
   /// Set/get the reference image UID
-  bool setRefImageUid(const uuid& refImageUid);
+  bool setRefImageUid(const uuid& uid);
   std::optional<uuid> refImageUid() const;
 
   /// Set/get the UID of the active image: the one that is currently being transformed or
   /// whose settings are currently being changed by the user
-  bool setActiveImageUid(const uuid& activeImageUid);
+  bool setActiveImageUid(const uuid& uid);
   std::optional<uuid> activeImageUid() const;
 
   /// Set rainbow colors for the image border and edges
@@ -319,20 +323,20 @@ public:
   /// Move the image backward/forward in layers (decrease/increase its layer order)
   /// @note It is important that these take arguments by value, since imageUids are being swapped
   /// internally. Potential for nasty bugs if a reference is used.
-  bool moveImageBackwards(const uuid& imageUid);
-  bool moveImageForwards(const uuid& imageUid);
+  bool moveImageBackwards(const uuid& imageUidArg);
+  bool moveImageForwards(const uuid& imageUidArg);
 
   /// Move the image to the backmost/frontmost layer
-  bool moveImageToBack(const uuid& imageUid);
-  bool moveImageToFront(const uuid& imageUid);
+  bool moveImageToBack(const uuid& imageUidArg);
+  bool moveImageToFront(const uuid& imageUidArg);
 
   /// Move the image annotation backward/forward in layers (decrease/increase its layer order)
-  bool moveAnnotationBackwards(const uuid& imageUid, const uuid& annotUid);
-  bool moveAnnotationForwards(const uuid& imageUid, const uuid& annotUid);
+  bool moveAnnotationBackwards(const uuid& imageUidArg, const uuid& annotUid);
+  bool moveAnnotationForwards(const uuid& imageUidArg, const uuid& annotUid);
 
   /// Move the image annotation to the backmost/frontmost layer
-  bool moveAnnotationToBack(const uuid& imageUid, const uuid& annotUid);
-  bool moveAnnotationToFront(const uuid& imageUid, const uuid& annotUid);
+  bool moveAnnotationToBack(const uuid& imageUidArg, const uuid& annotUid);
+  bool moveAnnotationToFront(const uuid& imageUidArg, const uuid& annotUid);
 
   std::size_t numImages() const;
   std::size_t numSegs() const;
@@ -356,11 +360,11 @@ public:
   const uuid_range_t& labelTableUidsOrdered() const;
   const uuid_range_t& landmarkGroupUidsOrdered() const;
 
-  uuid_range_t isosurfaceUids(const uuid& imageUid, ComponentIndexType component) const;
+  uuid_range_t isosurfaceUids(const uuid& imageUidArg, ComponentIndexType comp) const;
 
   /// Set/get the active segmentation for an image
-  bool assignActiveSegUidToImage(const uuid& imageUid, const uuid& activeSegUid);
-  std::optional<uuid> imageToActiveSegUid(const uuid& imageUid) const;
+  bool assignActiveSegUidToImage(const uuid& imageUidArg, const uuid& activeSegUid);
+  std::optional<uuid> imageToActiveSegUid(const uuid& imageUidArg) const;
 
   /**
    * @brief Assign the active inverse warp for an image.
@@ -369,14 +373,14 @@ public:
    * @param activeWarpUid Inverse warp UID.
    * @return True when both image and warp field exist and the field is usable.
    */
-  bool assignActiveInverseWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid);
+  bool assignActiveInverseWarpUidToImage(const uuid& imageUidArg, const uuid& activeWarpUid);
   bool assignActiveInverseWarpUidToImage(
-    const uuid& imageUid,
+    const uuid& imageUidArg,
     const uuid& activeWarpUid,
     const std::optional<uuid>& referenceImageUid);
 
   /** @brief Clear the active inverse warp for an image. */
-  void clearActiveInverseWarpUidForImage(const uuid& imageUid);
+  void clearActiveInverseWarpUidForImage(const uuid& imageUidArg);
 
   /**
    * @brief Return the active inverse warp for an image.
@@ -384,7 +388,7 @@ public:
    * @param imageUid Image UID.
    * @return Active inverse warp UID, or std::nullopt when none is assigned.
    */
-  std::optional<uuid> imageToActiveInverseWarpUid(const uuid& imageUid) const;
+  std::optional<uuid> imageToActiveInverseWarpUid(const uuid& imageUidArg) const;
 
   /**
    *  Return the reference-space image for the active inverse warp.
@@ -392,9 +396,9 @@ public:
    *  imageUid Moving image UID.
    *  Reference image UID, or the moving image UID when no explicit reference was assigned.
    */
-  std::optional<uuid> imageToActiveInverseWarpReferenceImageUid(const uuid& imageUid) const;
+  std::optional<uuid> imageToActiveInverseWarpReferenceImageUid(const uuid& imageUidArg) const;
 
-  bool setActiveInverseWarpReferenceImageUid(const uuid& imageUid, const std::optional<uuid>& referenceImageUid);
+  bool setActiveInverseWarpReferenceImageUid(const uuid& imageUidArg, const std::optional<uuid>& referenceImageUid);
 
   /**
    * @brief Assign the active forward warp for an image.
@@ -403,10 +407,10 @@ public:
    * @param activeWarpUid Forward warp UID.
    * @return True when both image and warp field exist and the field is usable.
    */
-  bool assignActiveForwardWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid);
+  bool assignActiveForwardWarpUidToImage(const uuid& imageUidArg, const uuid& activeWarpUid);
 
   /** @brief Clear the active forward warp for an image. */
-  void clearActiveForwardWarpUidForImage(const uuid& imageUid);
+  void clearActiveForwardWarpUidForImage(const uuid& imageUidArg);
 
   /**
    * @brief Return the active forward warp for an image.
@@ -414,11 +418,11 @@ public:
    * @param imageUid Image UID.
    * @return Active forward warp UID, or std::nullopt when none is assigned.
    */
-  std::optional<uuid> imageToActiveForwardWarpUid(const uuid& imageUid) const;
+  std::optional<uuid> imageToActiveForwardWarpUid(const uuid& imageUidArg) const;
 
   /// Assign a segmentation to an image.
   /// Makes it the active segmentation if it is the first one.
-  bool assignSegUidToImage(const uuid& imageUid, const uuid& segUid);
+  bool assignSegUidToImage(const uuid& imageUidArg, const uuid& segUidArg);
 
   /**
    * @brief Add an inverse warp to an image.
@@ -429,9 +433,11 @@ public:
    * @param warpUid Inverse warp UID.
    * @return True when the field was assigned.
    */
-  bool assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid);
-  bool
-  assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid, const std::optional<uuid>& referenceImageUid);
+  bool assignInverseWarpUidToImage(const uuid& imageUidArg, const uuid& warpUid);
+  bool assignInverseWarpUidToImage(
+    const uuid& imageUidArg,
+    const uuid& warpUid,
+    const std::optional<uuid>& referenceImageUid);
 
   /**
    * @brief Add a forward warp to an image.
@@ -442,25 +448,25 @@ public:
    * @param warpUid Forward warp UID.
    * @return True when the field was assigned.
    */
-  bool assignForwardWarpUidToImage(const uuid& imageUid, const uuid& warpUid);
+  bool assignForwardWarpUidToImage(const uuid& imageUidArg, const uuid& warpUid);
 
   /// Get all segmentations for an image
-  std::vector<uuid> imageToSegUids(const uuid& imageUid) const;
+  std::vector<uuid> imageToSegUids(const uuid& imageUidArg) const;
 
   /// Get all warp fields for an image
-  std::vector<uuid> imageToDefUids(const uuid& imageUid) const;
+  std::vector<uuid> imageToDefUids(const uuid& imageUidArg) const;
 
   /// Assign a group of landmarks to an image
-  bool assignLandmarkGroupUidToImage(const uuid& imageUid, uuid lmGroupUid);
-  const std::vector<uuid>& imageToLandmarkGroupUids(const uuid& imageUid) const;
+  bool assignLandmarkGroupUidToImage(const uuid& imageUidArg, uuid lmGroupUid);
+  const std::vector<uuid>& imageToLandmarkGroupUids(const uuid& imageUidArg) const;
 
   /// Set/get the active landmark group for an image
-  bool assignActiveLandmarkGroupUidToImage(const uuid& imageUid, const uuid& lmGroupUid);
-  std::optional<uuid> imageToActiveLandmarkGroupUid(const uuid& imageUid) const;
+  bool assignActiveLandmarkGroupUidToImage(const uuid& imageUidArg, const uuid& lmGroupUid);
+  std::optional<uuid> imageToActiveLandmarkGroupUid(const uuid& imageUidArg) const;
 
   /// Set/get the active annotation for an image
-  bool assignActiveAnnotationUidToImage(const uuid& imageUid, const std::optional<uuid>& annotUid);
-  std::optional<uuid> imageToActiveAnnotationUid(const uuid& imageUid) const;
+  bool assignActiveAnnotationUidToImage(const uuid& imageUidArg, const std::optional<uuid>& annotUid);
+  std::optional<uuid> imageToActiveAnnotationUid(const uuid& imageUidArg) const;
 
   /**
    * @brief Get a list of all annotations assigned to a given image. The annotation order
@@ -469,11 +475,11 @@ public:
    * @return List of (ordered) annotation UIDs for the image.
    * The list is empty if the image has no annotations or the image UID is invalid.
    */
-  const std::list<uuid>& annotationsForImage(const uuid& imageUid) const;
+  const std::list<uuid>& annotationsForImage(const uuid& imageUidArg) const;
 
   /// Set/get whether the image is
-  void setImageBeingSegmented(const uuid& imageUid, bool set);
-  bool isImageBeingSegmented(const uuid& imageUid) const;
+  void setImageBeingSegmented(const uuid& imageUidArg, bool set);
+  bool isImageBeingSegmented(const uuid& imageUidArg) const;
 
   uuid_range_t imagesBeingSegmented() const;
 
@@ -484,13 +490,13 @@ public:
   std::optional<uuid> labelTableUid(std::size_t index) const;
   std::optional<uuid> landmarkGroupUid(std::size_t index) const;
 
-  std::optional<std::size_t> imageIndex(const uuid& imageUid) const;
-  std::optional<std::size_t> segIndex(const uuid& segUid) const;
-  std::optional<std::size_t> defIndex(const uuid& defUid) const;
+  std::optional<std::size_t> imageIndex(const uuid& imageUidArg) const;
+  std::optional<std::size_t> segIndex(const uuid& segUidArg) const;
+  std::optional<std::size_t> defIndex(const uuid& defUidArg) const;
   std::optional<std::size_t> imageColorMapIndex(const uuid& mapUid) const;
   std::optional<std::size_t> labelTableIndex(const uuid& tableUid) const;
   std::optional<std::size_t> landmarkGroupIndex(const uuid& lmGroupUid) const;
-  std::optional<std::size_t> annotationIndex(const uuid& imageUid, const uuid& annotUid) const;
+  std::optional<std::size_t> annotationIndex(const uuid& imageUidArg, const uuid& annotUid) const;
 
   /// @todo Put into DataHelper
   Image* refImage();

@@ -39,8 +39,8 @@ public:
   // Non-copyable, movable
   AsciiAtlas(const AsciiAtlas&) = delete;
   AsciiAtlas& operator=(const AsciiAtlas&) = delete;
-  AsciiAtlas(AsciiAtlas&&) noexcept;
-  AsciiAtlas& operator=(AsciiAtlas&&) noexcept;
+  AsciiAtlas(AsciiAtlas&& o) noexcept;
+  AsciiAtlas& operator=(AsciiAtlas&& o) noexcept;
 
   /**
    * @brief Build (or rebuild) the atlas from a TTF font stored in memory.

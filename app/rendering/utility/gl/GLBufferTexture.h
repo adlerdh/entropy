@@ -30,8 +30,8 @@ public:
   GLBufferTexture(const GLBufferTexture&) = delete;
   GLBufferTexture& operator=(const GLBufferTexture&) = delete;
 
-  GLBufferTexture(GLBufferTexture&&) noexcept;
-  GLBufferTexture& operator=(GLBufferTexture&&) noexcept;
+  GLBufferTexture(GLBufferTexture&& other) noexcept;
+  GLBufferTexture& operator=(GLBufferTexture&& other) noexcept;
 
   ~GLBufferTexture();
 

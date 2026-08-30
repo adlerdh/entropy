@@ -24,8 +24,8 @@ public:
   GLFrameBufferObject(const GLFrameBufferObject&) = delete;
   GLFrameBufferObject& operator=(const GLFrameBufferObject&) = delete;
 
-  GLFrameBufferObject(GLFrameBufferObject&&) noexcept;
-  GLFrameBufferObject& operator=(GLFrameBufferObject&&) noexcept;
+  GLFrameBufferObject(GLFrameBufferObject&& other) noexcept;
+  GLFrameBufferObject& operator=(GLFrameBufferObject&& other) noexcept;
 
   /// Delete the framebuffer object if still owned.
   ~GLFrameBufferObject();
@@ -43,14 +43,14 @@ public:
   void attach2DTexture(
     const fbo::TargetType& target,
     const fbo::AttachmentType& attachment,
-    const GLTexture& tex,
+    const GLTexture& texture,
     std::optional<int> colorAttachmentIndex = std::nullopt);
 
   /// Attach one cube-map face to a framebuffer attachment point.
   void attachCubeMapTexture(
     const fbo::TargetType& target,
     const fbo::AttachmentType& attachment,
-    const GLTexture& tex,
+    const GLTexture& texture,
     const tex::CubeMapFace& cubeMapFace,
     GLint level,
     std::optional<int> colorAttachmentIndex = std::nullopt);

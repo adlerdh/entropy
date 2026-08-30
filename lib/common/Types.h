@@ -41,28 +41,28 @@ enum class ComponentType
 };
 
 /// Return true when the component type is one of the floating-point types.
-bool isComponentFloatingPoint(const ComponentType&);
+bool isComponentFloatingPoint(const ComponentType& compType);
 
 /// Return true when the component type is an unsigned integer type.
-bool isComponentUnsignedInt(const ComponentType&);
+bool isComponentUnsignedInt(const ComponentType& compType);
 
 /// Return true when the component type can be used to store segmentation labels.
-bool isValidSegmentationComponentType(const ComponentType&);
+bool isValidSegmentationComponentType(const ComponentType& compType);
 
 /// Return a user-facing description of the component type.
-std::string componentTypeString(const ComponentType&);
+std::string componentTypeString(const ComponentType& compType);
 
 /// Return true when the component type is not floating point.
-bool isIntegerType(const ComponentType&);
+bool isIntegerType(const ComponentType& type);
 
 /// Return true when the component type is a signed integer type.
-bool isSignedIntegerType(const ComponentType&);
+bool isSignedIntegerType(const ComponentType& type);
 
 /// Return true when the component type is an unsigned integer type.
-bool isUnsignedIntegerType(const ComponentType&);
+bool isUnsignedIntegerType(const ComponentType& type);
 
 /// Return true when the component type is a floating-point type.
-bool isFloatingType(const ComponentType&);
+bool isFloatingType(const ComponentType& type);
 
 /**
  * @brief Logical image pixel layout.

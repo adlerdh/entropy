@@ -78,7 +78,7 @@ void drawViewOutline(NVGcontext* nvg, const FrameBounds& miewportViewBounds, con
 void drawImageViewIntersections(
   NVGcontext* nvg,
   const FrameBounds& miewportViewBounds,
-  const glm::vec3& worldCrosshairs,
+  const glm::vec3& worldCrosshairsOrigin,
   AppData& appData,
   const View& view,
   const ImageSegPairs& imageSegPairs,
@@ -98,7 +98,7 @@ void drawAnatomicalLabels(
   NVGcontext* nvg,
   const FrameBounds& miewportViewBounds,
   bool isViewOblique,
-  const glm::vec4& color,
+  const glm::vec4& fontColor,
   const AnatomicalLabelType& anatLabelType,
   float labelScale,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);

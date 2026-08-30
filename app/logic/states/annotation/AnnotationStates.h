@@ -24,8 +24,8 @@ class ViewBeingSelectedState : public AnnotationStateMachine
 {
   void entry() override;
 
-  void react(const MousePressEvent&) override;
-  void react(const MouseMoveEvent&) override;
+  void react(const MousePressEvent& e) override;
+  void react(const MouseMoveEvent& e) override;
   void react(const MouseReleaseEvent&) override;
 
   void react(const TurnOffAnnotationModeEvent&) override;
@@ -42,8 +42,8 @@ class StandbyState : public AnnotationStateMachine
   void entry() override;
   void exit() override;
 
-  void react(const MousePressEvent&) override;
-  void react(const MouseMoveEvent&) override;
+  void react(const MousePressEvent& e) override;
+  void react(const MouseMoveEvent& e) override;
   void react(const MouseReleaseEvent&) override;
 
   void react(const TurnOffAnnotationModeEvent&) override;
@@ -64,8 +64,8 @@ class CreatingNewAnnotationState : public AnnotationStateMachine
   void entry() override;
   void exit() override;
 
-  void react(const MousePressEvent&) override;
-  void react(const MouseMoveEvent&) override;
+  void react(const MousePressEvent& e) override;
+  void react(const MouseMoveEvent& e) override;
   void react(const MouseReleaseEvent&) override;
 
   void react(const TurnOffAnnotationModeEvent&) override;
@@ -81,8 +81,8 @@ class AddingVertexToNewAnnotationState : public AnnotationStateMachine
   void entry() override;
   void exit() override;
 
-  void react(const MousePressEvent&) override;
-  void react(const MouseMoveEvent&) override;
+  void react(const MousePressEvent& e) override;
+  void react(const MouseMoveEvent& e) override;
   void react(const MouseReleaseEvent&) override;
 
   void react(const TurnOffAnnotationModeEvent&) override;
@@ -100,9 +100,9 @@ class VertexSelectedState : public AnnotationStateMachine
   void entry() override;
   void exit() override;
 
-  void react(const MousePressEvent&) override;
+  void react(const MousePressEvent& e) override;
   void react(const MouseReleaseEvent&) override;
-  void react(const MouseMoveEvent&) override;
+  void react(const MouseMoveEvent& e) override;
 
   void react(const TurnOffAnnotationModeEvent&) override;
   void react(const InsertVertexEvent&) override;

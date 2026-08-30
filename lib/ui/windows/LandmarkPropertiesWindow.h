@@ -9,4 +9,6 @@ class AppData;
  * @param appData Application data containing landmark groups and window visibility.
  * @param recenterAllViews Callback used by landmark controls that reposition views.
  */
-void renderLandmarkPropertiesWindow(AppData& appData, const AllViewsRecenterType& recenterAllViews);
+void renderLandmarkPropertiesWindow(
+  AppData& appData,
+  const AllViewsRecenterType& recenterAllViewsOnCurrentCrosshairsPosition);
