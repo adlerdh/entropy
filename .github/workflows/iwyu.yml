@@ -1,6 +1,12 @@
 name: Include What You Use
 
 on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "6 11 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -23,7 +29,7 @@ env:
 jobs:
   iwyu:
     name: IWYU Analysis (Ubuntu x86_64)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: true
 
     steps:
@@ -32,9 +38,6 @@ jobs:
 
       - name: Install build and IWYU dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y software-properties-common
-          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             ccache \
@@ -65,9 +68,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .ccache
-          key: ubuntu2204-gcc13-iwyu-ccache-v1-${{ github.run_id }}
+          key: ubuntu2404-gcc13-iwyu-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            ubuntu2204-gcc13-iwyu-ccache-v1-
+            ubuntu2404-gcc13-iwyu-ccache-v1-
 
       - name: Configure Debug ccache
         run: |
@@ -96,9 +99,9 @@ jobs:
             build-iwyu/external/spdlog-*
             build-iwyu/external/stduuid-*
             build-iwyu/external/tinyfsm-*
-          key: ubuntu2204-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            ubuntu2204-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-
+            ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Debug dependencies
         run: >-

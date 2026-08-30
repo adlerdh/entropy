@@ -380,9 +380,10 @@ cmake --build build-iwyu --parallel
 
 The default options favor direct quoted includes, avoid forward-declaration recommendations, and report suggestions
 without making the compiler command fail. External and generated targets are excluded in
-[CMakeLists.txt](CMakeLists.txt). The manually dispatched Ubuntu 22.04
-[Include What You Use](.github/workflows/iwyu.yml) workflow is advisory and uploads its full output as the `iwyu-log`
-artifact.
+[CMakeLists.txt](CMakeLists.txt). The Ubuntu 24.04
+[Include What You Use](.github/workflows/iwyu.yml) workflow runs for pull requests and pushes to `main`, weekly, and
+when manually dispatched. The job remains advisory because recommendations vary between IWYU releases. It uploads its
+full output as the `iwyu-log` artifact.
 
 ## Packaging
 
@@ -521,10 +522,10 @@ generator selection also work normally. Packaging options are documented in [PAC
 CI workflows are under [.github/workflows](.github/workflows). They build and test Entropy on macOS, Windows, Ubuntu,
 and Fedora.
 
-Pull requests run formatting checks, Debug builds, and unit tests on the primary platforms, plus static analysis and
-text-hygiene checks. Pushes to `main` run the primary platform builds and tests. Scheduled and manually dispatched
-workflows provide broader compatibility, coverage, and package validation. Official tag-driven builds are handled by
-the release workflow described in [PACKAGING.md](PACKAGING.md).
+Pull requests run formatting checks, Debug builds, and unit tests on the primary platforms, plus static analysis,
+include hygiene, and text-hygiene checks. Pushes to `main` repeat these checks and the primary platform builds and
+tests. Scheduled and manually dispatched workflows provide broader compatibility, coverage, and package validation.
+Official tag-driven builds are handled by the release workflow described in [PACKAGING.md](PACKAGING.md).
 
 The main CI build matrix is:
 
@@ -536,7 +537,7 @@ The main CI build matrix is:
 | Windows x86_64 | `windows-2022` | Visual Studio 2022 / MSVC v143 | Debug build and tests, release packages, optional coverage |
 | Windows x86_64 compatibility | `windows-2025` | Visual Studio 2026 / MSVC | Scheduled/manual Debug build and tests on a newer Windows runner |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | `gcc-13` / `g++-13` | Debug build and tests, release packages, and primary coverage |
-| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | `gcc-13` / `g++-13` | Debug build and tests with clang-tidy, plus cppcheck analysis |
+| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | `gcc-13` / `g++-13` | Debug build and tests with clang-tidy, cppcheck analysis, and IWYU analysis |
 | Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
 
 The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA. Ubuntu 24.04 runs a complete
