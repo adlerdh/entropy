@@ -1048,11 +1048,6 @@ bool EntropyApp::loadSerializedImage(
     }
   }
 
-  // Create distance maps for all components:
-  // To conserve GPU memory, the map is downsampled by 0.25 relative to the original image size
-  constexpr float distanceMapDownsample = 0.25f;
-  createDistanceMaps(*image, *imageUid, distanceMapDownsample, m_data);
-
   for (const auto& serializedSurface : serializedImage.m_isosurfaces) {
     if (serializedSurface.m_component >= image->header().numComponentsPerPixel()) {
       spdlog::warn(

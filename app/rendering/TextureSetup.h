@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -92,12 +93,11 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
 std::vector<uuids::uuid> createSegTextures(AppData& appData, const uuid_range_t& segUids);
 
 /**
- * @brief Create distance-map textures for all available image distance maps.
- * @param appData Application data containing image derived data and render data.
- * @return Distance-map textures keyed by image UID and component index.
+ * @brief Create the distance-map texture for one image component.
+ * @return Created texture, or nullopt when no valid CPU distance map is available.
  */
-std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > createDistanceMapTextures(
-  const AppData& appData);
+std::optional<GLTexture>
+createDistanceMapTexture(const AppData& appData, const uuids::uuid& imageUid, uint32_t component);
 
 /**
  * @brief Create OpenGL textures for all image color maps.

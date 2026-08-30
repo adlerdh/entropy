@@ -2,6 +2,7 @@
 
 #include "logic/app/Data.h"
 #include "rendering/ImageDrawing.h"
+#include "rendering/helpers/TextureSetupHelpers.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "windowing/View.h"
 
@@ -10,6 +11,7 @@
 #include <functional>
 #include <list>
 #include <optional>
+#include <span>
 
 namespace
 {
@@ -87,6 +89,19 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   const bool renderWarped = deformationUid.has_value();
 
   updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first, onlyIsosurfaceUid);
+
+  const auto& isosurfaceData = m_appData.renderData().m_isosurfaceData;
+  const auto foregroundThresholds = settings.foregroundThresholds(activeComp);
+  const auto activeIsovalues = std::span{isosurfaceData.values}.first(
+    std::min<std::size_t>(static_cast<std::size_t>(std::max(isosurfaceData.numIsos, 0)), isosurfaceData.values.size()));
+  if (
+    !renderWarped && rendering::texture_setup::distanceMapSupportsIsovalues(
+                       foregroundThresholds.first,
+                       foregroundThresholds.second,
+                       activeIsovalues))
+  {
+    updateDistanceMapForRaycasting(*imgSegPair.first, activeComp);
+  }
 
   const std::optional<uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(*imgSegPair.first) : std::nullopt;

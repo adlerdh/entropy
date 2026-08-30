@@ -2,9 +2,11 @@
 
 #include "rendering/TextureLayout.h"
 
+#include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -35,6 +37,15 @@ struct TextureUploadRegion
 {
   glm::uvec3 offset{0u}; //!< Texture-space update origin; z is zero for GL_TEXTURE_2D
   glm::uvec3 size{0u};   //!< Texture-space update extent; z is one for GL_TEXTURE_2D
+};
+
+/** @brief Image geometry needed to compare normalized texture-coordinate domains. */
+struct TextureGeometry
+{
+  glm::uvec3 dimensions{0u};
+  glm::vec3 spacing{0.0f};
+  glm::vec3 origin{0.0f};
+  glm::mat3 directions{1.0f};
 };
 
 /**
@@ -72,6 +83,22 @@ std::optional<TextureUploadRegion> textureUploadRegion(
   const glm::uvec3& imageSize,
   const glm::uvec3& imageOffset,
   const glm::uvec3& imageRegionSize);
+
+/**
+ * @brief Explain why a derived texture does not cover the same physical domain as its source.
+ *
+ * Dimensions may differ. This permits intentionally downsampled derived images as long as their
+ * voxel-edge bounds and directions remain aligned with the source image.
+ */
+std::optional<std::string> textureDomainMismatchReason(const TextureGeometry& source, const TextureGeometry& derived);
+
+/**
+ * @brief Return whether foreground-mask distances conservatively accelerate all active isovalues.
+ *
+ * Outside the foreground interval, a distance to that interval does not bound the distance to an
+ * unrelated isosurface and must not be used for empty-space skipping.
+ */
+bool distanceMapSupportsIsovalues(double foregroundLow, double foregroundHigh, std::span<const float> isovalues);
 
 /**
  * @brief Return a user-facing explanation for why a texture exceeds the available OpenGL limits.

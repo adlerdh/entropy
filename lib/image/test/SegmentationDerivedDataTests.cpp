@@ -186,6 +186,11 @@ TEST_CASE("ImageDerivedData creates derived images and skips unsupported interle
   CHECK(distanceMaps.front().image.header().pixelDimensions() == image.header().pixelDimensions());
   CHECK(distanceMaps.front().image.header().memoryComponentType() == ComponentType::UInt8);
 
+  const auto singleDistanceMap = createDistanceMapImage(image, 0, 1.0f);
+  REQUIRE(singleDistanceMap);
+  CHECK(singleDistanceMap->component == 0);
+  CHECK_FALSE(createDistanceMapImage(image, 1, 1.0f));
+
   const auto skipped = createDistanceMapImages(makeInterleavedImage(), 1.0f);
   CHECK(skipped.empty());
 }

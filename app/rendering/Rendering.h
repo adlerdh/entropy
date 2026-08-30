@@ -2,6 +2,7 @@
 
 #include "common/Types.h"
 #include "common/UuidRange.h"
+#include "image/ImageDerivedData.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/ascii/AsciiRenderer.h"
@@ -331,6 +332,19 @@ private:
     std::future<std::optional<rendering::mesh::SegmentationLabelInventory>> future;
   };
 
+  struct DistanceMapGenerationRequest
+  {
+    uint64_t pixelDataRevision = 0;
+    std::pair<double, double> foregroundThresholds{0.0, 0.0};
+    bool operator==(const DistanceMapGenerationRequest&) const = default;
+  };
+
+  struct PendingDistanceMapGeneration
+  {
+    DistanceMapGenerationRequest request;
+    std::future<std::optional<DistanceMapImageResult>> future;
+  };
+
 #include "rendering/PrivateMethods.h"
 
   /// Shared application state. Not owned; Rendering reads and updates render-facing state through this reference.
@@ -409,6 +423,11 @@ private:
   std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
   std::unordered_map<uuids::uuid, PendingSegmentationLabelInventory> m_pendingSegmentationLabelInventories;
 
+  std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, PendingDistanceMapGeneration>>
+    m_pendingDistanceMapGenerations;
+  std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, DistanceMapGenerationRequest>>
+    m_failedDistanceMapGenerations;
+
   MeshImagePlaneHandleMap m_meshImagePlaneHandles; //!< Stable handles for dynamic 3D image-plane meshes
 
   /// Most recently edited surface retained on the raycast path until its replacement mesh is ready.
@@ -423,4 +442,7 @@ private:
     AppData& appData,
     const uuids::uuid& imageUid,
     const std::optional<uuids::uuid>& onlyIsosurfaceUid = std::nullopt);
+
+  /// Start or complete lazy distance-map generation for a raycasted image component.
+  void updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint32_t component);
 };

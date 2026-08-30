@@ -2,6 +2,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
+#include <limits>
+#include <span>
+
 namespace texture_setup = rendering::texture_setup;
 using TextureDimension = rendering::TextureDimension;
 
@@ -101,6 +105,63 @@ TEST_CASE("texture setup helpers map texture update regions", "[rendering][textu
   REQUIRE(yz);
   CHECK(yz->offset == glm::uvec3{10, 20, 0});
   CHECK(yz->size == glm::uvec3{30, 40, 1});
+}
+
+TEST_CASE(
+  "texture setup helpers accept downsampled textures with the same physical domain",
+  "[rendering][texture-setup]")
+{
+  const texture_setup::TextureGeometry source{
+    .dimensions = {80, 40, 20},
+    .spacing = {1.0f, 2.0f, 3.0f},
+    .origin = {10.0f, 20.0f, 30.0f},
+    .directions = glm::mat3{1.0f}};
+  const texture_setup::TextureGeometry downsampled{
+    .dimensions = {20, 10, 5},
+    .spacing = {4.0f, 8.0f, 12.0f},
+    .origin = {11.5f, 23.0f, 34.5f},
+    .directions = glm::mat3{1.0f}};
+
+  CHECK_FALSE(texture_setup::textureDomainMismatchReason(source, downsampled));
+}
+
+TEST_CASE("texture setup helpers reject derived textures with incompatible geometry", "[rendering][texture-setup]")
+{
+  const texture_setup::TextureGeometry source{
+    .dimensions = {80, 40, 20},
+    .spacing = {1.0f, 2.0f, 3.0f},
+    .origin = {10.0f, 20.0f, 30.0f},
+    .directions = glm::mat3{1.0f}};
+  auto derived = source;
+
+  SECTION("physical origin")
+  {
+    derived.origin.x += 1.0f;
+    REQUIRE(texture_setup::textureDomainMismatchReason(source, derived));
+  }
+  SECTION("physical extent")
+  {
+    derived.spacing.z *= 2.0f;
+    REQUIRE(texture_setup::textureDomainMismatchReason(source, derived));
+  }
+  SECTION("directions")
+  {
+    derived.directions[0] = glm::vec3{0.0f, 1.0f, 0.0f};
+    REQUIRE(texture_setup::textureDomainMismatchReason(source, derived));
+  }
+}
+
+TEST_CASE("distance maps accelerate only isovalues inside their foreground interval", "[rendering][texture-setup]")
+{
+  const std::array inside{2.0f, 5.0f, 8.0f};
+  const std::array outside{2.0f, 11.0f};
+  const std::array nonFinite{std::numeric_limits<float>::quiet_NaN()};
+
+  CHECK(texture_setup::distanceMapSupportsIsovalues(2.0, 8.0, inside));
+  CHECK_FALSE(texture_setup::distanceMapSupportsIsovalues(2.0, 8.0, outside));
+  CHECK_FALSE(texture_setup::distanceMapSupportsIsovalues(8.0, 2.0, inside));
+  CHECK_FALSE(texture_setup::distanceMapSupportsIsovalues(2.0, 8.0, nonFinite));
+  CHECK_FALSE(texture_setup::distanceMapSupportsIsovalues(2.0, 8.0, std::span<const float>{}));
 }
 
 TEST_CASE("texture setup helpers reject invalid update regions", "[rendering][texture-setup]")

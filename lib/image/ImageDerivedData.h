@@ -148,6 +148,16 @@ struct DistanceMapImageResult
 };
 
 /**
+ * @brief Create a Euclidean distance map for one source image component.
+ * @param image Source image.
+ * @param component Component to process.
+ * @param downsamplingFactor Factor applied before distance-map computation.
+ * @return Derived distance map, or nullopt when the component cannot be processed.
+ */
+std::optional<DistanceMapImageResult>
+createDistanceMapImage(const Image& image, uint32_t component, float downsamplingFactor);
+
+/**
  * @brief Create one noise-estimate image for each supported component of an image.
  * @param image Source image.
  * @param radius Neighborhood radius, in voxels, used by the noise-estimation filter.

@@ -88,6 +88,14 @@ mesh::MeshData makeTriangleMesh()
     .coordinateSpace = mesh::MeshCoordinateSpace::ImageSubject};
 }
 
+mesh::MeshGeometryKey makeTestGeometryKey(std::string extractionAlgorithm)
+{
+  mesh::MeshGeometryKey key;
+  key.sourceUid = generateRandomUuid();
+  key.extractionAlgorithm = std::move(extractionAlgorithm);
+  return key;
+}
+
 bool isClosedTriangleMesh(const mesh::MeshData& meshData)
 {
   std::unordered_map<uint64_t, std::size_t> edgeUseCounts;
@@ -1456,7 +1464,7 @@ TEST_CASE("mesh cache failed entries preserve diagnostics without ready mesh dat
 
 TEST_CASE("mesh cache bounds automatic retries and preserves the attempt count", "[rendering][mesh]")
 {
-  mesh::MeshGeometryKey key{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "retry-test"};
+  mesh::MeshGeometryKey key = makeTestGeometryKey("retry-test");
   mesh::MeshCache cache;
 
   cache.markPending(key);
@@ -1586,10 +1594,10 @@ TEST_CASE("mesh extraction queue respects the active job limit", "[rendering][me
 
 TEST_CASE("mesh extraction scheduler serializes jobs and cancels obsolete pending work", "[rendering][mesh]")
 {
-  mesh::MeshGeometryKey firstKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "first"};
-  mesh::MeshGeometryKey cancelledKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "cancelled"};
-  mesh::MeshGeometryKey retainedKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "retained"};
-  mesh::MeshGeometryKey rejectedKey{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "rejected"};
+  mesh::MeshGeometryKey firstKey = makeTestGeometryKey("first");
+  mesh::MeshGeometryKey cancelledKey = makeTestGeometryKey("cancelled");
+  mesh::MeshGeometryKey retainedKey = makeTestGeometryKey("retained");
+  mesh::MeshGeometryKey rejectedKey = makeTestGeometryKey("rejected");
 
   std::mutex mutex;
   std::condition_variable condition;
@@ -1610,7 +1618,8 @@ TEST_CASE("mesh extraction scheduler serializes jobs and cancels obsolete pendin
       --concurrentJobs;
       return mesh::MeshExtractionJobResult{
         .key = key,
-        .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}}};
+        .result = mesh::MeshExtractionResult{.key = key, .mesh = makeTriangleMesh(), .diagnostics = {}},
+        .diagnostics = {}};
     };
   };
 
@@ -1640,7 +1649,7 @@ TEST_CASE("mesh extraction scheduler serializes jobs and cancels obsolete pendin
 
 TEST_CASE("mesh extraction cache distinguishes an empty contour from failure", "[rendering][mesh]")
 {
-  mesh::MeshGeometryKey key{.sourceUid = generateRandomUuid(), .extractionAlgorithm = "empty"};
+  mesh::MeshGeometryKey key = makeTestGeometryKey("empty");
   mesh::MeshCache cache;
   cache.markPending(key);
   const mesh::MeshExtractionRunResult result = mesh::applyExtractionJobResult(

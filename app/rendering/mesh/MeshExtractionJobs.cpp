@@ -52,7 +52,10 @@ MeshExtractionJob makeIsosurfaceExtractionJob(
         .empty = true,
         .diagnostics = {"The requested isovalue produced no surface triangles"}};
     }
-    return MeshExtractionJobResult{.key = key, .result = MeshExtractionResult{.key = key, .mesh = std::move(*mesh)}};
+    return MeshExtractionJobResult{
+      .key = key,
+      .result = MeshExtractionResult{.key = key, .mesh = std::move(*mesh), .diagnostics = {}},
+      .diagnostics = {}};
   };
 }
 
@@ -96,7 +99,10 @@ MeshExtractionJob makeSegmentationExtractionJob(
         .empty = true,
         .diagnostics = {"The segmentation label produced no surface triangles"}};
     }
-    return MeshExtractionJobResult{.key = key, .result = MeshExtractionResult{.key = key, .mesh = std::move(*mesh)}};
+    return MeshExtractionJobResult{
+      .key = key,
+      .result = MeshExtractionResult{.key = key, .mesh = std::move(*mesh), .diagnostics = {}},
+      .diagnostics = {}};
   };
 }
 

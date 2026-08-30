@@ -1,9 +1,44 @@
 #include "rendering/helpers/TextureSetupHelpers.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 namespace rendering::texture_setup
 {
+
+namespace
+{
+
+constexpr float k_geometryTolerance = 1.0e-4f;
+
+bool nearlyEqual(float a, float b)
+{
+  return std::abs(a - b) <= k_geometryTolerance * std::max({1.0f, std::abs(a), std::abs(b)});
+}
+
+bool nearlyEqual(const glm::vec3& a, const glm::vec3& b)
+{
+  return nearlyEqual(a.x, b.x) && nearlyEqual(a.y, b.y) && nearlyEqual(a.z, b.z);
+}
+
+bool validGeometry(const TextureGeometry& geometry)
+{
+  return geometry.dimensions.x > 0u && geometry.dimensions.y > 0u && geometry.dimensions.z > 0u &&
+         geometry.spacing.x > 0.0f && geometry.spacing.y > 0.0f && geometry.spacing.z > 0.0f;
+}
+
+glm::vec3 lowerVoxelEdge(const TextureGeometry& geometry)
+{
+  return geometry.origin - geometry.directions * (0.5f * geometry.spacing);
+}
+
+glm::vec3 axisExtent(const TextureGeometry& geometry, int axis)
+{
+  return geometry.directions[axis] * geometry.spacing[axis] * static_cast<float>(geometry.dimensions[axis]);
+}
+
+} // namespace
 
 std::vector<int> nonSingletonAxes(const glm::uvec3& size)
 {
@@ -103,6 +138,48 @@ std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3&
   uploadLayout.layout.axes = glm::ivec2{axes[0], axes[1]};
   uploadLayout.uploadSize = glm::uvec3{size2D.x, size2D.y, 1u};
   return uploadLayout;
+}
+
+std::optional<std::string> textureDomainMismatchReason(const TextureGeometry& source, const TextureGeometry& derived)
+{
+  if (!validGeometry(source)) {
+    return "the source image has invalid dimensions or spacing";
+  }
+  if (!validGeometry(derived)) {
+    return "the derived image has invalid dimensions or spacing";
+  }
+
+  for (int column = 0; column < 3; ++column) {
+    if (!nearlyEqual(source.directions[column], derived.directions[column])) {
+      return "its directions differ from the source image";
+    }
+  }
+
+  if (!nearlyEqual(lowerVoxelEdge(source), lowerVoxelEdge(derived))) {
+    return "its physical origin does not align with the source image voxel bounds";
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (!nearlyEqual(axisExtent(source, axis), axisExtent(derived, axis))) {
+      return "its physical extent differs from the source image";
+    }
+  }
+
+  return std::nullopt;
+}
+
+bool distanceMapSupportsIsovalues(double foregroundLow, double foregroundHigh, std::span<const float> isovalues)
+{
+  if (
+    !std::isfinite(foregroundLow) || !std::isfinite(foregroundHigh) || foregroundLow > foregroundHigh ||
+    isovalues.empty())
+  {
+    return false;
+  }
+  return std::all_of(isovalues.begin(), isovalues.end(), [foregroundLow, foregroundHigh](float value) {
+    return std::isfinite(value) && foregroundLow <= static_cast<double>(value) &&
+           static_cast<double>(value) <= foregroundHigh;
+  });
 }
 
 std::string textureLimitReason(const glm::uvec3& size, const TextureLimits& limits)

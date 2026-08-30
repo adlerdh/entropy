@@ -18,6 +18,7 @@ target_sources(entropy PRIVATE
   BrushPreview.cpp
   ColorImagePass.cpp
   DeformationTextureBinding.cpp
+  DistanceMapLifecycle.cpp
   GrayImagePass.cpp
   ImagePasses.cpp
   ImageViewOverlays.cpp

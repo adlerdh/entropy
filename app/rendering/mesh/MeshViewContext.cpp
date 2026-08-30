@@ -25,7 +25,12 @@ MeshDrawContext meshDrawContextForView(const MeshGpuStore& gpuStore, const View&
     .lightDirectionWorld = -cameraFrontWorld,
     .lighting = lighting,
     .fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f},
+    .viewportOrigin = glm::ivec2{0},
     .shadowDepthPass = false,
+    .advancedLighting = {},
+    .shadowLightClip_T_world = glm::mat4{1.0f},
+    .shadowDepthTexture = nullptr,
+    .ambientOcclusionTexture = nullptr,
     .meshLookup = [&gpuStore](const MeshHandle& handle) -> const MeshGpuData* {
       return gpuStore.lookup(handle);
     }};

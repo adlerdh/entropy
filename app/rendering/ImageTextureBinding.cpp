@@ -1,6 +1,7 @@
 #include "rendering/Rendering.h"
 
 #include "logic/app/Data.h"
+#include "rendering/helpers/TextureSetupHelpers.h"
 #include "rendering/utility/gl/GLTexture.h"
 
 #include <spdlog/spdlog.h>
@@ -9,6 +10,7 @@
 #include <functional>
 #include <list>
 #include <optional>
+#include <span>
 
 namespace
 {
@@ -90,21 +92,18 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
   }
 
   const auto distTextureIt = R.m_distanceMapTextures.find(textureImageUid);
-  const bool useDistMap = S.useDistanceMapForRaycasting() && std::end(R.m_distanceMapTextures) != distTextureIt;
+  const auto foregroundThresholds = S.foregroundThresholds(S.activeComponent());
+  const auto activeIsovalues = std::span{R.m_isosurfaceData.values}.first(std::min<std::size_t>(
+    static_cast<std::size_t>(std::max(R.m_isosurfaceData.numIsos, 0)),
+    R.m_isosurfaceData.values.size()));
+  const bool useDistMap = S.useDistanceMapForRaycasting() && std::end(R.m_distanceMapTextures) != distTextureIt &&
+                          rendering::texture_setup::distanceMapSupportsIsovalues(
+                            foregroundThresholds.first,
+                            foregroundThresholds.second,
+                            activeIsovalues);
   bool foundMap = false;
 
   if (useDistMap) {
-    const auto& distMaps = m_appData.distanceMaps(textureImageUid, S.activeComponent());
-
-    if (distMaps.empty()) {
-      spdlog::warn("No distance map for component {} of image {}", S.activeComponent(), *imgUid);
-
-      // Prevent repeated attempts and warnings for this image when no distance map is available.
-      if (Image* imageNonConst = (imgUid ? m_appData.image(*imgUid) : nullptr)) {
-        imageNonConst->settings().setUseDistanceMapForRaycasting(false);
-      }
-    }
-
     auto it2 = distTextureIt->second.find(S.activeComponent());
     if (std::end(distTextureIt->second) != it2) {
       foundMap = true;

@@ -709,8 +709,8 @@ bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid&
   return true;
 }
 
-std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createDistanceMapTextures(
-  const AppData& appData)
+std::optional<GLTexture>
+createDistanceMapTexture(const AppData& appData, const uuids::uuid& imageUid, uint32_t component)
 {
   static constexpr GLint sk_mipmapLevel = 0; // Load distance map data into first mipmap level
   static constexpr GLint sk_alignment = 1;   // Pixel pack/unpack alignment is 1 byte
@@ -735,105 +735,107 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createD
   // Use this for Red float format:
   // GLTexture::getBufferPixelNormalizedRedFormat( sk_compType );
 
-  // Map from image UID to vector of textures for the distance maps of the image components.
-  std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> mapTextures;
-
-  if (0 == appData.numImages()) {
-    spdlog::warn("No images are loaded for which to create distance map textures");
-    return mapTextures;
-  }
-
-  spdlog::debug("Begin creating 3D distance map textures for image components");
   const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
 
-  GLTexture::PixelStoreSettings pixelPackSettings;
-  pixelPackSettings.m_alignment = sk_alignment;
-  GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
-
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    spdlog::debug("Begin creating distance map texture(s) for components of image {}", imageUid);
-
-    // const auto* image = appData.image(imageUid);
-    // if (!image) {
-    //   spdlog::warn("Image {} is invalid", imageUid);
-    //   continue;
-    // }
-
-    const auto result = appData.getImage(imageUid);
-    if (!result) {
-      spdlog::warn("{}", result.error());
-      continue;
-    }
-
-    const Image& image = result->get();
-    const uint32_t numComp = image.header().numComponentsPerPixel();
-
-    if (!imageUsesVolumeTexture(appData, imageUid)) {
-      spdlog::debug(
-        "Skipping 3D distance map texture creation for image {} because it has no 3D image texture",
-        imageUid);
-      continue;
-    }
-
-    // Map of component index to texture
-    std::unordered_map<uint32_t, GLTexture> componentTextures;
-
-    for (uint32_t comp = 0; comp < numComp; ++comp) {
-      const std::map<double, Image>& maps = appData.distanceMaps(imageUid, comp);
-      if (maps.empty()) {
-        spdlog::warn("No distance map for component {} of image {}", comp, imageUid);
-        continue;
-      }
-
-      // Get the first map:
-      const Image& map = maps.begin()->second;
-      const auto uploadLayout =
-        texture_setup::textureUploadLayoutForImage(map.header().pixelDimensions(), textureLimits);
-      const void* mapBuffer = map.bufferAsVoid(0);
-      if (
-        !uploadLayout || RenderData::TextureDimension::Texture3D != uploadLayout->layout.dimension || !mapBuffer ||
-        ComponentType::UInt8 != map.header().memoryComponentType() ||
-        map.header().pixelDimensions() != image.header().pixelDimensions())
-      {
-        spdlog::warn("Skipping invalid or non-volume distance map for component {} of image {}", comp, imageUid);
-        continue;
-      }
-
-      try {
-        GLTexture texture(
-          tex::Target::Texture3D,
-          GLTexture::MultisampleSettings(),
-          pixelPackSettings,
-          pixelUnpackSettings);
-        texture.generate();
-        texture.setMinificationFilter(sk_minFilter);
-        texture.setMagnificationFilter(sk_maxFilter);
-        texture.setWrapMode(sk_wrapModeClampToEdge);
-        texture.setAutoGenerateMipmaps(false);
-        texture.setSize(uploadLayout->uploadSize);
-        texture.setData(
-          sk_mipmapLevel,
-          k_sizedInternalNormalizedFormat,
-          k_bufferPixelNormalizedFormat,
-          GLTexture::getBufferPixelDataType(sk_compType),
-          mapBuffer);
-        componentTextures.insert_or_assign(comp, std::move(texture));
-      }
-      catch (const std::exception& e) {
-        spdlog::warn(
-          "Could not create distance map texture for component {} of image {}: {}",
-          comp,
-          imageUid,
-          e.what());
-      }
-    }
-
-    spdlog::debug("Done creating {} distance map textures for image components", componentTextures.size());
-    mapTextures.emplace(imageUid, std::move(componentTextures));
+  const auto result = appData.getImage(imageUid);
+  if (!result) {
+    spdlog::warn("{}", result.error());
+    return std::nullopt;
   }
 
-  spdlog::debug("Done creating textures for {} distance map(s)", mapTextures.size());
-  return mapTextures;
+  const Image& image = result->get();
+  if (component >= image.header().numComponentsPerPixel()) {
+    spdlog::warn("Cannot create distance map texture for invalid component {} of image {}", component, imageUid);
+    return std::nullopt;
+  }
+  if (!imageUsesVolumeTexture(appData, imageUid)) {
+    spdlog::debug(
+      "Skipping 3D distance map texture creation for image {} because it has no 3D image texture",
+      imageUid);
+    return std::nullopt;
+  }
+
+  const std::map<double, Image>& maps = appData.distanceMaps(imageUid, component);
+  if (maps.empty()) {
+    spdlog::debug("No distance map for component {} of image {}", component, imageUid);
+    return std::nullopt;
+  }
+
+  const Image& map = maps.begin()->second;
+  const auto uploadLayout = texture_setup::textureUploadLayoutForImage(map.header().pixelDimensions(), textureLimits);
+  const void* mapBuffer = map.bufferAsVoid(0);
+  if (!uploadLayout) {
+    const glm::uvec3 dimensions = map.header().pixelDimensions();
+    spdlog::warn(
+      "Skipping distance map for component {} of image {} because its dimensions {}x{}x{} cannot be uploaded",
+      component,
+      imageUid,
+      dimensions.x,
+      dimensions.y,
+      dimensions.z);
+    return std::nullopt;
+  }
+  if (RenderData::TextureDimension::Texture3D != uploadLayout->layout.dimension) {
+    spdlog::warn(
+      "Skipping distance map for component {} of image {} because raycasting requires a 3D texture",
+      component,
+      imageUid);
+    return std::nullopt;
+  }
+  if (!mapBuffer) {
+    spdlog::warn(
+      "Skipping distance map for component {} of image {} because it has no pixel data",
+      component,
+      imageUid);
+    return std::nullopt;
+  }
+  if (ComponentType::UInt8 != map.header().memoryComponentType()) {
+    spdlog::warn(
+      "Skipping distance map for component {} of image {} because its component type is not UInt8",
+      component,
+      imageUid);
+    return std::nullopt;
+  }
+
+  const auto geometryFor = [](const Image& geometryImage) {
+    return texture_setup::TextureGeometry{
+      .dimensions = geometryImage.header().pixelDimensions(),
+      .spacing = geometryImage.header().spacing(),
+      .origin = geometryImage.header().origin(),
+      .directions = geometryImage.header().directions()};
+  };
+  if (const auto mismatch = texture_setup::textureDomainMismatchReason(geometryFor(image), geometryFor(map))) {
+    spdlog::warn("Skipping distance map for component {} of image {} because {}", component, imageUid, *mismatch);
+    return std::nullopt;
+  }
+
+  try {
+    GLTexture::PixelStoreSettings pixelPackSettings;
+    pixelPackSettings.m_alignment = sk_alignment;
+    GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
+    GLTexture texture(tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings);
+    texture.generate();
+    texture.setMinificationFilter(sk_minFilter);
+    texture.setMagnificationFilter(sk_maxFilter);
+    texture.setWrapMode(sk_wrapModeClampToEdge);
+    texture.setAutoGenerateMipmaps(false);
+    texture.setSize(uploadLayout->uploadSize);
+    texture.setData(
+      sk_mipmapLevel,
+      k_sizedInternalNormalizedFormat,
+      k_bufferPixelNormalizedFormat,
+      GLTexture::getBufferPixelDataType(sk_compType),
+      mapBuffer);
+    return texture;
+  }
+  catch (const std::exception& e) {
+    spdlog::warn(
+      "Could not create distance map texture for component {} of image {}: {}",
+      component,
+      imageUid,
+      e.what());
+    return std::nullopt;
+  }
 }
 
 TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_range_t& segUids)

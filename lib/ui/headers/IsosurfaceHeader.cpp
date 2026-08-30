@@ -1102,8 +1102,8 @@ void renderIsosurfacesHeader(
             "upper thresholds");
 
           if (distMapChanged) {
-            // A distance-map texture is conservative only for the foreground mask that created it. Once the mask
-            // thresholds change, disable skipping instead of silently raycasting with stale empty-space distances.
+            // A distance-map texture is conservative only for the foreground mask that created it. Remove stale
+            // data now. The renderer will lazily regenerate it if raycasting still needs acceleration.
             appData.removeDistanceMaps(imageUid, componentToAdjust);
             if (auto imageTexturesIt = appData.renderData().m_distanceMapTextures.find(imageUid);
                 imageTexturesIt != appData.renderData().m_distanceMapTextures.end())
@@ -1113,7 +1113,6 @@ void renderIsosurfacesHeader(
                 appData.renderData().m_distanceMapTextures.erase(imageTexturesIt);
               }
             }
-            imgSettings.setUseDistanceMapForRaycasting(false);
           }
         }
       }

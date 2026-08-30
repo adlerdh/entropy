@@ -87,7 +87,8 @@ void Rendering::initTextures()
     spdlog::error("Not all segmentation textures were created");
   }
 
-  m_appData.renderData().m_distanceMapTextures = createDistanceMapTextures(m_appData);
+  // Distance maps are generated and uploaded lazily when raycast isosurfaces first need them.
+  m_appData.renderData().m_distanceMapTextures.clear();
 
   m_isAppDoneLoadingImages = true;
 }
