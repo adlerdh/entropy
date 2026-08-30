@@ -461,7 +461,7 @@ void renderDicomSeriesSelectionPopup(
     std::optional<std::size_t> referenceSeriesIndex,
     bool addToExistingProject)>& loadSelectedSeries)
 {
-  constexpr const char* popupTitle = "Load DICOM Series";
+  const char* const popupTitle = "Load DICOM Series";
   auto& guiData = appData.guiData();
 
   if (guiData.m_dicomSeriesScanInProgress) {

@@ -712,7 +712,7 @@ void removeLayout(AppData& appData, std::size_t index)
 
 void renderConfirmRemoveLayoutPopup(AppData& appData)
 {
-  constexpr const char* popupTitle = "Remove Layout?";
+  const char* const popupTitle = "Remove Layout?";
   GuiData& guiData = appData.guiData();
 
   const std::optional<std::size_t> pendingIndex = guiData.m_pendingRemoveLayoutIndex;
@@ -789,6 +789,8 @@ void renderLayoutTabs(AppData& appData)
   if (!guiData.m_showLayoutTabs || 0 == windowData.numLayouts()) {
     return;
   }
+
+  // cppcheck-suppress threadsafety-threadsafety
 
   static thread_local std::optional<uuids::uuid> lastSyncedSelectedLayoutUid;
 
@@ -1136,6 +1138,7 @@ std::optional<uuids::uuid> globalTimeControlImageUid(AppData& appData)
 
 void updateTimePlayback(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t activeTimePoint)
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local std::unordered_map<uuids::uuid, TimePlaybackState> s_playbackStateByImage;
 
   if (!image.settings().timePlaybackPlaying()) {
@@ -1198,6 +1201,7 @@ void updateAllTimeSeriesPlayback(AppData& appData)
 
 void renderGlobalTimeControl(AppData& appData)
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool s_timePlaybackWasRunning = false;
   auto updatePlaybackAnimationState = [&appData]() {
     const bool playbackRunning = anyTimeSeriesPlaybackRunning(appData);
@@ -1742,7 +1746,7 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   // Setup ImGui platform/renderer bindings:
-  constexpr const char* glsl_version = "#version 150";
+  const char* const glsl_version = "#version 150";
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
@@ -2859,7 +2863,7 @@ void ImGuiWrapper::applyUiWindowBgOpacity(float opacity)
 void ImGuiWrapper::initializeFonts(float scale)
 {
   static const std::string forkAwesomeFontPath = std::string("res/fonts/ForkAwesome/") + FONT_ICON_FILE_NAME_FK;
-  static constexpr const char* interBoldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
+  const char* const interBoldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
   const UiFontSpec uiFont = uiFontSpec(m_appData.settings().uiFontFamily());
 
   spdlog::debug("Begin loading fonts for UI scale {}", scale);
@@ -4312,6 +4316,8 @@ void ImGuiWrapper::render()
     }
     return names;
   };
+
+  // cppcheck-suppress threadsafety-threadsafety
 
   static thread_local std::string s_settingsPersistenceStatus;
   auto saveUserSettingsToDefault = [this]() {

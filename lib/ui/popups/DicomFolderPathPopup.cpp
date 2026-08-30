@@ -34,7 +34,7 @@ void renderDicomFolderPathPopup(
   AppData& appData,
   const std::function<void(const std::vector<std::filesystem::path>& folderNames)>& openDicomFolders)
 {
-  constexpr const char* popupTitle = "Open DICOM Folder";
+  const char* const popupTitle = "Open DICOM Folder";
   auto& guiData = appData.guiData();
 
   if (guiData.m_showDicomFolderPathPopup && !ImGui::IsPopupOpen(popupTitle)) {

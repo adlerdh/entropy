@@ -73,7 +73,7 @@ void renderUnsavedProjectPopup(
   const std::function<fs::path(void)>& defaultProjectSaveDirectory,
   const std::function<std::string(void)>& defaultProjectSaveName)
 {
-  constexpr const char* popupTitle = "Unsaved Project";
+  const char* const popupTitle = "Unsaved Project";
   auto& guiData = appData.guiData();
   const bool isQuit = GuiData::UnsavedProjectAction::QuitApp == guiData.m_pendingUnsavedProjectAction;
   const char* actionText = unsavedProjectActionText(guiData.m_pendingUnsavedProjectAction);

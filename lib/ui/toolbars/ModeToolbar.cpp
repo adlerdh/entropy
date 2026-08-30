@@ -38,6 +38,8 @@ void renderModeToolbar(
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
+  // cppcheck-suppress threadsafety-threadsafety
+
   static thread_local bool s_lastShowState = guiData.m_showModeToolbar;
 
   if (!guiData.m_showModeToolbar) {

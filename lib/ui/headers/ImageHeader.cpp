@@ -550,6 +550,8 @@ void renderImageDicomMetadata(const AppData& appData, const uuids::uuid& imageUi
     return;
   }
 
+  // cppcheck-suppress threadsafety-threadsafety
+
   static thread_local std::unordered_map<std::string, HeaderDicomMetadataCache> metadataCache;
   const std::string cacheKey = dicomCacheKey(imageUid, *dicomSource);
   auto cacheIt = metadataCache.find(cacheKey);
@@ -2826,6 +2828,8 @@ void renderImageHeader(
         forwardWarp ? std::nullopt : assignmentInverseWarpReferenceUid());
     };
 
+    // cppcheck-suppress threadsafety-threadsafety
+
     static thread_local WarpInversionOptions inversionOptions;
     const bool hasAssignedInverseWarp = activeInverseWarpUid.has_value();
     const bool hasBothWarpDirections = activeInverseWarpUid.has_value() && activeForwardWarpUid.has_value();
@@ -3271,7 +3275,7 @@ void renderImageHeader(
       ImGui::SameLine();
 
       // Save manual tx to file:
-      constexpr const char* dialogTitle = "Select Manual Affine Transformation";
+      const char* const dialogTitle = "Select Manual Affine Transformation";
 
       const auto selectedManualTxFile =
         ImGui::renderFileButtonDialogAndWindow(saveManualAffineButtonText.c_str(), dialogTitle, dialogFilters);
@@ -3312,7 +3316,7 @@ void renderImageHeader(
       // Save effective affine tx to file:
       static const std::string saveEffectiveTxButtonText =
         std::string(ICON_FK_FLOPPY_O) + " Save effective (manual * initial) affine...";
-      constexpr const char* saveEffectiveTxDialogTitle = "Select Effective Affine Transformation";
+      const char* const saveEffectiveTxDialogTitle = "Select Effective Affine Transformation";
 
       const auto selectedEffectiveTxFile = ImGui::renderFileButtonDialogAndWindow(
         saveEffectiveTxButtonText.c_str(),

@@ -34,7 +34,7 @@ void renderLargeImageLoadPromptPopup(
   AppData& appData,
   const std::function<void(GuiData::LargeImageLoadDecision decision)>& handleDecision)
 {
-  constexpr const char* popupTitle = "Large Image Load";
+  const char* const popupTitle = "Large Image Load";
   auto& guiData = appData.guiData();
 
   if (guiData.m_showLargeImageLoadPrompt && !ImGui::IsPopupOpen(popupTitle)) {

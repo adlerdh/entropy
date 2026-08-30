@@ -28,7 +28,10 @@ void renderAnnotationToolbar(
   // Always keep the toolbar open by setting this to null
   bool* toolbarWindowOpen = nullptr;
 
+  // cppcheck-suppress threadsafety-threadsafety
+
   static thread_local int corner = 3;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool isHoriz = true;
 
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());

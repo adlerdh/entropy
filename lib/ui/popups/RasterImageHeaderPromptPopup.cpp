@@ -40,7 +40,7 @@ void renderRasterImageHeaderPromptPopup(
   const std::function<
     void(GuiData::RasterImageHeaderDecision decision, ImageSpatialMetadata metadata, bool applyToAll)>& handleDecision)
 {
-  constexpr const char* popupTitle = "Specify Image Geometry";
+  const char* const popupTitle = "Specify Image Geometry";
   GuiData& guiData = appData.guiData();
 
   if (guiData.m_showRasterImageHeaderPrompt && !ImGui::IsPopupOpen(popupTitle)) {

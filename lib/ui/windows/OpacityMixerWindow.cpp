@@ -42,7 +42,7 @@ void renderOpacityBlenderWindow(
 {
   RenderData& renderData = appData.renderData();
 
-  constexpr const char* windowName = "Image Opacity Mixer";
+  const char* const windowName = "Image Opacity Mixer";
 
   if (!appData.guiData().m_showOpacityBlenderWindow) {
     return;
@@ -117,6 +117,8 @@ void renderOpacityBlenderWindow(
     ImGui::PopStyleColor(4);
     ImGui::PopID();
   }
+
+  // cppcheck-suppress threadsafety-threadsafety
 
   static thread_local double mix = 0.0;
 

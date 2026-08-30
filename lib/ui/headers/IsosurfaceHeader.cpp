@@ -472,6 +472,7 @@ void renderIsosurfacesHeader(
   // Force sorting of table items:
 
   // UID of the currently selected isosurface in the table
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local std::unordered_map<uuids::uuid, uuids::uuid> imageToSelectedSurfaceUid;
 
   // UID of the currently selected surface:
@@ -529,6 +530,7 @@ void renderIsosurfacesHeader(
   ImGui::Spacing();
 
   // By default, adjust image component 0:
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local uint32_t componentToAdjust = 0;
 
   const bool showComponentSelection = image->header().numComponentsPerPixel() > 1;

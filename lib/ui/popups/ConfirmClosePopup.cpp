@@ -51,7 +51,7 @@ void renderUnsavedAppSettingsPopup(
   const std::function<bool(void)>& saveSettings,
   const std::function<void(void)>& quitAppWithoutPrompt)
 {
-  constexpr const char* popupTitle = "Unsaved Application Settings";
+  const char* const popupTitle = "Unsaved Application Settings";
   auto& guiData = appData.guiData();
 
   auto saveAction = [&]() {
@@ -132,7 +132,7 @@ void renderUnsavedAppSettingsPopup(
 
 void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)>& quitAppWithoutPrompt)
 {
-  constexpr const char* popupTitle = "Quit Entropy?";
+  const char* const popupTitle = "Quit Entropy?";
   auto& guiData = appData.guiData();
 
   if (guiData.m_showConfirmCloseAppPopup) {

@@ -82,8 +82,12 @@ void logTextureUnitZeroStateIfChanged(const char* phase)
     bool operator==(const UnitZeroState&) const = default;
   };
 
+  // cppcheck-suppress threadsafety-threadsafety
+
   static thread_local UnitZeroState lastState{};
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool haveLastState = false;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local int logCount = 0;
   static constexpr int maxLogs = 64;
 

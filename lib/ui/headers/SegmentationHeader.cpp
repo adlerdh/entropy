@@ -240,7 +240,7 @@ void renderSegmentationHeader(
   }
 
   // Save segmentation:
-  constexpr const char* dialogTitle = "Select Segmentation Image";
+  const char* const dialogTitle = "Select Segmentation Image";
   static const auto dialogFilters = native_dialog::segmentationFilters();
 
   ImGui::SameLine();

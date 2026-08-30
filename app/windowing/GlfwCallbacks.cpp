@@ -64,7 +64,9 @@ bool syncZoomsForAllViews(const ModifierState& modState)
 
 bool isLeftDoubleClick(int button, int action, const glm::vec2& windowCursorPos)
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local double s_lastLeftClickTime = -1.0;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local glm::vec2 s_lastLeftClickWindowPos{0.0f};
 
   if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS) {

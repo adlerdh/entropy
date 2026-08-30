@@ -53,14 +53,17 @@ void renderInspectionWindow(
 {
   std::ignore = getImageValueLinear;
 
-  static constexpr size_t sk_refIndex = 0;     // Index of the reference image
+  static constexpr size_t sk_refIndex = 0; // Index of the reference image
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool s_firstRun = false; // Is this the first run?
 
   static constexpr float sk_pad = 10.0f;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local int corner = 2;
   //    static PopupWindowPosition pos = PopupWindowPosition::BottomLeft;
 
   // Show World coordinates?
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool s_showWorldCoords = false;
 
   bool selectionButtonShown = false;
@@ -71,6 +74,7 @@ void renderInspectionWindow(
     std::min(numImages, appData.guiData().m_visibleImageCountDuringLoad.value_or(numImages));
 
   // For which images to show coordinates?
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local std::unordered_map<uuid, bool> s_showSubject;
 
   if (s_firstRun) {

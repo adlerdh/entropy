@@ -35,7 +35,7 @@ void renderConfirmRemoveImagePopup(
   AppData& appData,
   const std::function<bool(const uuids::uuid& imageUid)>& removeImage)
 {
-  constexpr const char* popupTitle = "Remove Image?";
+  const char* const popupTitle = "Remove Image?";
 
   const auto pendingUid = appData.guiData().m_pendingRemoveImageUid;
   const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;

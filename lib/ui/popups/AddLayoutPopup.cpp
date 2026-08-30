@@ -58,11 +58,18 @@ void renderAddLayoutModalPopup(
 {
   bool addLayout = false;
 
+  // cppcheck-suppress threadsafety-threadsafety
+
   static thread_local int columns = 3;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local int rows = 3;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool isLightbox = false;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local ViewType lightboxViewType = ViewType::Axial;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local float lightboxSliceSpacingMm = 1.0f;
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local std::string customLayoutName = "Custom";
 
   if (openAddLayoutPopup && !ImGui::IsPopupOpen(sk_addLayoutPopupId)) {

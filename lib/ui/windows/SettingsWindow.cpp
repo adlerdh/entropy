@@ -2599,7 +2599,7 @@ void renderAsciiShadingSettings(RenderData& renderData)
   helpMarker("Render grayscale images as ASCII art");
 
   if (rd.m_asciiEnabled) {
-    constexpr const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
+    const char* const charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
     if (ImGui::Combo("Character set", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
       // Signal that the atlas needs to be rebuilt — caller checks this flag
       rd.m_asciiAtlasNeedsRebuild = true;
@@ -2984,6 +2984,7 @@ void renderSettingsWindow(
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local GuiData::SettingsTab s_selectedPage = GuiData::SettingsTab::Views;
 
   if (appData.guiData().m_requestedSettingsTab) {

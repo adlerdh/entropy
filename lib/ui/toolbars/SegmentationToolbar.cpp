@@ -76,7 +76,7 @@ void renderSegToolbar(
 
   const auto activeSegUid = appData.imageToActiveSegUid(*activeImageUid);
   if (!activeSegUid) {
-    constexpr const char* k_createSegPopupTitle = "Create segmentation?";
+    const char* const k_createSegPopupTitle = "Create segmentation?";
     ImGui::OpenPopup(k_createSegPopupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
 
     if (ImGui::BeginPopupModal(

@@ -43,12 +43,14 @@ texture_setup::TextureLimits queryTextureLimits()
 
 bool shouldLogPlanarImageUpload(const uuids::uuid& imageUid)
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local std::unordered_set<uuids::uuid> loggedImageUids;
   return loggedImageUids.insert(imageUid).second;
 }
 
 bool shouldLogPlanarSegUpload(const uuids::uuid& segUid)
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local std::unordered_set<uuids::uuid> loggedSegUids;
   return loggedSegUids.insert(segUid).second;
 }
@@ -173,6 +175,7 @@ void handleTextureCreationFailures(AppData& appData, const std::vector<TextureCr
 
 texture_setup::TextureLimits logTextureLimitsOnce()
 {
+  // cppcheck-suppress threadsafety-threadsafety
   static thread_local bool logged = false;
   const texture_setup::TextureLimits limits = queryTextureLimits();
   if (logged) {

@@ -35,7 +35,7 @@ void renderConfirmSetReferenceImagePopup(
   AppData& appData,
   const std::function<bool(const uuids::uuid& imageUid)>& setReferenceImage)
 {
-  constexpr const char* popupTitle = "Set Reference Image?";
+  const char* const popupTitle = "Set Reference Image?";
 
   const auto pendingUid = appData.guiData().m_pendingReferenceImageUid;
   const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
