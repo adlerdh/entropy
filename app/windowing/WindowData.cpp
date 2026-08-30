@@ -964,9 +964,11 @@ std::vector<Layout> createDefaultProjectLayouts(
 
   std::vector<bool> isOneUpGeneratedLayout;
   isOneUpGeneratedLayout.reserve(generatedLayouts.size());
-  for (const auto& layout : generatedLayouts) {
-    isOneUpGeneratedLayout.push_back(isOneUpLayoutKind(layout.kind()));
-  }
+  std::transform(
+    generatedLayouts.begin(),
+    generatedLayouts.end(),
+    std::back_inserter(isOneUpGeneratedLayout),
+    [](const Layout& layout) { return isOneUpLayoutKind(layout.kind()); });
 
   for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
     if (isOneUpGeneratedLayout.at(i)) {
@@ -1348,9 +1350,11 @@ void WindowData::reconcileImageDependentLayouts(
 
   std::vector<bool> isOneUpGeneratedLayout;
   isOneUpGeneratedLayout.reserve(generatedLayouts.size());
-  for (const auto& layoutLocal : generatedLayouts) {
-    isOneUpGeneratedLayout.push_back(isOneUpLayoutKind(layoutLocal.kind()));
-  }
+  std::transform(
+    generatedLayouts.begin(),
+    generatedLayouts.end(),
+    std::back_inserter(isOneUpGeneratedLayout),
+    [](const Layout& layout) { return isOneUpLayoutKind(layout.kind()); });
 
   for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
     if (isOneUpGeneratedLayout.at(i)) {
@@ -1554,12 +1558,8 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppD
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  std::list<uuid> renderedImages;
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
-
-  for (const auto& uid : orderedImageUids) {
-    renderedImages.push_back(uid);
-  }
+  const std::list<uuid> renderedImages{orderedImageUids.begin(), orderedImageUids.end()};
 
   const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
     orderedImageUids,
@@ -1586,12 +1586,8 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  std::list<uuid> renderedImages;
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
-
-  for (const auto& uid : orderedImageUids) {
-    renderedImages.push_back(uid);
-  }
+  const std::list<uuid> renderedImages{orderedImageUids.begin(), orderedImageUids.end()};
 
   const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
     orderedImageUids,

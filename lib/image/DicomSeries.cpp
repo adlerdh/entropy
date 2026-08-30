@@ -399,9 +399,9 @@ std::optional<dicom::SeriesGeometry> readSeriesGeometry(
 
   std::vector<std::string> fileNames;
   fileNames.reserve(files.size());
-  for (const auto& file : files) {
-    fileNames.push_back(file.string());
-  }
+  std::transform(files.begin(), files.end(), std::back_inserter(fileNames), [](const fs::path& file) {
+    return file.string();
+  });
 
   try {
     auto reader = ReaderType::New();
@@ -450,12 +450,7 @@ std::vector<fs::path> canonicalInputRoots(const std::vector<fs::path>& inputPath
 
 std::vector<fs::path> toPaths(const std::vector<std::string>& fileNames)
 {
-  std::vector<fs::path> paths;
-  paths.reserve(fileNames.size());
-  for (const auto& fileName : fileNames) {
-    paths.emplace_back(fileName);
-  }
-  return paths;
+  return {fileNames.begin(), fileNames.end()};
 }
 
 std::string uidTail(const std::string& uid)
@@ -608,9 +603,9 @@ std::optional<Image> loadScalarSeriesImage(const dicom::SeriesInfo& series)
 
   std::vector<std::string> fileNames;
   fileNames.reserve(series.files.size());
-  for (const auto& file : series.files) {
-    fileNames.push_back(file.string());
-  }
+  std::transform(series.files.begin(), series.files.end(), std::back_inserter(fileNames), [](const fs::path& file) {
+    return file.string();
+  });
 
   try {
     auto imageIo = itk::GDCMImageIO::New();

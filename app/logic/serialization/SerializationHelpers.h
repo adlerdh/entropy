@@ -349,9 +349,7 @@ void optionalPathObjectFromJson(const json& j, const char* key, std::optional<fs
 json pathObjectVectorToJson(const std::vector<fs::path>& paths)
 {
   json values = json::array();
-  for (const fs::path& path : paths) {
-    values.push_back(pathObjectToJson(path));
-  }
+  std::transform(paths.begin(), paths.end(), std::back_inserter(values), pathObjectToJson);
   return values;
 }
 
@@ -363,9 +361,9 @@ std::vector<fs::path> pathObjectVectorFromJson(const json& j, const char* key)
   }
 
   paths.reserve(j.size());
-  for (const json& value : j) {
-    paths.push_back(pathObjectFromJson(value, key));
-  }
+  std::transform(j.begin(), j.end(), std::back_inserter(paths), [key](const json& value) {
+    return pathObjectFromJson(value, key);
+  });
   return paths;
 }
 

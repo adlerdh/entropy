@@ -229,11 +229,7 @@ void ImageHeader::setBoundingBox()
 
   m_subjectBBoxSize = subjectMaxBBoxCorner - subjectMinBBoxCorner;
 
-  m_subjectBBoxCenter = glm::vec3{0.0f, 0.0f, 0.0f};
-
-  for (const auto& p : m_subjectBBoxCorners) {
-    m_subjectBBoxCenter += p;
-  }
+  m_subjectBBoxCenter = std::accumulate(m_subjectBBoxCorners.begin(), m_subjectBBoxCorners.end(), glm::vec3{0.0f});
 
   m_subjectBBoxCenter /= m_subjectBBoxCorners.size();
 }

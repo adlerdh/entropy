@@ -6,6 +6,9 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <iterator>
+
 namespace fs = std::filesystem;
 
 namespace
@@ -61,9 +64,13 @@ std::vector<nfdfilteritem_t> toNfdFilters(const std::vector<native_dialog::Filte
   std::vector<nfdfilteritem_t> nfdFilters;
   nfdFilters.reserve(filters.size());
 
-  for (const auto& filter : filters) {
-    nfdFilters.push_back({filter.name.c_str(), filter.extensions.c_str()});
-  }
+  std::transform(
+    filters.begin(),
+    filters.end(),
+    std::back_inserter(nfdFilters),
+    [](const native_dialog::Filter& filter) {
+      return nfdfilteritem_t{filter.name.c_str(), filter.extensions.c_str()};
+    });
 
   return nfdFilters;
 }

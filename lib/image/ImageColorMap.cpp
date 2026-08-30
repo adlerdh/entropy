@@ -67,9 +67,9 @@ ImageColorMap::ImageColorMap(
     throwDebug("Empty color map");
   }
 
-  for (const auto& x : colors) {
-    m_colors_RGBA_F32.emplace_back(x.r, x.g, x.b, 1.0f);
-  }
+  std::transform(colors.begin(), colors.end(), std::back_inserter(m_colors_RGBA_F32), [](const glm::vec3& color) {
+    return glm::vec4{color, 1.0f};
+  });
 }
 
 ImageColorMap::ImageColorMap(

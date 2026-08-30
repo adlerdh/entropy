@@ -432,9 +432,9 @@ void setMeshImagePlaneUniforms(
     program.setUniform("u_imgThresholdsRgba", uniforms.thresholdsRgba);
     program.setUniform("u_imgMinMaxRgba", uniforms.minMaxRgba);
     std::vector<float> rgbaOpacity = uniforms.imgOpacityRgba;
-    for (float& opacity : rgbaOpacity) {
-      opacity *= renderable.opacityMultiplier;
-    }
+    std::transform(rgbaOpacity.begin(), rgbaOpacity.end(), rgbaOpacity.begin(), [&renderable](const float opacity) {
+      return opacity * renderable.opacityMultiplier;
+    });
     program.setUniform("u_imgOpacityRgba", rgbaOpacity);
     program.setUniform(
       "u_alphaIsOne",

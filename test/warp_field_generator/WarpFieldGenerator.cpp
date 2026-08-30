@@ -29,9 +29,7 @@ constexpr double kMinPositive = 1.0e-12;
 
 std::string lower(std::string text)
 {
-  std::ranges::transform(text, text.begin(), [](unsigned char c) {
-    return static_cast<char>(std::tolower(c));
-  });
+  std::ranges::transform(text, text.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return text;
 }
 
@@ -146,8 +144,9 @@ OperationType parseOperationType(const std::string& text)
   if (type == "expansion" || type == "expand" || type == "elliptical_expansion" || type == "spherical_expansion") {
     return OperationType::Expansion;
   }
-  if (type == "contraction" || type == "contract" || type == "elliptical_contraction" ||
-      type == "spherical_contraction") {
+  if (
+    type == "contraction" || type == "contract" || type == "elliptical_contraction" || type == "spherical_contraction")
+  {
     return OperationType::Contraction;
   }
   if (type == "rotation" || type == "rotate" || type == "pure_rotation") {
@@ -329,7 +328,11 @@ glm::dvec3 rotateAroundAxis(const glm::dvec3& value, const glm::dvec3& axis, dou
   return (value * c) + (glm::cross(unitAxis, value) * s) + (unitAxis * axisProjection * (1.0 - c));
 }
 
-glm::dvec3 affineDisplacement(const glm::dmat3& matrix, const glm::dvec3& translation, const glm::dvec3& relative, std::size_t dimension)
+glm::dvec3 affineDisplacement(
+  const glm::dmat3& matrix,
+  const glm::dvec3& translation,
+  const glm::dvec3& relative,
+  std::size_t dimension)
 {
   glm::dvec3 out = translation;
   for (std::size_t row = 0; row < dimension; ++row) {
@@ -481,9 +484,8 @@ glm::dvec3 controlPointDisplacement(const WarpOperation& operation, const glm::d
 
   for (std::size_t i = 0; i < operation.controlPoints.size(); ++i) {
     const glm::dvec3 relative = point - operation.controlPoints[i];
-    const double radius = std::max(
-      i < operation.weights.size() ? std::abs(operation.weights[i]) : std::abs(operation.width),
-      kMinPositive);
+    const double radius =
+      std::max(i < operation.weights.size() ? std::abs(operation.weights[i]) : std::abs(operation.width), kMinPositive);
     const double distance = norm(relative, dimension) / radius;
     const double weight = std::exp(-0.5 * distance * distance);
     weightedSum += operation.displacements[i] * weight;
@@ -644,10 +646,8 @@ std::vector<double> identityDirection(std::size_t dimension)
   return direction;
 }
 
-std::vector<double> expandedDirection(
-  const std::vector<double>& direction,
-  std::size_t spatialDimension,
-  std::size_t dimension)
+std::vector<double>
+expandedDirection(const std::vector<double>& direction, std::size_t spatialDimension, std::size_t dimension)
 {
   if (direction.size() == dimension * dimension) {
     return direction;
@@ -719,8 +719,8 @@ void writeTypedWarpField(const WarpFieldSpec& spec)
     double normalizedTime = 0.0;
     if constexpr (ImageDimension > 1) {
       if (ImageDimension > spec.spatialDimension && spec.size[spec.spatialDimension] > 1) {
-        normalizedTime = static_cast<double>(index[spec.spatialDimension]) /
-                         static_cast<double>(spec.size[spec.spatialDimension] - 1);
+        normalizedTime =
+          static_cast<double>(index[spec.spatialDimension]) / static_cast<double>(spec.size[spec.spatialDimension] - 1);
       }
     }
 
@@ -786,7 +786,8 @@ WarpFieldSpec parseSpecJson(const std::string& text)
   spec.size = optionalVector<std::size_t>(document, "size", std::vector<std::size_t>(spec.spatialDimension, 64));
   spec.spacing = optionalVector<double>(document, "spacing", std::vector<double>(spec.size.size(), 1.0));
   spec.origin = optionalVector<double>(document, "origin", std::vector<double>(spec.size.size(), 0.0));
-  spec.compositionMode = parseCompositionMode(document.value("composition_mode", document.value("composition", "additive")));
+  spec.compositionMode =
+    parseCompositionMode(document.value("composition_mode", document.value("composition", "additive")));
 
   if (document.contains("time_points")) {
     const std::size_t timePoints = document.at("time_points").get<std::size_t>();
@@ -860,21 +861,19 @@ void validateSpec(const WarpFieldSpec& spec)
     throw std::runtime_error("output image file is required");
   }
 
-  for (const std::size_t extent : spec.size) {
-    if (extent == 0) {
-      throw std::runtime_error("image dimensions must be greater than zero");
-    }
+  if (std::any_of(spec.size.begin(), spec.size.end(), [](const std::size_t extent) { return extent == 0; })) {
+    throw std::runtime_error("image dimensions must be greater than zero");
   }
 
-  for (const double spacing : spec.spacing) {
-    if (!(spacing > 0.0)) {
-      throw std::runtime_error("spacing values must be positive");
-    }
+  if (std::any_of(spec.spacing.begin(), spec.spacing.end(), [](const double spacing) { return !(spacing > 0.0); })) {
+    throw std::runtime_error("spacing values must be positive");
   }
 
   for (const WarpOperation& operation : spec.operations) {
-    if ((operation.type == OperationType::ControlPoint || operation.type == OperationType::Landmark) &&
-        operation.controlPoints.empty()) {
+    if (
+      (operation.type == OperationType::ControlPoint || operation.type == OperationType::Landmark) &&
+      operation.controlPoints.empty())
+    {
       throw std::runtime_error("control point and landmark operations require at least one point");
     }
 
@@ -887,17 +886,22 @@ void validateSpec(const WarpFieldSpec& spec)
 glm::dvec3 evaluateDisplacement(const WarpFieldSpec& spec, const glm::dvec3& point, double normalizedTime)
 {
   if (spec.compositionMode == CompositionMode::Additive) {
-    glm::dvec3 displacement{0.0, 0.0, 0.0};
-    for (const WarpOperation& operation : spec.operations) {
-      displacement += evaluateOperation(operation, point, spec.spatialDimension, normalizedTime);
-    }
-    return displacement;
+    return std::accumulate(
+      spec.operations.begin(),
+      spec.operations.end(),
+      glm::dvec3{0.0},
+      [&](const glm::dvec3& displacement, const WarpOperation& operation) {
+        return displacement + evaluateOperation(operation, point, spec.spatialDimension, normalizedTime);
+      });
   }
 
-  glm::dvec3 currentPoint = point;
-  for (const WarpOperation& operation : spec.operations) {
-    currentPoint += evaluateOperation(operation, currentPoint, spec.spatialDimension, normalizedTime);
-  }
+  const glm::dvec3 currentPoint = std::accumulate(
+    spec.operations.begin(),
+    spec.operations.end(),
+    point,
+    [&](const glm::dvec3& current, const WarpOperation& operation) {
+      return current + evaluateOperation(operation, current, spec.spatialDimension, normalizedTime);
+    });
   return currentPoint - point;
 }
 

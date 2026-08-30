@@ -34,9 +34,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
 {
   if (value.is_array()) {
     ordered_json result = ordered_json::array();
-    for (const json& element : value) {
-      result.push_back(orderedUserPreferencesJson(element, path));
-    }
+    std::transform(value.begin(), value.end(), std::back_inserter(result), [path](const json& element) {
+      return orderedUserPreferencesJson(element, path);
+    });
     return result;
   }
   if (!value.is_object()) {

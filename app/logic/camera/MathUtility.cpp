@@ -74,12 +74,8 @@ std::vector<uint32_t> sortCounterclockwise(const std::vector<glm::vec2>& points)
     return std::vector<uint32_t>{0};
   }
 
-  glm::vec2 center{0.0f, 0.0f};
-
-  for (const auto& p : points) {
-    center += p;
-  }
-  center = center / static_cast<float>(points.size());
+  const glm::vec2 center =
+    std::accumulate(points.begin(), points.end(), glm::vec2{0.0f}) / static_cast<float>(points.size());
 
   const glm::vec2 a = points[0] - center;
 
@@ -112,9 +108,9 @@ std::vector<glm::vec2> project3dPointsToPlane(const std::vector<glm::vec3>& A)
   std::vector<glm::vec2> B;
 
   B.reserve(A.size());
-  for (const auto& a : A) {
-    B.emplace_back(M * glm::vec4{a, 1.0f});
-  }
+  std::transform(A.begin(), A.end(), std::back_inserter(B), [&M](const glm::vec3& point) {
+    return glm::vec2{M * glm::vec4{point, 1.0f}};
+  });
 
   return B;
 }
@@ -174,9 +170,11 @@ void applyLayeringOffsetsToModelPositions(
   const float offsetMag = static_cast<float>(layer) * worldDepth;
   const glm::vec3 modelOffset = offsetMag * modelTowardsViewer;
 
-  for (auto& p : modelPositions) {
-    p += modelOffset;
-  }
+  std::transform(
+    modelPositions.begin(),
+    modelPositions.end(),
+    modelPositions.begin(),
+    [&modelOffset](const glm::vec3& position) { return position + modelOffset; });
 }
 
 glm::mat3 computeSubjectAxesInCamera(

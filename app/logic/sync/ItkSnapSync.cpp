@@ -924,14 +924,15 @@ void ItkSnapSync::releaseDirectorySlot()
     reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
 
   {
-    for (auto& entry : directory->entries) {
-      if (entry.pid == m_processId) {
-        entry.pid = 0;
-        entry.title[0] = '\0';
-        entry.pendingDropId = 0;
-        entry.pendingDrop[0] = '\0';
-        break;
-      }
+    const auto entry =
+      std::find_if(std::begin(directory->entries), std::end(directory->entries), [this](const auto& candidate) {
+        return candidate.pid == m_processId;
+      });
+    if (entry != std::end(directory->entries)) {
+      entry->pid = 0;
+      entry->title[0] = '\0';
+      entry->pendingDropId = 0;
+      entry->pendingDrop[0] = '\0';
     }
   }
 

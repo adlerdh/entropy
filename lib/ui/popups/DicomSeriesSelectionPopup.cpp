@@ -780,12 +780,8 @@ void renderDicomSeriesSelectionPopup(
       ImGui::Dummy(ImVec2(0.0f, footerPadding));
     }
 
-    std::size_t selectedCount = 0;
-    for (bool selected : prompt.selected) {
-      if (selected) {
-        ++selectedCount;
-      }
-    }
+    const std::size_t selectedCount =
+      static_cast<std::size_t>(std::count(prompt.selected.begin(), prompt.selected.end(), true));
 
     if (ImGui::Button("Select All Loadable")) {
       for (std::size_t i = 0; i < prompt.series.size() && i < prompt.selected.size(); ++i) {

@@ -93,16 +93,13 @@ std::vector<uuids::uuid> selectImages(const AppData& data, const ImageSelection&
       break;
     }
     case ImageSelection::AllLoadedImages: {
-      for (const auto& imageUid : data.imageUidsOrdered()) {
-        imageUids.push_back(imageUid);
-      }
+      const auto& orderedImageUids = data.imageUidsOrdered();
+      imageUids.insert(imageUids.end(), orderedImageUids.begin(), orderedImageUids.end());
       break;
     }
     case ImageSelection::VisibleImagesInView: {
       if (view) {
-        for (const auto& viewUid : view->visibleImages()) {
-          imageUids.push_back(viewUid);
-        }
+        imageUids.insert(imageUids.end(), view->visibleImages().begin(), view->visibleImages().end());
       }
       break;
     }
@@ -567,10 +564,11 @@ std::string getAnnotationSubjectPlaneName(const Annotation& annotation)
   constexpr float parallelThreshold_degrees = 0.1f;
   const glm::vec3 subjectPlaneNormal{annotation.getSubjectPlaneEquation()};
 
-  for (const auto& dir : directionToName) {
-    if (helper::areVectorsParallel(Directions::get(dir.first), subjectPlaneNormal, parallelThreshold_degrees)) {
-      return dir.second;
-    }
+  const auto direction = std::find_if(directionToName.begin(), directionToName.end(), [&](const auto& candidate) {
+    return helper::areVectorsParallel(Directions::get(candidate.first), subjectPlaneNormal, parallelThreshold_degrees);
+  });
+  if (direction != directionToName.end()) {
+    return direction->second;
   }
 
   return oblique;

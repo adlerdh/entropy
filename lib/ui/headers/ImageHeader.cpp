@@ -258,9 +258,7 @@ std::vector<std::string> inverseWarpFieldWarnings(const Image& field, const Imag
   std::vector<std::string> warnings;
   warnings.reserve(details.size() + 1u);
   warnings.emplace_back("Warning! The inverse warp field differs from the reference:");
-  for (const std::string& detail : details) {
-    warnings.emplace_back(inverseWarpWarningDetail(detail));
-  }
+  std::transform(details.begin(), details.end(), std::back_inserter(warnings), inverseWarpWarningDetail);
   return warnings;
 }
 
@@ -1350,13 +1348,12 @@ void renderImageHeader(
           VectorModeOption{"Curl magnitude", ComponentRenderMode::VectorCurlMagnitude},
           VectorModeOption{"Laplacian magnitude", ComponentRenderMode::VectorLaplacianMagnitude}};
 
-        const char* currentVectorModeLabel = vectorModeOptions[0].label;
-        for (const auto& option : vectorModeOptions) {
-          if (option.mode == imgSettings.componentRenderMode()) {
-            currentVectorModeLabel = option.label;
-            break;
-          }
-        }
+        const auto currentVectorMode = std::find_if(
+          vectorModeOptions.begin(),
+          vectorModeOptions.end(),
+          [&imgSettings](const VectorModeOption& option) { return option.mode == imgSettings.componentRenderMode(); });
+        const char* currentVectorModeLabel =
+          currentVectorMode == vectorModeOptions.end() ? vectorModeOptions[0].label : currentVectorMode->label;
 
         if (ImGui::BeginCombo("Render", currentVectorModeLabel)) {
           for (const auto& option : vectorModeOptions) {
@@ -1480,13 +1477,12 @@ void renderImageHeader(
           ComplexModeOption{"Real", ComponentRenderMode::ComplexReal},
           ComplexModeOption{"Imaginary", ComponentRenderMode::ComplexImaginary}};
 
-        const char* currentComplexModeLabel = complexModeOptions[0].label;
-        for (const auto& option : complexModeOptions) {
-          if (option.mode == imgSettings.componentRenderMode()) {
-            currentComplexModeLabel = option.label;
-            break;
-          }
-        }
+        const auto currentComplexMode = std::find_if(
+          complexModeOptions.begin(),
+          complexModeOptions.end(),
+          [&imgSettings](const ComplexModeOption& option) { return option.mode == imgSettings.componentRenderMode(); });
+        const char* currentComplexModeLabel =
+          currentComplexMode == complexModeOptions.end() ? complexModeOptions[0].label : currentComplexMode->label;
 
         if (ImGui::BeginCombo("Render", currentComplexModeLabel)) {
           for (const auto& option : complexModeOptions) {
@@ -1570,13 +1566,15 @@ void renderImageHeader(
         componentModeOptions.push_back(MultiComponentModeOption{"Maximum", ComponentRenderMode::Maximum});
         componentModeOptions.push_back(MultiComponentModeOption{"Mean", ComponentRenderMode::Mean});
 
-        const char* currentComponentModeLabel = componentModeOptions.front().label;
-        for (const auto& option : componentModeOptions) {
-          if (option.mode == imgSettings.componentRenderMode()) {
-            currentComponentModeLabel = option.label;
-            break;
-          }
-        }
+        const auto currentComponentMode = std::find_if(
+          componentModeOptions.begin(),
+          componentModeOptions.end(),
+          [&imgSettings](const MultiComponentModeOption& option) {
+            return option.mode == imgSettings.componentRenderMode();
+          });
+        const char* currentComponentModeLabel = currentComponentMode == componentModeOptions.end()
+                                                  ? componentModeOptions.front().label
+                                                  : currentComponentMode->label;
 
         if (ImGui::BeginCombo("Render", currentComponentModeLabel)) {
           for (const auto& option : componentModeOptions) {

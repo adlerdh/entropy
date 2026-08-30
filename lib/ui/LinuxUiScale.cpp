@@ -1,5 +1,6 @@
 #include "ui/LinuxUiScale.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -56,13 +57,9 @@ std::optional<std::string_view> tagValue(std::string_view text, std::string_view
 
 bool hasOnlyTrailingWhitespace(std::string_view text, std::size_t begin)
 {
-  for (std::size_t i = begin; i < text.size(); ++i) {
-    if (!std::isspace(static_cast<unsigned char>(text[i]))) {
-      return false;
-    }
-  }
-
-  return true;
+  return std::all_of(text.begin() + static_cast<std::ptrdiff_t>(begin), text.end(), [](const char character) {
+    return std::isspace(static_cast<unsigned char>(character));
+  });
 }
 
 std::optional<float> parseScale(std::string_view scaleText)

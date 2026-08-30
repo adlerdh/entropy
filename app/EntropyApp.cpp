@@ -82,11 +82,9 @@ std::vector<fs::path> nonEmptyPaths(const std::vector<fs::path>& fileNames)
   std::vector<fs::path> paths;
   paths.reserve(fileNames.size());
 
-  for (const auto& fileName : fileNames) {
-    if (!fileName.empty()) {
-      paths.push_back(fileName);
-    }
-  }
+  std::copy_if(fileNames.begin(), fileNames.end(), std::back_inserter(paths), [](const fs::path& fileName) {
+    return !fileName.empty();
+  });
 
   return paths;
 }
@@ -1321,9 +1319,11 @@ void EntropyApp::continueRasterImageHeaderPreflight()
     std::vector<fs::path> allImages;
     allImages.reserve(numSerializedImages(*m_pendingRasterProject));
     allImages.push_back(m_pendingRasterProject->m_referenceImage.m_imageFileName);
-    for (const auto& image : m_pendingRasterProject->m_additionalImages) {
-      allImages.push_back(image.m_imageFileName);
-    }
+    std::transform(
+      m_pendingRasterProject->m_additionalImages.begin(),
+      m_pendingRasterProject->m_additionalImages.end(),
+      std::back_inserter(allImages),
+      [](const serialize::Image& image) { return image.m_imageFileName; });
 
     while (m_pendingRasterImageIndex < numSerializedImages(*m_pendingRasterProject)) {
       serialize::Image* image = serializedImageAt(*m_pendingRasterProject, m_pendingRasterImageIndex);
@@ -1353,9 +1353,11 @@ void EntropyApp::continueRasterImageHeaderPreflight()
   if (m_pendingRasterImageHeaderContext == RasterImageHeaderContext::AddImage) {
     std::vector<fs::path> allImages;
     allImages.reserve(m_pendingRasterAddImages.size());
-    for (const auto& image : m_pendingRasterAddImages) {
-      allImages.push_back(image.m_imageFileName);
-    }
+    std::transform(
+      m_pendingRasterAddImages.begin(),
+      m_pendingRasterAddImages.end(),
+      std::back_inserter(allImages),
+      [](const serialize::Image& image) { return image.m_imageFileName; });
 
     while (m_pendingRasterImageIndex < m_pendingRasterAddImages.size()) {
       if (promptForImage(m_pendingRasterAddImages[m_pendingRasterImageIndex], allImages)) {
@@ -1367,9 +1369,11 @@ void EntropyApp::continueRasterImageHeaderPreflight()
     std::vector<serialize::Image> imagesToAdd = std::exchange(m_pendingRasterAddImages, {});
     std::vector<fs::path> imageFiles;
     imageFiles.reserve(imagesToAdd.size());
-    for (const auto& image : imagesToAdd) {
-      imageFiles.push_back(image.m_imageFileName);
-    }
+    std::transform(
+      imagesToAdd.begin(),
+      imagesToAdd.end(),
+      std::back_inserter(imageFiles),
+      [](const serialize::Image& image) { return image.m_imageFileName; });
     m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
     m_pendingRasterImageIndex = 0;
 
@@ -2125,11 +2129,12 @@ void EntropyApp::markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind ki
   }
 
   std::scoped_lock lock(m_data.guiData().m_loadingStatus->mutex);
-  for (auto& item : m_data.guiData().m_loadingStatus->items) {
-    if (!item.loaded && item.kind == kind && loading_status::equivalentPath(item.fileName, fileName)) {
-      item.loaded = true;
-      break;
-    }
+  auto& items = m_data.guiData().m_loadingStatus->items;
+  const auto item = std::find_if(items.begin(), items.end(), [&](const GuiData::LoadingStatusItem& candidate) {
+    return !candidate.loaded && candidate.kind == kind && loading_status::equivalentPath(candidate.fileName, fileName);
+  });
+  if (item != items.end()) {
+    item->loaded = true;
   }
 }
 

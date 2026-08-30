@@ -575,9 +575,9 @@ std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, co
   std::vector<LayoutSpec> specs;
   specs.reserve(layouts.size());
 
-  for (const auto& layout : layouts) {
-    specs.emplace_back(createLayoutSpec(layout, orderedImageUids));
-  }
+  std::transform(layouts.begin(), layouts.end(), std::back_inserter(specs), [&orderedImageUids](const Layout& layout) {
+    return createLayoutSpec(layout, orderedImageUids);
+  });
 
   return specs;
 }

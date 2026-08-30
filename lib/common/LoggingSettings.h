@@ -60,10 +60,12 @@ constexpr std::span<const LogLevelChoice> allLogLevelChoices()
  */
 constexpr std::string_view logLevelLabel(spdlog::level::level_enum level)
 {
-  for (const LogLevelChoice& choice : allLogLevelChoices()) {
-    if (choice.level == level) {
-      return choice.label;
-    }
+  const auto choices = allLogLevelChoices();
+  const auto choice = std::find_if(choices.begin(), choices.end(), [level](const LogLevelChoice& candidate) {
+    return candidate.level == level;
+  });
+  if (choice != choices.end()) {
+    return choice->label;
   }
 
   return "Info";

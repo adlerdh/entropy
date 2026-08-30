@@ -67,9 +67,7 @@ std::vector<std::string> pathVectorToStrings(const std::vector<std::filesystem::
 {
   std::vector<std::string> values;
   values.reserve(paths.size());
-  for (const auto& path : paths) {
-    values.push_back(pathToString(path));
-  }
+  std::transform(paths.begin(), paths.end(), std::back_inserter(values), pathToString);
   return values;
 }
 
@@ -77,9 +75,7 @@ std::vector<std::filesystem::path> pathVectorFromJson(const nlohmann::json& json
 {
   std::vector<std::filesystem::path> paths;
   paths.reserve(json.size());
-  for (const auto& item : json) {
-    paths.push_back(pathFromJson(item));
-  }
+  std::transform(json.begin(), json.end(), std::back_inserter(paths), pathFromJson);
   return paths;
 }
 

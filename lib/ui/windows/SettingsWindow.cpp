@@ -511,13 +511,11 @@ bool renderLocalNccSettings(
 
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
     {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
-  int patchIndex = 2;
-  for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
-    if (renderData.m_localNccPatchRadius == k_patchSizes[i].first) {
-      patchIndex = static_cast<int>(i);
-      break;
-    }
-  }
+  const auto selectedPatch = std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
+    return renderData.m_localNccPatchRadius == option.first;
+  });
+  int patchIndex =
+    selectedPatch == k_patchSizes.end() ? 2 : static_cast<int>(std::distance(k_patchSizes.begin(), selectedPatch));
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
     for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
       const bool selected = static_cast<int>(i) == patchIndex;
@@ -597,13 +595,11 @@ bool renderLocalLinearResidualSettings(
 
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
     {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
-  int patchIndex = 2;
-  for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
-    if (renderData.m_localLinearResidualPatchRadius == k_patchSizes[i].first) {
-      patchIndex = static_cast<int>(i);
-      break;
-    }
-  }
+  const auto selectedPatch = std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
+    return renderData.m_localLinearResidualPatchRadius == option.first;
+  });
+  int patchIndex =
+    selectedPatch == k_patchSizes.end() ? 2 : static_cast<int>(std::distance(k_patchSizes.begin(), selectedPatch));
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
     for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
       const bool selected = static_cast<int>(i) == patchIndex;
@@ -2882,10 +2878,11 @@ static void renderSettingsNavigation(GuiData::SettingsTab& selectedPage)
 
 float settingsNavigationAutoWidth()
 {
-  float width = 0.0f;
-  for (const ui_settings::SettingsPageChoice& choice : ui_settings::settingsPageChoices()) {
-    width = std::max(width, ImGui::CalcTextSize(choice.label).x);
-  }
+  const auto choices = ui_settings::settingsPageChoices();
+  const float width =
+    std::accumulate(choices.begin(), choices.end(), 0.0f, [](const float current, const auto& choice) {
+      return std::max(current, ImGui::CalcTextSize(choice.label).x);
+    });
 
   const ImGuiStyle& style = ImGui::GetStyle();
   return width + (2.0f * style.FramePadding.x) + (2.0f * style.WindowPadding.x);

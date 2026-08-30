@@ -92,9 +92,11 @@ std::vector<ParameterValue> defaultParameterValues(const BackendCapabilities& ca
 {
   std::vector<ParameterValue> values;
   values.reserve(capabilities.parameters.size());
-  for (const ParameterSchema& parameter : capabilities.parameters) {
-    values.push_back(ParameterValue{parameter.key, parameter.defaultValue});
-  }
+  std::transform(
+    capabilities.parameters.begin(),
+    capabilities.parameters.end(),
+    std::back_inserter(values),
+    [](const ParameterSchema& parameter) { return ParameterValue{parameter.key, parameter.defaultValue}; });
   return values;
 }
 
@@ -389,9 +391,7 @@ std::vector<std::string> commandPreviews(const SetupState& state, const CommandG
   const std::vector<CommandSpec> commands = generateCommands(job, commandOptions);
   std::vector<std::string> previews;
   previews.reserve(commands.size());
-  for (const CommandSpec& command : commands) {
-    previews.push_back(displayCommand(command));
-  }
+  std::transform(commands.begin(), commands.end(), std::back_inserter(previews), displayCommand);
   return previews;
 }
 

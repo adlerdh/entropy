@@ -70,9 +70,7 @@ TEST_CASE("UI color presets initialize every ImGui color slot", "[ui][style]")
 
   for (const UiColorPreset preset : sk_presets) {
     ImGuiStyle style;
-    for (ImVec4& color : style.Colors) {
-      color = sentinel;
-    }
+    std::fill(std::begin(style.Colors), std::end(style.Colors), sentinel);
 
     applyUiStylePreset(preset, &style);
 

@@ -996,9 +996,11 @@ std::vector<const registration::JobRecord*> sortedJobs(
 {
   std::vector<const registration::JobRecord*> sorted;
   sorted.reserve(jobs.jobs().size());
-  for (const registration::JobRecord& job : jobs.jobs()) {
-    sorted.push_back(&job);
-  }
+  std::transform(
+    jobs.jobs().begin(),
+    jobs.jobs().end(),
+    std::back_inserter(sorted),
+    [](const registration::JobRecord& job) { return &job; });
 
   if (!sortSpecs || sortSpecs->SpecsCount == 0) {
     return sorted;
@@ -2189,14 +2191,10 @@ void renderRegistrationProgressWindow(AppData& appData)
     return;
   }
 
-  const registration::JobRecord* activeJob = nullptr;
-  for (const registration::JobRecord& job : jobs.jobs()) {
-    if (registration::isActiveJobStatus(job.status) && job.status != registration::JobStatus::ImportingOutputs) {
-      activeJob = &job;
-      break;
-    }
-  }
-  if (!activeJob) {
+  const auto activeJob = std::find_if(jobs.jobs().begin(), jobs.jobs().end(), [](const registration::JobRecord& job) {
+    return registration::isActiveJobStatus(job.status) && job.status != registration::JobStatus::ImportingOutputs;
+  });
+  if (activeJob == jobs.jobs().end()) {
     return;
   }
 

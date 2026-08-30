@@ -1090,13 +1090,8 @@ void AnnotationStateMachine::flipSelectedAnnotation(const FlipDirection& flipDir
   }
 
   // Compute annotation centroid (in annotation plane coordinates)
-  glm::vec2 polyCentroid{0.0f, 0.0f};
-
-  for (auto vertex : vertices) {
-    polyCentroid += vertex;
-  }
-
-  polyCentroid = (1.0f / static_cast<float>(vertices.size())) * polyCentroid;
+  const glm::vec2 polyCentroid =
+    (1.0f / static_cast<float>(vertices.size())) * std::accumulate(vertices.begin(), vertices.end(), glm::vec2{0.0f});
 
   // Transform polygon vertex in annotation plane to view Clip space:
   auto transformFromAnnotPlaneToViewClip =
@@ -1292,10 +1287,14 @@ std::vector<uuid> AnnotationStateMachine::findHitPolygon(const ViewHit& hit)
     bool hitPolygon = false;
     if (forwardWarped) {
       std::vector<glm::vec2> miewportVertices;
-      for (const glm::vec2& vertex : annot->getBoundaryVertices(OUTER_BOUNDARY)) {
-        miewportVertices.push_back(
-          warpedAnnotationVertexMiewport(*ms_appData, hit, *activeImageUid, *activeImage, *annot, vertex));
-      }
+      const auto& boundaryVertices = annot->getBoundaryVertices(OUTER_BOUNDARY);
+      std::transform(
+        boundaryVertices.begin(),
+        boundaryVertices.end(),
+        std::back_inserter(miewportVertices),
+        [&](const glm::vec2& vertex) {
+          return warpedAnnotationVertexMiewport(*ms_appData, hit, *activeImageUid, *activeImage, *annot, vertex);
+        });
       hitPolygon = math::pnpoly(miewportVertices, hitMiewportPos);
     }
     else {

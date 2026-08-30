@@ -80,10 +80,7 @@ glm::vec3 meshPositionCenter(const rendering::mesh::MeshData& mesh) noexcept
     return glm::vec3{0.0f};
   }
 
-  glm::vec3 sum{0.0f};
-  for (const glm::vec3& position : mesh.positions) {
-    sum += position;
-  }
+  const glm::vec3 sum = std::accumulate(mesh.positions.begin(), mesh.positions.end(), glm::vec3{0.0f});
   return sum / static_cast<float>(mesh.positions.size());
 }
 

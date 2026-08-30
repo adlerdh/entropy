@@ -38,9 +38,9 @@ void validateAnnotationVersion(const json& value)
 json boundaryToJson(const std::vector<glm::vec2>& vertices)
 {
   json boundary = json::array();
-  for (const auto& vertex : vertices) {
-    boundary.emplace_back(std::vector<float>{vertex.x, vertex.y});
-  }
+  std::transform(vertices.begin(), vertices.end(), std::back_inserter(boundary), [](const glm::vec2& vertex) {
+    return std::vector<float>{vertex.x, vertex.y};
+  });
   return boundary;
 }
 
@@ -93,9 +93,7 @@ void appendAnnotationsFromArray(const json& annotationArrayJson, std::vector<Ann
   }
 
   annotations.reserve(annotations.size() + annotationArrayJson.size());
-  for (const auto& annotJson : annotationArrayJson) {
-    annotations.emplace_back(annotJson);
-  }
+  std::copy(annotationArrayJson.begin(), annotationArrayJson.end(), std::back_inserter(annotations));
 }
 
 template<typename T>
@@ -273,9 +271,7 @@ void from_json(const json& j, std::vector<Annotation>& annots)
 json annotationsToJson(const std::vector<Annotation>& annotations)
 {
   json annotationArray = json::array();
-  for (const Annotation& annotation : annotations) {
-    annotationArray.emplace_back(annotation);
-  }
+  std::copy(annotations.begin(), annotations.end(), std::back_inserter(annotationArray));
 
   return json{{"version", annotationVersionToJson()}, {"annotations", std::move(annotationArray)}};
 }

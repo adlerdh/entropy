@@ -223,8 +223,7 @@ std::array<float, kSpatialK> computePerRegionMax(const std::vector<GlyphProfile>
   for (const auto& p : profiles)
     for (int i = 0; i < kSpatialK; i++)
       mx[static_cast<size_t>(i)] = std::max(mx[static_cast<size_t>(i)], p.regionFill[static_cast<size_t>(i)]);
-  for (auto& v : mx)
-    v = std::max(v, 1e-6f);
+  std::transform(mx.begin(), mx.end(), mx.begin(), [](const float value) { return std::max(value, 1e-6f); });
   return mx;
 }
 

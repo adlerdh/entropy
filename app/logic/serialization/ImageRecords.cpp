@@ -95,9 +95,7 @@ json segmentationLabelsToJson(const serialize::SegmentationLabels& labels)
   }
   if (!labels.m_values.empty()) {
     json values = json::array();
-    for (const auto& value : labels.m_values) {
-      values.push_back(segmentationLabelToJson(value));
-    }
+    std::transform(labels.m_values.begin(), labels.m_values.end(), std::back_inserter(values), segmentationLabelToJson);
     j["values"] = std::move(values);
   }
   return j;
@@ -303,9 +301,7 @@ void to_json(json& j, const serialize::DicomSource& source)
   if (!source.m_files.empty()) {
     std::vector<std::string> paths;
     paths.reserve(source.m_files.size());
-    for (const auto& file : source.m_files) {
-      paths.push_back(pathToString(file));
-    }
+    std::transform(source.m_files.begin(), source.m_files.end(), std::back_inserter(paths), pathToString);
     j["paths"] = paths;
   }
 }

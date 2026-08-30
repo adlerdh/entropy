@@ -110,35 +110,33 @@ void Rendering::renderAllImagesForView(
       CurrentImages imageSegPairs;
       CurrentImages sourceImages;
 
+      const auto appendSourceImages = [&sourceImages](const auto& imageUids) {
+        std::transform(imageUids.begin(), imageUids.end(), std::back_inserter(sourceImages), [](const auto& imageUid) {
+          return ImgSegPair{imageUid, std::nullopt};
+        });
+      };
+
       int displayModeUniform = 0;
 
       if (ViewRenderMode::Image == view.renderMode()) {
         displayModeUniform = 0;
         imageSegPairs = getImageAndSegUidsForImageShaders(view.renderedImages());
-        for (const auto& imageUid : view.renderedImages()) {
-          sourceImages.emplace_back(imageUid, std::nullopt);
-        }
+        appendSourceImages(view.renderedImages());
       }
       else if (ViewRenderMode::Checkerboard == view.renderMode()) {
         displayModeUniform = 1;
         imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
-        for (const auto& imageUid : view.metricImages()) {
-          sourceImages.emplace_back(imageUid, std::nullopt);
-        }
+        appendSourceImages(view.metricImages());
       }
       else if (ViewRenderMode::Quadrants == view.renderMode()) {
         displayModeUniform = 2;
         imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages());
-        for (const auto& imageUid : view.metricImages()) {
-          sourceImages.emplace_back(imageUid, std::nullopt);
-        }
+        appendSourceImages(view.metricImages());
       }
       else if (ViewRenderMode::Flashlight == view.renderMode()) {
         displayModeUniform = 3;
         imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages());
-        for (const auto& imageUid : view.metricImages()) {
-          sourceImages.emplace_back(imageUid, std::nullopt);
-        }
+        appendSourceImages(view.metricImages());
       }
 
       // The first image in the stack is the fixed one:

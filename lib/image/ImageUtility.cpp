@@ -44,11 +44,12 @@ std::string stripMedicalImageExtension(std::string fileName)
     ".hdf5",   ".jpeg",   ".jpg",     ".jpe",    ".png",    ".tiff",    ".tif",     ".bmp",    ".dib"};
 
   const std::string lowerFileName = toLowerAscii(fileName);
-  for (const std::string_view extension : k_medicalImageExtensions) {
-    if (endsWith(lowerFileName, extension)) {
-      fileName.resize(fileName.size() - extension.size());
-      break;
-    }
+  const auto extension = std::find_if(
+    k_medicalImageExtensions.begin(),
+    k_medicalImageExtensions.end(),
+    [&lowerFileName](const std::string_view candidate) { return endsWith(lowerFileName, candidate); });
+  if (extension != k_medicalImageExtensions.end()) {
+    fileName.resize(fileName.size() - extension->size());
   }
 
   return fileName;

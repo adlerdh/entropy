@@ -41,9 +41,9 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
 {
   if (value.is_array()) {
     ordered_json result = ordered_json::array();
-    for (const json& element : value) {
-      result.push_back(orderedProjectJson(element, path));
-    }
+    std::transform(value.begin(), value.end(), std::back_inserter(result), [path](const json& element) {
+      return orderedProjectJson(element, path);
+    });
     return result;
   }
   if (!value.is_object()) {

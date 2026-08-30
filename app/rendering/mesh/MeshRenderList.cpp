@@ -1,5 +1,8 @@
 #include "rendering/mesh/MeshRenderList.h"
 
+#include <algorithm>
+#include <iterator>
+
 namespace rendering::mesh
 {
 
@@ -46,11 +49,11 @@ std::vector<std::reference_wrapper<const MeshRenderable>> shadowCastingRenderabl
   std::vector<std::reference_wrapper<const MeshRenderable>> renderables;
   renderables.reserve(list.opaque.size() + list.alphaOverDdp.size());
   const auto appendCasters = [&renderables](const auto& bucket) {
-    for (const std::reference_wrapper<const MeshRenderable> renderable : bucket) {
-      if (renderable.get().castsShadow) {
-        renderables.push_back(renderable);
-      }
-    }
+    std::copy_if(
+      bucket.begin(),
+      bucket.end(),
+      std::back_inserter(renderables),
+      [](const std::reference_wrapper<const MeshRenderable> renderable) { return renderable.get().castsShadow; });
   };
   appendCasters(list.opaque);
   appendCasters(list.alphaOverDdp);

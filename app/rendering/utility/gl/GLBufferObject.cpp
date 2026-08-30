@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 
 #include <limits>
+#include <numeric>
 #include <utility>
 
 GLBufferObject::GLBufferObject(const BufferType& type, const BufferUsagePattern& usage)
@@ -128,10 +129,11 @@ void* GLBufferObject::mapRange(
   GLsizeiptr length,
   const std::set<BufferMapRangeAccessFlag>& accessFlags)
 {
-  GLbitfield access = 0u;
-  for (const BufferMapRangeAccessFlag& f : accessFlags) {
-    access |= underlyingType(f);
-  }
+  const GLbitfield access = std::accumulate(
+    accessFlags.begin(),
+    accessFlags.end(),
+    GLbitfield{0u},
+    [](const GLbitfield flags, const auto flag) { return flags | underlyingType(flag); });
 
   void* buffer = glMapBufferRange(m_typeEnum, offset, length, access);
   CHECK_GL_ERROR(m_errorChecker);

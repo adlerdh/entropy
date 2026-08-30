@@ -42,11 +42,7 @@ std::string argumentAfter(const std::vector<std::string>& args, const std::strin
 
 bool hasArgSequence(const std::vector<std::string>& args, std::initializer_list<const char*> sequence)
 {
-  std::vector<std::string> expected;
-  expected.reserve(sequence.size());
-  for (const char* value : sequence) {
-    expected.emplace_back(value);
-  }
+  const std::vector<std::string> expected{sequence.begin(), sequence.end()};
   return std::search(args.begin(), args.end(), expected.begin(), expected.end()) != args.end();
 }
 

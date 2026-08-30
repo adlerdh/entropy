@@ -185,10 +185,10 @@ double patternValue(const ImageSpec& spec, const std::vector<std::size_t>& index
     case Pattern::Ramp:
       return spec.offset + spec.amplitude * (x + 2.0 * y + 3.0 * z + 4.0 * t + static_cast<double>(component));
     case Pattern::Checker: {
-      std::size_t parity = component;
-      for (const std::size_t value : index) {
-        parity += value / 4u;
-      }
+      const std::size_t parity =
+        std::accumulate(index.begin(), index.end(), component, [](const std::size_t sum, const std::size_t value) {
+          return sum + value / 4u;
+        });
       return spec.offset + ((parity % 2u == 0u) ? spec.amplitude : -spec.amplitude);
     }
     case Pattern::Gaussian: {

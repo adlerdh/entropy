@@ -126,11 +126,13 @@ std::list<uuids::uuid> raycastableImageUids(
   const std::unordered_map<uuids::uuid, PlanarTextureLayout>& textureLayouts)
 {
   std::list<uuids::uuid> raycastableUids;
-  for (const uuids::uuid& imageUid : imageUids) {
-    if (imageHasRaycastableTextureLayout(textureLayouts, imageUid)) {
-      raycastableUids.push_back(imageUid);
-    }
-  }
+  std::copy_if(
+    imageUids.begin(),
+    imageUids.end(),
+    std::back_inserter(raycastableUids),
+    [&textureLayouts](const uuids::uuid& imageUid) {
+      return imageHasRaycastableTextureLayout(textureLayouts, imageUid);
+    });
   return raycastableUids;
 }
 

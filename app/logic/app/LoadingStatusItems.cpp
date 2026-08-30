@@ -60,9 +60,11 @@ void appendSerializedImageItems(std::vector<GuiData::LoadingStatusItem>& items, 
   if (image.m_forwardWarpFieldPath) {
     items.push_back(imageItem(*image.m_forwardWarpFieldPath));
   }
-  for (const auto& seg : image.m_segmentations) {
-    items.push_back(segmentationItem(seg.m_segFileName));
-  }
+  std::transform(
+    image.m_segmentations.begin(),
+    image.m_segmentations.end(),
+    std::back_inserter(items),
+    [](const serialize::Segmentation& segmentation) { return segmentationItem(segmentation.m_segFileName); });
 }
 } // namespace
 
@@ -72,9 +74,9 @@ std::vector<GuiData::LoadingStatusItem> imageItems(const std::vector<fs::path>& 
 {
   std::vector<GuiData::LoadingStatusItem> items;
   items.reserve(fileNames.size());
-  for (const auto& fileName : fileNames) {
-    items.push_back(imageItem(fileName));
-  }
+  std::transform(fileNames.begin(), fileNames.end(), std::back_inserter(items), [](const fs::path& fileName) {
+    return imageItem(fileName);
+  });
   return items;
 }
 
@@ -93,11 +95,11 @@ std::vector<GuiData::LoadingStatusItem> dicomSeriesItems(const std::vector<dicom
 {
   std::vector<GuiData::LoadingStatusItem> items;
   items.reserve(series.size());
-  for (const auto& seriesInfo : series) {
-    items.push_back(imageItem(
+  std::transform(series.begin(), series.end(), std::back_inserter(items), [](const dicom::SeriesInfo& seriesInfo) {
+    return imageItem(
       seriesInfo.files.empty() ? fs::path{seriesInfo.seriesInstanceUid} : seriesInfo.files.front(),
-      totalFileSizeBytes(seriesInfo.files)));
-  }
+      totalFileSizeBytes(seriesInfo.files));
+  });
   return items;
 }
 

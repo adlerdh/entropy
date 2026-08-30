@@ -169,9 +169,9 @@ void renderOpenRecentMenu(const MainMenuBarCallbacks& callbacks)
     if (ImGui::BeginMenu("Projects")) {
       std::vector<std::vector<fs::path>> projectGroups;
       projectGroups.reserve(projects.size());
-      for (const fs::path& project : projects) {
-        projectGroups.push_back({project});
-      }
+      std::transform(projects.begin(), projects.end(), std::back_inserter(projectGroups), [](const fs::path& project) {
+        return std::vector<fs::path>{project};
+      });
       renderRecentGroupMenuItems(
         projectGroups,
         callbacks.canOpenProject,

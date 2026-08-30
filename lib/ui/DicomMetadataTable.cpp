@@ -14,10 +14,13 @@ float fittedColumnWidth(
   const std::vector<dicom::MetadataEntry>& entries,
   const std::function<const std::string&(const dicom::MetadataEntry&)>& value)
 {
-  float width = ImGui::CalcTextSize(header).x;
-  for (const auto& entry : entries) {
-    width = std::max(width, ImGui::CalcTextSize(value(entry).c_str()).x);
-  }
+  const float width = std::accumulate(
+    entries.begin(),
+    entries.end(),
+    ImGui::CalcTextSize(header).x,
+    [&value](const float current, const auto& entry) {
+      return std::max(current, ImGui::CalcTextSize(value(entry).c_str()).x);
+    });
 
   const float padding = 2.0f * (ImGui::GetStyle().CellPadding.x + ImGui::GetStyle().ItemSpacing.x);
   return width + padding;
@@ -61,9 +64,9 @@ void renderDicomMetadataTable(
 
     std::vector<const dicom::MetadataEntry*> rows;
     rows.reserve(entries.size());
-    for (const auto& entry : entries) {
-      rows.push_back(&entry);
-    }
+    std::transform(entries.begin(), entries.end(), std::back_inserter(rows), [](const dicom::MetadataEntry& entry) {
+      return &entry;
+    });
 
     if (ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs()) {
       if (sortSpecs->SpecsCount > 0) {

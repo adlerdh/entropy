@@ -1431,10 +1431,10 @@ void renderEmptyWorkspace(
     std::string{ICON_FK_FILES_O} + " Open DICOM Series...",
     std::string{ICON_FK_FOLDER_OPEN_O} + " Open Project..."};
 
-  float buttonWidth = 0.0f;
-  for (const std::string& label : buttonLabels) {
-    buttonWidth = std::max(buttonWidth, buttonWidthForLabel(label.c_str()));
-  }
+  const float buttonWidth =
+    std::accumulate(buttonLabels.begin(), buttonLabels.end(), 0.0f, [](const float current, const std::string& label) {
+      return std::max(current, buttonWidthForLabel(label.c_str()));
+    });
 
   const float buttonsWidth = 3.0f * buttonWidth + 2.0f * style.ItemSpacing.x;
   const float recentWidth = ui::scaledPixel(560.0f);
@@ -4374,17 +4374,25 @@ void ImGuiWrapper::render()
       .recentImageGroups =
         [this]() {
           std::vector<std::vector<fs::path>> groups;
-          for (const RecentPathGroup& group : m_appData.settings().recentImageGroups()) {
-            groups.push_back(group.paths);
-          }
+          const auto& recentGroups = m_appData.settings().recentImageGroups();
+          groups.reserve(recentGroups.size());
+          std::transform(
+            recentGroups.begin(),
+            recentGroups.end(),
+            std::back_inserter(groups),
+            [](const RecentPathGroup& group) { return group.paths; });
           return groups;
         },
       .recentDicomGroups =
         [this]() {
           std::vector<std::vector<fs::path>> groups;
-          for (const RecentPathGroup& group : m_appData.settings().recentDicomGroups()) {
-            groups.push_back(group.paths);
-          }
+          const auto& recentGroups = m_appData.settings().recentDicomGroups();
+          groups.reserve(recentGroups.size());
+          std::transform(
+            recentGroups.begin(),
+            recentGroups.end(),
+            std::back_inserter(groups),
+            [](const RecentPathGroup& group) { return group.paths; });
           return groups;
         },
       .clearRecents =
