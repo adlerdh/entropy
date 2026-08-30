@@ -98,7 +98,7 @@ Image makeRawImage()
   ImageHeader header(ioInfo, ioInfo, false);
   std::vector<uint16_t> values{1, 2, 3, 4};
   std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "raw",
     Image::ImageRepresentation::Image,
@@ -117,7 +117,7 @@ Image makeRawRasterRgbImage()
 
   std::vector<std::uint8_t> values{40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150};
   std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "rgb",
     Image::ImageRepresentation::Image,
@@ -137,7 +137,7 @@ Image makeSparseBinaryImage()
   std::vector<float> values(ioInfo.m_sizeInfo.m_imageSizeInPixels, 0.0f);
   values.at(values.size() / 2) = 100.0f;
   std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "sparse-binary",
     Image::ImageRepresentation::Image,
@@ -154,7 +154,7 @@ Image makeThreeComponentImage()
   const std::vector<float> c1{4.0f, 3.0f, 2.0f, 1.0f};
   const std::vector<float> c2{2.0f, 6.0f, 10.0f, 14.0f};
   std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "three-component",
     Image::ImageRepresentation::Image,
@@ -171,7 +171,7 @@ Image makeTimeSeriesVectorImage()
   const std::vector<float> c1{5.0f, 6.0f, 7.0f, 8.0f, 15.0f, 16.0f, 17.0f, 18.0f};
   const std::vector<float> c2{9.0f, 10.0f, 11.0f, 12.0f, 19.0f, 20.0f, 21.0f, 22.0f};
   std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "time-series-vector",
     Image::ImageRepresentation::Image,
@@ -207,7 +207,7 @@ Image makeTimeSeriesLinearVectorField()
   }
 
   std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "time-series-linear-vector-field",
     Image::ImageRepresentation::Image,
@@ -242,7 +242,7 @@ Image makeLinearVectorField(const std::vector<std::vector<double>>& directions =
   }
 
   std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "linear-vector-field",
     Image::ImageRepresentation::Image,
@@ -273,7 +273,7 @@ Image makeQuadraticVectorField()
   }
 
   std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "quadratic-vector-field",
     Image::ImageRepresentation::Image,

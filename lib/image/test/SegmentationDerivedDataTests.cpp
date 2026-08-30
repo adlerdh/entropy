@@ -47,7 +47,7 @@ Image makeSegmentation()
   std::vector<uint16_t> labels(static_cast<std::size_t>(dims.x) * dims.y * dims.z, 0);
   labels[2 + dims.x * (2 + dims.y * 2)] = 1;
   std::vector<const void*> buffers{labels.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "seg",
     Image::ImageRepresentation::Segmentation,
@@ -64,7 +64,7 @@ Image makeScalarImage(glm::uvec3 dims = {4, 4, 4})
     values[i] = static_cast<float>(i % 7);
   }
   std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "image",
     Image::ImageRepresentation::Image,
@@ -79,7 +79,7 @@ Image makeInterleavedImage()
   ImageHeader header(ioInfo, ioInfo, true);
   std::vector<uint16_t> values{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
   std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "interleaved",
     Image::ImageRepresentation::Image,

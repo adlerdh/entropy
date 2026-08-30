@@ -58,7 +58,7 @@ Image makeConstantWarp(glm::uvec3 dims, glm::vec3 displacement, const std::strin
   std::vector<float> y(numPixels, displacement.y);
   std::vector<float> z(numPixels, displacement.z);
   std::vector<const void*> buffers{x.data(), y.data(), z.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     name,
     Image::ImageRepresentation::Image,

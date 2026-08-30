@@ -81,6 +81,20 @@ public:
     const std::vector<const void*>& imageDataComponents,
     ImageTimeAxis timeAxis = {});
 
+  /**
+   * @brief Create an image by copying raw component buffers into image-owned storage.
+   *
+   * The source buffers only need to remain valid for the duration of this call. The returned
+   * image does not retain pointers or references to them.
+   */
+  static Image fromCopiedData(
+    ImageHeader header,
+    const std::string& displayName,
+    const ImageRepresentation& imageRep,
+    const MultiComponentBufferType& bufferType,
+    const std::vector<const void*>& imageDataComponents,
+    ImageTimeAxis timeAxis = {});
+
   Image(const Image&) = default;
   Image& operator=(const Image&) = default;
 

@@ -589,6 +589,17 @@ Image::Image(
   m_loadState = LoadState::LoadedPixels;
 }
 
+Image Image::fromCopiedData(
+  ImageHeader header,
+  const std::string& displayName,
+  const ImageRepresentation& imageRep,
+  const MultiComponentBufferType& bufferType,
+  const std::vector<const void*>& imageDataComponents,
+  ImageTimeAxis timeAxis)
+{
+  return Image(std::move(header), displayName, imageRep, bufferType, imageDataComponents, std::move(timeAxis));
+}
+
 Image::LoadState Image::loadState() const
 {
   return m_loadState;

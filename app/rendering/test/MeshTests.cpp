@@ -190,7 +190,7 @@ Image makeMeshScalarImage()
   }
 
   const std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "mesh-grid-test",
     Image::ImageRepresentation::Image,
@@ -215,7 +215,7 @@ Image makeMeshLabelImage()
     targetLabel,
     adjacentLabel};
   const std::vector<const void*> buffers{values.data()};
-  return Image(
+  return Image::fromCopiedData(
     header,
     "mesh-label-test",
     Image::ImageRepresentation::Segmentation,
