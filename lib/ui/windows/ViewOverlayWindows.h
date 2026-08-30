@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+struct ImFont;
+
 /**
  * @brief Immutable placement and identity information shared by per-view overlay controls.
  */
@@ -87,6 +89,16 @@ struct ViewOverlayModeCallbacks
   std::function<bool()> areThreeDImagePlanesGloballyEnabled{};               //!< Global 3D image-plane master switch
   std::function<bool()> getThreeDImagePlanesVisible{};                       //!< Whether 3D image planes are shown
   std::function<void(bool)> setThreeDImagePlanesVisible{};                   //!< Set 3D image-plane visibility
+  std::function<bool()> getThreeDImagePlaneOpacityFadeEnabled{};             //!< Whether planes fade with view angle
+  std::function<void(bool)> setThreeDImagePlaneOpacityFadeEnabled{};         //!< Set view-angle plane fading
+  std::function<bool()> getThreeDPlaneSegmentationsVisible{};                //!< Whether planes show segmentations
+  std::function<void(bool)> setThreeDPlaneSegmentationsVisible{};            //!< Set segmentation visibility on planes
+  std::function<bool()> getThreeDCrosshairsVisible{};                        //!< Whether 3D crosshairs are shown
+  std::function<void(bool)> setThreeDCrosshairsVisible{};                    //!< Set 3D crosshairs visibility
+  std::function<bool()> getThreeDImageVolumeBoundsVisible{};                 //!< Whether image volume bounds are shown
+  std::function<void(bool)> setThreeDImageVolumeBoundsVisible{};             //!< Set image volume bounds visibility
+  std::function<void()> openThreeDRenderingSettings{};                       //!< Open full 3D rendering settings
+  ImFont* threeDOptionsHeadingFont = nullptr;                                //!< Bold font for the options heading
   std::function<std::optional<ClipboardPayload>()>
     exportAsciiClipboardPayload{};             //!< Export this view's ASCII clipboard payload
   std::vector<ViewType> selectableViewTypes{}; //!< Empty means all supported view types are selectable

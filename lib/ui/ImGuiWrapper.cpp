@@ -5001,6 +5001,11 @@ void ImGuiWrapper::render()
         getImageIsReference,
         canImageBeVolumeRendered};
 
+      const char* const boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
+      const auto boldFontIt = m_appData.guiData().m_fonts.find(boldFontPath);
+      ImFont* const threeDOptionsHeadingFont =
+        boldFontIt != m_appData.guiData().m_fonts.end() ? boldFontIt->second : nullptr;
+
       const ViewOverlayModeCallbacks modeCallbacks{
         .viewType = view->viewType(),
         .renderMode = view->renderMode(),
@@ -5065,6 +5070,26 @@ void ImGuiWrapper::render()
         .areThreeDImagePlanesGloballyEnabled = [this]() { return m_appData.renderData().m_showImagePlanesIn3D; },
         .getThreeDImagePlanesVisible = [view]() { return view->threeDState().m_showImagePlanes; },
         .setThreeDImagePlanesVisible = [view](bool visible) { view->threeDState().m_showImagePlanes = visible; },
+        .getThreeDImagePlaneOpacityFadeEnabled =
+          [this]() { return m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle; },
+        .setThreeDImagePlaneOpacityFadeEnabled =
+          [this](bool enabled) { m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle = enabled; },
+        .getThreeDPlaneSegmentationsVisible =
+          [this]() { return m_appData.renderData().m_showSegmentationsOnImagePlanesIn3D; },
+        .setThreeDPlaneSegmentationsVisible =
+          [this](bool visible) { m_appData.renderData().m_showSegmentationsOnImagePlanesIn3D = visible; },
+        .getThreeDCrosshairsVisible = [this]() { return m_appData.renderData().m_showCrosshairsIn3D; },
+        .setThreeDCrosshairsVisible = [this](bool visible) { m_appData.renderData().m_showCrosshairsIn3D = visible; },
+        .getThreeDImageVolumeBoundsVisible =
+          [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
+        .setThreeDImageVolumeBoundsVisible =
+          [this](bool visible) { m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = visible; },
+        .openThreeDRenderingSettings =
+          [this]() {
+            m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Rendering;
+            m_appData.guiData().m_showSettingsWindow = true;
+          },
+        .threeDOptionsHeadingFont = threeDOptionsHeadingFont,
         .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
                                          ? std::function<std::optional<ClipboardPayload>()>([this, viewUid]() {
                                              return m_exportAsciiClipboardPayloadForView(viewUid);

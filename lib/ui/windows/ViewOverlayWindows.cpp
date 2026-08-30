@@ -47,9 +47,169 @@ void helpTooltip(const char* text)
 {
   ImGui::SameLine();
   ImGui::TextDisabled("%s", ICON_FK_QUESTION_CIRCLE_O);
-  if (ImGui::IsItemHovered()) {
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
     ImGui::SetTooltip("%s", text);
   }
+}
+
+void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, std::size_t numImages)
+{
+  if (ImGui::Button(ICON_FK_COGS "##threeDViewOptions")) {
+    ImGui::OpenPopup("threeDViewOptionsPopup");
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", "Open 3D View Options");
+  }
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
+  if (ImGui::BeginPopup("threeDViewOptionsPopup")) {
+    if (modes.threeDOptionsHeadingFont) {
+      ImGui::PushFont(modes.threeDOptionsHeadingFont);
+    }
+    ImGui::TextUnformatted("3D View Options");
+    if (modes.threeDOptionsHeadingFont) {
+      ImGui::PopFont();
+    }
+    ImGui::Separator();
+
+    ImGui::SeparatorText("Render mode");
+    const auto& renderModes = numImages > 1 ? All3dViewRenderModes : All3dNonMetricRenderModes;
+    for (const ViewRenderMode candidate : renderModes) {
+      const bool selected = candidate == modes.renderMode;
+      if (
+        ImGui::Selectable(typeString(candidate).c_str(), selected, ImGuiSelectableFlags_DontClosePopups) &&
+        modes.setRenderMode)
+      {
+        modes.setRenderMode(candidate);
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", descriptionString(candidate).c_str());
+      }
+      if (selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+
+    ImGui::SeparatorText("Projection");
+    ProjectionType projectionType = ProjectionType::Perspective;
+    if (modes.getThreeDProjectionType && modes.setThreeDProjectionType) {
+      projectionType = modes.getThreeDProjectionType();
+      if (ImGui::RadioButton("Perspective", ProjectionType::Perspective == projectionType)) {
+        modes.setThreeDProjectionType(ProjectionType::Perspective);
+        projectionType = ProjectionType::Perspective;
+      }
+      helpTooltip("Use perspective projection so distant objects appear smaller");
+      if (ImGui::RadioButton("Orthographic", ProjectionType::Orthographic == projectionType)) {
+        modes.setThreeDProjectionType(ProjectionType::Orthographic);
+        projectionType = ProjectionType::Orthographic;
+      }
+      helpTooltip("Use orthographic projection so scale does not change with distance");
+    }
+
+    if (modes.getThreeDFovAngleDegrees && modes.setThreeDFovAngleDegrees) {
+      float fovDegrees = modes.getThreeDFovAngleDegrees();
+      const bool isPerspective = ProjectionType::Perspective == projectionType;
+      ImGui::BeginDisabled(!isPerspective);
+      ImGui::SetNextItemWidth(120.0f);
+      if (ImGui::DragFloat("Field of view", &fovDegrees, 0.1f, 0.5f, 150.0f, "%.1f deg", ImGuiSliderFlags_AlwaysClamp))
+      {
+        modes.setThreeDFovAngleDegrees(fovDegrees);
+      }
+      ImGui::EndDisabled();
+      helpTooltip("Perspective view angle; larger values show more of the scene with stronger perspective");
+    }
+
+    ImGui::SeparatorText("Camera");
+    if (modes.getThreeDOrbitTargetMode && modes.setThreeDOrbitTargetMode) {
+      camera3d::OrbitTargetMode targetMode = modes.getThreeDOrbitTargetMode();
+      ImGui::TextUnformatted("Orbit around:");
+      if (ImGui::RadioButton("Image center", camera3d::OrbitTargetMode::VisibleImages == targetMode)) {
+        modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::VisibleImages);
+      }
+      helpTooltip("Rotate the camera around the center of the visible images");
+      if (ImGui::RadioButton("Crosshairs", camera3d::OrbitTargetMode::Crosshairs == targetMode)) {
+        modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::Crosshairs);
+      }
+      helpTooltip("Rotate the camera around the current crosshairs position");
+    }
+
+    if (modes.getThreeDViewPositionFollowsCrosshairs && modes.setThreeDViewPositionFollowsCrosshairs) {
+      bool followsCrosshairs = modes.getThreeDViewPositionFollowsCrosshairs();
+      const bool isPerspective = ProjectionType::Perspective == projectionType;
+      if (!isPerspective && followsCrosshairs) {
+        followsCrosshairs = false;
+        modes.setThreeDViewPositionFollowsCrosshairs(false);
+      }
+      ImGui::BeginDisabled(!isPerspective);
+      if (ImGui::Checkbox("Camera follows crosshairs", &followsCrosshairs)) {
+        modes.setThreeDViewPositionFollowsCrosshairs(followsCrosshairs);
+      }
+      ImGui::EndDisabled();
+      helpTooltip("Move the 3D camera eye when the crosshairs position changes");
+    }
+
+    ImGui::SeparatorText("Scene");
+    const bool imagePlanesGloballyEnabled =
+      !modes.areThreeDImagePlanesGloballyEnabled || modes.areThreeDImagePlanesGloballyEnabled();
+    if (modes.getThreeDImagePlanesVisible && modes.setThreeDImagePlanesVisible) {
+      bool showImagePlanes = modes.getThreeDImagePlanesVisible();
+      ImGui::BeginDisabled(!imagePlanesGloballyEnabled);
+      if (ImGui::Checkbox("Show image planes", &showImagePlanes)) {
+        modes.setThreeDImagePlanesVisible(showImagePlanes);
+      }
+      ImGui::EndDisabled();
+      helpTooltip(
+        imagePlanesGloballyEnabled
+          ? "Show orthogonal image planes through the crosshairs in this 3D view"
+          : "Enable image planes in the full 3D Rendering settings before showing them in this view");
+    }
+
+    ImGui::Spacing();
+    ImGui::TextDisabled("Global scene settings:");
+    ImGui::BeginDisabled(!imagePlanesGloballyEnabled);
+    if (modes.getThreeDImagePlaneOpacityFadeEnabled && modes.setThreeDImagePlaneOpacityFadeEnabled) {
+      bool fadeOpacity = modes.getThreeDImagePlaneOpacityFadeEnabled();
+      if (ImGui::Checkbox("Fade plane opacity with view angle", &fadeOpacity)) {
+        modes.setThreeDImagePlaneOpacityFadeEnabled(fadeOpacity);
+      }
+      helpTooltip("Make image planes more transparent as they become parallel to the camera direction");
+    }
+    if (modes.getThreeDPlaneSegmentationsVisible && modes.setThreeDPlaneSegmentationsVisible) {
+      bool showSegmentations = modes.getThreeDPlaneSegmentationsVisible();
+      if (ImGui::Checkbox("Show segmentations on planes", &showSegmentations)) {
+        modes.setThreeDPlaneSegmentationsVisible(showSegmentations);
+      }
+      helpTooltip("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
+    }
+    ImGui::EndDisabled();
+
+    if (modes.getThreeDCrosshairsVisible && modes.setThreeDCrosshairsVisible) {
+      bool showCrosshairs = modes.getThreeDCrosshairsVisible();
+      if (ImGui::Checkbox("Show crosshairs glyphs", &showCrosshairs)) {
+        modes.setThreeDCrosshairsVisible(showCrosshairs);
+      }
+      helpTooltip("Show red, green, and blue crosshairs axes in mesh-rendered 3D views");
+    }
+    if (modes.getThreeDImageVolumeBoundsVisible && modes.setThreeDImageVolumeBoundsVisible) {
+      bool showVolumeBounds = modes.getThreeDImageVolumeBoundsVisible();
+      if (ImGui::Checkbox("Show image volume bounds", &showVolumeBounds)) {
+        modes.setThreeDImageVolumeBoundsVisible(showVolumeBounds);
+      }
+      helpTooltip("Draw an outline around the full spatial extent of each visible image in 3D views");
+    }
+
+    ImGui::Separator();
+    if (ImGui::Button("Open 3D rendering settings...") && modes.openThreeDRenderingSettings) {
+      modes.openThreeDRenderingSettings();
+      ImGui::CloseCurrentPopup();
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("%s", "Open Application Settings directly to the 3D Rendering page");
+    }
+
+    ImGui::EndPopup();
+  }
+  ImGui::PopStyleVar();
 }
 
 } // namespace
@@ -303,6 +463,8 @@ void renderViewSettingsComboWindow(
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
         if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION)) {
+          ImGui::TextUnformatted("Render mode:");
+          ImGui::Spacing();
           auto renderSelectablesForRenderModes = [&renderMode,
                                                   &setRenderMode](const std::vector<ViewRenderMode>& renderModes) {
             for (const auto& st : renderModes) {
@@ -495,13 +657,6 @@ void renderViewSettingsComboWindow(
         // change.
         const bool xhairsRotated = math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
         static const ImVec2 sk_viewTypePopupPadding(8.0f, 8.0f);
-        if (ViewType::ThreeD == viewType) {
-          const ImGuiStyle& style = ImGui::GetStyle();
-          const float minPopupWidth =
-            ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + ImGui::CalcTextSize("Camera follows crosshairs").x +
-            style.ItemSpacing.x + ImGui::CalcTextSize(ICON_FK_QUESTION_CIRCLE_O).x + 2.0f * sk_viewTypePopupPadding.x;
-          ImGui::SetNextWindowSizeConstraints(ImVec2(minPopupWidth, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
-        }
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_viewTypePopupPadding);
         const bool clickedViewTypeCombo =
           ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
@@ -512,16 +667,10 @@ void renderViewSettingsComboWindow(
         }
 
         if (clickedViewTypeCombo) {
-          ViewType selectedViewType = viewType;
           if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
             auto renderViewTypeChoice = [&](const ViewType& vt) {
               const bool isSelected = (vt == viewType);
-              if (ImGui::Selectable(
-                    to_string(vt, !xhairsRotated).c_str(),
-                    isSelected,
-                    ImGuiSelectableFlags_DontClosePopups))
-              {
-                selectedViewType = vt;
+              if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected)) {
                 setViewType(vt);
               }
 
@@ -540,111 +689,17 @@ void renderViewSettingsComboWindow(
                 renderViewTypeChoice(vt);
               }
             }
-
-            if (ViewType::ThreeD == selectedViewType) {
-              ImGui::Spacing();
-              ImGui::Separator();
-              ImGui::Spacing();
-              ImGui::TextDisabled("Per-view settings:");
-
-              ProjectionType projectionType = ProjectionType::Perspective;
-              if (modes.getThreeDProjectionType && modes.setThreeDProjectionType) {
-                projectionType = modes.getThreeDProjectionType();
-                ImGui::Spacing();
-                ImGui::TextUnformatted("Projection:");
-                if (ImGui::RadioButton("Perspective", ProjectionType::Perspective == projectionType)) {
-                  modes.setThreeDProjectionType(ProjectionType::Perspective);
-                  projectionType = ProjectionType::Perspective;
-                }
-                ImGui::SameLine();
-                if (ImGui::RadioButton("Orthographic", ProjectionType::Orthographic == projectionType)) {
-                  modes.setThreeDProjectionType(ProjectionType::Orthographic);
-                  projectionType = ProjectionType::Orthographic;
-                }
-                helpTooltip("Perspective gives depth foreshortening; orthographic keeps scale constant with distance");
-
-                if (modes.getThreeDFovAngleDegrees && modes.setThreeDFovAngleDegrees) {
-                  float fovDegrees = modes.getThreeDFovAngleDegrees();
-                  const bool isPerspective = ProjectionType::Perspective == projectionType;
-                  if (!isPerspective) {
-                    ImGui::BeginDisabled();
-                  }
-                  ImGui::SetNextItemWidth(120.0f);
-                  if (ImGui::DragFloat(
-                        "Field of view",
-                        &fovDegrees,
-                        0.1f,
-                        0.5f,
-                        150.0f,
-                        "%.1f deg",
-                        ImGuiSliderFlags_AlwaysClamp))
-                  {
-                    modes.setThreeDFovAngleDegrees(fovDegrees);
-                  }
-                  helpTooltip("Perspective view angle; larger values show more of the scene with stronger perspective");
-                  if (!isPerspective) {
-                    ImGui::EndDisabled();
-                  }
-                }
-              }
-
-              if (modes.getThreeDOrbitTargetMode && modes.setThreeDOrbitTargetMode) {
-                camera3d::OrbitTargetMode targetMode = modes.getThreeDOrbitTargetMode();
-                ImGui::Spacing();
-                ImGui::Spacing();
-                ImGui::TextUnformatted("Orbit around:");
-                if (ImGui::RadioButton("Image center", camera3d::OrbitTargetMode::VisibleImages == targetMode)) {
-                  modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::VisibleImages);
-                }
-                ImGui::SameLine();
-                if (ImGui::RadioButton("Crosshairs", camera3d::OrbitTargetMode::Crosshairs == targetMode)) {
-                  modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::Crosshairs);
-                }
-                helpTooltip("Choose the pivot used by left-drag orbit rotation");
-              }
-
-              if (modes.getThreeDViewPositionFollowsCrosshairs && modes.setThreeDViewPositionFollowsCrosshairs) {
-                ImGui::Spacing();
-                ImGui::Spacing();
-                bool followsCrosshairs = modes.getThreeDViewPositionFollowsCrosshairs();
-                const bool isPerspective = ProjectionType::Perspective == projectionType;
-                if (!isPerspective && followsCrosshairs) {
-                  followsCrosshairs = false;
-                  modes.setThreeDViewPositionFollowsCrosshairs(false);
-                }
-                if (!isPerspective) {
-                  ImGui::BeginDisabled();
-                }
-                if (ImGui::Checkbox("Camera follows crosshairs", &followsCrosshairs)) {
-                  modes.setThreeDViewPositionFollowsCrosshairs(followsCrosshairs);
-                }
-                if (!isPerspective) {
-                  ImGui::EndDisabled();
-                }
-                helpTooltip("Move the 3D camera eye to the crosshairs position when the crosshairs move.");
-              }
-
-              if (modes.getThreeDImagePlanesVisible && modes.setThreeDImagePlanesVisible) {
-                bool showImagePlanes = modes.getThreeDImagePlanesVisible();
-                const bool globallyEnabled =
-                  !modes.areThreeDImagePlanesGloballyEnabled || modes.areThreeDImagePlanesGloballyEnabled();
-                ImGui::BeginDisabled(!globallyEnabled);
-                if (ImGui::Checkbox("Show image planes in this view", &showImagePlanes)) {
-                  modes.setThreeDImagePlanesVisible(showImagePlanes);
-                }
-                ImGui::EndDisabled();
-                helpTooltip(
-                  globallyEnabled
-                    ? "Show axial, coronal, and sagittal image planes through the current crosshairs in this 3D view"
-                    : "Enable image planes globally in Rendering settings before showing them in this view");
-              }
-            }
           }
 
           ImGui::EndCombo();
         }
 
         ImGui::PopItemWidth();
+
+        if (ViewType::ThreeD == viewType) {
+          ImGui::SameLine();
+          renderThreeDViewOptions(modes, numImages);
+        }
       }
 
       if (modes.exportAsciiClipboardPayload) {
