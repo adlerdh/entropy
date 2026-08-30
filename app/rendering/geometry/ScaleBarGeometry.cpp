@@ -47,13 +47,13 @@ double computeNiceScaleBarLengthMm(double targetLengthMm, double minLengthMm, do
     return 0.0;
   }
 
-  const double minPower = std::floor(std::log10(minLengthMm)) - 1.0;
-  const double maxPower = std::ceil(std::log10(maxLengthMm)) + 1.0;
+  const int minPower = static_cast<int>(std::floor(std::log10(minLengthMm))) - 1;
+  const int maxPower = static_cast<int>(std::ceil(std::log10(maxLengthMm))) + 1;
   double bestUnderTarget = 0.0;
   double smallestFit = 0.0;
 
-  for (double power = minPower; power <= maxPower; power += 1.0) {
-    const double magnitude = std::pow(10.0, power);
+  for (int power = minPower; power <= maxPower; ++power) {
+    const double magnitude = std::pow(10.0, static_cast<double>(power));
     for (const double multiplier : {1.0, 2.0, 5.0, 10.0}) {
       const double candidate = multiplier * magnitude;
       if (candidate < minLengthMm || candidate > maxLengthMm) {

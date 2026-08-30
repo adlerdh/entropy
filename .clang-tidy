@@ -6,9 +6,6 @@ Checks: >
   -bugprone-narrowing-conversions,
   -bugprone-unchecked-optional-access,
   clang-analyzer-*,
-  -clang-analyzer-optin.core.EnumCastOutOfRange,
-  -clang-analyzer-optin.cplusplus.VirtualCall,
-  -clang-analyzer-security.FloatLoopCounter,
   cert-err09-cpp,
   cert-err34-c,
   cert-err52-cpp,
@@ -80,7 +77,9 @@ Checks: >
   readability-simplify-subscript-expr,
   readability-static-accessed-through-instance,
   readability-use-anyofallof
-WarningsAsErrors: '*'
+# Catch2 models combinable bit flags as an enum. EnumCastOutOfRange reports those valid
+# third-party flag combinations, so keep the checker enabled without promoting that diagnostic.
+WarningsAsErrors: '*,-clang-analyzer-optin.core.EnumCastOutOfRange'
 HeaderFilterRegex: '^(app|lib)/'
 ExcludeHeaderFilterRegex: '(^|/)(external|build-[^/]+)/'
 SystemHeaders: false

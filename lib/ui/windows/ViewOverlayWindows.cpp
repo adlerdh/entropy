@@ -52,7 +52,18 @@ void helpTooltip(const char* text)
   }
 }
 
-void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, std::size_t numImages)
+void renderPopupHeading(ImFont* font, const char* text)
+{
+  if (font) {
+    ImGui::PushFont(font);
+  }
+  ImGui::TextUnformatted(text);
+  if (font) {
+    ImGui::PopFont();
+  }
+}
+
+void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, std::size_t numImages, ImFont* headingFont)
 {
   if (ImGui::Button(ICON_FK_COGS "##threeDViewOptions")) {
     ImGui::OpenPopup("threeDViewOptionsPopup");
@@ -63,14 +74,7 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, std::size_t 
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
   if (ImGui::BeginPopup("threeDViewOptionsPopup")) {
-    if (modes.threeDOptionsHeadingFont) {
-      ImGui::PushFont(modes.threeDOptionsHeadingFont);
-    }
-    ImGui::TextUnformatted("3D View Options");
-    if (modes.threeDOptionsHeadingFont) {
-      ImGui::PopFont();
-    }
-    ImGui::Separator();
+    renderPopupHeading(headingFont, "3D view options:");
 
     ImGui::SeparatorText("Render mode");
     const auto& renderModes = numImages > 1 ? All3dViewRenderModes : All3dNonMetricRenderModes;
@@ -227,6 +231,7 @@ void renderViewSettingsComboWindow(
   const bool allowImageSelection = context.allowImageSelection;
   const CoordinateFrame& worldCrosshairs = context.worldCrosshairs;
   const glm::vec2& contentScales = context.contentScales;
+  ImFont* const popupHeadingFont = context.popupHeadingFont;
 
   const std::size_t numImages = images.numImages;
   const auto& isImageRendered = images.isImageRendered;
@@ -329,7 +334,7 @@ void renderViewSettingsComboWindow(
 
           ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
           if (ImGui::BeginPopup("imageVisibilityPopup")) {
-            ImGui::Text("Visible images:");
+            renderPopupHeading(popupHeadingFont, "Visible images:");
             ImGui::PushID("visibleimages"); /*** ID = visibleimages ***/
 
             for (std::size_t i = 0; i < numImages; ++i) {
@@ -423,7 +428,7 @@ void renderViewSettingsComboWindow(
           }
 
           if (ImGui::BeginPopup("metricVisibilityPopup")) {
-            ImGui::Text("Compared images:");
+            renderPopupHeading(popupHeadingFont, "Compared images:");
 
             for (std::size_t i = 0; i < numImages; ++i) {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
@@ -463,7 +468,8 @@ void renderViewSettingsComboWindow(
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
         if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION)) {
-          ImGui::TextUnformatted("Render mode:");
+          ImGui::Spacing();
+          renderPopupHeading(popupHeadingFont, "Render mode:");
           ImGui::Spacing();
           auto renderSelectablesForRenderModes = [&renderMode,
                                                   &setRenderMode](const std::vector<ViewRenderMode>& renderModes) {
@@ -511,8 +517,8 @@ void renderViewSettingsComboWindow(
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
         if (ImGui::BeginCombo("##mipModeCombo", ICON_FK_FILM, ImGuiComboFlags_HeightLargest)) {
-          ImGui::Text("Intensity projection mode:");
           ImGui::Spacing();
+          renderPopupHeading(popupHeadingFont, "Intensity projection mode:");
 
           for (const auto& ip : AllIntensityProjectionModes) {
             const bool isSelected = (ip == intensityProjMode);
@@ -698,7 +704,7 @@ void renderViewSettingsComboWindow(
 
         if (ViewType::ThreeD == viewType) {
           ImGui::SameLine();
-          renderThreeDViewOptions(modes, numImages);
+          renderThreeDViewOptions(modes, numImages, popupHeadingFont);
         }
       }
 

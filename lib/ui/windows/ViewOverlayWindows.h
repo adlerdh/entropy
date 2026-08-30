@@ -27,13 +27,14 @@ struct ImFont;
  */
 struct ViewOverlayWindowContext
 {
-  uuids::uuid viewOrLayoutUid;       //!< View or layout identifier used for ImGui IDs and bulk actions
-  FrameBounds viewFrameBounds;       //!< Pixel bounds of the rendered view frame
-  UiControls uiControls;             //!< Flags describing which overlay controls the view supports
-  bool showApplyToAllButton = false; //!< Whether to show the apply-to-all-views button
-  bool allowImageSelection = true;   //!< Whether the image-selection popup is editable
-  CoordinateFrame worldCrosshairs;   //!< Current world crosshairs frame
-  glm::vec2 contentScales{1.0f};     //!< Platform content scale ratios
+  uuids::uuid viewOrLayoutUid;        //!< View or layout identifier used for ImGui IDs and bulk actions
+  FrameBounds viewFrameBounds;        //!< Pixel bounds of the rendered view frame
+  UiControls uiControls;              //!< Flags describing which overlay controls the view supports
+  bool showApplyToAllButton = false;  //!< Whether to show the apply-to-all-views button
+  bool allowImageSelection = true;    //!< Whether the image-selection popup is editable
+  CoordinateFrame worldCrosshairs;    //!< Current world crosshairs frame
+  glm::vec2 contentScales{1.0f};      //!< Platform content scale ratios
+  ImFont* popupHeadingFont = nullptr; //!< Bold font used for popup titles
 };
 
 /**
@@ -98,7 +99,6 @@ struct ViewOverlayModeCallbacks
   std::function<bool()> getThreeDImageVolumeBoundsVisible{};                 //!< Whether image volume bounds are shown
   std::function<void(bool)> setThreeDImageVolumeBoundsVisible{};             //!< Set image volume bounds visibility
   std::function<void()> openThreeDRenderingSettings{};                       //!< Open full 3D rendering settings
-  ImFont* threeDOptionsHeadingFont = nullptr;                                //!< Bold font for the options heading
   std::function<std::optional<ClipboardPayload>()>
     exportAsciiClipboardPayload{};             //!< Export this view's ASCII clipboard payload
   std::vector<ViewType> selectableViewTypes{}; //!< Empty means all supported view types are selectable

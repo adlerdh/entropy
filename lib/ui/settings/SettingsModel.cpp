@@ -215,9 +215,10 @@ const std::array<SettingsPageChoice, 9>& settingsPageChoices()
 const char* settingsPageLabel(GuiData::SettingsTab page)
 {
   const auto& choices = settingsPageChoices();
-  const auto* const choice = std::find_if(choices.begin(), choices.end(), [page](const SettingsPageChoice& candidate) {
-    return candidate.page == page;
-  });
+  const std::array<SettingsPageChoice, 9>::const_iterator choice =
+    std::find_if(choices.begin(), choices.end(), [page](const SettingsPageChoice& candidate) {
+      return candidate.page == page;
+    });
   if (choice != choices.end()) {
     return choice->label;
   }
