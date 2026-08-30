@@ -79,14 +79,18 @@ public:
     const BufferComponentType& type,
     const BufferNormalizeValues& normalize,
     GLsizei stride,
-    GLint offset);
+    GLint offset) const;
 
   /// Configure a floating-point vertex attribute stream from a stored attribute descriptor.
-  void setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo);
+  void setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo) const;
 
   /// Configure an integer vertex attribute stream.
-  void
-  setAttributeIntegerBuffer(GLuint index, GLint size, const BufferComponentType& type, GLsizei stride, GLint offset);
+  void setAttributeIntegerBuffer(
+    GLuint index,
+    GLint size,
+    const BufferComponentType& type,
+    GLsizei stride,
+    GLint offset) const;
 
   /// Enable one vertex attribute index.
   static void enableVertexAttribute(GLuint index);

@@ -316,7 +316,7 @@ const std::vector<std::filesystem::path>& AppSettings::recentProjectFiles() cons
 void AppSettings::setRecentImageGroups(std::vector<RecentPathGroup> groups)
 {
   m_recentImageGroups.clear();
-  for (auto& group : std::ranges::reverse_view(groups)) {
+  for (const auto& group : std::ranges::reverse_view(groups)) {
     recordRecentPathGroup(m_recentImageGroups, group.paths);
   }
 }
@@ -324,7 +324,7 @@ void AppSettings::setRecentImageGroups(std::vector<RecentPathGroup> groups)
 void AppSettings::setRecentDicomGroups(std::vector<RecentPathGroup> groups)
 {
   m_recentDicomGroups.clear();
-  for (auto& group : std::ranges::reverse_view(groups)) {
+  for (const auto& group : std::ranges::reverse_view(groups)) {
     recordRecentPathGroup(m_recentDicomGroups, group.paths);
   }
 }
@@ -332,7 +332,7 @@ void AppSettings::setRecentDicomGroups(std::vector<RecentPathGroup> groups)
 void AppSettings::setRecentProjectFiles(std::vector<std::filesystem::path> files)
 {
   m_recentProjectFiles.clear();
-  for (auto& file : std::ranges::reverse_view(files)) {
+  for (const auto& file : std::ranges::reverse_view(files)) {
     recordRecentPath(m_recentProjectFiles, file);
   }
 }

@@ -59,7 +59,7 @@ void renderModeToolbar(
   activeColor.w = 0.94f;
   inactiveColor.w = 0.7f;
 
-  ImGuiIO& io = ImGui::GetIO();
+  const ImGuiIO& io = ImGui::GetIO();
   //    ImGuiWindowFlags windowFlags = k_toolbarWindowFlags;
 
   const bool isHoriz = guiData.m_isModeToolbarHorizontal;

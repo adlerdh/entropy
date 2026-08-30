@@ -239,7 +239,7 @@ void renderAnnotationsHeader(
     for (const auto& annotUid : annotUids) {
       ImGui::PushID(static_cast<int>(annotIndex++));
 
-      Annotation* annot = appData.annotation(annotUid);
+      const Annotation* annot = appData.annotation(annotUid);
       if (!annot) {
         spdlog::error("Null annotation {}", annotUid);
         ImGui::PopID(); // lmGroupIndex

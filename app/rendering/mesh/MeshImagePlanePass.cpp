@@ -110,7 +110,9 @@ private:
 };
 
 GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
+  // cppcheck-suppress constParameterReference -- returns the selected program as a mutable reference
   GLShaderProgram& texture3dProgram,
+  // cppcheck-suppress constParameterReference -- returns the selected program as a mutable reference
   GLShaderProgram& texture2dProgram,
   const rendering::TextureDimension textureDimension)
 {

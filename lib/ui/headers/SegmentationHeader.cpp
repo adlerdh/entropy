@@ -106,7 +106,7 @@ void renderSegmentationHeader(
     headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
   }
 
-  auto& imgSettings = image->settings();
+  const auto& imgSettings = image->settings();
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.

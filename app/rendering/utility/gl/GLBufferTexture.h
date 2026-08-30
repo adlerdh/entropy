@@ -42,13 +42,13 @@ public:
   void release(std::optional<uint32_t> textureUnit = std::nullopt);
 
   /// Bind the texture to the current context or to a specific texture unit.
-  void bind(std::optional<uint32_t> textureUnit = std::nullopt);
+  void bind(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Return whether the texture object is bound, optionally on the supplied texture unit.
-  bool isBound(std::optional<uint32_t> textureUnit = std::nullopt);
+  bool isBound(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Unbind the texture target from the current context.
-  void unbind();
+  void unbind() const;
 
   /// Return the OpenGL texture name.
   GLuint id() const;

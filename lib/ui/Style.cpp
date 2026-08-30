@@ -295,6 +295,7 @@ ImVec4 withAlpha(const ImVec4& color, float alpha)
 }
 
 void applyDarkAccentPalette(
+  // cppcheck-suppress constParameterReference -- the palette mutates style.Colors through the reference
   ImGuiStyle& style,
   const ImVec4& bg,
   const ImVec4& panel,

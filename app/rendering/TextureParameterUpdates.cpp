@@ -144,15 +144,9 @@ void Rendering::updateImageColorMapInterpolation(std::size_t colorMapIndex)
     return;
   }
 
-  const auto* map = m_appData.imageColorMap(*cmapUid);
-  if (!map) {
-    spdlog::warn("Image color map {} is invalid", *cmapUid);
-    return;
-  }
-
-  ImageColorMap* cmap = m_appData.imageColorMap(*cmapUid);
+  const ImageColorMap* cmap = m_appData.imageColorMap(*cmapUid);
   if (!cmap) {
-    spdlog::warn("Image color map {} is null", *cmapUid);
+    spdlog::warn("Image color map {} is invalid", *cmapUid);
     return;
   }
 

@@ -1567,7 +1567,7 @@ bool AppData::moveAnnotationToFront(const uuid& imageUidArg, const uuid& annotUi
   auto index = annotationIndex(imageUidArg, annotUid);
   if (!index) return false;
 
-  auto& annotList = m_imageToAnnotations.at(imageUidArg);
+  const auto& annotList = m_imageToAnnotations.at(imageUidArg);
   const long N = static_cast<long>(annotList.size());
 
   while (index && static_cast<long>(*index) < N - 1) {
@@ -1859,7 +1859,7 @@ bool AppData::assignInverseWarpUidToImage(
     movingImage && resolvedReferenceUid && image(*resolvedReferenceUid) && defImage &&
     defImage->header().numComponentsPerPixel() >= 3)
   {
-    auto& defUids = m_imageToDefs[imageUidArg];
+    const auto& defUids = m_imageToDefs[imageUidArg];
     if (std::find(std::begin(defUids), std::end(defUids), warpUid) != std::end(defUids)) {
       return assignActiveInverseWarpUidToImage(imageUidArg, warpUid, resolvedReferenceUid);
     }
@@ -1877,7 +1877,7 @@ bool AppData::assignForwardWarpUidToImage(const uuid& imageUidArg, const uuid& w
   const Image* movingImage = image(imageUidArg);
   const Image* defImage = warpField(warpUid);
   if (movingImage && defImage && defImage->header().numComponentsPerPixel() >= 3) {
-    auto& defUids = m_imageToDefs[imageUidArg];
+    const auto& defUids = m_imageToDefs[imageUidArg];
     if (std::find(std::begin(defUids), std::end(defUids), warpUid) == std::end(defUids)) {
       m_imageToDefs[imageUidArg].emplace_back(warpUid);
     }

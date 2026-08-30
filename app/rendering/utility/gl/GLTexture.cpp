@@ -645,7 +645,7 @@ void GLTexture::bind(std::optional<uint32_t> textureUnit) const
   }
 }
 
-bool GLTexture::isBound(std::optional<uint32_t> textureUnit)
+bool GLTexture::isBound(std::optional<uint32_t> textureUnit) const
 {
   GLint prevUnit = 0;
 
@@ -666,7 +666,7 @@ bool GLTexture::isBound(std::optional<uint32_t> textureUnit)
   return result;
 }
 
-void GLTexture::unbind(std::optional<uint32_t> textureUnit)
+void GLTexture::unbind(std::optional<uint32_t> textureUnit) const
 {
   if (0 == m_id) {
     return;

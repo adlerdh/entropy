@@ -297,7 +297,7 @@ bool AnnotationStateMachine::createNewGrowingPolygon(const ViewHit& hit)
     return false;
   }
 
-  Annotation* annot = ms_appData->annotation(*annotUid);
+  const Annotation* annot = ms_appData->annotation(*annotUid);
   if (!annot) {
     spdlog::error("Null annotation {}", *annotUid);
     return false;
@@ -837,7 +837,7 @@ void AnnotationStateMachine::removeSelectedPolygon()
     return;
   }
 
-  Annotation* annot = ms_appData->annotation(*annotUid);
+  const Annotation* annot = ms_appData->annotation(*annotUid);
   if (!annot) {
     spdlog::warn("Annotation {} is not valid", *annotUid);
     transit<StandbyState>();
@@ -955,7 +955,7 @@ void AnnotationStateMachine::copySelectedAnnotation()
     return;
   }
 
-  Annotation* annot = ms_appData->annotation(*annotUid);
+  const Annotation* annot = ms_appData->annotation(*annotUid);
   if (!annot) {
     spdlog::warn("Annotation {} is not valid", *annotUid);
     transit<StandbyState>();
@@ -1196,7 +1196,7 @@ std::vector<std::pair<uuid, size_t> > AnnotationStateMachine::findHitVertices(co
 
   // Loop over all annotations and determine whether we're atop a vertex:
   for (const auto& annotUid : uidsOfAnnotsOnImageSlice) {
-    Annotation* annot = ms_appData->annotation(annotUid);
+    const Annotation* annot = ms_appData->annotation(annotUid);
     if (!annot) {
       spdlog::error("Null annotation {}", annotUid);
       continue;

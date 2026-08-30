@@ -3025,7 +3025,7 @@ void renderSettingsWindow(
 
         ImGui::TableSetColumnIndex(1);
         if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
-          ImGuiContext& imguiContext = *ImGui::GetCurrentContext();
+          const ImGuiContext& imguiContext = *ImGui::GetCurrentContext();
           const bool settingsEditedBeforePage = imguiContext.ActiveIdHasBeenEditedThisFrame;
           renderSettingsPage(
             s_selectedPage,

@@ -20,7 +20,7 @@ ControlFrame::ControlFrame(
 {
 }
 
-bool ControlFrame::isImageRendered(const AppData& appData, std::size_t index)
+bool ControlFrame::isImageRendered(const AppData& appData, std::size_t index) const
 {
   auto imageUid = appData.imageUid(index);
   if (!imageUid) {
@@ -29,7 +29,7 @@ bool ControlFrame::isImageRendered(const AppData& appData, std::size_t index)
   return isImageRendered(*imageUid);
 }
 
-bool ControlFrame::isImageRendered(const uuids::uuid& imageUid)
+bool ControlFrame::isImageRendered(const uuids::uuid& imageUid) const
 {
   return m_imageSelection.isImageRendered(imageUid);
 }
@@ -61,7 +61,7 @@ void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bo
   }
 }
 
-bool ControlFrame::isImageVolumeRendered(const AppData& appData, std::size_t index)
+bool ControlFrame::isImageVolumeRendered(const AppData& appData, std::size_t index) const
 {
   auto imageUid = appData.imageUid(index);
   if (!imageUid) {
@@ -70,7 +70,7 @@ bool ControlFrame::isImageVolumeRendered(const AppData& appData, std::size_t ind
   return isImageVolumeRendered(*imageUid);
 }
 
-bool ControlFrame::isImageVolumeRendered(const uuids::uuid& imageUid)
+bool ControlFrame::isImageVolumeRendered(const uuids::uuid& imageUid) const
 {
   return m_imageSelection.isImageVolumeRendered(imageUid);
 }
@@ -99,7 +99,7 @@ void ControlFrame::setVolumeRenderedImages(const std::list<uuids::uuid>& imageUi
   m_imageSelection.setVolumeRenderedImages(imageUids);
 }
 
-bool ControlFrame::isImageUsedForMetric(const AppData& appData, std::size_t index)
+bool ControlFrame::isImageUsedForMetric(const AppData& appData, std::size_t index) const
 {
   auto imageUid = appData.imageUid(index);
   if (!imageUid) {
@@ -108,7 +108,7 @@ bool ControlFrame::isImageUsedForMetric(const AppData& appData, std::size_t inde
   return isImageUsedForMetric(*imageUid);
 }
 
-bool ControlFrame::isImageUsedForMetric(const uuids::uuid& imageUid)
+bool ControlFrame::isImageUsedForMetric(const uuids::uuid& imageUid) const
 {
   return m_imageSelection.isImageUsedForMetric(imageUid);
 }

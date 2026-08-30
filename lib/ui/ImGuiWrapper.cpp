@@ -688,7 +688,7 @@ std::vector<std::string> layoutTabLabels(const AppData& appData)
 
 void requestLayoutRemoval(AppData& appData, std::size_t index)
 {
-  WindowData& windowData = appData.windowData();
+  const WindowData& windowData = appData.windowData();
   if (index >= windowData.numLayouts() || windowData.numLayouts() <= 1) {
     return;
   }
@@ -2912,7 +2912,7 @@ void ImGuiWrapper::initializeFonts(float scale)
   ImFont* fork1Ptr =
     loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, forkAwesomeFontSize, forkAwesomeIconGlyphRange);
   ImFont* interBoldFontPtr = loadFont(interBoldFontPath, interBoldFontConfig, uiFont.size, nullptr);
-  ImFont* boldForkPtr =
+  const ImFont* boldForkPtr =
     loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
   if (uiFontPtr && fork1Ptr) {
@@ -3811,7 +3811,7 @@ void ImGuiWrapper::render()
         m_appData.guiData().m_showAddLayoutPopup = true;
         break;
       case MainMenuAction::RemoveLayout: {
-        auto& windowData = m_appData.windowData();
+        const auto& windowData = m_appData.windowData();
         if (windowData.numLayouts() >= 2) {
           requestLayoutRemoval(m_appData, windowData.currentLayoutIndex());
         }

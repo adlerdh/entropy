@@ -89,7 +89,7 @@ void renderImageHeaderInformation(
   const char* coordFormat = appData.guiData().m_coordsPrecisionFormat.c_str();
 
   const ImageHeader& imgHeader = image.header();
-  ImageTransformations& imgTx = image.transformations();
+  const ImageTransformations& imgTx = image.transformations();
   const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid);
 
   // File name:

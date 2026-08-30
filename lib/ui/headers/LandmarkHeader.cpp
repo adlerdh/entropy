@@ -207,7 +207,7 @@ void renderLandmarkGroupHeader(
       for (const auto& lmGroupUid : lmGroupUids) {
         ImGui::PushID(static_cast<int>(lmGroupIndex++));
 
-        if (LandmarkGroup* lmGroup = appData.landmarkGroup(lmGroupUid)) {
+        if (const LandmarkGroup* lmGroup = appData.landmarkGroup(lmGroupUid)) {
           const bool isSelected = (lmGroupUid == *activeLmGroupUid);
           if (ImGui::Selectable(lmGroup->getName().c_str(), isSelected)) {
             appData.assignActiveLandmarkGroupUidToImage(imageUid, lmGroupUid);

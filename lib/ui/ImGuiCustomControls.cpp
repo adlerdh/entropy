@@ -55,7 +55,7 @@ bool SliderScalarN_multiComp(
   const char** format,
   ImGuiSliderFlags flags)
 {
-  ImGuiWindow* window = GetCurrentWindow();
+  const ImGuiWindow* window = GetCurrentWindow();
   if (window->SkipItems) {
     return false;
   }

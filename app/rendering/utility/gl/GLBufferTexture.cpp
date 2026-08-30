@@ -110,17 +110,17 @@ void GLBufferTexture::release(std::optional<uint32_t> textureUnit)
   m_texture.release(textureUnit);
 }
 
-void GLBufferTexture::bind(std::optional<uint32_t> textureUnit)
+void GLBufferTexture::bind(std::optional<uint32_t> textureUnit) const
 {
   m_texture.bind(textureUnit);
 }
 
-bool GLBufferTexture::isBound(std::optional<uint32_t> textureUnit)
+bool GLBufferTexture::isBound(std::optional<uint32_t> textureUnit) const
 {
   return m_texture.isBound(textureUnit);
 }
 
-void GLBufferTexture::unbind()
+void GLBufferTexture::unbind() const
 {
   m_texture.unbind();
 }

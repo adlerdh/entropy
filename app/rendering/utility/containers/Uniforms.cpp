@@ -133,7 +133,7 @@ GLint Uniforms::queryAndSetLocation(
 int Uniforms::queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter)
 {
   bool foundOne = false;
-  for (auto& uniform : m_uniformsMap) {
+  for (const auto& uniform : m_uniformsMap) {
     const GLint loc = queryAndSetLocation(uniform.first, locationGetter);
     if (-1 != loc) {
       foundOne = true;

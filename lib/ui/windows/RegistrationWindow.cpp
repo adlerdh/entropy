@@ -1270,7 +1270,7 @@ void renderFloatPairWidget(registration::ParameterValue& value, const registrati
 }
 
 void renderParameterWidget(
-  registration::SetupState& state,
+  const registration::SetupState& state,
   registration::ParameterValue& value,
   const registration::ParameterSchema& parameter)
 {

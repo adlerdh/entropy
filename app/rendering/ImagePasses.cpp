@@ -72,7 +72,7 @@ void Rendering::renderOneImage_overlays(
   bool renderLandmarkAndAnnotationOverlays,
   bool renderImageBorders)
 {
-  auto& renderData = m_appData.renderData();
+  const auto& renderData = m_appData.renderData();
   const bool allowLandmarksAndAnnotations = renderLandmarkAndAnnotationOverlays && ViewType::ThreeD != view.viewType();
   const bool renderBordersInCurrentLayout =
     renderImageBorders && renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&

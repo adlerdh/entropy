@@ -150,7 +150,7 @@ void renderSegToolbar(
 
   ImGui::PushID("segtoolbar");
 
-  ImGuiIO& io = ImGui::GetIO();
+  const ImGuiIO& io = ImGui::GetIO();
 
   //    ImGuiWindowFlags windowFlags = k_toolbarWindowFlags;
 

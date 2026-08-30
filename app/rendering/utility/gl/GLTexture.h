@@ -136,10 +136,10 @@ public:
   void bind(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Return whether this texture is currently bound, optionally on the supplied texture unit.
-  bool isBound(std::optional<uint32_t> textureUnit = std::nullopt);
+  bool isBound(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Unbind this texture target from the current context, or from one specific texture unit.
-  void unbind(std::optional<uint32_t> textureUnit = std::nullopt);
+  void unbind(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// @todo Place Sampler Object in separate class.
   /// @todo Store Sampler Object as member of GPU image record

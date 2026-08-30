@@ -1096,7 +1096,7 @@ void CallbackHandler::doWindowLevel(
   const ViewHit& currHit,
   bool fineAdjustment)
 {
-  View* viewToWL = startHit.view;
+  const View* viewToWL = startHit.view;
 
   if (!viewToWL) {
     return;

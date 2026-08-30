@@ -132,14 +132,14 @@ public:
    * @param index Image index in application order
    * @return True when the image is rendered by this frame
    */
-  bool isImageRendered(const AppData& appData, std::size_t index);
+  bool isImageRendered(const AppData& appData, std::size_t index) const;
 
   /**
    * @brief Check whether an image UID is selected for 2D rendering
    * @param imageUid Image UID to query
    * @return True when the image is rendered by this frame
    */
-  bool isImageRendered(const uuids::uuid& imageUid);
+  bool isImageRendered(const uuids::uuid& imageUid) const;
 
   /**
    * @brief Set 2D rendering visibility for an image at an application image index
@@ -177,14 +177,14 @@ public:
    * @param index Image index in application order
    * @return True when the image is volume rendered by this frame
    */
-  bool isImageVolumeRendered(const AppData& appData, std::size_t index);
+  bool isImageVolumeRendered(const AppData& appData, std::size_t index) const;
 
   /**
    * @brief Check whether an image UID is selected for 3D volume rendering
    * @param imageUid Image UID to query
    * @return True when the image is volume rendered by this frame
    */
-  bool isImageVolumeRendered(const uuids::uuid& imageUid);
+  bool isImageVolumeRendered(const uuids::uuid& imageUid) const;
 
   /**
    * @brief Set 3D volume-rendering visibility for an image at an application image index
@@ -221,14 +221,14 @@ public:
    * @param index Image index in application order
    * @return True when the image is used by this frame's metric
    */
-  bool isImageUsedForMetric(const AppData& appData, std::size_t index);
+  bool isImageUsedForMetric(const AppData& appData, std::size_t index) const;
 
   /**
    * @brief Check whether an image UID is selected for metric rendering
    * @param imageUid Image UID to query
    * @return True when the image is used by this frame's metric
    */
-  bool isImageUsedForMetric(const uuids::uuid& imageUid);
+  bool isImageUsedForMetric(const uuids::uuid& imageUid) const;
 
   /**
    * @brief Set metric visibility for an image at an application image index

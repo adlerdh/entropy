@@ -1027,7 +1027,7 @@ CameraSnapshotIndex createCameraSnapshotIndex(const std::vector<ViewCameraSnapsh
   return index;
 }
 
-View* viewInLayout(Layout& layout, const uuid& viewUid)
+View* viewInLayout(const Layout& layout, const uuid& viewUid)
 {
   const auto& views = layout.views();
   const auto viewIt = views.find(viewUid);
@@ -1111,7 +1111,7 @@ bool initializeFromSyncedRestoredCamera(
     std::pair{CameraSyncMode::Rotation, view.cameraRotationSyncGroupUid()}};
 
   for (const auto& [syncMode, syncGroupUid] : candidates) {
-    if (View* source = restoredSyncedView(layout, view, snapshots, snapshotIndex, syncMode, syncGroupUid)) {
+    if (const View* source = restoredSyncedView(layout, view, snapshots, snapshotIndex, syncMode, syncGroupUid)) {
       copyViewCameraState(*source, view);
       return true;
     }
@@ -1683,7 +1683,7 @@ void WindowData::recenterAllViews(
   bool resetObliqueOrientation,
   const std::set<uuid>& excludedViews)
 {
-  for (auto& layoutLocal : m_layouts) {
+  for (const auto& layoutLocal : m_layouts) {
     for (const auto& [viewUid, view] : layoutLocal.views()) {
       if (excludedViews.contains(viewUid)) {
         continue;
@@ -2074,7 +2074,7 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewU
   const auto renderedImages = referenceView->renderedImages();
   const auto metricImages = referenceView->metricImages();
 
-  for (auto& viewUid : currentViewUids()) {
+  for (const auto& viewUid : currentViewUids()) {
     View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -2095,7 +2095,7 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& r
   const auto renderMode = referenceView->renderMode();
   const auto ipMode = referenceView->intensityProjectionMode();
 
-  for (auto& viewUid : currentViewUids()) {
+  for (const auto& viewUid : currentViewUids()) {
     View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -2113,7 +2113,7 @@ std::vector<uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3& worldN
 
   std::vector<uuid> viewUids;
 
-  for (auto& viewUid : currentViewUids()) {
+  for (const auto& viewUid : currentViewUids()) {
     const View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -2166,7 +2166,7 @@ uuid WindowData::findLargestCurrentView() const
 
 void WindowData::recomputeCameraAspectRatios()
 {
-  for (auto& layoutLocal : m_layouts) {
+  for (const auto& layoutLocal : m_layouts) {
     for (const auto& [viewUid, view] : layoutLocal.views()) {
       if (!view) {
         continue;

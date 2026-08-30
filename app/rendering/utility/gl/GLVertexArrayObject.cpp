@@ -85,7 +85,7 @@ void GLVertexArrayObject::setAttributeBuffer(
   const BufferComponentType& type,
   const BufferNormalizeValues& normalize,
   GLsizei stride,
-  GLint offset)
+  GLint offset) const
 {
   glVertexAttribPointer(
     index,
@@ -98,7 +98,7 @@ void GLVertexArrayObject::setAttributeBuffer(
   CHECK_GL_ERROR(m_errorChecker)
 }
 
-void GLVertexArrayObject::setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo)
+void GLVertexArrayObject::setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo) const
 {
   setAttributeBuffer(
     index,
@@ -114,7 +114,7 @@ void GLVertexArrayObject::setAttributeIntegerBuffer(
   GLint size,
   const BufferComponentType& type,
   GLsizei stride,
-  GLint offset)
+  GLint offset) const
 {
   glVertexAttribIPointer(
     index,

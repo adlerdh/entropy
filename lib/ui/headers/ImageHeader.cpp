@@ -380,7 +380,7 @@ void disabledWrappedText(const char* text)
 
 bool autoWindowButton(
   const char* label,
-  Image& image,
+  const Image& image,
   ImageSettings& settings,
   uint32_t component,
   double low,
@@ -2372,7 +2372,7 @@ void renderImageHeader(
 
     std::size_t cmapIndex = getCurrentImageColormapIndex();
 
-    ImageColorMap* cmap = getImageColorMap(cmapIndex);
+    const ImageColorMap* cmap = getImageColorMap(cmapIndex);
 
     if (cmap && !viewSettings.displayImageAsColor()) {
       bool* showImageColormapWindow = &(guiData.m_showImageColormapWindow[imageUid]);

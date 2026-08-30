@@ -146,7 +146,7 @@ void renderInspectionWindow(
     }
   };
 
-  ImGuiIO& io = ImGui::GetIO();
+  const ImGuiIO& io = ImGui::GetIO();
 
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                                  ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
