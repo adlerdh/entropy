@@ -4804,6 +4804,9 @@ void ImGuiWrapper::render()
   Layout& currentLayout = m_appData.windowData().currentLayout();
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);
+  const char* const boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
+  const auto boldFontIt = m_appData.guiData().m_fonts.find(boldFontPath);
+  ImFont* const popupHeadingFont = boldFontIt != m_appData.guiData().m_fonts.end() ? boldFontIt->second : nullptr;
 
   if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
@@ -4820,7 +4823,8 @@ void ImGuiWrapper::render()
       false,
       LayoutKind::Lightbox != currentLayout.kind(),
       m_appData.state().worldCrosshairs(),
-      m_appData.windowData().getContentScaleRatios()};
+      m_appData.windowData().getContentScaleRatios(),
+      popupHeadingFont};
 
     const bool useThreeDImageSelection = ViewType::ThreeD == currentLayout.viewType() &&
                                          is3dRenderMode(currentLayout.renderMode()) &&
@@ -4956,7 +4960,8 @@ void ImGuiWrapper::render()
         true,
         true,
         m_appData.state().worldCrosshairs(),
-        m_appData.windowData().getContentScaleRatios()};
+        m_appData.windowData().getContentScaleRatios(),
+        popupHeadingFont};
 
       const bool useThreeDImageSelection = ViewType::ThreeD == view->viewType() && is3dRenderMode(view->renderMode()) &&
                                            ViewRenderMode::Disabled != view->renderMode();
@@ -5000,11 +5005,6 @@ void ImGuiWrapper::render()
         getImageIsActive,
         getImageIsReference,
         canImageBeVolumeRendered};
-
-      const char* const boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
-      const auto boldFontIt = m_appData.guiData().m_fonts.find(boldFontPath);
-      ImFont* const threeDOptionsHeadingFont =
-        boldFontIt != m_appData.guiData().m_fonts.end() ? boldFontIt->second : nullptr;
 
       const ViewOverlayModeCallbacks modeCallbacks{
         .viewType = view->viewType(),
@@ -5089,7 +5089,6 @@ void ImGuiWrapper::render()
             m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Rendering;
             m_appData.guiData().m_showSettingsWindow = true;
           },
-        .threeDOptionsHeadingFont = threeDOptionsHeadingFont,
         .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
                                          ? std::function<std::optional<ClipboardPayload>()>([this, viewUid]() {
                                              return m_exportAsciiClipboardPayloadForView(viewUid);
