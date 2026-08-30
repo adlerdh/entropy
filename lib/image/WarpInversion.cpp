@@ -285,7 +285,14 @@ class ProgressCommand : public itk::Command
 public:
   using Self = ProgressCommand;
   using Pointer = itk::SmartPointer<Self>;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
   itkNewMacro(Self);
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   void SetProgressCallback(std::function<void(double)> callback)
   {

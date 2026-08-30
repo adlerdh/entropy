@@ -79,6 +79,20 @@ TEST_CASE("raycast isosurface picker handles ray origins inside the image", "[ca
   CHECK(hit->worldPosition.x == Catch::Approx(6.0f).margin(0.001f));
 }
 
+TEST_CASE(
+  "raycast isosurface picker samples the ray endpoint for nonintegral step counts",
+  "[camera][raycast][picking]")
+{
+  const std::array<double, 1> isos{8.9};
+  auto request = xGradientRequest(glm::vec3{-2.0f, 0.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, isos);
+  request.stepLength = 3.0f;
+
+  const auto hit = camera3d::pickFirstIsoSurfaceHit(request);
+
+  REQUIRE(hit);
+  CHECK(hit->worldPosition.x == Catch::Approx(8.9f).margin(0.001f));
+}
+
 TEST_CASE("raycast isosurface picker returns no hit on ray or isovalue miss", "[camera][raycast][picking]")
 {
   const std::array<double, 1> isos{12.0};

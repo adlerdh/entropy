@@ -89,6 +89,8 @@ std::optional<IsoSurfacePickHit> pickFirstIsoSurfaceHit(const IsoSurfacePickRequ
   const float tStart = std::max(0.0f, entryT);
   const float tEnd = exitT;
   const float step = std::max(k_minStepLength, request.stepLength);
+  const float raySpan = tEnd - tStart;
+  const auto numSteps = static_cast<std::size_t>(std::ceil(raySpan / step));
 
   float oldT = tStart;
   glm::vec3 oldPixelPos{request.pixel_T_world * glm::vec4{request.worldRayOrigin + oldT * worldDir, 1.0f}};
@@ -97,8 +99,8 @@ std::optional<IsoSurfacePickHit> pickFirstIsoSurfaceHit(const IsoSurfacePickRequ
     return std::nullopt;
   }
 
-  for (float t = std::min(tStart + step, tEnd); t <= tEnd + 0.5f * step; t += step) {
-    const float clampedT = std::min(t, tEnd);
+  for (std::size_t stepIndex = 1; stepIndex <= numSteps; ++stepIndex) {
+    const float clampedT = std::min(tStart + static_cast<float>(stepIndex) * step, tEnd);
     const glm::vec3 pixelPos{request.pixel_T_world * glm::vec4{request.worldRayOrigin + clampedT * worldDir, 1.0f}};
     const std::optional<double> value = request.sampleValue(pixelPos);
     if (!value) {

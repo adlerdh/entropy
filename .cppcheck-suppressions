@@ -1,18 +1,18 @@
 # Add narrowly scoped, reviewed false-positive suppressions here.
 # The thread-safety addon mistakes this state-machine callback for C exit().
-threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStateMachine.h
+threadsafety-unsafe-call:*app/logic/states/annotation/AnnotationStateMachine.h
 # tinyfsm requires an exit() callback. The addon mistakes its name for C exit().
-threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStates.h
-threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStates.cpp
+threadsafety-unsafe-call:*app/logic/states/annotation/AnnotationStates.h
+threadsafety-unsafe-call:*app/logic/states/annotation/AnnotationStates.cpp
 # itkNewMacro intentionally provides covariant factory methods required by ITK.
-duplInheritedMember:lib/image/WarpInversion.cpp
+duplInheritedMember:*lib/image/WarpInversion.cpp
 # ImGui, GLFW callbacks, and OpenGL rendering are confined to the main UI/context thread.
 # The addon does not distinguish thread_local UI state or immutable local constexpr data
 # from shared mutable function statics.
-threadsafety-threadsafety:lib/ui/*
-threadsafety-threadsafety:app/rendering/Rendering.cpp
-threadsafety-threadsafety:app/rendering/TextureSetup.cpp
-threadsafety-threadsafety:app/windowing/GlfwCallbacks.cpp
+threadsafety-threadsafety:*lib/ui/*
+threadsafety-threadsafety:*app/rendering/Rendering.cpp
+threadsafety-threadsafety:*app/rendering/TextureSetup.cpp
+threadsafety-threadsafety:*app/windowing/GlfwCallbacks.cpp
 # These style diagnostics conflict with established project naming and clear loop-based code.
 # Other style checks remain enabled.
 shadowFunction
@@ -21,10 +21,14 @@ constVariableReference
 funcArgNamesDifferent
 funcArgNamesDifferentUnnamed
 # Keeping the four pass programs together documents the ASCII pipeline more clearly than narrower scopes.
-variableScope:app/rendering/ascii/AsciiRenderer.cpp
+variableScope:*app/rendering/ascii/AsciiRenderer.cpp
+
+# These component-typed vectors own the memory referenced by buffer after the switch.
+# Moving them into the individual cases would leave buffer dangling.
+variableScope:*app/logic/app/CallbackHandler.cpp
 
 # These shader references intentionally return a mutable selected program.
-constParameterReference:app/rendering/mesh/MeshImagePlanePass.cpp
+constParameterReference:*app/rendering/mesh/MeshImagePlanePass.cpp
 
 # These ownership suggestions are not appropriate for stateful façade and OpenGL wrapper APIs.
 functionStatic
@@ -34,7 +38,7 @@ constVariablePointer
 constParameterReference
 
 # Persistent immediate-mode UI state intentionally lives outside the narrowest lexical scope.
-variableScope:lib/ui/*
+variableScope:*lib/ui/*
 
 # Compile-time contract tests intentionally assert fixed enum values and header visibility.
 knownConditionTrueFalse:*/test/*
@@ -42,4 +46,4 @@ duplicateExpression:*/test/*
 suspiciousFloatingPointCast:*/test/*
 
 # Cppcheck does not model mutations performed by ImGui through pointer arguments.
-knownConditionTrueFalse:lib/ui/ImGuiWrapper.cpp
+knownConditionTrueFalse:*lib/ui/ImGuiWrapper.cpp

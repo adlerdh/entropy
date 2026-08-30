@@ -17,6 +17,13 @@ set(entropy_RES_DIR "${CMAKE_SOURCE_DIR}/res")
 set(entropy_EXT_DIR "${CMAKE_SOURCE_DIR}/external")
 set(entropy_FIREANTS_BRIDGE_DIR "${entropy_LIB_DIR}/registration/fireants_bridge")
 
+if(WIN32)
+  set(entropy_WINDOWS_APP_ICON "${entropy_RES_DIR}/icons/Windows/Entropy.ico")
+  if(NOT EXISTS "${entropy_WINDOWS_APP_ICON}")
+    message(FATAL_ERROR "Windows application icon not found: ${entropy_WINDOWS_APP_ICON}")
+  endif()
+endif()
+
 set(entropy_LINUX_PACKAGE_PLATFORM_LABEL_DEFAULT "Linux")
 if(UNIX AND NOT APPLE AND EXISTS "/etc/os-release")
   file(STRINGS "/etc/os-release" entropy_OS_RELEASE_LINES REGEX "^(ID|VERSION_ID)=")
