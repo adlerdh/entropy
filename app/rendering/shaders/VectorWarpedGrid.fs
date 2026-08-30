@@ -14,6 +14,7 @@ in VS_OUT
 {
   vec3 v_texCoord;
   vec3 v_worldPos;
+  vec3 v_worldNormal;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
