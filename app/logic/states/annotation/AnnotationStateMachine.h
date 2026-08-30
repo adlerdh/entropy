@@ -144,26 +144,26 @@ protected:
    * @brief Set the hovered view to the view hit by the mouse
    * @param[in] hit Mouse hit
    */
-  void hoverView(const ViewHit& hit);
+  static void hoverView(const ViewHit& hit);
 
   /**
    * @brief Select the view hit by the mouse
    * @param[in] hit Mouse hit
    * @return True iff a view was selected
    */
-  bool selectView(const ViewHit& hit);
+  static bool selectView(const ViewHit& hit);
 
   /**
    * @brief Deselect the vertex and/or annotation
    * @param[in] deselectVertex
    * @param[in] deselectAnnotation
    */
-  void deselect(bool deselectVertex, bool deselectAnnotation);
+  static void deselect(bool deselectVertex, bool deselectAnnotation);
 
   /**
    * @brief If there is a hovered annotation or vertex, then unhover them.
    */
-  void unhoverAnnotation();
+  static void unhoverAnnotation();
 
   /**
    * @brief Start creating a new ("growing") annotation polygon at the mouse position
@@ -246,7 +246,7 @@ protected:
    * @brief Paste the active annotation (if it exists) to the active image from the clipboard.
    * If there is no copied annotation, then nothing happens.
    */
-  void pasteAnnotation() const;
+  static void pasteAnnotation();
 
   /**
    * @brief Flip the active annotation (if it exists) of the active image.
@@ -260,21 +260,21 @@ protected:
    * @return Pairs of {annotation uid, vertex index} for the found vertices.
    * The closest vertex is returned in the first element of the vector.
    */
-  std::vector<std::pair<uuid, size_t> > findHitVertices(const ViewHit& hit);
+  static std::vector<std::pair<uuid, size_t> > findHitVertices(const ViewHit& hit);
 
   /**
    * @brief Find polygons of the active image under the mouse hit
    * @param[in] hit Mouse hit
    * @return Vector of annotation UIDs, from top-most to bottom-most layer.
    */
-  std::vector<uuid> findHitPolygon(const ViewHit& hit);
+  static std::vector<uuid> findHitPolygon(const ViewHit& hit);
 
   /**
    * @brief Set the selected annotation and (optionally) one of its vertices
    * @param[in] annotUid UID of annotation to select
    * @param[in] vertexIndex Index of vertex to select
    */
-  void setSelectedAnnotationAndVertex(const uuid& annotUid, const std::optional<size_t>& vertexIndex);
+  static void setSelectedAnnotationAndVertex(const uuid& annotUid, const std::optional<size_t>& vertexIndex);
 
   /**
    * @brief Set/clear the hover state of the vertex near the hit

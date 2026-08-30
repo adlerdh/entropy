@@ -9,7 +9,7 @@
 /**
  * @brief Restore the OpenGL state expected by Entropy after third-party drawing calls.
  */
-void setupOpenGLState();
+static void setupOpenGLState();
 
 /**
  * @brief Compile and link all shader programs used by the renderer.
@@ -565,7 +565,7 @@ std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(
 /**
  * @brief Unbind every texture returned by one of the texture binding helpers.
  */
-void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
+static void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
 
 /**
  * @brief Ensure that a deformation field has a GPU texture available for rendering.
@@ -616,7 +616,7 @@ std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const I
 /**
  * @brief Unbind every buffer texture returned by a buffer texture binding helper.
  */
-void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures);
+static void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures);
 
 /// @}
 /// @name Image selection helpers

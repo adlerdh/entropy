@@ -98,6 +98,7 @@ std::optional<size_t> ASM::ms_selectedVertex = std::nullopt;
 std::optional<uuid> ASM::ms_hoveredAnnotUid = std::nullopt;
 std::optional<size_t> ASM::ms_hoveredVertex = std::nullopt;
 
+// cppcheck-suppress functionStatic -- tinyfsm expects the fallback event handler on the state type
 void AnnotationStateMachine::react(const tinyfsm::Event&)
 {
   spdlog::warn("Unhandled event sent to AnnotationStateMachine");
@@ -964,7 +965,7 @@ void AnnotationStateMachine::copySelectedAnnotation()
   ms_appData->state().setCopiedAnnotation(*annot);
 }
 
-void AnnotationStateMachine::pasteAnnotation() const
+void AnnotationStateMachine::pasteAnnotation()
 {
   // Angle threshold (in degrees) for checking whether two vectors are parallel
   static constexpr float sk_parallelThreshold_degrees = 0.1f;

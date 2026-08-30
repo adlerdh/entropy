@@ -1554,7 +1554,7 @@ void WindowData::resetToThreeUpLayout()
   setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
 }
 
-void WindowData::setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppData& appData) const
+void WindowData::setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppData& appData)
 {
   static constexpr bool s_filterAgainstDefaults = true;
 

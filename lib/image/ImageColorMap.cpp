@@ -168,7 +168,7 @@ bool ImageColorMap::setColorRGBA(std::size_t i, const glm::vec4& rgba)
   return false;
 }
 
-glm::vec2 ImageColorMap::slopeIntercept(bool inverted) const
+glm::vec2 ImageColorMap::slopeIntercept(bool inverted)
 {
   const float slope = inverted ? -1.0f : 1.0f;
   const float intercept = inverted ? 1.0f : 0.0f;

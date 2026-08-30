@@ -56,7 +56,7 @@ public:
    * @param context Camera matrices and mesh lookup callback
    * @param program Linked mesh shader program
    */
-  void drawOpaque(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program) const;
+  static void drawOpaque(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program);
 
   /**
    * @brief Draw the additive bucket of a render list using additive blending
@@ -64,7 +64,7 @@ public:
    * @param context Camera matrices and mesh lookup callback
    * @param program Linked mesh shader program
    */
-  void drawAdditive(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program) const;
+  static void drawAdditive(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program);
 
   /**
    * @brief Draw the multiplicative bucket of a render list using order-independent multiplicative blending
@@ -72,7 +72,7 @@ public:
    * @param context Camera matrices and mesh lookup callback
    * @param program Linked mesh shader program
    */
-  void drawMultiplicative(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program) const;
+  static void drawMultiplicative(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program);
 
   /**
    * @brief Draw all compositing buckets currently implemented by the mesh renderer
@@ -84,8 +84,8 @@ public:
    * @param context Camera matrices and mesh lookup callback
    * @param program Linked mesh shader program
    */
-  void drawImplementedBuckets(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program)
-    const;
+  static void
+  drawImplementedBuckets(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program);
 
   /**
    * @brief Draw one bucket of mesh renderables using the basic mesh shader

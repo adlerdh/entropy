@@ -118,7 +118,7 @@ public:
 
   /// @brief Get slope/intercept coefficients for normalized color-map coordinate mapping.
   /// @param inverted When true, returns coefficients that invert the normalized coordinate.
-  glm::vec2 slopeIntercept(bool inverted = false) const;
+  static glm::vec2 slopeIntercept(bool inverted = false);
 
   /// @brief Set whether sampling beyond the map border should be treated as transparent.
   void setTransparentBorder(bool set);

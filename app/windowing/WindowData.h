@@ -51,7 +51,7 @@ public:
    * @param appData Application data containing image order and selection policy
    * @throw Propagates exceptions from layout image-selection updates
    */
-  void setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppData& appData) const;
+  static void setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppData& appData);
 
   /**
    * @brief Reorder rendered and metric image selections after image order changes
@@ -117,7 +117,7 @@ public:
    * @param resetObliqueOrientation True to reset oblique view orientation
    * @throw Propagates exceptions from camera transforms
    */
-  void recenterView(
+  static void recenterView(
     View& view,
     const glm::vec3& worldCenter,
     const glm::vec3& worldFov,

@@ -79,7 +79,7 @@ public:
    * The OpenGL context must still be current. This removes stale texture, sampler, program, framebuffer, and VAO
    * bindings so platform OpenGL drivers do not validate deleted or incomplete textures during shutdown.
    */
-  void prepareForShutdown();
+  static void prepareForShutdown();
 
   /**
    * @brief Initialize the initial OpenGL state and texture resources.

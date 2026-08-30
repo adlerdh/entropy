@@ -55,7 +55,7 @@ public:
   void use();
 
   /// Unbind the current shader program.
-  void stopUse();
+  static void stopUse();
 
   void bindAttribLocation(const std::string& nameArg, GLuint location);
   void bindFragDataLocation(const std::string& nameArg, GLuint location) const;

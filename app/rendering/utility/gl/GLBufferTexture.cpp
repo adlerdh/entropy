@@ -191,7 +191,14 @@ void GLBufferTexture::attachBufferToTexture(std::optional<uint32_t> textureUnit)
 
 void GLBufferTexture::detachBufferFromTexture()
 {
+  if (0 == m_texture.id()) {
+    return;
+  }
+
+  m_texture.bind();
   glTexBuffer(GL_TEXTURE_BUFFER, 0, 0);
+  m_texture.markBufferTextureStorage(0, 0);
+  m_texture.unbind();
 }
 
 void GLBufferTexture::detatchBufferFromTexture()

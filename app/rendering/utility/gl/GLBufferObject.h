@@ -96,7 +96,7 @@ public:
 
   /// @todo Change GLsizeiptr and GLintptr to std::size_t
   /// Copy bytes between two buffer objects using OpenGL's copy buffer targets.
-  void copyData(
+  static void copyData(
     GLBufferObject& readBuffer,
     GLBufferObject& writeBuffer,
     GLintptr readOffset,

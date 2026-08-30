@@ -147,7 +147,7 @@ public:
   void bindSampler(uint32_t textureUnit) const;
 
   /// Unbind this texture's sampler object from a texture unit.
-  void unbindSampler(uint32_t textureUnit);
+  static void unbindSampler(uint32_t textureUnit);
 
   tex::Target target() const;
 
@@ -359,9 +359,9 @@ private:
     GLint m_boundID;
   };
 
-  PixelStoreSettings getPixelPackSettings();
-  PixelStoreSettings getPixelUnpackSettings();
+  static PixelStoreSettings getPixelPackSettings();
+  static PixelStoreSettings getPixelUnpackSettings();
 
-  void applyPixelPackSettings(const PixelStoreSettings& settings);
-  void applyPixelUnpackSettings(const PixelStoreSettings& settings);
+  static void applyPixelPackSettings(const PixelStoreSettings& settings);
+  static void applyPixelUnpackSettings(const PixelStoreSettings& settings);
 };

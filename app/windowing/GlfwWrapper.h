@@ -79,7 +79,7 @@ public:
    * causing glfwWaitEvents() to return.
    * @note This may be called from any thread.
    */
-  void postEmptyEvent();
+  static void postEmptyEvent();
 
   const GLFWwindow* window() const;
   GLFWwindow* window();
@@ -105,7 +105,7 @@ private:
   void syncContentScale();
 
   // Process user interaction input between render calls.
-  void processInput();
+  static void processInput();
 
   // Returns the "current monitor" of the window. This is evaluated
   // as the monitor with the largest overlap with the window.

@@ -150,7 +150,7 @@ void GLVertexArrayObject::disableVertexAttribute(GLuint index)
 //     glVertexAttrib4f( index, values[0], values[1], values[2], values[3] );
 // }
 
-void GLVertexArrayObject::drawElements(const IndexedDrawParams& params) const
+void GLVertexArrayObject::drawElements(const IndexedDrawParams& params)
 {
   glDrawElements(
     params.primitiveMode(),

@@ -709,6 +709,7 @@ std::pair<double, double> ImageSettings::windowValuesLowHigh() const
   return windowValuesLowHigh(m_activeComponent);
 }
 
+// cppcheck-suppress functionStatic -- this setter is instance-shaped pending quantile-window implementation
 void ImageSettings::setWindowQuantileLow(uint32_t i, double pLow, bool clampValues)
 {
   std::ignore = i;
@@ -716,6 +717,7 @@ void ImageSettings::setWindowQuantileLow(uint32_t i, double pLow, bool clampValu
   std::ignore = clampValues;
 }
 
+// cppcheck-suppress functionStatic -- this setter is instance-shaped pending quantile-window implementation
 void ImageSettings::setWindowQuantileHigh(uint32_t i, double pHigh, bool clampValues)
 {
   std::ignore = i;

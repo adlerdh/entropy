@@ -89,13 +89,13 @@ public:
   setAttributeIntegerBuffer(GLuint index, GLint size, const BufferComponentType& type, GLsizei stride, GLint offset);
 
   /// Enable one vertex attribute index.
-  void enableVertexAttribute(GLuint index);
+  static void enableVertexAttribute(GLuint index);
 
   /// Disable one vertex attribute index.
-  void disableVertexAttribute(GLuint index);
+  static void disableVertexAttribute(GLuint index);
 
   /// Issue `glDrawElements()` with precomputed draw arguments.
-  void drawElements(const IndexedDrawParams& params) const;
+  static void drawElements(const IndexedDrawParams& params);
 
 private:
   GLuint m_id;

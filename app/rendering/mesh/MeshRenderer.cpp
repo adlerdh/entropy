@@ -244,7 +244,6 @@ void releaseAmbientOcclusionTexture(const MeshDrawContext& context)
 } // namespace
 
 void MeshRenderer::drawOpaque(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program)
-  const
 {
   const ScopedMeshBlendState scopedBlendState;
   const ScopedVisibleMeshDepthState scopedDepthState(GL_TRUE);
@@ -253,7 +252,6 @@ void MeshRenderer::drawOpaque(const MeshRenderList& list, const MeshDrawContext&
 }
 
 void MeshRenderer::drawAdditive(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program)
-  const
 {
   const ScopedMeshBlendState scopedBlendState;
   const ScopedVisibleMeshDepthState scopedDepthState(GL_FALSE);
@@ -266,7 +264,7 @@ void MeshRenderer::drawAdditive(const MeshRenderList& list, const MeshDrawContex
 void MeshRenderer::drawMultiplicative(
   const MeshRenderList& list,
   const MeshDrawContext& context,
-  GLShaderProgram& program) const
+  GLShaderProgram& program)
 {
   const ScopedMeshBlendState scopedBlendState;
   const ScopedVisibleMeshDepthState scopedDepthState(GL_FALSE);
@@ -279,7 +277,7 @@ void MeshRenderer::drawMultiplicative(
 void MeshRenderer::drawImplementedBuckets(
   const MeshRenderList& list,
   const MeshDrawContext& context,
-  GLShaderProgram& program) const
+  GLShaderProgram& program)
 {
   drawOpaque(list, context, program);
   drawAdditive(list, context, program);
