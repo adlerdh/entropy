@@ -34,9 +34,9 @@ FrameViewport::FrameViewport(glm::vec4 windowClipViewport)
   updateTransforms();
 }
 
-void FrameViewport::setWindowClipViewport(glm::vec4 windowClipViewport)
+void FrameViewport::setWindowClipViewport(glm::vec4 windowClipViewportArg)
 {
-  m_windowClipViewport = windowClipViewport;
+  m_windowClipViewport = windowClipViewportArg;
   updateTransforms();
 }
 

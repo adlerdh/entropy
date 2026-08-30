@@ -614,16 +614,16 @@ ImageSettings Image::defaultSettings() const
 
   const std::string displayName =
     m_header.fileName().empty() ? m_settings.displayName() : getFileName(m_header.fileName().string(), false);
-  ImageSettings settings(
+  ImageSettings settingsLocal(
     displayName,
     m_header.numPixels(),
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     componentStats);
-  setDefaultComponentRendering(settings, m_header, m_imageRep, componentStats);
-  setDefaultVectorFieldRendering(settings, m_header);
-  setDefaultInterpolationModes(settings, m_imageRep);
-  return settings;
+  setDefaultComponentRendering(settingsLocal, m_header, m_imageRep, componentStats);
+  setDefaultVectorFieldRendering(settingsLocal, m_header);
+  setDefaultInterpolationModes(settingsLocal, m_imageRep);
+  return settingsLocal;
 }
 
 const Image::ImageRepresentation& Image::imageRep() const

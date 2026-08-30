@@ -103,19 +103,19 @@ bool GLShader::isCompiled() const
 
 void GLShader::compileFromString(const char* source)
 {
-  const GLuint handle = glCreateShader(underlyingType(m_type));
+  const GLuint handleLocal = glCreateShader(underlyingType(m_type));
 
-  glShaderSource(handle, 1, &source, nullptr);
-  glCompileShader(handle);
+  glShaderSource(handleLocal, 1, &source, nullptr);
+  glCompileShader(handleLocal);
 
-  if (!checkShaderStatus(handle)) {
+  if (!checkShaderStatus(handleLocal)) {
     spdlog::error("Cannot compile shader '{}' due to failed status check", m_name);
     m_isCompiled = false;
   }
   else {
     m_isCompiled = true;
   }
-  m_handle = handle;
+  m_handle = handleLocal;
 
   CHECK_GL_ERROR(m_errorChecker)
 }
@@ -152,21 +152,21 @@ const std::string& GLShader::shaderTypeString(const ShaderType& type)
   return sk_shaderTypeStrings.at(type);
 }
 
-bool GLShader::checkShaderStatus(GLuint handle)
+bool GLShader::checkShaderStatus(GLuint handleArg)
 {
   GLint status = 0;
-  glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
+  glGetShaderiv(handleArg, GL_COMPILE_STATUS, &status);
 
   if (GL_FALSE == status) {
     GLint logLength = 0;
-    glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &logLength);
+    glGetShaderiv(handleArg, GL_INFO_LOG_LENGTH, &logLength);
 
     std::string logString;
 
     if (logLength > 0) {
       std::vector<GLchar> cLog(static_cast<size_t>(logLength));
       GLsizei actualLength = 0;
-      glGetShaderInfoLog(handle, logLength, &actualLength, &cLog[0]);
+      glGetShaderInfoLog(handleArg, logLength, &actualLength, &cLog[0]);
       logString = &cLog[0];
     }
 

@@ -8,94 +8,94 @@
 
 #include <span>
 
-QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t value) const
+QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t valueArg) const
 {
   if (comp >= m_header.numComponentsPerPixel()) {
     spdlog::error(
       "Invalid image component {} (image has {}) when converting value {} to quantile",
       comp,
       m_header.numComponentsPerPixel(),
-      value);
+      valueArg);
     throwDebug("Invalid image component");
   }
 
   if (m_settings.usingExactQuantiles()) {
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8:
-        return convertValueToQuantile<int8_t>(std::span{m_dataSorted_int8[comp]}, static_cast<int8_t>(value));
+        return convertValueToQuantile<int8_t>(std::span{m_dataSorted_int8[comp]}, static_cast<int8_t>(valueArg));
       case ComponentType::UInt8:
-        return convertValueToQuantile<uint8_t>(std::span{m_dataSorted_uint8[comp]}, static_cast<uint8_t>(value));
+        return convertValueToQuantile<uint8_t>(std::span{m_dataSorted_uint8[comp]}, static_cast<uint8_t>(valueArg));
       case ComponentType::Int16:
-        return convertValueToQuantile<int16_t>(std::span{m_dataSorted_int16[comp]}, static_cast<int16_t>(value));
+        return convertValueToQuantile<int16_t>(std::span{m_dataSorted_int16[comp]}, static_cast<int16_t>(valueArg));
       case ComponentType::UInt16:
-        return convertValueToQuantile<uint16_t>(std::span{m_dataSorted_uint16[comp]}, static_cast<uint16_t>(value));
+        return convertValueToQuantile<uint16_t>(std::span{m_dataSorted_uint16[comp]}, static_cast<uint16_t>(valueArg));
       case ComponentType::Int32:
-        return convertValueToQuantile<int32_t>(std::span{m_dataSorted_int32[comp]}, static_cast<int32_t>(value));
+        return convertValueToQuantile<int32_t>(std::span{m_dataSorted_int32[comp]}, static_cast<int32_t>(valueArg));
       case ComponentType::UInt32:
-        return convertValueToQuantile<uint32_t>(std::span{m_dataSorted_uint32[comp]}, static_cast<uint32_t>(value));
+        return convertValueToQuantile<uint32_t>(std::span{m_dataSorted_uint32[comp]}, static_cast<uint32_t>(valueArg));
       case ComponentType::Float32:
-        return convertValueToQuantile<float>(std::span{m_dataSorted_float32[comp]}, static_cast<float>(value));
+        return convertValueToQuantile<float>(std::span{m_dataSorted_float32[comp]}, static_cast<float>(valueArg));
       default:
         spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
         throwDebug("Invalid memory component type");
     }
   }
 
-  const double q = m_tdigests.at(comp).cdf(static_cast<double>(value));
+  const double q = m_tdigests.at(comp).cdf(static_cast<double>(valueArg));
 
   QuantileOfValue qov;
   qov.lowerQuantile = q;
   qov.upperQuantile = q;
   qov.lowerIndex = 0;
   qov.upperIndex = 0;
-  qov.lowerValue = value;
-  qov.upperValue = value;
+  qov.lowerValue = valueArg;
+  qov.upperValue = valueArg;
   qov.foundValue = true;
   return qov;
 }
 
-QuantileOfValue Image::valueToQuantile(uint32_t comp, double value) const
+QuantileOfValue Image::valueToQuantile(uint32_t comp, double valueArg) const
 {
   if (comp >= m_header.numComponentsPerPixel()) {
     spdlog::error(
       "Invalid image component {} (image has {}) when converting value {} to quantile",
       comp,
       m_header.numComponentsPerPixel(),
-      value);
+      valueArg);
     throwDebug("Invalid image component");
   }
 
   if (m_settings.usingExactQuantiles()) {
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8:
-        return convertValueToQuantile(std::span{m_dataSorted_int8[comp]}, static_cast<int8_t>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_int8[comp]}, static_cast<int8_t>(valueArg));
       case ComponentType::UInt8:
-        return convertValueToQuantile(std::span{m_dataSorted_uint8[comp]}, static_cast<uint8_t>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_uint8[comp]}, static_cast<uint8_t>(valueArg));
       case ComponentType::Int16:
-        return convertValueToQuantile(std::span{m_dataSorted_int16[comp]}, static_cast<int16_t>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_int16[comp]}, static_cast<int16_t>(valueArg));
       case ComponentType::UInt16:
-        return convertValueToQuantile(std::span{m_dataSorted_uint16[comp]}, static_cast<uint16_t>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_uint16[comp]}, static_cast<uint16_t>(valueArg));
       case ComponentType::Int32:
-        return convertValueToQuantile(std::span{m_dataSorted_int32[comp]}, static_cast<int32_t>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_int32[comp]}, static_cast<int32_t>(valueArg));
       case ComponentType::UInt32:
-        return convertValueToQuantile(std::span{m_dataSorted_uint32[comp]}, static_cast<uint32_t>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_uint32[comp]}, static_cast<uint32_t>(valueArg));
       case ComponentType::Float32:
-        return convertValueToQuantile(std::span{m_dataSorted_float32[comp]}, static_cast<float>(value));
+        return convertValueToQuantile(std::span{m_dataSorted_float32[comp]}, static_cast<float>(valueArg));
       default:
         spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
         throwDebug("Invalid memory component type");
     }
   }
 
-  const double q = m_tdigests.at(comp).cdf(value);
+  const double q = m_tdigests.at(comp).cdf(valueArg);
 
   QuantileOfValue qov;
   qov.lowerQuantile = q;
   qov.upperQuantile = q;
   qov.lowerIndex = 0;
   qov.upperIndex = 0;
-  qov.lowerValue = value;
-  qov.upperValue = value;
+  qov.lowerValue = valueArg;
+  qov.upperValue = valueArg;
   qov.foundValue = true;
   return qov;
 }

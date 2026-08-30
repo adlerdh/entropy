@@ -78,13 +78,13 @@ size_t LandmarkGroup::addPoint(const PointRecord<PositionType>& point)
     return 0u;
   }
 
-  size_t maxIndex = 0;
+  size_t maxIndexLocal = 0;
 
   for (const auto& p : m_pointMap) {
-    if (p.first > maxIndex) maxIndex = p.first;
+    if (p.first > maxIndexLocal) maxIndexLocal = p.first;
   }
 
-  const size_t newIndex = maxIndex + 1;
+  const size_t newIndex = maxIndexLocal + 1;
   m_pointMap.emplace(newIndex, point);
   return newIndex;
 }

@@ -109,9 +109,9 @@ void GLBufferObject::write(std::size_t offset, std::size_t sizeInBytes, const GL
   CHECK_GL_ERROR(m_errorChecker);
 }
 
-void GLBufferObject::read(std::size_t offset, std::size_t size, GLvoid* data)
+void GLBufferObject::read(std::size_t offset, std::size_t sizeArg, GLvoid* data)
 {
-  glGetBufferSubData(m_typeEnum, static_cast<GLsizeiptr>(offset), static_cast<GLsizeiptr>(size), data);
+  glGetBufferSubData(m_typeEnum, static_cast<GLsizeiptr>(offset), static_cast<GLsizeiptr>(sizeArg), data);
 
   CHECK_GL_ERROR(m_errorChecker);
 }
@@ -148,7 +148,7 @@ void GLBufferObject::copyData(
   GLBufferObject& writeBuffer,
   GLintptr readOffset,
   GLintptr writeOffset,
-  GLsizeiptr size)
+  GLsizeiptr sizeArg)
 {
   readBuffer.bind();
   writeBuffer.bind();
@@ -158,7 +158,7 @@ void GLBufferObject::copyData(
     underlyingType(writeBuffer.type()),
     readOffset,
     writeOffset,
-    size);
+    sizeArg);
 }
 
 GLuint GLBufferObject::id() const

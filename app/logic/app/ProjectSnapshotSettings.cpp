@@ -832,220 +832,228 @@ serialize::SegSettings segmentationSettings(const AppData& appData, const Image&
 
 void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
 {
-  ImageSettings& imageSettings = image.settings();
+  ImageSettings& imageSettingsLocal = image.settings();
   if (!settings.m_displayName.empty()) {
-    imageSettings.setDisplayName(settings.m_displayName);
+    imageSettingsLocal.setDisplayName(settings.m_displayName);
   }
 
-  imageSettings.setGlobalVisibility(settings.m_globalVisibility);
-  imageSettings.setGlobalOpacity(settings.m_globalOpacity);
+  imageSettingsLocal.setGlobalVisibility(settings.m_globalVisibility);
+  imageSettingsLocal.setGlobalOpacity(settings.m_globalOpacity);
   if (settings.m_hasBorderColor) {
-    imageSettings.setBorderColor(settings.m_borderColor);
+    imageSettingsLocal.setBorderColor(settings.m_borderColor);
   }
-  imageSettings.setLockedToReference(settings.m_lockedToReference);
-  imageSettings.setWarpEnabled(settings.m_warpEnabled);
-  imageSettings.setAllowExaggeratedWarp(settings.m_allowExaggeratedWarp);
-  imageSettings.setWarpStrength(settings.m_warpStrength);
-  if (settings.m_activeComponent < imageSettings.numComponents()) {
-    imageSettings.setActiveComponent(settings.m_activeComponent);
+  imageSettingsLocal.setLockedToReference(settings.m_lockedToReference);
+  imageSettingsLocal.setWarpEnabled(settings.m_warpEnabled);
+  imageSettingsLocal.setAllowExaggeratedWarp(settings.m_allowExaggeratedWarp);
+  imageSettingsLocal.setWarpStrength(settings.m_warpStrength);
+  if (settings.m_activeComponent < imageSettingsLocal.numComponents()) {
+    imageSettingsLocal.setActiveComponent(settings.m_activeComponent);
   }
-  imageSettings.setActiveTimePoint(image.timeAxis().clamp(settings.m_activeTimePoint));
-  imageSettings.setTimePlaybackLoop(settings.m_timePlaybackLoop);
-  imageSettings.setTimePlaybackPlaying(settings.m_timePlaybackPlaying && image.isTimeSeries());
-  imageSettings.setTimePlaybackSpeed(settings.m_timePlaybackSpeed);
-  imageSettings.setOpacity(settings.m_opacity);
+  imageSettingsLocal.setActiveTimePoint(image.timeAxis().clamp(settings.m_activeTimePoint));
+  imageSettingsLocal.setTimePlaybackLoop(settings.m_timePlaybackLoop);
+  imageSettingsLocal.setTimePlaybackPlaying(settings.m_timePlaybackPlaying && image.isTimeSeries());
+  imageSettingsLocal.setTimePlaybackSpeed(settings.m_timePlaybackSpeed);
+  imageSettingsLocal.setOpacity(settings.m_opacity);
   if (settings.m_hasComponentRenderMode) {
     const ComponentRenderMode componentMode = fromSerializedComponentRenderMode(settings.m_componentRenderMode);
-    imageSettings.setComponentRenderMode(
+    imageSettingsLocal.setComponentRenderMode(
       componentRenderModeIsValidForImage(componentMode, image) ? componentMode : ComponentRenderMode::SingleComponent);
   }
-  if (ComponentRenderMode::ComplexReal == imageSettings.componentRenderMode()) {
-    imageSettings.setActiveComponent(0);
+  if (ComponentRenderMode::ComplexReal == imageSettingsLocal.componentRenderMode()) {
+    imageSettingsLocal.setActiveComponent(0);
   }
-  else if (ComponentRenderMode::ComplexImaginary == imageSettings.componentRenderMode()) {
-    imageSettings.setActiveComponent(1);
+  else if (ComponentRenderMode::ComplexImaginary == imageSettingsLocal.componentRenderMode()) {
+    imageSettingsLocal.setActiveComponent(1);
   }
-  imageSettings.setComplexPhaseUnit(fromSerializedComplexPhaseUnit(settings.m_complexPhaseUnit));
-  imageSettings.setComplexPhaseRange(fromSerializedComplexPhaseRange(settings.m_complexPhaseRange));
-  imageSettings.setVectorArrowOverlayVisible(settings.m_vectorArrowOverlayVisible);
-  imageSettings.setVectorArrowOverlayOnImage(settings.m_vectorArrowOverlayOnImage);
-  imageSettings.setVectorArrowOverlayDensity(settings.m_vectorArrowOverlayDensity);
-  imageSettings.setVectorArrowOverlayVoxelSpacing(settings.m_vectorArrowOverlayVoxelSpacing);
-  imageSettings.setVectorArrowOverlayMillimeterSpacing(settings.m_vectorArrowOverlayMillimeterSpacing);
-  imageSettings.setVectorArrowOverlaySpacingMode(
+  imageSettingsLocal.setComplexPhaseUnit(fromSerializedComplexPhaseUnit(settings.m_complexPhaseUnit));
+  imageSettingsLocal.setComplexPhaseRange(fromSerializedComplexPhaseRange(settings.m_complexPhaseRange));
+  imageSettingsLocal.setVectorArrowOverlayVisible(settings.m_vectorArrowOverlayVisible);
+  imageSettingsLocal.setVectorArrowOverlayOnImage(settings.m_vectorArrowOverlayOnImage);
+  imageSettingsLocal.setVectorArrowOverlayDensity(settings.m_vectorArrowOverlayDensity);
+  imageSettingsLocal.setVectorArrowOverlayVoxelSpacing(settings.m_vectorArrowOverlayVoxelSpacing);
+  imageSettingsLocal.setVectorArrowOverlayMillimeterSpacing(settings.m_vectorArrowOverlayMillimeterSpacing);
+  imageSettingsLocal.setVectorArrowOverlaySpacingMode(
     fromSerializedVectorArrowOverlaySpacingMode(settings.m_vectorArrowOverlaySpacingMode));
-  imageSettings.setVectorArrowOverlayColor(settings.m_vectorArrowOverlayColor);
-  imageSettings.setVectorArrowOverlayUseDirectionColor(settings.m_vectorArrowOverlayUseDirectionColor);
-  imageSettings.setVectorArrowOverlayLineThickness(settings.m_vectorArrowOverlayLineThickness);
-  imageSettings.setVectorArrowOverlayOpacity(settings.m_vectorArrowOverlayOpacity);
-  imageSettings.setVectorArrowOverlayScaleByMagnitude(settings.m_vectorArrowOverlayScaleByMagnitude);
-  imageSettings.setVectorArrowOverlayScaleFactor(settings.m_vectorArrowOverlayScaleFactor);
-  imageSettings.setVectorWarpedGridVisible(settings.m_vectorWarpedGridVisible);
-  imageSettings.setVectorWarpedGridOverlayOnImage(settings.m_vectorWarpedGridOverlayOnImage);
-  imageSettings.setVectorWarpedGridConvention(
+  imageSettingsLocal.setVectorArrowOverlayColor(settings.m_vectorArrowOverlayColor);
+  imageSettingsLocal.setVectorArrowOverlayUseDirectionColor(settings.m_vectorArrowOverlayUseDirectionColor);
+  imageSettingsLocal.setVectorArrowOverlayLineThickness(settings.m_vectorArrowOverlayLineThickness);
+  imageSettingsLocal.setVectorArrowOverlayOpacity(settings.m_vectorArrowOverlayOpacity);
+  imageSettingsLocal.setVectorArrowOverlayScaleByMagnitude(settings.m_vectorArrowOverlayScaleByMagnitude);
+  imageSettingsLocal.setVectorArrowOverlayScaleFactor(settings.m_vectorArrowOverlayScaleFactor);
+  imageSettingsLocal.setVectorWarpedGridVisible(settings.m_vectorWarpedGridVisible);
+  imageSettingsLocal.setVectorWarpedGridOverlayOnImage(settings.m_vectorWarpedGridOverlayOnImage);
+  imageSettingsLocal.setVectorWarpedGridConvention(
     fromSerializedVectorWarpedGridConvention(settings.m_vectorWarpedGridConvention));
-  imageSettings.setVectorWarpedGridPixelSpacing(settings.m_vectorWarpedGridPixelSpacing);
-  imageSettings.setVectorWarpedGridVoxelSpacing(settings.m_vectorWarpedGridVoxelSpacing);
-  imageSettings.setVectorWarpedGridMillimeterSpacing(settings.m_vectorWarpedGridMillimeterSpacing);
-  imageSettings.setVectorWarpedGridSpacingMode(
+  imageSettingsLocal.setVectorWarpedGridPixelSpacing(settings.m_vectorWarpedGridPixelSpacing);
+  imageSettingsLocal.setVectorWarpedGridVoxelSpacing(settings.m_vectorWarpedGridVoxelSpacing);
+  imageSettingsLocal.setVectorWarpedGridMillimeterSpacing(settings.m_vectorWarpedGridMillimeterSpacing);
+  imageSettingsLocal.setVectorWarpedGridSpacingMode(
     fromSerializedVectorArrowOverlaySpacingMode(settings.m_vectorWarpedGridSpacingMode));
-  imageSettings.setVectorWarpedGridLineThickness(settings.m_vectorWarpedGridLineThickness);
-  imageSettings.setVectorWarpedGridScaleFactor(settings.m_vectorWarpedGridScaleFactor);
-  imageSettings.setVectorWarpedGridForegroundColor(settings.m_vectorWarpedGridForegroundColor);
-  imageSettings.setVectorWarpedGridBackgroundColor(settings.m_vectorWarpedGridBackgroundColor);
-  imageSettings.setVectorPlanarProjectionSignedColors(settings.m_vectorPlanarProjectionSignedColors);
-  imageSettings.setVectorLogJacobianDeterminant(settings.m_vectorLogJacobianDeterminant);
-  imageSettings.setIgnoreAlpha(settings.m_ignoreAlpha);
-  imageSettings.setColorInterpolationMode(settings.m_colorInterpolationMode);
+  imageSettingsLocal.setVectorWarpedGridLineThickness(settings.m_vectorWarpedGridLineThickness);
+  imageSettingsLocal.setVectorWarpedGridScaleFactor(settings.m_vectorWarpedGridScaleFactor);
+  imageSettingsLocal.setVectorWarpedGridForegroundColor(settings.m_vectorWarpedGridForegroundColor);
+  imageSettingsLocal.setVectorWarpedGridBackgroundColor(settings.m_vectorWarpedGridBackgroundColor);
+  imageSettingsLocal.setVectorPlanarProjectionSignedColors(settings.m_vectorPlanarProjectionSignedColors);
+  imageSettingsLocal.setVectorLogJacobianDeterminant(settings.m_vectorLogJacobianDeterminant);
+  imageSettingsLocal.setIgnoreAlpha(settings.m_ignoreAlpha);
+  imageSettingsLocal.setColorInterpolationMode(settings.m_colorInterpolationMode);
   const std::size_t numLevelComponents =
-    std::min<std::size_t>(settings.m_componentLevels.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_componentLevels.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numLevelComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_componentLevelIndices, component)) {
       continue;
     }
-    imageSettings.setWindowCenter(static_cast<uint32_t>(component), settings.m_componentLevels.at(component));
+    imageSettingsLocal.setWindowCenter(static_cast<uint32_t>(component), settings.m_componentLevels.at(component));
   }
   const std::size_t numWindowComponents =
-    std::min<std::size_t>(settings.m_componentWindows.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_componentWindows.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numWindowComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_componentWindowIndices, component)) {
       continue;
     }
     const double windowWidth = settings.m_componentWindows.at(component);
     if (windowWidth > 0.0) {
-      imageSettings.setWindowWidth(static_cast<uint32_t>(component), windowWidth);
+      imageSettingsLocal.setWindowWidth(static_cast<uint32_t>(component), windowWidth);
     }
   }
   const std::size_t numThresholdLowComponents =
-    std::min<std::size_t>(settings.m_componentThresholdLows.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_componentThresholdLows.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numThresholdLowComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_componentThresholdLowIndices, component)) {
       continue;
     }
-    imageSettings.setThresholdLow(static_cast<uint32_t>(component), settings.m_componentThresholdLows.at(component));
+    imageSettingsLocal.setThresholdLow(
+      static_cast<uint32_t>(component),
+      settings.m_componentThresholdLows.at(component));
   }
   const std::size_t numThresholdHighComponents =
-    std::min<std::size_t>(settings.m_componentThresholdHighs.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_componentThresholdHighs.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numThresholdHighComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_componentThresholdHighIndices, component)) {
       continue;
     }
-    imageSettings.setThresholdHigh(static_cast<uint32_t>(component), settings.m_componentThresholdHighs.at(component));
+    imageSettingsLocal.setThresholdHigh(
+      static_cast<uint32_t>(component),
+      settings.m_componentThresholdHighs.at(component));
   }
   const std::size_t numVisibilityComponents =
-    std::min<std::size_t>(settings.m_componentVisibility.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_componentVisibility.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numVisibilityComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_componentVisibilityIndices, component)) {
       continue;
     }
-    imageSettings.setVisibility(static_cast<uint32_t>(component), settings.m_componentVisibility.at(component));
+    imageSettingsLocal.setVisibility(static_cast<uint32_t>(component), settings.m_componentVisibility.at(component));
   }
   const std::size_t numOpacityComponents =
-    std::min<std::size_t>(settings.m_componentOpacities.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_componentOpacities.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numOpacityComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_componentOpacityIndices, component)) {
       continue;
     }
-    imageSettings.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
+    imageSettingsLocal.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
   }
   const std::size_t numColorMapComponents =
-    std::min<std::size_t>(settings.m_colorMapIndices.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_colorMapIndices.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numColorMapComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_colorMapIndexIndices, component)) {
       continue;
     }
-    imageSettings.setColorMapIndex(static_cast<uint32_t>(component), settings.m_colorMapIndices.at(component));
+    imageSettingsLocal.setColorMapIndex(static_cast<uint32_t>(component), settings.m_colorMapIndices.at(component));
   }
   const std::size_t numColorMapInvertedComponents =
-    std::min<std::size_t>(settings.m_colorMapInverted.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_colorMapInverted.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numColorMapInvertedComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_colorMapInvertedIndices, component)) {
       continue;
     }
-    imageSettings.setColorMapInverted(static_cast<uint32_t>(component), settings.m_colorMapInverted.at(component));
+    imageSettingsLocal.setColorMapInverted(static_cast<uint32_t>(component), settings.m_colorMapInverted.at(component));
   }
   const std::size_t numColorMapContinuousComponents =
-    std::min<std::size_t>(settings.m_colorMapContinuous.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_colorMapContinuous.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numColorMapContinuousComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_colorMapContinuousIndices, component)) {
       continue;
     }
-    imageSettings.setColorMapContinuous(static_cast<uint32_t>(component), settings.m_colorMapContinuous.at(component));
+    imageSettingsLocal.setColorMapContinuous(
+      static_cast<uint32_t>(component),
+      settings.m_colorMapContinuous.at(component));
   }
   const std::size_t numColorMapLevelComponents =
-    std::min<std::size_t>(settings.m_colorMapLevels.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_colorMapLevels.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numColorMapLevelComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_colorMapLevelIndices, component)) {
       continue;
     }
-    imageSettings.setColorMapQuantization(
+    imageSettingsLocal.setColorMapQuantization(
       static_cast<uint32_t>(component),
       static_cast<uint32_t>(settings.m_colorMapLevels.at(component)));
   }
   const std::size_t numColorMapHsvComponents =
-    std::min<std::size_t>(settings.m_colorMapHsvModifiers.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_colorMapHsvModifiers.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numColorMapHsvComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_colorMapHsvModifierIndices, component)) {
       continue;
     }
-    imageSettings.setColormapHsvModfactors(
+    imageSettingsLocal.setColormapHsvModfactors(
       static_cast<uint32_t>(component),
       settings.m_colorMapHsvModifiers.at(component));
   }
   const std::size_t numInterpolationComponents =
-    std::min<std::size_t>(settings.m_interpolationModes.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_interpolationModes.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numInterpolationComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_interpolationModeIndices, component)) {
       continue;
     }
-    imageSettings.setInterpolationMode(static_cast<uint32_t>(component), settings.m_interpolationModes.at(component));
+    imageSettingsLocal.setInterpolationMode(
+      static_cast<uint32_t>(component),
+      settings.m_interpolationModes.at(component));
   }
   const std::size_t numForegroundLowComponents =
-    std::min<std::size_t>(settings.m_foregroundThresholdLows.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_foregroundThresholdLows.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numForegroundLowComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_foregroundThresholdLowIndices, component)) {
       continue;
     }
-    imageSettings.setForegroundThresholdLow(
+    imageSettingsLocal.setForegroundThresholdLow(
       static_cast<uint32_t>(component),
       settings.m_foregroundThresholdLows.at(component));
   }
   const std::size_t numForegroundHighComponents =
-    std::min<std::size_t>(settings.m_foregroundThresholdHighs.size(), imageSettings.numComponents());
+    std::min<std::size_t>(settings.m_foregroundThresholdHighs.size(), imageSettingsLocal.numComponents());
   for (std::size_t component = 0; component < numForegroundHighComponents; ++component) {
     if (!shouldApplySparseComponentValue(settings.m_foregroundThresholdHighIndices, component)) {
       continue;
     }
-    imageSettings.setForegroundThresholdHigh(
+    imageSettingsLocal.setForegroundThresholdHigh(
       static_cast<uint32_t>(component),
       settings.m_foregroundThresholdHighs.at(component));
   }
-  imageSettings.setEdgeDetectionMethod(
+  imageSettingsLocal.setEdgeDetectionMethod(
     serialize::ProjectEdgeDetectionMethod::Pixel == settings.m_edgeDetectionMethod ? EdgeDetectionMethod::Pixel
                                                                                    : EdgeDetectionMethod::Voxel);
-  imageSettings.setShowAnyEdges(settings.m_showEdges);
-  imageSettings.setThresholdEdges(settings.m_thresholdEdges);
-  imageSettings.setThresholdPixelEdges(settings.m_thresholdEdges);
-  imageSettings.setThinPixelEdges(settings.m_thinPixelEdges);
-  imageSettings.setOverlayEdges(settings.m_overlayEdges);
-  imageSettings.setOverlayPixelEdges(settings.m_overlayEdges);
-  imageSettings.setColormapEdges(
+  imageSettingsLocal.setShowAnyEdges(settings.m_showEdges);
+  imageSettingsLocal.setThresholdEdges(settings.m_thresholdEdges);
+  imageSettingsLocal.setThresholdPixelEdges(settings.m_thresholdEdges);
+  imageSettingsLocal.setThinPixelEdges(settings.m_thinPixelEdges);
+  imageSettingsLocal.setOverlayEdges(settings.m_overlayEdges);
+  imageSettingsLocal.setOverlayPixelEdges(settings.m_overlayEdges);
+  imageSettingsLocal.setColormapEdges(
     serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod && settings.m_colormapEdges);
-  imageSettings.setEdgeMagnitude(settings.m_edgeMagnitude);
-  imageSettings.setPixelEdgeScale(settings.m_pixelEdgeScale);
-  imageSettings.setPixelEdgeThreshold(settings.m_pixelEdgeThreshold);
+  imageSettingsLocal.setEdgeMagnitude(settings.m_edgeMagnitude);
+  imageSettingsLocal.setPixelEdgeScale(settings.m_pixelEdgeScale);
+  imageSettingsLocal.setPixelEdgeThreshold(settings.m_pixelEdgeThreshold);
   if (settings.m_hasEdgeColor) {
-    imageSettings.setEdgeColor(settings.m_edgeColor);
+    imageSettingsLocal.setEdgeColor(settings.m_edgeColor);
   }
-  imageSettings.setEdgeOpacity(settings.m_edgeOpacity);
-  imageSettings.setUseDistanceMapForRaycasting(settings.m_useDistanceMapForRaycasting);
-  imageSettings.setIsosurfacesVisible(settings.m_isosurfacesVisible);
-  imageSettings.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
-  imageSettings.setModulateIsocontourOpacityWithImageOpacity(settings.m_modulateIsocontourOpacityWithImageOpacity);
-  imageSettings.setShowIsoscontoursIn2D(settings.m_showIsocontoursIn2D);
-  imageSettings.setShowIsosurfacesIn3D(settings.m_showIsosurfacesIn3D);
-  imageSettings.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);
-  imageSettings.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
+  imageSettingsLocal.setEdgeOpacity(settings.m_edgeOpacity);
+  imageSettingsLocal.setUseDistanceMapForRaycasting(settings.m_useDistanceMapForRaycasting);
+  imageSettingsLocal.setIsosurfacesVisible(settings.m_isosurfacesVisible);
+  imageSettingsLocal.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
+  imageSettingsLocal.setModulateIsocontourOpacityWithImageOpacity(settings.m_modulateIsocontourOpacityWithImageOpacity);
+  imageSettingsLocal.setShowIsoscontoursIn2D(settings.m_showIsocontoursIn2D);
+  imageSettingsLocal.setShowIsosurfacesIn3D(settings.m_showIsosurfacesIn3D);
+  imageSettingsLocal.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);
+  imageSettingsLocal.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
 }
 
 void applySegmentationSettings(AppData& appData, Image& seg, const serialize::SegSettings& settings)

@@ -192,13 +192,13 @@ size_t GLVertexArrayObject::IndexedDrawParams::elementCount() const
   return m_elementCount;
 }
 
-void GLVertexArrayObject::IndexedDrawParams::setElementCount(size_t elementCount)
+void GLVertexArrayObject::IndexedDrawParams::setElementCount(size_t elementCountArg)
 {
-  if (elementCount > std::numeric_limits<GLsizei>::max()) {
+  if (elementCountArg > std::numeric_limits<GLsizei>::max()) {
     throwDebug("Attempting to set more elements than max count");
   }
 
-  m_elementCount = elementCount;
+  m_elementCount = elementCountArg;
 }
 
 GLenum GLVertexArrayObject::IndexedDrawParams::indexType() const

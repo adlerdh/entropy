@@ -16,22 +16,22 @@ MeshShadowMapResources::~MeshShadowMapResources()
   clear();
 }
 
-bool MeshShadowMapResources::ensureSize(const uint32_t sizePixels)
+bool MeshShadowMapResources::ensureSize(const uint32_t sizePixelsArg)
 {
-  if (sizePixels == 0u) {
+  if (sizePixelsArg == 0u) {
     clear();
     return false;
   }
 
-  if (m_initialized && m_sizePixels == sizePixels) {
+  if (m_initialized && m_sizePixels == sizePixelsArg) {
     return false;
   }
 
   clear();
   m_depthTexture.emplace(makeDepthTexture());
-  allocateDepthTexture(*m_depthTexture, sizePixels);
+  allocateDepthTexture(*m_depthTexture, sizePixelsArg);
   attachFramebuffer();
-  m_sizePixels = sizePixels;
+  m_sizePixels = sizePixelsArg;
   m_initialized = true;
   return true;
 }

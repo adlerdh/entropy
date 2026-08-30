@@ -146,8 +146,8 @@ std::optional<uuid> viewImageUid(const View& view)
 CameraSnapshotKey cameraSnapshotKey(
   LayoutKind layoutKind,
   bool isLightbox,
-  const std::optional<uuid>& layoutImageUid,
-  const std::optional<uuid>& viewImageUid,
+  const std::optional<uuid>& layoutImageUidArg,
+  const std::optional<uuid>& viewImageUidArg,
   ViewType viewType,
   std::size_t viewIndex)
 {
@@ -155,7 +155,7 @@ CameraSnapshotKey cameraSnapshotKey(
     .m_layoutKind = layoutKind,
     .m_viewType = viewType,
     .m_isLightbox = isLightbox,
-    .m_imageUid = isLightbox ? layoutImageUid : viewImageUid,
+    .m_imageUid = isLightbox ? layoutImageUidArg : viewImageUidArg,
     .m_viewIndex = isLightbox ? viewIndex : 0};
 }
 
@@ -1277,13 +1277,13 @@ void WindowData::setCurrentLayoutViewType(const AppData& appData, const ViewType
     return;
   }
 
-  Layout& layout = m_layouts.at(m_currentLayout);
-  if (!layout.isLightbox() || LayoutKind::Lightbox != layout.kind()) {
-    layout.setViewType(viewType);
+  Layout& layoutLocal = m_layouts.at(m_currentLayout);
+  if (!layoutLocal.isLightbox() || LayoutKind::Lightbox != layoutLocal.kind()) {
+    layoutLocal.setViewType(viewType);
     return;
   }
 
-  const std::optional<uuid> imageUid = layoutImageUid(layout);
+  const std::optional<uuid> imageUid = layoutImageUid(layoutLocal);
   if (!imageUid) {
     spdlog::warn("Cannot rebuild managed lightbox layout because it has no source image");
     return;
@@ -1324,8 +1324,8 @@ void WindowData::reconcileImageDependentLayouts(
     m_viewAlignment,
     m_viewConvention,
     dicomNativeViewTypesByImage);
-  for (auto& layout : generatedLayouts) {
-    setDefaultRenderedImagesForLayout(layout, appData);
+  for (auto& layoutLocal : generatedLayouts) {
+    setDefaultRenderedImagesForLayout(layoutLocal, appData);
   }
   const CameraSnapshotIndex cameraSnapshotIndex = createCameraSnapshotIndex(cameraSnapshots);
   const CameraRestoreSummary restoreSummary =
@@ -1348,8 +1348,8 @@ void WindowData::reconcileImageDependentLayouts(
 
   std::vector<bool> isOneUpGeneratedLayout;
   isOneUpGeneratedLayout.reserve(generatedLayouts.size());
-  for (const auto& layout : generatedLayouts) {
-    isOneUpGeneratedLayout.push_back(isOneUpLayoutKind(layout.kind()));
+  for (const auto& layoutLocal : generatedLayouts) {
+    isOneUpGeneratedLayout.push_back(isOneUpLayoutKind(layoutLocal.kind()));
   }
 
   for (std::size_t i = 0; i < generatedLayouts.size(); ++i) {
@@ -1396,62 +1396,62 @@ std::vector<layout::LayoutSpec> WindowData::createDefaultProjectLayoutSnapshots(
   const AppData& appData,
   const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage) const
 {
-  std::vector<Layout> layouts =
+  std::vector<Layout> layoutsLocal =
     createDefaultProjectLayouts(appData, m_crosshairs, m_viewAlignment, m_viewConvention, dicomNativeViewTypesByImage);
-  for (auto& layout : layouts) {
-    setDefaultRenderedImagesForLayout(layout, appData);
+  for (auto& layoutLocal : layoutsLocal) {
+    setDefaultRenderedImagesForLayout(layoutLocal, appData);
   }
 
-  return layout::createLayoutSpecs(layouts, appData.imageUidsOrdered());
+  return layout::createLayoutSpecs(layoutsLocal, appData.imageUidsOrdered());
 }
 
 std::size_t WindowData::defaultProjectLayoutIndex(
   const AppData& appData,
   const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage) const
 {
-  std::vector<Layout> layouts =
+  std::vector<Layout> layoutsLocal =
     createDefaultProjectLayouts(appData, m_crosshairs, m_viewAlignment, m_viewConvention, dicomNativeViewTypesByImage);
-  for (auto& layout : layouts) {
-    setDefaultRenderedImagesForLayout(layout, appData);
+  for (auto& layoutLocal : layoutsLocal) {
+    setDefaultRenderedImagesForLayout(layoutLocal, appData);
   }
 
-  return defaultLayoutIndexForImages(layouts, appData);
+  return defaultLayoutIndexForImages(layoutsLocal, appData);
 }
 
 bool WindowData::applyProjectLayoutSnapshots(
-  const std::vector<layout::LayoutSpec>& layouts,
+  const std::vector<layout::LayoutSpec>& layoutsArg,
   const uuid_range_t& orderedImageUids,
-  std::optional<std::size_t> currentLayoutIndex)
+  std::optional<std::size_t> currentLayoutIndexArg)
 {
-  if (layouts.empty()) {
+  if (layoutsArg.empty()) {
     return false;
   }
 
   std::vector<Layout> restoredLayouts =
-    layout::instantiateLayoutSpecs(layouts, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
+    layout::instantiateLayoutSpecs(layoutsArg, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
 
   if (restoredLayouts.empty()) {
     return false;
   }
 
   m_layouts = std::move(restoredLayouts);
-  m_currentLayout = (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) ? *currentLayoutIndex : 0;
+  m_currentLayout = (currentLayoutIndexArg && *currentLayoutIndexArg < m_layouts.size()) ? *currentLayoutIndexArg : 0;
   m_activeViewUid = std::nullopt;
   updateAllViews();
   return true;
 }
 
 bool WindowData::appendProjectLayoutSnapshots(
-  const std::vector<layout::LayoutSpec>& layouts,
+  const std::vector<layout::LayoutSpec>& layoutsArg,
   const uuid_range_t& orderedImageUids,
-  std::optional<std::size_t> currentLayoutIndex)
+  std::optional<std::size_t> currentLayoutIndexArg)
 {
-  if (layouts.empty()) {
+  if (layoutsArg.empty()) {
     return false;
   }
 
   std::vector<Layout> restoredLayouts =
-    layout::instantiateLayoutSpecs(layouts, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
+    layout::instantiateLayoutSpecs(layoutsArg, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
   if (restoredLayouts.empty()) {
     return false;
   }
@@ -1467,8 +1467,8 @@ bool WindowData::appendProjectLayoutSnapshots(
   }
 
   if (firstProjectLayoutIndex == restoredLayouts.size()) {
-    if (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) {
-      m_currentLayout = *currentLayoutIndex;
+    if (currentLayoutIndexArg && *currentLayoutIndexArg < m_layouts.size()) {
+      m_currentLayout = *currentLayoutIndexArg;
       updateAllViews();
     }
     return true;
@@ -1478,8 +1478,8 @@ bool WindowData::appendProjectLayoutSnapshots(
     m_layouts.end(),
     std::make_move_iterator(restoredLayouts.begin() + static_cast<std::ptrdiff_t>(firstProjectLayoutIndex)),
     std::make_move_iterator(restoredLayouts.end()));
-  if (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) {
-    m_currentLayout = *currentLayoutIndex;
+  if (currentLayoutIndexArg && *currentLayoutIndexArg < m_layouts.size()) {
+    m_currentLayout = *currentLayoutIndexArg;
   }
   m_activeViewUid = std::nullopt;
   updateAllViews();
@@ -1488,7 +1488,7 @@ bool WindowData::appendProjectLayoutSnapshots(
 
 bool WindowData::replaceProjectLayoutSnapshot(
   const std::size_t index,
-  const layout::LayoutSpec& layout,
+  const layout::LayoutSpec& layoutArg,
   const uuid_range_t& orderedImageUids)
 {
   if (index >= m_layouts.size()) {
@@ -1496,7 +1496,7 @@ bool WindowData::replaceProjectLayoutSnapshot(
   }
 
   std::vector<Layout> restoredLayouts =
-    layout::instantiateLayoutSpecs({layout}, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
+    layout::instantiateLayoutSpecs({layoutArg}, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
   if (restoredLayouts.empty()) {
     return false;
   }
@@ -1550,7 +1550,7 @@ void WindowData::resetToThreeUpLayout()
   setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
 }
 
-void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData) const
+void WindowData::setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppData& appData) const
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
@@ -1566,17 +1566,17 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, const AppData
     appData.refImageUid(),
     appData.activeImageUid());
 
-  if (isOneUpLayoutKind(layout.kind())) {
-    configureOneUpDefaultImageSelection(layout);
+  if (isOneUpLayoutKind(layoutArg.kind())) {
+    configureOneUpDefaultImageSelection(layoutArg);
   }
 
-  if (layout.isLightbox()) {
-    layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
-    layout.setMetricImages(metricImages);
+  if (layoutArg.isLightbox()) {
+    layoutArg.setRenderedImages(renderedImages, s_filterAgainstDefaults);
+    layoutArg.setMetricImages(metricImages);
     return;
   }
 
-  for (View* view : layout.orderedViews()) {
+  for (View* view : layoutArg.orderedViews()) {
     view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
     view->setMetricImages(metricImages);
   }
@@ -1598,18 +1598,18 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
     appData.refImageUid(),
     appData.activeImageUid());
 
-  for (auto& layout : m_layouts) {
-    if (isOneUpLayoutKind(layout.kind())) {
-      configureOneUpDefaultImageSelection(layout);
+  for (auto& layoutLocal : m_layouts) {
+    if (isOneUpLayoutKind(layoutLocal.kind())) {
+      configureOneUpDefaultImageSelection(layoutLocal);
     }
 
-    if (layout.isLightbox()) {
-      layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
-      layout.setMetricImages(metricImages);
+    if (layoutLocal.isLightbox()) {
+      layoutLocal.setRenderedImages(renderedImages, s_filterAgainstDefaults);
+      layoutLocal.setMetricImages(metricImages);
       continue;
     }
 
-    for (View* view : layout.orderedViews()) {
+    for (View* view : layoutLocal.orderedViews()) {
       view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
       view->setMetricImages(metricImages);
     }
@@ -1618,13 +1618,13 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
 
 void WindowData::updateImageOrdering(const uuid_range_t& orderedImageUids)
 {
-  for (auto& layout : m_layouts) {
-    if (layout.isLightbox()) {
-      layout.updateImageOrdering(orderedImageUids);
+  for (auto& layoutLocal : m_layouts) {
+    if (layoutLocal.isLightbox()) {
+      layoutLocal.updateImageOrdering(orderedImageUids);
       continue;
     }
 
-    for (const auto& [viewUid, view] : layout.views()) {
+    for (const auto& [viewUid, view] : layoutLocal.views()) {
       if (view) {
         view->updateImageOrdering(orderedImageUids);
       }
@@ -1636,9 +1636,12 @@ void WindowData::removeImageFromLayouts(const uuid& imageUid, const uuid_range_t
 {
   for (std::size_t i = m_layouts.size(); i > 0; --i) {
     const std::size_t layoutIndex = i - 1;
-    const auto& layout = m_layouts.at(layoutIndex);
+    const auto& layoutLocal = m_layouts.at(layoutIndex);
 
-    if (layout.isLightbox() && layout.renderedImages().size() == 1 && layout.renderedImages().front() == imageUid) {
+    if (
+      layoutLocal.isLightbox() && layoutLocal.renderedImages().size() == 1 &&
+      layoutLocal.renderedImages().front() == imageUid)
+    {
       removeLayout(layoutIndex);
     }
   }
@@ -1662,14 +1665,14 @@ void WindowData::appendImageToDefaultRenderedImages(const AppData& appData, cons
     }
   };
 
-  for (auto& layout : m_layouts) {
-    if (layout.isLightbox()) {
+  for (auto& layoutLocal : m_layouts) {
+    if (layoutLocal.isLightbox()) {
       continue;
     }
 
-    appendToFrame(layout);
+    appendToFrame(layoutLocal);
 
-    for (const auto& [viewUid, view] : layout.views()) {
+    for (const auto& [viewUid, view] : layoutLocal.views()) {
       if (view) {
         appendToFrame(*view);
       }
@@ -1684,8 +1687,8 @@ void WindowData::recenterAllViews(
   bool resetObliqueOrientation,
   const std::set<uuid>& excludedViews)
 {
-  for (auto& layout : m_layouts) {
-    for (const auto& [viewUid, view] : layout.views()) {
+  for (auto& layoutLocal : m_layouts) {
+    for (const auto& [viewUid, view] : layoutLocal.views()) {
       if (excludedViews.contains(viewUid)) {
         continue;
       }
@@ -1788,9 +1791,9 @@ View* WindowData::getCurrentView(const uuid& uid)
 
 const View* WindowData::getView(const uuid& uid) const
 {
-  for (const auto& layout : m_layouts) {
-    auto it = layout.views().find(uid);
-    if (std::end(layout.views()) != it) {
+  for (const auto& layoutLocal : m_layouts) {
+    auto it = layoutLocal.views().find(uid);
+    if (std::end(layoutLocal.views()) != it) {
       if (it->second) {
         return it->second.get();
       }
@@ -1801,9 +1804,9 @@ const View* WindowData::getView(const uuid& uid) const
 
 View* WindowData::getView(const uuid& uid)
 {
-  for (const auto& layout : m_layouts) {
-    auto it = layout.views().find(uid);
-    if (std::end(layout.views()) != it) {
+  for (const auto& layoutLocal : m_layouts) {
+    auto it = layoutLocal.views().find(uid);
+    if (std::end(layoutLocal.views()) != it) {
       if (it->second) return it->second.get();
     }
   }
@@ -1820,13 +1823,13 @@ std::optional<uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPo
     return std::nullopt;
   }
 
-  const auto& layout = m_layouts.at(m_currentLayout);
+  const auto& layoutLocal = m_layouts.at(m_currentLayout);
   std::vector<viewer::FrameHitTarget> frames;
-  frames.reserve(layout.orderedViewUids().size());
+  frames.reserve(layoutLocal.orderedViewUids().size());
 
-  for (const auto& viewUid : layout.orderedViewUids()) {
-    const auto viewIt = layout.views().find(viewUid);
-    if (viewIt == layout.views().end() || !viewIt->second) {
+  for (const auto& viewUid : layoutLocal.orderedViewUids()) {
+    const auto viewIt = layoutLocal.views().find(viewUid);
+    if (viewIt == layoutLocal.views().end() || !viewIt->second) {
       continue;
     }
 
@@ -1862,17 +1865,17 @@ std::string WindowData::layoutDisplayName(std::size_t index) const
     return "Layout";
   }
 
-  const Layout& layout = m_layouts.at(index);
-  if (LayoutKind::MultiImageGrid == layout.kind() || LayoutKind::AxCorSagByImage == layout.kind()) {
-    return tiledLayoutDisplayName(layout, "Grid");
+  const Layout& layoutLocal = m_layouts.at(index);
+  if (LayoutKind::MultiImageGrid == layoutLocal.kind() || LayoutKind::AxCorSagByImage == layoutLocal.kind()) {
+    return tiledLayoutDisplayName(layoutLocal, "Grid");
   }
-  if (LayoutKind::Custom == layout.kind() && layout.isLightbox()) {
-    return tiledLayoutDisplayName(layout, "Lightbox");
+  if (LayoutKind::Custom == layoutLocal.kind() && layoutLocal.isLightbox()) {
+    return tiledLayoutDisplayName(layoutLocal, "Lightbox");
   }
-  if (LayoutKind::Custom == layout.kind()) {
-    return layout.displayName();
+  if (LayoutKind::Custom == layoutLocal.kind()) {
+    return layoutLocal.displayName();
   }
-  return std::string{layout::layoutDisplayName(layout.kind(), layout.isLightbox())};
+  return std::string{layout::layoutDisplayName(layoutLocal.kind(), layoutLocal.isLightbox())};
 }
 
 std::size_t WindowData::currentLayoutIndex() const
@@ -1927,9 +1930,9 @@ void WindowData::moveLayout(std::size_t fromIndex, std::size_t toIndex)
   }
 
   const uuid currentLayoutUid = m_layouts.at(m_currentLayout).uid();
-  Layout layout = std::move(m_layouts.at(fromIndex));
+  Layout layoutLocal = std::move(m_layouts.at(fromIndex));
   m_layouts.erase(m_layouts.begin() + static_cast<std::ptrdiff_t>(fromIndex));
-  m_layouts.insert(m_layouts.begin() + static_cast<std::ptrdiff_t>(toIndex), std::move(layout));
+  m_layouts.insert(m_layouts.begin() + static_cast<std::ptrdiff_t>(toIndex), std::move(layoutLocal));
 
   auto currentLayoutIt = std::find_if(m_layouts.begin(), m_layouts.end(), [&currentLayoutUid](const Layout& candidate) {
     return candidate.uid() == currentLayoutUid;
@@ -2056,8 +2059,8 @@ uuid_range_t WindowData::cameraSyncGroupViewUids(CameraSyncMode mode, const uuid
     return {};
   }
 
-  const auto& currentLayout = m_layouts.at(m_currentLayout);
-  if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {
+  const auto& currentLayoutLocal = m_layouts.at(m_currentLayout);
+  if (const auto* group = currentLayoutLocal.getCameraSyncGroup(mode, syncGroupUid)) {
     return uuid_range_t{group->begin(), group->end()};
   }
   return {};
@@ -2167,8 +2170,8 @@ uuid WindowData::findLargestCurrentView() const
 
 void WindowData::recomputeCameraAspectRatios()
 {
-  for (auto& layout : m_layouts) {
-    for (const auto& [viewUid, view] : layout.views()) {
+  for (auto& layoutLocal : m_layouts) {
+    for (const auto& [viewUid, view] : layoutLocal.views()) {
       if (!view) {
         continue;
       }

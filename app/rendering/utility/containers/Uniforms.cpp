@@ -24,9 +24,9 @@ Uniforms::Decl::Decl(UniformType type, const ValueType& defaultValue, bool isReq
 {
 }
 
-void Uniforms::Decl::set(const ValueType& value)
+void Uniforms::Decl::set(const ValueType& valueArg)
 {
-  m_value = value;
+  m_value = valueArg;
   m_isDirty = true;
 }
 
@@ -78,10 +78,10 @@ void Uniforms::resetAllToDefaults()
   }
 }
 
-void Uniforms::setValue(const std::string& name, const ValueType& value)
+void Uniforms::setValue(const std::string& name, const ValueType& valueArg)
 {
   Decl& u = m_uniformsMap.at(name);
-  u.m_value = value;
+  u.m_value = valueArg;
   u.m_isDirty = true;
 }
 
@@ -143,9 +143,9 @@ int Uniforms::queryAndSetAllLocations(const std::function<GLint(const std::strin
   return (foundOne ? 0 : 1);
 }
 
-void Uniforms::setDirty(const std::string& name, bool isDirty)
+void Uniforms::setDirty(const std::string& name, bool isDirtyArg)
 {
-  m_uniformsMap.at(name).m_isDirty = isDirty;
+  m_uniformsMap.at(name).m_isDirty = isDirtyArg;
 }
 
 bool Uniforms::isDirty(const std::string& name) const

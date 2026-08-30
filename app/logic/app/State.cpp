@@ -1,9 +1,9 @@
 #include "logic/app/State.h"
 #include "logic/states/FsmList.hpp"
 
-void AppState::setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter)
+void AppState::setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenterArg)
 {
-  m_worldRotationCenter = worldRotationCenter;
+  m_worldRotationCenter = worldRotationCenterArg;
 }
 
 glm::vec3 AppState::worldRotationCenter() const
@@ -21,9 +21,9 @@ void AppState::setWorldCrosshairsPos(const glm::vec3& worldPos)
   //    broadcastCrosshairsPosition();
 }
 
-void AppState::setWorldCrosshairs(CoordinateFrame worldCrosshairs)
+void AppState::setWorldCrosshairs(CoordinateFrame worldCrosshairsArg)
 {
-  m_crosshairsState.worldCrosshairs = worldCrosshairs;
+  m_crosshairsState.worldCrosshairs = worldCrosshairsArg;
 }
 
 const CoordinateFrame& AppState::worldCrosshairs() const

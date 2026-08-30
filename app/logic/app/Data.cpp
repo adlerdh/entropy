@@ -65,9 +65,9 @@ AppData::AppData()
   spdlog::debug("Constructed application data");
 }
 
-void AppData::setProject(serialize::EntropyProject project)
+void AppData::setProject(serialize::EntropyProject projectArg)
 {
-  m_project = std::move(project);
+  m_project = std::move(projectArg);
 }
 
 void AppData::setProjectFileName(std::optional<fs::path> fileName)
@@ -422,14 +422,14 @@ void AppData::loadImageColorMaps()
   spdlog::debug("Loaded {} image color maps", m_imageColorMaps.size());
 }
 
-uuid AppData::addImage(Image image)
+uuid AppData::addImage(Image imageArg)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const std::size_t numComps = image.header().numComponentsPerPixel();
+  const std::size_t numComps = imageArg.header().numComponentsPerPixel();
 
   auto uid = generateRandomUuid();
-  m_images.emplace(uid, std::move(image));
+  m_images.emplace(uid, std::move(imageArg));
   m_imageUidsOrdered.push_back(uid);
 
   if (1 == m_images.size()) {
@@ -444,20 +444,20 @@ uuid AppData::addImage(Image image)
   return uid;
 }
 
-bool AppData::replaceImage(const uuid& imageUid, Image image)
+bool AppData::replaceImage(const uuid& imageUidArg, Image imageArg)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  auto it = m_images.find(imageUid);
+  auto it = m_images.find(imageUidArg);
   if (std::end(m_images) == it) {
     return false;
   }
 
-  const std::size_t numComps = image.header().numComponentsPerPixel();
-  it->second = std::move(image);
-  m_imageToComponentData[imageUid] = std::vector<ComponentData>(numComps);
+  const std::size_t numComps = imageArg.header().numComponentsPerPixel();
+  it->second = std::move(imageArg);
+  m_imageToComponentData[imageUidArg] = std::vector<ComponentData>(numComps);
 
-  if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
+  if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUidArg);
       projectionsIt != m_imageToComponentProjectionImages.end())
   {
     for (const auto& [mode, projectionUid] : projectionsIt->second) {
@@ -474,37 +474,37 @@ bool AppData::replaceImage(const uuid& imageUid, Image image)
   return true;
 }
 
-std::optional<uuid> AppData::addSeg(Image seg)
+std::optional<uuid> AppData::addSeg(Image segArg)
 {
-  if (!isComponentUnsignedInt(seg.header().memoryComponentType())) {
+  if (!isComponentUnsignedInt(segArg.header().memoryComponentType())) {
     spdlog::error(
       "Segmentation image {} with non-unsigned integer component type {} cannot be added",
-      seg.settings().displayName(),
-      seg.header().memoryComponentTypeAsString());
+      segArg.settings().displayName(),
+      segArg.header().memoryComponentTypeAsString());
     return std::nullopt;
   }
 
   auto uid = generateRandomUuid();
-  m_segs.emplace(uid, std::move(seg));
+  m_segs.emplace(uid, std::move(segArg));
   m_segUidsOrdered.push_back(uid);
   return uid;
 }
 
-std::optional<uuid> AppData::addDef(Image def)
+std::optional<uuid> AppData::addDef(Image defArg)
 {
-  if (def.header().numComponentsPerPixel() < 3) {
+  if (defArg.header().numComponentsPerPixel() < 3) {
     spdlog::error(
       "Warp field image {} with only {} components cannot be added",
-      def.settings().displayName(),
-      def.header().numComponentsPerPixel());
+      defArg.settings().displayName(),
+      defArg.header().numComponentsPerPixel());
     return std::nullopt;
   }
 
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const std::size_t numComps = def.header().numComponentsPerPixel();
+  const std::size_t numComps = defArg.header().numComponentsPerPixel();
   auto uid = generateRandomUuid();
-  m_images.emplace(uid, std::move(def));
+  m_images.emplace(uid, std::move(defArg));
   m_imageUidsOrdered.push_back(uid);
   m_defUidsOrdered.push_back(uid);
   m_imageToComponentData[uid] = std::vector<ComponentData>(numComps);
@@ -559,45 +559,45 @@ bool AppData::removeLandmarkGroup(const uuid& lmGroupUid)
   return true;
 }
 
-std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, const Annotation& annotation)
+std::optional<uuid> AppData::addAnnotation(const uuid& imageUidArg, const Annotation& annotationArg)
 {
-  if (!image(imageUid)) {
+  if (!image(imageUidArg)) {
     return std::nullopt; // invalid image UID
   }
 
   auto annotUid = generateRandomUuid();
-  m_annotations.emplace(annotUid, std::move(annotation));
-  m_imageToAnnotations[imageUid].emplace_back(annotUid);
+  m_annotations.emplace(annotUid, std::move(annotationArg));
+  m_imageToAnnotations[imageUidArg].emplace_back(annotUid);
 
   // If this is the first annotation or there is no active annotation for the image,
   // then make this the active annotation:
-  if (1 == m_imageToAnnotations[imageUid].size() || !imageToActiveAnnotationUid(imageUid)) {
-    assignActiveAnnotationUidToImage(imageUid, annotUid);
+  if (1 == m_imageToAnnotations[imageUidArg].size() || !imageToActiveAnnotationUid(imageUidArg)) {
+    assignActiveAnnotationUidToImage(imageUidArg, annotUid);
   }
 
   return annotUid;
 }
 
 bool AppData::addDistanceMap(
-  const uuid& imageUid,
+  const uuid& imageUidArg,
   ComponentIndexType component,
   Image distanceMap,
   double boundaryIsoValue)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
+  const Image* img = image(imageUidArg);
   if (!img) {
     return false; // invalid image UID
   }
 
   const uint32_t numComps = img->header().numComponentsPerPixel();
   if (component >= numComps) {
-    spdlog::error("Invalid component {} for image {}. Cannot set distance map for it.", component, imageUid);
+    spdlog::error("Invalid component {} for image {}. Cannot set distance map for it.", component, imageUidArg);
     return false;
   }
 
-  auto compDataIt = m_imageToComponentData.find(imageUid);
+  auto compDataIt = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) != compDataIt) {
     if (component >= compDataIt->second.size()) {
       compDataIt->second.resize(numComps);
@@ -609,30 +609,30 @@ bool AppData::addDistanceMap(
     return true;
   }
   else {
-    spdlog::error("No component data for image {}. Cannot set distance map.", imageUid);
+    spdlog::error("No component data for image {}. Cannot set distance map.", imageUidArg);
     return false;
   }
 
   return false;
 }
 
-bool AppData::removeDistanceMaps(const uuid& imageUid, ComponentIndexType component)
+bool AppData::removeDistanceMaps(const uuid& imageUidArg, ComponentIndexType component)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
+  const Image* img = image(imageUidArg);
   if (!img) {
     return false;
   }
 
   if (component >= img->header().numComponentsPerPixel()) {
-    spdlog::error("Invalid component {} for image {}. Cannot remove distance maps for it.", component, imageUid);
+    spdlog::error("Invalid component {} for image {}. Cannot remove distance maps for it.", component, imageUidArg);
     return false;
   }
 
-  auto compDataIt = m_imageToComponentData.find(imageUid);
+  auto compDataIt = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) == compDataIt) {
-    spdlog::error("No component data for image {}. Cannot remove distance maps.", imageUid);
+    spdlog::error("No component data for image {}. Cannot remove distance maps.", imageUidArg);
     return false;
   }
 
@@ -644,22 +644,26 @@ bool AppData::removeDistanceMaps(const uuid& imageUid, ComponentIndexType compon
   return true;
 }
 
-bool AppData::addNoiseEstimate(const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius)
+bool AppData::addNoiseEstimate(
+  const uuid& imageUidArg,
+  ComponentIndexType component,
+  Image noiseEstimate,
+  uint32_t radius)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
+  const Image* img = image(imageUidArg);
   if (!img) {
     return false; // invalid image UID
   }
 
   const uint32_t numComps = img->header().numComponentsPerPixel();
   if (component >= numComps) {
-    spdlog::error("Invalid component {} for image {}. Cannot set noise estimate for it.", component, imageUid);
+    spdlog::error("Invalid component {} for image {}. Cannot set noise estimate for it.", component, imageUidArg);
     return false;
   }
 
-  auto compDataIt = m_imageToComponentData.find(imageUid);
+  auto compDataIt = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) != compDataIt) {
     if (component >= compDataIt->second.size()) {
       compDataIt->second.resize(numComps);
@@ -671,7 +675,7 @@ bool AppData::addNoiseEstimate(const uuid& imageUid, ComponentIndexType componen
     return true;
   }
   else {
-    spdlog::error("No component data for image {}. Cannot set noise estimate.", imageUid);
+    spdlog::error("No component data for image {}. Cannot set noise estimate.", imageUidArg);
     return false;
   }
 
@@ -687,25 +691,25 @@ std::size_t AppData::addLabelColorTable(std::size_t numLabels, std::size_t maxNu
   return (m_labelTables.size() - 1);
 }
 
-std::optional<uuid> AppData::addIsosurface(const uuid& imageUid, ComponentIndexType comp, Isosurface isosurface)
+std::optional<uuid> AppData::addIsosurface(const uuid& imageUidArg, ComponentIndexType comp, Isosurface isosurfaceArg)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
+  const Image* img = image(imageUidArg);
   if (!img) {
-    spdlog::error("Cannot add isosurface to invalid image {}", imageUid);
+    spdlog::error("Cannot add isosurface to invalid image {}", imageUidArg);
     return std::nullopt;
   }
 
   const uint32_t numComps = img->header().numComponentsPerPixel();
   if (comp >= numComps) {
-    spdlog::error("Cannot add isosurface to invalid component {} of image {}", comp, imageUid);
+    spdlog::error("Cannot add isosurface to invalid component {} of image {}", comp, imageUidArg);
     return std::nullopt;
   }
 
-  auto it = m_imageToComponentData.find(imageUid);
+  auto it = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) == it) {
-    spdlog::error("No component data for image {}; cannot add isosurface", imageUid);
+    spdlog::error("No component data for image {}; cannot add isosurface", imageUidArg);
     return std::nullopt;
   }
 
@@ -716,39 +720,39 @@ std::optional<uuid> AppData::addIsosurface(const uuid& imageUid, ComponentIndexT
   const auto uid = generateRandomUuid();
   auto& data = it->second.at(comp);
   data.m_isosurfaceUidsSorted.push_back(uid);
-  data.m_isosurfaces.emplace(uid, std::move(isosurface));
+  data.m_isosurfaces.emplace(uid, std::move(isosurfaceArg));
   return uid;
 }
 
-bool AppData::removeImage(const uuid& imageUid)
+bool AppData::removeImage(const uuid& imageUidArg)
 {
-  if (!image(imageUid)) {
+  if (!image(imageUidArg)) {
     return false;
   }
 
-  if (m_refImageUid && *m_refImageUid == imageUid) {
+  if (m_refImageUid && *m_refImageUid == imageUidArg) {
     return false;
   }
 
-  auto imageOrderIt = std::find(std::begin(m_imageUidsOrdered), std::end(m_imageUidsOrdered), imageUid);
+  auto imageOrderIt = std::find(std::begin(m_imageUidsOrdered), std::end(m_imageUidsOrdered), imageUidArg);
   if (std::end(m_imageUidsOrdered) == imageOrderIt) {
     return false;
   }
 
-  const auto imageSegs = imageToSegUids(imageUid);
-  const auto imageDefs = imageToDefUids(imageUid);
-  const auto imageLandmarkGroups = imageToLandmarkGroupUids(imageUid);
-  const auto imageAnnotations = annotationsForImage(imageUid);
+  const auto imageSegs = imageToSegUids(imageUidArg);
+  const auto imageDefs = imageToDefUids(imageUidArg);
+  const auto imageLandmarkGroups = imageToLandmarkGroupUids(imageUidArg);
+  const auto imageAnnotations = annotationsForImage(imageUidArg);
 
-  m_images.erase(imageUid);
+  m_images.erase(imageUidArg);
   m_imageUidsOrdered.erase(imageOrderIt);
-  m_defs.erase(imageUid);
+  m_defs.erase(imageUidArg);
   m_defUidsOrdered.erase(
-    std::remove(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), imageUid),
+    std::remove(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), imageUidArg),
     std::end(m_defUidsOrdered));
-  removeWarpReferences(imageUid);
+  removeWarpReferences(imageUidArg);
 
-  if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
+  if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUidArg);
       projectionsIt != m_imageToComponentProjectionImages.end())
   {
     for (const auto& [mode, projectionUid] : projectionsIt->second) {
@@ -762,68 +766,68 @@ bool AppData::removeImage(const uuid& imageUid)
     m_imageToComponentProjectionImages.erase(projectionsIt);
   }
 
-  m_imageToSegs.erase(imageUid);
-  m_imageToActiveSeg.erase(imageUid);
-  m_imageToDefs.erase(imageUid);
-  m_imageToActiveInverseWarp.erase(imageUid);
-  m_imageToActiveInverseWarpReferenceImage.erase(imageUid);
+  m_imageToSegs.erase(imageUidArg);
+  m_imageToActiveSeg.erase(imageUidArg);
+  m_imageToDefs.erase(imageUidArg);
+  m_imageToActiveInverseWarp.erase(imageUidArg);
+  m_imageToActiveInverseWarpReferenceImage.erase(imageUidArg);
   for (auto it = m_imageToActiveInverseWarpReferenceImage.begin();
        it != m_imageToActiveInverseWarpReferenceImage.end();)
   {
-    if (it->second == imageUid) {
+    if (it->second == imageUidArg) {
       it = m_imageToActiveInverseWarpReferenceImage.erase(it);
     }
     else {
       ++it;
     }
   }
-  m_imageToActiveForwardWarp.erase(imageUid);
-  m_imageToLandmarkGroups.erase(imageUid);
-  m_imageToActiveLandmarkGroup.erase(imageUid);
-  m_imageToAnnotations.erase(imageUid);
-  m_imageToActiveAnnotation.erase(imageUid);
-  m_imageToComponentData.erase(imageUid);
-  m_imagesBeingSegmented.erase(imageUid);
+  m_imageToActiveForwardWarp.erase(imageUidArg);
+  m_imageToLandmarkGroups.erase(imageUidArg);
+  m_imageToActiveLandmarkGroup.erase(imageUidArg);
+  m_imageToAnnotations.erase(imageUidArg);
+  m_imageToActiveAnnotation.erase(imageUidArg);
+  m_imageToComponentData.erase(imageUidArg);
+  m_imagesBeingSegmented.erase(imageUidArg);
 
-  if (m_activeImageUid && *m_activeImageUid == imageUid) {
+  if (m_activeImageUid && *m_activeImageUid == imageUidArg) {
     m_activeImageUid =
       m_refImageUid ? m_refImageUid
                     : (!m_imageUidsOrdered.empty() ? std::optional<uuid>{m_imageUidsOrdered.front()} : std::nullopt);
   }
 
-  for (const auto& segUid : imageSegs) {
+  for (const auto& segUidLocal : imageSegs) {
     bool stillUsed = false;
     for (const auto& [otherImageUid, segUids] : m_imageToSegs) {
-      if (otherImageUid == imageUid) {
+      if (otherImageUid == imageUidArg) {
         continue;
       }
 
-      if (std::find(std::begin(segUids), std::end(segUids), segUid) != std::end(segUids)) {
+      if (std::find(std::begin(segUids), std::end(segUids), segUidLocal) != std::end(segUids)) {
         stillUsed = true;
         break;
       }
     }
 
     if (!stillUsed) {
-      removeSeg(segUid);
+      removeSeg(segUidLocal);
     }
   }
 
-  for (const auto& defUid : imageDefs) {
+  for (const auto& defUidLocal : imageDefs) {
     bool stillUsed = false;
     for (const auto& [otherImageUid, defUids] : m_imageToDefs) {
-      if (otherImageUid == imageUid) {
+      if (otherImageUid == imageUidArg) {
         continue;
       }
 
-      if (std::find(std::begin(defUids), std::end(defUids), defUid) != std::end(defUids)) {
+      if (std::find(std::begin(defUids), std::end(defUids), defUidLocal) != std::end(defUids)) {
         stillUsed = true;
         break;
       }
     }
 
     if (!stillUsed) {
-      removeDef(defUid);
+      removeDef(defUidLocal);
     }
   }
 
@@ -834,7 +838,7 @@ bool AppData::removeImage(const uuid& imageUid)
   for (const auto& lmGroupUid : imageLandmarkGroups) {
     bool stillUsed = false;
     for (const auto& [otherImageUid, lmGroupUids] : m_imageToLandmarkGroups) {
-      if (otherImageUid == imageUid) {
+      if (otherImageUid == imageUidArg) {
         continue;
       }
 
@@ -852,9 +856,9 @@ bool AppData::removeImage(const uuid& imageUid)
   return true;
 }
 
-bool AppData::removeSeg(const uuid& segUid)
+bool AppData::removeSeg(const uuid& segUidArg)
 {
-  auto segMapIt = m_segs.find(segUid);
+  auto segMapIt = m_segs.find(segUidArg);
   if (std::end(m_segs) != segMapIt) {
     // Remove the segmentation
     m_segs.erase(segMapIt);
@@ -864,7 +868,7 @@ bool AppData::removeSeg(const uuid& segUid)
     return false;
   }
 
-  auto segVecIt = std::find(std::begin(m_segUidsOrdered), std::end(m_segUidsOrdered), segUid);
+  auto segVecIt = std::find(std::begin(m_segUidsOrdered), std::end(m_segUidsOrdered), segUidArg);
   if (std::end(m_segUidsOrdered) != segVecIt) {
     m_segUidsOrdered.erase(segVecIt);
   }
@@ -874,21 +878,21 @@ bool AppData::removeSeg(const uuid& segUid)
 
   // Remove segmentation from image-to-segmentation map for all images
   for (auto& m : m_imageToSegs) {
-    m.second.erase(std::remove(std::begin(m.second), std::end(m.second), segUid), std::end(m.second));
+    m.second.erase(std::remove(std::begin(m.second), std::end(m.second), segUidArg), std::end(m.second));
   }
 
   // Remove it as an active segmentation
   for (auto it = std::begin(m_imageToActiveSeg); it != std::end(m_imageToActiveSeg);) {
-    if (segUid == it->second) {
-      const auto imageUid = it->first;
+    if (segUidArg == it->second) {
+      const auto imageUidLocal = it->first;
 
       it = m_imageToActiveSeg.erase(it);
 
       // Set a new active segmentation for this image, if one exists
-      if (m_imageToSegs.count(imageUid) > 0) {
-        if (!m_imageToSegs[imageUid].empty()) {
+      if (m_imageToSegs.count(imageUidLocal) > 0) {
+        if (!m_imageToSegs[imageUidLocal].empty()) {
           // Set the image's first segmentation as its active one
-          m_imageToActiveSeg[imageUid] = m_imageToSegs[imageUid][0];
+          m_imageToActiveSeg[imageUidLocal] = m_imageToSegs[imageUidLocal][0];
         }
       }
     }
@@ -900,15 +904,15 @@ bool AppData::removeSeg(const uuid& segUid)
   return true;
 }
 
-bool AppData::removeDef(const uuid& defUid)
+bool AppData::removeDef(const uuid& defUidArg)
 {
-  auto defMapIt = m_defs.find(defUid);
+  auto defMapIt = m_defs.find(defUidArg);
   if (std::end(m_defs) != defMapIt) {
     // Remove the deformation
     m_defs.erase(defMapIt);
   }
 
-  auto defVecIt = std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUid);
+  auto defVecIt = std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUidArg);
   if (std::end(m_defUidsOrdered) != defVecIt) {
     m_defUidsOrdered.erase(defVecIt);
   }
@@ -916,27 +920,27 @@ bool AppData::removeDef(const uuid& defUid)
     return false;
   }
 
-  if (const auto imageIt = std::find(std::begin(m_imageUidsOrdered), std::end(m_imageUidsOrdered), defUid);
+  if (const auto imageIt = std::find(std::begin(m_imageUidsOrdered), std::end(m_imageUidsOrdered), defUidArg);
       std::end(m_imageUidsOrdered) != imageIt)
   {
-    m_images.erase(defUid);
+    m_images.erase(defUidArg);
     m_imageUidsOrdered.erase(imageIt);
-    m_imageToComponentData.erase(defUid);
-    m_renderData.m_imageTextures.erase(defUid);
-    m_renderData.m_imageTextureLayouts.erase(defUid);
-    m_renderData.m_uniforms.erase(defUid);
+    m_imageToComponentData.erase(defUidArg);
+    m_renderData.m_imageTextures.erase(defUidArg);
+    m_renderData.m_imageTextureLayouts.erase(defUidArg);
+    m_renderData.m_uniforms.erase(defUidArg);
   }
 
   // Remove all image warp assignments that reference this field.
-  removeWarpReferences(defUid);
+  removeWarpReferences(defUidArg);
 
   return true;
 }
 
 void AppData::removeWarpReferences(const uuid& warpUid)
 {
-  for (auto& [imageUid, warpUids] : m_imageToDefs) {
-    (void)imageUid;
+  for (auto& [imageUidLocal, warpUids] : m_imageToDefs) {
+    (void)imageUidLocal;
     warpUids.erase(std::remove(std::begin(warpUids), std::end(warpUids), warpUid), std::end(warpUids));
   }
 
@@ -1000,22 +1004,22 @@ bool AppData::removeAnnotation(const uuid& annotUid)
   return true;
 }
 
-bool AppData::removeIsosurface(const uuid& imageUid, ComponentIndexType comp, const uuid& isosurfaceUid)
+bool AppData::removeIsosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
+  const Image* img = image(imageUidArg);
   if (!img) {
-    spdlog::error("Cannot remove isosurface from invalid image {}", imageUid);
+    spdlog::error("Cannot remove isosurface from invalid image {}", imageUidArg);
     return false;
   }
 
   if (comp >= img->header().numComponentsPerPixel()) {
-    spdlog::error("Cannot remove isosurface from invalid component {} of image {}", comp, imageUid);
+    spdlog::error("Cannot remove isosurface from invalid component {} of image {}", comp, imageUidArg);
     return false;
   }
 
-  auto it = m_imageToComponentData.find(imageUid);
+  auto it = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) == it || comp >= it->second.size()) {
     return false;
   }
@@ -1029,14 +1033,14 @@ bool AppData::removeIsosurface(const uuid& imageUid, ComponentIndexType comp, co
   return (data.m_isosurfaces.erase(isosurfaceUid) > 0);
 }
 
-const Image* AppData::image(const uuid& imageUid) const
+const Image* AppData::image(const uuid& imageUidArg) const
 {
-  auto it = m_images.find(imageUid);
+  auto it = m_images.find(imageUidArg);
   if (std::end(m_images) != it) {
     return &it->second;
   }
 
-  auto projectionIt = m_componentProjectionImages.find(imageUid);
+  auto projectionIt = m_componentProjectionImages.find(imageUidArg);
   if (std::end(m_componentProjectionImages) != projectionIt) {
     return &projectionIt->second;
   }
@@ -1044,42 +1048,42 @@ const Image* AppData::image(const uuid& imageUid) const
   return nullptr;
 }
 
-Image* AppData::image(const uuid& imageUid)
+Image* AppData::image(const uuid& imageUidArg)
 {
-  return const_cast<Image*>(const_cast<const AppData*>(this)->image(imageUid));
+  return const_cast<Image*>(const_cast<const AppData*>(this)->image(imageUidArg));
 }
 
 std::optional<uuid> AppData::setComponentProjectionImage(
-  const uuid& imageUid,
+  const uuid& imageUidArg,
   ComponentProjectionMode mode,
   uint32_t timePoint,
-  Image image)
+  Image imageArg)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  if (m_images.find(imageUid) == m_images.end()) {
+  if (m_images.find(imageUidArg) == m_images.end()) {
     return std::nullopt;
   }
 
-  auto& projections = m_imageToComponentProjectionImages[imageUid];
+  auto& projections = m_imageToComponentProjectionImages[imageUidArg];
   const ComponentProjectionCacheKey key{mode, timePoint};
   if (const auto projectionIt = projections.find(key); projectionIt != projections.end()) {
-    m_componentProjectionImages.insert_or_assign(projectionIt->second, std::move(image));
-    m_componentProjectionToSourceImage[projectionIt->second] = imageUid;
+    m_componentProjectionImages.insert_or_assign(projectionIt->second, std::move(imageArg));
+    m_componentProjectionToSourceImage[projectionIt->second] = imageUidArg;
     return projectionIt->second;
   }
 
   const uuid projectionUid = generateRandomUuid();
   projections.emplace(key, projectionUid);
-  m_componentProjectionImages.emplace(projectionUid, std::move(image));
-  m_componentProjectionToSourceImage[projectionUid] = imageUid;
+  m_componentProjectionImages.emplace(projectionUid, std::move(imageArg));
+  m_componentProjectionToSourceImage[projectionUid] = imageUidArg;
   return projectionUid;
 }
 
 std::optional<uuid>
-AppData::componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint) const
+AppData::componentProjectionImageUid(const uuid& imageUidArg, ComponentProjectionMode mode, uint32_t timePoint) const
 {
-  const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
+  const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUidArg);
   if (m_imageToComponentProjectionImages.end() == projectionsIt) {
     return std::nullopt;
   }
@@ -1110,20 +1114,20 @@ std::optional<uuid> AppData::componentProjectionSourceImageUid(const uuid& proje
   return projectionIt->second;
 }
 
-uuid AppData::effectiveImageUidForRendering(const uuid& imageUid) const
+uuid AppData::effectiveImageUidForRendering(const uuid& imageUidArg) const
 {
-  const auto imageIt = m_images.find(imageUid);
+  const auto imageIt = m_images.find(imageUidArg);
   if (m_images.end() == imageIt) {
-    return imageUid;
+    return imageUidArg;
   }
 
   const auto projectionMode = componentProjectionForImage(imageIt->second);
   if (!projectionMode) {
-    return imageUid;
+    return imageUidArg;
   }
 
   const uint32_t timePoint = imageIt->second.timeAxis().clamp(imageIt->second.settings().activeTimePoint());
-  return componentProjectionImageUid(imageUid, *projectionMode, timePoint).value_or(imageUid);
+  return componentProjectionImageUid(imageUidArg, *projectionMode, timePoint).value_or(imageUidArg);
 }
 
 /*
@@ -1136,53 +1140,53 @@ if (result) {
 }
 */
 
-std::expected<std::reference_wrapper<const Image>, std::string> AppData::getImage(const uuid& imageUid) const
+std::expected<std::reference_wrapper<const Image>, std::string> AppData::getImage(const uuid& imageUidArg) const
 {
-  auto it = m_images.find(imageUid);
+  auto it = m_images.find(imageUidArg);
   if (std::end(m_images) != it) {
     return std::cref(it->second);
   }
-  return std::unexpected(std::format("Image {} does not exist", to_string(imageUid)));
+  return std::unexpected(std::format("Image {} does not exist", to_string(imageUidArg)));
 }
 
-std::expected<std::reference_wrapper<Image>, std::string> AppData::getImage(const uuid& imageUid)
+std::expected<std::reference_wrapper<Image>, std::string> AppData::getImage(const uuid& imageUidArg)
 {
-  const auto result = const_cast<const AppData*>(this)->getImage(imageUid);
+  const auto result = const_cast<const AppData*>(this)->getImage(imageUidArg);
   if (!result) {
     return std::unexpected(result.error());
   }
   return std::ref(const_cast<Image&>(result->get()));
 }
 
-const Image* AppData::seg(const uuid& segUid) const
+const Image* AppData::seg(const uuid& segUidArg) const
 {
-  auto it = m_segs.find(segUid);
+  auto it = m_segs.find(segUidArg);
   if (std::end(m_segs) != it) {
     return &it->second;
   }
   return nullptr;
 }
 
-Image* AppData::seg(const uuid& segUid)
+Image* AppData::seg(const uuid& segUidArg)
 {
-  return const_cast<Image*>(const_cast<const AppData*>(this)->seg(segUid));
+  return const_cast<Image*>(const_cast<const AppData*>(this)->seg(segUidArg));
 }
 
-const Image* AppData::def(const uuid& defUid) const
+const Image* AppData::def(const uuid& defUidArg) const
 {
-  auto it = m_defs.find(defUid);
+  auto it = m_defs.find(defUidArg);
   if (std::end(m_defs) != it) return &it->second;
 
-  if (std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUid) != std::end(m_defUidsOrdered)) {
-    return image(defUid);
+  if (std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUidArg) != std::end(m_defUidsOrdered)) {
+    return image(defUidArg);
   }
 
   return nullptr;
 }
 
-Image* AppData::def(const uuid& defUid)
+Image* AppData::def(const uuid& defUidArg)
 {
-  return const_cast<Image*>(const_cast<const AppData*>(this)->def(defUid));
+  return const_cast<Image*>(const_cast<const AppData*>(this)->def(defUidArg));
 }
 
 const Image* AppData::warpField(const uuid& warpUid) const
@@ -1191,9 +1195,9 @@ const Image* AppData::warpField(const uuid& warpUid) const
     return defImage;
   }
 
-  const Image* image = this->image(warpUid);
-  if (image && isVectorFieldCandidate(*image)) {
-    return image;
+  const Image* imageLocal = this->image(warpUid);
+  if (imageLocal && isVectorFieldCandidate(*imageLocal)) {
+    return imageLocal;
   }
 
   return nullptr;
@@ -1204,60 +1208,60 @@ Image* AppData::warpField(const uuid& warpUid)
   return const_cast<Image*>(const_cast<const AppData*>(this)->warpField(warpUid));
 }
 
-const std::map<double, Image>& AppData::distanceMaps(const uuid& imageUid, ComponentIndexType component) const
+const std::map<double, Image>& AppData::distanceMaps(const uuid& imageUidArg, ComponentIndexType component) const
 {
   // Map of distance maps (keyed by isosurface value) for the component:
   static const std::map<double, Image> EMPTY;
 
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  auto compDataIt = m_imageToComponentData.find(imageUid);
+  auto compDataIt = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) != compDataIt) {
     if (component < compDataIt->second.size()) {
       return compDataIt->second.at(component).m_distanceMaps;
     }
     else {
-      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.", component, imageUid);
+      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.", component, imageUidArg);
       return EMPTY;
     }
   }
   else {
-    if (m_componentProjectionImages.find(imageUid) != m_componentProjectionImages.end()) {
+    if (m_componentProjectionImages.find(imageUidArg) != m_componentProjectionImages.end()) {
       return EMPTY;
     }
-    spdlog::error("No component data for image {}. Cannot get distance map for it.", imageUid);
+    spdlog::error("No component data for image {}. Cannot get distance map for it.", imageUidArg);
     return EMPTY;
   }
 }
 
-const std::map<uint32_t, Image>& AppData::noiseEstimates(const uuid& imageUid, ComponentIndexType component) const
+const std::map<uint32_t, Image>& AppData::noiseEstimates(const uuid& imageUidArg, ComponentIndexType component) const
 {
   // Map of noise estimates (keyed by radius value) for the component:
   static const std::map<uint32_t, Image> EMPTY;
 
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  auto compDataIt = m_imageToComponentData.find(imageUid);
+  auto compDataIt = m_imageToComponentData.find(imageUidArg);
 
   if (std::end(m_imageToComponentData) != compDataIt) {
     if (component < compDataIt->second.size()) {
       return compDataIt->second.at(component).m_noiseEstimates;
     }
     else {
-      spdlog::error("Invalid component {} for image {}. Cannot get noise estimate for it.", component, imageUid);
+      spdlog::error("Invalid component {} for image {}. Cannot get noise estimate for it.", component, imageUidArg);
       return EMPTY;
     }
   }
   else {
-    if (m_componentProjectionImages.find(imageUid) != m_componentProjectionImages.end()) {
+    if (m_componentProjectionImages.find(imageUidArg) != m_componentProjectionImages.end()) {
       return EMPTY;
     }
-    spdlog::error("No component data for image {}. Cannot get noise estimate for it.", imageUid);
+    spdlog::error("No component data for image {}. Cannot get noise estimate for it.", imageUidArg);
     return EMPTY;
   }
 }
 
-const Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType comp, const uuid& isosurfaceUid) const
+const Isosurface* AppData::isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid) const
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
@@ -1268,7 +1272,7 @@ const Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType c
   //   return nullptr;
   // }
 
-  const auto result = getImage(imageUid);
+  const auto result = getImage(imageUidArg);
   if (!result) {
     spdlog::warn("Cannot get isosurface: {}", result.error());
     return nullptr;
@@ -1277,11 +1281,11 @@ const Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType c
   const Image& img = result->get();
 
   if (comp >= img.header().numComponentsPerPixel()) {
-    spdlog::error("Cannot get isosurface from invalid component {} of image {}", comp, imageUid);
+    spdlog::error("Cannot get isosurface from invalid component {} of image {}", comp, imageUidArg);
     return nullptr;
   }
 
-  auto it = m_imageToComponentData.find(imageUid);
+  auto it = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) == it || comp >= it->second.size()) {
     return nullptr;
   }
@@ -1289,9 +1293,9 @@ const Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType c
   return &(it->second.at(comp).m_isosurfaces.at(isosurfaceUid));
 }
 
-Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType comp, const uuid& isosurfaceUid)
+Isosurface* AppData::isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid)
 {
-  return const_cast<Isosurface*>(const_cast<const AppData*>(this)->isosurface(imageUid, comp, isosurfaceUid));
+  return const_cast<Isosurface*>(const_cast<const AppData*>(this)->isosurface(imageUidArg, comp, isosurfaceUid));
 }
 
 const ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid) const
@@ -1394,8 +1398,8 @@ void AppData::setRainbowColorsForAllImages()
   const float N = static_cast<float>(m_imageUidsOrdered.size());
   std::size_t i = 0;
 
-  for (const auto& imageUid : m_imageUidsOrdered) {
-    if (Image* img = image(imageUid)) {
+  for (const auto& imageUidLocal : m_imageUidsOrdered) {
+    if (Image* img = image(imageUidLocal)) {
       const float a = (1.0f + sk_startHue + static_cast<float>(i) / N);
 
       float intPart = std::numeric_limits<float>::quiet_NaN();
@@ -1418,11 +1422,11 @@ void AppData::setRainbowColorsForAllImages()
 void AppData::setRainbowColorsForAllLandmarkGroups()
 {
   // Landmark group color is set to image border color
-  for (const auto imageUid : m_imageUidsOrdered) {
-    const Image* img = image(imageUid);
+  for (const auto imageUidLocal : m_imageUidsOrdered) {
+    const Image* img = image(imageUidLocal);
     if (!img) continue;
 
-    for (const auto lmGroupUid : imageToLandmarkGroupUids(imageUid)) {
+    for (const auto lmGroupUid : imageToLandmarkGroupUids(imageUidLocal)) {
       if (auto* lmGroup = landmarkGroup(lmGroupUid)) {
         lmGroup->setColorOverride(true);
         lmGroup->setColor(img->settings().borderColor());
@@ -1431,9 +1435,9 @@ void AppData::setRainbowColorsForAllLandmarkGroups()
   }
 }
 
-bool AppData::moveImageBackwards(const uuid& imageUid)
+bool AppData::moveImageBackwards(const uuid& imageUidArg)
 {
-  const auto index = imageIndex(imageUid);
+  const auto index = imageIndex(imageUidArg);
   if (!index) return false;
 
   const std::size_t i = *index;
@@ -1447,9 +1451,9 @@ bool AppData::moveImageBackwards(const uuid& imageUid)
   return false;
 }
 
-bool AppData::moveImageForwards(const uuid& imageUid)
+bool AppData::moveImageForwards(const uuid& imageUidArg)
 {
-  const auto index = imageIndex(imageUid);
+  const auto index = imageIndex(imageUidArg);
   if (!index) return false;
 
   const std::size_t i = *index;
@@ -1467,25 +1471,25 @@ bool AppData::moveImageForwards(const uuid& imageUid)
   return false;
 }
 
-bool AppData::moveImageToBack(const uuid& imageUid)
+bool AppData::moveImageToBack(const uuid& imageUidArg)
 {
-  auto index = imageIndex(imageUid);
+  auto index = imageIndex(imageUidArg);
   if (!index) return false;
 
   while (index && *index > 1) {
-    if (!moveImageBackwards(imageUid)) {
+    if (!moveImageBackwards(imageUidArg)) {
       return false;
     }
 
-    index = imageIndex(imageUid);
+    index = imageIndex(imageUidArg);
   }
 
   return true;
 }
 
-bool AppData::moveImageToFront(const uuid& imageUid)
+bool AppData::moveImageToFront(const uuid& imageUidArg)
 {
-  auto index = imageIndex(imageUid);
+  auto index = imageIndex(imageUidArg);
   if (!index) return false;
 
   const std::size_t N = m_imageUidsOrdered.size();
@@ -1495,19 +1499,19 @@ bool AppData::moveImageToFront(const uuid& imageUid)
   }
 
   while (index && *index < N - 1) {
-    if (!moveImageForwards(imageUid)) {
+    if (!moveImageForwards(imageUidArg)) {
       return false;
     }
 
-    index = imageIndex(imageUid);
+    index = imageIndex(imageUidArg);
   }
 
   return true;
 }
 
-bool AppData::moveAnnotationBackwards(const uuid& imageUid, const uuid& annotUid)
+bool AppData::moveAnnotationBackwards(const uuid& imageUidArg, const uuid& annotUid)
 {
-  const auto index = annotationIndex(imageUid, annotUid);
+  const auto index = annotationIndex(imageUidArg, annotUid);
   if (!index) return false;
 
   const std::size_t i = *index;
@@ -1517,18 +1521,18 @@ bool AppData::moveAnnotationBackwards(const uuid& imageUid, const uuid& annotUid
     // Already the backmost index
     return true;
   }
-  auto& annotList = m_imageToAnnotations.at(imageUid);
+  auto& annotList = m_imageToAnnotations.at(imageUidArg);
   return swapElementsAt(annotList, i - 1, i);
 }
 
-bool AppData::moveAnnotationForwards(const uuid& imageUid, const uuid& annotUid)
+bool AppData::moveAnnotationForwards(const uuid& imageUidArg, const uuid& annotUid)
 {
-  const auto index = annotationIndex(imageUid, annotUid);
+  const auto index = annotationIndex(imageUidArg, annotUid);
   if (!index) return false;
 
   const std::size_t i = *index;
 
-  auto& annotList = m_imageToAnnotations.at(imageUid);
+  auto& annotList = m_imageToAnnotations.at(imageUidArg);
   const std::size_t N = annotList.size();
 
   if (i == N - 1) {
@@ -1542,36 +1546,36 @@ bool AppData::moveAnnotationForwards(const uuid& imageUid, const uuid& annotUid)
   return false;
 }
 
-bool AppData::moveAnnotationToBack(const uuid& imageUid, const uuid& annotUid)
+bool AppData::moveAnnotationToBack(const uuid& imageUidArg, const uuid& annotUid)
 {
-  auto index = annotationIndex(imageUid, annotUid);
+  auto index = annotationIndex(imageUidArg, annotUid);
   if (!index) return false;
 
   while (index && *index >= 1) {
-    if (!moveAnnotationBackwards(imageUid, annotUid)) {
+    if (!moveAnnotationBackwards(imageUidArg, annotUid)) {
       return false;
     }
 
-    index = annotationIndex(imageUid, annotUid);
+    index = annotationIndex(imageUidArg, annotUid);
   }
 
   return true;
 }
 
-bool AppData::moveAnnotationToFront(const uuid& imageUid, const uuid& annotUid)
+bool AppData::moveAnnotationToFront(const uuid& imageUidArg, const uuid& annotUid)
 {
-  auto index = annotationIndex(imageUid, annotUid);
+  auto index = annotationIndex(imageUidArg, annotUid);
   if (!index) return false;
 
-  auto& annotList = m_imageToAnnotations.at(imageUid);
+  auto& annotList = m_imageToAnnotations.at(imageUidArg);
   const long N = static_cast<long>(annotList.size());
 
   while (index && static_cast<long>(*index) < N - 1) {
-    if (!moveAnnotationForwards(imageUid, annotUid)) {
+    if (!moveAnnotationForwards(imageUidArg, annotUid)) {
       return false;
     }
 
-    index = annotationIndex(imageUid, annotUid);
+    index = annotationIndex(imageUidArg, annotUid);
   }
 
   return true;
@@ -1625,14 +1629,14 @@ uuid_range_t AppData::warpFieldCandidateUidsOrdered() const
 {
   uuid_range_t candidates = m_defUidsOrdered;
 
-  for (const uuid& imageUid : m_imageUidsOrdered) {
-    if (std::find(std::begin(candidates), std::end(candidates), imageUid) != std::end(candidates)) {
+  for (const uuid& imageUidLocal : m_imageUidsOrdered) {
+    if (std::find(std::begin(candidates), std::end(candidates), imageUidLocal) != std::end(candidates)) {
       continue;
     }
 
-    const Image* image = this->image(imageUid);
-    if (image && isVectorFieldCandidate(*image)) {
-      candidates.push_back(imageUid);
+    const Image* imageLocal = this->image(imageUidLocal);
+    if (imageLocal && isVectorFieldCandidate(*imageLocal)) {
+      candidates.push_back(imageUidLocal);
     }
   }
 
@@ -1654,13 +1658,13 @@ const uuid_range_t& AppData::landmarkGroupUidsOrdered() const
   return m_landmarkGroupUidsOrdered;
 }
 
-uuid_range_t AppData::isosurfaceUids(const uuid& imageUid, ComponentIndexType comp) const
+uuid_range_t AppData::isosurfaceUids(const uuid& imageUidArg, ComponentIndexType comp) const
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
+  const Image* img = image(imageUidArg);
   if (!img) {
-    spdlog::error("Cannot remove isosurface from invalid image {}", imageUid);
+    spdlog::error("Cannot remove isosurface from invalid image {}", imageUidArg);
     return {};
   }
 
@@ -1668,7 +1672,7 @@ uuid_range_t AppData::isosurfaceUids(const uuid& imageUid, ComponentIndexType co
     return {};
   }
 
-  auto it = m_imageToComponentData.find(imageUid);
+  auto it = m_imageToComponentData.find(imageUidArg);
   if (std::end(m_imageToComponentData) == it || comp >= it->second.size()) {
     return {};
   }
@@ -1676,19 +1680,19 @@ uuid_range_t AppData::isosurfaceUids(const uuid& imageUid, ComponentIndexType co
   return it->second.at(comp).m_isosurfaceUidsSorted;
 }
 
-std::optional<uuid> AppData::imageToActiveSegUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveSegUid(const uuid& imageUidArg) const
 {
-  auto it = m_imageToActiveSeg.find(imageUid);
+  auto it = m_imageToActiveSeg.find(imageUidArg);
   if (std::end(m_imageToActiveSeg) != it) {
     return it->second;
   }
   return std::nullopt;
 }
 
-bool AppData::assignActiveSegUidToImage(const uuid& imageUid, const uuid& activeSegUid)
+bool AppData::assignActiveSegUidToImage(const uuid& imageUidArg, const uuid& activeSegUid)
 {
-  if (image(imageUid) && seg(activeSegUid)) {
-    m_imageToActiveSeg[imageUid] = activeSegUid;
+  if (image(imageUidArg) && seg(activeSegUid)) {
+    m_imageToActiveSeg[imageUidArg] = activeSegUid;
 
     if (const auto* table = activeLabelTable()) {
       m_settings.adjustActiveSegmentationLabels(*table);
@@ -1701,126 +1705,128 @@ bool AppData::assignActiveSegUidToImage(const uuid& imageUid, const uuid& active
   return false;
 }
 
-std::optional<uuid> AppData::imageToActiveInverseWarpUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveInverseWarpUid(const uuid& imageUidArg) const
 {
-  auto it = m_imageToActiveInverseWarp.find(imageUid);
+  auto it = m_imageToActiveInverseWarp.find(imageUidArg);
   if (std::end(m_imageToActiveInverseWarp) != it) {
     return it->second;
   }
   return std::nullopt;
 }
 
-std::optional<uuid> AppData::imageToActiveInverseWarpReferenceImageUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveInverseWarpReferenceImageUid(const uuid& imageUidArg) const
 {
-  if (imageToActiveInverseWarpUid(imageUid)) {
-    auto it = m_imageToActiveInverseWarpReferenceImage.find(imageUid);
+  if (imageToActiveInverseWarpUid(imageUidArg)) {
+    auto it = m_imageToActiveInverseWarpReferenceImage.find(imageUidArg);
     if (it != m_imageToActiveInverseWarpReferenceImage.end()) {
       return it->second;
     }
-    return imageUid;
+    return imageUidArg;
   }
   return std::nullopt;
 }
 
-bool AppData::setActiveInverseWarpReferenceImageUid(const uuid& imageUid, const std::optional<uuid>& referenceImageUid)
+bool AppData::setActiveInverseWarpReferenceImageUid(
+  const uuid& imageUidArg,
+  const std::optional<uuid>& referenceImageUid)
 {
-  if (!image(imageUid) || !imageToActiveInverseWarpUid(imageUid)) {
+  if (!image(imageUidArg) || !imageToActiveInverseWarpUid(imageUidArg)) {
     return false;
   }
   if (referenceImageUid) {
     if (!image(*referenceImageUid)) {
       return false;
     }
-    m_imageToActiveInverseWarpReferenceImage[imageUid] = *referenceImageUid;
+    m_imageToActiveInverseWarpReferenceImage[imageUidArg] = *referenceImageUid;
   }
   else {
-    m_imageToActiveInverseWarpReferenceImage.erase(imageUid);
+    m_imageToActiveInverseWarpReferenceImage.erase(imageUidArg);
   }
   return true;
 }
 
-std::optional<uuid> AppData::imageToActiveForwardWarpUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveForwardWarpUid(const uuid& imageUidArg) const
 {
-  auto it = m_imageToActiveForwardWarp.find(imageUid);
+  auto it = m_imageToActiveForwardWarp.find(imageUidArg);
   if (std::end(m_imageToActiveForwardWarp) != it) {
     return it->second;
   }
   return std::nullopt;
 }
 
-void AppData::clearActiveInverseWarpUidForImage(const uuid& imageUid)
+void AppData::clearActiveInverseWarpUidForImage(const uuid& imageUidArg)
 {
-  m_imageToActiveInverseWarp.erase(imageUid);
-  m_imageToActiveInverseWarpReferenceImage.erase(imageUid);
+  m_imageToActiveInverseWarp.erase(imageUidArg);
+  m_imageToActiveInverseWarpReferenceImage.erase(imageUidArg);
 }
 
-bool AppData::assignActiveInverseWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid)
+bool AppData::assignActiveInverseWarpUidToImage(const uuid& imageUidArg, const uuid& activeWarpUid)
 {
-  return assignActiveInverseWarpUidToImage(imageUid, activeWarpUid, std::nullopt);
+  return assignActiveInverseWarpUidToImage(imageUidArg, activeWarpUid, std::nullopt);
 }
 
 bool AppData::assignActiveInverseWarpUidToImage(
-  const uuid& imageUid,
+  const uuid& imageUidArg,
   const uuid& activeWarpUid,
   const std::optional<uuid>& referenceImageUid)
 {
   const Image* defImage = warpField(activeWarpUid);
   const std::optional<uuid> resolvedReferenceUid =
-    referenceImageUid ? referenceImageUid : std::optional<uuid>{imageUid};
+    referenceImageUid ? referenceImageUid : std::optional<uuid>{imageUidArg};
   if (
-    image(imageUid) && resolvedReferenceUid && image(*resolvedReferenceUid) && defImage &&
+    image(imageUidArg) && resolvedReferenceUid && image(*resolvedReferenceUid) && defImage &&
     defImage->header().numComponentsPerPixel() >= 3)
   {
-    m_imageToActiveInverseWarp[imageUid] = activeWarpUid;
-    m_imageToActiveInverseWarpReferenceImage[imageUid] = *resolvedReferenceUid;
+    m_imageToActiveInverseWarp[imageUidArg] = activeWarpUid;
+    m_imageToActiveInverseWarpReferenceImage[imageUidArg] = *resolvedReferenceUid;
     return true;
   }
-  spdlog::error("Cannot assign warp field {} as an inverse warp for image {}", activeWarpUid, imageUid);
+  spdlog::error("Cannot assign warp field {} as an inverse warp for image {}", activeWarpUid, imageUidArg);
   return false;
 }
 
-void AppData::clearActiveForwardWarpUidForImage(const uuid& imageUid)
+void AppData::clearActiveForwardWarpUidForImage(const uuid& imageUidArg)
 {
-  m_imageToActiveForwardWarp.erase(imageUid);
+  m_imageToActiveForwardWarp.erase(imageUidArg);
 }
 
-bool AppData::assignActiveForwardWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid)
+bool AppData::assignActiveForwardWarpUidToImage(const uuid& imageUidArg, const uuid& activeWarpUid)
 {
   const Image* defImage = warpField(activeWarpUid);
-  if (image(imageUid) && defImage && defImage->header().numComponentsPerPixel() >= 3) {
-    m_imageToActiveForwardWarp[imageUid] = activeWarpUid;
+  if (image(imageUidArg) && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+    m_imageToActiveForwardWarp[imageUidArg] = activeWarpUid;
     return true;
   }
-  spdlog::error("Cannot assign warp field {} as a forward warp for image {}", activeWarpUid, imageUid);
+  spdlog::error("Cannot assign warp field {} as a forward warp for image {}", activeWarpUid, imageUidArg);
   return false;
 }
 
-std::vector<uuid> AppData::imageToSegUids(const uuid& imageUid) const
+std::vector<uuid> AppData::imageToSegUids(const uuid& imageUidArg) const
 {
-  auto it = m_imageToSegs.find(imageUid);
+  auto it = m_imageToSegs.find(imageUidArg);
   if (std::end(m_imageToSegs) != it) {
     return it->second;
   }
   return std::vector<uuid>{};
 }
 
-std::vector<uuid> AppData::imageToDefUids(const uuid& imageUid) const
+std::vector<uuid> AppData::imageToDefUids(const uuid& imageUidArg) const
 {
-  auto it = m_imageToDefs.find(imageUid);
+  auto it = m_imageToDefs.find(imageUidArg);
   if (std::end(m_imageToDefs) != it) {
     return it->second;
   }
   return std::vector<uuid>{};
 }
 
-bool AppData::assignSegUidToImage(const uuid& imageUid, const uuid& segUid)
+bool AppData::assignSegUidToImage(const uuid& imageUidArg, const uuid& segUidArg)
 {
-  if (image(imageUid) && seg(segUid)) {
-    m_imageToSegs[imageUid].emplace_back(segUid);
+  if (image(imageUidArg) && seg(segUidArg)) {
+    m_imageToSegs[imageUidArg].emplace_back(segUidArg);
 
-    if (1 == m_imageToSegs[imageUid].size()) {
+    if (1 == m_imageToSegs[imageUidArg].size()) {
       // If this is the first segmentation, make it the active one
-      assignActiveSegUidToImage(imageUid, segUid);
+      assignActiveSegUidToImage(imageUidArg, segUidArg);
     }
 
     if (const auto* table = activeLabelTable()) {
@@ -1835,91 +1841,91 @@ bool AppData::assignSegUidToImage(const uuid& imageUid, const uuid& segUid)
   return false;
 }
 
-bool AppData::assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid)
+bool AppData::assignInverseWarpUidToImage(const uuid& imageUidArg, const uuid& warpUid)
 {
-  return assignInverseWarpUidToImage(imageUid, warpUid, std::nullopt);
+  return assignInverseWarpUidToImage(imageUidArg, warpUid, std::nullopt);
 }
 
 bool AppData::assignInverseWarpUidToImage(
-  const uuid& imageUid,
+  const uuid& imageUidArg,
   const uuid& warpUid,
   const std::optional<uuid>& referenceImageUid)
 {
-  const Image* movingImage = image(imageUid);
+  const Image* movingImage = image(imageUidArg);
   const Image* defImage = warpField(warpUid);
   const std::optional<uuid> resolvedReferenceUid =
-    referenceImageUid ? referenceImageUid : std::optional<uuid>{imageUid};
+    referenceImageUid ? referenceImageUid : std::optional<uuid>{imageUidArg};
   if (
     movingImage && resolvedReferenceUid && image(*resolvedReferenceUid) && defImage &&
     defImage->header().numComponentsPerPixel() >= 3)
   {
-    auto& defUids = m_imageToDefs[imageUid];
+    auto& defUids = m_imageToDefs[imageUidArg];
     if (std::find(std::begin(defUids), std::end(defUids), warpUid) != std::end(defUids)) {
-      return assignActiveInverseWarpUidToImage(imageUid, warpUid, resolvedReferenceUid);
+      return assignActiveInverseWarpUidToImage(imageUidArg, warpUid, resolvedReferenceUid);
     }
 
-    m_imageToDefs[imageUid].emplace_back(warpUid);
-    return assignActiveInverseWarpUidToImage(imageUid, warpUid, resolvedReferenceUid);
+    m_imageToDefs[imageUidArg].emplace_back(warpUid);
+    return assignActiveInverseWarpUidToImage(imageUidArg, warpUid, resolvedReferenceUid);
   }
 
-  spdlog::error("Cannot assign inverse warp field {} to image {}", warpUid, imageUid);
+  spdlog::error("Cannot assign inverse warp field {} to image {}", warpUid, imageUidArg);
   return false;
 }
 
-bool AppData::assignForwardWarpUidToImage(const uuid& imageUid, const uuid& warpUid)
+bool AppData::assignForwardWarpUidToImage(const uuid& imageUidArg, const uuid& warpUid)
 {
-  const Image* movingImage = image(imageUid);
+  const Image* movingImage = image(imageUidArg);
   const Image* defImage = warpField(warpUid);
   if (movingImage && defImage && defImage->header().numComponentsPerPixel() >= 3) {
-    auto& defUids = m_imageToDefs[imageUid];
+    auto& defUids = m_imageToDefs[imageUidArg];
     if (std::find(std::begin(defUids), std::end(defUids), warpUid) == std::end(defUids)) {
-      m_imageToDefs[imageUid].emplace_back(warpUid);
+      m_imageToDefs[imageUidArg].emplace_back(warpUid);
     }
-    return assignActiveForwardWarpUidToImage(imageUid, warpUid);
+    return assignActiveForwardWarpUidToImage(imageUidArg, warpUid);
   }
 
-  spdlog::error("Cannot assign forward warp field {} to image {}", warpUid, imageUid);
+  spdlog::error("Cannot assign forward warp field {} to image {}", warpUid, imageUidArg);
   return false;
 }
 
-const std::vector<uuid>& AppData::imageToLandmarkGroupUids(const uuid& imageUid) const
+const std::vector<uuid>& AppData::imageToLandmarkGroupUids(const uuid& imageUidArg) const
 {
   static const std::vector<uuid> sk_emptyUidVector{};
 
-  auto it = m_imageToLandmarkGroups.find(imageUid);
+  auto it = m_imageToLandmarkGroups.find(imageUidArg);
   if (std::end(m_imageToLandmarkGroups) != it) {
     return it->second;
   }
   return sk_emptyUidVector;
 }
 
-bool AppData::assignActiveLandmarkGroupUidToImage(const uuid& imageUid, const uuid& lmGroupUid)
+bool AppData::assignActiveLandmarkGroupUidToImage(const uuid& imageUidArg, const uuid& lmGroupUid)
 {
-  if (image(imageUid) && landmarkGroup(lmGroupUid)) {
-    m_imageToActiveLandmarkGroup[imageUid] = lmGroupUid;
+  if (image(imageUidArg) && landmarkGroup(lmGroupUid)) {
+    m_imageToActiveLandmarkGroup[imageUidArg] = lmGroupUid;
     return true;
   }
   return false;
 }
 
-std::optional<uuid> AppData::imageToActiveLandmarkGroupUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveLandmarkGroupUid(const uuid& imageUidArg) const
 {
-  auto it = m_imageToActiveLandmarkGroup.find(imageUid);
+  auto it = m_imageToActiveLandmarkGroup.find(imageUidArg);
   if (std::end(m_imageToActiveLandmarkGroup) != it) {
     return it->second;
   }
   return std::nullopt;
 }
 
-bool AppData::assignLandmarkGroupUidToImage(const uuid& imageUid, uuid lmGroupUid)
+bool AppData::assignLandmarkGroupUidToImage(const uuid& imageUidArg, uuid lmGroupUid)
 {
-  if (image(imageUid) && landmarkGroup(lmGroupUid)) {
-    m_imageToLandmarkGroups[imageUid].emplace_back(lmGroupUid);
+  if (image(imageUidArg) && landmarkGroup(lmGroupUid)) {
+    m_imageToLandmarkGroups[imageUidArg].emplace_back(lmGroupUid);
 
     // If this is the first landmark group for the image, or if the image has no active
     // landmark group, then make this the image's active landmark group:
-    if (1 == m_imageToLandmarkGroups[imageUid].size() || !imageToActiveLandmarkGroupUid(imageUid)) {
-      assignActiveLandmarkGroupUidToImage(imageUid, lmGroupUid);
+    if (1 == m_imageToLandmarkGroups[imageUidArg].size() || !imageToActiveLandmarkGroupUid(imageUidArg)) {
+      assignActiveLandmarkGroupUidToImage(imageUidArg, lmGroupUid);
     }
 
     return true;
@@ -1927,54 +1933,54 @@ bool AppData::assignLandmarkGroupUidToImage(const uuid& imageUid, uuid lmGroupUi
   return false;
 }
 
-bool AppData::assignActiveAnnotationUidToImage(const uuid& imageUid, const std::optional<uuid>& annotUid)
+bool AppData::assignActiveAnnotationUidToImage(const uuid& imageUidArg, const std::optional<uuid>& annotUid)
 {
-  if (image(imageUid)) {
+  if (image(imageUidArg)) {
     if (annotUid && annotation(*annotUid)) {
-      m_imageToActiveAnnotation[imageUid] = *annotUid;
+      m_imageToActiveAnnotation[imageUidArg] = *annotUid;
       return true;
     }
     else if (!annotUid) {
-      m_imageToActiveAnnotation.erase(imageUid);
+      m_imageToActiveAnnotation.erase(imageUidArg);
       return true;
     }
   }
   return false;
 }
 
-std::optional<uuid> AppData::imageToActiveAnnotationUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveAnnotationUid(const uuid& imageUidArg) const
 {
-  auto it = m_imageToActiveAnnotation.find(imageUid);
+  auto it = m_imageToActiveAnnotation.find(imageUidArg);
   if (std::end(m_imageToActiveAnnotation) != it) {
     return it->second;
   }
   return std::nullopt;
 }
 
-const std::list<uuid>& AppData::annotationsForImage(const uuid& imageUid) const
+const std::list<uuid>& AppData::annotationsForImage(const uuid& imageUidArg) const
 {
   static const std::list<uuid> sk_emptyUidList{};
 
-  auto it = m_imageToAnnotations.find(imageUid);
+  auto it = m_imageToAnnotations.find(imageUidArg);
   if (std::end(m_imageToAnnotations) != it) {
     return it->second;
   }
   return sk_emptyUidList;
 }
 
-void AppData::setImageBeingSegmented(const uuid& imageUid, bool set)
+void AppData::setImageBeingSegmented(const uuid& imageUidArg, bool set)
 {
   if (set) {
-    m_imagesBeingSegmented.insert(imageUid);
+    m_imagesBeingSegmented.insert(imageUidArg);
   }
   else {
-    m_imagesBeingSegmented.erase(imageUid);
+    m_imagesBeingSegmented.erase(imageUidArg);
   }
 }
 
-bool AppData::isImageBeingSegmented(const uuid& imageUid) const
+bool AppData::isImageBeingSegmented(const uuid& imageUidArg) const
 {
-  return (m_imagesBeingSegmented.count(imageUid) > 0);
+  return (m_imagesBeingSegmented.count(imageUidArg) > 0);
 }
 
 uuid_range_t AppData::imagesBeingSegmented() const
@@ -2030,11 +2036,11 @@ std::optional<uuid> AppData::landmarkGroupUid(std::size_t index) const
   return std::nullopt;
 }
 
-std::optional<std::size_t> AppData::imageIndex(const uuid& imageUid) const
+std::optional<std::size_t> AppData::imageIndex(const uuid& imageUidArg) const
 {
   std::size_t i = 0;
   for (const auto& uid : m_imageUidsOrdered) {
-    if (uid == imageUid) {
+    if (uid == imageUidArg) {
       return i;
     }
     ++i;
@@ -2042,20 +2048,20 @@ std::optional<std::size_t> AppData::imageIndex(const uuid& imageUid) const
   return std::nullopt;
 }
 
-std::optional<std::size_t> AppData::segIndex(const uuid& segUid) const
+std::optional<std::size_t> AppData::segIndex(const uuid& segUidArg) const
 {
   for (std::size_t i = 0; i < m_segUidsOrdered.size(); ++i) {
-    if (m_segUidsOrdered.at(i) == segUid) {
+    if (m_segUidsOrdered.at(i) == segUidArg) {
       return i;
     }
   }
   return std::nullopt;
 }
 
-std::optional<std::size_t> AppData::defIndex(const uuid& defUid) const
+std::optional<std::size_t> AppData::defIndex(const uuid& defUidArg) const
 {
   for (std::size_t i = 0; i < m_defUidsOrdered.size(); ++i) {
-    if (m_defUidsOrdered.at(i) == defUid) {
+    if (m_defUidsOrdered.at(i) == defUidArg) {
       return i;
     }
   }
@@ -2092,10 +2098,10 @@ std::optional<std::size_t> AppData::landmarkGroupIndex(const uuid& lmGroupUid) c
   return std::nullopt;
 }
 
-std::optional<std::size_t> AppData::annotationIndex(const uuid& imageUid, const uuid& annotUid) const
+std::optional<std::size_t> AppData::annotationIndex(const uuid& imageUidArg, const uuid& annotUid) const
 {
   std::size_t i = 0;
-  for (const auto& uid : annotationsForImage(imageUid)) {
+  for (const auto& uid : annotationsForImage(imageUidArg)) {
     if (annotUid == uid) {
       return i;
     }
@@ -2129,10 +2135,10 @@ Image* AppData::activeSeg()
   const auto imgUid = activeImageUid();
   if (!imgUid) return nullptr;
 
-  const auto segUid = imageToActiveSegUid(*imgUid);
-  if (!segUid) return nullptr;
+  const auto segUidLocal = imageToActiveSegUid(*imgUid);
+  if (!segUidLocal) return nullptr;
 
-  return seg(*segUid);
+  return seg(*segUidLocal);
 }
 
 ParcellationLabelTable* AppData::activeLabelTable()
@@ -2141,8 +2147,8 @@ ParcellationLabelTable* AppData::activeLabelTable()
 
   if (m_activeImageUid) {
     if (const auto activeSegUid = imageToActiveSegUid(*m_activeImageUid)) {
-      if (const Image* activeSeg = seg(*activeSegUid)) {
-        if (const auto tableUid = labelTableUid(activeSeg->settings().labelTableIndex())) {
+      if (const Image* activeSegLocal = seg(*activeSegUid)) {
+        if (const auto tableUid = labelTableUid(activeSegLocal->settings().labelTableIndex())) {
           activeLabelTable = labelTable(*tableUid);
         }
       }
@@ -2158,8 +2164,8 @@ std::string AppData::getAllImageDisplayNames() const
 
   bool first = true;
 
-  for (const auto& imageUid : imageUidsOrdered()) {
-    if (const Image* img = image(imageUid)) {
+  for (const auto& imageUidLocal : imageUidsOrdered()) {
+    if (const Image* img = image(imageUidLocal)) {
       if (!first) allImageDisplayNames << ", ";
       allImageDisplayNames << img->settings().displayName();
       first = false;

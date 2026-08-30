@@ -1185,8 +1185,8 @@ void renderInterfaceTab(
   const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
   const std::function<void()>& requestFontReload,
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
-  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
-  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPresetArg,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacityArg,
   const std::function<void()>& readjustViewport)
 {
   bool showLayoutTabs = appData.settings().showLayoutTabs();
@@ -1317,8 +1317,8 @@ void renderInterfaceTab(
         const bool selected = preset == currentDensityPreset;
         if (ImGui::Selectable(uiDensityPresetName(preset), selected)) {
           appData.settings().setUiDensityPreset(preset);
-          if (applyUiDensityPreset) {
-            applyUiDensityPreset(preset);
+          if (applyUiDensityPresetArg) {
+            applyUiDensityPresetArg(preset);
           }
         }
         if (selected) {
@@ -1333,8 +1333,8 @@ void renderInterfaceTab(
     float windowBgOpacity = appData.settings().uiWindowBgOpacity();
     if (ImGui::SliderFloat("Window opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
       appData.settings().setUiWindowBgOpacity(windowBgOpacity);
-      if (applyUiWindowBgOpacity) {
-        applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
+      if (applyUiWindowBgOpacityArg) {
+        applyUiWindowBgOpacityArg(appData.settings().uiWindowBgOpacity());
       }
     }
     ImGui::SameLine();
@@ -2916,8 +2916,8 @@ static void renderSettingsPage(
   const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
   const std::function<void()>& requestFontReload,
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
-  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
-  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPresetArg,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacityArg,
   const std::function<void()>& readjustViewport,
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
@@ -2933,8 +2933,8 @@ static void renderSettingsPage(
         setUiScaleOverride,
         requestFontReload,
         applyUiColorPreset,
-        applyUiDensityPreset,
-        applyUiWindowBgOpacity,
+        applyUiDensityPresetArg,
+        applyUiWindowBgOpacityArg,
         readjustViewport);
       if (ImGui::CollapsingHeader("Precision", ImGuiTreeNodeFlags_DefaultOpen)) {
         renderPrecisionTab(appData);
@@ -2981,8 +2981,8 @@ void renderSettingsWindow(
   const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
   const std::function<void()>& requestFontReload,
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
-  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
-  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPresetArg,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacityArg,
   const std::function<void()>& readjustViewport,
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
@@ -3039,8 +3039,8 @@ void renderSettingsWindow(
             setUiScaleOverride,
             requestFontReload,
             applyUiColorPreset,
-            applyUiDensityPreset,
-            applyUiWindowBgOpacity,
+            applyUiDensityPresetArg,
+            applyUiWindowBgOpacityArg,
             readjustViewport,
             persistenceCallbacks,
             recenterAllViews);

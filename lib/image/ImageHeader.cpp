@@ -97,26 +97,26 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   const uint32_t numDim = spaceInfo.m_numDimensions;
   std::vector<std::size_t> dims = spaceInfo.m_dimensions;
   std::vector<double> orig = spaceInfo.m_origin;
-  std::vector<double> spacing = spaceInfo.m_spacing;
+  std::vector<double> spacingLocal = spaceInfo.m_spacing;
   std::vector<std::vector<double> > dirs = spaceInfo.m_directions;
 
   // Expect a 3D image
-  if (numDim != 3 || orig.size() != 3 || spacing.size() != 3 || dims.size() != 3 || dirs.size() != 3) {
+  if (numDim != 3 || orig.size() != 3 || spacingLocal.size() != 3 || dims.size() != 3 || dirs.size() != 3) {
     spdlog::debug(
       "Vector sizes: numDims = {}, origin = {}, spacing = {}, dims = {}, directions = {}",
       numDim,
       orig.size(),
-      spacing.size(),
+      spacingLocal.size(),
       dims.size(),
       dirs.size());
 
-    if (numDim == 1 && orig.size() == 1 && spacing.size() == 1 && dims.size() == 1 && dirs.size() == 1) {
+    if (numDim == 1 && orig.size() == 1 && spacingLocal.size() == 1 && dims.size() == 1 && dirs.size() == 1) {
       // The image is 1D: augment to 3D
       orig.push_back(0.0);
       orig.push_back(0.0);
 
-      spacing.push_back(1.0);
-      spacing.push_back(1.0);
+      spacingLocal.push_back(1.0);
+      spacingLocal.push_back(1.0);
 
       dims.push_back(1);
       dims.push_back(1);
@@ -138,10 +138,10 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
 
       dirs = std::move(d3x3);
     }
-    else if (numDim == 2 && orig.size() == 2 && spacing.size() == 2 && dims.size() == 2 && dirs.size() == 2) {
+    else if (numDim == 2 && orig.size() == 2 && spacingLocal.size() == 2 && dims.size() == 2 && dirs.size() == 2) {
       // The image is 2D: augment to 3D
       orig.push_back(0.0);
-      spacing.push_back(1.0);
+      spacingLocal.push_back(1.0);
       dims.push_back(1);
 
       std::vector<std::vector<double> > d3x3(3);
@@ -170,8 +170,9 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   m_numPixels = static_cast<uint64_t>(m_pixelDimensions.x) * static_cast<uint64_t>(m_pixelDimensions.y) *
                 static_cast<uint64_t>(m_pixelDimensions.z);
 
-  m_spacing =
-    m_headerOverrides.m_useIdentityPixelSpacings ? glm::vec3(1.0f) : glm::vec3{spacing[0], spacing[1], spacing[2]};
+  m_spacing = m_headerOverrides.m_useIdentityPixelSpacings
+                ? glm::vec3(1.0f)
+                : glm::vec3{spacingLocal[0], spacingLocal[1], spacingLocal[2]};
 
   m_origin = m_headerOverrides.m_useZeroPixelOrigin ? glm::vec3(0.0f) : glm::vec3{orig[0], orig[1], orig[2]};
 
@@ -330,9 +331,9 @@ const fs::path& ImageHeader::fileName() const
 {
   return m_fileName;
 }
-void ImageHeader::setFileName(fs::path fileName)
+void ImageHeader::setFileName(fs::path fileNameArg)
 {
-  m_fileName = std::move(fileName);
+  m_fileName = std::move(fileNameArg);
 }
 
 uint32_t ImageHeader::numComponentsPerPixel() const

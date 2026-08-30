@@ -410,9 +410,9 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
 GlfwWrapper::~GlfwWrapper()
 {
-  for (auto& cursor : m_mouseModeToCursor) {
-    if (cursor.second) {
-      glfwDestroyCursor(cursor.second);
+  for (auto& cursorLocal : m_mouseModeToCursor) {
+    if (cursorLocal.second) {
+      glfwDestroyCursor(cursorLocal.second);
     }
   }
 

@@ -143,10 +143,10 @@ std::size_t MeshExtractionQueue::maxActiveJobs() const
   return m_maxActiveJobs;
 }
 
-void MeshExtractionQueue::setMaxActiveJobs(const std::size_t maxActiveJobs)
+void MeshExtractionQueue::setMaxActiveJobs(const std::size_t maxActiveJobsArg)
 {
   std::scoped_lock lock(m_mutex);
-  m_maxActiveJobs = std::max<std::size_t>(1, maxActiveJobs);
+  m_maxActiveJobs = std::max<std::size_t>(1, maxActiveJobsArg);
 }
 
 void MeshExtractionQueue::run()

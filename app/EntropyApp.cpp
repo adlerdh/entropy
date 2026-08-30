@@ -1716,11 +1716,11 @@ void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, b
   }
 
   m_pendingDicomScanAddToExistingProject = addToExistingProject;
-  auto& guiData = m_data.guiData();
-  guiData.m_dicomSeriesScanInProgress = true;
-  guiData.m_pendingDicomScanRoot = scanInputs.front();
-  guiData.m_pendingDicomSeriesSelectionPrompt = std::nullopt;
-  guiData.m_showDicomSeriesSelectionPopup = false;
+  auto& guiDataLocal = m_data.guiData();
+  guiDataLocal.m_dicomSeriesScanInProgress = true;
+  guiDataLocal.m_pendingDicomScanRoot = scanInputs.front();
+  guiDataLocal.m_pendingDicomSeriesSelectionPrompt = std::nullopt;
+  guiDataLocal.m_showDicomSeriesSelectionPopup = false;
   m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
   m_glfw.postEmptyEvent();
 
@@ -1757,9 +1757,9 @@ void EntropyApp::pollDicomSeriesScan()
   }
   m_futureDiscoverDicom = {};
 
-  auto& guiData = m_data.guiData();
-  guiData.m_dicomSeriesScanInProgress = false;
-  guiData.m_pendingDicomScanRoot = fs::path{};
+  auto& guiDataLocal = m_data.guiData();
+  guiDataLocal.m_dicomSeriesScanInProgress = false;
+  guiDataLocal.m_pendingDicomScanRoot = fs::path{};
 
   if (result.series.empty()) {
     for (const auto& warning : result.warnings) {
@@ -1789,8 +1789,8 @@ void EntropyApp::pollDicomSeriesScan()
     }
   }
 
-  guiData.m_pendingDicomSeriesSelectionPrompt = std::move(prompt);
-  guiData.m_showDicomSeriesSelectionPopup = true;
+  guiDataLocal.m_pendingDicomSeriesSelectionPrompt = std::move(prompt);
+  guiDataLocal.m_showDicomSeriesSelectionPopup = true;
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
   m_glfw.postEmptyEvent();
 }
@@ -2145,7 +2145,7 @@ void EntropyApp::hideLoadingStatus()
 }
 
 void EntropyApp::startAsyncImageLoad(
-  const std::string& windowTitleStatus,
+  const std::string& windowTitleStatusArg,
   std::function<bool()> loadTask,
   std::function<void()> onLoadFailed,
   bool showLoadingOverlay,
@@ -2167,7 +2167,7 @@ void EntropyApp::startAsyncImageLoad(
   m_data.guiData().m_visibleImageCountDuringLoad = m_data.numImages();
   beginLoadingStatus(std::move(loadingStatusTitle), std::move(loadingItems));
 
-  m_glfw.setWindowTitleStatus(windowTitleStatus);
+  m_glfw.setWindowTitleStatus(windowTitleStatusArg);
   m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
   if (showLoadingOverlay) {
     m_data.state().setProjectLoadState(ProjectLoadState::Loading);

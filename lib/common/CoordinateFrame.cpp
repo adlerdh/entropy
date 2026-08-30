@@ -81,9 +81,9 @@ void CoordinateFrame::setWorldOrigin(glm::vec3 origin)
   m_worldFrameOrigin = origin;
 }
 
-void CoordinateFrame::setFrameToWorldRotation(glm::quat world_T_frame_rotation)
+void CoordinateFrame::setFrameToWorldRotation(glm::quat world_T_frame_rotationArg)
 {
-  m_world_T_frame_rotation = normalizedRotation(world_T_frame_rotation);
+  m_world_T_frame_rotation = normalizedRotation(world_T_frame_rotationArg);
 }
 
 void CoordinateFrame::setFrameToWorldRotation(float angleDegrees, const glm::vec3& worldAxis)
@@ -130,9 +130,9 @@ void CoordinateFrame::setFrameToWorldRotation(
     normalizedWorldAxis1,
     normalizedWorldAxis2,
     glm::cross(normalizedWorldAxis1, normalizedWorldAxis2)};
-  const glm::mat3 world_T_frame = glm::orthonormalize(world_T_ident * glm::inverse(frame_T_ident));
+  const glm::mat3 world_T_frameLocal = glm::orthonormalize(world_T_ident * glm::inverse(frame_T_ident));
 
-  setFrameToWorldRotation(glm::quat_cast(world_T_frame));
+  setFrameToWorldRotation(glm::quat_cast(world_T_frameLocal));
 }
 
 void CoordinateFrame::setIdentity()

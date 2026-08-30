@@ -149,38 +149,38 @@ void GLShaderProgram::stopUse()
   glUseProgram(0);
 }
 
-void GLShaderProgram::bindAttribLocation(const std::string& name, GLuint location)
+void GLShaderProgram::bindAttribLocation(const std::string& nameArg, GLuint location)
 {
-  glBindAttribLocation(m_handle, location, name.c_str());
+  glBindAttribLocation(m_handle, location, nameArg.c_str());
   m_linked = false;
 }
 
-void GLShaderProgram::bindFragDataLocation(const std::string& name, GLuint location) const
+void GLShaderProgram::bindFragDataLocation(const std::string& nameArg, GLuint location) const
 {
-  glBindFragDataLocation(m_handle, location, name.c_str());
+  glBindFragDataLocation(m_handle, location, nameArg.c_str());
 }
 
-GLint GLShaderProgram::getAttribLocation(const std::string& name) const
+GLint GLShaderProgram::getAttribLocation(const std::string& nameArg) const
 {
-  return glGetAttribLocation(m_handle, name.c_str());
+  return glGetAttribLocation(m_handle, nameArg.c_str());
 }
 
-GLint GLShaderProgram::getUniformLocation(const std::string& name)
+GLint GLShaderProgram::getUniformLocation(const std::string& nameArg)
 {
-  if (const std::optional<GLint> locOpt = m_registeredUniforms.location(name)) {
+  if (const std::optional<GLint> locOpt = m_registeredUniforms.location(nameArg)) {
     return *locOpt;
   }
   else {
-    const GLint loc = glGetUniformLocation(m_handle, name.c_str());
-    m_registeredUniforms.insertUniform(name, Uniforms::Decl());
-    m_registeredUniforms.setLocation(name, loc);
+    const GLint loc = glGetUniformLocation(m_handle, nameArg.c_str());
+    m_registeredUniforms.insertUniform(nameArg, Uniforms::Decl());
+    m_registeredUniforms.setLocation(nameArg, loc);
     return loc;
   }
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, GLboolean val)
+bool GLShaderProgram::setUniform(const std::string& nameArg, GLboolean val)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -189,9 +189,9 @@ bool GLShaderProgram::setUniform(const std::string& name, GLboolean val)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, GLint val)
+bool GLShaderProgram::setUniform(const std::string& nameArg, GLint val)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -200,9 +200,9 @@ bool GLShaderProgram::setUniform(const std::string& name, GLint val)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, GLuint val)
+bool GLShaderProgram::setUniform(const std::string& nameArg, GLuint val)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -211,9 +211,9 @@ bool GLShaderProgram::setUniform(const std::string& name, GLuint val)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, GLfloat val)
+bool GLShaderProgram::setUniform(const std::string& nameArg, GLfloat val)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -222,9 +222,9 @@ bool GLShaderProgram::setUniform(const std::string& name, GLfloat val)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, GLfloat x, GLfloat y, GLfloat z)
+bool GLShaderProgram::setUniform(const std::string& nameArg, GLfloat x, GLfloat y, GLfloat z)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -233,9 +233,9 @@ bool GLShaderProgram::setUniform(const std::string& name, GLfloat x, GLfloat y, 
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::ivec2& v)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::ivec2& v)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -244,9 +244,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::ivec2& v)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::vec2& v)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec2& v)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -255,9 +255,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::vec2& v)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::vec3& v)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec3& v)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -266,9 +266,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::vec3& v)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::vec4& v)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec4& v)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -277,9 +277,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::vec4& v)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::mat2& m)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat2& m)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -288,9 +288,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::mat2& m)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::mat3& m)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat3& m)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -299,9 +299,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::mat3& m)
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const glm::mat4& m)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat4& m)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -310,9 +310,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::mat4& m)
   return true;
 }
 
-bool GLShaderProgram::setSamplerUniform(const std::string& name, GLint sampler)
+bool GLShaderProgram::setSamplerUniform(const std::string& nameArg, GLint sampler)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0) {
     return false;
   }
@@ -321,9 +321,9 @@ bool GLShaderProgram::setSamplerUniform(const std::string& name, GLint sampler)
   return true;
 }
 
-bool GLShaderProgram::setSamplerUniform(const std::string& name, const Uniforms::SamplerIndexVectorType& samplers)
+bool GLShaderProgram::setSamplerUniform(const std::string& nameArg, const Uniforms::SamplerIndexVectorType& samplers)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0 || samplers.indices.empty()) {
     return false;
   }
@@ -332,9 +332,9 @@ bool GLShaderProgram::setSamplerUniform(const std::string& name, const Uniforms:
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm::mat4>& matrices)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::mat4>& matrices)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0 || matrices.empty()) {
     return false;
   }
@@ -343,9 +343,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm:
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm::vec2>& vectors)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::vec2>& vectors)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0 || vectors.empty()) {
     return false;
   }
@@ -354,9 +354,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm:
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm::vec3>& vectors)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::vec3>& vectors)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0 || vectors.empty()) {
     return false;
   }
@@ -365,9 +365,9 @@ bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm:
   return true;
 }
 
-bool GLShaderProgram::setUniform(const std::string& name, const std::vector<float>& floats)
+bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<float>& floats)
 {
-  const GLint loc = getUniformLocation(name);
+  const GLint loc = getUniformLocation(nameArg);
   if (loc < 0 || floats.empty()) {
     return false;
   }
@@ -425,14 +425,14 @@ void GLShaderProgram::printActiveUniforms() const
 
     glGetActiveUniform(m_handle, GLuint(i), maxUniformNameLength, &actualLength, &arraySize, &type, &nameData[0]);
 
-    const std::string name(&nameData[0], static_cast<size_t>(actualLength));
+    const std::string nameLocal(&nameData[0], static_cast<size_t>(actualLength));
     const GLint location = glGetUniformLocation(m_handle, &nameData[0]);
 
     spdlog::info(
       "uniform {}: location = {}, name = {}, type = {}",
       i,
       location,
-      name,
+      nameLocal,
       Uniforms::getUniformTypeString(type));
   }
 
@@ -571,14 +571,14 @@ void GLShaderProgram::printActiveAttribs() const
 
     glGetActiveAttrib(m_handle, i, maxAttribNameLength, &actualLength, &arraySize, &type, &nameData[0]);
 
-    const std::string name(&nameData[0], actualLength);
+    const std::string nameLocal(&nameData[0], actualLength);
     const GLint location = glGetAttribLocation(m_handle, &nameData[0]);
 
     spdlog::info(
       "attribute {}: location = {}, name = {}, type = {}",
       i,
       location,
-      name,
+      nameLocal,
       Uniforms::getUniformTypeString(type));
   }
 

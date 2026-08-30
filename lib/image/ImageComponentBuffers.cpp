@@ -48,7 +48,7 @@ const T* componentBufferForSave(const Image& image, uint32_t component, std::vec
 bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName)
 {
   constexpr uint32_t DIM = 3;
-  constexpr bool isVectorImage = false;
+  constexpr bool isVectorImageLocal = false;
   const fs::path fileName = (newFileName) ? *newFileName : m_header.fileName();
 
   if (component >= m_header.numComponentsPerPixel()) {
@@ -88,7 +88,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<int8_t, DIM, isVectorImage>(image, fileName);
+      return writeImage<int8_t, DIM, isVectorImageLocal>(image, fileName);
     }
     case ComponentType::UInt8: {
       std::vector<uint8_t> scratch;
@@ -97,7 +97,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<uint8_t, DIM, isVectorImage>(image, fileName);
+      return writeImage<uint8_t, DIM, isVectorImageLocal>(image, fileName);
     }
     case ComponentType::Int16: {
       std::vector<int16_t> scratch;
@@ -106,7 +106,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<int16_t, DIM, isVectorImage>(image, fileName);
+      return writeImage<int16_t, DIM, isVectorImageLocal>(image, fileName);
     }
     case ComponentType::UInt16: {
       std::vector<uint16_t> scratch;
@@ -115,7 +115,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<uint16_t, DIM, isVectorImage>(image, fileName);
+      return writeImage<uint16_t, DIM, isVectorImageLocal>(image, fileName);
     }
     case ComponentType::Int32: {
       std::vector<int32_t> scratch;
@@ -124,7 +124,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<int32_t, DIM, isVectorImage>(image, fileName);
+      return writeImage<int32_t, DIM, isVectorImageLocal>(image, fileName);
     }
     case ComponentType::UInt32: {
       std::vector<uint32_t> scratch;
@@ -133,7 +133,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<uint32_t, DIM, isVectorImage>(image, fileName);
+      return writeImage<uint32_t, DIM, isVectorImageLocal>(image, fileName);
     }
     case ComponentType::Float32: {
       std::vector<float> scratch;
@@ -142,7 +142,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
         return false;
       }
       auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<float, DIM, isVectorImage>(image, fileName);
+      return writeImage<float, DIM, isVectorImageLocal>(image, fileName);
     }
     default: {
       return false;

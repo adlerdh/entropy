@@ -732,19 +732,19 @@ glm::uvec3 GLTexture::size() const
   return m_size;
 }
 
-void GLTexture::setSize(const glm::uvec3& size)
+void GLTexture::setSize(const glm::uvec3& sizeArg)
 {
-  if (glm::any(glm::lessThan(size, glm::uvec3{1}))) {
+  if (glm::any(glm::lessThan(sizeArg, glm::uvec3{1}))) {
     std::ostringstream ss;
-    ss << "Invalid texture size " << glm::to_string(size) << std::ends;
+    ss << "Invalid texture size " << glm::to_string(sizeArg) << std::ends;
     throwDebug(ss.str());
   }
 
-  if (m_size != size) {
+  if (m_size != sizeArg) {
     m_hasAllocatedStorage = false;
     m_loggedSuspiciousBind = false;
     m_loggedUnitZeroBind = false;
-    m_size = size;
+    m_size = sizeArg;
     labelTextureObject(m_id, m_target, m_size);
   }
 }
@@ -872,7 +872,7 @@ void GLTexture::setData(
 void GLTexture::setSubData(
   GLint level,
   const glm::uvec3& offset,
-  const glm::uvec3& size,
+  const glm::uvec3& sizeArg,
   const BufferPixelFormat& format,
   const BufferPixelDataType& type,
   const GLvoid* data)
@@ -893,25 +893,25 @@ void GLTexture::setSubData(
   if (!m_hasAllocatedStorage) {
     throwDebug("Cannot write texture sub-data before allocating texture storage");
   }
-  if (glm::any(glm::equal(size, glm::uvec3{0u}))) {
+  if (glm::any(glm::equal(sizeArg, glm::uvec3{0u}))) {
     throwDebug("Texture sub-data dimensions must all be greater than zero");
   }
   for (int axis = 0; axis < 3; ++axis) {
-    if (offset[axis] > m_size[axis] || size[axis] > m_size[axis] - offset[axis]) {
+    if (offset[axis] > m_size[axis] || sizeArg[axis] > m_size[axis] - offset[axis]) {
       throwDebug("Texture sub-data region exceeds allocated texture bounds");
     }
   }
-  if (Target::Texture1D == m_target && (offset.y != 0u || offset.z != 0u || size.y != 1u || size.z != 1u)) {
+  if (Target::Texture1D == m_target && (offset.y != 0u || offset.z != 0u || sizeArg.y != 1u || sizeArg.z != 1u)) {
     throwDebug("One-dimensional texture sub-data must use singleton y and z extents");
   }
-  if ((Target::Texture2D == m_target || Target::Texture1DArray == m_target) && (offset.z != 0u || size.z != 1u)) {
+  if ((Target::Texture2D == m_target || Target::Texture1DArray == m_target) && (offset.z != 0u || sizeArg.z != 1u)) {
     throwDebug("Two-dimensional texture sub-data must use a singleton z extent");
   }
 
   const GLenum _format = underlyingType(format);
   const GLenum _type = underlyingType(type);
   const glm::ivec3 _offset(offset);
-  const glm::ivec3 _size(size);
+  const glm::ivec3 _size(sizeArg);
 
   Binder binder(*this);
 

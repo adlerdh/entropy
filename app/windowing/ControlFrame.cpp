@@ -188,9 +188,9 @@ ViewType ControlFrame::viewType() const
   return m_viewType;
 }
 
-void ControlFrame::setViewType(const ViewType& viewType)
+void ControlFrame::setViewType(const ViewType& viewTypeArg)
 {
-  m_viewType = viewType;
+  m_viewType = viewTypeArg;
 }
 
 ViewRenderMode ControlFrame::renderMode() const

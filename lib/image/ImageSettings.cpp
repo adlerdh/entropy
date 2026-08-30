@@ -140,9 +140,9 @@ double ImageSettings::timePlaybackSpeed() const
   return m_timePlaybackSpeed;
 }
 
-void ImageSettings::setBorderColor(glm::vec3 borderColor)
+void ImageSettings::setBorderColor(glm::vec3 borderColorArg)
 {
-  m_borderColor = borderColor;
+  m_borderColor = borderColorArg;
 }
 
 const glm::vec3& ImageSettings::borderColor() const
@@ -303,9 +303,9 @@ float ImageSettings::vectorArrowOverlayLineThickness() const
   return m_vectorArrowOverlayLineThickness;
 }
 
-void ImageSettings::setVectorArrowOverlayOpacity(float opacity)
+void ImageSettings::setVectorArrowOverlayOpacity(float opacityArg)
 {
-  m_vectorArrowOverlayOpacity = std::clamp(opacity, 0.0f, 1.0f);
+  m_vectorArrowOverlayOpacity = std::clamp(opacityArg, 0.0f, 1.0f);
 }
 
 float ImageSettings::vectorArrowOverlayOpacity() const
@@ -936,9 +936,9 @@ bool ImageSettings::globalVisibility() const
   return m_globalVisibility;
 }
 
-void ImageSettings::setGlobalOpacity(double opacity)
+void ImageSettings::setGlobalOpacity(double opacityArg)
 {
-  m_globalOpacity = static_cast<float>(std::max(std::min(opacity, 1.0), 0.0));
+  m_globalOpacity = static_cast<float>(std::max(std::min(opacityArg, 1.0), 0.0));
 }
 
 double ImageSettings::globalOpacity() const
@@ -1239,14 +1239,14 @@ bool ImageSettings::overlayPixelEdges() const
   return overlayPixelEdges(m_activeComponent);
 }
 
-void ImageSettings::setColormapEdges(uint32_t i, bool showEdges)
+void ImageSettings::setColormapEdges(uint32_t i, bool showEdgesArg)
 {
-  m_componentSettings[i].m_colormapEdges = showEdges;
+  m_componentSettings[i].m_colormapEdges = showEdgesArg;
 }
 
-void ImageSettings::setColormapEdges(bool showEdges)
+void ImageSettings::setColormapEdges(bool showEdgesArg)
 {
-  setColormapEdges(m_activeComponent, showEdges);
+  setColormapEdges(m_activeComponent, showEdgesArg);
 }
 
 bool ImageSettings::colormapEdges(uint32_t i) const
@@ -1279,14 +1279,14 @@ glm::vec3 ImageSettings::edgeColor() const
   return edgeColor(m_activeComponent);
 }
 
-void ImageSettings::setEdgeOpacity(uint32_t i, double opacity)
+void ImageSettings::setEdgeOpacity(uint32_t i, double opacityArg)
 {
-  m_componentSettings[i].m_edgeOpacity = opacity;
+  m_componentSettings[i].m_edgeOpacity = opacityArg;
 }
 
-void ImageSettings::setEdgeOpacity(double opacity)
+void ImageSettings::setEdgeOpacity(double opacityArg)
 {
-  setEdgeOpacity(m_activeComponent, opacity);
+  setEdgeOpacity(m_activeComponent, opacityArg);
 }
 
 double ImageSettings::edgeOpacity(uint32_t i) const

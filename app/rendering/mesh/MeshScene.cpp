@@ -5,9 +5,9 @@
 namespace rendering::mesh
 {
 
-void MeshScene::setRenderables(std::vector<MeshRenderable> renderables)
+void MeshScene::setRenderables(std::vector<MeshRenderable> renderablesArg)
 {
-  m_renderables = std::move(renderables);
+  m_renderables = std::move(renderablesArg);
 }
 
 void MeshScene::setImagePlaneRenderables(std::vector<MeshImagePlaneRenderable> imagePlanes)

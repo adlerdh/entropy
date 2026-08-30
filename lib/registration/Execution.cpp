@@ -296,12 +296,12 @@ std::optional<ResultManifest> readBackendResultManifest(const JobSpec& job, std:
 
 JobExecution executeJob(
   const JobSpec& job,
-  const CommandGenerationOptions& commandOptions,
+  const CommandGenerationOptions& commandOptionsArg,
   IProcessRunner& processRunner,
   const JobExecutionCallbacks& callbacks)
 {
   JobExecution execution;
-  std::vector<CommandSpec> commands = generateCommands(job, commandOptions);
+  std::vector<CommandSpec> commands = generateCommands(job, commandOptionsArg);
 
   setStatus(execution, JobStatus::PreparingInputs, callbacks);
   if (commands.empty()) {

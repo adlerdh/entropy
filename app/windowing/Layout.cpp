@@ -44,9 +44,9 @@ Layout::Layout(bool isLightbox)
 
 void Layout::replaceContentsPreservingUid(Layout&& other) noexcept
 {
-  const uuid uid = m_uid;
+  const uuid uidLocal = m_uid;
   *this = std::move(other);
-  m_uid = uid;
+  m_uid = uidLocal;
 }
 
 void Layout::setImageRendered(const AppData& appData, std::size_t index, bool visible)
@@ -152,9 +152,9 @@ LayoutKind Layout::kind() const
   return m_kind;
 }
 
-void Layout::setKind(LayoutKind kind)
+void Layout::setKind(LayoutKind kindArg)
 {
-  m_kind = kind;
+  m_kind = kindArg;
 }
 
 const std::string& Layout::displayName() const
@@ -162,9 +162,9 @@ const std::string& Layout::displayName() const
   return m_displayName;
 }
 
-void Layout::setDisplayName(std::string displayName)
+void Layout::setDisplayName(std::string displayNameArg)
 {
-  m_displayName = displayName.empty() ? std::string{"Custom"} : std::move(displayName);
+  m_displayName = displayNameArg.empty() ? std::string{"Custom"} : std::move(displayNameArg);
 }
 
 bool Layout::addView(std::unique_ptr<View> view)
@@ -192,28 +192,28 @@ const std::vector<uuid>& Layout::orderedViewUids() const
 
 std::vector<View*> Layout::orderedViews()
 {
-  std::vector<View*> views;
-  views.reserve(m_orderedViewUids.size());
+  std::vector<View*> viewsLocal;
+  viewsLocal.reserve(m_orderedViewUids.size());
   for (const auto& viewUid : m_orderedViewUids) {
     auto it = m_views.find(viewUid);
     if (it != m_views.end() && it->second) {
-      views.push_back(it->second.get());
+      viewsLocal.push_back(it->second.get());
     }
   }
-  return views;
+  return viewsLocal;
 }
 
 std::vector<const View*> Layout::orderedViews() const
 {
-  std::vector<const View*> views;
-  views.reserve(m_orderedViewUids.size());
+  std::vector<const View*> viewsLocal;
+  viewsLocal.reserve(m_orderedViewUids.size());
   for (const auto& viewUid : m_orderedViewUids) {
     auto it = m_views.find(viewUid);
     if (it != m_views.end() && it->second) {
-      views.push_back(it->second.get());
+      viewsLocal.push_back(it->second.get());
     }
   }
-  return views;
+  return viewsLocal;
 }
 
 uuid Layout::addCameraSyncGroup(CameraSyncMode mode)
