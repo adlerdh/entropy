@@ -215,9 +215,9 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   };
 
   // Read names and description from first three lines
-  std::string briefName;     // line 1
-  std::string technicalName; // line 2
-  std::string description;   // line 3
+  std::string briefName;         // line 1
+  std::string technicalNameText; // line 2
+  std::string descriptionText;   // line 3
 
   std::string line;
 
@@ -231,10 +231,10 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   }
 
   if (std::getline(csv, line)) {
-    technicalName = line;
-    technicalName.erase(
-      std::remove_if(std::begin(technicalName), std::end(technicalName), predicate),
-      std::end(technicalName));
+    technicalNameText = line;
+    technicalNameText.erase(
+      std::remove_if(std::begin(technicalNameText), std::end(technicalNameText), predicate),
+      std::end(technicalNameText));
   }
   else {
     spdlog::error("Could not extract technical name of colormap '{}'", briefName);
@@ -242,8 +242,10 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   }
 
   if (std::getline(csv, line)) {
-    description = line;
-    description.erase(std::remove_if(std::begin(description), std::end(description), predicate), std::end(description));
+    descriptionText = line;
+    descriptionText.erase(
+      std::remove_if(std::begin(descriptionText), std::end(descriptionText), predicate),
+      std::end(descriptionText));
   }
   else {
     spdlog::error("Could not extract description of colormap '{}'", briefName);
@@ -291,12 +293,12 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
     return std::nullopt;
   }
 
-  SPDLOG_TRACE("Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalName, colors.size());
+  SPDLOG_TRACE("Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalNameText, colors.size());
 
   return ImageColorMap(
     std::move(briefName),
-    std::move(technicalName),
-    std::move(description),
+    std::move(technicalNameText),
+    std::move(descriptionText),
     InterpolationMode::Linear,
     std::move(colors));
 }

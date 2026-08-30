@@ -173,7 +173,7 @@ std::optional<glm::dmat4> readAffineTransform(const std::filesystem::path& fileN
   std::vector<std::string> lines;
   std::string line;
   while (std::getline(stream, line)) {
-    lines.push_back(std::move(line));
+    lines.push_back(line);
   }
   if (lines.empty()) {
     return std::nullopt;

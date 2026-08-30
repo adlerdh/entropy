@@ -393,8 +393,8 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   spdlog::debug("Set GLFW callbacks");
 
   // Create cursors: not currently used
-  GLFWcursor* cursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-  m_mouseModeToCursor.emplace(MouseMode::WindowLevel, cursor);
+  GLFWcursor* windowLevelCursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+  m_mouseModeToCursor.emplace(MouseMode::WindowLevel, windowLevelCursor);
 
   spdlog::debug("Created GLFW cursors");
 

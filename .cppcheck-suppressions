@@ -16,6 +16,13 @@ variableScope:*app/logic/app/CallbackHandler.cpp
 # Persistent immediate-mode UI state intentionally lives outside the narrowest lexical scope.
 variableScope:*lib/ui/*
 
+# These APIs intentionally retain instance-shaped no-op hooks for interface compatibility.
+functionStatic:*lib/image/ImageSettings.cpp
+# tinyfsm dispatch requires this fallback handler to remain a non-static member.
+functionStatic:*app/logic/states/annotation/AnnotationStateMachine.cpp
+# The directory is mutated through an iterator returned by std::find_if.
+constVariablePointer:*app/logic/sync/ItkSnapSync.cpp
+
 # Compile-time contract tests intentionally assert fixed enum values and header visibility.
 knownConditionTrueFalse:*/test/*
 duplicateExpression:*/test/*

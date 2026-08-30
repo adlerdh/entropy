@@ -256,14 +256,14 @@ public:
       return false;
     }
 
-    const size_t numVertices = getBoundaryVertices(boundary).size();
+    const size_t boundaryVertexCount = getBoundaryVertices(boundary).size();
 
-    if (1 == numVertices) {
+    if (1 == boundaryVertexCount) {
       spdlog::warn("Cannot remove the last vertex of a boundary");
       return false;
     }
 
-    if (vertexIndex >= numVertices) {
+    if (vertexIndex >= boundaryVertexCount) {
       spdlog::warn("Invalid polygon vertex {}", vertexIndex);
       return false;
     }

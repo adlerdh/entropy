@@ -95,7 +95,9 @@ std::optional<fs::path> handleDialogResult(NFD::UniquePath& outPath, nfdresult_t
   return std::nullopt;
 }
 
-native_dialog::PathDialogResult handleMultiDialogResultWithStatus(NFD::UniquePathSet& outPaths, nfdresult_t result)
+native_dialog::PathDialogResult handleMultiDialogResultWithStatus(
+  const NFD::UniquePathSet& outPaths,
+  nfdresult_t result)
 {
   native_dialog::PathDialogResult dialogResult;
 
@@ -148,7 +150,7 @@ native_dialog::PathDialogResult handleMultiDialogResultWithStatus(NFD::UniquePat
   return dialogResult;
 }
 
-std::vector<fs::path> handleMultiDialogResult(NFD::UniquePathSet& outPaths, nfdresult_t result)
+std::vector<fs::path> handleMultiDialogResult(const NFD::UniquePathSet& outPaths, nfdresult_t result)
 {
   return handleMultiDialogResultWithStatus(outPaths, result).paths;
 }

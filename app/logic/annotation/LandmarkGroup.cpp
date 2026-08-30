@@ -78,13 +78,7 @@ size_t LandmarkGroup::addPoint(const PointRecord<PositionType>& point)
     return 0u;
   }
 
-  size_t maxIndexLocal = 0;
-
-  for (const auto& p : m_pointMap) {
-    if (p.first > maxIndexLocal) maxIndexLocal = p.first;
-  }
-
-  const size_t newIndex = maxIndexLocal + 1;
+  const size_t newIndex = m_pointMap.rbegin()->first + 1;
   m_pointMap.emplace(newIndex, point);
   return newIndex;
 }
@@ -106,13 +100,7 @@ void LandmarkGroup::setLayer(uint32_t layer)
 
 size_t LandmarkGroup::maxIndex() const
 {
-  size_t maxIndex = 0;
-
-  for (const auto& p : m_pointMap) {
-    if (p.first > maxIndex) maxIndex = p.first;
-  }
-
-  return maxIndex;
+  return m_pointMap.empty() ? 0 : m_pointMap.rbegin()->first;
 }
 
 uint32_t LandmarkGroup::getLayer() const
