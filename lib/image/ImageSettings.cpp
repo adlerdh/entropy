@@ -62,14 +62,13 @@ ImageSettings::ImageSettings(
   uint32_t numComponents,
   ComponentType componentType,
   const std::vector<ComponentStats>& componentStats)
-  : m_displayName(std::move(displayName))
-  , m_numPixels(numPixels)
+  : m_numPixels(numPixels)
   , m_numComponents(numComponents)
   , m_componentType(componentType)
   , m_componentSettings(numComponents)
 {
   if (0 == m_numPixels) {
-    spdlog::error("Zero pixels is invalid when constructing settings for image {}", m_displayName);
+    spdlog::error("Zero pixels is invalid when constructing settings for image {}", displayName);
     throwDebug("Invalid number of pixels provided to construct settings for image");
   }
 
@@ -77,9 +76,11 @@ ImageSettings::ImageSettings(
     spdlog::error(
       "Invalid number of components ({}) provided to construct settings for image {}",
       numComponents,
-      m_displayName);
+      displayName);
     throwDebug("Invalid number of components provided to construct settings for image");
   }
+
+  m_displayName = std::move(displayName);
 
   constexpr bool k_setDefaultVisibilitySettings = true;
   updateWithNewComponentStatistics(componentStats, k_setDefaultVisibilitySettings);

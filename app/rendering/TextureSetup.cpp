@@ -813,10 +813,9 @@ createDistanceMapTexture(const AppData& appData, const uuids::uuid& imageUid, ui
   }
 
   try {
-    GLTexture::PixelStoreSettings pixelPackSettings;
-    pixelPackSettings.m_alignment = sk_alignment;
-    GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
-    GLTexture texture(tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings);
+    GLTexture::PixelStoreSettings pixelStoreSettings;
+    pixelStoreSettings.m_alignment = sk_alignment;
+    GLTexture texture(tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelStoreSettings, pixelStoreSettings);
     texture.generate();
     texture.setMinificationFilter(sk_minFilter);
     texture.setMagnificationFilter(sk_maxFilter);
@@ -862,9 +861,8 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
   spdlog::debug("Begin creating 3D segmentation textures");
   const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
 
-  GLTexture::PixelStoreSettings pixelPackSettings;
-  pixelPackSettings.m_alignment = k_alignment;
-  GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
+  GLTexture::PixelStoreSettings pixelStoreSettings;
+  pixelStoreSettings.m_alignment = k_alignment;
 
   // Loop through images in order of index
   for (const auto& segUid : segUids) {
@@ -931,8 +929,8 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
         RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
                                                                                   : tex::Target::Texture3D,
         GLTexture::MultisampleSettings(),
-        pixelPackSettings,
-        pixelUnpackSettings);
+        pixelStoreSettings,
+        pixelStoreSettings);
       texture.generate();
       texture.setMinificationFilter(sk_minFilter);
       texture.setMagnificationFilter(sk_maxFilter);

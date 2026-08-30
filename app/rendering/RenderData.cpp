@@ -45,11 +45,10 @@ GLTexture createBlankRgbaTexture(tex::Target target, uint8_t value)
 
   static const glm::uvec3 sk_size{1, 1, 1};
 
-  GLTexture::PixelStoreSettings pixelPackSettings;
-  pixelPackSettings.m_alignment = sk_alignment;
-  GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
+  GLTexture::PixelStoreSettings pixelStoreSettings;
+  pixelStoreSettings.m_alignment = sk_alignment;
 
-  GLTexture T(target, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings);
+  GLTexture T(target, GLTexture::MultisampleSettings(), pixelStoreSettings, pixelStoreSettings);
 
   T.generate();
   T.setMinificationFilter(sk_minFilter);

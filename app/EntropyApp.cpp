@@ -1366,7 +1366,8 @@ void EntropyApp::continueRasterImageHeaderPreflight()
       m_pendingRasterImageIndex++;
     }
 
-    std::vector<serialize::Image> imagesToAdd = std::exchange(m_pendingRasterAddImages, {});
+    std::vector<serialize::Image> imagesToAdd;
+    imagesToAdd.swap(m_pendingRasterAddImages);
     std::vector<fs::path> imageFiles;
     imageFiles.reserve(imagesToAdd.size());
     std::transform(
