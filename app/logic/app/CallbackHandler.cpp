@@ -2590,6 +2590,10 @@ void CallbackHandler::toggleFullScreenMode(bool forceWindowMode)
 
 bool CallbackHandler::setLockManualImageTransformation(const uuid& imageUid, bool locked)
 {
+  if (!locked && m_appData.refImageUid() == imageUid) {
+    return false;
+  }
+
   Image* image = m_appData.image(imageUid);
   if (!image) {
     return false;

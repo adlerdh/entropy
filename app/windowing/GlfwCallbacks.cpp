@@ -16,8 +16,10 @@
 #include "logic/states/annotation/AnnotationEvents.h"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
+#include "image/Image.h"
 #include "ui/GuiData.h"
 #include "ui/ImGuiWrapper.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 #include "viewer/ViewTypes.h"
 #include "windowing/GlfwWrapper.h"
 #include "windowing/View.h"
@@ -50,6 +52,7 @@ static std::optional<ViewHit> s_startHit;
 
 static std::optional<ViewHit> s_imageScaleEffectivePrevHit;
 static std::optional<app::ImageScaleConstraint> s_imageScaleViewAxisConstraint;
+static std::optional<bool> s_manualImageTransformGestureAllowed;
 
 constexpr float kImageScaleDeadZoneRadiusViewClip = 0.06f;
 constexpr float kImageScaleAxisConstraintDominanceRatio = 1.5f;
@@ -83,6 +86,60 @@ bool isLeftDoubleClick(int button, int action, const glm::vec2& windowCursorPos)
   s_lastLeftClickTime = now;
   s_lastLeftClickWindowPos = windowCursorPos;
   return isDoubleClick;
+}
+
+bool confirmManualImageTransformGesture(EntropyApp& app, const View& view)
+{
+  AppData& appData = app.appData();
+  const auto imageUid = appData.activeImageUid();
+  if (
+    !imageUid ||
+    std::find(view.visibleImages().begin(), view.visibleImages().end(), *imageUid) == view.visibleImages().end())
+  {
+    return false;
+  }
+
+  const Image* image = appData.image(*imageUid);
+  if (!image) {
+    return false;
+  }
+
+  if (!image->transformations().is_worldDef_T_affine_locked()) {
+    return true;
+  }
+
+  if (appData.refImageUid() == imageUid) {
+    native_dialog::showMessageDialog(
+      {"Manual Transformation Locked",
+       "The reference image's manual transformation is locked.",
+       "The reference image defines project space and cannot be manually transformed.",
+       "OK",
+       "Cancel",
+       ""});
+    return false;
+  }
+
+  const auto result = native_dialog::showMessageDialog(
+    {"Manual Transformation Locked",
+     "The active image's manual transformation is locked.",
+     "Unlock it to translate, rotate, or scale the image.",
+     "Unlock",
+     "Cancel",
+     ""});
+  return result && native_dialog::MessageDialogResult::FirstButton == *result &&
+         app.callbackHandler().setLockManualImageTransformation(*imageUid, false);
+}
+
+bool manualImageTransformGestureCanProceed(EntropyApp& app, const ViewHit& previousHit, const ViewHit& currentHit)
+{
+  if (!s_manualImageTransformGestureAllowed) {
+    const glm::vec2 dragDelta = currentHit.viewClipPos - previousHit.viewClipPos;
+    if (glm::dot(dragDelta, dragDelta) <= 0.0f) {
+      return false;
+    }
+    s_manualImageTransformGestureAllowed = confirmManualImageTransformGesture(app, *previousHit.view);
+  }
+  return *s_manualImageTransformGestureAllowed;
 }
 } // namespace
 
@@ -491,7 +548,10 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       break;
     }
     case MouseMode::ImageTranslate: {
-      if (!currHit_withOverride) {
+      if (
+        !currHit_withOverride || (!s_mouseButtonState.left && !s_mouseButtonState.right) ||
+        !manualImageTransformGestureCanProceed(*app, *s_prevHit, *currHit_withOverride))
+      {
         break;
       }
 
@@ -504,7 +564,10 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       break;
     }
     case MouseMode::ImageRotate: {
-      if (!currHit_withOverride) {
+      if (
+        !currHit_withOverride || (!s_mouseButtonState.left && !s_mouseButtonState.right) ||
+        !manualImageTransformGestureCanProceed(*app, *s_prevHit, *currHit_withOverride))
+      {
         break;
       }
 
@@ -517,7 +580,10 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       break;
     }
     case MouseMode::ImageScale: {
-      if (!currHit_withOverride) {
+      if (
+        !currHit_withOverride || !s_mouseButtonState.left ||
+        !manualImageTransformGestureCanProceed(*app, *s_prevHit, *currHit_withOverride))
+      {
         break;
       }
 
@@ -600,6 +666,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   s_prevHit = std::nullopt;
   s_imageScaleEffectivePrevHit = std::nullopt;
   s_imageScaleViewAxisConstraint = std::nullopt;
+  s_manualImageTransformGestureAllowed = std::nullopt;
 
   double mindowCursorPosX = std::numeric_limits<double>::quiet_NaN();
   double mindowCursorPosY = std::numeric_limits<double>::quiet_NaN();
