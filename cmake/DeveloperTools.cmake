@@ -7,7 +7,7 @@ option(Entropy_ENABLE_CLANG_TIDY "Run clang-tidy during C++ compilation" OFF)
 set(Entropy_CLANG_TIDY_OPTIONS "--quiet" CACHE STRING "Additional options passed to clang-tidy")
 option(Entropy_ENABLE_CPPCHECK "Add the cppcheck static-analysis target" OFF)
 set(Entropy_CPPCHECK_OPTIONS
-  "--enable=warning,style,performance,portability;--addon=threadsafety;--inline-suppr;--error-exitcode=1;--quiet;--template=gcc"
+  "--enable=warning,style,performance,portability;--addon=threadsafety;--inconclusive;--inline-suppr;--error-exitcode=1;--quiet;--template=gcc"
   CACHE STRING "Options passed to cppcheck")
 set(Entropy_CPPCHECK_JOBS "4" CACHE STRING "Parallel cppcheck analysis jobs")
 

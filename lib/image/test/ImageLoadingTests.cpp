@@ -12,6 +12,7 @@
 #include <itkVectorImage.h>
 
 #include <array>
+#include <bit>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -28,6 +29,15 @@ namespace fs = std::filesystem;
 
 using BufferType = Image::MultiComponentBufferType;
 using Rep = Image::ImageRepresentation;
+
+template<std::size_t Size>
+void writeFloatArray(std::ofstream& output, const std::array<float, Size>& values)
+{
+  for (const float value : values) {
+    const auto bytes = std::bit_cast<std::array<char, sizeof(float)>>(value);
+    output.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+  }
+}
 
 fs::path testDirectory()
 {
@@ -257,7 +267,7 @@ fs::path writeNrrdVectorAxisImage(const fs::path& dir)
 
   const std::array<float, 20> values{0.0f,  1.0f,  2.0f,  3.0f,  4.0f,  10.0f, 11.0f, 12.0f, 13.0f, 14.0f,
                                      20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f};
-  out.write(reinterpret_cast<const char*>(values.data()), static_cast<std::streamsize>(values.size() * sizeof(float)));
+  writeFloatArray(out, values);
   return fileName;
 }
 
@@ -281,7 +291,7 @@ fs::path writeNrrdVectorAxisTimeImage(const fs::path& dir)
 
   const std::array<float, 12>
     values{0.0f, 1.0f, 10.0f, 11.0f, 100.0f, 101.0f, 110.0f, 111.0f, 200.0f, 201.0f, 210.0f, 211.0f};
-  out.write(reinterpret_cast<const char*>(values.data()), static_cast<std::streamsize>(values.size() * sizeof(float)));
+  writeFloatArray(out, values);
   return fileName;
 }
 

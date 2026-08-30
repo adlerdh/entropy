@@ -69,7 +69,7 @@ ImageSettings::ImageSettings(
   , m_componentSettings(numComponents)
 {
   if (0 == m_numPixels) {
-    spdlog::error("Zero pixels is invalid when constructing settings for image {}", displayName);
+    spdlog::error("Zero pixels is invalid when constructing settings for image {}", m_displayName);
     throwDebug("Invalid number of pixels provided to construct settings for image");
   }
 
@@ -77,7 +77,7 @@ ImageSettings::ImageSettings(
     spdlog::error(
       "Invalid number of components ({}) provided to construct settings for image {}",
       numComponents,
-      displayName);
+      m_displayName);
     throwDebug("Invalid number of components provided to construct settings for image");
   }
 

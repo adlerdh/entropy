@@ -324,8 +324,8 @@ cmake --preset app-debug -B build-cppcheck -D Entropy_ENABLE_CPPCHECK=ON
 cmake --build build-cppcheck --target cppcheck
 ```
 
-The target enables error, warning, style, performance, and portability analysis, inline suppressions, and the
-thread-safety addon. Project-wide reviewed false positives are in
+The target enables error, warning, style, performance, portability, and inconclusive analysis, inline suppressions,
+and the thread-safety addon. Project-wide reviewed false positives are in
 [.cppcheck-suppressions](.cppcheck-suppressions), scoped as narrowly as practical. Source-local suppressions use
 cppcheck's `cppcheck-suppress` comment syntax. External, generated, and Objective-C++ sources that cppcheck cannot
 meaningfully analyze are excluded by the target in [CMakeLists.txt](CMakeLists.txt).

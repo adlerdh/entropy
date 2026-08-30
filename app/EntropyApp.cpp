@@ -1364,14 +1364,13 @@ void EntropyApp::continueRasterImageHeaderPreflight()
       m_pendingRasterImageIndex++;
     }
 
-    std::vector<serialize::Image> imagesToAdd = std::move(m_pendingRasterAddImages);
+    std::vector<serialize::Image> imagesToAdd = std::exchange(m_pendingRasterAddImages, {});
     std::vector<fs::path> imageFiles;
     imageFiles.reserve(imagesToAdd.size());
     for (const auto& image : imagesToAdd) {
       imageFiles.push_back(image.m_imageFileName);
     }
     m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
-    m_pendingRasterAddImages.clear();
     m_pendingRasterImageIndex = 0;
 
     m_preserveLayoutsOnImagesReady = true;
