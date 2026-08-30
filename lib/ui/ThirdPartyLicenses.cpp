@@ -13,6 +13,7 @@ CMRC_DECLARE(licenses);
 
 namespace
 {
+thread_local std::map<std::string, std::string> g_licenseCache;
 
 struct LicenseDocument
 {
@@ -277,10 +278,8 @@ static const LicenseEntry sk_entries[] = {
 
 std::string loadLicenseText(const char* resourcePath)
 {
-  static thread_local std::map<std::string, std::string> cache;
-
-  auto it = cache.find(resourcePath);
-  if (it != cache.end()) {
+  auto it = g_licenseCache.find(resourcePath);
+  if (it != g_licenseCache.end()) {
     return it->second;
   }
 
@@ -288,10 +287,11 @@ std::string loadLicenseText(const char* resourcePath)
   try {
     const cmrc::file file = fs.open(resourcePath);
     const std::string text(file.begin(), file.end());
-    return cache.emplace(resourcePath, text).first->second;
+    return g_licenseCache.emplace(resourcePath, text).first->second;
   }
   catch (const std::runtime_error&) {
-    return cache.emplace(resourcePath, std::string{"License resource not found: "} + resourcePath).first->second;
+    return g_licenseCache.emplace(resourcePath, std::string{"License resource not found: "} + resourcePath)
+      .first->second;
   }
 }
 

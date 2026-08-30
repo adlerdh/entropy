@@ -1,4 +1,4 @@
-#include "rendering/utility/vtk/PolyDataGenerator.h"
+#include "rendering/mesh/PolyDataGenerator.h"
 
 #include <glm/glm.hpp>
 

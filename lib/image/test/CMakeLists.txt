@@ -34,7 +34,7 @@ target_link_libraries(TestImage PRIVATE
 entropy_enable_coverage_for_target(TestImage)
 entropy_register_coverage_test_target(TestImage)
 
-target_include_directories(TestImage PRIVATE
+target_include_directories(TestImage SYSTEM PRIVATE
   ${ITK_INCLUDE_DIRS}
   "${CMAKE_SOURCE_DIR}/test/image_generator"
 )

@@ -768,7 +768,7 @@ double bumpQuantile(
         newQuant = (0 == Q.lowerIndex) ? 0.0 : newQuant - 1.0 / N;
       }
     }
-    else if (dir > 0) {
+    else {
       if (usingExactQuantiles) {
         newQuant = (N == Q.upperIndex) ? 1.0 : static_cast<double>(Q.upperIndex + 1) / N;
       }

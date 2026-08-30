@@ -908,10 +908,17 @@ void applyJson(
       if (const auto level = diagnostics->find("logVerbosity"); level != diagnostics->end() && level->is_string()) {
         const std::string levelName = level->get<std::string>();
         for (const auto& choice : logging::allLogLevelChoices()) {
-          if (choice.label == levelName && logging::isLogLevelChoiceAvailable(choice)) {
-            logging::setDefaultLoggerSinkLevel(choice.level);
-            break;
+          if (choice.label != levelName) {
+            continue;
           }
+#if SPDLOG_ACTIVE_LEVEL > SPDLOG_LEVEL_TRACE
+          if (!choice.requiresCompiledTrace) {
+            logging::setDefaultLoggerSinkLevel(choice.level);
+          }
+#else
+          logging::setDefaultLoggerSinkLevel(choice.level);
+#endif
+          break;
         }
       }
     }

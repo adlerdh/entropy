@@ -14,7 +14,6 @@
 
 #include <algorithm> // std::equal
 #include <cctype>    // std::tolower
-#include <cstdlib>   // std::exit
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -160,8 +159,11 @@ std::vector<char*> filterPlatformArguments(const int argc, char* argv[])
 
 } // namespace
 
-bool parseCommandLine(const int argc, char* argv[], InputParams& params)
+bool parseCommandLine(const int argc, char* argv[], InputParams& params, bool* exitRequested)
 {
+  if (exitRequested) {
+    *exitRequested = false;
+  }
   params.set = false;
   params.imageFiles.clear();
   params.dicomPaths.clear();
@@ -235,11 +237,17 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   }
   catch (const CLI::CallForHelp&) {
     std::cout << program.help();
-    std::exit(EXIT_SUCCESS);
+    if (exitRequested) {
+      *exitRequested = true;
+    }
+    return true;
   }
   catch (const CLI::CallForVersion&) {
     std::cout << VERSION_FULL << '\n';
-    std::exit(EXIT_SUCCESS);
+    if (exitRequested) {
+      *exitRequested = true;
+    }
+    return true;
   }
   catch (const CLI::ParseError& e) {
     spdlog::critical("Exception parsing arguments: {}", e.what());

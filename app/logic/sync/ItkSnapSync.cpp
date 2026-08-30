@@ -1,5 +1,7 @@
 #include "logic/sync/ItkSnapSync.h"
 
+#include <string_view>
+
 #include "image/Image.h"
 #include "logic/app/Data.h"
 #include "logic/app/Settings.h"
@@ -630,6 +632,13 @@ bool ItkSnapSync::broadcastCursor(const glm::dvec3& cursorLps)
   }
 
   auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  if (
+    !header || m_sharedMemory->size() <
+                 static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
+  {
+    m_sharedMemory->unlock();
+    return false;
+  }
   auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
 
   const glm::dvec3 cursor = rasFromLps(cursorLps);
@@ -691,6 +700,13 @@ bool ItkSnapSync::broadcastViewState(const ItkSnapViewSyncState& state)
   }
 
   auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  if (
+    !header || m_sharedMemory->size() <
+                 static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
+  {
+    m_sharedMemory->unlock();
+    return false;
+  }
   auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
 
   std::optional<glm::dvec3> cursorLps;
@@ -852,13 +868,17 @@ void ItkSnapSync::claimDirectorySlot()
   }
 
   auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  if (
+    !header || m_sharedMemory->size() <
+                 static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
+  {
+    m_sharedMemory->unlock();
+    return;
+  }
   auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
   auto* directory =
     reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
 
-  if (
-    header && m_sharedMemory->size() >=
-                static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
   {
     int target = -1;
     for (int i = 0; i < sk_maxInstances; ++i) {
@@ -872,9 +892,9 @@ void ItkSnapSync::claimDirectorySlot()
     if (target >= 0) {
       auto& entry = directory->entries[target];
       entry.pid = toItkSnapIpcLong(m_processId);
-      constexpr const char* title = "Entropy";
       std::fill(std::begin(entry.title), std::end(entry.title), '\0');
-      std::copy_n(title, std::min(std::strlen(title), sizeof(entry.title) - 1), entry.title);
+      constexpr std::string_view title{"Entropy"};
+      std::copy_n(title.data(), std::min(title.size(), sizeof(entry.title) - 1), entry.title);
       entry.pendingDropId = 0;
       entry.pendingDrop[0] = '\0';
       m_claimedDirectorySlot = true;
@@ -892,13 +912,17 @@ void ItkSnapSync::releaseDirectorySlot()
   }
 
   auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  if (
+    !header || m_sharedMemory->size() <
+                 static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
+  {
+    m_sharedMemory->unlock();
+    return;
+  }
   auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
   auto* directory =
     reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
 
-  if (
-    header && m_sharedMemory->size() >=
-                static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
   {
     for (auto& entry : directory->entries) {
       if (entry.pid == m_processId) {

@@ -1,6 +1,6 @@
 #include "rendering/utility/CreateGLObjects.h"
 #include "rendering/utility/vtk/PolyDataConversion.h"
-#include "rendering/utility/vtk/PolyDataGenerator.h"
+#include "rendering/mesh/PolyDataGenerator.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/packing.hpp>

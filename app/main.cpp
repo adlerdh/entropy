@@ -40,9 +40,13 @@ int main(int argc, char* argv[])
 
     InputParams params;
 
-    if (!parseCommandLine(argc, argv, params)) {
+    bool exitRequested = false;
+    if (!parseCommandLine(argc, argv, params, &exitRequested)) {
       logFailure();
       return EXIT_FAILURE;
+    }
+    if (exitRequested) {
+      return EXIT_SUCCESS;
     }
 
     logging.setConsoleSinkLevel(params.consoleLogLevel);

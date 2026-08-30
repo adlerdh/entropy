@@ -1,5 +1,7 @@
 #include "windowing/View.h"
 
+#include <atomic>
+
 #include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "logic/app/DataHelper.h"
@@ -33,6 +35,7 @@
 
 namespace
 {
+std::atomic_size_t g_parallelCameraWarningCount{0};
 using uuid = uuids::uuid;
 
 static const glm::vec3 sk_origin{0.0f};
@@ -168,8 +171,6 @@ CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
 glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldCrosshairs)
 {
   static constexpr std::size_t k_maxNumWarnings = 10;
-  static std::size_t warnCount = 0;
-
   Camera& activeCamera = camera();
 
   if (ViewType::ThreeD == m_viewType) {
@@ -200,16 +201,16 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
       activeCamera,
       worldCameraOrigin + worldCameraToPlaneDistance * worldCameraFront,
       std::nullopt);
-    warnCount = 0; // Reset warning counter
+    g_parallelCameraWarningCount = 0;
   }
   else {
-    if (warnCount++ < k_maxNumWarnings) {
+    if (g_parallelCameraWarningCount++ < k_maxNumWarnings) {
       spdlog::warn(
         "Camera (front direction = {}) is parallel with the view (plane = {})",
         glm::to_string(worldCameraFront),
         glm::to_string(worldViewPlane));
     }
-    else if (k_maxNumWarnings == warnCount) {
+    else if (k_maxNumWarnings == g_parallelCameraWarningCount) {
       spdlog::warn("Halting warning about camera front direction.");
     }
 

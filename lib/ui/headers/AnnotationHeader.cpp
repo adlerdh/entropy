@@ -51,6 +51,12 @@
 #undef min
 #undef max
 
+namespace
+{
+constexpr char k_exportAnnotDialogTitle[] = "Export Annotations to JSON";
+thread_local bool g_skipRemoveAnnotationConfirmation = false;
+} // namespace
+
 namespace fs = std::filesystem;
 using namespace ui::headers;
 
@@ -83,7 +89,6 @@ void renderAnnotationsHeader(
   static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O) + " Remove...";
   static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Fill segmentation";
 
-  constexpr const char* exportAnnotDialogTitle = "Export Annotations to JSON";
   static const auto annotDialogFilters = native_dialog::annotationFilters();
 
   Image* image = appData.image(imageUid);
@@ -359,7 +364,6 @@ void renderAnnotationsHeader(
 
   // Remove the annotation:
   bool removeAnnot = false;
-  static thread_local bool doNotAskAagain = false;
 
   ImGui::Spacing();
   const bool clickedRemoveButton = ImGui::Button(removeAnnotButtonText.c_str());
@@ -368,10 +372,10 @@ void renderAnnotationsHeader(
   }
 
   if (clickedRemoveButton) {
-    if (!doNotAskAagain && !ImGui::IsPopupOpen("Remove Annotation")) {
+    if (!g_skipRemoveAnnotationConfirmation && !ImGui::IsPopupOpen("Remove Annotation")) {
       ImGui::OpenPopup("Remove Annotation", ImGuiWindowFlags_AlwaysAutoResize);
     }
-    else if (doNotAskAagain) {
+    else if (g_skipRemoveAnnotationConfirmation) {
       removeAnnot = true;
     }
   }
@@ -398,7 +402,7 @@ void renderAnnotationsHeader(
     ImGui::Separator();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::Checkbox("Do not ask again", &doNotAskAagain);
+    ImGui::Checkbox("Do not ask again", &g_skipRemoveAnnotationConfirmation);
     ImGui::PopStyleVar();
 
     if (ImGui::Button("Yes")) {
@@ -593,8 +597,10 @@ void renderAnnotationsHeader(
     ImGui::SameLine();
 
     // Export annotations to disk:
-    const auto selectedFile =
-      ImGui::renderFileButtonDialogAndWindow(exportAnnotButtonText.c_str(), exportAnnotDialogTitle, annotDialogFilters);
+    const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
+      exportAnnotButtonText.c_str(),
+      k_exportAnnotDialogTitle,
+      annotDialogFilters);
 
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Export annotations for this image to a JSON file");

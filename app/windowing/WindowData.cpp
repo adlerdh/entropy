@@ -768,7 +768,7 @@ std::size_t defaultLayoutIndexForImages(const std::vector<Layout>& layouts, cons
     return *preferredIndex;
   }
 
-  return layouts.empty() ? std::size_t{0} : 0;
+  return 0;
 }
 
 LayoutKind oneUpLayoutKindForViewType(ViewType viewType)
@@ -1324,8 +1324,6 @@ void WindowData::reconcileImageDependentLayouts(
     m_viewAlignment,
     m_viewConvention,
     dicomNativeViewTypesByImage);
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
-
   for (auto& layout : generatedLayouts) {
     setDefaultRenderedImagesForLayout(layout, appData);
   }

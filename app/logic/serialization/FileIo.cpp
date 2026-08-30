@@ -7,10 +7,10 @@
 #include <spdlog/spdlog.h>
 
 #include <cerrno>
+#include <array>
 #include <cstdint>
 #include <exception>
 #include <fstream>
-#include <iterator>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -56,17 +56,24 @@ bool openAffineTxFile(glm::dmat4& matrix, const fs::path& fileName)
       throw std::system_error(errno, std::system_category(), "Failed to open input file " + fileName.string());
     }
 
-    std::vector<std::vector<double>> rows;
+    std::vector<std::array<double, 4>> rows;
     std::string temp;
 
     while (std::getline(inFile, temp)) {
       std::istringstream buffer(temp);
 
-      const std::vector<double> row{(std::istream_iterator<double>(buffer)), std::istream_iterator<double>()};
-
-      if (4 != row.size()) {
+      std::array<double, 4> row{};
+      bool validRow = true;
+      for (double& value : row) {
+        if (!(buffer >> value)) {
+          validRow = false;
+          break;
+        }
+      }
+      double extraValue = 0.0;
+      if (!validRow || (buffer >> extraValue)) {
         throw std::length_error(
-          fmt::format("4x4 affine matrix row {} read with invalid length {}", rows.size() + 1, row.size()));
+          fmt::format("4x4 affine matrix row {} must contain exactly four numbers", rows.size() + 1));
       }
 
       rows.push_back(row);

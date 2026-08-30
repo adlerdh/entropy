@@ -19,10 +19,12 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <atomic>
 #include <string_view>
 
 namespace
 {
+std::atomic_size_t g_localPatchMetricWarningCount{0};
 
 namespace image_drawing = rendering::image_drawing;
 
@@ -34,14 +36,11 @@ bool isLocalPatchMetric(ViewRenderMode renderMode)
 void warnLocalPatchMetricMissingImage(std::string_view message)
 {
   static constexpr std::size_t k_maxNumWarnings = 10;
-  static std::size_t warnCount = 0;
-
-  if (warnCount < k_maxNumWarnings) {
-    ++warnCount;
+  const std::size_t previousCount = g_localPatchMetricWarningCount.fetch_add(1, std::memory_order_relaxed);
+  if (previousCount < k_maxNumWarnings) {
     spdlog::warn("{}", message);
   }
-  else if (k_maxNumWarnings == warnCount) {
-    ++warnCount;
+  else if (k_maxNumWarnings == previousCount) {
     spdlog::warn("Halting warnings about local patch metric views without enough images.");
   }
 }

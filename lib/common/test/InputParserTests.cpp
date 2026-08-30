@@ -9,6 +9,20 @@
 #include <string>
 #include <vector>
 
+TEST_CASE("help and version request a successful early exit", "[common][input]")
+{
+  for (const std::string& option : {std::string{"--help"}, std::string{"--version"}}) {
+    std::string app = "Entropy";
+    std::string argument = option;
+    std::array<char*, 2> argv{app.data(), argument.data()};
+
+    InputParams params;
+    bool exitRequested = false;
+    REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params, &exitRequested));
+    CHECK(exitRequested);
+  }
+}
+
 TEST_CASE("macOS LaunchServices process serial number argument is ignored", "[common][input]")
 {
   char app[] = "Entropy";

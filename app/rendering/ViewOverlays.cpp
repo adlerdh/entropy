@@ -216,8 +216,7 @@ void Rendering::renderVectorOverlays()
         drawEmptyThreeDViewHint(m_nvg, miewportViewBounds);
       }
 
-      if (threeDFrustumSource && ViewType::ThreeD != view->viewType() && ViewRenderMode::Disabled != view->renderMode())
-      {
+      if (threeDFrustumSource && ViewType::ThreeD != view->viewType()) {
         const glm::vec3 planeNormal = helper::worldDirection(view->camera(), Directions::View::Front);
         const camera3d::FrustumSliceOverlay overlay =
           camera3d::frustumSliceOverlay(threeDFrustumSource->threeDCamera(), worldXhairsOffset, planeNormal);

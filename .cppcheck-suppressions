@@ -1,15 +1,14 @@
 # Add narrowly scoped, reviewed false-positive suppressions here.
 # The thread-safety addon mistakes this state-machine callback for C exit().
-threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStateMachine.h:90
-# The addon matches methods and local variables named "exit" as calls to C exit().
+threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStateMachine.h
+# tinyfsm requires an exit() callback. The addon mistakes its name for C exit().
 threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStates.h
 threadsafety-unsafe-call:app/logic/states/annotation/AnnotationStates.cpp
-threadsafety-unsafe-call:app/logic/camera/Camera3DControls.cpp
-threadsafety-unsafe-call:lib/common/test/MathFuncsTests.cpp
-# Help and version terminate successfully before the application starts worker threads.
-threadsafety-unsafe-call:lib/common/InputParser.cpp
+# itkNewMacro intentionally provides covariant factory methods required by ITK.
+duplInheritedMember:lib/image/WarpInversion.cpp
 # ImGui, GLFW callbacks, and OpenGL rendering are confined to the main UI/context thread.
-# The addon flags even thread_local state and local constexpr strings in these files.
+# The addon does not distinguish thread_local UI state or immutable local constexpr data
+# from shared mutable function statics.
 threadsafety-threadsafety:lib/ui/*
 threadsafety-threadsafety:app/rendering/Rendering.cpp
 threadsafety-threadsafety:app/rendering/TextureSetup.cpp
@@ -44,4 +43,3 @@ suspiciousFloatingPointCast:*/test/*
 
 # Cppcheck does not model mutations performed by ImGui through pointer arguments.
 knownConditionTrueFalse:lib/ui/ImGuiWrapper.cpp
-knownConditionTrueFalse:app/logic/app/UserPreferences.cpp

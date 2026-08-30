@@ -42,10 +42,6 @@ bool loadImageAtDimension(
     std::unique_ptr<ReadComponentType[]> allComponentBuffers = nullptr;
     if (Image::MultiComponentBufferType::InterleavedImage == bufferType) {
       allComponentBuffers = std::make_unique<ReadComponentType[]>(numPixels * componentsToLoad);
-      if (!allComponentBuffers) {
-        spdlog::error("Null buffer holding all components of image file {}", fileName);
-        return false;
-      }
     }
 
     for (uint32_t component = 0; component < componentsToLoad; ++component) {

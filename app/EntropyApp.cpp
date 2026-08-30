@@ -1855,10 +1855,9 @@ void EntropyApp::loadDicomSeries(
         serializedImage.m_imageFileName = seriesInfo.files.front();
         serializedImage.m_dicomSource = makeDicomSourceSnapshot(seriesInfo);
 
-        const std::size_t numImagesBeforeLoad = m_data.numImages();
         const bool isReferenceImage = !addToExistingProject && addedImageUids.empty();
         const bool loaded = loadSerializedImage(serializedImage, isReferenceImage, &seriesInfo);
-        if (!loaded || m_data.numImages() <= numImagesBeforeLoad) {
+        if (!loaded) {
           spdlog::error("Could not load DICOM series {}", seriesInfo.seriesInstanceUid);
           continue;
         }

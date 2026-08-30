@@ -31,22 +31,36 @@ std::vector<double> parseNumbers(std::string_view text)
   return {std::istream_iterator<double>(stream), std::istream_iterator<double>()};
 }
 
+std::optional<std::array<double, 4>> parseMatrixRow(std::string_view text)
+{
+  std::istringstream stream{std::string{text}};
+  std::array<double, 4> row{};
+  for (double& value : row) {
+    if (!(stream >> value)) {
+      return std::nullopt;
+    }
+  }
+
+  double extraValue = 0.0;
+  if (stream >> extraValue) {
+    return std::nullopt;
+  }
+  return row;
+}
+
 std::optional<glm::dmat4> readPlainMatrix(const std::vector<std::string>& lines)
 {
-  std::vector<std::vector<double>> rows;
+  std::vector<std::array<double, 4>> rows;
   for (const std::string& line : lines) {
     const std::string trimmed = trim(line);
     if (trimmed.empty() || trimmed.starts_with('#')) {
       continue;
     }
-    std::vector<double> row = parseNumbers(trimmed);
-    if (row.empty()) {
-      continue;
-    }
-    if (row.size() != 4) {
+    const auto row = parseMatrixRow(trimmed);
+    if (!row) {
       return std::nullopt;
     }
-    rows.push_back(std::move(row));
+    rows.push_back(*row);
   }
 
   if (rows.size() != 4) {

@@ -1,7 +1,7 @@
 find_package(ITK ${itk_VERSION} REQUIRED
   COMPONENTS ${entropy_ITK_COMPONENTS}
   HINTS "${itk_PREFIX}/build")
-include("${ITK_USE_FILE}")
+entropy_configure_itk_directory()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,6 +21,9 @@ add_library(WarpFieldGeneratorCore STATIC
 
 target_include_directories(WarpFieldGeneratorCore PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_include_directories(WarpFieldGeneratorCore SYSTEM PUBLIC
+  ${ITK_INCLUDE_DIRS}
 )
 
 target_link_libraries(WarpFieldGeneratorCore PUBLIC

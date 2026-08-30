@@ -1,0 +1,77 @@
+set(entropy_SHADERS
+  AsciiPost.vs
+  AsciiPost.fs
+  AsciiCellMean.fs
+  AsciiCellRegions.fs
+  AsciiPostSpatial.fs
+  Difference.fs
+  LocalNcc.fs
+  LocalLinearResidual.fs
+  Edge.fs
+  Image.vs
+  ImageWarped.vs
+  ImageGrey.fs
+  ImageColor.fs
+  VectorDirectionColor.fs
+  VectorSignedNormalProjection.fs
+  VectorPlanarProjectionColor.fs
+  VectorWarpedGrid.fs
+  IsoContour.fs
+  Metric.vs
+  MetricWarped.vs
+  mesh/FullScreenTriangle.vs
+  mesh/AmbientOcclusionGeometry.fs
+  mesh/AmbientOcclusionFilter.fs
+  mesh/AmbientOcclusionResolve.fs
+  mesh/MeshImagePlaneDdpInit.fs
+  mesh/MeshImagePlaneDdpPeel.fs
+  mesh/MeshImagePlaneDisplay.glsl
+  mesh/MeshImagePlane.vs
+  mesh/Mesh.fs
+  mesh/Mesh.vs
+  mesh/MeshDdpBackBlend.fs
+  mesh/MeshDdpInit.fs
+  mesh/MeshDdpPeel.fs
+  mesh/MeshDdpResolve.fs
+  mesh/MeshShadowDepth.fs
+  Overlay.fs
+  PixelEdgePost.fs
+  RaycastIso.fs
+  RaycastIso.vs
+  Seg.fs
+  Seg.vs
+  SegWarped.vs
+  Simple.fs
+  Simple.vs
+  Xray.fs
+  functions/AsciiComposite.glsl
+  functions/ColorHelpers.glsl
+  functions/DoRender.glsl
+  functions/ComputeEdge_FreiChen.glsl
+  functions/ComputeEdge_Sobel.glsl
+  functions/Helpers.glsl
+  functions/IntensityProjection.glsl
+  functions/MetricSampling_Deformation.glsl
+  functions/MetricSampling_Identity.glsl
+  functions/SegInteriorAlpha_NoOutline.glsl
+  functions/SegInteriorAlpha_WithOutline.glsl
+  functions/SegValue_Linear.glsl
+  functions/SegValue_Nearest.glsl
+  functions/SampleTexCoord_Deformation.glsl
+  functions/SampleTexCoord_Identity.glsl
+  functions/TextureLookup_Cubic.glsl
+  functions/TextureLookup_Cubic_2D.glsl
+  functions/TextureLookup_Linear.glsl
+  functions/TextureLookup_Linear_2D.glsl
+  functions/TextureLookup_FloatingPoint_Linear.glsl
+  functions/TextureLookup_FloatingPoint_Linear_2D.glsl
+  functions/UIntTextureLookup_Linear.glsl
+  functions/UIntTextureLookup_Linear_2D.glsl
+)
+list(TRANSFORM entropy_SHADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+
+cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADERS} NAMESPACE shaders
+  WHENCE "${entropy_APP_DIR}"
+  PREFIX "app"
+)
+entropy_disable_linting_for_targets(entropy-shaders)

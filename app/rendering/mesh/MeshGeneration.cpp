@@ -1,5 +1,5 @@
 #include "rendering/mesh/MeshGeneration.h"
-#include "rendering/utility/vtk/PolyDataGenerator.h"
+#include "rendering/mesh/PolyDataGenerator.h"
 
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>

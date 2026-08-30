@@ -119,12 +119,12 @@ raySceneAabbHit(const Camera& camera, const camera3d::SceneFrame& scene, const g
   const glm::vec3 rayOrigin = worldRayOrigin(camera, ndcPos);
   const glm::vec3 rayDir = helper::worldRayDirection(camera, ndcPos);
   const auto [boxMin, boxMax] = sceneAabb(scene);
-  const auto [hit, entry, exit] = math::slabs(rayOrigin, rayDir, boxMin, boxMax);
-  if (!hit || exit <= 0.0f) {
+  const auto [hit, entryDistance, exitDistance] = math::slabs(rayOrigin, rayDir, boxMin, boxMax);
+  if (!hit || exitDistance <= 0.0f) {
     return std::nullopt;
   }
 
-  const float t = (entry > 0.0f) ? entry : exit;
+  const float t = (entryDistance > 0.0f) ? entryDistance : exitDistance;
   if (t <= 0.0f || !std::isfinite(t)) {
     return std::nullopt;
   }

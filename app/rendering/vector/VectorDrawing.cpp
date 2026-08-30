@@ -923,8 +923,6 @@ void drawAnnotations(
       if (annot->isSmoothed()) {
         nvgLineJoin(nvg, NVG_ROUND);
 
-        std::vector<glm::vec2> miewportPoints;
-
         nvgBeginPath(nvg);
 
         bool isFirst = true;

@@ -1,4 +1,7 @@
 #include "logic/states/annotation/AnnotationStateMachine.h"
+
+#include <atomic>
+
 #include "logic/states/annotation/AnnotationStates.h"
 
 #include "logic/app/DeformationWarp.h"
@@ -16,6 +19,7 @@
 
 namespace
 {
+std::atomic_size_t g_invisibleActiveImageLogCount{0};
 using uuid = uuids::uuid;
 
 // Only create/edit points on the outer polygon boundary for now
@@ -143,9 +147,7 @@ Image* AnnotationStateMachine::checkActiveImage(const ViewHit& hit)
   }
 
   if (!hit.view || !activeImageIsDrawableInView(*hit.view, *activeImageUid, *activeImage)) {
-    static std::size_t logCount = 0;
-    if (logCount < 3) {
-      ++logCount;
+    if (g_invisibleActiveImageLogCount.fetch_add(1, std::memory_order_relaxed) < 3) {
       spdlog::info("Cannot create annotation because the active image is not visible in the selected view");
     }
     return nullptr;
@@ -572,7 +574,7 @@ void AnnotationStateMachine::insertVertex()
 
       newVertex = *selectedVertex + (*selectedVertex - *prevVertex);
     }
-    else if (annot->isClosed()) {
+    else {
       // Selected the last vertex and the annotation is closed. Insert a new vertex in between the
       // last vertex and the first vertex.
       static constexpr size_t firstVertexIndex = 0;
@@ -658,8 +660,6 @@ void AnnotationStateMachine::removeSelectedVertex()
     // There are at least two vertices, so remove the last one
     if (annot->polygon().removeVertexFromBoundary(OUTER_BOUNDARY, *ms_selectedVertex)) {
       annot->markDirty();
-      const size_t newNumVertices = numVertices - 1;
-
       size_t nextVertexToSelect = 0ul;
 
       if (*ms_selectedVertex >= 1) {
@@ -669,7 +669,7 @@ void AnnotationStateMachine::removeSelectedVertex()
         // Wrap around the closed polygon
         nextVertexToSelect = numVertices - 2ul;
       }
-      else if (0 == *ms_selectedVertex && *ms_selectedVertex <= newNumVertices - 1) {
+      else {
         nextVertexToSelect = *ms_selectedVertex;
       }
 

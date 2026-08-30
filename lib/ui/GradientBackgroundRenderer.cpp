@@ -12,6 +12,58 @@ namespace ui
 {
 namespace
 {
+struct GradientGlResources
+{
+  GLuint program = 0;
+  GLuint vertexArray = 0;
+  bool programInitialized = false;
+};
+
+thread_local GradientGlResources g_resources;
+
+constexpr char k_vertexSource[] = R"GLSL(
+#version 330 core
+out vec2 v_ndc;
+void main()
+{
+  vec2 positions[3] = vec2[3](
+    vec2(-1.0, -1.0),
+    vec2( 3.0, -1.0),
+    vec2(-1.0,  3.0));
+  v_ndc = positions[gl_VertexID];
+  gl_Position = vec4(v_ndc, 0.0, 1.0);
+}
+)GLSL";
+
+constexpr char k_fragmentSource[] = R"GLSL(
+#version 330 core
+in vec2 v_ndc;
+out vec4 fragColor;
+
+uniform vec3 u_edgeColor;
+uniform vec3 u_centerColor;
+uniform float u_rectangularExponent;
+uniform bool u_dither;
+
+float interleavedGradientNoise(vec2 pixel)
+{
+  return fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
+}
+
+void main()
+{
+  vec2 p = abs(v_ndc);
+  float exponent = max(u_rectangularExponent, 1.0);
+  float edgeDistance = clamp(pow(pow(p.x, exponent) + pow(p.y, exponent), 1.0 / exponent), 0.0, 1.0);
+  vec3 color = mix(u_centerColor, u_edgeColor, edgeDistance);
+
+  if (u_dither) {
+    float dither = (interleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
+    color = clamp(color + vec3(dither), 0.0, 1.0);
+  }
+  fragColor = vec4(color, 1.0);
+}
+)GLSL";
 
 GLuint compileShader(GLenum type, const char* source)
 {
@@ -34,60 +86,10 @@ GLuint compileShader(GLenum type, const char* source)
 
 GLuint shaderProgram()
 {
-  static thread_local GLuint program = 0;
-  static thread_local bool initialized = false;
-  if (initialized) {
-    return program;
+  if (g_resources.programInitialized) {
+    return g_resources.program;
   }
-  initialized = true;
-
-  constexpr const char* k_vertexSource = R"GLSL(
-#version 330 core
-out vec2 v_ndc;
-void main()
-{
-  vec2 positions[3] = vec2[3](
-    vec2(-1.0, -1.0),
-    vec2( 3.0, -1.0),
-    vec2(-1.0,  3.0));
-  v_ndc = positions[gl_VertexID];
-  gl_Position = vec4(v_ndc, 0.0, 1.0);
-}
-)GLSL";
-
-  constexpr const char* k_fragmentSource = R"GLSL(
-#version 330 core
-in vec2 v_ndc;
-out vec4 fragColor;
-
-uniform vec3 u_edgeColor;
-uniform vec3 u_centerColor;
-uniform float u_rectangularExponent;
-uniform bool u_dither;
-
-float interleavedGradientNoise(vec2 pixel)
-{
-  return fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
-}
-
-void main()
-{
-  // A high-order superellipse distance gives a rectangular vignette without
-  // the diagonal derivative seams produced by max(abs(x), abs(y)).
-  vec2 p = abs(v_ndc);
-  float exponent = max(u_rectangularExponent, 1.0);
-  float edgeDistance = clamp(pow(pow(p.x, exponent) + pow(p.y, exponent), 1.0 / exponent), 0.0, 1.0);
-  vec3 color = mix(u_centerColor, u_edgeColor, edgeDistance);
-
-  // Dark gradients span very few values in an 8-bit default framebuffer.
-  // Sub-LSB dithering hides visible contour bands without shifting target colors.
-  if (u_dither) {
-    float dither = (interleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
-    color = clamp(color + vec3(dither), 0.0, 1.0);
-  }
-  fragColor = vec4(color, 1.0);
-}
-)GLSL";
+  g_resources.programInitialized = true;
 
   const GLuint vertexShader = compileShader(GL_VERTEX_SHADER, k_vertexSource);
   const GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, k_fragmentSource);
@@ -101,34 +103,33 @@ void main()
     return 0;
   }
 
-  program = glCreateProgram();
-  glAttachShader(program, vertexShader);
-  glAttachShader(program, fragmentShader);
-  glLinkProgram(program);
+  g_resources.program = glCreateProgram();
+  glAttachShader(g_resources.program, vertexShader);
+  glAttachShader(g_resources.program, fragmentShader);
+  glLinkProgram(g_resources.program);
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 
   GLint linked = GL_FALSE;
-  glGetProgramiv(program, GL_LINK_STATUS, &linked);
+  glGetProgramiv(g_resources.program, GL_LINK_STATUS, &linked);
   if (linked == GL_TRUE) {
-    return program;
+    return g_resources.program;
   }
 
   std::array<char, 1024> log{};
-  glGetProgramInfoLog(program, static_cast<GLsizei>(log.size()), nullptr, log.data());
+  glGetProgramInfoLog(g_resources.program, static_cast<GLsizei>(log.size()), nullptr, log.data());
   spdlog::error("Failed to link gradient background shader program: {}", log.data());
-  glDeleteProgram(program);
-  program = 0;
+  glDeleteProgram(g_resources.program);
+  g_resources.program = 0;
   return 0;
 }
 
 GLuint vertexArrayObject()
 {
-  static thread_local GLuint vao = 0;
-  if (vao == 0) {
-    glGenVertexArrays(1, &vao);
+  if (g_resources.vertexArray == 0) {
+    glGenVertexArrays(1, &g_resources.vertexArray);
   }
-  return vao;
+  return g_resources.vertexArray;
 }
 
 } // namespace

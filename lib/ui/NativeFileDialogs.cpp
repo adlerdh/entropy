@@ -10,6 +10,8 @@ namespace fs = std::filesystem;
 
 namespace
 {
+thread_local fs::path g_lastUsedDirectory;
+
 class NfdInitializer
 {
 public:
@@ -45,8 +47,7 @@ bool ensureNfdInitialized()
 
 fs::path& lastUsedDirectory()
 {
-  static thread_local fs::path directory;
-  return directory;
+  return g_lastUsedDirectory;
 }
 
 std::string dialogDefaultPathString(const fs::path& defaultPath)

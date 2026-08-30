@@ -5,12 +5,13 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string_view>
 
 namespace linux_ui_scale = ui::linux_ui_scale;
 
 TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[ui][scale]")
 {
-  constexpr const char* xml = R"(<monitors version="2">
+  const std::string_view xml = R"(<monitors version="2">
   <configuration>
     <logicalmonitor>
       <x>0</x>
@@ -35,7 +36,7 @@ TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[
 
 TEST_CASE("GNOME monitor scale parser falls back to first valid logical monitor", "[ui][scale]")
 {
-  constexpr const char* xml = R"(<monitors version="2">
+  const std::string_view xml = R"(<monitors version="2">
   <configuration>
     <logicalmonitor><scale>1.25</scale></logicalmonitor>
     <logicalmonitor><scale>2</scale></logicalmonitor>

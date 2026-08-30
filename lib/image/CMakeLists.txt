@@ -3,7 +3,7 @@ find_package(ITK ${itk_VERSION} REQUIRED
   COMPONENTS ${entropy_ITK_COMPONENTS}
   HINTS "${itk_PREFIX}/build")
 message(STATUS "Found ITK in ${ITK_DIR}")
-include("${ITK_USE_FILE}")
+entropy_configure_itk_directory()
 
 add_library(EntropyImage STATIC)
 add_library(Entropy::Image ALIAS EntropyImage)
@@ -37,12 +37,15 @@ if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   )
 endif()
 
+set_source_files_properties(WarpInversion.cpp PROPERTIES
+  COMPILE_OPTIONS "$<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wno-extra-semi>"
+)
+
 target_include_directories(EntropyImage
   PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/.."
-  PRIVATE
-    ${ITK_INCLUDE_DIRS}
 )
+target_include_directories(EntropyImage SYSTEM PRIVATE ${ITK_INCLUDE_DIRS})
 
 target_link_libraries(EntropyImage
   PUBLIC
