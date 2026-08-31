@@ -461,6 +461,7 @@ void setMeshImagePlaneUniforms(
       renderable.boundaryWorld.begin() + renderable.boundaryVertexCount});
   std::array<GLint, 4> viewport{};
   glGetIntegerv(GL_VIEWPORT, viewport.data());
+  program.setUniform("u_viewportOrigin", glm::vec2{viewport[0], viewport[1]});
   program.setUniform("u_viewportSize", glm::vec2{viewport[2], viewport[3]});
 
   // 3D image planes use the image shader's ordinary layer path. Comparison modes, flashlight masking, and intensity

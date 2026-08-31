@@ -182,6 +182,8 @@ TEST_CASE("image plane DDP shaders apply the ordered coplanar depth tie-break", 
 
 TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering][shaders][ddp]")
 {
+  const std::string display =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
   const std::string init =
     shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
   const std::string peel =
@@ -189,6 +191,12 @@ TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering
 
   CHECK(init.find("u_boundaryWorldPositions") != std::string::npos);
   CHECK(peel.find("u_boundaryWorldPositions") != std::string::npos);
+  CHECK(init.find("u_viewportOrigin") != std::string::npos);
+  CHECK(peel.find("u_viewportOrigin") != std::string::npos);
+  CHECK(init.find("imagePlaneBorderDistancePixels()") != std::string::npos);
+  CHECK(peel.find("imagePlaneBorderDistancePixels()") != std::string::npos);
+  CHECK(display.find("clipImagePlaneBoundarySegment") != std::string::npos);
+  CHECK(display.find("gl_FragCoord.xy - u_viewportOrigin") != std::string::npos);
   CHECK(init.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
   CHECK(peel.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
 }

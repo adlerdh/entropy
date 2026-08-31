@@ -20,3 +20,13 @@ TEST_CASE("2D views initialize their slice camera from their own view type", "[w
   CHECK(windowing::initialSliceProjectionType(ViewType::Sagittal) == ProjectionType::Orthographic);
   CHECK(windowing::initialSliceProjectionType(ViewType::Oblique) == ProjectionType::Orthographic);
 }
+
+TEST_CASE("orthogonal slice cameras track live crosshairs axes", "[windowing][camera][crosshairs]")
+{
+  CHECK(windowing::sliceCameraTracksCrosshairs(ViewType::Axial));
+  CHECK(windowing::sliceCameraTracksCrosshairs(ViewType::Coronal));
+  CHECK(windowing::sliceCameraTracksCrosshairs(ViewType::Sagittal));
+
+  CHECK_FALSE(windowing::sliceCameraTracksCrosshairs(ViewType::Oblique));
+  CHECK_FALSE(windowing::sliceCameraTracksCrosshairs(ViewType::ThreeD));
+}

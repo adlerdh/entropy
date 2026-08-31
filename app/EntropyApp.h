@@ -2,7 +2,6 @@
 
 #include "common/InputParams.h"
 #include "image/DicomSeries.h"
-#include <filesystem>
 
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
@@ -21,6 +20,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <future>
 #include <optional>
@@ -425,92 +425,138 @@ private:
    */
   std::unordered_map<uuids::uuid, ViewType> dicomNativeViewTypesByImage() const;
 
+  /// Background image or project loading task, when one is active.
   std::future<void> m_futureLoadProject;
+
+  /// Background DICOM discovery task, when a scan is active.
   std::future<dicom::DiscoverResult> m_futureDiscoverDicom;
+
+  /// Whether selections from the active DICOM scan should be added to the current project.
   bool m_pendingDicomScanAddToExistingProject = false;
 
-  /**
-   * DICOM source metadata keyed by loaded image UID for project serialization.
-   */
+  /// DICOM source metadata keyed by loaded image UID for project serialization.
   std::unordered_map<uuids::uuid, serialize::DicomSource> m_dicomSourcesByImageUid;
 
-  /**
-   * Atomic boolean that is set to true iff image loading is cancelled
-   */
+  /// Set when the active background image-loading operation should stop.
   std::atomic<bool> m_imageLoadCancelled;
 
-  /**
-   * Atomic boolean set to true when all project images are loaded from disk and
-   * ready to be loaded into textures
-   */
+  /// Set when background-loaded images are ready for main-thread finalization and texture upload.
   std::atomic<bool> m_imagesReady;
 
-  /**
-   * Atomic boolean set to true iff images could not be loaded.
-   * If true, this flag will cause the render loop to exit.
-   */
+  /// Set when background image loading failed and the render loop must handle the failure.
   std::atomic<bool> m_imageLoadFailed;
 
-  /**
-   * True when onImagesReady is handling a live Add Image operation instead of initial load.
-   */
+  /// Whether `onImagesReady()` should retain existing layouts while finalizing newly added images.
   bool m_preserveLayoutsOnImagesReady = false;
 
-  /**
-   * Images added by the current live Add Image operation, if any.
-   */
+  /// UIDs created by the active Add Image operation and awaiting main-thread finalization.
   std::vector<uuids::uuid> m_pendingAddedImageUids;
+
+  /// Layout file to apply after the active startup image-loading operation completes.
   std::optional<std::filesystem::path> m_pendingLayoutsFile = std::nullopt;
 
+  /// Deferred association between an asynchronously loaded warp field and its target image.
   struct PendingWarpAssignment
   {
+    /// Image that will receive the warp field.
     uuids::uuid imageUid;
+
+    /// Loaded warp-field image.
     uuids::uuid warpUid;
+
+    /// Whether loading created a new warp-field image rather than finding an existing one.
     bool loaded = false;
+
+    /// Whether to assign the field as the image's forward warp instead of its inverse warp.
     bool forwardWarp = false;
+
+    /// Optional reference image used to interpret an inverse warp field.
     std::optional<uuids::uuid> inverseWarpReferenceImageUid = std::nullopt;
   };
 
+  /// Deferred inverse-warp reference that is resolved after all project images are loaded.
   struct PendingInverseWarpReference
   {
+    /// Image whose inverse warp requires a reference image.
     uuids::uuid imageUid;
+
+    /// Serialized path identifying the inverse warp reference image.
     std::filesystem::path referenceImagePath;
   };
 
+  /// Warp assignment awaiting completion of the active asynchronous load.
   std::optional<PendingWarpAssignment> m_pendingWarpAssignment = std::nullopt;
+
+  /// Inverse-warp references awaiting resolution against the completed project load.
   std::vector<PendingInverseWarpReference> m_pendingInverseWarpReferences;
 
+  /// Operation being resumed after a large-image loading prompt.
   enum class LargeImageLoadContext : std::uint8_t
   {
-    None,
-    AddImage,
-    Project
+    None,     ///< No large-image prompt is active.
+    AddImage, ///< Resume adding a single image.
+    Project   ///< Resume loading a serialized project.
   };
 
+  /// Operation being resumed after a standard-raster spatial-metadata prompt.
   enum class RasterImageHeaderContext : std::uint8_t
   {
-    None,
-    AddImage,
-    Project
+    None,     ///< No raster-header prompt is active.
+    AddImage, ///< Resume adding one or more raster images.
+    Project   ///< Resume loading a serialized project.
   };
 
+  /// Current operation suspended for a large-image loading decision.
   LargeImageLoadContext m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+
+  /// Image path awaiting a large-image loading decision during Add Image.
   std::optional<std::filesystem::path> m_pendingLargeAddImageFile = std::nullopt;
+
+  /// Serialized project currently undergoing large-image preflight.
   std::optional<serialize::EntropyProject> m_pendingLargeProject = std::nullopt;
+
+  /// Source path of the project currently undergoing large-image preflight.
   std::optional<std::filesystem::path> m_pendingLargeProjectFileName = std::nullopt;
+
+  /// Index of the next serialized project image to inspect during large-image preflight.
   std::size_t m_pendingLargeProjectImageIndex = 0;
+
+  /// Current operation suspended for a raster spatial-metadata decision.
   RasterImageHeaderContext m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
+
+  /// Serialized project currently undergoing raster spatial-metadata preflight.
   std::optional<serialize::EntropyProject> m_pendingRasterProject = std::nullopt;
+
+  /// Serialized images being added after raster spatial-metadata preflight.
   std::vector<serialize::Image> m_pendingRasterAddImages;
+
+  /// Index of the next image to inspect during raster spatial-metadata preflight.
   std::size_t m_pendingRasterImageIndex = 0;
+
+  /// Baseline snapshot used to detect unsaved project changes.
   std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
+
+  /// Paths retained while an unsaved-project prompt defers a replacement operation.
   std::vector<std::filesystem::path> m_pendingProjectReplacementPaths;
 
-  GlfwWrapper m_glfw;                                  //!< GLFW wrapper
-  AppData m_data;                                      //!< Application data
-  Rendering m_rendering;                               //!< Render logic
-  CallbackHandler m_callbackHandler;                   //!< UI callback handlers
-  ItkSnapSync m_itkSnapSync;                           //!< Cursor, zoom, and pan synchronization with ITK-SNAP
-  app_sync::EntropyInstanceSync m_entropyInstanceSync; //!< Synchronization with running Entropy instances
-  ImGuiWrapper m_imgui;                                //!< ImGui wrapper
+  /// GLFW window, input, and render-loop services.
+  GlfwWrapper m_glfw;
+
+  /// Application-owned project data, settings, runtime state, and window layouts.
+  AppData m_data;
+
+  /// OpenGL rendering resources and frame-rendering operations.
+  Rendering m_rendering;
+
+  /// High-level callback operations shared by window and UI event handlers.
+  CallbackHandler m_callbackHandler;
+
+  /// Cursor, zoom, and pan synchronization with ITK-SNAP.
+  ItkSnapSync m_itkSnapSync;
+
+  /// Synchronization service for other running Entropy instances.
+  app_sync::EntropyInstanceSync m_entropyInstanceSync;
+
+  /// Immediate-mode user interface services and transient GUI state integration.
+  ImGuiWrapper m_imgui;
 };

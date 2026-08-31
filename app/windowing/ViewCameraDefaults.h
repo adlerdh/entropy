@@ -20,4 +20,11 @@ ViewType initialSliceViewType(ViewType viewType) noexcept;
  */
 ProjectionType initialSliceProjectionType(ViewType viewType) noexcept;
 
+/**
+ * @brief Return whether a visible view's slice camera tracks the live crosshairs frame
+ * @param viewType Visible view type
+ * @return True for orthogonal 2D views; false for oblique and 3D views
+ */
+bool sliceCameraTracksCrosshairs(ViewType viewType) noexcept;
+
 } // namespace windowing

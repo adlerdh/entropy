@@ -23,4 +23,20 @@ ProjectionType initialSliceProjectionType(ViewType viewType) noexcept
   return ProjectionType::Orthographic;
 }
 
+bool sliceCameraTracksCrosshairs(ViewType viewType) noexcept
+{
+  switch (viewType) {
+    case ViewType::Axial:
+    case ViewType::Coronal:
+    case ViewType::Sagittal:
+      return true;
+    case ViewType::Oblique:
+    case ViewType::ThreeD:
+    case ViewType::NumElements:
+      return false;
+  }
+
+  return false;
+}
+
 } // namespace windowing

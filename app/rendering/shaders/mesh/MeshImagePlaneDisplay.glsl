@@ -120,3 +120,66 @@ vec4 displayedImagePlaneColor(vec3 sampleTc, vec3 worldPos)
   }
   return scalarImagePlaneColor(sampleTc, worldPos);
 }
+
+float imagePlaneClipDistance(vec4 clipPosition, int planeIndex)
+{
+  switch (planeIndex) {
+    case 0:
+      return clipPosition.x + clipPosition.w;
+    case 1:
+      return clipPosition.w - clipPosition.x;
+    case 2:
+      return clipPosition.y + clipPosition.w;
+    case 3:
+      return clipPosition.w - clipPosition.y;
+    case 4:
+      return clipPosition.z + clipPosition.w;
+    default:
+      return clipPosition.w - clipPosition.z;
+  }
+}
+
+bool clipImagePlaneBoundarySegment(inout vec4 aClip, inout vec4 bClip)
+{
+  for (int planeIndex = 0; planeIndex < 6; ++planeIndex) {
+    float aDistance = imagePlaneClipDistance(aClip, planeIndex);
+    float bDistance = imagePlaneClipDistance(bClip, planeIndex);
+    bool aOutside = aDistance < 0.0;
+    bool bOutside = bDistance < 0.0;
+    if (aOutside && bOutside) {
+      return false;
+    }
+    if (aOutside != bOutside) {
+      vec4 intersection = mix(aClip, bClip, aDistance / (aDistance - bDistance));
+      if (aOutside) {
+        aClip = intersection;
+      }
+      else {
+        bClip = intersection;
+      }
+    }
+  }
+
+  return aClip.w > 1.0e-6 && bClip.w > 1.0e-6;
+}
+
+float imagePlaneBorderDistancePixels()
+{
+  vec2 fragmentPixels = gl_FragCoord.xy - u_viewportOrigin;
+  float borderDistancePixels = 1e20;
+  for (int i = 0; i < u_boundaryVertexCount; ++i) {
+    int next = (i + 1) % u_boundaryVertexCount;
+    vec4 aClip = u_clip_T_world * vec4(u_boundaryWorldPositions[i], 1.0);
+    vec4 bClip = u_clip_T_world * vec4(u_boundaryWorldPositions[next], 1.0);
+    if (!clipImagePlaneBoundarySegment(aClip, bClip)) {
+      continue;
+    }
+
+    vec2 a = 0.5 * (aClip.xy / aClip.w + vec2(1.0)) * u_viewportSize;
+    vec2 b = 0.5 * (bClip.xy / bClip.w + vec2(1.0)) * u_viewportSize;
+    vec2 ab = b - a;
+    float t = clamp(dot(fragmentPixels - a, ab) / max(dot(ab, ab), 1.0e-8), 0.0, 1.0);
+    borderDistancePixels = min(borderDistancePixels, length(fragmentPixels - (a + t * ab)));
+  }
+  return borderDistancePixels;
+}

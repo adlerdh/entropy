@@ -1,7 +1,5 @@
 #include "windowing/View.h"
 
-#include <atomic>
-
 #include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "logic/app/DataHelper.h"
@@ -28,6 +26,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <atomic>
 #include <array>
 #include <cmath>
 #include <limits>
@@ -133,7 +132,9 @@ View::View(
   else if (ViewType::ThreeD != viewType && isRenderModeCompatibleWithViewType(viewType, renderMode)) {
     m_last2dRenderMode = renderMode;
   }
-  m_camera.set_anatomy_T_start_provider([this]() { return m_anatomy_T_start; });
+  m_camera.set_anatomy_T_start_provider([this]() {
+    return windowing::sliceCameraTracksCrosshairs(m_viewType) ? get_anatomy_T_start(m_viewType) : m_anatomy_T_start;
+  });
   m_sliceCameraActivated = ViewType::ThreeD != m_viewType;
 }
 
