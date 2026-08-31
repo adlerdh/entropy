@@ -90,6 +90,7 @@ protected:
   virtual void exit() {}
 
   /// Default reaction for unhandled events
+  // cppcheck-suppress functionStatic -- tinyfsm expects the fallback event handler on the state type
   void react(const tinyfsm::Event&);
 
   /// Default reactions for handled events

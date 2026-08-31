@@ -726,12 +726,12 @@ void ImageSettings::setWindowQuantileHigh(uint32_t i, double pHigh, bool clampVa
   std::ignore = clampValues;
 }
 
-void ImageSettings::setWindowQuantileLow(double pLow, bool clampValues)
+void ImageSettings::setWindowQuantileLow(double pLow, bool clampValues) const
 {
   setWindowQuantileLow(m_activeComponent, pLow, clampValues);
 }
 
-void ImageSettings::setWindowQuantileHigh(double pHigh, bool clampValues)
+void ImageSettings::setWindowQuantileHigh(double pHigh, bool clampValues) const
 {
   setWindowQuantileHigh(m_activeComponent, pHigh, clampValues);
 }

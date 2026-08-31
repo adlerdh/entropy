@@ -451,15 +451,15 @@ public:
 
   /// @brief Set the lower window quantile in [0, 1] for a component.
   /// @param clampValues When true, clamp to [0, 1].
-  void setWindowQuantileLow(uint32_t i, double pLow, bool clampValues = true);
+  static void setWindowQuantileLow(uint32_t i, double pLow, bool clampValues = true);
   /// @brief Set the lower window quantile for the active component.
-  void setWindowQuantileLow(double pLow, bool clampValues = false);
+  void setWindowQuantileLow(double pLow, bool clampValues = false) const;
 
   /// @brief Set the upper window quantile in [0, 1] for a component.
   /// @param clampValues When true, clamp to [0, 1].
-  void setWindowQuantileHigh(uint32_t i, double pHigh, bool clampValues = true);
+  static void setWindowQuantileHigh(uint32_t i, double pHigh, bool clampValues = true);
   /// @brief Set the upper window quantile for the active component.
-  void setWindowQuantileHigh(double pHigh, bool clampValues = false);
+  void setWindowQuantileHigh(double pHigh, bool clampValues = false) const;
 
   /// @brief Get lower/upper window quantiles in [0, 1] for a component.
   std::pair<double, double> windowQuantilesLowHigh(uint32_t i) const;
