@@ -37,12 +37,13 @@ jobs:
             exit 1
           fi
 
-          major=$(sed -nE 's/.*set\(VERSION_MAJOR[[:space:]]+([0-9]+)\).*/\1/p' CMakeLists.txt | head -n 1)
-          minor=$(sed -nE 's/.*set\(VERSION_MINOR[[:space:]]+([0-9]+)\).*/\1/p' CMakeLists.txt | head -n 1)
-          feature=$(sed -nE 's/.*set\(VERSION_FEATURE[[:space:]]+([0-9]+)\).*/\1/p' CMakeLists.txt | head -n 1)
-          patch=$(sed -nE 's/.*set\(VERSION_PATCH[[:space:]]+([0-9]+)\).*/\1/p' CMakeLists.txt | head -n 1)
+          metadata_file=cmake/ProjectMetadata.cmake
+          major=$(sed -nE 's/.*set\(VERSION_MAJOR[[:space:]]+([0-9]+)\).*/\1/p' "$metadata_file" | head -n 1)
+          minor=$(sed -nE 's/.*set\(VERSION_MINOR[[:space:]]+([0-9]+)\).*/\1/p' "$metadata_file" | head -n 1)
+          feature=$(sed -nE 's/.*set\(VERSION_FEATURE[[:space:]]+([0-9]+)\).*/\1/p' "$metadata_file" | head -n 1)
+          patch=$(sed -nE 's/.*set\(VERSION_PATCH[[:space:]]+([0-9]+)\).*/\1/p' "$metadata_file" | head -n 1)
           if [[ -z "$major" || -z "$minor" || -z "$feature" || -z "$patch" ]]; then
-            echo "Unable to parse VERSION_* values from CMakeLists.txt" >&2
+            echo "Unable to parse VERSION_* values from $metadata_file" >&2
             exit 1
           fi
 
