@@ -88,10 +88,8 @@ bool imageSettingsEqual(
          a->m_edgeMagnitude == b->m_edgeMagnitude && a->m_pixelEdgeScale == b->m_pixelEdgeScale &&
          a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold && a->m_edgeColor == b->m_edgeColor &&
          a->m_hasEdgeColor == b->m_hasEdgeColor && a->m_edgeOpacity == b->m_edgeOpacity &&
-         a->m_isosurfacesVisible == b->m_isosurfacesVisible &&
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
-         a->m_modulateIsocontourOpacityWithImageOpacity == b->m_modulateIsocontourOpacityWithImageOpacity &&
-         a->m_showIsocontoursIn2D == b->m_showIsocontoursIn2D && a->m_showIsosurfacesIn3D == b->m_showIsosurfacesIn3D &&
+         a->m_modulateIsosurfaceOpacityWithImageOpacity == b->m_modulateIsosurfaceOpacityWithImageOpacity &&
          a->m_isocontourLineWidthIn2D == b->m_isocontourLineWidthIn2D &&
          a->m_isosurfaceOpacityModulator == b->m_isosurfaceOpacityModulator;
 }
@@ -158,7 +156,7 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 {
   return a.name == b.name && a.value == b.value && a.color == b.color &&
          surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
-         a.visible == b.visible && a.showIn2d == b.showIn2d && a.showIn3d == b.showIn3d;
+         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visible == b.visible;
 }
 
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)

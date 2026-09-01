@@ -29,6 +29,7 @@ uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // Texture unit 0: image (scalar)
 
 uniform float u_isoValue;
 uniform float u_fillOpacity;
+uniform bool u_fillAboveIsovalue;
 uniform float u_lineOpacity;
 uniform vec3 u_color;
 uniform float u_contourWidth; // pixels
@@ -151,6 +152,9 @@ void main()
     float halfLineWidthPx = max(0.5 * u_contourWidth, 0.0);
     lineCoverage = 1.0 - smoothstep(halfLineWidthPx, halfLineWidthPx + 1.0, abs(signedDistancePx));
     fillCoverage = 1.0 - smoothstep(-0.5, 0.5, signedDistancePx);
+  }
+  if (u_fillAboveIsovalue) {
+    fillCoverage = 1.0 - fillCoverage;
   }
 
   /// TODO: use thresholding?

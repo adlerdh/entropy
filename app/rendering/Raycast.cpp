@@ -73,10 +73,6 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   }
 
   const ImageSettings& settings = image->settings();
-  if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D()) {
-    return; // Hide all surfaces
-  }
-
   // Render surfaces of the active image component
   const uint32_t activeComp = image->settings().activeComponent();
 

@@ -94,10 +94,6 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
     const bool renderWarped = activeRenderableDeformationUid(imageUid).has_value();
     const ImageSettings& settings = image->settings();
-    if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D()) {
-      continue;
-    }
-
     const uint32_t activeComponent = settings.activeComponent();
     const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
     const auto isosurfaceUids = m_appData.isosurfaceUids(imageUid, activeComponent);
@@ -112,12 +108,12 @@ bool Rendering::renderIsosurfaceMeshesForView(
         continue;
       }
 
-      const float effectiveOpacity = surface->opacity * settings.isosurfaceOpacityModulator();
+      const float effectiveOpacity = surface->opacity * settings.effectiveIsosurfaceOpacityModulator();
       const rendering::mesh::IsosurfaceMeshEligibility eligibility{
         .renderWarped = renderWarped,
         .valueEditInProgress = surface->valueEditInProgress,
         .opacity = effectiveOpacity,
-        .visible = surface->visible && surface->showIn3d};
+        .visible = surface->visible};
       if (!rendering::mesh::canRenderIsosurfaceWithMesh(eligibility)) {
         if (eligibility.visible && eligibility.opacity > 0.0f) {
           allVisibleIsosurfacesHaveReadyMeshes = false;
@@ -177,7 +173,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
           effectiveOpacity,
           globalMaterial.rimLightingEnabled,
           globalMaterial.rimOpacityStrength),
-        .visible = surface->visible && surface->showIn3d};
+        .visible = surface->visible};
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);
       renderable.drawOptions.clipPlanes = clipPlanes;

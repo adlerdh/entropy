@@ -811,11 +811,8 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
     settings.m_hasEdgeColor = true;
   }
   settings.m_edgeOpacity = imageSettings.edgeOpacity();
-  settings.m_isosurfacesVisible = imageSettings.isosurfacesVisible();
   settings.m_applyImageColormapToIsosurfaces = imageSettings.applyImageColormapToIsosurfaces();
-  settings.m_modulateIsocontourOpacityWithImageOpacity = imageSettings.modulateIsocontourOpacityWithImageOpacity();
-  settings.m_showIsocontoursIn2D = imageSettings.showIsocontoursIn2D();
-  settings.m_showIsosurfacesIn3D = imageSettings.showIsosurfacesIn3D();
+  settings.m_modulateIsosurfaceOpacityWithImageOpacity = imageSettings.modulateIsosurfaceOpacityWithImageOpacity();
   settings.m_isocontourLineWidthIn2D = imageSettings.isoContourLineWidthIn2D();
   settings.m_isosurfaceOpacityModulator = imageSettings.isosurfaceOpacityModulator();
   return settings;
@@ -1033,11 +1030,8 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
     imageSettingsLocal.setEdgeColor(settings.m_edgeColor);
   }
   imageSettingsLocal.setEdgeOpacity(settings.m_edgeOpacity);
-  imageSettingsLocal.setIsosurfacesVisible(settings.m_isosurfacesVisible);
   imageSettingsLocal.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
-  imageSettingsLocal.setModulateIsocontourOpacityWithImageOpacity(settings.m_modulateIsocontourOpacityWithImageOpacity);
-  imageSettingsLocal.setShowIsoscontoursIn2D(settings.m_showIsocontoursIn2D);
-  imageSettingsLocal.setShowIsosurfacesIn3D(settings.m_showIsosurfacesIn3D);
+  imageSettingsLocal.setModulateIsosurfaceOpacityWithImageOpacity(settings.m_modulateIsosurfaceOpacityWithImageOpacity);
   imageSettingsLocal.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);
   imageSettingsLocal.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
 }

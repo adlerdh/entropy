@@ -504,16 +504,6 @@ InterpolationMode ImageSettings::colorInterpolationMode() const
   return m_colorInterpolationMode;
 }
 
-void ImageSettings::setIsosurfacesVisible(bool visible)
-{
-  m_isosurfacesVisible = visible;
-}
-
-bool ImageSettings::isosurfacesVisible() const
-{
-  return m_isosurfacesVisible;
-}
-
 void ImageSettings::setApplyImageColormapToIsosurfaces(bool apply)
 {
   m_applyImageColormapToIsosurfaces = apply;
@@ -524,34 +514,14 @@ bool ImageSettings::applyImageColormapToIsosurfaces() const
   return m_applyImageColormapToIsosurfaces;
 }
 
-void ImageSettings::setModulateIsocontourOpacityWithImageOpacity(bool modulate)
+void ImageSettings::setModulateIsosurfaceOpacityWithImageOpacity(bool modulate)
 {
-  m_modulateIsocontourOpacityWithImageOpacity = modulate;
+  m_modulateIsosurfaceOpacityWithImageOpacity = modulate;
 }
 
-bool ImageSettings::modulateIsocontourOpacityWithImageOpacity() const
+bool ImageSettings::modulateIsosurfaceOpacityWithImageOpacity() const
 {
-  return m_modulateIsocontourOpacityWithImageOpacity;
-}
-
-void ImageSettings::setShowIsoscontoursIn2D(bool show)
-{
-  m_showIsocontoursIn2D = show;
-}
-
-bool ImageSettings::showIsocontoursIn2D() const
-{
-  return m_showIsocontoursIn2D;
-}
-
-void ImageSettings::setShowIsosurfacesIn3D(bool show)
-{
-  m_showIsosurfacesIn3D = show;
-}
-
-bool ImageSettings::showIsosurfacesIn3D() const
-{
-  return m_showIsosurfacesIn3D;
+  return m_modulateIsosurfaceOpacityWithImageOpacity;
 }
 
 void ImageSettings::setIsosurfaceWidthIn2d(double width)
@@ -572,6 +542,12 @@ void ImageSettings::setIsosurfaceOpacityModulator(float opacityMod)
 float ImageSettings::isosurfaceOpacityModulator() const
 {
   return m_isosurfaceOpacityModulator;
+}
+
+float ImageSettings::effectiveIsosurfaceOpacityModulator() const
+{
+  const double imageOpacity = m_modulateIsosurfaceOpacityWithImageOpacity ? opacity() * globalOpacity() : 1.0;
+  return m_isosurfaceOpacityModulator * static_cast<float>(imageOpacity);
 }
 
 std::pair<double, double> ImageSettings::minMaxImageRange(uint32_t i) const

@@ -801,12 +801,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       isosurfacesMenu,
       isosurfacesPosition++,
       MainMenuAction::AddIsosurfaceRange,
-      L"Add Isosurface &Range...") ||
-    !insertActionMenuItem(
-      isosurfacesMenu,
-      isosurfacesPosition++,
-      MainMenuAction::ToggleActiveImageIsosurfaces,
-      L"&Show Isosurfaces"))
+      L"Add Isosurface &Range..."))
   {
     DestroyMenu(affineMenu);
     DestroyMenu(deformationMenu);

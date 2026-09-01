@@ -209,7 +209,6 @@ void to_json(json& j, const serialize::ImageSettings& settings)
   addIfNotEmpty(j, "edges", std::move(edges));
 
   json isosurfaces = json::object();
-  addIfChanged(isosurfaces, "visible", settings.m_isosurfacesVisible, defaults.m_isosurfacesVisible);
   addIfChanged(
     isosurfaces,
     "applyImageColormap",
@@ -217,11 +216,9 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     defaults.m_applyImageColormapToIsosurfaces);
   addIfChanged(
     isosurfaces,
-    "modulateContourOpacityWithImageOpacity",
-    settings.m_modulateIsocontourOpacityWithImageOpacity,
-    defaults.m_modulateIsocontourOpacityWithImageOpacity);
-  addIfChanged(isosurfaces, "showContours2D", settings.m_showIsocontoursIn2D, defaults.m_showIsocontoursIn2D);
-  addIfChanged(isosurfaces, "showSurfaces3D", settings.m_showIsosurfacesIn3D, defaults.m_showIsosurfacesIn3D);
+    "modulateOpacityWithImageOpacity",
+    settings.m_modulateIsosurfaceOpacityWithImageOpacity,
+    defaults.m_modulateIsosurfaceOpacityWithImageOpacity);
   addIfChanged(
     isosurfaces,
     "contourLineWidth2D",
@@ -638,28 +635,15 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   }
 
   if (const auto isosurfaces = j.find("isosurfaces"); isosurfaces != j.end() && isosurfaces->is_object()) {
-    if (const auto visible = isosurfaces->find("visible"); visible != isosurfaces->end() && visible->is_boolean()) {
-      settings.m_isosurfacesVisible = visible->get<bool>();
-    }
     if (const auto colormap = isosurfaces->find("applyImageColormap");
         colormap != isosurfaces->end() && colormap->is_boolean())
     {
       settings.m_applyImageColormapToIsosurfaces = colormap->get<bool>();
     }
-    if (const auto modulate = isosurfaces->find("modulateContourOpacityWithImageOpacity");
+    if (const auto modulate = isosurfaces->find("modulateOpacityWithImageOpacity");
         modulate != isosurfaces->end() && modulate->is_boolean())
     {
-      settings.m_modulateIsocontourOpacityWithImageOpacity = modulate->get<bool>();
-    }
-    if (const auto contours = isosurfaces->find("showContours2D");
-        contours != isosurfaces->end() && contours->is_boolean())
-    {
-      settings.m_showIsocontoursIn2D = contours->get<bool>();
-    }
-    if (const auto surfaces = isosurfaces->find("showSurfaces3D");
-        surfaces != isosurfaces->end() && surfaces->is_boolean())
-    {
-      settings.m_showIsosurfacesIn3D = surfaces->get<bool>();
+      settings.m_modulateIsosurfaceOpacityWithImageOpacity = modulate->get<bool>();
     }
     if (const auto lineWidth = isosurfaces->find("contourLineWidth2D");
         lineWidth != isosurfaces->end() && lineWidth->is_number())

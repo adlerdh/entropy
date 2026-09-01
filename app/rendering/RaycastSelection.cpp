@@ -108,14 +108,10 @@ std::optional<Rendering::ActiveIsosurfaceEdit> Rendering::activeIsosurfaceEdit(c
     }
 
     const ImageSettings& settings = image->settings();
-    if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D()) {
-      continue;
-    }
-
     const uint32_t activeComponent = settings.activeComponent();
     for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, activeComponent)) {
       const Isosurface* surface = m_appData.isosurface(imageUid, activeComponent, surfaceUid);
-      if (surface && surface->visible && surface->showIn3d && surface->valueEditInProgress) {
+      if (surface && surface->visible && surface->valueEditInProgress) {
         return ActiveIsosurfaceEdit{.imageSegPair = imgSegPair, .isosurfaceUid = surfaceUid};
       }
     }

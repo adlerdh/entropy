@@ -429,11 +429,8 @@ struct ImageSettings
   double m_edgeOpacity = 1.0;              //!< Solid edge opacity
   bool m_hasEdgeColor = false;             //!< Edge color was present in the serialized settings
 
-  bool m_isosurfacesVisible = true;                         //!< Show image isosurfaces
   bool m_applyImageColormapToIsosurfaces = false;           //!< Color isosurfaces with the image colormap
-  bool m_modulateIsocontourOpacityWithImageOpacity = false; //!< Scale 2D contour opacity by image opacity
-  bool m_showIsocontoursIn2D = true;                        //!< Show 2D isocontours
-  bool m_showIsosurfacesIn3D = true;                        //!< Show 3D isosurfaces
+  bool m_modulateIsosurfaceOpacityWithImageOpacity = false; //!< Scale isosurface opacity by image opacity
   double m_isocontourLineWidthIn2D = 2.0;                   //!< 2D isocontour line width
   float m_isosurfaceOpacityModulator = 1.0f;                //!< Isosurface opacity multiplier
 };

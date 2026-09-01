@@ -359,35 +359,17 @@ public:
   /// @brief Get interpolation used when displaying an image as RGB/RGBA color.
   InterpolationMode colorInterpolationMode() const;
 
-  /// @brief Set global visibility for all isosurfaces associated with this image.
-  void setIsosurfacesVisible(bool visible);
-
-  /// @brief Return global visibility for all isosurfaces associated with this image.
-  bool isosurfacesVisible() const;
-
   /// @brief Set whether isosurfaces should use the image colormap instead of per-surface colors.
   void setApplyImageColormapToIsosurfaces(bool apply);
 
   /// @brief Return whether isosurfaces use the image colormap instead of per-surface colors.
   bool applyImageColormapToIsosurfaces() const;
 
-  /// @brief Set whether 2D isocontour opacity is scaled by this image's opacity.
-  void setModulateIsocontourOpacityWithImageOpacity(bool modulate);
+  /// @brief Set whether isosurface opacity is scaled by this image's opacity.
+  void setModulateIsosurfaceOpacityWithImageOpacity(bool modulate);
 
-  /// @brief Return whether 2D isocontour opacity is scaled by this image's opacity.
-  bool modulateIsocontourOpacityWithImageOpacity() const;
-
-  /// @brief Set whether isocontours are shown in 2D slice views.
-  void setShowIsoscontoursIn2D(bool show);
-
-  /// @brief Return whether isocontours are shown in 2D slice views.
-  bool showIsocontoursIn2D() const;
-
-  /// @brief Set whether isosurfaces are shown in 3D views.
-  void setShowIsosurfacesIn3D(bool show);
-
-  /// @brief Return whether isosurfaces are shown in 3D views.
-  bool showIsosurfacesIn3D() const;
+  /// @brief Return whether isosurface opacity is scaled by this image's opacity.
+  bool modulateIsosurfaceOpacityWithImageOpacity() const;
 
   /// @brief Set 2D isocontour line width in pixels.
   void setIsosurfaceWidthIn2d(double width);
@@ -400,6 +382,9 @@ public:
 
   /// @brief Get opacity multiplier applied to all isosurfaces of this image.
   float isosurfaceOpacityModulator() const;
+
+  /// @brief Get the image-wide isosurface opacity multiplier, including image opacity modulation when enabled.
+  float effectiveIsosurfaceOpacityModulator() const;
 
   /// @brief Get the observed native intensity range for a component.
   std::pair<double, double> minMaxImageRange(uint32_t i) const;
@@ -1004,11 +989,8 @@ private:
 
   // These apply to the image's isosurfaces:
 
-  bool m_isosurfacesVisible{true};                         //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces{false};           //!< Color image isosurfaces using the image colormap
-  bool m_modulateIsocontourOpacityWithImageOpacity{false}; //!< Scale 2D isocontour opacity by image opacity
-  bool m_showIsocontoursIn2D{true};                        //!< Visibility of isosurface edges in 2D image slices
-  bool m_showIsosurfacesIn3D{true};                        //!< Visibility of isosurfaces in 3D views
+  bool m_modulateIsosurfaceOpacityWithImageOpacity{false}; //!< Scale isosurface opacity by image opacity
 
   /// Width of isovalue lines in 2D, roughly in terms of pixels
   double m_isocontourLineWidthIn2D{2.0};

@@ -868,7 +868,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
     parsed.m_isocontours.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
   REQUIRE(parsed.m_referenceImage.m_settings);
   CHECK(parsed.m_referenceImage.m_settings->m_displayName == "Preserved image settings");
-  CHECK_FALSE(parsed.m_referenceImage.m_settings->m_modulateIsocontourOpacityWithImageOpacity);
+  CHECK_FALSE(parsed.m_referenceImage.m_settings->m_modulateIsosurfaceOpacityWithImageOpacity);
   CHECK(parsed.m_view.m_annotationsOnTop == true);
   CHECK(parsed.m_view.m_landmarksOnTop == true);
   CHECK(parsed.m_view.m_hideAnnotationVertices == true);
@@ -1310,11 +1310,8 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_edgeColor = glm::vec3{0.1f, 0.2f, 0.3f},
     .m_edgeOpacity = 0.6,
     .m_hasEdgeColor = true,
-    .m_isosurfacesVisible = false,
     .m_applyImageColormapToIsosurfaces = true,
-    .m_modulateIsocontourOpacityWithImageOpacity = true,
-    .m_showIsocontoursIn2D = false,
-    .m_showIsosurfacesIn3D = false,
+    .m_modulateIsosurfaceOpacityWithImageOpacity = true,
     .m_isocontourLineWidthIn2D = 3.5,
     .m_isosurfaceOpacityModulator = 0.45f};
 
@@ -1337,8 +1334,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(settings.contains("colorMapIndices"));
   CHECK_FALSE(settings.contains("foregroundThresholdLows"));
   CHECK_FALSE(settings.contains("showEdges"));
-  CHECK_FALSE(settings.contains("isosurfacesVisible"));
-
   CHECK(display.at("name") == "Image");
   CHECK(display.at("visible") == false);
   CHECK(display.at("opacity") == 0.25);
@@ -1412,11 +1407,8 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(edges.at("pixelThreshold") == 0.44);
   CHECK(edges.at("color") == json::array({0.1f, 0.2f, 0.3f}));
   CHECK(edges.at("opacity") == 0.6);
-  CHECK(isosurfaces.at("visible") == false);
   CHECK(isosurfaces.at("applyImageColormap") == true);
-  CHECK(isosurfaces.at("modulateContourOpacityWithImageOpacity") == true);
-  CHECK(isosurfaces.at("showContours2D") == false);
-  CHECK(isosurfaces.at("showSurfaces3D") == false);
+  CHECK(isosurfaces.at("modulateOpacityWithImageOpacity") == true);
   CHECK(isosurfaces.at("contourLineWidth2D") == 3.5);
   CHECK(isosurfaces.at("opacityModulator") == 0.45f);
 
@@ -1502,11 +1494,8 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_edgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
   CHECK(parsedSettings.m_hasEdgeColor);
   CHECK(parsedSettings.m_edgeOpacity == 0.6);
-  CHECK_FALSE(parsedSettings.m_isosurfacesVisible);
   CHECK(parsedSettings.m_applyImageColormapToIsosurfaces);
-  CHECK(parsedSettings.m_modulateIsocontourOpacityWithImageOpacity);
-  CHECK_FALSE(parsedSettings.m_showIsocontoursIn2D);
-  CHECK_FALSE(parsedSettings.m_showIsosurfacesIn3D);
+  CHECK(parsedSettings.m_modulateIsosurfaceOpacityWithImageOpacity);
   CHECK(parsedSettings.m_isocontourLineWidthIn2D == 3.5);
   CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
 }
@@ -1546,6 +1535,9 @@ TEST_CASE("Image serialization ignores legacy per-image distance-map settings", 
 
 TEST_CASE("Project serialization preserves image isosurfaces", "[project][serialization][isosurface]")
 {
+  const json defaultSurface = Isosurface{};
+  CHECK_FALSE(defaultSurface.contains("fillAboveIsovalue"));
+
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
 
@@ -1556,9 +1548,8 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   imageSurface.m_surface.color = glm::vec3{0.25f, 0.5f, 0.75f};
   imageSurface.m_surface.opacity = 0.65f;
   imageSurface.m_surface.fillOpacity = 0.15f;
+  imageSurface.m_surface.fillAboveIsovalue = true;
   imageSurface.m_surface.visible = false;
-  imageSurface.m_surface.showIn2d = false;
-  imageSurface.m_surface.showIn3d = false;
   project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
 
   const json root = project;
@@ -1566,11 +1557,8 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(savedSurface.at("component") == 2);
   CHECK(savedSurface.at("surface").at("name") == "Rim surface");
   CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
-  CHECK(savedSurface.at("surface").at("showContours2D") == false);
-  CHECK(savedSurface.at("surface").at("showSurface3D") == false);
+  CHECK(savedSurface.at("surface").at("fillAboveIsovalue") == true);
   CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
-  CHECK_FALSE(savedSurface.at("surface").contains("showIn2d"));
-  CHECK_FALSE(savedSurface.at("surface").contains("showIn3d"));
   CHECK_FALSE(savedSurface.at("surface").contains("rimLighting"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
@@ -1582,9 +1570,8 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(parsedSurface.m_surface.color == glm::vec3{0.25f, 0.5f, 0.75f});
   CHECK(parsedSurface.m_surface.opacity == 0.65f);
   CHECK(parsedSurface.m_surface.fillOpacity == 0.15f);
+  CHECK(parsedSurface.m_surface.fillAboveIsovalue);
   CHECK_FALSE(parsedSurface.m_surface.visible);
-  CHECK_FALSE(parsedSurface.m_surface.showIn2d);
-  CHECK_FALSE(parsedSurface.m_surface.showIn3d);
 }
 
 TEST_CASE("Project serialization preserves inverse and forward warp paths", "[project][serialization]")

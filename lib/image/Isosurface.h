@@ -35,9 +35,8 @@ public:
   SurfaceMaterial material;          //!< Material properties
   float opacity = 1.0f;              //!< Surface/line opacity
   float fillOpacity = 0.0f;          //!< Fill opacity
+  bool fillAboveIsovalue = false;    //!< Fill values above rather than below the isovalue
   bool visible = true;               //!< Visibility
-  bool showIn2d = true;              //!< Show in 2D slice views
-  bool showIn3d = true;              //!< Show in 3D views
   bool valueEditInProgress = false;  //!< Transient UI state used to defer mesh extraction during isovalue edits
 
   /// @brief Get the ambient RGB contribution derived from material and surface color.

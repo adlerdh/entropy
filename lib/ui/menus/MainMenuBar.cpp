@@ -479,7 +479,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     ImGui::Separator();
     actionMenuItem(callbacks, "Add Isosurface...", MainMenuAction::AddIsosurface);
     actionMenuItem(callbacks, "Add Isosurface Range...", MainMenuAction::AddIsosurfaceRange);
-    actionMenuItem(callbacks, "Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces);
     ImGui::EndMenu();
   }
   ImGui::Separator();

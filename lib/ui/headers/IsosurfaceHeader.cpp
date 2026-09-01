@@ -883,10 +883,10 @@ void renderIsosurfacesHeader(
 
     Isosurface* surface = appData.isosurface(imageUid, componentToAdjust, *selectedSurfaceUid);
 
-    // Open Surface Properties on first appearance
+    // Open the selected surface properties on first appearance.
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
-    if (ImGui::TreeNode("Properties")) {
+    if (ImGui::TreeNode("Selected surface properties")) {
       ImGui::InputText("Name", &surface->name);
       ImGui::SameLine();
       helpMarker("Edit the name of the surface");
@@ -938,60 +938,48 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
+      ImGui::Checkbox("Fill above isovalue", &surface->fillAboveIsovalue);
+      ImGui::SameLine();
+      helpMarker("Fill values above the isovalue instead of values below it");
+
       ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("Image Settings")) {
-      ImGui::TextDisabled("Settings for all image isosurfaces:");
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (ImGui::TreeNode("Image-wide display")) {
+      ImGui::TextDisabled("Settings for all isosurfaces belonging to this image:");
       ImGui::Spacing();
 
-      bool hideAll = !imgSettings.isosurfacesVisible();
-      if (ImGui::Checkbox("Hide all", &hideAll)) {
-        imgSettings.setIsosurfacesVisible(!hideAll);
+      bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
+      if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {
+        imgSettings.setApplyImageColormapToIsosurfaces(applyColormap);
       }
       ImGui::SameLine();
-      helpMarker("Hide all isosurfaces");
+      helpMarker("Color isosurfaces using the image colormap");
 
-      if (imgSettings.isosurfacesVisible()) {
-        bool showIn2d = imgSettings.showIsocontoursIn2D();
-        if (ImGui::Checkbox("Show isocontours in 2D", &showIn2d)) {
-          imgSettings.setShowIsoscontoursIn2D(showIn2d);
-        }
-        ImGui::SameLine();
-        helpMarker("Show isocontours in 2D image planes");
-
-        bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
-        if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {
-          imgSettings.setApplyImageColormapToIsosurfaces(applyColormap);
-        }
-        ImGui::SameLine();
-        helpMarker("Color isosurfaces using the image colormap");
-
-        bool modulateContourOpacity = imgSettings.modulateIsocontourOpacityWithImageOpacity();
-        if (ImGui::Checkbox("Link 2D contour opacity to image", &modulateContourOpacity)) {
-          imgSettings.setModulateIsocontourOpacityWithImageOpacity(modulateContourOpacity);
-        }
-        ImGui::SameLine();
-        helpMarker("Scale this image's 2D isocontour opacity by the image opacity");
-
-        float opacityMod = imgSettings.isosurfaceOpacityModulator();
-        if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {
-          imgSettings.setIsosurfaceOpacityModulator(opacityMod);
-        }
-        ImGui::SameLine();
-        helpMarker("Global opacity modulator for all image isosurfaces");
-
-        if (imgSettings.showIsocontoursIn2D()) {
-          float width = static_cast<float>(imgSettings.isoContourLineWidthIn2D());
-          // if (ImGui::DragFloat("Iso-line width", &width, 0.001f, 0.001f, 10.000f, "%0.3f \%",
-          // ImGuiSliderFlags_AlwaysClamp)) {
-          if (mySliderF32("Contour line width", &width, 1.0f, 10.0f, "%0.1f %%")) {
-            imgSettings.setIsosurfaceWidthIn2d(static_cast<double>(width));
-          }
-          ImGui::SameLine();
-          helpMarker("Width of isocontours in 2D views");
-        }
+      bool modulateIsosurfaceOpacity = imgSettings.modulateIsosurfaceOpacityWithImageOpacity();
+      if (ImGui::Checkbox("Modulate isosurface opacity with image opacity", &modulateIsosurfaceOpacity)) {
+        imgSettings.setModulateIsosurfaceOpacityWithImageOpacity(modulateIsosurfaceOpacity);
       }
+      ImGui::SameLine();
+      helpMarker("Scale this image's 2D contours and 3D isosurfaces by the image opacity");
+
+      float opacityMod = imgSettings.isosurfaceOpacityModulator();
+      if (mySliderF32("Overall opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {
+        imgSettings.setIsosurfaceOpacityModulator(opacityMod);
+      }
+      ImGui::SameLine();
+      helpMarker("Scale the opacity of all isosurfaces belonging to this image");
+
+      float width = static_cast<float>(imgSettings.isoContourLineWidthIn2D());
+      if (mySliderF32("Contour line width", &width, 1.0f, 10.0f, "%0.1f %%")) {
+        imgSettings.setIsosurfaceWidthIn2d(static_cast<double>(width));
+      }
+      ImGui::SameLine();
+      helpMarker("Width of isocontours in 2D views");
 
       ImGui::TreePop();
     }

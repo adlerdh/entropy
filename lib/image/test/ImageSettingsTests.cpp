@@ -346,20 +346,19 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
   settings.setColorInterpolationMode(InterpolationMode::NearestNeighbor);
   CHECK(settings.colorInterpolationMode() == InterpolationMode::NearestNeighbor);
 
-  settings.setIsosurfacesVisible(false);
-  CHECK_FALSE(settings.isosurfacesVisible());
   settings.setApplyImageColormapToIsosurfaces(true);
   CHECK(settings.applyImageColormapToIsosurfaces());
-  settings.setModulateIsocontourOpacityWithImageOpacity(true);
-  CHECK(settings.modulateIsocontourOpacityWithImageOpacity());
-  settings.setShowIsoscontoursIn2D(false);
-  CHECK_FALSE(settings.showIsocontoursIn2D());
-  settings.setShowIsosurfacesIn3D(false);
-  CHECK_FALSE(settings.showIsosurfacesIn3D());
+  settings.setModulateIsosurfaceOpacityWithImageOpacity(true);
+  CHECK(settings.modulateIsosurfaceOpacityWithImageOpacity());
   settings.setIsosurfaceWidthIn2d(3.5);
   CHECK(settings.isoContourLineWidthIn2D() == Catch::Approx(3.5));
   settings.setIsosurfaceOpacityModulator(0.4f);
   CHECK(settings.isosurfaceOpacityModulator() == Catch::Approx(0.4f));
+  settings.setOpacity(0.5);
+  settings.setGlobalOpacity(0.25);
+  CHECK(settings.effectiveIsosurfaceOpacityModulator() == Catch::Approx(0.05f));
+  settings.setModulateIsosurfaceOpacityWithImageOpacity(false);
+  CHECK(settings.effectiveIsosurfaceOpacityModulator() == Catch::Approx(0.4f));
 
   settings.setGlobalVisibility(false);
   CHECK_FALSE(settings.globalVisibility());

@@ -40,10 +40,7 @@ void Rendering::updateIsosurfaceDataFor3d(
   const ImageSettings& settings = image->settings();
   const auto& rimLighting = appData.renderData().m_meshSurfaceMaterialSettings;
 
-  if (
-    !settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible() ||
-    !settings.showIsosurfacesIn3D())
-  {
+  if (!settings.globalVisibility() || !settings.visibility()) {
     return;
   }
 
@@ -61,11 +58,11 @@ void Rendering::updateIsosurfaceDataFor3d(
       continue;
     }
 
-    if (!surface->visible || !surface->showIn3d) {
+    if (!surface->visible) {
       continue;
     }
 
-    const float opacity = surface->opacity * settings.isosurfaceOpacityModulator();
+    const float opacity = surface->opacity * settings.effectiveIsosurfaceOpacityModulator();
     if (opacity <= 0.0f) {
       continue;
     }

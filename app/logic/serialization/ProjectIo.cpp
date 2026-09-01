@@ -130,14 +130,7 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"twoD", "threeD"};
   }
   else if (path.ends_with("/settings/isosurfaces")) {
-    preferredKeys = {
-      "visible",
-      "applyImageColormap",
-      "modulateContourOpacityWithImageOpacity",
-      "showContours2D",
-      "showSurfaces3D",
-      "contourLineWidth2D",
-      "opacityModulator"};
+    preferredKeys = {"applyImageColormap", "modulateOpacityWithImageOpacity", "contourLineWidth2D", "opacityModulator"};
   }
 
   const auto append = [&](const std::string& key) {

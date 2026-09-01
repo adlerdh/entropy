@@ -85,9 +85,8 @@ void to_json(json& j, const Isosurface& surface)
 
   addIfChanged(j, "opacity", surface.opacity, defaults.opacity);
   addIfChanged(j, "contourFillOpacity", surface.fillOpacity, defaults.fillOpacity);
+  addIfChanged(j, "fillAboveIsovalue", surface.fillAboveIsovalue, defaults.fillAboveIsovalue);
   addIfChanged(j, "visible", surface.visible, defaults.visible);
-  addIfChanged(j, "showContours2D", surface.showIn2d, defaults.showIn2d);
-  addIfChanged(j, "showSurface3D", surface.showIn3d, defaults.showIn3d);
 }
 
 void from_json(const json& j, Isosurface& surface)
@@ -112,13 +111,10 @@ void from_json(const json& j, Isosurface& surface)
   if (const auto value = j.find("contourFillOpacity"); value != j.end() && value->is_number()) {
     surface.fillOpacity = value->get<float>();
   }
+  if (const auto value = j.find("fillAboveIsovalue"); value != j.end() && value->is_boolean()) {
+    surface.fillAboveIsovalue = value->get<bool>();
+  }
   if (const auto value = j.find("visible"); value != j.end() && value->is_boolean()) {
     surface.visible = value->get<bool>();
-  }
-  if (const auto value = j.find("showContours2D"); value != j.end() && value->is_boolean()) {
-    surface.showIn2d = value->get<bool>();
-  }
-  if (const auto value = j.find("showSurface3D"); value != j.end() && value->is_boolean()) {
-    surface.showIn3d = value->get<bool>();
   }
 }

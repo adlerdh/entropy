@@ -491,7 +491,9 @@ void setMeshImagePlaneIsoContourUniforms(
   const glm::vec3& color,
   const float imagePlaneOpacityMultiplier)
 {
-  const float isosurfaceOpacity = imageSettings.isosurfaceOpacityModulator() * imagePlaneOpacityMultiplier;
+  const float imageOpacity = imageSettings.modulateIsosurfaceOpacityWithImageOpacity() ? uniforms.imgOpacity : 1.0f;
+  const float isosurfaceOpacity =
+    imageSettings.isosurfaceOpacityModulator() * imageOpacity * imagePlaneOpacityMultiplier;
 
   program.setSamplerUniform("u_imgTex", sk_imgTexSampler.index);
   rendering::setTexture2DAxesUniforms(program, textureLayout);
@@ -503,6 +505,7 @@ void setMeshImagePlaneIsoContourUniforms(
 
   program.setUniform("u_isoValue", static_cast<float>(imageSettings.mapNativeIntensityToTexture(surface.value)));
   program.setUniform("u_fillOpacity", static_cast<float>(isosurfaceOpacity * surface.fillOpacity));
+  program.setUniform("u_fillAboveIsovalue", surface.fillAboveIsovalue);
   program.setUniform("u_lineOpacity", static_cast<float>(isosurfaceOpacity * surface.opacity));
   program.setUniform("u_contourWidth", static_cast<float>(imageSettings.isoContourLineWidthIn2D()));
   program.setUniform("u_color", color);
@@ -728,44 +731,41 @@ void Rendering::drawMeshImagePlaneRenderListForView(
     program.stopUse();
 
     const ImageSettings& imageSettings = image->settings();
-    if (imageSettings.isosurfacesVisible() && imageSettings.showIsocontoursIn2D()) {
-      GLShaderProgram& isoProgram = shaderProgramForImagePlaneTextureDimension(
-        m_meshImagePlaneIsoContourProgram,
-        m_meshImagePlaneIsoContourTexture2DProgram,
-        textureLayout.dimension);
+    GLShaderProgram& isoProgram = shaderProgramForImagePlaneTextureDimension(
+      m_meshImagePlaneIsoContourProgram,
+      m_meshImagePlaneIsoContourTexture2DProgram,
+      textureLayout.dimension);
 
-      isoProgram.use();
-      for (const auto& surfaceUid : m_appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component))
-      {
-        const Isosurface* surface =
-          m_appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
-        if (!surface) {
-          spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
-          continue;
-        }
-        if (!surface->visible || !surface->showIn2d) {
-          continue;
-        }
-
-        static constexpr bool premultipliedAlpha = false;
-        const glm::vec3 color = glm::vec3{
-          getIsosurfaceColor(m_appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
-        setMeshImagePlaneIsoContourUniforms(
-          isoProgram,
-          view,
-          imagePlane,
-          uniformsIt->second,
-          textureLayout,
-          context,
-          m_appData.renderData().m_numCheckerboardSquares,
-          imageSettings,
-          *surface,
-          color,
-          imagePlane.opacityMultiplier);
-        drawUploadedImagePlane(*gpuData);
+    isoProgram.use();
+    for (const auto& surfaceUid : m_appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component)) {
+      const Isosurface* surface =
+        m_appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
+      if (!surface) {
+        spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
+        continue;
       }
-      isoProgram.stopUse();
+      if (!surface->visible) {
+        continue;
+      }
+
+      static constexpr bool premultipliedAlpha = false;
+      const glm::vec3 color = glm::vec3{
+        getIsosurfaceColor(m_appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
+      setMeshImagePlaneIsoContourUniforms(
+        isoProgram,
+        view,
+        imagePlane,
+        uniformsIt->second,
+        textureLayout,
+        context,
+        m_appData.renderData().m_numCheckerboardSquares,
+        imageSettings,
+        *surface,
+        color,
+        imagePlane.opacityMultiplier);
+      drawUploadedImagePlane(*gpuData);
     }
+    isoProgram.stopUse();
 
     unbindTextures(boundTextures);
   }

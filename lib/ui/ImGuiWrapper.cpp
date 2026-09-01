@@ -3720,13 +3720,6 @@ void ImGuiWrapper::render()
         m_appData.guiData().m_showIsosurfacesWindow = true;
         m_appData.guiData().m_requestAddIsosurfaceRange = true;
         break;
-      case MainMenuAction::ToggleActiveImageIsosurfaces:
-        if (const auto imageUid = activeImageUid()) {
-          if (Image* image = m_appData.image(*imageUid)) {
-            image->settings().setIsosurfacesVisible(!image->settings().isosurfacesVisible());
-          }
-        }
-        break;
       case MainMenuAction::CreateSegmentation:
         createActiveSegmentation();
         break;
@@ -3931,7 +3924,6 @@ void ImGuiWrapper::render()
         case MainMenuAction::LastTimePoint:
         case MainMenuAction::AddIsosurface:
         case MainMenuAction::AddIsosurfaceRange:
-        case MainMenuAction::ToggleActiveImageIsosurfaces:
         case MainMenuAction::CreateSegmentation:
         case MainMenuAction::CreateLandmarkGroup:
         case MainMenuAction::AddLayout:
@@ -4159,11 +4151,6 @@ void ImGuiWrapper::render()
         const auto imageUid = globalTimeControlImageUid(m_appData);
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
         return image ? image->settings().timePlaybackPlaying() : false;
-      }
-      case MainMenuAction::ToggleActiveImageIsosurfaces: {
-        const auto imageUid = m_appData.activeImageUid();
-        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
-        return image ? image->settings().isosurfacesVisible() : false;
       }
       case MainMenuAction::ToggleImGuiDemoWindow:
         return m_appData.guiData().m_showImGuiDemoWindow;

@@ -617,7 +617,6 @@ void addImageMenu(NSMenu* mainMenu) {
     @"Add Isosurface Range...",
     MainMenuAction::AddIsosurfaceRange,
     @"plus.rectangle.on.rectangle");
-  addSymbolActionMenuItem(isosurfacesMenu, @"Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces, @"eye");
   [isosurfacesItem setSubmenu:isosurfacesMenu];
   [menu addItem:isosurfacesItem];
   [menu addItem:[NSMenuItem separatorItem]];

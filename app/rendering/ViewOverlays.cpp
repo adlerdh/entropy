@@ -43,7 +43,7 @@ bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
     }
 
     const ImageSettings& settings = image->settings();
-    if (!settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible()) {
+    if (!settings.globalVisibility() || !settings.visibility()) {
       continue;
     }
 

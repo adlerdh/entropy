@@ -75,7 +75,6 @@ enum class MainMenuAction
   LastTimePoint,
   AddIsosurface,
   AddIsosurfaceRange,
-  ToggleActiveImageIsosurfaces,
   CreateSegmentation,
   SaveSegmentation,
   ClearSegmentation,

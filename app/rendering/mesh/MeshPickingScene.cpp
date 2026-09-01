@@ -86,8 +86,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
 
       const ImageSettings& settings = image->settings();
-      if (!settings.isosurfacesVisible() || !settings.showIsosurfacesIn3D() || activeRenderableDeformationUid(imageUid))
-      {
+      if (activeRenderableDeformationUid(imageUid)) {
         continue;
       }
 
@@ -99,12 +98,12 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           continue;
         }
 
-        const float effectiveOpacity = surface->opacity * settings.isosurfaceOpacityModulator();
+        const float effectiveOpacity = surface->opacity * settings.effectiveIsosurfaceOpacityModulator();
         if (!rendering::mesh::canRenderIsosurfaceWithMesh(
               {.renderWarped = false,
                .valueEditInProgress = surface->valueEditInProgress,
                .opacity = effectiveOpacity,
-               .visible = surface->visible && surface->showIn3d}))
+               .visible = surface->visible}))
         {
           continue;
         }

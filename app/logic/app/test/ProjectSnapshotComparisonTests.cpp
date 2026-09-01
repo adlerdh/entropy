@@ -263,9 +263,9 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedMeshRendering.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
-  auto changedImageIsocontours = project;
-  changedImageIsocontours.m_referenceImage.m_settings->m_modulateIsocontourOpacityWithImageOpacity = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedImageIsocontours));
+  auto changedImageIsosurfaces = project;
+  changedImageIsosurfaces.m_referenceImage.m_settings->m_modulateIsosurfaceOpacityWithImageOpacity = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedImageIsosurfaces));
 
   auto changedIntensityProjection = project;
   changedIntensityProjection.m_intensityProjection.m_slabThicknessMm = 12.0f;

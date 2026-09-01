@@ -74,10 +74,6 @@ void Rendering::renderIsoContoursForImage(
     referenceImageUid ? ImgSegPair{*referenceImageUid, std::nullopt} : imgSegPair};
   const ImageSettings& imageSettings = image.settings();
 
-  if (!imageSettings.isosurfacesVisible() || !imageSettings.showIsocontoursIn2D()) {
-    return;
-  }
-
   const uint32_t activeComponent = imageSettings.activeComponent();
 
   GLShaderProgram* program = nullptr;
@@ -133,14 +129,14 @@ void Rendering::renderIsoContoursForImage(
       continue;
     }
 
-    if (!surface->visible || !surface->showIn2d) {
+    if (!surface->visible) {
       continue;
     }
 
     static constexpr bool premultipliedAlpha = false;
     const glm::vec3 color =
       glm::vec3{getIsosurfaceColor(m_appData, *surface, imageSettings, activeComponent, premultipliedAlpha)};
-    const float imageOpacity = imageSettings.modulateIsocontourOpacityWithImageOpacity() ? uniforms.imgOpacity : 1.0f;
+    const float imageOpacity = imageSettings.modulateIsosurfaceOpacityWithImageOpacity() ? uniforms.imgOpacity : 1.0f;
     const float isosurfaceOpacity = imageSettings.isosurfaceOpacityModulator() * imageOpacity;
 
     program->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
@@ -150,6 +146,7 @@ void Rendering::renderIsoContoursForImage(
     program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
     program->setUniform("u_isoValue", static_cast<float>(imageSettings.mapNativeIntensityToTexture(surface->value)));
     program->setUniform("u_fillOpacity", static_cast<float>(isosurfaceOpacity * surface->fillOpacity));
+    program->setUniform("u_fillAboveIsovalue", surface->fillAboveIsovalue);
     program->setUniform("u_lineOpacity", static_cast<float>(isosurfaceOpacity * surface->opacity));
     program->setUniform("u_contourWidth", static_cast<float>(imageSettings.isoContourLineWidthIn2D()));
     program->setUniform("u_color", color);
