@@ -165,6 +165,12 @@ public:
    */
   void setUiWindowBgOpacity(float opacity);
 
+  /** Return the scale applied to buttons and icons in the mode and segmentation toolbars. */
+  float toolbarScale() const;
+
+  /** Set the scale applied to buttons and icons in the mode and segmentation toolbars. */
+  void setToolbarScale(float scale);
+
   /**
    * @brief Return whether the layout tab strip is shown.
    */
@@ -294,6 +300,7 @@ private:
   UiColorPreset m_uiColorPreset = UiColorPreset::EntropyDark;
   UiDensityPreset m_uiDensityPreset = UiDensityPreset::Default;
   float m_uiWindowBgOpacity = 0.95f;
+  float m_toolbarScale = 1.0f;
   bool m_showLayoutTabs = true;
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
   bool m_showGlobalTimeControls = true;
@@ -338,7 +345,7 @@ private:
   bool m_brushPreviewWhilePainting = true;
   SegmentationOutlineStyle m_brushPreviewOutlineStyle = SegmentationOutlineStyle::ViewPixel;
   uint64_t m_brushPreviewRevision = 0;
-  uint32_t m_brushSizeInVoxels = 1u; //!< Brush size (diameter) in voxels
+  uint32_t m_brushSizeInVoxels = 3u; //!< Brush size (diameter) in voxels
   float m_brushSizeInMm = 1.0f;      //!< Brush size (diameter) in millimeters
   /* End segmentation drawing variables */
 };

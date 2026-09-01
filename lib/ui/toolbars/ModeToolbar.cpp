@@ -35,7 +35,8 @@ void renderModeToolbar(
 {
   GuiData& guiData = appData.guiData();
 
-  const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
+  const auto buttonSize =
+    scaledToolbarButtonSize(appData.windowData().getContentScaleRatios(), appData.settings().toolbarScale());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
   // cppcheck-suppress threadsafety-threadsafety
@@ -111,6 +112,7 @@ void renderModeToolbar(
   ImGui::PushID("toolbar");
 
   if (ImGui::Begin(title, toolbarWindowOpen, k_toolbarWindowFlags)) {
+    ImGui::SetWindowFontScale(appData.settings().toolbarScale());
     //        isCollapsed = false;
 
     if (s_lastShowState != guiData.m_showModeToolbar) {
@@ -524,6 +526,7 @@ void renderModeToolbar(
       readjustViewport();
       ImGui::EndPopup();
     }
+    ImGui::SetWindowFontScale(1.0f);
   }
   //    else
   //    {

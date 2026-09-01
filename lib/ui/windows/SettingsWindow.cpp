@@ -1326,6 +1326,13 @@ void renderInterfaceTab(
     ImGui::SameLine();
     helpMarker("Spacing and padding density used by application controls");
 
+    float toolbarScale = 100.0f * appData.settings().toolbarScale();
+    if (ImGui::SliderFloat("Toolbar scale", &toolbarScale, 75.0f, 150.0f, "%.0f%%")) {
+      appData.settings().setToolbarScale(toolbarScale / 100.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Size of buttons and icons in the mode and segmentation toolbars");
+
     float windowBgOpacity = appData.settings().uiWindowBgOpacity();
     if (ImGui::SliderFloat("Window opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
       appData.settings().setUiWindowBgOpacity(windowBgOpacity);

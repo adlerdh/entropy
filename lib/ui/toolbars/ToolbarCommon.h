@@ -34,11 +34,11 @@ inline void renderPlacementContextMenu(int& corner, bool& /*isHoriz*/)
 /**
  * @brief Return the scaled toolbar button size for the current ImGui font scale.
  */
-inline ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
+inline ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale, const float buttonScale = 1.0f)
 {
   static const ImVec2 k_toolbarButtonSize(32, 32);
   (void)contentScale;
-  return ui::scaledSize(k_toolbarButtonSize);
+  return ui::scaledSize(k_toolbarButtonSize.x * buttonScale, k_toolbarButtonSize.y * buttonScale);
 }
 
 /**

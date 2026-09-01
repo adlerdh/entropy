@@ -30,5 +30,6 @@ void renderSegToolbar(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(MouseMode)>& setMouseMode,
   const std::function<void(void)>& readjustViewport,
+  const std::function<void(void)>& requestRender,
   const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
     executePoissonSeg);

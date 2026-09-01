@@ -31,6 +31,7 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setEntropyInstanceSyncEnabled(true);
   settings.setOverlays(false);
   settings.setUiScaleOverride(1.75f);
+  settings.setToolbarScale(1.25f);
   settings.setUiFontFamily(UiFontFamily::Cousine);
   settings.setUiColorPreset(UiColorPreset::SoftLight);
   settings.setUiDensityPreset(UiDensityPreset::Comfortable);
@@ -238,6 +239,7 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.entropyInstanceSyncEnabled() == expected.entropyInstanceSyncEnabled());
   CHECK(actual.overlays() == expected.overlays());
   CHECK(actual.uiScaleOverride() == expected.uiScaleOverride());
+  CHECK(actual.toolbarScale() == Catch::Approx(expected.toolbarScale()));
   CHECK(actual.uiFontFamily() == expected.uiFontFamily());
   CHECK(actual.uiColorPreset() == expected.uiColorPreset());
   CHECK(actual.uiDensityPreset() == expected.uiDensityPreset());
@@ -521,6 +523,11 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("format") == "entropy.userSettings");
   CHECK(root.at("version").at("major") == 1);
   CHECK(root.at("version").at("minor") == 0);
+  REQUIRE(text.find("\"density\"") != std::string::npos);
+  REQUIRE(text.find("\"toolbarScale\"") != std::string::npos);
+  REQUIRE(text.find("\"windowBackgroundOpacity\"") != std::string::npos);
+  CHECK(text.find("\"density\"") < text.find("\"toolbarScale\""));
+  CHECK(text.find("\"toolbarScale\"") < text.find("\"windowBackgroundOpacity\""));
   CHECK(root.at("interface").at("precision").at("imageValues") == 4);
   CHECK(root.at("interface").at("precision").at("coordinates") == 5);
   CHECK(root.at("interface").at("precision").at("transformations") == 6);
@@ -651,6 +658,7 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
   const std::string text = R"({
     "interface": {
       "uiScale": 99,
+      "toolbarScale": 99,
       "font": "notAFont",
       "windowBackgroundOpacity": 0.01,
       "showLayoutTabs": "bad",
@@ -731,6 +739,7 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
 
   REQUIRE(settings.uiScaleOverride());
   CHECK(*settings.uiScaleOverride() == Catch::Approx(4.0f));
+  CHECK(settings.toolbarScale() == Catch::Approx(1.5f));
   CHECK(settings.uiFontFamily() == UiFontFamily::Inter);
   CHECK(settings.uiWindowBgOpacity() == Catch::Approx(0.2f));
   CHECK(precisionPreferences.imageValuePrecision == 9);
@@ -790,6 +799,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   const json root = json::parse(user_preferences::toJsonString(settings, renderPreferences));
 
   CHECK(root.at("interface").at("uiScale") == "auto");
+  CHECK(root.at("interface").at("toolbarScale") == 1.0f);
   CHECK(root.at("interface").at("font") == "inter");
   CHECK(root.at("interface").at("colorScheme") == "entropyDark");
   CHECK(root.at("interface").at("showLayoutTabs") == true);
@@ -812,6 +822,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("scaleBars").at("show") == true);
   CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
   CHECK(root.at("views").at("asciiShading").at("enabled") == false);
+  CHECK(root.at("segmentations").at("brush").at("sizeVoxels") == 3);
   CHECK_FALSE(root.contains("comparison"));
   CHECK_FALSE(root.at("images").contains("intensityProjectionDefaults"));
   CHECK_FALSE(root.at("segmentations").contains("display"));

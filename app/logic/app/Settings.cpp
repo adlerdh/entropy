@@ -248,6 +248,16 @@ void AppSettings::setUiWindowBgOpacity(float opacity)
   m_uiWindowBgOpacity = std::clamp(opacity, 0.2f, 1.0f);
 }
 
+float AppSettings::toolbarScale() const
+{
+  return m_toolbarScale;
+}
+
+void AppSettings::setToolbarScale(float scale)
+{
+  m_toolbarScale = std::clamp(scale, 0.75f, 1.5f);
+}
+
 bool AppSettings::showLayoutTabs() const
 {
   return m_showLayoutTabs;

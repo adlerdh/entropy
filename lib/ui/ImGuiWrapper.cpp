@@ -4777,6 +4777,7 @@ void ImGuiWrapper::render()
       m_updateImageUniforms,
       setMouseMode,
       m_readjustViewport,
+      m_postEmptyGlfwEvent,
       m_executePoissonSeg);
 
     annotationToolbar(m_paintActiveSegmentationWithActivePolygon);

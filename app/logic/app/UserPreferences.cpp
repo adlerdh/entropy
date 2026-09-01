@@ -80,6 +80,19 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
     preferredKeys =
       {"pbr", "shadows", "ambientOcclusion", "rimLighting", "segmentationSmoothing", "pointPicking", "clipPlane"};
   }
+  else if (path == "interface") {
+    preferredKeys = {
+      "showLayoutTabs",
+      "layoutTabsPosition",
+      "showGlobalTimeControls",
+      "uiScale",
+      "font",
+      "colorScheme",
+      "density",
+      "toolbarScale",
+      "windowBackgroundOpacity",
+      "precision"};
+  }
   else if (path == "rendering/raycasting") {
     preferredKeys = {"samplingFactor", "distanceMap"};
   }
@@ -418,6 +431,7 @@ json toJson(
       {"font", enumToName(settings.uiFontFamily(), sk_uiFontNames)},
       {"colorScheme", enumToName(settings.uiColorPreset(), sk_uiColorPresetNames)},
       {"density", enumToName(settings.uiDensityPreset(), sk_uiDensityPresetNames)},
+      {"toolbarScale", settings.toolbarScale()},
       {"windowBackgroundOpacity", settings.uiWindowBgOpacity()},
       {"showLayoutTabs", settings.showLayoutTabs()},
       {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)},
@@ -591,6 +605,10 @@ void applyJson(
       else if (scale->is_number()) {
         settings.setUiScaleOverride(scale->get<float>());
       }
+    }
+
+    if (const auto scale = interface->find("toolbarScale"); scale != interface->end() && scale->is_number()) {
+      settings.setToolbarScale(scale->get<float>());
     }
 
     if (const auto parsed = enumFromName<UiFontFamily>(interface->value("font", ""), sk_uiFontNames)) {

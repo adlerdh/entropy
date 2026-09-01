@@ -32,6 +32,7 @@ void renderSegToolbar(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(MouseMode)>& setMouseMode,
   const std::function<void(void)>& readjustViewport,
+  const std::function<void(void)>& requestRender,
   const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
     executePoissonSeg)
 {
@@ -46,13 +47,22 @@ void renderSegToolbar(
 
   static_cast<void>(executePoissonSeg);
 
-  const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
+  const auto buttonSize =
+    scaledToolbarButtonSize(appData.windowData().getContentScaleRatios(), appData.settings().toolbarScale());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
-  guiData.m_showSegToolbar = (inSegmentationMode && !inAnnotationMode && !appData.guiData().m_showAnnotationsWindow);
+  // cppcheck-suppress threadsafety-threadsafety
+  static thread_local bool s_wasVisible = false;
 
-  if (!guiData.m_showSegToolbar) {
-    readjustViewport();
+  const bool isVisible = inSegmentationMode && !inAnnotationMode && !appData.guiData().m_showAnnotationsWindow;
+  guiData.m_showSegToolbar = isVisible;
+
+  if (!isVisible) {
+    if (s_wasVisible) {
+      readjustViewport();
+      requestRender();
+      s_wasVisible = false;
+    }
     return;
   }
 
@@ -191,6 +201,7 @@ void renderSegToolbar(
   const char* title = ((isHoriz /*| isCollapsed*/) ? "Segmentation###SegToolbarWindow" : "###SegToolbarWindow");
 
   if (ImGui::Begin(title, toolbarWindowOpen, k_toolbarWindowFlags)) {
+    ImGui::SetWindowFontScale(appData.settings().toolbarScale());
     int id = 0;
 
     const size_t fgLabel = appData.settings().foregroundLabel();
@@ -830,8 +841,15 @@ void renderSegToolbar(
 
     // Save the new toolbar size:
     const ImVec2 winSize = ImGui::GetContentRegionAvail();
-    guiData.m_segToolbarDockDims = glm::vec2{winSize.x, winSize.y} + 2.0f * glm::vec2{padSize.x, padSize.y};
-    readjustViewport();
+    const glm::vec2 dockDims = glm::vec2{winSize.x, winSize.y} + 2.0f * glm::vec2{padSize.x, padSize.y};
+    const bool layoutChanged = !s_wasVisible || dockDims != guiData.m_segToolbarDockDims;
+    guiData.m_segToolbarDockDims = dockDims;
+    if (layoutChanged) {
+      readjustViewport();
+      requestRender();
+    }
+    s_wasVisible = true;
+    ImGui::SetWindowFontScale(1.0f);
   }
 
   ImGui::End(); // End toolbar
