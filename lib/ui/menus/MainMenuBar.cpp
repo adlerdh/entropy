@@ -666,17 +666,17 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Image", callbacks.canAddImage)) {
+    if (ImGui::BeginMenu("Images", callbacks.canAddImage)) {
       main_menu::renderImageMenu(callbacks);
       ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Segmentation", callbacks.canAddSegmentation)) {
+    if (ImGui::BeginMenu("Segmentations", callbacks.canAddSegmentation)) {
       main_menu::renderSegmentationMenu(callbacks);
       ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Annotation", callbacks.canUseLayouts)) {
+    if (ImGui::BeginMenu("Annotations", callbacks.canUseLayouts)) {
       main_menu::renderAnnotationMenu(callbacks);
       ImGui::EndMenu();
     }

@@ -1778,10 +1778,13 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
 {
   const bool displayOpen = ImGui::CollapsingHeader("Display", ImGuiTreeNodeFlags_DefaultOpen);
   if (displayOpen) {
-    // Modulate opacity of segmentation with opacity of image:
-    ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
+    ImGui::Text("Modulate segmentation opacity with image opacity:");
+    ImGui::Checkbox("2D views", &renderData.m_modulateSegmentationOpacityWithImageOpacity2d);
     ImGui::SameLine();
-    helpMarker("Modulate opacity of segmentation with opacity of image");
+    helpMarker("Multiply segmentation overlay opacity in 2D views by the corresponding image opacity");
+    ImGui::Checkbox("3D views", &renderData.m_modulateSegmentationOpacityWithImageOpacity3d);
+    ImGui::SameLine();
+    helpMarker("Multiply segmentation mesh opacity in 3D views by the corresponding image opacity");
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -2262,9 +2265,11 @@ void renderSurfaceLightingSettings(RenderData& renderData)
 {
   ImGui::SeparatorText("Lighting");
   disabledTextWrapped(
-    "3D surfaces use the Blinn-Phong shading model. These controls set the ambient, diffuse, and specular lighting "
-    "contributions and the sharpness of specular highlights.");
+    "When PBR is off, 3D surfaces use Blinn-Phong shading. These controls set the ambient, diffuse, and specular "
+    "lighting contributions and the sharpness of specular highlights.");
 
+  auto& material = renderData.m_meshSurfaceMaterialSettings;
+  ImGui::BeginDisabled(material.pbrShadingEnabled);
   const float lightingWidth = ImGui::CalcItemWidth();
   ImGui::PushItemWidth(lightingWidth);
   if (mySliderF32("Ambient", &renderData.m_lightingAmbient, 0.0f, 2.0f, "%0.2f")) {
@@ -2291,6 +2296,34 @@ void renderSurfaceLightingSettings(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Higher values make the specular highlight smaller and sharper");
   ImGui::PopItemWidth();
+  ImGui::EndDisabled();
+
+  ImGui::Spacing();
+  ImGui::Checkbox("Physically Based Rendering", &material.pbrShadingEnabled);
+  ImGui::SameLine();
+  helpMarker("Use physically based material shading for all segmentation and isosurface meshes");
+  disabledTextWrapped(
+    "PBR replaces Blinn-Phong shading for surface meshes. Metallic, roughness, and indirect-light occlusion control "
+    "the material response instead of the Blinn-Phong controls above.");
+  if (material.pbrShadingEnabled) {
+    if (mySliderF32("Metallic", &material.metallic, 0.0f, 1.0f, "%0.2f")) {
+      material.metallic = std::clamp(material.metallic, 0.0f, 1.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Controls how strongly all rendered surfaces behave like metal");
+
+    if (mySliderF32("Roughness", &material.roughness, 0.001f, 1.0f, "%0.2f")) {
+      material.roughness = std::clamp(material.roughness, 0.001f, 1.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Controls highlight sharpness for physically based surface shading");
+
+    if (mySliderF32("Indirect-light occlusion", &material.ambientOcclusion, 0.0f, 1.0f, "%0.2f")) {
+      material.ambientOcclusion = std::clamp(material.ambientOcclusion, 0.0f, 1.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Scales indirect lighting for all surface materials; separate from screen-space ambient occlusion");
+  }
 }
 
 void renderImagePlanesTab(RenderData& renderData)
@@ -2391,6 +2424,8 @@ void renderMeshRenderingTab(RenderData& renderData)
   ImGui::Checkbox("Ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
   ImGui::SameLine();
   helpMarker("Darken small screen-space creases and nearby mesh depth discontinuities");
+  disabledTextWrapped(
+    "Ambient occlusion adds contact shading in creases and where nearby surfaces obscure indirect light.");
   if (renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled) {
     ImGui::DragFloat(
       "AO radius",
@@ -2442,6 +2477,33 @@ void renderMeshRenderingTab(RenderData& renderData)
     }
     ImGui::SameLine();
     helpMarker("Hemisphere samples per pixel. Higher values reduce noise but increase rendering cost");
+  }
+
+  auto& material = renderData.m_meshSurfaceMaterialSettings;
+  ImGui::Spacing();
+  ImGui::Checkbox("Rim lighting", &material.rimLightingEnabled);
+  ImGui::SameLine();
+  helpMarker("Emphasize silhouettes on surfaces");
+  disabledTextWrapped(
+    "Rim lighting emphasizes silhouettes by increasing opacity and adding a glow near surface edges.");
+  if (material.rimLightingEnabled) {
+    if (mySliderF32("Rim opacity", &material.rimOpacityStrength, 0.0f, 1.0f, "%0.2f")) {
+      material.rimOpacityStrength = std::clamp(material.rimOpacityStrength, 0.0f, 1.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Increase surface opacity toward silhouettes");
+
+    if (mySliderF32("Rim glow", &material.rimEmissionStrength, 0.0f, 2.0f, "%0.2f")) {
+      material.rimEmissionStrength = std::max(material.rimEmissionStrength, 0.0f);
+    }
+    ImGui::SameLine();
+    helpMarker("Add view-angle light at surface silhouettes");
+
+    if (mySliderF32("Rim falloff", &material.rimPower, 0.25f, 8.0f, "%0.2f")) {
+      material.rimPower = std::max(material.rimPower, 0.25f);
+    }
+    ImGui::SameLine();
+    helpMarker("Controls rim width; higher values produce a narrower rim");
   }
 
   const auto meshLightingPlan = rendering::mesh::meshAdvancedLightingPlan(
@@ -2587,6 +2649,29 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
     ImGuiSliderFlags_AlwaysClamp);
   ImGui::SameLine();
   helpMarker("Fallback ray-marching step as a fraction of voxel size. Smaller values improve fidelity but cost more");
+
+  ImGui::Checkbox("Raycast using distance map", &renderData.m_useDistanceMapForRaycasting);
+  ImGui::SameLine();
+  helpMarker("Skip empty regions while transient isosurfaces are rendered by raycasting");
+  disabledTextWrapped(
+    "A distance map is generated lazily from a foreground intensity range. It accelerates transient isosurface "
+    "raycasting without affecting the final surface meshes.");
+  if (renderData.m_useDistanceMapForRaycasting) {
+    int lowerPercentile =
+      static_cast<int>(std::lround(std::clamp(renderData.m_distanceMapForegroundLowerPercentile, 0.0f, 1.0f) * 100.0f));
+    int upperPercentile =
+      static_cast<int>(std::lround(std::clamp(renderData.m_distanceMapForegroundUpperPercentile, 0.0f, 1.0f) * 100.0f));
+    if (ImGui::SliderInt("Foreground lower percentile", &lowerPercentile, 0, upperPercentile, "%d%%")) {
+      renderData.m_distanceMapForegroundLowerPercentile = static_cast<float>(lowerPercentile) / 100.0f;
+    }
+    ImGui::SameLine();
+    helpMarker("Lower percentile of each image component included in the distance-map foreground mask");
+    if (ImGui::SliderInt("Foreground upper percentile", &upperPercentile, lowerPercentile, 100, "%d%%")) {
+      renderData.m_distanceMapForegroundUpperPercentile = static_cast<float>(upperPercentile) / 100.0f;
+    }
+    ImGui::SameLine();
+    helpMarker("Upper percentile of each image component included in the distance-map foreground mask");
+  }
 }
 
 void renderAsciiShadingSettings(RenderData& renderData)

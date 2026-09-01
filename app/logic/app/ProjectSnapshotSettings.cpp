@@ -430,6 +430,9 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
   const auto& renderData = appData.renderData();
   return serialize::ProjectRaycastingSettings{
     .m_samplingFactor = renderData.m_raycastSamplingFactor,
+    .m_useDistanceMap = renderData.m_useDistanceMapForRaycasting,
+    .m_distanceMapForegroundLowerPercentile = renderData.m_distanceMapForegroundLowerPercentile,
+    .m_distanceMapForegroundUpperPercentile = renderData.m_distanceMapForegroundUpperPercentile,
     .m_renderFrontFaces = renderData.m_renderFrontFaces,
     .m_renderBackFaces = renderData.m_renderBackFaces,
     .m_segmentationMasking = raycastSegmentationMasking(renderData.m_segMasking)};
@@ -439,6 +442,11 @@ void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastin
 {
   auto& renderData = appData.renderData();
   renderData.m_raycastSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
+  renderData.m_useDistanceMapForRaycasting = settings.m_useDistanceMap;
+  renderData.m_distanceMapForegroundLowerPercentile =
+    std::clamp(settings.m_distanceMapForegroundLowerPercentile, 0.0f, 1.0f);
+  renderData.m_distanceMapForegroundUpperPercentile =
+    std::clamp(settings.m_distanceMapForegroundUpperPercentile, 0.0f, 1.0f);
   renderData.m_adaptiveRaycastSamplingEnabled = false;
   renderData.m_adaptiveRaycastTargetFrameRate = 30.0f;
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
@@ -452,6 +460,10 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
   const auto& renderData = appData.renderData();
   return serialize::ProjectMeshRenderingSettings{
     .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
+    .m_pbrShadingEnabled = renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled,
+    .m_pbrMetallic = renderData.m_meshSurfaceMaterialSettings.metallic,
+    .m_pbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness,
+    .m_pbrAmbientOcclusion = renderData.m_meshSurfaceMaterialSettings.ambientOcclusion,
     .m_smoothSegmentationMeshes = renderData.m_smoothSegmentationMeshes,
     .m_segmentationSmoothingIterations = renderData.m_segmentationMeshSmoothingIterations,
     .m_segmentationSmoothingPassBand = renderData.m_segmentationMeshSmoothingPassBand,
@@ -468,13 +480,21 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
     .m_ambientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
     .m_ambientOcclusionPower = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power,
     .m_ambientOcclusionContrast = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast,
-    .m_ambientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount};
+    .m_ambientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount,
+    .m_rimLightingEnabled = renderData.m_meshSurfaceMaterialSettings.rimLightingEnabled,
+    .m_rimOpacityStrength = renderData.m_meshSurfaceMaterialSettings.rimOpacityStrength,
+    .m_rimEmissionStrength = renderData.m_meshSurfaceMaterialSettings.rimEmissionStrength,
+    .m_rimPower = renderData.m_meshSurfaceMaterialSettings.rimPower};
 }
 
 void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRenderingSettings& settings)
 {
   auto& renderData = appData.renderData();
   renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled = settings.m_pbrShadingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.metallic = settings.m_pbrMetallic;
+  renderData.m_meshSurfaceMaterialSettings.roughness = settings.m_pbrRoughness;
+  renderData.m_meshSurfaceMaterialSettings.ambientOcclusion = settings.m_pbrAmbientOcclusion;
   renderData.m_smoothSegmentationMeshes = settings.m_smoothSegmentationMeshes;
   renderData.m_segmentationMeshSmoothingIterations = std::clamp(settings.m_segmentationSmoothingIterations, 1u, 1000u);
   renderData.m_segmentationMeshSmoothingPassBand = std::clamp(settings.m_segmentationSmoothingPassBand, 0.001f, 2.0f);
@@ -492,6 +512,10 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power = settings.m_ambientOcclusionPower;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast = settings.m_ambientOcclusionContrast;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = settings.m_ambientOcclusionSampleCount;
+  renderData.m_meshSurfaceMaterialSettings.rimLightingEnabled = settings.m_rimLightingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.rimOpacityStrength = settings.m_rimOpacityStrength;
+  renderData.m_meshSurfaceMaterialSettings.rimEmissionStrength = settings.m_rimEmissionStrength;
+  renderData.m_meshSurfaceMaterialSettings.rimPower = settings.m_rimPower;
 }
 
 serialize::ProjectIntensityProjectionSettings intensityProjectionSettings(const AppData& appData)
@@ -519,7 +543,8 @@ serialize::ProjectSegmentationDisplaySettings segmentationDisplaySettings(const 
 {
   const auto& renderData = appData.renderData();
   return serialize::ProjectSegmentationDisplaySettings{
-    .m_modulateOpacityWithImageOpacity = renderData.m_modulateSegOpacityWithImageOpacity,
+    .m_modulateOpacityWithImageOpacity2d = renderData.m_modulateSegmentationOpacityWithImageOpacity2d,
+    .m_modulateOpacityWithImageOpacity3d = renderData.m_modulateSegmentationOpacityWithImageOpacity3d,
     .m_outlineStyle = renderData.m_segOutlineStyle,
     .m_interiorOpacity = renderData.m_segInteriorOpacity,
     .m_erosionFactor = renderData.m_segInterpCutoff};
@@ -528,7 +553,8 @@ serialize::ProjectSegmentationDisplaySettings segmentationDisplaySettings(const 
 void applySegmentationDisplaySettings(AppData& appData, const serialize::ProjectSegmentationDisplaySettings& settings)
 {
   auto& renderData = appData.renderData();
-  renderData.m_modulateSegOpacityWithImageOpacity = settings.m_modulateOpacityWithImageOpacity;
+  renderData.m_modulateSegmentationOpacityWithImageOpacity2d = settings.m_modulateOpacityWithImageOpacity2d;
+  renderData.m_modulateSegmentationOpacityWithImageOpacity3d = settings.m_modulateOpacityWithImageOpacity3d;
   renderData.m_segOutlineStyle = settings.m_outlineStyle;
   renderData.m_segInteriorOpacity = settings.m_interiorOpacity;
   renderData.m_segInterpCutoff = settings.m_erosionFactor;
@@ -675,13 +701,9 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
   settings.m_colorMapLevels.reserve(imageSettings.numComponents());
   settings.m_colorMapHsvModifiers.reserve(imageSettings.numComponents());
   settings.m_interpolationModes.reserve(imageSettings.numComponents());
-  settings.m_foregroundThresholdLows.reserve(imageSettings.numComponents());
-  settings.m_foregroundThresholdHighs.reserve(imageSettings.numComponents());
   for (uint32_t component = 0; component < imageSettings.numComponents(); ++component) {
     const auto componentThresholds = imageSettings.thresholds(component);
-    const auto foregroundThresholds = imageSettings.foregroundThresholds(component);
     const auto defaultComponentThresholds = defaultSettings.thresholds(component);
-    const auto defaultForegroundThresholds = defaultSettings.foregroundThresholds(component);
     addDiffValue(
       settings.m_componentLevels,
       settings.m_componentLevelIndices,
@@ -766,20 +788,6 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
       imageSettings.interpolationMode(component),
       defaultSettings.interpolationMode(component),
       InterpolationMode::Linear);
-    addDiffValue(
-      settings.m_foregroundThresholdLows,
-      settings.m_foregroundThresholdLowIndices,
-      component,
-      foregroundThresholds.first,
-      defaultForegroundThresholds.first,
-      0.0);
-    addDiffValue(
-      settings.m_foregroundThresholdHighs,
-      settings.m_foregroundThresholdHighIndices,
-      component,
-      foregroundThresholds.second,
-      defaultForegroundThresholds.second,
-      0.0);
   }
   settings.m_edgeDetectionMethod = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
                                      ? serialize::ProjectEdgeDetectionMethod::Pixel
@@ -803,7 +811,6 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
     settings.m_hasEdgeColor = true;
   }
   settings.m_edgeOpacity = imageSettings.edgeOpacity();
-  settings.m_useDistanceMapForRaycasting = imageSettings.useDistanceMapForRaycasting();
   settings.m_isosurfacesVisible = imageSettings.isosurfacesVisible();
   settings.m_applyImageColormapToIsosurfaces = imageSettings.applyImageColormapToIsosurfaces();
   settings.m_modulateIsocontourOpacityWithImageOpacity = imageSettings.modulateIsocontourOpacityWithImageOpacity();
@@ -1008,26 +1015,6 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
       static_cast<uint32_t>(component),
       settings.m_interpolationModes.at(component));
   }
-  const std::size_t numForegroundLowComponents =
-    std::min<std::size_t>(settings.m_foregroundThresholdLows.size(), imageSettingsLocal.numComponents());
-  for (std::size_t component = 0; component < numForegroundLowComponents; ++component) {
-    if (!shouldApplySparseComponentValue(settings.m_foregroundThresholdLowIndices, component)) {
-      continue;
-    }
-    imageSettingsLocal.setForegroundThresholdLow(
-      static_cast<uint32_t>(component),
-      settings.m_foregroundThresholdLows.at(component));
-  }
-  const std::size_t numForegroundHighComponents =
-    std::min<std::size_t>(settings.m_foregroundThresholdHighs.size(), imageSettingsLocal.numComponents());
-  for (std::size_t component = 0; component < numForegroundHighComponents; ++component) {
-    if (!shouldApplySparseComponentValue(settings.m_foregroundThresholdHighIndices, component)) {
-      continue;
-    }
-    imageSettingsLocal.setForegroundThresholdHigh(
-      static_cast<uint32_t>(component),
-      settings.m_foregroundThresholdHighs.at(component));
-  }
   imageSettingsLocal.setEdgeDetectionMethod(
     serialize::ProjectEdgeDetectionMethod::Pixel == settings.m_edgeDetectionMethod ? EdgeDetectionMethod::Pixel
                                                                                    : EdgeDetectionMethod::Voxel);
@@ -1046,7 +1033,6 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
     imageSettingsLocal.setEdgeColor(settings.m_edgeColor);
   }
   imageSettingsLocal.setEdgeOpacity(settings.m_edgeOpacity);
-  imageSettingsLocal.setUseDistanceMapForRaycasting(settings.m_useDistanceMapForRaycasting);
   imageSettingsLocal.setIsosurfacesVisible(settings.m_isosurfacesVisible);
   imageSettingsLocal.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
   imageSettingsLocal.setModulateIsocontourOpacityWithImageOpacity(settings.m_modulateIsocontourOpacityWithImageOpacity);

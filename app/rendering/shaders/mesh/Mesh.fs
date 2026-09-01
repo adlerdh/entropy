@@ -39,6 +39,9 @@ const int kShadingModelPhysicallyBased = 2;
 const float kPi = 3.14159265359;
 const vec3 kPbrFillLightDirection = vec3(-0.43643578, 0.21821789, 0.87287156);
 const float kPbrFillLightStrength = 0.18;
+const float kPbrAmbientStrength = 0.30;
+const float kPbrDiffuseStrength = 0.50;
+const float kPbrSpecularStrength = 0.20;
 
 vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
@@ -88,17 +91,16 @@ vec3 physicallyBasedDirectColor(vec3 albedo, vec3 normal, vec3 lightDirection, v
 
   vec3 specular = (distribution * geometry * fresnel) / max(4.0 * nDotV * nDotL, 0.000001);
   vec3 diffuse = (vec3(1.0) - fresnel) * (1.0 - u_metallic) * albedo / kPi;
-  // Match the application's ADS controls while retaining energy-conserving BRDF terms.
-  // Multiplying the Lambertian term by pi treats u_lightingDiffuse as irradiance,
-  // keeping its brightness comparable to the simple shading path.
-  vec3 diffuseLighting = diffuse * (kPi * u_lightingDiffuse);
-  vec3 specularLighting = specular * (kPi * u_lightingSpecular);
+  // Fixed neutral light strengths keep PBR independent of the disabled Blinn-Phong controls.
+  // Multiplying by pi treats the strengths as irradiance and keeps brightness comparable.
+  vec3 diffuseLighting = diffuse * (kPi * kPbrDiffuseStrength);
+  vec3 specularLighting = specular * (kPi * kPbrSpecularStrength);
   return (diffuseLighting + specularLighting) * nDotL * lightStrength;
 }
 
 vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
-  vec3 ambient = albedo * u_lightingAmbient * u_ambientOcclusion * ao;
+  vec3 ambient = albedo * kPbrAmbientStrength * u_ambientOcclusion * ao;
   vec3 keyLighting = physicallyBasedDirectColor(albedo, normal, lightDirection, viewDirection, shadow);
   vec3 fillLighting =
     physicallyBasedDirectColor(albedo, normal, kPbrFillLightDirection, viewDirection, kPbrFillLightStrength);

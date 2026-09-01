@@ -154,6 +154,7 @@ TEST_CASE("settings pages stay in the intended navigation order", "[ui][settings
   CHECK(pages[2].label == std::string("Interface"));
   CHECK(pages[3].page == GuiData::SettingsTab::Images);
   CHECK(pages[4].page == GuiData::SettingsTab::Segmentation);
+  CHECK(pages[4].label == std::string("Segmentations"));
   CHECK(pages[5].page == GuiData::SettingsTab::Registration);
   CHECK(pages[5].label == std::string("Registration"));
   CHECK(pages[6].page == GuiData::SettingsTab::Comparison);

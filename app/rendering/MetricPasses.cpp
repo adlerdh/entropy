@@ -263,7 +263,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_tex_T_world", U[i].segTexture_T_world);
       program.setUniform(
         "u_segOpacity",
-        U[i].segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U[i].imgOpacity : 1.0f));
+        U[i].segOpacity * (R.m_modulateSegmentationOpacityWithImageOpacity2d ? U[i].imgOpacity : 1.0f));
       program.setUniform("u_quadrants", glm::ivec2{0, 0});
       program.setUniform("u_showFix", true); // ignored if not checkerboard or quadrants
       program.setUniform("u_renderMode", 0); // disabled

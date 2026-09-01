@@ -1148,9 +1148,9 @@ bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callb
 
   if (
     !insertSubmenu(state->mainMenu, 0, fileMenu, L"&File") || !insertSubmenu(state->mainMenu, 1, modesMenu, L"&Mode") ||
-    !insertSubmenu(state->mainMenu, 2, imageMenu, L"&Image") ||
-    !insertSubmenu(state->mainMenu, 3, segmentationMenu, L"&Segmentation") ||
-    !insertSubmenu(state->mainMenu, 4, annotationsMenu, L"&Annotation") ||
+    !insertSubmenu(state->mainMenu, 2, imageMenu, L"&Images") ||
+    !insertSubmenu(state->mainMenu, 3, segmentationMenu, L"&Segmentations") ||
+    !insertSubmenu(state->mainMenu, 4, annotationsMenu, L"&Annotations") ||
     !insertSubmenu(state->mainMenu, 5, landmarksMenu, L"Land&marks") ||
     !insertSubmenu(state->mainMenu, 6, state->layoutsMenu, L"&Layout") ||
     !insertSubmenu(state->mainMenu, 7, viewsMenu, L"&View") ||

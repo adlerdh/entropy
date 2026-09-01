@@ -70,8 +70,6 @@ bool imageSettingsEqual(
          a->m_colorMapIndices == b->m_colorMapIndices && a->m_colorMapInverted == b->m_colorMapInverted &&
          a->m_colorMapContinuous == b->m_colorMapContinuous && a->m_colorMapLevels == b->m_colorMapLevels &&
          a->m_colorMapHsvModifiers == b->m_colorMapHsvModifiers && a->m_interpolationModes == b->m_interpolationModes &&
-         a->m_foregroundThresholdLows == b->m_foregroundThresholdLows &&
-         a->m_foregroundThresholdHighs == b->m_foregroundThresholdHighs &&
          a->m_componentLevelIndices == b->m_componentLevelIndices &&
          a->m_componentWindowIndices == b->m_componentWindowIndices &&
          a->m_componentThresholdLowIndices == b->m_componentThresholdLowIndices &&
@@ -84,15 +82,12 @@ bool imageSettingsEqual(
          a->m_colorMapLevelIndices == b->m_colorMapLevelIndices &&
          a->m_colorMapHsvModifierIndices == b->m_colorMapHsvModifierIndices &&
          a->m_interpolationModeIndices == b->m_interpolationModeIndices &&
-         a->m_foregroundThresholdLowIndices == b->m_foregroundThresholdLowIndices &&
-         a->m_foregroundThresholdHighIndices == b->m_foregroundThresholdHighIndices &&
          a->m_edgeDetectionMethod == b->m_edgeDetectionMethod && a->m_showEdges == b->m_showEdges &&
          a->m_thresholdEdges == b->m_thresholdEdges && a->m_thinPixelEdges == b->m_thinPixelEdges &&
          a->m_overlayEdges == b->m_overlayEdges && a->m_colormapEdges == b->m_colormapEdges &&
          a->m_edgeMagnitude == b->m_edgeMagnitude && a->m_pixelEdgeScale == b->m_pixelEdgeScale &&
          a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold && a->m_edgeColor == b->m_edgeColor &&
          a->m_hasEdgeColor == b->m_hasEdgeColor && a->m_edgeOpacity == b->m_edgeOpacity &&
-         a->m_useDistanceMapForRaycasting == b->m_useDistanceMapForRaycasting &&
          a->m_isosurfacesVisible == b->m_isosurfacesVisible &&
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
          a->m_modulateIsocontourOpacityWithImageOpacity == b->m_modulateIsocontourOpacityWithImageOpacity &&
@@ -163,9 +158,7 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 {
   return a.name == b.name && a.value == b.value && a.color == b.color &&
          surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
-         a.visible == b.visible && a.showIn2d == b.showIn2d && a.showIn3d == b.showIn3d &&
-         a.rimLightingEnabled == b.rimLightingEnabled && a.rimOpacityStrength == b.rimOpacityStrength &&
-         a.rimEmissionStrength == b.rimEmissionStrength && a.rimPower == b.rimPower;
+         a.visible == b.visible && a.showIn2d == b.showIn2d && a.showIn3d == b.showIn3d;
 }
 
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)
@@ -308,15 +301,21 @@ bool raycastingSettingsEqual(
   const serialize::ProjectRaycastingSettings& a,
   const serialize::ProjectRaycastingSettings& b)
 {
-  return a.m_samplingFactor == b.m_samplingFactor && a.m_renderFrontFaces == b.m_renderFrontFaces &&
-         a.m_renderBackFaces == b.m_renderBackFaces && a.m_segmentationMasking == b.m_segmentationMasking;
+  return a.m_samplingFactor == b.m_samplingFactor && a.m_useDistanceMap == b.m_useDistanceMap &&
+         a.m_distanceMapForegroundLowerPercentile == b.m_distanceMapForegroundLowerPercentile &&
+         a.m_distanceMapForegroundUpperPercentile == b.m_distanceMapForegroundUpperPercentile &&
+         a.m_renderFrontFaces == b.m_renderFrontFaces && a.m_renderBackFaces == b.m_renderBackFaces &&
+         a.m_segmentationMasking == b.m_segmentationMasking;
 }
 
 bool meshRenderingSettingsEqual(
   const serialize::ProjectMeshRenderingSettings& a,
   const serialize::ProjectMeshRenderingSettings& b)
 {
-  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_smoothSegmentationMeshes == b.m_smoothSegmentationMeshes &&
+  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_pbrShadingEnabled == b.m_pbrShadingEnabled &&
+         a.m_pbrMetallic == b.m_pbrMetallic && a.m_pbrRoughness == b.m_pbrRoughness &&
+         a.m_pbrAmbientOcclusion == b.m_pbrAmbientOcclusion &&
+         a.m_smoothSegmentationMeshes == b.m_smoothSegmentationMeshes &&
          a.m_segmentationSmoothingIterations == b.m_segmentationSmoothingIterations &&
          a.m_segmentationSmoothingPassBand == b.m_segmentationSmoothingPassBand &&
          a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses && a.m_pickingEnabled == b.m_pickingEnabled &&
@@ -328,7 +327,9 @@ bool meshRenderingSettingsEqual(
          a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength &&
          a.m_ambientOcclusionPower == b.m_ambientOcclusionPower &&
          a.m_ambientOcclusionContrast == b.m_ambientOcclusionContrast &&
-         a.m_ambientOcclusionSampleCount == b.m_ambientOcclusionSampleCount;
+         a.m_ambientOcclusionSampleCount == b.m_ambientOcclusionSampleCount &&
+         a.m_rimLightingEnabled == b.m_rimLightingEnabled && a.m_rimOpacityStrength == b.m_rimOpacityStrength &&
+         a.m_rimEmissionStrength == b.m_rimEmissionStrength && a.m_rimPower == b.m_rimPower;
 }
 
 bool intensityProjectionSettingsEqual(
@@ -343,7 +344,8 @@ bool segmentationDisplaySettingsEqual(
   const serialize::ProjectSegmentationDisplaySettings& a,
   const serialize::ProjectSegmentationDisplaySettings& b)
 {
-  return a.m_modulateOpacityWithImageOpacity == b.m_modulateOpacityWithImageOpacity &&
+  return a.m_modulateOpacityWithImageOpacity2d == b.m_modulateOpacityWithImageOpacity2d &&
+         a.m_modulateOpacityWithImageOpacity3d == b.m_modulateOpacityWithImageOpacity3d &&
          a.m_outlineStyle == b.m_outlineStyle && a.m_interiorOpacity == b.m_interiorOpacity &&
          a.m_erosionFactor == b.m_erosionFactor;
 }

@@ -203,7 +203,7 @@ const std::array<SettingsPageChoice, 9>& settingsPageChoices()
     SettingsPageChoice{GuiData::SettingsTab::Rendering, "3D Rendering"},
     SettingsPageChoice{GuiData::SettingsTab::Interface, "Interface"},
     SettingsPageChoice{GuiData::SettingsTab::Images, "Images"},
-    SettingsPageChoice{GuiData::SettingsTab::Segmentation, "Segmentation"},
+    SettingsPageChoice{GuiData::SettingsTab::Segmentation, "Segmentations"},
     SettingsPageChoice{GuiData::SettingsTab::Registration, "Registration"},
     SettingsPageChoice{GuiData::SettingsTab::Comparison, "Comparison"},
     SettingsPageChoice{GuiData::SettingsTab::Synchronization, "Synchronization"},

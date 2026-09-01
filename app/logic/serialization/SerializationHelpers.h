@@ -438,8 +438,6 @@ std::size_t imageComponentSettingsCount(const serialize::ImageSettings& settings
      settings.m_colorMapLevels.size(),
      settings.m_colorMapHsvModifiers.size(),
      settings.m_interpolationModes.size(),
-     settings.m_foregroundThresholdLows.size(),
-     settings.m_foregroundThresholdHighs.size(),
      maxSparseIndexPlusOne(settings.m_componentLevelIndices),
      maxSparseIndexPlusOne(settings.m_componentWindowIndices),
      maxSparseIndexPlusOne(settings.m_componentThresholdLowIndices),
@@ -451,9 +449,7 @@ std::size_t imageComponentSettingsCount(const serialize::ImageSettings& settings
      maxSparseIndexPlusOne(settings.m_colorMapContinuousIndices),
      maxSparseIndexPlusOne(settings.m_colorMapLevelIndices),
      maxSparseIndexPlusOne(settings.m_colorMapHsvModifierIndices),
-     maxSparseIndexPlusOne(settings.m_interpolationModeIndices),
-     maxSparseIndexPlusOne(settings.m_foregroundThresholdLowIndices),
-     maxSparseIndexPlusOne(settings.m_foregroundThresholdHighIndices)});
+     maxSparseIndexPlusOne(settings.m_interpolationModeIndices)});
 }
 
 json imageComponentSettingsToJson(const serialize::ImageSettings& settings, const std::size_t index)
@@ -548,19 +544,6 @@ json imageComponentSettingsToJson(const serialize::ImageSettings& settings, cons
   {
     value["interpolationMode"] = enumToName(*componentValue, k_interpolationModeNames);
   }
-  if (
-    const auto componentValue =
-      sparseVectorValue(settings.m_foregroundThresholdLows, settings.m_foregroundThresholdLowIndices, index))
-  {
-    value["foregroundThresholdLow"] = *componentValue;
-  }
-  if (
-    const auto componentValue =
-      sparseVectorValue(settings.m_foregroundThresholdHighs, settings.m_foregroundThresholdHighIndices, index))
-  {
-    value["foregroundThresholdHigh"] = *componentValue;
-  }
-
   return value;
 }
 
@@ -578,9 +561,7 @@ json imageComponentDefaultsToJson()
     {"colorMapContinuous", true},
     {"colorMapLevels", 8},
     {"colorMapHsvModifier", vec3ToJson(glm::vec3{0.0f, 1.0f, 1.0f})},
-    {"interpolationMode", enumToName(InterpolationMode::Linear, k_interpolationModeNames)},
-    {"foregroundThresholdLow", 0.0},
-    {"foregroundThresholdHigh", 0.0}};
+    {"interpolationMode", enumToName(InterpolationMode::Linear, k_interpolationModeNames)}};
 }
 
 } // namespace

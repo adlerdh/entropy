@@ -391,10 +391,17 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
   project.m_raycasting.m_samplingFactor = 1.25f;
+  project.m_raycasting.m_useDistanceMap = false;
+  project.m_raycasting.m_distanceMapForegroundLowerPercentile = 0.2f;
+  project.m_raycasting.m_distanceMapForegroundUpperPercentile = 0.8f;
   project.m_raycasting.m_renderFrontFaces = false;
   project.m_raycasting.m_renderBackFaces = true;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
   project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_pbrShadingEnabled = true;
+  project.m_meshRendering.m_pbrMetallic = 0.4f;
+  project.m_meshRendering.m_pbrRoughness = 0.2f;
+  project.m_meshRendering.m_pbrAmbientOcclusion = 0.9f;
   project.m_meshRendering.m_smoothSegmentationMeshes = false;
   project.m_meshRendering.m_segmentationSmoothingIterations = 40;
   project.m_meshRendering.m_segmentationSmoothingPassBand = 0.2f;
@@ -408,6 +415,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_ambientOcclusionPower = 1.8f;
   project.m_meshRendering.m_ambientOcclusionContrast = 2.2f;
   project.m_meshRendering.m_ambientOcclusionSampleCount = 32;
+  project.m_meshRendering.m_rimLightingEnabled = true;
+  project.m_meshRendering.m_rimOpacityStrength = 0.8f;
+  project.m_meshRendering.m_rimEmissionStrength = 1.25f;
+  project.m_meshRendering.m_rimPower = 3.5f;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
@@ -417,7 +428,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_intensityProjection.m_xrayEnergyKeV = 120.0f;
   project.m_intensityProjection.m_xrayWindow = 0.35f;
   project.m_intensityProjection.m_xrayLevel = 0.65f;
-  project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity = false;
+  project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d = false;
+  project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d = false;
   project.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ImageVoxel;
   project.m_segmentationDisplay.m_interiorOpacity = 0.4f;
   project.m_segmentationDisplay.m_erosionFactor = 0.8f;
@@ -466,9 +478,16 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("adaptiveSamplingEnabled"));
   CHECK_FALSE(raycasting.contains("adaptiveSamplingTargetFrameRate"));
   CHECK(raycasting.at("renderFrontFaces") == false);
+  CHECK(raycasting.at("distanceMap").at("enabled") == false);
+  CHECK(raycasting.at("distanceMap").at("lowerPercentile") == 0.2f);
+  CHECK(raycasting.at("distanceMap").at("upperPercentile") == 0.8f);
   CHECK_FALSE(raycasting.contains("renderBackFaces"));
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
   CHECK(mesh.at("enabled") == false);
+  CHECK(mesh.at("pbr").at("enabled") == true);
+  CHECK(mesh.at("pbr").at("metallic") == 0.4f);
+  CHECK(mesh.at("pbr").at("roughness") == 0.2f);
+  CHECK(mesh.at("pbr").at("ambientOcclusion") == 0.9f);
   CHECK(mesh.at("segmentationSmoothing").at("enabled") == false);
   CHECK(mesh.at("segmentationSmoothing").at("iterations") == 40);
   CHECK(mesh.at("segmentationSmoothing").at("passBand") == 0.2f);
@@ -482,6 +501,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(mesh.at("ambientOcclusion").at("power") == 1.8f);
   CHECK(mesh.at("ambientOcclusion").at("contrast") == 2.2f);
   CHECK(mesh.at("ambientOcclusion").at("sampleCount") == 32);
+  CHECK(mesh.at("rimLighting").at("enabled") == true);
+  CHECK(mesh.at("rimLighting").at("opacity") == 0.8f);
+  CHECK(mesh.at("rimLighting").at("glow") == 1.25f);
+  CHECK(mesh.at("rimLighting").at("falloff") == 3.5f);
   CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
   CHECK_FALSE(mesh.contains("dualDepthPeeling"));
   CHECK(mesh.at("pointPicking") == false);
@@ -505,8 +528,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == true);
   CHECK(rendering.at("intensityProjection").at("slabThicknessMm") == 12.5f);
   CHECK(rendering.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
-  CHECK(rendering.at("segmentation").at("outlineStyle") == "voxel");
-  CHECK(rendering.at("segmentation").at("erosionFactor") == 0.8f);
+  CHECK(rendering.at("segmentations").at("outlineStyle") == "voxel");
+  CHECK(rendering.at("segmentations").at("erosionFactor") == 0.8f);
+  CHECK(rendering.at("segmentations").at("imageOpacityModulation").at("twoD") == false);
+  CHECK(rendering.at("segmentations").at("imageOpacityModulation").at("threeD") == false);
   CHECK(rendering.at("isocontours").at("floatingPointInterpolationPolicy") == "floatingPoint");
   CHECK_FALSE(settings.contains("annotations"));
   CHECK_FALSE(rendering.contains("isosurfaces"));
@@ -537,10 +562,17 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.z == 0.75f);
   CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.w == 0.8f);
   CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
+  CHECK_FALSE(parsed.m_raycasting.m_useDistanceMap);
+  CHECK(parsed.m_raycasting.m_distanceMapForegroundLowerPercentile == 0.2f);
+  CHECK(parsed.m_raycasting.m_distanceMapForegroundUpperPercentile == 0.8f);
   CHECK(parsed.m_raycasting.m_renderFrontFaces == false);
   CHECK(parsed.m_raycasting.m_renderBackFaces == true);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
   CHECK(parsed.m_meshRendering.m_renderingEnabled == false);
+  CHECK(parsed.m_meshRendering.m_pbrShadingEnabled == true);
+  CHECK(parsed.m_meshRendering.m_pbrMetallic == 0.4f);
+  CHECK(parsed.m_meshRendering.m_pbrRoughness == 0.2f);
+  CHECK(parsed.m_meshRendering.m_pbrAmbientOcclusion == 0.9f);
   CHECK(parsed.m_meshRendering.m_smoothSegmentationMeshes == false);
   CHECK(parsed.m_meshRendering.m_segmentationSmoothingIterations == 40);
   CHECK(parsed.m_meshRendering.m_segmentationSmoothingPassBand == 0.2f);
@@ -553,6 +585,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.8f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 2.2f);
+  CHECK(parsed.m_meshRendering.m_rimLightingEnabled == true);
+  CHECK(parsed.m_meshRendering.m_rimOpacityStrength == 0.8f);
+  CHECK(parsed.m_meshRendering.m_rimEmissionStrength == 1.25f);
+  CHECK(parsed.m_meshRendering.m_rimPower == 3.5f);
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 32);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
@@ -563,7 +599,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
   CHECK(parsed.m_intensityProjection.m_xrayWindow == 0.35f);
   CHECK(parsed.m_intensityProjection.m_xrayLevel == 0.65f);
-  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity == false);
+  CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
+  CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
   CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ImageVoxel);
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 0.4f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.8f);
@@ -620,16 +657,24 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.0f, 0.0f, 1.0f};
   project.m_raycasting.m_samplingFactor = 1.25f;
+  project.m_raycasting.m_useDistanceMap = false;
+  project.m_raycasting.m_distanceMapForegroundLowerPercentile = 0.2f;
+  project.m_raycasting.m_distanceMapForegroundUpperPercentile = 0.8f;
   project.m_raycasting.m_renderFrontFaces = false;
   project.m_raycasting.m_renderBackFaces = false;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskIn;
   project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
+  project.m_meshRendering.m_rimLightingEnabled = true;
   project.m_meshRendering.m_segmentationSmoothingIterations = 40;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
+  project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d = false;
+  project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d = false;
+  project.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ImageVoxel;
   project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
 
   REQUIRE(serialize::save(project, projectFile));
@@ -664,7 +709,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   const auto& orderedRendering = ordered.at("settings").at("rendering");
   CHECK(
     objectKeys(orderedRendering) ==
-    std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours"});
+    std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours", "segmentations"});
   CHECK(objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"maxPeelPasses"});
   CHECK(
     objectKeys(orderedRendering.at("threeD")) == std::vector<std::string>{
@@ -680,8 +725,10 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                    "imagePlanes"});
   CHECK(
     objectKeys(orderedRendering.at("mesh")) == std::vector<std::string>{
+                                                 "pbr",
                                                  "shadows",
                                                  "ambientOcclusion",
+                                                 "rimLighting",
                                                  "segmentationSmoothing",
                                                  "pointPicking",
                                                  "clipPlane",
@@ -690,8 +737,21 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
     objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
     std::vector<std::string>{"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"});
   CHECK(
-    objectKeys(orderedRendering.at("raycasting")) ==
-    std::vector<std::string>{"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"});
+    objectKeys(orderedRendering.at("raycasting")) == std::vector<std::string>{
+                                                       "samplingFactor",
+                                                       "distanceMap",
+                                                       "renderFrontFaces",
+                                                       "renderBackFaces",
+                                                       "segmentationMasking"});
+  CHECK(
+    objectKeys(orderedRendering.at("raycasting").at("distanceMap")) ==
+    std::vector<std::string>{"enabled", "lowerPercentile", "upperPercentile"});
+  CHECK(
+    objectKeys(orderedRendering.at("segmentations")) ==
+    std::vector<std::string>{"imageOpacityModulation", "outlineStyle"});
+  CHECK(
+    objectKeys(orderedRendering.at("segmentations").at("imageOpacityModulation")) ==
+    std::vector<std::string>{"twoD", "threeD"});
 }
 
 TEST_CASE("Project serialization ignores obsolete DDP settings nested under mesh", "[project][serialization]")
@@ -703,6 +763,21 @@ TEST_CASE("Project serialization ignores obsolete DDP settings nested under mesh
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 5);
+}
+
+TEST_CASE("Project serialization ignores the obsolete singular segmentation settings key", "[project][serialization]")
+{
+  const json root = {
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings",
+     {{"rendering", {{"segmentation", {{"modulateOpacityWithImageOpacity", false}, {"outlineStyle", "voxel"}}}}}}}};
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
+  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
+  const json saved = parsed;
+  const json rendering = saved.value("settings", json::object()).value("rendering", json::object());
+  CHECK_FALSE(rendering.contains("segmentation"));
 }
 
 TEST_CASE("Project serialization ignores obsolete translucent mesh compositing", "[project][serialization]")
@@ -760,8 +835,8 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
             {"xrayEnergyKeV", 120.0f},
             {"xrayWindow", 0.0f},
             {"xrayLevel", 2.0f}}},
-          {"segmentation",
-           {{"modulateOpacityWithImageOpacity", false},
+          {"segmentations",
+           {{"imageOpacityModulation", {{"twoD", false}, {"threeD", false}}},
             {"outlineStyle", "bad"},
             {"interiorOpacity", 2.0f},
             {"erosionFactor", 0.0f}}},
@@ -784,7 +859,8 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
   CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
   CHECK(parsed.m_intensityProjection.m_xrayWindow == 1.0e-3f);
   CHECK(parsed.m_intensityProjection.m_xrayLevel == 1.0f);
-  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity == false);
+  CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
+  CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
   CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 1.0f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
@@ -1210,8 +1286,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_colorMapLevels = {8, 9, 10},
     .m_colorMapHsvModifiers = {glm::vec3{0.1f, 0.2f, 0.3f}, glm::vec3{0.4f, 0.5f, 0.6f}},
     .m_interpolationModes = {InterpolationMode::Linear, InterpolationMode::NearestNeighbor},
-    .m_foregroundThresholdLows = {4.0, 5.0, 6.0},
-    .m_foregroundThresholdHighs = {40.0, 50.0, 60.0},
     .m_componentLevelIndices = {},
     .m_componentWindowIndices = {},
     .m_componentThresholdLowIndices = {},
@@ -1224,8 +1298,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_colorMapLevelIndices = {},
     .m_colorMapHsvModifierIndices = {},
     .m_interpolationModeIndices = {},
-    .m_foregroundThresholdLowIndices = {},
-    .m_foregroundThresholdHighIndices = {},
     .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Pixel,
     .m_showEdges = true,
     .m_thresholdEdges = false,
@@ -1238,7 +1310,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_edgeColor = glm::vec3{0.1f, 0.2f, 0.3f},
     .m_edgeOpacity = 0.6,
     .m_hasEdgeColor = true,
-    .m_useDistanceMapForRaycasting = false,
     .m_isosurfacesVisible = false,
     .m_applyImageColormapToIsosurfaces = true,
     .m_modulateIsocontourOpacityWithImageOpacity = true,
@@ -1257,7 +1328,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   const json& vectorArrows = settings.at("vectorArrows");
   const json& warpedGrid = settings.at("warpedGrid");
   const json& edges = settings.at("edges");
-  const json& raycasting = settings.at("raycasting");
   const json& isosurfaces = settings.at("isosurfaces");
 
   CHECK_FALSE(settings.contains("globalVisibility"));
@@ -1300,8 +1370,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(components.at("values").at(0).contains("colorMapLevels"));
   CHECK(components.at("values").at(0).at("colorMapHsvModifier") == json::array({0.1f, 0.2f, 0.3f}));
   CHECK_FALSE(components.at("values").at(0).contains("interpolationMode"));
-  CHECK(components.at("values").at(0).at("foregroundThresholdLow") == 4.0);
-  CHECK(components.at("values").at(0).at("foregroundThresholdHigh") == 40.0);
   CHECK(components.at("values").at(1).at("visible") == false);
   CHECK(components.at("values").at(1).at("colorMapHsvModifier") == json::array({0.4f, 0.5f, 0.6f}));
   CHECK(components.at("values").at(1).at("interpolationMode") == "nearest");
@@ -1344,7 +1412,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(edges.at("pixelThreshold") == 0.44);
   CHECK(edges.at("color") == json::array({0.1f, 0.2f, 0.3f}));
   CHECK(edges.at("opacity") == 0.6);
-  CHECK(raycasting.at("useDistanceMap") == false);
   CHECK(isosurfaces.at("visible") == false);
   CHECK(isosurfaces.at("applyImageColormap") == true);
   CHECK(isosurfaces.at("modulateContourOpacityWithImageOpacity") == true);
@@ -1423,8 +1490,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(
     parsedSettings.m_interpolationModes ==
     std::vector<InterpolationMode>{InterpolationMode::Linear, InterpolationMode::NearestNeighbor});
-  CHECK(parsedSettings.m_foregroundThresholdLows == std::vector<double>{4.0, 5.0, 6.0});
-  CHECK(parsedSettings.m_foregroundThresholdHighs == std::vector<double>{40.0, 50.0, 60.0});
   CHECK(parsedSettings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Pixel);
   CHECK(parsedSettings.m_showEdges);
   CHECK_FALSE(parsedSettings.m_thresholdEdges);
@@ -1437,7 +1502,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_edgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
   CHECK(parsedSettings.m_hasEdgeColor);
   CHECK(parsedSettings.m_edgeOpacity == 0.6);
-  CHECK_FALSE(parsedSettings.m_useDistanceMapForRaycasting);
   CHECK_FALSE(parsedSettings.m_isosurfacesVisible);
   CHECK(parsedSettings.m_applyImageColormapToIsosurfaces);
   CHECK(parsedSettings.m_modulateIsocontourOpacityWithImageOpacity);
@@ -1447,93 +1511,37 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
 }
 
-TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project][serialization][isosurface]")
+TEST_CASE("Isosurface serialization ignores legacy material effects", "[project][serialization][isosurface]")
 {
-  Isosurface surface;
-  surface.name = "Cortex";
-  surface.value = 42.0;
-  surface.color = glm::vec3{0.1f, 0.2f, 0.3f};
-  surface.material.ambient = 0.2f;
-  surface.material.diffuse = 0.6f;
-  surface.material.specular = 0.3f;
-  surface.material.shininess = 12.0f;
-  surface.material.usePbrShading = true;
-  surface.material.metallic = 0.4f;
-  surface.material.roughness = 0.2f;
-  surface.material.ambientOcclusion = 0.9f;
-  surface.opacity = 0.7f;
-  surface.fillOpacity = 0.25f;
-  surface.visible = false;
-  surface.showIn2d = false;
-  surface.showIn3d = false;
-  surface.rimLightingEnabled = true;
-  surface.rimOpacityStrength = 0.8f;
-  surface.rimEmissionStrength = 1.25f;
-  surface.rimPower = 3.5f;
-
-  const json root = surface;
-
-  CHECK(root.at("contourFillOpacity") == 0.25f);
-  CHECK(root.at("showContours2D") == false);
-  CHECK(root.at("showSurface3D") == false);
-  CHECK(root.at("material").at("pbr").at("enabled") == true);
-  CHECK(root.at("material").at("pbr").at("metallic") == 0.4f);
-  CHECK(root.at("material").at("pbr").at("roughness") == 0.2f);
-  CHECK(root.at("material").at("pbr").at("ambientOcclusion") == 0.9f);
-  CHECK(root.at("rimLighting").at("enabled") == true);
-  CHECK(root.at("rimLighting").at("opacity") == 0.8f);
-  CHECK(root.at("rimLighting").at("glow") == 1.25f);
-  CHECK(root.at("rimLighting").at("falloff") == 3.5f);
-  CHECK_FALSE(root.contains("fillOpacity"));
-  CHECK_FALSE(root.contains("showIn2d"));
-  CHECK_FALSE(root.contains("showIn3d"));
-  CHECK_FALSE(root.contains("rimLightingEnabled"));
-  CHECK_FALSE(root.contains("rimOpacityStrength"));
-  CHECK_FALSE(root.contains("rimEmissionStrength"));
-  CHECK_FALSE(root.contains("rimPower"));
-  CHECK_FALSE(root.contains("edgeStrength"));
-
-  const Isosurface parsed = root.get<Isosurface>();
-  CHECK(parsed.name == "Cortex");
-  CHECK(parsed.value == 42.0);
-  CHECK(parsed.color == glm::vec3{0.1f, 0.2f, 0.3f});
-  CHECK(parsed.material.ambient == 0.2f);
-  CHECK(parsed.material.diffuse == 0.6f);
-  CHECK(parsed.material.specular == 0.3f);
-  CHECK(parsed.material.shininess == 12.0f);
-  CHECK(parsed.material.usePbrShading);
-  CHECK(parsed.material.metallic == 0.4f);
-  CHECK(parsed.material.roughness == 0.2f);
-  CHECK(parsed.material.ambientOcclusion == 0.9f);
-  CHECK(parsed.opacity == 0.7f);
-  CHECK(parsed.fillOpacity == 0.25f);
-  CHECK_FALSE(parsed.visible);
-  CHECK_FALSE(parsed.showIn2d);
-  CHECK_FALSE(parsed.showIn3d);
-  CHECK(parsed.rimLightingEnabled);
-  CHECK(parsed.rimOpacityStrength == 0.8f);
-  CHECK(parsed.rimEmissionStrength == 1.25f);
-  CHECK(parsed.rimPower == 3.5f);
+  const json legacy = {
+    {"material", {{"pbr", {{"enabled", true}, {"metallic", 0.9f}}}}},
+    {"rimLighting", {{"enabled", true}, {"glow", 2.0f}}}};
+  const Isosurface parsed = legacy.get<Isosurface>();
+  const json saved = parsed;
+  CHECK_FALSE(saved.contains("rimLighting"));
+  CHECK_FALSE(saved.value("material", json::object()).contains("pbr"));
 }
 
-TEST_CASE("Isosurface serialization omits default PBR coefficients", "[project][serialization][isosurface]")
+TEST_CASE("Image serialization ignores legacy per-image distance-map settings", "[project][serialization][image]")
 {
-  Isosurface surface;
-  surface.material.usePbrShading = true;
-
-  const json root = surface;
-  const json& pbr = root.at("material").at("pbr");
-
-  CHECK(pbr.at("enabled") == true);
-  CHECK_FALSE(pbr.contains("metallic"));
-  CHECK_FALSE(pbr.contains("roughness"));
-  CHECK_FALSE(pbr.contains("ambientOcclusion"));
-
-  const Isosurface parsed = root.get<Isosurface>();
-  CHECK(parsed.material.usePbrShading);
-  CHECK(parsed.material.metallic == 0.25f);
-  CHECK(parsed.material.roughness == 0.5f);
-  CHECK(parsed.material.ambientOcclusion == 1.0f);
+  const json legacy = {
+    {"images",
+     json::array(
+       {{{"path", "image.nii.gz"},
+         {"settings",
+          {{"raycasting", {{"useDistanceMap", false}}},
+           {"components",
+            {{"values", json::array({{{"foregroundThresholdLow", 10.0}, {"foregroundThresholdHigh", 90.0}}})}}}}}}})}};
+  const serialize::EntropyProject parsed = legacy.get<serialize::EntropyProject>();
+  const json saved = parsed;
+  const json& savedSettings = saved.at("images").at(0).value("settings", json::object());
+  CHECK_FALSE(savedSettings.contains("raycasting"));
+  if (const auto components = savedSettings.find("components"); components != savedSettings.end()) {
+    for (const auto& component : components->value("values", json::array())) {
+      CHECK_FALSE(component.contains("foregroundThresholdLow"));
+      CHECK_FALSE(component.contains("foregroundThresholdHigh"));
+    }
+  }
 }
 
 TEST_CASE("Project serialization preserves image isosurfaces", "[project][serialization][isosurface]")
@@ -1551,10 +1559,6 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   imageSurface.m_surface.visible = false;
   imageSurface.m_surface.showIn2d = false;
   imageSurface.m_surface.showIn3d = false;
-  imageSurface.m_surface.rimLightingEnabled = true;
-  imageSurface.m_surface.rimOpacityStrength = 0.7f;
-  imageSurface.m_surface.rimEmissionStrength = 1.4f;
-  imageSurface.m_surface.rimPower = 3.0f;
   project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
 
   const json root = project;
@@ -1564,14 +1568,10 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
   CHECK(savedSurface.at("surface").at("showContours2D") == false);
   CHECK(savedSurface.at("surface").at("showSurface3D") == false);
-  CHECK(savedSurface.at("surface").at("rimLighting").at("enabled") == true);
-  CHECK(savedSurface.at("surface").at("rimLighting").at("opacity") == 0.7f);
-  CHECK(savedSurface.at("surface").at("rimLighting").at("glow") == 1.4f);
-  CHECK(savedSurface.at("surface").at("rimLighting").at("falloff") == 3.0f);
   CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
   CHECK_FALSE(savedSurface.at("surface").contains("showIn2d"));
   CHECK_FALSE(savedSurface.at("surface").contains("showIn3d"));
-  CHECK_FALSE(savedSurface.at("surface").contains("rimLightingEnabled"));
+  CHECK_FALSE(savedSurface.at("surface").contains("rimLighting"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_isosurfaces.size() == 1);
@@ -1585,10 +1585,6 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK_FALSE(parsedSurface.m_surface.visible);
   CHECK_FALSE(parsedSurface.m_surface.showIn2d);
   CHECK_FALSE(parsedSurface.m_surface.showIn3d);
-  CHECK(parsedSurface.m_surface.rimLightingEnabled);
-  CHECK(parsedSurface.m_surface.rimOpacityStrength == 0.7f);
-  CHECK(parsedSurface.m_surface.rimEmissionStrength == 1.4f);
-  CHECK(parsedSurface.m_surface.rimPower == 3.0f);
 }
 
 TEST_CASE("Project serialization preserves inverse and forward warp paths", "[project][serialization]")

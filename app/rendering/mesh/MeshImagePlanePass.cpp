@@ -354,7 +354,7 @@ void setMeshImagePlaneSegmentationUniforms(
   program.setUniform(
     "u_segOpacity",
     drawSegmentation
-      ? uniforms.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? uniforms.imgOpacity : 1.0f)
+      ? uniforms.segOpacity * (renderData.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f)
       : 0.0f);
   program.setUniform(
     "u_segFillOpacity",

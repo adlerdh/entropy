@@ -164,6 +164,21 @@ TEST_CASE("distance maps accelerate only isovalues inside their foreground inter
   CHECK_FALSE(texture_setup::distanceMapSupportsIsovalues(2.0, 8.0, std::span<const float>{}));
 }
 
+TEST_CASE("distance map foreground percentiles map to native component values", "[rendering][texture-setup]")
+{
+  ComponentStats statistics;
+  for (std::size_t index = 0; index < statistics.quantiles.size(); ++index) {
+    statistics.quantiles[index] = static_cast<long double>(index * 2u);
+  }
+
+  CHECK(
+    texture_setup::distanceMapForegroundThresholds(statistics, 0.25f, 0.75f) == std::pair<double, double>{50.0, 150.0});
+  CHECK(
+    texture_setup::distanceMapForegroundThresholds(statistics, 0.9f, 0.1f) == std::pair<double, double>{20.0, 180.0});
+  CHECK(
+    texture_setup::distanceMapForegroundThresholds(statistics, -1.0f, 2.0f) == std::pair<double, double>{0.0, 200.0});
+}
+
 TEST_CASE("texture setup helpers reject invalid update regions", "[rendering][texture-setup]")
 {
   const rendering::PlanarTextureLayout xy{.dimension = TextureDimension::Texture2D, .axes = {0, 1}};

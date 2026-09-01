@@ -427,6 +427,8 @@ private:
     m_pendingDistanceMapGenerations;
   std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, DistanceMapGenerationRequest>>
     m_failedDistanceMapGenerations;
+  std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, DistanceMapGenerationRequest>>
+    m_completedDistanceMapGenerations;
 
   MeshImagePlaneHandleMap m_meshImagePlaneHandles; //!< Stable handles for dynamic 3D image-plane meshes
 

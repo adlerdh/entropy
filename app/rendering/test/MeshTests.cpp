@@ -1175,12 +1175,41 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
   const mesh::MeshMaterial sanitized = mesh::sanitizedMaterial(material, glm::vec4{0.25f, 0.5f, 0.75f, 1.0f});
 
   CHECK(sanitized.baseColor == glm::vec4{0.25f, 0.5f, 0.75f, 1.0f});
-  CHECK(sanitized.metallic == Catch::Approx(0.25f));
-  CHECK(sanitized.roughness == Catch::Approx(0.5f));
+  CHECK(sanitized.metallic == Catch::Approx(0.2f));
+  CHECK(sanitized.roughness == Catch::Approx(0.3f));
   CHECK(sanitized.ambientOcclusion == Catch::Approx(1.0f));
   CHECK(sanitized.rimOpacityStrength == Catch::Approx(1.0f));
   CHECK(sanitized.rimEmissionStrength == Catch::Approx(1.0f));
   CHECK(sanitized.rimPower == Catch::Approx(2.0f));
+}
+
+TEST_CASE("global surface settings create one material policy for every mesh type", "[rendering][mesh][material]")
+{
+  const mesh::MeshSurfaceMaterialSettings settings{
+    .pbrShadingEnabled = true,
+    .metallic = 0.4f,
+    .roughness = 0.2f,
+    .ambientOcclusion = 0.9f,
+    .rimLightingEnabled = true,
+    .rimOpacityStrength = 0.8f,
+    .rimEmissionStrength = 1.25f,
+    .rimPower = 3.5f};
+  const glm::vec4 color{0.1f, 0.2f, 0.3f, 0.75f};
+
+  const mesh::MeshMaterial material = mesh::meshMaterialForSurface(color, settings);
+  CHECK(material.baseColor == color);
+  CHECK(material.shadingModel == mesh::MeshShadingModel::PhysicallyBased);
+  CHECK(material.metallic == Catch::Approx(0.4f));
+  CHECK(material.roughness == Catch::Approx(0.2f));
+  CHECK(material.ambientOcclusion == Catch::Approx(0.9f));
+  CHECK(material.rimLightingEnabled);
+  CHECK(material.rimOpacityStrength == Catch::Approx(0.8f));
+  CHECK(material.rimEmissionStrength == Catch::Approx(1.25f));
+  CHECK(material.rimPower == Catch::Approx(3.5f));
+
+  const mesh::SegmentationLabelMeshStyle segmentation =
+    mesh::segmentationLabelMeshStyle(4, color, {.showMesh = true, .opacity = 1.0f}, settings);
+  CHECK(segmentation.material == material);
 }
 
 TEST_CASE("isosurface and segmentation extraction requests build distinct geometry keys", "[rendering][mesh]")
@@ -1309,6 +1338,14 @@ TEST_CASE("segmentation mesh policy respects independent 3D visibility and opaci
   CHECK_FALSE(mesh::shouldRenderSegmentationLabelMesh({.showMesh = true, .opacity = 0.0f}));
 }
 
+TEST_CASE("segmentation mesh opacity optionally follows image opacity", "[rendering][mesh]")
+{
+  CHECK(mesh::segmentationMeshOpacity(0.8f, 0.25f, true) == Catch::Approx(0.2f));
+  CHECK(mesh::segmentationMeshOpacity(0.8f, 0.25f, false) == Catch::Approx(0.8f));
+  CHECK(mesh::segmentationMeshOpacity(2.0f, 1.0f, false) == Catch::Approx(1.0f));
+  CHECK(mesh::segmentationMeshOpacity(-1.0f, 1.0f, false) == Catch::Approx(0.0f));
+}
+
 TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "[rendering][mesh]")
 {
   CHECK(mesh::compositingModeForLabelAlpha(1.0f) == mesh::MeshCompositingMode::Opaque);
@@ -1325,6 +1362,7 @@ TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "
     4,
     glm::vec4{0.1f, 0.2f, 0.3f, 0.5f},
     {.showMesh = true, .opacity = 0.25f},
+    {},
     mesh::MeshCompositingMode::Multiplicative);
 
   CHECK(style.labelValue == 4);

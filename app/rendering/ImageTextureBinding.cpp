@@ -92,11 +92,14 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
   }
 
   const auto distTextureIt = R.m_distanceMapTextures.find(textureImageUid);
-  const auto foregroundThresholds = S.foregroundThresholds(S.activeComponent());
+  const auto foregroundThresholds = rendering::texture_setup::distanceMapForegroundThresholds(
+    S.componentStatistics(S.activeComponent()),
+    R.m_distanceMapForegroundLowerPercentile,
+    R.m_distanceMapForegroundUpperPercentile);
   const auto activeIsovalues = std::span{R.m_isosurfaceData.values}.first(std::min<std::size_t>(
     static_cast<std::size_t>(std::max(R.m_isosurfaceData.numIsos, 0)),
     R.m_isosurfaceData.values.size()));
-  const bool useDistMap = S.useDistanceMapForRaycasting() && std::end(R.m_distanceMapTextures) != distTextureIt &&
+  const bool useDistMap = R.m_useDistanceMapForRaycasting && std::end(R.m_distanceMapTextures) != distTextureIt &&
                           rendering::texture_setup::distanceMapSupportsIsovalues(
                             foregroundThresholds.first,
                             foregroundThresholds.second,

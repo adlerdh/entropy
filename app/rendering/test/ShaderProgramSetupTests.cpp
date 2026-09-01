@@ -116,15 +116,15 @@ TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributio
   CHECK(raycast.find("uniform vec3 u_specular") == std::string::npos);
 }
 
-TEST_CASE("mesh PBR shading honors scene lighting in opaque and DDP paths", "[rendering][shaders][pbr]")
+TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP paths", "[rendering][shaders][pbr]")
 {
   const std::array shaderPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
 
   for (const char* shaderPath : shaderPaths) {
     const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
-    CHECK(shader.find("albedo * u_lightingAmbient * u_ambientOcclusion * ao") != std::string::npos);
-    CHECK(shader.find("diffuse * (kPi * u_lightingDiffuse)") != std::string::npos);
-    CHECK(shader.find("specular * (kPi * u_lightingSpecular)") != std::string::npos);
+    CHECK(shader.find("albedo * kPbrAmbientStrength * u_ambientOcclusion * ao") != std::string::npos);
+    CHECK(shader.find("diffuse * (kPi * kPbrDiffuseStrength)") != std::string::npos);
+    CHECK(shader.find("specular * (kPi * kPbrSpecularStrength)") != std::string::npos);
     CHECK(shader.find("kPbrFillLightDirection") != std::string::npos);
     CHECK(shader.find("kPbrFillLightStrength") != std::string::npos);
     CHECK(shader.find("ambient + keyLighting + fillLighting") != std::string::npos);

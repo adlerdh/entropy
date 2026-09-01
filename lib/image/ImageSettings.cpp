@@ -504,16 +504,6 @@ InterpolationMode ImageSettings::colorInterpolationMode() const
   return m_colorInterpolationMode;
 }
 
-void ImageSettings::setUseDistanceMapForRaycasting(bool use)
-{
-  m_useDistanceMapForRaycasting = use;
-}
-
-bool ImageSettings::useDistanceMapForRaycasting() const
-{
-  return m_useDistanceMapForRaycasting;
-}
-
 void ImageSettings::setIsosurfacesVisible(bool visible)
 {
   m_isosurfacesVisible = visible;

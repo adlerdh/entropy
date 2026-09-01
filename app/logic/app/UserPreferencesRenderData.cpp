@@ -107,7 +107,10 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.xrayWindow = renderData.m_xrayIntensityWindow;
   preferences.xrayLevel = renderData.m_xrayIntensityLevel;
   preferences.isocontourFloatingPointInterpolationPolicy = renderData.m_isocontourFloatingPointInterpolationPolicy;
-  preferences.modulateSegmentationOpacityWithImageOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
+  preferences.modulateSegmentationOpacityWithImageOpacity2d =
+    renderData.m_modulateSegmentationOpacityWithImageOpacity2d;
+  preferences.modulateSegmentationOpacityWithImageOpacity3d =
+    renderData.m_modulateSegmentationOpacityWithImageOpacity3d;
   preferences.segmentationOutlineStyle = renderData.m_segOutlineStyle;
   preferences.segmentationInteriorOpacity = renderData.m_segInteriorOpacity;
   preferences.segmentationErosionFactor = renderData.m_segInterpCutoff;
@@ -149,6 +152,9 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.limitFrameRate = renderData.m_manualFramerateLimiter;
   preferences.targetFrameTimeSeconds = renderData.m_targetFrameTimeSeconds;
   preferences.raycastSamplingFactor = renderData.m_raycastSamplingFactor;
+  preferences.useDistanceMapForRaycasting = renderData.m_useDistanceMapForRaycasting;
+  preferences.distanceMapForegroundLowerPercentile = renderData.m_distanceMapForegroundLowerPercentile;
+  preferences.distanceMapForegroundUpperPercentile = renderData.m_distanceMapForegroundUpperPercentile;
   preferences.transparent3DBackground = renderData.m_3dTransparentIfNoHit;
   preferences.imageBoxVisible = renderData.m_raycastBackgroundEdgeBrighteningEnabled;
   preferences.showImagePlanesIn3D = renderData.m_showImagePlanesIn3D;
@@ -163,6 +169,10 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.lightingDiffuse = renderData.m_lightingDiffuse;
   preferences.lightingSpecular = renderData.m_lightingSpecular;
   preferences.lightingSpecularPower = renderData.m_lightingSpecularPower;
+  preferences.meshPbrShadingEnabled = renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled;
+  preferences.meshPbrMetallic = renderData.m_meshSurfaceMaterialSettings.metallic;
+  preferences.meshPbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness;
+  preferences.meshPbrAmbientOcclusion = renderData.m_meshSurfaceMaterialSettings.ambientOcclusion;
   preferences.renderFrontFaces = renderData.m_renderFrontFaces;
   preferences.renderBackFaces = renderData.m_renderBackFaces;
   preferences.reversePovRotation = renderData.m_reverseThreeDRotateAboutEye;
@@ -187,6 +197,10 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.meshAmbientOcclusionPower = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power;
   preferences.meshAmbientOcclusionContrast = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast;
   preferences.meshAmbientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount;
+  preferences.meshRimLightingEnabled = renderData.m_meshSurfaceMaterialSettings.rimLightingEnabled;
+  preferences.meshRimOpacityStrength = renderData.m_meshSurfaceMaterialSettings.rimOpacityStrength;
+  preferences.meshRimEmissionStrength = renderData.m_meshSurfaceMaterialSettings.rimEmissionStrength;
+  preferences.meshRimPower = renderData.m_meshSurfaceMaterialSettings.rimPower;
   preferences.ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses;
   preferences.segmentationMasking =
     static_cast<user_preferences::RenderPreferences::SegMaskingForRaycasting>(renderData.m_segMasking);
@@ -239,7 +253,10 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_xrayIntensityWindow = preferences.xrayWindow;
   renderData.m_xrayIntensityLevel = preferences.xrayLevel;
   renderData.m_isocontourFloatingPointInterpolationPolicy = preferences.isocontourFloatingPointInterpolationPolicy;
-  renderData.m_modulateSegOpacityWithImageOpacity = preferences.modulateSegmentationOpacityWithImageOpacity;
+  renderData.m_modulateSegmentationOpacityWithImageOpacity2d =
+    preferences.modulateSegmentationOpacityWithImageOpacity2d;
+  renderData.m_modulateSegmentationOpacityWithImageOpacity3d =
+    preferences.modulateSegmentationOpacityWithImageOpacity3d;
   renderData.m_segOutlineStyle = preferences.segmentationOutlineStyle;
   renderData.m_segInteriorOpacity = preferences.segmentationInteriorOpacity;
   renderData.m_segInterpCutoff = preferences.segmentationErosionFactor;
@@ -281,6 +298,11 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_manualFramerateLimiter = preferences.limitFrameRate;
   renderData.m_targetFrameTimeSeconds = preferences.targetFrameTimeSeconds;
   renderData.m_raycastSamplingFactor = std::clamp(preferences.raycastSamplingFactor, 0.5f, 2.0f);
+  renderData.m_useDistanceMapForRaycasting = preferences.useDistanceMapForRaycasting;
+  renderData.m_distanceMapForegroundLowerPercentile =
+    std::clamp(preferences.distanceMapForegroundLowerPercentile, 0.0f, 1.0f);
+  renderData.m_distanceMapForegroundUpperPercentile =
+    std::clamp(preferences.distanceMapForegroundUpperPercentile, 0.0f, 1.0f);
   renderData.m_adaptiveRaycastSamplingEnabled = false;
   renderData.m_adaptiveRaycastTargetFrameRate = 30.0f;
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(preferences.raycastSamplingFactor, 0.5f, 2.0f);
@@ -298,6 +320,10 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_lightingDiffuse = preferences.lightingDiffuse;
   renderData.m_lightingSpecular = preferences.lightingSpecular;
   renderData.m_lightingSpecularPower = preferences.lightingSpecularPower;
+  renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled = preferences.meshPbrShadingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.metallic = preferences.meshPbrMetallic;
+  renderData.m_meshSurfaceMaterialSettings.roughness = preferences.meshPbrRoughness;
+  renderData.m_meshSurfaceMaterialSettings.ambientOcclusion = preferences.meshPbrAmbientOcclusion;
   renderData.m_renderFrontFaces = preferences.renderFrontFaces;
   renderData.m_renderBackFaces = preferences.renderBackFaces;
   renderData.m_reverseThreeDRotateAboutEye = preferences.reversePovRotation;
@@ -324,6 +350,10 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power = preferences.meshAmbientOcclusionPower;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast = preferences.meshAmbientOcclusionContrast;
   renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = preferences.meshAmbientOcclusionSampleCount;
+  renderData.m_meshSurfaceMaterialSettings.rimLightingEnabled = preferences.meshRimLightingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.rimOpacityStrength = preferences.meshRimOpacityStrength;
+  renderData.m_meshSurfaceMaterialSettings.rimEmissionStrength = preferences.meshRimEmissionStrength;
+  renderData.m_meshSurfaceMaterialSettings.rimPower = preferences.meshRimPower;
   renderData.m_meshDdpSettings.maxPeelPasses = std::clamp<uint32_t>(preferences.ddpMaxPeelPasses, 1u, 32u);
   renderData.m_segMasking = static_cast<RenderData::SegMaskingForRaycasting>(preferences.segmentationMasking);
   renderData.m_asciiEnabled = preferences.asciiEnabled;

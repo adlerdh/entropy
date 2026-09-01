@@ -107,8 +107,8 @@ Uniforms meshFragmentUniforms()
 {
   Uniforms uniforms;
   uniforms.insertUniform("u_baseColor", UniformType::Vec4, glm::vec4{0.8f, 0.8f, 0.8f, 1.0f});
-  uniforms.insertUniform("u_metallic", UniformType::Float, 0.25f);
-  uniforms.insertUniform("u_roughness", UniformType::Float, 0.5f);
+  uniforms.insertUniform("u_metallic", UniformType::Float, 0.2f);
+  uniforms.insertUniform("u_roughness", UniformType::Float, 0.3f);
   uniforms.insertUniform("u_ambientOcclusion", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
   uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);

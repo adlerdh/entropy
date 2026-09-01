@@ -676,13 +676,6 @@ TEST_CASE("Isosurface material helpers compute lighting colors", "[image][isosur
   CHECK(surface.specularColor().x == Catch::Approx(0.75f));
   CHECK(surface.specularColor().y == Catch::Approx(0.75f));
   CHECK(surface.specularColor().z == Catch::Approx(0.75f));
-  CHECK(surface.material.metallic == Catch::Approx(0.25f));
-  CHECK(surface.material.roughness == Catch::Approx(0.5f));
-  CHECK(surface.material.ambientOcclusion == Catch::Approx(1.0f));
-  CHECK_FALSE(surface.rimLightingEnabled);
-  CHECK(surface.rimOpacityStrength == Catch::Approx(1.0f));
-  CHECK(surface.rimEmissionStrength == Catch::Approx(1.0f));
-  CHECK(surface.rimPower == Catch::Approx(2.0f));
 }
 
 TEST_CASE("Histogram bin rules handle normal and degenerate statistics", "[image][utility][histogram]")

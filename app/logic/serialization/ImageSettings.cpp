@@ -208,14 +208,6 @@ void to_json(json& j, const serialize::ImageSettings& settings)
   }
   addIfNotEmpty(j, "edges", std::move(edges));
 
-  json raycasting = json::object();
-  addIfChanged(
-    raycasting,
-    "useDistanceMap",
-    settings.m_useDistanceMapForRaycasting,
-    defaults.m_useDistanceMapForRaycasting);
-  addIfNotEmpty(j, "raycasting", std::move(raycasting));
-
   json isosurfaces = json::object();
   addIfChanged(isosurfaces, "visible", settings.m_isosurfacesVisible, defaults.m_isosurfacesVisible);
   addIfChanged(
@@ -459,26 +451,6 @@ void from_json(const json& j, serialize::ImageSettings& settings)
               InterpolationMode::Linear);
           }
         }
-        if (const auto componentValue = value.find("foregroundThresholdLow");
-            componentValue != value.end() && componentValue->is_number())
-        {
-          setSparseVectorValue(
-            settings.m_foregroundThresholdLows,
-            settings.m_foregroundThresholdLowIndices,
-            storedIndex,
-            componentValue->get<double>(),
-            0.0);
-        }
-        if (const auto componentValue = value.find("foregroundThresholdHigh");
-            componentValue != value.end() && componentValue->is_number())
-        {
-          setSparseVectorValue(
-            settings.m_foregroundThresholdHighs,
-            settings.m_foregroundThresholdHighIndices,
-            storedIndex,
-            componentValue->get<double>(),
-            0.0);
-        }
       }
 
       const std::size_t activeComponent = settings.m_activeComponent;
@@ -662,14 +634,6 @@ void from_json(const json& j, serialize::ImageSettings& settings)
     }
     if (const auto opacity = edges->find("opacity"); opacity != edges->end() && opacity->is_number()) {
       settings.m_edgeOpacity = opacity->get<double>();
-    }
-  }
-
-  if (const auto raycasting = j.find("raycasting"); raycasting != j.end() && raycasting->is_object()) {
-    if (const auto useDistanceMap = raycasting->find("useDistanceMap");
-        useDistanceMap != raycasting->end() && useDistanceMap->is_boolean())
-    {
-      settings.m_useDistanceMapForRaycasting = useDistanceMap->get<bool>();
     }
   }
 

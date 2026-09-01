@@ -38,6 +38,7 @@ void Rendering::updateIsosurfaceDataFor3d(
   }
 
   const ImageSettings& settings = image->settings();
+  const auto& rimLighting = appData.renderData().m_meshSurfaceMaterialSettings;
 
   if (
     !settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible() ||
@@ -78,9 +79,9 @@ void Rendering::updateIsosurfaceDataFor3d(
 
     isoData.opacities[i] = opacity;
 
-    isoData.rimOpacityStrengths[i] = surface->rimLightingEnabled ? surface->rimOpacityStrength : 0.0f;
-    isoData.rimEmissionStrengths[i] = surface->rimLightingEnabled ? surface->rimEmissionStrength : 0.0f;
-    isoData.rimPowers[i] = surface->rimPower;
+    isoData.rimOpacityStrengths[i] = rimLighting.rimLightingEnabled ? rimLighting.rimOpacityStrength : 0.0f;
+    isoData.rimEmissionStrengths[i] = rimLighting.rimLightingEnabled ? rimLighting.rimEmissionStrength : 0.0f;
+    isoData.rimPowers[i] = rimLighting.rimPower;
 
     if (settings.applyImageColormapToIsosurfaces()) {
       // Color the surface using the current image colormap:

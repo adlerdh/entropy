@@ -61,7 +61,7 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "isocontours",
       "comparison",
       "intensityProjection",
-      "segmentation"};
+      "segmentations"};
   }
   else if (path == "settings/rendering/dualDepthPeeling") {
     preferredKeys = {"maxPeelPasses"};
@@ -86,10 +86,21 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"};
   }
   else if (path == "settings/rendering/raycasting") {
-    preferredKeys = {"samplingFactor", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
+    preferredKeys = {"samplingFactor", "distanceMap", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
+  }
+  else if (path == "settings/rendering/raycasting/distanceMap") {
+    preferredKeys = {"enabled", "lowerPercentile", "upperPercentile"};
   }
   else if (path == "settings/rendering/mesh") {
-    preferredKeys = {"shadows", "ambientOcclusion", "segmentationSmoothing", "pointPicking", "clipPlane", "enabled"};
+    preferredKeys = {
+      "pbr",
+      "shadows",
+      "ambientOcclusion",
+      "rimLighting",
+      "segmentationSmoothing",
+      "pointPicking",
+      "clipPlane",
+      "enabled"};
   }
   else if (path == "settings/rendering/mesh/segmentationSmoothing") {
     preferredKeys = {"enabled", "iterations", "passBand"};
@@ -103,8 +114,20 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   else if (path == "settings/rendering/mesh/ambientOcclusion") {
     preferredKeys = {"enabled", "radiusMm", "strength", "power", "contrast", "sampleCount"};
   }
+  else if (path == "settings/rendering/mesh/pbr") {
+    preferredKeys = {"enabled", "metallic", "roughness", "ambientOcclusion"};
+  }
+  else if (path == "settings/rendering/mesh/rimLighting") {
+    preferredKeys = {"enabled", "opacity", "glow", "falloff"};
+  }
   else if (path == "settings/rendering/isocontours") {
     preferredKeys = {"floatingPointInterpolationPolicy"};
+  }
+  else if (path == "settings/rendering/segmentations") {
+    preferredKeys = {"imageOpacityModulation", "outlineStyle", "interiorOpacity", "erosionFactor"};
+  }
+  else if (path == "settings/rendering/segmentations/imageOpacityModulation") {
+    preferredKeys = {"twoD", "threeD"};
   }
   else if (path.ends_with("/settings/isosurfaces")) {
     preferredKeys = {

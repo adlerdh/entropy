@@ -56,22 +56,6 @@ glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const s
          255.0f;
 }
 
-rendering::mesh::MeshMaterial meshMaterialForIsosurface(const Isosurface& surface, const glm::vec4& color)
-{
-  rendering::mesh::MeshMaterial material;
-  material.baseColor = color;
-  material.metallic = surface.material.metallic;
-  material.roughness = surface.material.roughness;
-  material.ambientOcclusion = surface.material.ambientOcclusion;
-  material.shadingModel = surface.material.usePbrShading ? rendering::mesh::MeshShadingModel::PhysicallyBased
-                                                         : rendering::mesh::MeshShadingModel::SimpleLit;
-  material.rimLightingEnabled = surface.rimLightingEnabled;
-  material.rimOpacityStrength = surface.rimOpacityStrength;
-  material.rimEmissionStrength = surface.rimEmissionStrength;
-  material.rimPower = surface.rimPower;
-  return material;
-}
-
 } // namespace
 
 std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const View& view, const glm::vec2& viewClipPos)
@@ -140,15 +124,16 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
         glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
         color.a = effectiveOpacity;
+        const auto& globalMaterial = m_appData.renderData().m_meshSurfaceMaterialSettings;
         rendering::mesh::MeshRenderable renderable = rendering::mesh::makeIsosurfaceRenderable(
           *handle,
           image->transformations().worldDef_T_subject(),
           rendering::mesh::IsosurfaceMeshStyle{
-            .material = meshMaterialForIsosurface(*surface, color),
+            .material = rendering::mesh::meshMaterialForSurface(color, globalMaterial),
             .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
               effectiveOpacity,
-              surface->rimLightingEnabled,
-              surface->rimOpacityStrength),
+              globalMaterial.rimLightingEnabled,
+              globalMaterial.rimOpacityStrength),
             .visible = surface->visible});
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));
@@ -180,7 +165,16 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         continue;
       }
 
-      const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
+      float imageOpacity = 1.0f;
+      if (imageSegPair.first) {
+        if (const Image* image = m_appData.image(*imageSegPair.first)) {
+          imageOpacity = static_cast<float>(image->settings().opacity());
+        }
+      }
+      const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
+        static_cast<float>(seg->settings().opacity()),
+        imageOpacity,
+        m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
         const rendering::mesh::SegmentationLabelMeshState labelState{
           .showMesh = labelTable->getShowMesh(labelIndex),
@@ -217,7 +211,8 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           rendering::mesh::segmentationLabelMeshStyle(
             labelValue,
             normalizedLabelColor(*labelTable, labelIndex),
-            labelState));
+            labelState,
+            m_appData.renderData().m_meshSurfaceMaterialSettings));
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));
       }

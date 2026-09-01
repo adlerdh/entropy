@@ -108,7 +108,8 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.xrayWindow = 0.35f;
   preferences.xrayLevel = 0.65f;
   preferences.isocontourFloatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
-  preferences.modulateSegmentationOpacityWithImageOpacity = false;
+  preferences.modulateSegmentationOpacityWithImageOpacity2d = false;
+  preferences.modulateSegmentationOpacityWithImageOpacity3d = false;
   preferences.segmentationOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
   preferences.segmentationInteriorOpacity = 0.73f;
   preferences.segmentationErosionFactor = 0.77f;
@@ -148,6 +149,9 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.limitFrameRate = true;
   preferences.targetFrameTimeSeconds = 0.25;
   preferences.raycastSamplingFactor = 1.75f;
+  preferences.useDistanceMapForRaycasting = false;
+  preferences.distanceMapForegroundLowerPercentile = 0.2f;
+  preferences.distanceMapForegroundUpperPercentile = 0.8f;
   preferences.transparent3DBackground = false;
   preferences.imageBoxVisible = true;
   preferences.showImagePlanesIn3D = false;
@@ -162,6 +166,10 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.lightingDiffuse = 0.83f;
   preferences.lightingSpecular = 0.51f;
   preferences.lightingSpecularPower = 48.0f;
+  preferences.meshPbrShadingEnabled = true;
+  preferences.meshPbrMetallic = 0.4f;
+  preferences.meshPbrRoughness = 0.2f;
+  preferences.meshPbrAmbientOcclusion = 0.9f;
   preferences.renderFrontFaces = false;
   preferences.renderBackFaces = true;
   preferences.reversePovRotation = true;
@@ -186,6 +194,10 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.meshAmbientOcclusionPower = 2.0f;
   preferences.meshAmbientOcclusionContrast = 3.0f;
   preferences.meshAmbientOcclusionSampleCount = 32;
+  preferences.meshRimLightingEnabled = true;
+  preferences.meshRimOpacityStrength = 0.8f;
+  preferences.meshRimEmissionStrength = 1.25f;
+  preferences.meshRimPower = 3.5f;
   preferences.ddpMaxPeelPasses = 12;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
   preferences.asciiEnabled = true;
@@ -314,7 +326,8 @@ void requireRenderPreferencesEqual(
   CHECK(actual.xrayWindow == Catch::Approx(expected.xrayWindow));
   CHECK(actual.xrayLevel == Catch::Approx(expected.xrayLevel));
   CHECK(actual.isocontourFloatingPointInterpolationPolicy == expected.isocontourFloatingPointInterpolationPolicy);
-  CHECK(actual.modulateSegmentationOpacityWithImageOpacity == expected.modulateSegmentationOpacityWithImageOpacity);
+  CHECK(actual.modulateSegmentationOpacityWithImageOpacity2d == expected.modulateSegmentationOpacityWithImageOpacity2d);
+  CHECK(actual.modulateSegmentationOpacityWithImageOpacity3d == expected.modulateSegmentationOpacityWithImageOpacity3d);
   CHECK(actual.segmentationOutlineStyle == expected.segmentationOutlineStyle);
   CHECK(actual.segmentationInteriorOpacity == Catch::Approx(expected.segmentationInteriorOpacity));
   CHECK(actual.segmentationErosionFactor == Catch::Approx(expected.segmentationErosionFactor));
@@ -354,6 +367,9 @@ void requireRenderPreferencesEqual(
   CHECK(actual.limitFrameRate == expected.limitFrameRate);
   CHECK(actual.targetFrameTimeSeconds == Catch::Approx(expected.targetFrameTimeSeconds));
   CHECK(actual.raycastSamplingFactor == Catch::Approx(expected.raycastSamplingFactor));
+  CHECK(actual.useDistanceMapForRaycasting == expected.useDistanceMapForRaycasting);
+  CHECK(actual.distanceMapForegroundLowerPercentile == Catch::Approx(expected.distanceMapForegroundLowerPercentile));
+  CHECK(actual.distanceMapForegroundUpperPercentile == Catch::Approx(expected.distanceMapForegroundUpperPercentile));
   CHECK(actual.transparent3DBackground == expected.transparent3DBackground);
   CHECK(actual.imageBoxVisible == expected.imageBoxVisible);
   CHECK(actual.showImagePlanesIn3D == expected.showImagePlanesIn3D);
@@ -368,6 +384,10 @@ void requireRenderPreferencesEqual(
   CHECK(actual.lightingDiffuse == Catch::Approx(expected.lightingDiffuse));
   CHECK(actual.lightingSpecular == Catch::Approx(expected.lightingSpecular));
   CHECK(actual.lightingSpecularPower == Catch::Approx(expected.lightingSpecularPower));
+  CHECK(actual.meshPbrShadingEnabled == expected.meshPbrShadingEnabled);
+  CHECK(actual.meshPbrMetallic == Catch::Approx(expected.meshPbrMetallic));
+  CHECK(actual.meshPbrRoughness == Catch::Approx(expected.meshPbrRoughness));
+  CHECK(actual.meshPbrAmbientOcclusion == Catch::Approx(expected.meshPbrAmbientOcclusion));
   CHECK(actual.renderFrontFaces == expected.renderFrontFaces);
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
@@ -393,6 +413,10 @@ void requireRenderPreferencesEqual(
   CHECK(actual.meshAmbientOcclusionPower == Catch::Approx(expected.meshAmbientOcclusionPower));
   CHECK(actual.meshAmbientOcclusionContrast == Catch::Approx(expected.meshAmbientOcclusionContrast));
   CHECK(actual.meshAmbientOcclusionSampleCount == expected.meshAmbientOcclusionSampleCount);
+  CHECK(actual.meshRimLightingEnabled == expected.meshRimLightingEnabled);
+  CHECK(actual.meshRimOpacityStrength == Catch::Approx(expected.meshRimOpacityStrength));
+  CHECK(actual.meshRimEmissionStrength == Catch::Approx(expected.meshRimEmissionStrength));
+  CHECK(actual.meshRimPower == Catch::Approx(expected.meshRimPower));
   CHECK(actual.ddpMaxPeelPasses == expected.ddpMaxPeelPasses);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
   CHECK(actual.asciiEnabled == expected.asciiEnabled);
@@ -456,7 +480,10 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.xrayEnergyKeV = defaults.xrayEnergyKeV;
   renderPreferences.xrayWindow = defaults.xrayWindow;
   renderPreferences.xrayLevel = defaults.xrayLevel;
-  renderPreferences.modulateSegmentationOpacityWithImageOpacity = defaults.modulateSegmentationOpacityWithImageOpacity;
+  renderPreferences.modulateSegmentationOpacityWithImageOpacity2d =
+    defaults.modulateSegmentationOpacityWithImageOpacity2d;
+  renderPreferences.modulateSegmentationOpacityWithImageOpacity3d =
+    defaults.modulateSegmentationOpacityWithImageOpacity3d;
   renderPreferences.segmentationOutlineStyle = defaults.segmentationOutlineStyle;
   renderPreferences.segmentationInteriorOpacity = defaults.segmentationInteriorOpacity;
   renderPreferences.segmentationErosionFactor = defaults.segmentationErosionFactor;
@@ -654,7 +681,7 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
         "spatialExponent": 99
       }
     },
-    "segmentation": {
+    "segmentations": {
       "brush": {
         "sizeVoxels": 9999
       },
@@ -787,7 +814,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("asciiShading").at("enabled") == false);
   CHECK_FALSE(root.contains("comparison"));
   CHECK_FALSE(root.at("images").contains("intensityProjectionDefaults"));
-  CHECK_FALSE(root.at("segmentation").contains("display"));
+  CHECK_FALSE(root.at("segmentations").contains("display"));
   CHECK(
     root.at("rendering").at("raycasting").at("samplingFactor").get<float>() ==
     Catch::Approx(renderPreferences.raycastSamplingFactor));
@@ -798,7 +825,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
   CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));
-  CHECK(root.at("segmentation").at("brushPreview").at("mode") == "hover");
+  CHECK(root.at("segmentations").at("brushPreview").at("mode") == "hover");
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);

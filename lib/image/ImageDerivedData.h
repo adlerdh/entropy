@@ -157,6 +157,13 @@ struct DistanceMapImageResult
 std::optional<DistanceMapImageResult>
 createDistanceMapImage(const Image& image, uint32_t component, float downsamplingFactor);
 
+/** Create a distance map using explicit native-value foreground thresholds. */
+std::optional<DistanceMapImageResult> createDistanceMapImage(
+  const Image& image,
+  uint32_t component,
+  float downsamplingFactor,
+  std::pair<double, double> foregroundThresholds);
+
 /**
  * @brief Create one noise-estimate image for each supported component of an image.
  * @param image Source image.

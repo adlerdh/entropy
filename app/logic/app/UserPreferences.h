@@ -93,7 +93,8 @@ struct RenderPreferences
 
   FloatingPointLinearInterpolationPolicy isocontourFloatingPointInterpolationPolicy =
     FloatingPointLinearInterpolationPolicy::Automatic;
-  bool modulateSegmentationOpacityWithImageOpacity = true;
+  bool modulateSegmentationOpacityWithImageOpacity2d = true;
+  bool modulateSegmentationOpacityWithImageOpacity3d = true;
   SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::Disabled;
   float segmentationInteriorOpacity = 0.2f;
   float segmentationErosionFactor = 0.5f;
@@ -123,6 +124,9 @@ struct RenderPreferences
   bool limitFrameRate = false;
   double targetFrameTimeSeconds = 1.0 / 60.0;
   float raycastSamplingFactor = 0.8f;
+  bool useDistanceMapForRaycasting = true;
+  float distanceMapForegroundLowerPercentile = 0.5f;
+  float distanceMapForegroundUpperPercentile = 1.0f;
   bool transparent3DBackground = true;
   bool imageBoxVisible = false;
   bool showImagePlanesIn3D = true;
@@ -137,6 +141,10 @@ struct RenderPreferences
   float lightingDiffuse = 0.50f;
   float lightingSpecular = 0.20f;
   float lightingSpecularPower = 16.0f;
+  bool meshPbrShadingEnabled = false;
+  float meshPbrMetallic = 0.2f;
+  float meshPbrRoughness = 0.3f;
+  float meshPbrAmbientOcclusion = 1.0f;
   bool renderFrontFaces = true;
   bool renderBackFaces = true;
   bool reversePovRotation = false;
@@ -161,6 +169,10 @@ struct RenderPreferences
   float meshAmbientOcclusionPower = 1.5f;
   float meshAmbientOcclusionContrast = 1.0f;
   uint32_t meshAmbientOcclusionSampleCount = 24;
+  bool meshRimLightingEnabled = false;
+  float meshRimOpacityStrength = 1.0f;
+  float meshRimEmissionStrength = 1.0f;
+  float meshRimPower = 2.0f;
   uint32_t ddpMaxPeelPasses = 5;
   SegMaskingForRaycasting segmentationMasking = SegMaskingForRaycasting::Disabled;
 

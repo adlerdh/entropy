@@ -359,12 +359,6 @@ public:
   /// @brief Get interpolation used when displaying an image as RGB/RGBA color.
   InterpolationMode colorInterpolationMode() const;
 
-  /// @brief Set whether boundary distance maps may accelerate raycasting.
-  void setUseDistanceMapForRaycasting(bool use);
-
-  /// @brief Return whether boundary distance maps may accelerate raycasting.
-  bool useDistanceMapForRaycasting() const;
-
   /// @brief Set global visibility for all isosurfaces associated with this image.
   void setIsosurfacesVisible(bool visible);
 
@@ -1009,7 +1003,6 @@ private:
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
 
   // These apply to the image's isosurfaces:
-  bool m_useDistanceMapForRaycasting{true}; //!< Use the distance map to accelerate raycasting of the image
 
   bool m_isosurfacesVisible{true};                         //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces{false};           //!< Color image isosurfaces using the image colormap

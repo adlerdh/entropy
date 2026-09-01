@@ -2,6 +2,8 @@
 
 #include "rendering/TextureLayout.h"
 
+#include "common/Types.h"
+
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 
@@ -12,6 +14,10 @@
 
 namespace rendering::texture_setup
 {
+
+/** Return native image-value thresholds for a global pair of foreground percentiles. */
+std::pair<double, double>
+distanceMapForegroundThresholds(const ComponentStats& statistics, float lowerPercentile, float upperPercentile);
 
 /**
  * @brief OpenGL texture size limits needed to decide how an image can be uploaded.

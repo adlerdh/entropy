@@ -32,10 +32,6 @@ serialize::EntropyProject makeProject()
   isosurface.m_component = 0;
   isosurface.m_surface.name = "Surface";
   isosurface.m_surface.value = 12.0;
-  isosurface.m_surface.rimLightingEnabled = true;
-  isosurface.m_surface.rimOpacityStrength = 0.5f;
-  isosurface.m_surface.rimEmissionStrength = 1.25f;
-  isosurface.m_surface.rimPower = 2.5f;
   project.m_referenceImage.m_isosurfaces.push_back(isosurface);
 
   serialize::Image additionalImage;
@@ -126,7 +122,7 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarkPoint));
 
   auto changedIsosurface = project;
-  changedIsosurface.m_referenceImage.m_isosurfaces.front().m_surface.rimPower = 4.0f;
+  changedIsosurface.m_referenceImage.m_isosurfaces.front().m_surface.opacity = 0.4f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurface));
 }
 
@@ -211,6 +207,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedRaycasting.m_raycasting.m_samplingFactor = 1.25f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
 
+  changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_useDistanceMap = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
   auto changedThreeDRendering = project;
   changedThreeDRendering.m_threeDRendering.m_transparentBackground = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
@@ -224,6 +224,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   auto changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_pbrShadingEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
   changedMeshRendering.m_meshRendering.m_shadowsEnabled = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
@@ -237,6 +241,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
 
   changedMeshRendering = project;
   changedMeshRendering.m_meshRendering.m_ambientOcclusionContrast = 2.0f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_rimLightingEnabled = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
@@ -265,6 +273,14 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
 
   auto changedSegmentationDisplay = project;
   changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ViewPixel;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
+
+  changedSegmentationDisplay = project;
+  changedSegmentationDisplay.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
+
+  changedSegmentationDisplay = project;
+  changedSegmentationDisplay.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
 }
 

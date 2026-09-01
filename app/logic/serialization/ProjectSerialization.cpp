@@ -621,6 +621,19 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
   const ProjectRaycastingSettings defaults;
   j = json::object();
   addIfChanged(j, "samplingFactor", settings.m_samplingFactor, defaults.m_samplingFactor);
+  json distanceMap = json::object();
+  addIfChanged(distanceMap, "enabled", settings.m_useDistanceMap, defaults.m_useDistanceMap);
+  addIfChanged(
+    distanceMap,
+    "lowerPercentile",
+    settings.m_distanceMapForegroundLowerPercentile,
+    defaults.m_distanceMapForegroundLowerPercentile);
+  addIfChanged(
+    distanceMap,
+    "upperPercentile",
+    settings.m_distanceMapForegroundUpperPercentile,
+    defaults.m_distanceMapForegroundUpperPercentile);
+  addIfNotEmpty(j, "distanceMap", std::move(distanceMap));
   addIfChanged(j, "renderFrontFaces", settings.m_renderFrontFaces, defaults.m_renderFrontFaces);
   addIfChanged(j, "renderBackFaces", settings.m_renderBackFaces, defaults.m_renderBackFaces);
   addIfChanged(
@@ -634,6 +647,20 @@ void from_json(const json& j, ProjectRaycastingSettings& settings)
 {
   if (const auto value = j.find("samplingFactor"); value != j.end() && value->is_number()) {
     settings.m_samplingFactor = std::clamp(value->get<float>(), 0.5f, 2.0f);
+  }
+  if (const auto distanceMap = j.find("distanceMap"); distanceMap != j.end() && distanceMap->is_object()) {
+    if (const auto value = distanceMap->find("enabled"); value != distanceMap->end() && value->is_boolean()) {
+      settings.m_useDistanceMap = value->get<bool>();
+    }
+    if (const auto value = distanceMap->find("lowerPercentile"); value != distanceMap->end() && value->is_number()) {
+      settings.m_distanceMapForegroundLowerPercentile = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = distanceMap->find("upperPercentile"); value != distanceMap->end() && value->is_number()) {
+      settings.m_distanceMapForegroundUpperPercentile = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (settings.m_distanceMapForegroundLowerPercentile > settings.m_distanceMapForegroundUpperPercentile) {
+      std::swap(settings.m_distanceMapForegroundLowerPercentile, settings.m_distanceMapForegroundUpperPercentile);
+    }
   }
   if (const auto value = j.find("renderFrontFaces"); value != j.end() && value->is_boolean()) {
     settings.m_renderFrontFaces = value->get<bool>();
@@ -655,6 +682,12 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   const ProjectMeshRenderingSettings defaults;
   j = json::object();
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
+  json pbr = json::object();
+  addIfChanged(pbr, "enabled", settings.m_pbrShadingEnabled, defaults.m_pbrShadingEnabled);
+  addIfChanged(pbr, "metallic", settings.m_pbrMetallic, defaults.m_pbrMetallic);
+  addIfChanged(pbr, "roughness", settings.m_pbrRoughness, defaults.m_pbrRoughness);
+  addIfChanged(pbr, "ambientOcclusion", settings.m_pbrAmbientOcclusion, defaults.m_pbrAmbientOcclusion);
+  addIfNotEmpty(j, "pbr", std::move(pbr));
   json segmentationSmoothing = json::object();
   addIfChanged(
     segmentationSmoothing,
@@ -697,12 +730,33 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
     settings.m_ambientOcclusionSampleCount,
     defaults.m_ambientOcclusionSampleCount);
   addIfNotEmpty(j, "ambientOcclusion", std::move(ambientOcclusion));
+
+  json rimLighting = json::object();
+  addIfChanged(rimLighting, "enabled", settings.m_rimLightingEnabled, defaults.m_rimLightingEnabled);
+  addIfChanged(rimLighting, "opacity", settings.m_rimOpacityStrength, defaults.m_rimOpacityStrength);
+  addIfChanged(rimLighting, "glow", settings.m_rimEmissionStrength, defaults.m_rimEmissionStrength);
+  addIfChanged(rimLighting, "falloff", settings.m_rimPower, defaults.m_rimPower);
+  addIfNotEmpty(j, "rimLighting", std::move(rimLighting));
 }
 
 void from_json(const json& j, ProjectMeshRenderingSettings& settings)
 {
   if (const auto value = j.find("enabled"); value != j.end() && value->is_boolean()) {
     settings.m_renderingEnabled = value->get<bool>();
+  }
+  if (const auto pbr = j.find("pbr"); pbr != j.end() && pbr->is_object()) {
+    if (const auto value = pbr->find("enabled"); value != pbr->end() && value->is_boolean()) {
+      settings.m_pbrShadingEnabled = value->get<bool>();
+    }
+    if (const auto value = pbr->find("metallic"); value != pbr->end() && value->is_number()) {
+      settings.m_pbrMetallic = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = pbr->find("roughness"); value != pbr->end() && value->is_number()) {
+      settings.m_pbrRoughness = std::clamp(value->get<float>(), 0.001f, 1.0f);
+    }
+    if (const auto value = pbr->find("ambientOcclusion"); value != pbr->end() && value->is_number()) {
+      settings.m_pbrAmbientOcclusion = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
   }
   if (const auto smoothing = j.find("segmentationSmoothing"); smoothing != j.end() && smoothing->is_object()) {
     if (const auto value = smoothing->find("enabled"); value != smoothing->end() && value->is_boolean()) {
@@ -766,6 +820,20 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
       settings.m_ambientOcclusionSampleCount = std::clamp(value->get<uint32_t>(), 8u, 64u);
     }
   }
+  if (const auto rimLighting = j.find("rimLighting"); rimLighting != j.end() && rimLighting->is_object()) {
+    if (const auto value = rimLighting->find("enabled"); value != rimLighting->end() && value->is_boolean()) {
+      settings.m_rimLightingEnabled = value->get<bool>();
+    }
+    if (const auto value = rimLighting->find("opacity"); value != rimLighting->end() && value->is_number()) {
+      settings.m_rimOpacityStrength = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = rimLighting->find("glow"); value != rimLighting->end() && value->is_number()) {
+      settings.m_rimEmissionStrength = std::clamp(value->get<float>(), 0.0f, 2.0f);
+    }
+    if (const auto value = rimLighting->find("falloff"); value != rimLighting->end() && value->is_number()) {
+      settings.m_rimPower = std::clamp(value->get<float>(), 0.25f, 8.0f);
+    }
+  }
 }
 
 void to_json(json& j, const ProjectIntensityProjectionSettings& settings)
@@ -802,11 +870,18 @@ void to_json(json& j, const ProjectSegmentationDisplaySettings& settings)
 {
   const ProjectSegmentationDisplaySettings defaults;
   j = json::object();
+  json imageOpacityModulation = json::object();
   addIfChanged(
-    j,
-    "modulateOpacityWithImageOpacity",
-    settings.m_modulateOpacityWithImageOpacity,
-    defaults.m_modulateOpacityWithImageOpacity);
+    imageOpacityModulation,
+    "twoD",
+    settings.m_modulateOpacityWithImageOpacity2d,
+    defaults.m_modulateOpacityWithImageOpacity2d);
+  addIfChanged(
+    imageOpacityModulation,
+    "threeD",
+    settings.m_modulateOpacityWithImageOpacity3d,
+    defaults.m_modulateOpacityWithImageOpacity3d);
+  addIfNotEmpty(j, "imageOpacityModulation", std::move(imageOpacityModulation));
   addIfChanged(
     j,
     "outlineStyle",
@@ -818,8 +893,13 @@ void to_json(json& j, const ProjectSegmentationDisplaySettings& settings)
 
 void from_json(const json& j, ProjectSegmentationDisplaySettings& settings)
 {
-  if (const auto value = j.find("modulateOpacityWithImageOpacity"); value != j.end() && value->is_boolean()) {
-    settings.m_modulateOpacityWithImageOpacity = value->get<bool>();
+  if (const auto modulation = j.find("imageOpacityModulation"); modulation != j.end() && modulation->is_object()) {
+    if (const auto value = modulation->find("twoD"); value != modulation->end() && value->is_boolean()) {
+      settings.m_modulateOpacityWithImageOpacity2d = value->get<bool>();
+    }
+    if (const auto value = modulation->find("threeD"); value != modulation->end() && value->is_boolean()) {
+      settings.m_modulateOpacityWithImageOpacity3d = value->get<bool>();
+    }
   }
   if (
     const auto parsed = enumFromName<SegmentationOutlineStyle>(j.value("outlineStyle", ""), k_segmentationOutlineNames))
@@ -981,8 +1061,8 @@ void to_json(json& j, const EntropyProject& project)
   addIfNotEmpty(rendering, "mesh", std::move(mesh));
   json intensityProjection = project.m_intensityProjection;
   addIfNotEmpty(rendering, "intensityProjection", std::move(intensityProjection));
-  json segmentation = project.m_segmentationDisplay;
-  addIfNotEmpty(rendering, "segmentation", std::move(segmentation));
+  json segmentations = project.m_segmentationDisplay;
+  addIfNotEmpty(rendering, "segmentations", std::move(segmentations));
   json isocontours = project.m_isocontours;
   addIfNotEmpty(rendering, "isocontours", std::move(isocontours));
   addIfNotEmpty(settings, "rendering", std::move(rendering));
@@ -1071,10 +1151,10 @@ void from_json(const json& j, EntropyProject& project)
       {
         intensityProjection->get_to(project.m_intensityProjection);
       }
-      if (const auto segmentation = rendering->find("segmentation");
-          segmentation != rendering->end() && segmentation->is_object())
+      if (const auto segmentations = rendering->find("segmentations");
+          segmentations != rendering->end() && segmentations->is_object())
       {
-        segmentation->get_to(project.m_segmentationDisplay);
+        segmentations->get_to(project.m_segmentationDisplay);
       }
       if (const auto isocontours = rendering->find("isocontours");
           isocontours != rendering->end() && isocontours->is_object())

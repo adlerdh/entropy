@@ -53,22 +53,6 @@ rendering::mesh::MeshHandle meshHandleForKey(const MeshGeometryKey& key, MeshHan
   return handle;
 }
 
-rendering::mesh::MeshMaterial meshMaterialForIsosurface(const Isosurface& surface, const glm::vec4& color)
-{
-  rendering::mesh::MeshMaterial material;
-  material.baseColor = color;
-  material.metallic = surface.material.metallic;
-  material.roughness = surface.material.roughness;
-  material.ambientOcclusion = surface.material.ambientOcclusion;
-  material.shadingModel = surface.material.usePbrShading ? rendering::mesh::MeshShadingModel::PhysicallyBased
-                                                         : rendering::mesh::MeshShadingModel::SimpleLit;
-  material.rimLightingEnabled = surface.rimLightingEnabled;
-  material.rimOpacityStrength = surface.rimOpacityStrength;
-  material.rimEmissionStrength = surface.rimEmissionStrength;
-  material.rimPower = surface.rimPower;
-  return material;
-}
-
 std::string isosurfaceMeshDescription(const Image& image, const Isosurface& surface, const std::size_t surfaceIndex)
 {
   const std::string surfaceName = surface.name.empty() ? std::format("surface {}", surfaceIndex) : surface.name;
@@ -186,12 +170,13 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
       glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
       color.a = effectiveOpacity;
+      const auto& globalMaterial = m_appData.renderData().m_meshSurfaceMaterialSettings;
       const rendering::mesh::IsosurfaceMeshStyle style{
-        .material = meshMaterialForIsosurface(*surface, color),
+        .material = rendering::mesh::meshMaterialForSurface(color, globalMaterial),
         .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
           effectiveOpacity,
-          surface->rimLightingEnabled,
-          surface->rimOpacityStrength),
+          globalMaterial.rimLightingEnabled,
+          globalMaterial.rimOpacityStrength),
         .visible = surface->visible && surface->showIn3d};
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);

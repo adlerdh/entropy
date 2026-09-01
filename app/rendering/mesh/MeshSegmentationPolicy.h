@@ -37,6 +37,9 @@ struct SegmentationLabelMeshState
  */
 bool shouldRenderSegmentationLabelMesh(const SegmentationLabelMeshState& state) noexcept;
 
+/** Return segmentation-mesh opacity after optional modulation by its associated image opacity. */
+float segmentationMeshOpacity(float segmentationOpacity, float imageOpacity, bool modulateWithImageOpacity) noexcept;
+
 /**
  * @brief Select the mesh compositing path for a label alpha value
  * @param alpha Effective non-premultiplied label alpha
@@ -52,6 +55,7 @@ MeshCompositingMode compositingModeForLabelAlpha(
  * @param labelValue Segmentation label value
  * @param color Normalized non-premultiplied RGBA
  * @param state Label visibility and opacity state
+ * @param materialSettings Global surface material settings
  * @param translucentMode Compositing path used for translucent labels
  * @return Renderable style for one label
  */
@@ -59,6 +63,7 @@ SegmentationLabelMeshStyle segmentationLabelMeshStyle(
   int64_t labelValue,
   const glm::vec4& color,
   const SegmentationLabelMeshState& state,
+  const MeshSurfaceMaterialSettings& materialSettings = {},
   MeshCompositingMode translucentMode = MeshCompositingMode::AlphaOverDdp) noexcept;
 
 /**

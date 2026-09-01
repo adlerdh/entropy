@@ -162,7 +162,16 @@ bool Rendering::renderSegmentationMeshesForView(
     if (!presentLabels) {
       continue;
     }
-    const float segmentationOpacity = static_cast<float>(seg->settings().opacity());
+    float imageOpacity = 1.0f;
+    if (imgSegPair.first) {
+      if (const Image* image = m_appData.image(*imgSegPair.first)) {
+        imageOpacity = static_cast<float>(image->settings().opacity());
+      }
+    }
+    const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
+      static_cast<float>(seg->settings().opacity()),
+      imageOpacity,
+      m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
     renderables.reserve(renderables.size() + labelTable->numLabels());
     std::shared_ptr<const Image> segmentationSnapshot;
 
@@ -231,7 +240,8 @@ bool Rendering::renderSegmentationMeshesForView(
       const rendering::mesh::SegmentationLabelMeshStyle style = rendering::mesh::segmentationLabelMeshStyle(
         labelValue,
         normalizedLabelColor(*labelTable, labelIndex),
-        labelState);
+        labelState,
+        m_appData.renderData().m_meshSurfaceMaterialSettings);
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeSegmentationLabelRenderable(handle, seg->transformations().worldDef_T_subject(), style);
       renderable.drawOptions.clipPlanes = clipPlanes;

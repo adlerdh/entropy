@@ -7,6 +7,19 @@
 namespace rendering::texture_setup
 {
 
+std::pair<double, double>
+distanceMapForegroundThresholds(const ComponentStats& statistics, float lowerPercentile, float upperPercentile)
+{
+  const auto quantileIndex = [](const float percentile) {
+    return static_cast<std::size_t>(std::lround(std::clamp(percentile, 0.0f, 1.0f) * 100.0f));
+  };
+  const std::size_t lowerIndex = quantileIndex(lowerPercentile);
+  const std::size_t upperIndex = quantileIndex(upperPercentile);
+  return {
+    static_cast<double>(statistics.quantiles[std::min(lowerIndex, upperIndex)]),
+    static_cast<double>(statistics.quantiles[std::max(lowerIndex, upperIndex)])};
+}
+
 namespace
 {
 

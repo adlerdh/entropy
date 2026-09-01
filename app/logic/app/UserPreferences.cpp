@@ -53,7 +53,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "rendering",
       "interface",
       "images",
-      "segmentation",
+      "segmentations",
       "registration",
       "comparison",
       "synchronization",
@@ -77,7 +77,14 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
     preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
   }
   else if (path == "rendering/mesh") {
-    preferredKeys = {"shadows", "ambientOcclusion", "segmentationSmoothing", "pointPicking", "clipPlane"};
+    preferredKeys =
+      {"pbr", "shadows", "ambientOcclusion", "rimLighting", "segmentationSmoothing", "pointPicking", "clipPlane"};
+  }
+  else if (path == "rendering/raycasting") {
+    preferredKeys = {"samplingFactor", "distanceMap"};
+  }
+  else if (path == "rendering/raycasting/distanceMap") {
+    preferredKeys = {"enabled", "lowerPercentile", "upperPercentile"};
   }
   else if (path == "system") {
     preferredKeys = {"performance", "updates", "diagnostics"};
@@ -465,7 +472,7 @@ json toJson(
        enumToName(
          renderPreferences.isocontourFloatingPointInterpolationPolicy,
          sk_floatingPointInterpolationPolicyNames)}}},
-    {"segmentation",
+    {"segmentations",
      {{"brush",
        {{"replaceBackgroundWithForeground", settings.replaceBackgroundWithForeground()},
         {"use3d", settings.use3dBrush()},
@@ -508,7 +515,12 @@ json toJson(
           {"specular", renderPreferences.imagePlaneLightingSpecular},
           {"specularPower", renderPreferences.imagePlaneLightingSpecularPower}}}}},
       {"mesh",
-       {{"shadows",
+       {{"pbr",
+         {{"enabled", renderPreferences.meshPbrShadingEnabled},
+          {"metallic", renderPreferences.meshPbrMetallic},
+          {"roughness", renderPreferences.meshPbrRoughness},
+          {"ambientOcclusion", renderPreferences.meshPbrAmbientOcclusion}}},
+        {"shadows",
          {{"enabled", renderPreferences.meshShadowsEnabled},
           {"mapSizePixels", renderPreferences.meshShadowMapSizePixels},
           {"strength", renderPreferences.meshShadowStrength},
@@ -520,6 +532,11 @@ json toJson(
           {"power", renderPreferences.meshAmbientOcclusionPower},
           {"contrast", renderPreferences.meshAmbientOcclusionContrast},
           {"sampleCount", renderPreferences.meshAmbientOcclusionSampleCount}}},
+        {"rimLighting",
+         {{"enabled", renderPreferences.meshRimLightingEnabled},
+          {"opacity", renderPreferences.meshRimOpacityStrength},
+          {"glow", renderPreferences.meshRimEmissionStrength},
+          {"falloff", renderPreferences.meshRimPower}}},
         {"segmentationSmoothing",
          {{"enabled", renderPreferences.smoothSegmentationMeshes},
           {"iterations", renderPreferences.segmentationMeshSmoothingIterations},
@@ -528,7 +545,12 @@ json toJson(
         {"clipPlane",
          {{"enabled", renderPreferences.meshClipPlaneEnabled},
           {"worldPlane", vec4ToJson(renderPreferences.meshClipPlaneWorld)}}}}},
-      {"raycasting", {{"samplingFactor", renderPreferences.raycastSamplingFactor}}},
+      {"raycasting",
+       {{"samplingFactor", renderPreferences.raycastSamplingFactor},
+        {"distanceMap",
+         {{"enabled", renderPreferences.useDistanceMapForRaycasting},
+          {"lowerPercentile", renderPreferences.distanceMapForegroundLowerPercentile},
+          {"upperPercentile", renderPreferences.distanceMapForegroundUpperPercentile}}}}},
       {"dualDepthPeeling", {{"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
     {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"registration", settings.registrationBackendConfig()},
@@ -679,8 +701,9 @@ void applyJson(
       sk_floatingPointInterpolationPolicyNames);
   }
 
-  if (const auto segmentation = root.find("segmentation"); segmentation != root.end() && segmentation->is_object()) {
-    if (const auto brush = segmentation->find("brush"); brush != segmentation->end() && brush->is_object()) {
+  if (const auto segmentations = root.find("segmentations"); segmentations != root.end() && segmentations->is_object())
+  {
+    if (const auto brush = segmentations->find("brush"); brush != segmentations->end() && brush->is_object()) {
       if (const auto value = brush->find("replaceBackgroundWithForeground");
           value != brush->end() && value->is_boolean())
       {
@@ -708,7 +731,8 @@ void applyJson(
         settings.setBrushSizeInMm(size->get<float>());
       }
     }
-    if (const auto preview = segmentation->find("brushPreview"); preview != segmentation->end() && preview->is_object())
+    if (const auto preview = segmentations->find("brushPreview");
+        preview != segmentations->end() && preview->is_object())
     {
       if (const auto parsed = enumFromName<BrushPreviewMode>(preview->value("mode", ""), sk_brushPreviewModeNames)) {
         settings.setBrushPreviewMode(*parsed);
@@ -741,6 +765,31 @@ void applyJson(
         raycasting != rendering->end() && raycasting->is_object())
     {
       setFloatFromJson(renderPreferences.raycastSamplingFactor, *raycasting, "samplingFactor", 0.5f, 2.0f);
+      if (const auto distanceMap = raycasting->find("distanceMap");
+          distanceMap != raycasting->end() && distanceMap->is_object())
+      {
+        setFromJson(renderPreferences.useDistanceMapForRaycasting, *distanceMap, "enabled");
+        setFloatFromJson(
+          renderPreferences.distanceMapForegroundLowerPercentile,
+          *distanceMap,
+          "lowerPercentile",
+          0.0f,
+          1.0f);
+        setFloatFromJson(
+          renderPreferences.distanceMapForegroundUpperPercentile,
+          *distanceMap,
+          "upperPercentile",
+          0.0f,
+          1.0f);
+        if (
+          renderPreferences.distanceMapForegroundLowerPercentile >
+          renderPreferences.distanceMapForegroundUpperPercentile)
+        {
+          std::swap(
+            renderPreferences.distanceMapForegroundLowerPercentile,
+            renderPreferences.distanceMapForegroundUpperPercentile);
+        }
+      }
     }
     if (const auto camera = rendering->find("camera"); camera != rendering->end() && camera->is_object()) {
       setFromJson(renderPreferences.reversePovRotation, *camera, "reversePovRotation");
@@ -782,6 +831,12 @@ void applyJson(
       }
     }
     if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
+      if (const auto pbr = mesh->find("pbr"); pbr != mesh->end() && pbr->is_object()) {
+        setFromJson(renderPreferences.meshPbrShadingEnabled, *pbr, "enabled");
+        setFloatFromJson(renderPreferences.meshPbrMetallic, *pbr, "metallic", 0.0f, 1.0f);
+        setFloatFromJson(renderPreferences.meshPbrRoughness, *pbr, "roughness", 0.001f, 1.0f);
+        setFloatFromJson(renderPreferences.meshPbrAmbientOcclusion, *pbr, "ambientOcclusion", 0.0f, 1.0f);
+      }
       if (const auto smoothing = mesh->find("segmentationSmoothing");
           smoothing != mesh->end() && smoothing->is_object())
       {
@@ -814,6 +869,12 @@ void applyJson(
         if (const auto samples = ao->find("sampleCount"); samples != ao->end() && samples->is_number_unsigned()) {
           renderPreferences.meshAmbientOcclusionSampleCount = std::clamp<uint32_t>(samples->get<uint32_t>(), 8u, 64u);
         }
+      }
+      if (const auto rim = mesh->find("rimLighting"); rim != mesh->end() && rim->is_object()) {
+        setFromJson(renderPreferences.meshRimLightingEnabled, *rim, "enabled");
+        setFloatFromJson(renderPreferences.meshRimOpacityStrength, *rim, "opacity", 0.0f, 1.0f);
+        setFloatFromJson(renderPreferences.meshRimEmissionStrength, *rim, "glow", 0.0f, 2.0f);
+        setFloatFromJson(renderPreferences.meshRimPower, *rim, "falloff", 0.25f, 8.0f);
       }
     }
     if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
@@ -958,8 +1019,10 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;
   preferences.xrayWindow = currentPreferences.xrayWindow;
   preferences.xrayLevel = currentPreferences.xrayLevel;
-  preferences.modulateSegmentationOpacityWithImageOpacity =
-    currentPreferences.modulateSegmentationOpacityWithImageOpacity;
+  preferences.modulateSegmentationOpacityWithImageOpacity2d =
+    currentPreferences.modulateSegmentationOpacityWithImageOpacity2d;
+  preferences.modulateSegmentationOpacityWithImageOpacity3d =
+    currentPreferences.modulateSegmentationOpacityWithImageOpacity3d;
   preferences.segmentationOutlineStyle = currentPreferences.segmentationOutlineStyle;
   preferences.segmentationInteriorOpacity = currentPreferences.segmentationInteriorOpacity;
   preferences.segmentationErosionFactor = currentPreferences.segmentationErosionFactor;

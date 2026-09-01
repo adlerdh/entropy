@@ -79,7 +79,7 @@ void Rendering::renderSegmentationForImage(
     program.setUniform("u_tex_T_world", uniforms.segTexture_T_world);
     program.setUniform(
       "u_segOpacity",
-      uniforms.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? uniforms.imgOpacity : 1.0f));
+      uniforms.segOpacity * (renderData.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f));
     program.setUniform("u_useSegColorOverride", false);
     program.setUniform("u_segColorOverride", sk_zeroVec4);
     program.setUniform("u_quadrants", renderData.m_quadrants);

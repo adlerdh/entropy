@@ -443,6 +443,19 @@ std::vector<ComponentImageResult> createNoiseEstimateImages(const Image& image, 
 std::optional<DistanceMapImageResult>
 createDistanceMapImage(const Image& image, uint32_t component, float downsamplingFactor)
 {
+  if (component >= image.header().numComponentsPerPixel()) {
+    spdlog::warn("Cannot create distance map for invalid image component {}", component);
+    return std::nullopt;
+  }
+  return createDistanceMapImage(image, component, downsamplingFactor, image.settings().foregroundThresholds(component));
+}
+
+std::optional<DistanceMapImageResult> createDistanceMapImage(
+  const Image& image,
+  uint32_t component,
+  float downsamplingFactor,
+  const std::pair<double, double> foregroundThresholds)
+{
   if (image.header().interleavedComponents()) {
     spdlog::info(
       "Image has multiple, interleaved components, "
@@ -459,9 +472,8 @@ createDistanceMapImage(const Image& image, uint32_t component, float downsamplin
 
   const auto compImage = createItkImageFromImageComponent<TItkImageComp>(image, component);
 
-  const auto thresholds = image.settings().foregroundThresholds(component);
-  const float threshLow = static_cast<float>(thresholds.first);
-  const float threshHigh = static_cast<float>(thresholds.second);
+  const float threshLow = static_cast<float>(foregroundThresholds.first);
+  const float threshHigh = static_cast<float>(foregroundThresholds.second);
 
   spdlog::debug("Computing Euclidean distance map using thresholds {} and {}", threshLow, threshHigh);
 
@@ -483,7 +495,7 @@ createDistanceMapImage(const Image& image, uint32_t component, float downsamplin
   return DistanceMapImageResult{
     component,
     createImageFromItkImage<TDistMapComp>(distMapItkImage, displayName),
-    thresholds.second};
+    foregroundThresholds.second};
 }
 
 std::vector<DistanceMapImageResult> createDistanceMapImages(const Image& image, float downsamplingFactor)
@@ -644,7 +656,6 @@ createComponentProjectionImage(const Image& image, ComponentProjectionMode mode,
   projection.settings().setOpacity(image.settings().opacity());
   projection.settings().setInterpolationMode(image.settings().interpolationMode());
   projection.settings().setColorMapIndex(image.settings().colorMapIndex());
-  projection.settings().setUseDistanceMapForRaycasting(false);
 
   return projection;
 }

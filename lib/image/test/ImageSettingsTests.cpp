@@ -346,8 +346,6 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
   settings.setColorInterpolationMode(InterpolationMode::NearestNeighbor);
   CHECK(settings.colorInterpolationMode() == InterpolationMode::NearestNeighbor);
 
-  settings.setUseDistanceMapForRaycasting(false);
-  CHECK_FALSE(settings.useDistanceMapForRaycasting());
   settings.setIsosurfacesVisible(false);
   CHECK_FALSE(settings.isosurfacesVisible());
   settings.setApplyImageColormapToIsosurfaces(true);

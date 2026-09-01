@@ -6,6 +6,7 @@
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
+#include "rendering/mesh/MeshMaterial.h"
 #include "rendering/utility/containers/VertexAttributeInfo.h"
 #include "rendering/utility/containers/VertexIndicesInfo.h"
 #include "rendering/utility/gl/GLBufferObject.h"
@@ -229,8 +230,11 @@ struct RenderData
   /// Crosshairs snapping mode used when interactions update the crosshairs position.
   CrosshairsSnapping m_snapCrosshairs;
 
-  /// Whether segmentation opacity is multiplied by the corresponding image opacity.
-  bool m_modulateSegOpacityWithImageOpacity;
+  /// Whether 2D segmentation opacity is multiplied by the corresponding image opacity.
+  bool m_modulateSegmentationOpacityWithImageOpacity2d;
+
+  /// Whether 3D segmentation-mesh opacity is multiplied by the corresponding image opacity.
+  bool m_modulateSegmentationOpacityWithImageOpacity3d;
 
   /// Policy for grayscale image floating-point linear interpolation.
   FloatingPointLinearInterpolationPolicy m_imageGrayFloatingPointInterpolationPolicy;
@@ -310,6 +314,10 @@ struct RenderData
 
   float m_raycastSamplingFactor; //!< Raycast sampling distance in image voxel units
 
+  bool m_useDistanceMapForRaycasting; //!< Accelerate transient isosurface raycasting with a foreground distance map
+  float m_distanceMapForegroundLowerPercentile; //!< Lower foreground percentile in [0, 1]
+  float m_distanceMapForegroundUpperPercentile; //!< Upper foreground percentile in [0, 1]
+
   /// Reserved adaptive raycast sampling flag; hidden in the UI while the controller is disabled.
   bool m_adaptiveRaycastSamplingEnabled;
 
@@ -352,6 +360,9 @@ struct RenderData
 
   /// Optional advanced mesh-lighting settings for mesh-rendered 3D surfaces.
   rendering::mesh::MeshAdvancedLightingSettings m_meshAdvancedLightingSettings;
+
+  /// Global material and rim-lighting settings for segmentation and isosurface meshes.
+  rendering::mesh::MeshSurfaceMaterialSettings m_meshSurfaceMaterialSettings;
 
   bool m_smoothSegmentationMeshes;                //!< Apply boundary-preserving smoothing to segmentation meshes
   uint32_t m_segmentationMeshSmoothingIterations; //!< Windowed-sinc smoothing iterations

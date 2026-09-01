@@ -227,9 +227,12 @@ struct ProjectThreeDRenderingSettings
  */
 struct ProjectRaycastingSettings
 {
-  float m_samplingFactor = 0.8f;  //!< Ray-marching sampling factor
-  bool m_renderFrontFaces = true; //!< Render front faces in 3D raycasting
-  bool m_renderBackFaces = true;  //!< Render back faces in 3D raycasting
+  float m_samplingFactor = 0.8f; //!< Ray-marching sampling factor
+  bool m_useDistanceMap = true;  //!< Accelerate raycasting using a lazily generated foreground distance map
+  float m_distanceMapForegroundLowerPercentile = 0.5f; //!< Lower foreground percentile in [0, 1]
+  float m_distanceMapForegroundUpperPercentile = 1.0f; //!< Upper foreground percentile in [0, 1]
+  bool m_renderFrontFaces = true;                      //!< Render front faces in 3D raycasting
+  bool m_renderBackFaces = true;                       //!< Render back faces in 3D raycasting
   ProjectSegmentationRaycastMasking m_segmentationMasking =
     ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior
 };
@@ -240,6 +243,10 @@ struct ProjectRaycastingSettings
 struct ProjectMeshRenderingSettings
 {
   bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
+  bool m_pbrShadingEnabled = false;                   //!< Use PBR shading for all rendered surface meshes
+  float m_pbrMetallic = 0.2f;                         //!< Global PBR metallic factor
+  float m_pbrRoughness = 0.3f;                        //!< Global PBR roughness factor
+  float m_pbrAmbientOcclusion = 1.0f;                 //!< Global PBR indirect-light occlusion factor
   bool m_smoothSegmentationMeshes = true;             //!< Smooth extracted segmentation-label surfaces
   uint32_t m_segmentationSmoothingIterations = 25;    //!< Windowed-sinc smoothing iterations
   float m_segmentationSmoothingPassBand = 0.1f;       //!< Windowed-sinc smoothing pass band
@@ -257,6 +264,10 @@ struct ProjectMeshRenderingSettings
   float m_ambientOcclusionPower = 1.5f;               //!< Mesh AO nonlinear response exponent
   float m_ambientOcclusionContrast = 1.0f;            //!< Mesh AO shaped occlusion scale
   uint32_t m_ambientOcclusionSampleCount = 24;        //!< Mesh AO hemisphere samples per pixel
+  bool m_rimLightingEnabled = false;                  //!< Apply rim lighting to all rendered surfaces
+  float m_rimOpacityStrength = 1.0f;                  //!< Global rim opacity modulation strength
+  float m_rimEmissionStrength = 1.0f;                 //!< Global rim glow strength
+  float m_rimPower = 2.0f;                            //!< Global rim falloff exponent
 };
 
 /**
@@ -276,7 +287,8 @@ struct ProjectIntensityProjectionSettings
  */
 struct ProjectSegmentationDisplaySettings
 {
-  bool m_modulateOpacityWithImageOpacity = true; //!< Scale segmentation opacity by image opacity
+  bool m_modulateOpacityWithImageOpacity2d = true; //!< Scale 2D segmentation opacity by image opacity
+  bool m_modulateOpacityWithImageOpacity3d = true; //!< Scale 3D segmentation-mesh opacity by image opacity
   SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::Disabled; //!< Global segmentation outline
   float m_interiorOpacity = 0.2f;                                               //!< Interior opacity when outlined
   float m_erosionFactor = 0.5f;                                                 //!< Linear interpolation cutoff
@@ -391,8 +403,6 @@ struct ImageSettings
   std::vector<std::size_t> m_colorMapLevels;                              //!< Per-component discrete colormap levels
   std::vector<glm::vec3> m_colorMapHsvModifiers;                          //!< Per-component HSV colormap modifiers
   std::vector<InterpolationMode> m_interpolationModes;                    //!< Per-component scalar interpolation modes
-  std::vector<double> m_foregroundThresholdLows;         //!< Per-component distance-map foreground low thresholds
-  std::vector<double> m_foregroundThresholdHighs;        //!< Per-component distance-map foreground high thresholds
   std::set<std::size_t> m_componentLevelIndices;         //!< Component indices with serialized window centers
   std::set<std::size_t> m_componentWindowIndices;        //!< Component indices with serialized window widths
   std::set<std::size_t> m_componentThresholdLowIndices;  //!< Component indices with serialized low thresholds
@@ -405,9 +415,6 @@ struct ImageSettings
   std::set<std::size_t> m_colorMapLevelIndices;          //!< Component indices with serialized colormap levels
   std::set<std::size_t> m_colorMapHsvModifierIndices;    //!< Component indices with serialized HSV modifiers
   std::set<std::size_t> m_interpolationModeIndices;      //!< Component indices with serialized interpolation mode
-  std::set<std::size_t> m_foregroundThresholdLowIndices; //!< Component indices with serialized foreground low threshold
-  std::set<std::size_t>
-    m_foregroundThresholdHighIndices; //!< Component indices with serialized foreground high threshold
 
   ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space
   bool m_showEdges = false;                                                             //!< Show edge rendering
@@ -422,7 +429,6 @@ struct ImageSettings
   double m_edgeOpacity = 1.0;              //!< Solid edge opacity
   bool m_hasEdgeColor = false;             //!< Edge color was present in the serialized settings
 
-  bool m_useDistanceMapForRaycasting = true;                //!< Use distance maps for image raycasting
   bool m_isosurfacesVisible = true;                         //!< Show image isosurfaces
   bool m_applyImageColormapToIsosurfaces = false;           //!< Color isosurfaces with the image colormap
   bool m_modulateIsocontourOpacityWithImageOpacity = false; //!< Scale 2D contour opacity by image opacity

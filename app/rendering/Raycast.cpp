@@ -91,14 +91,19 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first, onlyIsosurfaceUid);
 
   const auto& isosurfaceData = m_appData.renderData().m_isosurfaceData;
-  const auto foregroundThresholds = settings.foregroundThresholds(activeComp);
+  const auto& renderData = m_appData.renderData();
+  const auto foregroundThresholds = rendering::texture_setup::distanceMapForegroundThresholds(
+    settings.componentStatistics(activeComp),
+    renderData.m_distanceMapForegroundLowerPercentile,
+    renderData.m_distanceMapForegroundUpperPercentile);
   const auto activeIsovalues = std::span{isosurfaceData.values}.first(
     std::min<std::size_t>(static_cast<std::size_t>(std::max(isosurfaceData.numIsos, 0)), isosurfaceData.values.size()));
   if (
-    !renderWarped && rendering::texture_setup::distanceMapSupportsIsovalues(
-                       foregroundThresholds.first,
-                       foregroundThresholds.second,
-                       activeIsovalues))
+    renderData.m_useDistanceMapForRaycasting && !renderWarped &&
+    rendering::texture_setup::distanceMapSupportsIsovalues(
+      foregroundThresholds.first,
+      foregroundThresholds.second,
+      activeIsovalues))
   {
     updateDistanceMapForRaycasting(*imgSegPair.first, activeComp);
   }

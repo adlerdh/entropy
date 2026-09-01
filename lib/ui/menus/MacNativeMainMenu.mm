@@ -546,8 +546,8 @@ void addModeMenu(NSMenu* mainMenu) {
 }
 
 void addImageMenu(NSMenu* mainMenu) {
-  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Image" action:nil keyEquivalent:@""];
-  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Image"];
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Images" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Images"];
   addSymbolActionMenuItem(menu, @"Images Panel", MainMenuAction::ToggleImagesWindow, @"slider.horizontal.3");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"", @"plus.rectangle.on.rectangle");
@@ -702,8 +702,8 @@ void addImageMenu(NSMenu* mainMenu) {
 }
 
 void addSegmentationMenu(NSMenu* mainMenu) {
-  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Segmentation" action:nil keyEquivalent:@""];
-  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Segmentation"];
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Segmentations" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Segmentations"];
   addSymbolActionMenuItem(menu, @"Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow, @"star");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Segmentation...", @selector(addSegmentation:), @"", @"folder.badge.plus");
@@ -738,8 +738,8 @@ void addSegmentationMenu(NSMenu* mainMenu) {
 }
 
 void addAnnotationMenu(NSMenu* mainMenu) {
-  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Annotation" action:nil keyEquivalent:@""];
-  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Annotation"];
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Annotations" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Annotations"];
   addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Import Annotations...", MainMenuAction::ImportAnnotations, @"square.and.arrow.down");
