@@ -264,7 +264,9 @@ jobs:
             linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Release Dependencies
-        run: cmake --preset deps-release
+        run: >
+          cmake --preset deps-release
+          -DEntropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Build Release Dependencies
         run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"

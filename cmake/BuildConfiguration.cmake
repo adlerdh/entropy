@@ -6,7 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(CMAKE_VERBOSE_MAKEFILE "Show full native build commands" OFF)
 option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
 set(Entropy_SUPERBUILD_PARALLEL "" CACHE STRING
-  "Parallel level for ExternalProject builds; empty uses the native build tool default")
+  "Parallel level for ExternalProject builds; empty defers to CMAKE_BUILD_PARALLEL_LEVEL or the native build tool default")
 set(Entropy_SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config SuperBuild generators")
 set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
 
