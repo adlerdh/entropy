@@ -531,7 +531,8 @@ json toJson(
           {"specular", renderPreferences.imagePlaneLightingSpecular},
           {"specularPower", renderPreferences.imagePlaneLightingSpecularPower}}}}},
       {"mesh",
-       {{"pbr",
+       {{"flatShading", renderPreferences.meshFlatShadingEnabled},
+        {"pbr",
          {{"enabled", renderPreferences.meshPbrShadingEnabled},
           {"metallic", renderPreferences.meshPbrMetallic},
           {"roughness", renderPreferences.meshPbrRoughness},
@@ -852,6 +853,7 @@ void applyJson(
       }
     }
     if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
+      setFromJson(renderPreferences.meshFlatShadingEnabled, *mesh, "flatShading");
       if (const auto pbr = mesh->find("pbr"); pbr != mesh->end() && pbr->is_object()) {
         setFromJson(renderPreferences.meshPbrShadingEnabled, *pbr, "enabled");
         setFloatFromJson(renderPreferences.meshPbrMetallic, *pbr, "metallic", 0.0f, 1.0f);

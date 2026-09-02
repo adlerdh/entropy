@@ -243,12 +243,13 @@ struct ProjectRaycastingSettings
 struct ProjectMeshRenderingSettings
 {
   bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
+  bool m_flatShadingEnabled = false;                  //!< Use one geometric normal per rendered mesh triangle
   bool m_pbrShadingEnabled = false;                   //!< Use PBR shading for all rendered surface meshes
   float m_pbrMetallic = 0.2f;                         //!< Global PBR metallic factor
   float m_pbrRoughness = 0.3f;                        //!< Global PBR roughness factor
   float m_pbrAmbientOcclusion = 1.0f;                 //!< Global PBR indirect-light occlusion factor
   bool m_smoothSegmentationMeshes = true;             //!< Smooth extracted segmentation-label surfaces
-  bool m_smoothIsosurfaceMeshes = false;              //!< Smooth extracted scalar isosurfaces
+  bool m_smoothIsosurfaceMeshes = true;               //!< Smooth extracted scalar isosurfaces
   uint32_t m_meshSmoothingIterations = 25;            //!< Shared windowed-sinc smoothing iterations
   float m_meshSmoothingPassBand = 0.1f;               //!< Shared windowed-sinc smoothing pass band
   uint32_t m_ddpMaxPeelPasses = 5;                    //!< DDP safety/fixed front-back peel iteration count

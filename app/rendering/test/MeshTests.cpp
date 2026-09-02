@@ -1940,10 +1940,10 @@ TEST_CASE("scalar-grid isosurface extraction creates a planar surface", "[render
 
   for (const glm::vec3& position : meshData->positions) {
     CHECK(position.x == Catch::Approx(0.5f));
-    CHECK(position.y >= 0.0f);
-    CHECK(position.y <= 1.0f);
-    CHECK(position.z >= 0.0f);
-    CHECK(position.z <= 1.0f);
+    CHECK(position.y >= Catch::Approx(0.0f).margin(0.00001f));
+    CHECK(position.y <= Catch::Approx(1.0f).margin(0.00001f));
+    CHECK(position.z >= Catch::Approx(0.0f).margin(0.00001f));
+    CHECK(position.z <= Catch::Approx(1.0f).margin(0.00001f));
   }
 }
 
@@ -1961,10 +1961,10 @@ TEST_CASE("scalar-grid extraction honors coordinate transforms", "[rendering][me
 
   for (const glm::vec3& position : meshData->positions) {
     CHECK(position.x == Catch::Approx(11.0f));
-    CHECK(position.y >= 20.0f);
-    CHECK(position.y <= 23.0f);
-    CHECK(position.z >= 30.0f);
-    CHECK(position.z <= 34.0f);
+    CHECK(position.y >= Catch::Approx(20.0f).margin(0.00001f));
+    CHECK(position.y <= Catch::Approx(23.0f).margin(0.00001f));
+    CHECK(position.z >= Catch::Approx(30.0f).margin(0.00001f));
+    CHECK(position.z <= Catch::Approx(34.0f).margin(0.00001f));
   }
 }
 

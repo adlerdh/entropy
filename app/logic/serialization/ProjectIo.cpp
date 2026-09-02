@@ -92,8 +92,16 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"enabled", "lowerPercentile", "upperPercentile"};
   }
   else if (path == "settings/rendering/mesh") {
-    preferredKeys =
-      {"pbr", "shadows", "ambientOcclusion", "rimLighting", "smoothing", "pointPicking", "clipPlane", "enabled"};
+    preferredKeys = {
+      "flatShading",
+      "pbr",
+      "shadows",
+      "ambientOcclusion",
+      "rimLighting",
+      "smoothing",
+      "pointPicking",
+      "clipPlane",
+      "enabled"};
   }
   else if (path == "settings/rendering/mesh/smoothing") {
     preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};

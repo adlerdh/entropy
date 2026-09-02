@@ -20,6 +20,7 @@ enum class MeshShadingModel
  */
 struct MeshSurfaceMaterialSettings
 {
+  bool flatShadingEnabled = false;  //!< Use one geometric normal per triangle instead of interpolated vertex normals
   bool pbrShadingEnabled = false;   //!< Use physically based shading instead of Blinn-Phong shading
   float metallic = 0.2f;            //!< PBR metallic factor
   float roughness = 0.3f;           //!< PBR roughness factor

@@ -169,6 +169,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.lightingDiffuse = renderData.m_lightingDiffuse;
   preferences.lightingSpecular = renderData.m_lightingSpecular;
   preferences.lightingSpecularPower = renderData.m_lightingSpecularPower;
+  preferences.meshFlatShadingEnabled = renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled;
   preferences.meshPbrShadingEnabled = renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled;
   preferences.meshPbrMetallic = renderData.m_meshSurfaceMaterialSettings.metallic;
   preferences.meshPbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness;
@@ -321,6 +322,7 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_lightingDiffuse = preferences.lightingDiffuse;
   renderData.m_lightingSpecular = preferences.lightingSpecular;
   renderData.m_lightingSpecularPower = preferences.lightingSpecularPower;
+  renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled = preferences.meshFlatShadingEnabled;
   renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled = preferences.meshPbrShadingEnabled;
   renderData.m_meshSurfaceMaterialSettings.metallic = preferences.meshPbrMetallic;
   renderData.m_meshSurfaceMaterialSettings.roughness = preferences.meshPbrRoughness;

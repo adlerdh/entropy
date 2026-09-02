@@ -167,6 +167,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.lightingDiffuse = 0.83f;
   preferences.lightingSpecular = 0.51f;
   preferences.lightingSpecularPower = 48.0f;
+  preferences.meshFlatShadingEnabled = true;
   preferences.meshPbrShadingEnabled = true;
   preferences.meshPbrMetallic = 0.4f;
   preferences.meshPbrRoughness = 0.2f;
@@ -180,7 +181,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.smoothSegmentationMeshes = false;
-  preferences.smoothIsosurfaceMeshes = true;
+  preferences.smoothIsosurfaceMeshes = false;
   preferences.meshSmoothingIterations = 40;
   preferences.meshSmoothingPassBand = 0.2f;
   preferences.meshPickingEnabled = false;
@@ -387,6 +388,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.lightingDiffuse == Catch::Approx(expected.lightingDiffuse));
   CHECK(actual.lightingSpecular == Catch::Approx(expected.lightingSpecular));
   CHECK(actual.lightingSpecularPower == Catch::Approx(expected.lightingSpecularPower));
+  CHECK(actual.meshFlatShadingEnabled == expected.meshFlatShadingEnabled);
   CHECK(actual.meshPbrShadingEnabled == expected.meshPbrShadingEnabled);
   CHECK(actual.meshPbrMetallic == Catch::Approx(expected.meshPbrMetallic));
   CHECK(actual.meshPbrRoughness == Catch::Approx(expected.meshPbrRoughness));

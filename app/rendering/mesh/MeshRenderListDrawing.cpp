@@ -196,6 +196,7 @@ void Rendering::drawMeshRenderListForView(
       renderData.m_lightingSpecular,
       renderData.m_lightingSpecularPower});
   context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
+  context.flatShadingEnabled = renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled;
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
     renderData.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{

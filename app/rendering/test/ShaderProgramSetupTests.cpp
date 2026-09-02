@@ -133,6 +133,18 @@ TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP 
   }
 }
 
+TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths", "[rendering][shaders][mesh]")
+{
+  const std::array shaderPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("uniform bool u_flatShadingEnabled") != std::string::npos);
+    CHECK(shader.find("!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal)") != std::string::npos);
+    CHECK(shader.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
+  }
+}
+
 TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
 {
   const std::string resolve =

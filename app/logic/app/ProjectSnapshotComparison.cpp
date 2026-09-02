@@ -310,9 +310,9 @@ bool meshRenderingSettingsEqual(
   const serialize::ProjectMeshRenderingSettings& a,
   const serialize::ProjectMeshRenderingSettings& b)
 {
-  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_pbrShadingEnabled == b.m_pbrShadingEnabled &&
-         a.m_pbrMetallic == b.m_pbrMetallic && a.m_pbrRoughness == b.m_pbrRoughness &&
-         a.m_pbrAmbientOcclusion == b.m_pbrAmbientOcclusion &&
+  return a.m_renderingEnabled == b.m_renderingEnabled && a.m_flatShadingEnabled == b.m_flatShadingEnabled &&
+         a.m_pbrShadingEnabled == b.m_pbrShadingEnabled && a.m_pbrMetallic == b.m_pbrMetallic &&
+         a.m_pbrRoughness == b.m_pbrRoughness && a.m_pbrAmbientOcclusion == b.m_pbrAmbientOcclusion &&
          a.m_smoothSegmentationMeshes == b.m_smoothSegmentationMeshes &&
          a.m_smoothIsosurfaceMeshes == b.m_smoothIsosurfaceMeshes &&
          a.m_meshSmoothingIterations == b.m_meshSmoothingIterations &&

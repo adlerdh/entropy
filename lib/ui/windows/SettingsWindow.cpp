@@ -2276,6 +2276,15 @@ void renderSurfaceLightingSettings(RenderData& renderData)
     "lighting contributions and the sharpness of specular highlights.");
 
   auto& material = renderData.m_meshSurfaceMaterialSettings;
+  int surfaceShading = material.flatShadingEnabled ? 1 : 0;
+  if (ImGui::Combo("Surface shading", &surfaceShading, "Smooth (per-pixel)\0Flat\0")) {
+    material.flatShadingEnabled = surfaceShading == 1;
+  }
+  ImGui::SameLine();
+  helpMarker(
+    "Smooth shading interpolates vertex normals across each triangle. Flat shading uses one geometric normal per "
+    "triangle, making mesh facets visible. Lighting is evaluated per pixel in both modes.");
+
   ImGui::BeginDisabled(material.pbrShadingEnabled);
   const float lightingWidth = ImGui::CalcItemWidth();
   ImGui::PushItemWidth(lightingWidth);

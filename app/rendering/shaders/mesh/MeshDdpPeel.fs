@@ -9,6 +9,7 @@ uniform float u_metallic;
 uniform float u_roughness;
 uniform float u_ambientOcclusion;
 uniform int u_shadingModel;
+uniform bool u_flatShadingEnabled;
 uniform float u_lightingAmbient;
 uniform float u_lightingDiffuse;
 uniform float u_lightingSpecular;
@@ -115,7 +116,7 @@ vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 vi
 
 vec3 surfaceNormal()
 {
-  if (dot(v_worldNormal, v_worldNormal) > 0.000001) {
+  if (!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal) > 0.000001) {
     return normalize(v_worldNormal);
   }
 

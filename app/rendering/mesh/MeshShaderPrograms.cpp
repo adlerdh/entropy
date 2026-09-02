@@ -111,6 +111,7 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_roughness", UniformType::Float, 0.3f);
   uniforms.insertUniform("u_ambientOcclusion", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
+  uniforms.insertUniform("u_flatShadingEnabled", UniformType::Bool, false);
   uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);
   uniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.50f);
   uniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.20f);

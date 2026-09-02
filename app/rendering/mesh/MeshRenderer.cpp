@@ -301,6 +301,7 @@ void MeshRenderer::drawBucket(
   program.setUniform("u_lightingDiffuse", context.lighting.y);
   program.setUniform("u_lightingSpecular", context.lighting.z);
   program.setUniform("u_lightingSpecularPower", context.lighting.w);
+  program.setUniform("u_flatShadingEnabled", context.flatShadingEnabled);
   uploadShadowUniforms(context, program);
   uploadAmbientOcclusionUniforms(context, program);
 

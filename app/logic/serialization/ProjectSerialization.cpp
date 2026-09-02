@@ -682,6 +682,7 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   const ProjectMeshRenderingSettings defaults;
   j = json::object();
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
+  addIfChanged(j, "flatShading", settings.m_flatShadingEnabled, defaults.m_flatShadingEnabled);
   json pbr = json::object();
   addIfChanged(pbr, "enabled", settings.m_pbrShadingEnabled, defaults.m_pbrShadingEnabled);
   addIfChanged(pbr, "metallic", settings.m_pbrMetallic, defaults.m_pbrMetallic);
@@ -732,6 +733,9 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
 {
   if (const auto value = j.find("enabled"); value != j.end() && value->is_boolean()) {
     settings.m_renderingEnabled = value->get<bool>();
+  }
+  if (const auto value = j.find("flatShading"); value != j.end() && value->is_boolean()) {
+    settings.m_flatShadingEnabled = value->get<bool>();
   }
   if (const auto pbr = j.find("pbr"); pbr != j.end() && pbr->is_object()) {
     if (const auto value = pbr->find("enabled"); value != pbr->end() && value->is_boolean()) {

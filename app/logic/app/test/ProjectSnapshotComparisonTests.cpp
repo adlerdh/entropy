@@ -232,11 +232,15 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   auto changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_flatShadingEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
   changedMeshRendering.m_meshRendering.m_pbrShadingEnabled = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
-  changedMeshRendering.m_meshRendering.m_smoothIsosurfaceMeshes = true;
+  changedMeshRendering.m_meshRendering.m_smoothIsosurfaceMeshes = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;

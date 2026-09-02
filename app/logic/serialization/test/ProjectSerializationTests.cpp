@@ -398,12 +398,13 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_raycasting.m_renderBackFaces = true;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
   project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_flatShadingEnabled = true;
   project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pbrMetallic = 0.4f;
   project.m_meshRendering.m_pbrRoughness = 0.2f;
   project.m_meshRendering.m_pbrAmbientOcclusion = 0.9f;
   project.m_meshRendering.m_smoothSegmentationMeshes = false;
-  project.m_meshRendering.m_smoothIsosurfaceMeshes = true;
+  project.m_meshRendering.m_smoothIsosurfaceMeshes = false;
   project.m_meshRendering.m_meshSmoothingIterations = 40;
   project.m_meshRendering.m_meshSmoothingPassBand = 0.2f;
   project.m_meshRendering.m_shadowsEnabled = true;
@@ -485,12 +486,13 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("renderBackFaces"));
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
   CHECK(mesh.at("enabled") == false);
+  CHECK(mesh.at("flatShading") == true);
   CHECK(mesh.at("pbr").at("enabled") == true);
   CHECK(mesh.at("pbr").at("metallic") == 0.4f);
   CHECK(mesh.at("pbr").at("roughness") == 0.2f);
   CHECK(mesh.at("pbr").at("ambientOcclusion") == 0.9f);
   CHECK(mesh.at("smoothing").at("segmentations") == false);
-  CHECK(mesh.at("smoothing").at("isosurfaces") == true);
+  CHECK(mesh.at("smoothing").at("isosurfaces") == false);
   CHECK(mesh.at("smoothing").at("iterations") == 40);
   CHECK(mesh.at("smoothing").at("passBand") == 0.2f);
   CHECK(mesh.at("shadows").at("enabled") == true);
@@ -571,12 +573,13 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_raycasting.m_renderBackFaces == true);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
   CHECK(parsed.m_meshRendering.m_renderingEnabled == false);
+  CHECK(parsed.m_meshRendering.m_flatShadingEnabled == true);
   CHECK(parsed.m_meshRendering.m_pbrShadingEnabled == true);
   CHECK(parsed.m_meshRendering.m_pbrMetallic == 0.4f);
   CHECK(parsed.m_meshRendering.m_pbrRoughness == 0.2f);
   CHECK(parsed.m_meshRendering.m_pbrAmbientOcclusion == 0.9f);
   CHECK(parsed.m_meshRendering.m_smoothSegmentationMeshes == false);
-  CHECK(parsed.m_meshRendering.m_smoothIsosurfaceMeshes == true);
+  CHECK(parsed.m_meshRendering.m_smoothIsosurfaceMeshes == false);
   CHECK(parsed.m_meshRendering.m_meshSmoothingIterations == 40);
   CHECK(parsed.m_meshRendering.m_meshSmoothingPassBand == 0.2f);
   CHECK(parsed.m_meshRendering.m_shadowsEnabled == true);
@@ -667,6 +670,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_raycasting.m_renderBackFaces = false;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskIn;
   project.m_meshRendering.m_renderingEnabled = false;
+  project.m_meshRendering.m_flatShadingEnabled = true;
   project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
@@ -674,7 +678,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
   project.m_meshRendering.m_rimLightingEnabled = true;
   project.m_meshRendering.m_smoothSegmentationMeshes = false;
-  project.m_meshRendering.m_smoothIsosurfaceMeshes = true;
+  project.m_meshRendering.m_smoothIsosurfaceMeshes = false;
   project.m_meshRendering.m_meshSmoothingIterations = 40;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d = false;
@@ -730,6 +734,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                    "imagePlanes"});
   CHECK(
     objectKeys(orderedRendering.at("mesh")) == std::vector<std::string>{
+                                                 "flatShading",
                                                  "pbr",
                                                  "shadows",
                                                  "ambientOcclusion",

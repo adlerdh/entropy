@@ -141,6 +141,7 @@ struct RenderPreferences
   float lightingDiffuse = 0.50f;
   float lightingSpecular = 0.20f;
   float lightingSpecularPower = 16.0f;
+  bool meshFlatShadingEnabled = false;
   bool meshPbrShadingEnabled = false;
   float meshPbrMetallic = 0.2f;
   float meshPbrRoughness = 0.3f;
@@ -154,7 +155,7 @@ struct RenderPreferences
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
   bool smoothSegmentationMeshes = true;
-  bool smoothIsosurfaceMeshes = false;
+  bool smoothIsosurfaceMeshes = true;
   uint32_t meshSmoothingIterations = 25;
   float meshSmoothingPassBand = 0.1f;
   bool meshPickingEnabled = true;

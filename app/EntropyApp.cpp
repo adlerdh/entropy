@@ -22,6 +22,7 @@
 #include "logic/DistanceMap.h"
 
 #include "ui/NativeFileDialogs.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/epsilon.hpp>
@@ -41,7 +42,6 @@
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
-#include <iostream>
 #include <limits>
 #include <mutex>
 #include <sstream>
@@ -56,25 +56,16 @@ namespace fs = std::filesystem;
 
 namespace
 {
-bool promptForChar(const char* prompt, char& readch)
+std::string fileDisplayName(const fs::path& path)
 {
-  std::string tmp;
-  std::cout << prompt << '\n';
+  const fs::path fileName = path.filename();
+  return (fileName.empty() ? path : fileName).string();
+}
 
-  if (std::getline(std::cin, tmp)) {
-    // Only accept single character input
-    if (1 == tmp.length()) {
-      readch = tmp[0];
-    }
-    else {
-      // For most input, char zero is an appropriate sentinel
-      readch = '\0';
-    }
-
-    return true;
-  }
-
-  return false;
+std::string pixelDimensionsText(const glm::uvec3& dimensions)
+{
+  return std::to_string(dimensions.x) + " × " + std::to_string(dimensions.y) + " × " + std::to_string(dimensions.z) +
+         " pixels";
 }
 
 std::vector<fs::path> nonEmptyPaths(const std::vector<fs::path>& fileNames)
@@ -457,18 +448,39 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
         glm::to_string(segHdr.pixelDimensions()));
     }
 
-    char type = '\0';
-
-    while (promptForChar("\nContinue loading the segmentation despite transformation mismatch? [y/n]", type)) {
-      if ('n' == type || 'N' == type) {
-        spdlog::info("The segmentation from file {} will be loaded", fileName);
-        return noSegLoaded;
-      }
-      else if ('y' == type || 'Y' == type) {
-        spdlog::info("The segmentation from file {} will not be loaded due to subject_T_texture mismatch", fileName);
-        break;
-      }
+    std::string geometryDifferences;
+    if (glm::any(glm::epsilonNotEqual(imgHdr.origin(), segHdr.origin(), EPS))) {
+      geometryDifferences += "\n• Origins differ";
     }
+    if (glm::any(glm::epsilonNotEqual(imgHdr.spacing(), segHdr.spacing(), EPS))) {
+      geometryDifferences += "\n• Voxel spacings differ";
+    }
+    if (!math::areMatricesEqual(imgHdr.directions(), segHdr.directions())) {
+      geometryDifferences += "\n• Image orientations differ";
+    }
+    if (imgHdr.pixelDimensions() != segHdr.pixelDimensions()) {
+      geometryDifferences += "\n• Pixel dimensions differ";
+    }
+    if (geometryDifferences.empty()) {
+      geometryDifferences = "\n• Image-to-subject transformations differ";
+    }
+
+    const std::string imageName = fileDisplayName(imgHdr.fileName());
+    const std::string segmentationName = fileDisplayName(segHdr.fileName());
+    const std::string message = "The segmentation '" + segmentationName + "' does not match image '" + imageName + "'.";
+    const std::string informativeText =
+      "Image dimensions: " + pixelDimensionsText(imgHdr.pixelDimensions()) +
+      "\nSegmentation dimensions: " + pixelDimensionsText(segHdr.pixelDimensions()) +
+      "\n\nGeometry differences:" + geometryDifferences +
+      "\n\nLoading it anyway may place the segmentation incorrectly. Do you want to continue?";
+    const auto result = native_dialog::showMessageDialog(
+      {"Segmentation Geometry Mismatch", message, informativeText, "Load Anyway", "Cancel", ""});
+
+    if (!result || native_dialog::MessageDialogResult::FirstButton != *result) {
+      spdlog::info("The segmentation from file {} will not be loaded due to a geometry mismatch", fileName);
+      return noSegLoaded;
+    }
+    spdlog::info("Loading segmentation from file {} despite its geometry mismatch", fileName);
   }
 
   // The image and segmentation transformations match!
