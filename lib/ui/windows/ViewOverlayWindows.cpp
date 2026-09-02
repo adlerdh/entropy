@@ -63,7 +63,31 @@ void renderPopupHeading(ImFont* font, const char* text)
   }
 }
 
-void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, std::size_t numImages, ImFont* headingFont)
+void renderThreeDRenderModeCheckboxes(
+  ViewRenderMode renderMode,
+  const std::function<void(const ViewRenderMode&)>& setRenderMode)
+{
+  bool renderSegmentations = rendersSegmentations(renderMode);
+  bool renderIsosurfaceSurfaces = rendersIsosurfaces(renderMode);
+
+  if (ImGui::Checkbox("Segmentations", &renderSegmentations) && setRenderMode) {
+    renderMode = threeDRenderMode(renderSegmentations, renderIsosurfaceSurfaces);
+    setRenderMode(renderMode);
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Render visible segmentation labels as 3D surface meshes");
+  }
+
+  if (ImGui::Checkbox("Isosurfaces", &renderIsosurfaceSurfaces) && setRenderMode) {
+    setRenderMode(threeDRenderMode(renderSegmentations, renderIsosurfaceSurfaces));
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Render visible image isosurfaces in 3D");
+  }
+  ImGui::Spacing();
+}
+
+void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* headingFont)
 {
   if (ImGui::Button(ICON_FK_COGS "##threeDViewOptions")) {
     ImGui::OpenPopup("threeDViewOptionsPopup");
@@ -77,22 +101,7 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, std::size_t 
     renderPopupHeading(headingFont, "3D view options:");
 
     ImGui::SeparatorText("Render mode");
-    const auto& renderModes = numImages > 1 ? All3dViewRenderModes : All3dNonMetricRenderModes;
-    for (const ViewRenderMode candidate : renderModes) {
-      const bool selected = candidate == modes.renderMode;
-      if (
-        ImGui::Selectable(typeString(candidate).c_str(), selected, ImGuiSelectableFlags_DontClosePopups) &&
-        modes.setRenderMode)
-      {
-        modes.setRenderMode(candidate);
-      }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", descriptionString(candidate).c_str());
-      }
-      if (selected) {
-        ImGui::SetItemDefaultFocus();
-      }
-    }
+    renderThreeDRenderModeCheckboxes(modes.renderMode, modes.setRenderMode);
 
     ImGui::SeparatorText("Projection");
     ProjectionType projectionType = ProjectionType::Perspective;
@@ -489,16 +498,16 @@ void renderViewSettingsComboWindow(
             }
           };
 
-          if (numImages > 1) {
+          if (ViewType::ThreeD == viewType) {
+            renderThreeDRenderModeCheckboxes(renderMode, setRenderMode);
+          }
+          else if (numImages > 1) {
             // If there are two or more images, all shader types can be used:
-            const auto allRenderModes = (ViewType::ThreeD != viewType) ? All2dViewRenderModes : All3dViewRenderModes;
-            renderSelectablesForRenderModes(allRenderModes);
+            renderSelectablesForRenderModes(All2dViewRenderModes);
           }
           else if (1 == numImages) {
             // If there is only one image, then only non-metric shader types can be used:
-            const auto singleImageRenderModes =
-              (ViewType::ThreeD != viewType) ? All2dNonMetricRenderModes : All3dNonMetricRenderModes;
-            renderSelectablesForRenderModes(singleImageRenderModes);
+            renderSelectablesForRenderModes(All2dNonMetricRenderModes);
           }
 
           ImGui::EndCombo();
@@ -704,7 +713,7 @@ void renderViewSettingsComboWindow(
 
         if (ViewType::ThreeD == viewType) {
           ImGui::SameLine();
-          renderThreeDViewOptions(modes, numImages, popupHeadingFont);
+          renderThreeDViewOptions(modes, popupHeadingFont);
         }
       }
 

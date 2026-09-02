@@ -1307,7 +1307,9 @@ TEST_CASE("scalar-grid isosurface policy builds stable extraction requests", "[r
 {
   const uuids::uuid imageUid = generateRandomUuid();
 
-  const mesh::IsosurfaceMeshRequest request = mesh::makeScalarGridIsosurfaceRequest(imageUid, 11, 12, 2, 4, 17.5);
+  const mesh::MeshGenerationOptions options{.smoothSurface = false};
+  const mesh::IsosurfaceMeshRequest request =
+    mesh::makeScalarGridIsosurfaceRequest(imageUid, 11, 12, 2, 4, 17.5, options);
 
   CHECK(request.imageUid == imageUid);
   CHECK(request.imageDataVersion == 11);
@@ -1316,7 +1318,18 @@ TEST_CASE("scalar-grid isosurface policy builds stable extraction requests", "[r
   CHECK(request.timePoint == 4);
   CHECK(request.isoValue == Catch::Approx(17.5));
   CHECK(request.algorithm == mesh::kScalarGridIsosurfaceAlgorithm);
-  CHECK(request.algorithmVersion == mesh::kScalarGridIsosurfaceAlgorithmVersion);
+  CHECK(request.algorithmVersion != 0);
+
+  mesh::MeshGenerationOptions smoothedOptions = options;
+  smoothedOptions.smoothSurface = true;
+  const mesh::IsosurfaceMeshRequest smoothedRequest =
+    mesh::makeScalarGridIsosurfaceRequest(imageUid, 11, 12, 2, 4, 17.5, smoothedOptions);
+  CHECK(mesh::geometryKeyForRequest(smoothedRequest) != mesh::geometryKeyForRequest(request));
+
+  smoothedOptions.smoothingPassBand = 0.2;
+  const mesh::IsosurfaceMeshRequest changedPassBandRequest =
+    mesh::makeScalarGridIsosurfaceRequest(imageUid, 11, 12, 2, 4, 17.5, smoothedOptions);
+  CHECK(mesh::geometryKeyForRequest(changedPassBandRequest) != mesh::geometryKeyForRequest(smoothedRequest));
 
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
   CHECK(key.sourceUid == imageUid);
@@ -1327,7 +1340,7 @@ TEST_CASE("scalar-grid isosurface policy builds stable extraction requests", "[r
   CHECK(key.timePoint == 4);
   CHECK(key.isoValue == Catch::Approx(17.5));
   CHECK(key.extractionAlgorithm == mesh::kScalarGridIsosurfaceAlgorithm);
-  CHECK(key.extractionAlgorithmVersion == mesh::kScalarGridIsosurfaceAlgorithmVersion);
+  CHECK(key.extractionAlgorithmVersion == request.algorithmVersion);
 }
 
 TEST_CASE("segmentation mesh policy respects independent 3D visibility and opacity", "[rendering][mesh]")
@@ -2024,7 +2037,7 @@ TEST_CASE("cropped segmentation masks add background padding and close volume-ed
   REQUIRE(grid);
 
   mesh::MeshGenerationOptions options;
-  options.smoothLabelMeshes = false;
+  options.smoothSurface = false;
   const std::optional<mesh::MeshData> meshData = mesh::generateBinaryMaskSurface(*grid, options);
   REQUIRE(meshData);
   CHECK(mesh::isValidMeshData(*meshData));

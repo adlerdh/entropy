@@ -119,6 +119,21 @@ constexpr bool rendersIsosurfaces(const ViewRenderMode renderMode)
   return ViewRenderMode::VolumeRender == renderMode || ViewRenderMode::SegmentationAndIsosurfaces == renderMode;
 }
 
+/** @brief Return the 3D render mode corresponding to independently selected scene contents. */
+constexpr ViewRenderMode threeDRenderMode(bool renderSegmentations, bool renderIsosurfaceSurfaces)
+{
+  if (renderSegmentations && renderIsosurfaceSurfaces) {
+    return ViewRenderMode::SegmentationAndIsosurfaces;
+  }
+  if (renderSegmentations) {
+    return ViewRenderMode::SegmentationMesh;
+  }
+  if (renderIsosurfaceSurfaces) {
+    return ViewRenderMode::VolumeRender;
+  }
+  return ViewRenderMode::Disabled;
+}
+
 /**
  * @brief Return a longer intensity projection mode description for tooltips/help text.
  * @param ipMode Intensity projection mode.

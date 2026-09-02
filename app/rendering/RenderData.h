@@ -364,9 +364,10 @@ struct RenderData
   /// Global material and rim-lighting settings for segmentation and isosurface meshes.
   rendering::mesh::MeshSurfaceMaterialSettings m_meshSurfaceMaterialSettings;
 
-  bool m_smoothSegmentationMeshes;                //!< Apply boundary-preserving smoothing to segmentation meshes
-  uint32_t m_segmentationMeshSmoothingIterations; //!< Windowed-sinc smoothing iterations
-  float m_segmentationMeshSmoothingPassBand;      //!< Windowed-sinc smoothing pass band
+  bool m_smoothSegmentationMeshes;    //!< Apply boundary-preserving smoothing to segmentation meshes
+  bool m_smoothIsosurfaceMeshes;      //!< Apply boundary-preserving smoothing to isosurface meshes
+  uint32_t m_meshSmoothingIterations; //!< Shared windowed-sinc smoothing iterations
+  float m_meshSmoothingPassBand;      //!< Shared windowed-sinc smoothing pass band
 
   rendering::mesh::MeshDdpSettings m_meshDdpSettings; //!< Dual-depth-peeling termination and safety limit
 

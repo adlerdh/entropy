@@ -51,7 +51,7 @@ SegmentationMeshRequest makeScalarGridSegmentationRequest(
 {
   // Thread count affects execution only. Smoothing values change geometry and therefore must invalidate the cache.
   uint64_t algorithmVersion = kScalarGridSegmentationAlgorithmVersion;
-  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothLabelMeshes) + 0x9e3779b97f4a7c15ULL +
+  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothSurface) + 0x9e3779b97f4a7c15ULL +
                       (algorithmVersion << 6U) + (algorithmVersion >> 2U);
   algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothingIterations) + 0x9e3779b97f4a7c15ULL +
                       (algorithmVersion << 6U) + (algorithmVersion >> 2U);

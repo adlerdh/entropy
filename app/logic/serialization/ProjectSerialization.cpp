@@ -688,23 +688,12 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   addIfChanged(pbr, "roughness", settings.m_pbrRoughness, defaults.m_pbrRoughness);
   addIfChanged(pbr, "ambientOcclusion", settings.m_pbrAmbientOcclusion, defaults.m_pbrAmbientOcclusion);
   addIfNotEmpty(j, "pbr", std::move(pbr));
-  json segmentationSmoothing = json::object();
-  addIfChanged(
-    segmentationSmoothing,
-    "enabled",
-    settings.m_smoothSegmentationMeshes,
-    defaults.m_smoothSegmentationMeshes);
-  addIfChanged(
-    segmentationSmoothing,
-    "iterations",
-    settings.m_segmentationSmoothingIterations,
-    defaults.m_segmentationSmoothingIterations);
-  addIfChanged(
-    segmentationSmoothing,
-    "passBand",
-    settings.m_segmentationSmoothingPassBand,
-    defaults.m_segmentationSmoothingPassBand);
-  addIfNotEmpty(j, "segmentationSmoothing", std::move(segmentationSmoothing));
+  json smoothing = json::object();
+  addIfChanged(smoothing, "segmentations", settings.m_smoothSegmentationMeshes, defaults.m_smoothSegmentationMeshes);
+  addIfChanged(smoothing, "isosurfaces", settings.m_smoothIsosurfaceMeshes, defaults.m_smoothIsosurfaceMeshes);
+  addIfChanged(smoothing, "iterations", settings.m_meshSmoothingIterations, defaults.m_meshSmoothingIterations);
+  addIfChanged(smoothing, "passBand", settings.m_meshSmoothingPassBand, defaults.m_meshSmoothingPassBand);
+  addIfNotEmpty(j, "smoothing", std::move(smoothing));
   addIfChanged(j, "pointPicking", settings.m_pickingEnabled, defaults.m_pickingEnabled);
   json clipPlane = json::object();
   addIfChanged(clipPlane, "enabled", settings.m_clipPlaneEnabled, defaults.m_clipPlaneEnabled);
@@ -758,15 +747,18 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
       settings.m_pbrAmbientOcclusion = std::clamp(value->get<float>(), 0.0f, 1.0f);
     }
   }
-  if (const auto smoothing = j.find("segmentationSmoothing"); smoothing != j.end() && smoothing->is_object()) {
-    if (const auto value = smoothing->find("enabled"); value != smoothing->end() && value->is_boolean()) {
+  if (const auto smoothing = j.find("smoothing"); smoothing != j.end() && smoothing->is_object()) {
+    if (const auto value = smoothing->find("segmentations"); value != smoothing->end() && value->is_boolean()) {
       settings.m_smoothSegmentationMeshes = value->get<bool>();
     }
+    if (const auto value = smoothing->find("isosurfaces"); value != smoothing->end() && value->is_boolean()) {
+      settings.m_smoothIsosurfaceMeshes = value->get<bool>();
+    }
     if (const auto value = smoothing->find("iterations"); value != smoothing->end() && value->is_number_unsigned()) {
-      settings.m_segmentationSmoothingIterations = std::clamp(value->get<uint32_t>(), 1u, 1000u);
+      settings.m_meshSmoothingIterations = std::clamp(value->get<uint32_t>(), 1u, 1000u);
     }
     if (const auto value = smoothing->find("passBand"); value != smoothing->end() && value->is_number()) {
-      settings.m_segmentationSmoothingPassBand = std::clamp(value->get<float>(), 0.001f, 2.0f);
+      settings.m_meshSmoothingPassBand = std::clamp(value->get<float>(), 0.001f, 2.0f);
     }
   }
   if (const auto value = j.find("pointPicking"); value != j.end() && value->is_boolean()) {

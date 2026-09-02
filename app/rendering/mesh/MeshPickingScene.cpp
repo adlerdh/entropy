@@ -108,13 +108,19 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           continue;
         }
 
+        const rendering::mesh::MeshGenerationOptions generationOptions{
+          .threadCount = 0,
+          .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
+          .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
         const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
           imageUid,
           image->pixelDataRevision(),
           image->geometryRevision(),
           activeComponent,
           activeTimePoint,
-          surface->value);
+          surface->value,
+          generationOptions);
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
         const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
         if (!handle || !m_meshCpuCache.readyMesh(key)) {
@@ -188,9 +194,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         }
         const rendering::mesh::MeshGenerationOptions generationOptions{
           .threadCount = 0,
-          .smoothLabelMeshes = m_appData.renderData().m_smoothSegmentationMeshes,
-          .smoothingIterations = m_appData.renderData().m_segmentationMeshSmoothingIterations,
-          .smoothingPassBand = m_appData.renderData().m_segmentationMeshSmoothingPassBand};
+          .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
+          .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
         const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
           segUid,
           seg->pixelDataRevision(),

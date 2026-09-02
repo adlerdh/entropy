@@ -465,8 +465,9 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
     .m_pbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness,
     .m_pbrAmbientOcclusion = renderData.m_meshSurfaceMaterialSettings.ambientOcclusion,
     .m_smoothSegmentationMeshes = renderData.m_smoothSegmentationMeshes,
-    .m_segmentationSmoothingIterations = renderData.m_segmentationMeshSmoothingIterations,
-    .m_segmentationSmoothingPassBand = renderData.m_segmentationMeshSmoothingPassBand,
+    .m_smoothIsosurfaceMeshes = renderData.m_smoothIsosurfaceMeshes,
+    .m_meshSmoothingIterations = renderData.m_meshSmoothingIterations,
+    .m_meshSmoothingPassBand = renderData.m_meshSmoothingPassBand,
     .m_ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses,
     .m_pickingEnabled = renderData.m_meshPickingEnabled,
     .m_clipPlaneEnabled = renderData.m_meshClipPlaneEnabled,
@@ -496,8 +497,9 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   renderData.m_meshSurfaceMaterialSettings.roughness = settings.m_pbrRoughness;
   renderData.m_meshSurfaceMaterialSettings.ambientOcclusion = settings.m_pbrAmbientOcclusion;
   renderData.m_smoothSegmentationMeshes = settings.m_smoothSegmentationMeshes;
-  renderData.m_segmentationMeshSmoothingIterations = std::clamp(settings.m_segmentationSmoothingIterations, 1u, 1000u);
-  renderData.m_segmentationMeshSmoothingPassBand = std::clamp(settings.m_segmentationSmoothingPassBand, 0.001f, 2.0f);
+  renderData.m_smoothIsosurfaceMeshes = settings.m_smoothIsosurfaceMeshes;
+  renderData.m_meshSmoothingIterations = std::clamp(settings.m_meshSmoothingIterations, 1u, 1000u);
+  renderData.m_meshSmoothingPassBand = std::clamp(settings.m_meshSmoothingPassBand, 0.001f, 2.0f);
   renderData.m_meshDdpSettings.maxPeelPasses = std::clamp(settings.m_ddpMaxPeelPasses, 1u, 32u);
   renderData.m_meshPickingEnabled = settings.m_pickingEnabled;
   renderData.m_meshClipPlaneEnabled = settings.m_clipPlaneEnabled;

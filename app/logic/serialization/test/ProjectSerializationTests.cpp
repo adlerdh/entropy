@@ -403,8 +403,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_pbrRoughness = 0.2f;
   project.m_meshRendering.m_pbrAmbientOcclusion = 0.9f;
   project.m_meshRendering.m_smoothSegmentationMeshes = false;
-  project.m_meshRendering.m_segmentationSmoothingIterations = 40;
-  project.m_meshRendering.m_segmentationSmoothingPassBand = 0.2f;
+  project.m_meshRendering.m_smoothIsosurfaceMeshes = true;
+  project.m_meshRendering.m_meshSmoothingIterations = 40;
+  project.m_meshRendering.m_meshSmoothingPassBand = 0.2f;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_shadowMapSizePixels = 2048;
   project.m_meshRendering.m_shadowStrength = 0.6f;
@@ -488,9 +489,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(mesh.at("pbr").at("metallic") == 0.4f);
   CHECK(mesh.at("pbr").at("roughness") == 0.2f);
   CHECK(mesh.at("pbr").at("ambientOcclusion") == 0.9f);
-  CHECK(mesh.at("segmentationSmoothing").at("enabled") == false);
-  CHECK(mesh.at("segmentationSmoothing").at("iterations") == 40);
-  CHECK(mesh.at("segmentationSmoothing").at("passBand") == 0.2f);
+  CHECK(mesh.at("smoothing").at("segmentations") == false);
+  CHECK(mesh.at("smoothing").at("isosurfaces") == true);
+  CHECK(mesh.at("smoothing").at("iterations") == 40);
+  CHECK(mesh.at("smoothing").at("passBand") == 0.2f);
   CHECK(mesh.at("shadows").at("enabled") == true);
   CHECK(mesh.at("shadows").at("mapSizePixels") == 2048);
   CHECK(mesh.at("shadows").at("strength") == 0.6f);
@@ -574,8 +576,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_pbrRoughness == 0.2f);
   CHECK(parsed.m_meshRendering.m_pbrAmbientOcclusion == 0.9f);
   CHECK(parsed.m_meshRendering.m_smoothSegmentationMeshes == false);
-  CHECK(parsed.m_meshRendering.m_segmentationSmoothingIterations == 40);
-  CHECK(parsed.m_meshRendering.m_segmentationSmoothingPassBand == 0.2f);
+  CHECK(parsed.m_meshRendering.m_smoothIsosurfaceMeshes == true);
+  CHECK(parsed.m_meshRendering.m_meshSmoothingIterations == 40);
+  CHECK(parsed.m_meshRendering.m_meshSmoothingPassBand == 0.2f);
   CHECK(parsed.m_meshRendering.m_shadowsEnabled == true);
   CHECK(parsed.m_meshRendering.m_shadowMapSizePixels == 2048);
   CHECK(parsed.m_meshRendering.m_shadowStrength == 0.6f);
@@ -670,7 +673,9 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
   project.m_meshRendering.m_rimLightingEnabled = true;
-  project.m_meshRendering.m_segmentationSmoothingIterations = 40;
+  project.m_meshRendering.m_smoothSegmentationMeshes = false;
+  project.m_meshRendering.m_smoothIsosurfaceMeshes = true;
+  project.m_meshRendering.m_meshSmoothingIterations = 40;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d = false;
   project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d = false;
@@ -729,10 +734,13 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                  "shadows",
                                                  "ambientOcclusion",
                                                  "rimLighting",
-                                                 "segmentationSmoothing",
+                                                 "smoothing",
                                                  "pointPicking",
                                                  "clipPlane",
                                                  "enabled"});
+  CHECK(
+    objectKeys(orderedRendering.at("mesh").at("smoothing")) ==
+    std::vector<std::string>{"segmentations", "isosurfaces", "iterations"});
   CHECK(
     objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
     std::vector<std::string>{"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"});

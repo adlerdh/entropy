@@ -77,13 +77,19 @@ void Rendering::reconcileExtractedMeshResources()
       if (!surface) {
         continue;
       }
+      const rendering::mesh::MeshGenerationOptions generationOptions{
+        .threadCount = 0,
+        .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
+        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
       liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridIsosurfaceRequest(
         imageUid,
         image->pixelDataRevision(),
         image->geometryRevision(),
         component,
         timePoint,
-        surface->value)));
+        surface->value,
+        generationOptions)));
     }
   }
 
@@ -108,9 +114,9 @@ void Rendering::reconcileExtractedMeshResources()
       }
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
-        .smoothLabelMeshes = m_appData.renderData().m_smoothSegmentationMeshes,
-        .smoothingIterations = m_appData.renderData().m_segmentationMeshSmoothingIterations,
-        .smoothingPassBand = m_appData.renderData().m_segmentationMeshSmoothingPassBand};
+        .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
+        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
       liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridSegmentationRequest(
         segmentationUid,
         segmentation->pixelDataRevision(),

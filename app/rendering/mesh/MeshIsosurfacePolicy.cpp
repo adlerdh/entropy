@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
 
+#include <bit>
+
 namespace rendering::mesh
 {
 
@@ -40,8 +42,17 @@ IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(
   const uint64_t imageGeometryVersion,
   const uint32_t component,
   const uint32_t timePoint,
-  const double isoValue)
+  const double isoValue,
+  const MeshGenerationOptions& generationOptions)
 {
+  // Thread count affects execution only. Smoothing values change geometry and therefore must invalidate the cache.
+  uint64_t algorithmVersion = kScalarGridIsosurfaceAlgorithmVersion;
+  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothSurface) + 0x9e3779b97f4a7c15ULL +
+                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
+  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothingIterations) + 0x9e3779b97f4a7c15ULL +
+                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
+  algorithmVersion ^= std::bit_cast<uint64_t>(generationOptions.smoothingPassBand) + 0x9e3779b97f4a7c15ULL +
+                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
   return IsosurfaceMeshRequest{
     .imageUid = imageUid,
     .imageDataVersion = imageDataVersion,
@@ -50,7 +61,7 @@ IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(
     .timePoint = timePoint,
     .isoValue = isoValue,
     .algorithm = kScalarGridIsosurfaceAlgorithm,
-    .algorithmVersion = kScalarGridIsosurfaceAlgorithmVersion};
+    .algorithmVersion = algorithmVersion};
 }
 
 } // namespace rendering::mesh

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 
 #include <cstdint>
@@ -68,6 +69,7 @@ MeshCompositingMode compositingModeForIsosurfaceAlpha(
  * @param component Scalar image component
  * @param timePoint Time frame
  * @param isoValue Isovalue
+ * @param generationOptions Geometry-affecting mesh generation settings
  * @return Cacheable extraction request
  */
 IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(
@@ -76,6 +78,7 @@ IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(
   uint64_t imageGeometryVersion,
   uint32_t component,
   uint32_t timePoint,
-  double isoValue);
+  double isoValue,
+  const MeshGenerationOptions& generationOptions);
 
 } // namespace rendering::mesh

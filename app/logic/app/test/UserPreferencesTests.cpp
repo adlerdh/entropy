@@ -180,8 +180,9 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.smoothSegmentationMeshes = false;
-  preferences.segmentationMeshSmoothingIterations = 40;
-  preferences.segmentationMeshSmoothingPassBand = 0.2f;
+  preferences.smoothIsosurfaceMeshes = true;
+  preferences.meshSmoothingIterations = 40;
+  preferences.meshSmoothingPassBand = 0.2f;
   preferences.meshPickingEnabled = false;
   preferences.meshClipPlaneEnabled = true;
   preferences.meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.0f};
@@ -400,8 +401,9 @@ void requireRenderPreferencesEqual(
   CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
   CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
   CHECK(actual.smoothSegmentationMeshes == expected.smoothSegmentationMeshes);
-  CHECK(actual.segmentationMeshSmoothingIterations == expected.segmentationMeshSmoothingIterations);
-  CHECK(actual.segmentationMeshSmoothingPassBand == Catch::Approx(expected.segmentationMeshSmoothingPassBand));
+  CHECK(actual.smoothIsosurfaceMeshes == expected.smoothIsosurfaceMeshes);
+  CHECK(actual.meshSmoothingIterations == expected.meshSmoothingIterations);
+  CHECK(actual.meshSmoothingPassBand == Catch::Approx(expected.meshSmoothingPassBand));
   CHECK(actual.meshPickingEnabled == expected.meshPickingEnabled);
   CHECK(actual.meshClipPlaneEnabled == expected.meshClipPlaneEnabled);
   CHECK(actual.meshClipPlaneWorld == expected.meshClipPlaneWorld);

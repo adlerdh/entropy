@@ -121,14 +121,19 @@ bool Rendering::renderIsosurfaceMeshesForView(
         continue;
       }
 
+      const rendering::mesh::MeshGenerationOptions generationOptions{
+        .threadCount = 0,
+        .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
+        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
       const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
         imageUid,
         image->pixelDataRevision(),
         image->geometryRevision(),
         activeComponent,
         activeTimePoint,
-        surface->value);
-      const rendering::mesh::MeshGenerationOptions generationOptions{.threadCount = 0};
+        surface->value,
+        generationOptions);
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
       const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
 

@@ -23,8 +23,8 @@ struct MeshGenerationOptions
    */
   std::size_t threadCount = 0;
 
-  bool smoothLabelMeshes = true;     //!< Apply boundary-preserving smoothing to discrete label surfaces
-  uint32_t smoothingIterations = 25; //!< Windowed-sinc iterations when label smoothing is enabled
+  bool smoothSurface = true;         //!< Apply boundary-preserving smoothing to the extracted surface
+  uint32_t smoothingIterations = 25; //!< Windowed-sinc iterations when smoothing is enabled
   double smoothingPassBand = 0.1;    //!< Windowed-sinc pass band in the open interval (0, 2]
 };
 

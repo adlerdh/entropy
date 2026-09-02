@@ -154,8 +154,9 @@ struct RenderPreferences
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
   bool smoothSegmentationMeshes = true;
-  uint32_t segmentationMeshSmoothingIterations = 25;
-  float segmentationMeshSmoothingPassBand = 0.1f;
+  bool smoothIsosurfaceMeshes = false;
+  uint32_t meshSmoothingIterations = 25;
+  float meshSmoothingPassBand = 0.1f;
   bool meshPickingEnabled = true;
   bool meshClipPlaneEnabled = false;
   glm::vec4 meshClipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f};

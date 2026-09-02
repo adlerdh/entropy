@@ -185,7 +185,7 @@ vtkSmartPointer<vtkPolyData> finalizeSurface(
   cleanFilter->SetInputConnection(pipelineTail);
   pipelineTail = cleanFilter->GetOutputPort();
 
-  if (smoothingOptions && smoothingOptions->smoothLabelMeshes && smoothingOptions->smoothingIterations > 0u) {
+  if (smoothingOptions && smoothingOptions->smoothSurface && smoothingOptions->smoothingIterations > 0u) {
     windowedSincSmoother->SetInputConnection(pipelineTail);
     windowedSincSmoother->SetNumberOfIterations(static_cast<int>(smoothingOptions->smoothingIterations));
     windowedSincSmoother->SetFeatureEdgeSmoothing(1);
@@ -311,7 +311,10 @@ std::optional<MeshData> generateCrosshairsAxisMesh(const double coneLengthRatio)
 std::optional<MeshData>
 generateIsoSurfaceMesh(const ScalarGrid3D& grid, const double isoValue, const MeshGenerationOptions& options)
 {
-  if (!std::isfinite(isoValue)) {
+  if (
+    !std::isfinite(isoValue) || options.smoothingIterations > 1000u || !std::isfinite(options.smoothingPassBand) ||
+    options.smoothingPassBand <= 0.0 || options.smoothingPassBand > 2.0)
+  {
     return std::nullopt;
   }
   std::scoped_lock lock(vtkMeshGenerationMutex());
@@ -335,7 +338,7 @@ generateIsoSurfaceMesh(const ScalarGrid3D& grid, const double isoValue, const Me
 
     vtkNew<vtkTrivialProducer> source;
     source->SetOutput(flyingEdges->GetOutput());
-    vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, nullptr);
+    vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, &options);
     return meshDataFromPolyData(polyData, grid.coordinateSpace);
   });
 }

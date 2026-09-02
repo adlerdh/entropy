@@ -2527,23 +2527,28 @@ void renderMeshRenderingTab(RenderData& renderData)
   ImGui::Spacing();
   ImGui::SeparatorText("Smoothing");
   disabledTextWrapped(
-    "Segmentation surfaces are extracted from the original label voxels, then smoothed with a boundary-preserving "
-    "windowed-sinc surface filter. The segmentation data itself is not modified.");
+    "Mesh surfaces are extracted from the original image or label voxels, then optionally smoothed with a "
+    "boundary-preserving windowed-sinc surface filter. The image and segmentation data are not modified.");
 
   ImGui::Checkbox("Smooth segmentation meshes", &renderData.m_smoothSegmentationMeshes);
   ImGui::SameLine();
   helpMarker("Apply boundary-preserving windowed-sinc smoothing to extracted segmentation surfaces");
-  if (renderData.m_smoothSegmentationMeshes) {
-    int iterations = static_cast<int>(renderData.m_segmentationMeshSmoothingIterations);
+
+  ImGui::Checkbox("Smooth isosurface meshes", &renderData.m_smoothIsosurfaceMeshes);
+  ImGui::SameLine();
+  helpMarker("Apply boundary-preserving windowed-sinc smoothing to extracted image isosurfaces");
+
+  if (renderData.m_smoothSegmentationMeshes || renderData.m_smoothIsosurfaceMeshes) {
+    int iterations = static_cast<int>(renderData.m_meshSmoothingIterations);
     if (ImGui::InputInt("Smoothing iterations", &iterations)) {
-      renderData.m_segmentationMeshSmoothingIterations = static_cast<uint32_t>(std::clamp(iterations, 1, 1000));
+      renderData.m_meshSmoothingIterations = static_cast<uint32_t>(std::clamp(iterations, 1, 1000));
     }
     ImGui::SameLine();
-    helpMarker("More iterations produce smoother segmentation surfaces but take longer to generate");
+    helpMarker("More iterations produce smoother mesh surfaces but take longer to generate");
 
     ImGui::DragFloat(
       "Smoothing pass band",
-      &renderData.m_segmentationMeshSmoothingPassBand,
+      &renderData.m_meshSmoothingPassBand,
       0.005f,
       0.001f,
       2.0f,

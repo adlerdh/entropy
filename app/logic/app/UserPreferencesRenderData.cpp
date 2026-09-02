@@ -182,8 +182,9 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews;
   preferences.threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor;
   preferences.smoothSegmentationMeshes = renderData.m_smoothSegmentationMeshes;
-  preferences.segmentationMeshSmoothingIterations = renderData.m_segmentationMeshSmoothingIterations;
-  preferences.segmentationMeshSmoothingPassBand = renderData.m_segmentationMeshSmoothingPassBand;
+  preferences.smoothIsosurfaceMeshes = renderData.m_smoothIsosurfaceMeshes;
+  preferences.meshSmoothingIterations = renderData.m_meshSmoothingIterations;
+  preferences.meshSmoothingPassBand = renderData.m_meshSmoothingPassBand;
   preferences.meshPickingEnabled = renderData.m_meshPickingEnabled;
   preferences.meshClipPlaneEnabled = renderData.m_meshClipPlaneEnabled;
   preferences.meshClipPlaneWorld = renderData.m_meshClipPlaneWorld;
@@ -333,10 +334,9 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_showThreeDCameraFrustumIn2DViews = preferences.showThreeDCameraFrustumIn2DViews;
   renderData.m_threeDCameraFrustumColor = preferences.threeDCameraFrustumColor;
   renderData.m_smoothSegmentationMeshes = preferences.smoothSegmentationMeshes;
-  renderData.m_segmentationMeshSmoothingIterations =
-    std::clamp(preferences.segmentationMeshSmoothingIterations, 1u, 1000u);
-  renderData.m_segmentationMeshSmoothingPassBand =
-    std::clamp(preferences.segmentationMeshSmoothingPassBand, 0.001f, 2.0f);
+  renderData.m_smoothIsosurfaceMeshes = preferences.smoothIsosurfaceMeshes;
+  renderData.m_meshSmoothingIterations = std::clamp(preferences.meshSmoothingIterations, 1u, 1000u);
+  renderData.m_meshSmoothingPassBand = std::clamp(preferences.meshSmoothingPassBand, 0.001f, 2.0f);
   renderData.m_meshPickingEnabled = preferences.meshPickingEnabled;
   renderData.m_meshClipPlaneEnabled = preferences.meshClipPlaneEnabled;
   renderData.m_meshClipPlaneWorld = preferences.meshClipPlaneWorld;

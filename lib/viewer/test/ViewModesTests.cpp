@@ -116,6 +116,14 @@ TEST_CASE("3D surface mode capabilities distinguish individual and combined rend
   CHECK_FALSE(is3dRenderMode(ViewRenderMode::Image));
 }
 
+TEST_CASE("3D render mode composes independent scene-content choices", "[viewer][modes]")
+{
+  CHECK(threeDRenderMode(false, false) == ViewRenderMode::Disabled);
+  CHECK(threeDRenderMode(true, false) == ViewRenderMode::SegmentationMesh);
+  CHECK(threeDRenderMode(false, true) == ViewRenderMode::VolumeRender);
+  CHECK(threeDRenderMode(true, true) == ViewRenderMode::SegmentationAndIsosurfaces);
+}
+
 TEST_CASE("viewer mode labels tolerate sentinel values", "[viewer][modes]")
 {
   CHECK(typeString(ViewRenderMode::NumElements) == "Unknown");

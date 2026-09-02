@@ -77,8 +77,10 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
     preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
   }
   else if (path == "rendering/mesh") {
-    preferredKeys =
-      {"pbr", "shadows", "ambientOcclusion", "rimLighting", "segmentationSmoothing", "pointPicking", "clipPlane"};
+    preferredKeys = {"pbr", "shadows", "ambientOcclusion", "rimLighting", "smoothing", "pointPicking", "clipPlane"};
+  }
+  else if (path == "rendering/mesh/smoothing") {
+    preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};
   }
   else if (path == "interface") {
     preferredKeys = {
@@ -551,10 +553,11 @@ json toJson(
           {"opacity", renderPreferences.meshRimOpacityStrength},
           {"glow", renderPreferences.meshRimEmissionStrength},
           {"falloff", renderPreferences.meshRimPower}}},
-        {"segmentationSmoothing",
-         {{"enabled", renderPreferences.smoothSegmentationMeshes},
-          {"iterations", renderPreferences.segmentationMeshSmoothingIterations},
-          {"passBand", renderPreferences.segmentationMeshSmoothingPassBand}}},
+        {"smoothing",
+         {{"segmentations", renderPreferences.smoothSegmentationMeshes},
+          {"isosurfaces", renderPreferences.smoothIsosurfaceMeshes},
+          {"iterations", renderPreferences.meshSmoothingIterations},
+          {"passBand", renderPreferences.meshSmoothingPassBand}}},
         {"pointPicking", renderPreferences.meshPickingEnabled},
         {"clipPlane",
          {{"enabled", renderPreferences.meshClipPlaneEnabled},
@@ -855,15 +858,14 @@ void applyJson(
         setFloatFromJson(renderPreferences.meshPbrRoughness, *pbr, "roughness", 0.001f, 1.0f);
         setFloatFromJson(renderPreferences.meshPbrAmbientOcclusion, *pbr, "ambientOcclusion", 0.0f, 1.0f);
       }
-      if (const auto smoothing = mesh->find("segmentationSmoothing");
-          smoothing != mesh->end() && smoothing->is_object())
-      {
-        setFromJson(renderPreferences.smoothSegmentationMeshes, *smoothing, "enabled");
+      if (const auto smoothing = mesh->find("smoothing"); smoothing != mesh->end() && smoothing->is_object()) {
+        setFromJson(renderPreferences.smoothSegmentationMeshes, *smoothing, "segmentations");
+        setFromJson(renderPreferences.smoothIsosurfaceMeshes, *smoothing, "isosurfaces");
         if (const auto value = smoothing->find("iterations"); value != smoothing->end() && value->is_number_unsigned())
         {
-          renderPreferences.segmentationMeshSmoothingIterations = std::clamp(value->get<uint32_t>(), 1u, 1000u);
+          renderPreferences.meshSmoothingIterations = std::clamp(value->get<uint32_t>(), 1u, 1000u);
         }
-        setFloatFromJson(renderPreferences.segmentationMeshSmoothingPassBand, *smoothing, "passBand", 0.001f, 2.0f);
+        setFloatFromJson(renderPreferences.meshSmoothingPassBand, *smoothing, "passBand", 0.001f, 2.0f);
       }
       setFromJson(renderPreferences.meshPickingEnabled, *mesh, "pointPicking");
       if (const auto clipPlane = mesh->find("clipPlane"); clipPlane != mesh->end() && clipPlane->is_object()) {

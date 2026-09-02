@@ -248,8 +248,9 @@ struct ProjectMeshRenderingSettings
   float m_pbrRoughness = 0.3f;                        //!< Global PBR roughness factor
   float m_pbrAmbientOcclusion = 1.0f;                 //!< Global PBR indirect-light occlusion factor
   bool m_smoothSegmentationMeshes = true;             //!< Smooth extracted segmentation-label surfaces
-  uint32_t m_segmentationSmoothingIterations = 25;    //!< Windowed-sinc smoothing iterations
-  float m_segmentationSmoothingPassBand = 0.1f;       //!< Windowed-sinc smoothing pass band
+  bool m_smoothIsosurfaceMeshes = false;              //!< Smooth extracted scalar isosurfaces
+  uint32_t m_meshSmoothingIterations = 25;            //!< Shared windowed-sinc smoothing iterations
+  float m_meshSmoothingPassBand = 0.1f;               //!< Shared windowed-sinc smoothing pass band
   uint32_t m_ddpMaxPeelPasses = 5;                    //!< DDP safety/fixed front-back peel iteration count
   bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
   bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane

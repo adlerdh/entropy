@@ -190,9 +190,9 @@ bool Rendering::renderSegmentationMeshesForView(
       }
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
-        .smoothLabelMeshes = m_appData.renderData().m_smoothSegmentationMeshes,
-        .smoothingIterations = m_appData.renderData().m_segmentationMeshSmoothingIterations,
-        .smoothingPassBand = m_appData.renderData().m_segmentationMeshSmoothingPassBand};
+        .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
+        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
       const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
         segUid,
         seg->pixelDataRevision(),
