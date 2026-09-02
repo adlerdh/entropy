@@ -986,11 +986,11 @@ void installMacOSNativeMainMenu() {
   [fileMenuItem setSubmenu:fileMenu];
   [mainMenu addItem:fileMenuItem];
 
-  addModeMenu(mainMenu);
   addImageMenu(mainMenu);
   addSegmentationMenu(mainMenu);
   addAnnotationMenu(mainMenu);
   addLandmarkMenu(mainMenu);
+  addModeMenu(mainMenu);
 
   NSMenuItem* layoutsMenuItem = [[NSMenuItem alloc] initWithTitle:@"Layout" action:nil keyEquivalent:@""];
   g_layoutsMenu = [[NSMenu alloc] initWithTitle:@"Layout"];

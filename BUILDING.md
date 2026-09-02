@@ -385,7 +385,7 @@ directly.
 External and generated targets are excluded in
 [CMakeLists.txt](CMakeLists.txt). The Ubuntu 24.04
 [Include What You Use](.github/workflows/iwyu.yml) workflow runs for pull requests and pushes to `main`, weekly, and
-when manually dispatched. CI uses Clang 17 to match Ubuntu's Clang 17-based IWYU package. Include recommendations do
+when manually dispatched. CI builds with GCC 13 and runs Ubuntu's packaged IWYU analyzer. Include recommendations do
 not fail the job, but IWYU and compiler failures do. CI uploads the full output as the `iwyu-log` artifact.
 
 ## Packaging
@@ -500,6 +500,7 @@ Pass options at configure time with `-DNAME=value`, or put local overrides in `C
 | `Entropy_CLANG_TIDY_OPTIONS` | `--quiet` | Extra options passed to clang-tidy |
 | `Entropy_ENABLE_IWYU` | `OFF` | Runs Include What You Use during C++ compilation |
 | `Entropy_IWYU_OPTIONS` | project default | Extra options passed to Include What You Use |
+| `Entropy_IWYU_COMPILER_OPTIONS` | empty | Compiler compatibility options passed only to Include What You Use |
 
 ### Coverage Options
 

@@ -660,11 +660,6 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Mode")) {
-      main_menu::renderModeMenu(callbacks);
-      ImGui::EndMenu();
-    }
-
     if (ImGui::BeginMenu("Images", callbacks.canAddImage)) {
       main_menu::renderImageMenu(callbacks);
       ImGui::EndMenu();
@@ -682,6 +677,11 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
     if (ImGui::BeginMenu("Landmarks", callbacks.canUseLayouts)) {
       main_menu::renderLandmarkMenu(callbacks);
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Mode")) {
+      main_menu::renderModeMenu(callbacks);
       ImGui::EndMenu();
     }
 
