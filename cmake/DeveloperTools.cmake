@@ -1,7 +1,7 @@
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
 option(Entropy_ENABLE_IWYU "Run Include What You Use during C++ compilation" OFF)
 set(Entropy_IWYU_OPTIONS
-  "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--max_line_length=120;-Xiwyu;--error=0"
+  "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--max_line_length=120;-Xiwyu;--mapping_file=${CMAKE_SOURCE_DIR}/cmake/EntropyIwyu.imp;-Xiwyu;--error=0"
   CACHE STRING "Additional options passed to Include What You Use")
 option(Entropy_ENABLE_CLANG_TIDY "Run clang-tidy during C++ compilation" OFF)
 set(Entropy_CLANG_TIDY_OPTIONS "--quiet" CACHE STRING "Additional options passed to clang-tidy")
@@ -37,7 +37,8 @@ if(Entropy_ENABLE_IWYU)
     message(FATAL_ERROR "Entropy_ENABLE_IWYU=ON but include-what-you-use was not found")
   endif()
   message(STATUS "Using Include What You Use: ${Entropy_IWYU_EXECUTABLE}")
-  set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "${Entropy_IWYU_EXECUTABLE};${Entropy_IWYU_OPTIONS}"
+  set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE
+      "${Entropy_IWYU_EXECUTABLE};${Entropy_IWYU_OPTIONS}"
       CACHE STRING "Include What You Use command" FORCE)
 else()
   unset(CMAKE_CXX_INCLUDE_WHAT_YOU_USE CACHE)

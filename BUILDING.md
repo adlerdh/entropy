@@ -374,16 +374,19 @@ Run IWYU through a dedicated Debug build:
 ```sh
 cmake --preset deps-debug -B build-iwyu
 cmake --build build-iwyu --parallel
-cmake --preset app-debug -B build-iwyu -D Entropy_ENABLE_IWYU=ON
+cmake --preset app-debug -B build-iwyu -D Entropy_ENABLE_IWYU=ON -D Entropy_USE_CCACHE=OFF
 cmake --build build-iwyu --parallel
 ```
 
-The default options favor direct quoted includes, avoid forward-declaration recommendations, and report suggestions
-without making the compiler command fail. External and generated targets are excluded in
+The default options favor direct quoted includes and avoid forward-declaration recommendations. Include findings are
+advisory because IWYU is configured with `--error=0`. A genuine IWYU failure, such as a parser crash or invalid
+invocation, still fails the build. The analyzer build disables ccache so that CMake invokes IWYU and the compiler
+directly.
+External and generated targets are excluded in
 [CMakeLists.txt](CMakeLists.txt). The Ubuntu 24.04
 [Include What You Use](.github/workflows/iwyu.yml) workflow runs for pull requests and pushes to `main`, weekly, and
-when manually dispatched. The job remains advisory because recommendations vary between IWYU releases. It uploads its
-full output as the `iwyu-log` artifact.
+when manually dispatched. CI uses Clang 17 to match Ubuntu's Clang 17-based IWYU package. Include recommendations do
+not fail the job, but IWYU and compiler failures do. CI uploads the full output as the `iwyu-log` artifact.
 
 ## Packaging
 
@@ -537,12 +540,13 @@ The main CI build matrix is:
 | Windows x86_64 | `windows-2022` | Visual Studio 2022 / MSVC v143 | Debug build and tests, release packages, optional coverage |
 | Windows x86_64 compatibility | `windows-2025` | Visual Studio 2026 / MSVC | Scheduled/manual Debug build and tests on a newer Windows runner |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | `gcc-13` / `g++-13` | Debug build and tests, release packages, and primary coverage |
-| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | `gcc-13` / `g++-13` | Debug build and tests with clang-tidy, cppcheck analysis, and IWYU analysis |
+| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | GCC 13 and Clang 17 | Debug build and tests with clang-tidy, cppcheck analysis, and IWYU analysis |
 | Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
 
-The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA. Ubuntu 24.04 runs a complete
-Debug build and test suite with clang-tidy, runs cppcheck, and hosts the Fedora container jobs. Ubuntu 22.04 remains the
-primary Linux packaging target because release packages should be built on the oldest supported distribution.
+The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA. Ubuntu 24.04 uses GCC 13 for
+the regular build and Clang-based analysis, including a Clang 17 build for IWYU. It also runs cppcheck and hosts the
+Fedora container jobs. Ubuntu 22.04 remains the primary Linux packaging target because release packages should be
+built on the oldest supported distribution.
 
 macOS release artifacts are built separately for `arm64` and `x86_64`. Entropy does not publish a universal macOS
 binary.

@@ -2,7 +2,7 @@
 
 #include "common/LoggingDefaults.h"
 
-#include <spdlog/spdlog.h>
+#include <spdlog/common.h>
 
 #include <filesystem>
 #include <optional>

@@ -1,0 +1,5 @@
+[
+  { "include": ["@<glm/detail/.*>", "private", "<glm/glm.hpp>", "public"] },
+  { "include": ["@<glm/(ext|gtc|gtx)/.*\\.inl>", "private", "<glm/glm.hpp>", "public"] },
+  { "include": ["@<spdlog/fmt/bundled/.*>", "private", "<spdlog/spdlog.h>", "public"] }
+]

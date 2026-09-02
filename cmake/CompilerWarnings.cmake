@@ -6,7 +6,6 @@ add_library(Entropy::Warnings ALIAS entropy_warnings)
 # /Wall additionally enables many low-value compiler and system-header warnings.
 target_compile_options(entropy_warnings INTERFACE
   $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
-    -Werror
     -Wall
     -Wextra
     -Wpedantic
@@ -16,6 +15,13 @@ target_compile_options(entropy_warnings INTERFACE
     -Wshadow
     -Wno-error=array-bounds
     -ftrapv
+  >
+  # IWYU parses the compiler command with its embedded Clang, which can emit
+  # version-specific diagnostics that the selected compiler does not. Keep
+  # normal builds strict without turning those analyzer-only warnings into
+  # fatal parse errors.
+  $<$<AND:$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<NOT:$<BOOL:${Entropy_ENABLE_IWYU}>>>:
+    -Werror
   >
   $<$<AND:$<CXX_COMPILER_ID:GNU>,$<NOT:$<OR:$<BOOL:${Entropy_ENABLE_IWYU}>,$<BOOL:${Entropy_ENABLE_CLANG_TIDY}>>>>:
     -Wno-error=maybe-uninitialized

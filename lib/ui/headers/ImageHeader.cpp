@@ -2016,7 +2016,7 @@ void renderImageHeader(
     if (!showComponentControls) {
       // Image opacity slider:
       bool visible = imgSettings.visibility();
-      if (visibilityCheckboxBeforeSlider("##imageVisible", &visible, "Show/hide the image on all views")) {
+      if (visibilityCheckboxBeforeSlider("##imageVisible", &visible, "Show/hide the image on all views (W)")) {
         imgSettings.setVisibility(visible);
         updateImageUniforms();
       }

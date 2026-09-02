@@ -4,8 +4,8 @@
 [![Windows CI](https://github.com/adlerdh/entropy/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/windows.yml)
 [![Ubuntu CI](https://github.com/adlerdh/entropy/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/ubuntu.yml)
 [![Release](https://github.com/adlerdh/entropy/actions/workflows/release.yml/badge.svg)](https://github.com/adlerdh/entropy/actions/workflows/release.yml)
-[![Latest Release](https://img.shields.io/github/v/release/adlerdh/entropy)](https://github.com/adlerdh/entropy/releases)
 [![Static Analysis](https://github.com/adlerdh/entropy/actions/workflows/static-analysis.yml/badge.svg?branch=main)](https://github.com/adlerdh/entropy/actions/workflows/static-analysis.yml)
+[![Latest Release](https://img.shields.io/github/v/release/adlerdh/entropy)](https://github.com/adlerdh/entropy/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE.txt)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
 

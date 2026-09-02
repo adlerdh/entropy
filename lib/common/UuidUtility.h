@@ -8,7 +8,7 @@
  */
 uuids::uuid generateRandomUuid();
 
-#include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/ostr.h> // IWYU pragma: keep
 #if FMT_VERSION >= 90000
 /// fmt formatter for stduuid values via their stream operator.
 template<>

@@ -17,8 +17,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CC: gcc-13
-  CXX: g++-13
+  # Ubuntu's IWYU 0.21 is built against Clang 17. Use the matching compiler so
+  # IWYU sees the same command line, language implementation, and system headers
+  # as the compiler that subsequently builds each translation unit.
+  CC: clang-17
+  CXX: clang++-17
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_BASEDIR: ${{ github.workspace }}
@@ -30,7 +33,6 @@ jobs:
   iwyu:
     name: IWYU Analysis (Ubuntu x86_64)
     runs-on: ubuntu-24.04
-    continue-on-error: true
 
     steps:
       - name: Check out source
@@ -41,8 +43,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             ccache \
-            gcc-13 \
-            g++-13 \
+            clang-17 \
             iwyu \
             libdbus-1-dev \
             libssl-dev \
@@ -68,9 +69,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .ccache
-          key: ubuntu2404-gcc13-iwyu-ccache-v1-${{ github.run_id }}
+          key: ubuntu2404-clang17-iwyu-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            ubuntu2404-gcc13-iwyu-ccache-v1-
+            ubuntu2404-clang17-iwyu-ccache-v1-
 
       - name: Configure Debug ccache
         run: |
@@ -99,9 +100,9 @@ jobs:
             build-iwyu/external/spdlog-*
             build-iwyu/external/stduuid-*
             build-iwyu/external/tinyfsm-*
-          key: ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2404-clang17-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-
+            ubuntu2404-clang17-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Debug dependencies
         run: >-
@@ -114,7 +115,10 @@ jobs:
         run: cmake --build build-iwyu --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app with IWYU
-        run: cmake --preset app-debug -B build-iwyu -D Entropy_USE_CCACHE=ON -D Entropy_ENABLE_IWYU=ON
+        # Do not put a compiler launcher between CMake's IWYU invocation and Clang.
+        # IWYU performs the expensive parse regardless, so ccache provides little
+        # value for this second, analyzer-instrumented build.
+        run: cmake --preset app-debug -B build-iwyu -D Entropy_USE_CCACHE=OFF -D Entropy_ENABLE_IWYU=ON
 
       - name: Run IWYU during Debug app build
         run: |

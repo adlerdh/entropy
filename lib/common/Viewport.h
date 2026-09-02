@@ -1,8 +1,7 @@
 #pragma once
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec4.hpp>
+#include <glm/ext/vector_float2.hpp>
+#include <glm/ext/vector_float4.hpp>
 
 /**
  * @brief Viewport rectangle that follows the OpenGL convention.
