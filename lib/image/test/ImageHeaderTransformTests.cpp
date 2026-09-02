@@ -112,6 +112,24 @@ TEST_CASE("Standard raster formats are detected and named", "[image][header]")
   CHECK(imageFormatName("slice.nii.gz") == "NIfTI");
 }
 
+TEST_CASE("Image format names use descriptive long forms", "[image][header]")
+{
+  CHECK(imageFormatLongName("image.dcm") == "Digital Imaging and Communications in Medicine (DICOM)");
+  CHECK(imageFormatLongName("image.nrrd") == "Nearly Raw Raster Data (NRRD)");
+  CHECK(imageFormatLongName("image.nhdr.gz") == "Nearly Raw Raster Data (NRRD)");
+  CHECK(imageFormatLongName("image.mha") == "MetaImage (MHA/MHD)");
+  CHECK(imageFormatLongName("image.mhd.gz") == "MetaImage (MHA/MHD)");
+  CHECK(imageFormatLongName("image.hdr") == "Analyze 7.5 (HDR/IMG)");
+  CHECK(imageFormatLongName("image.img.gz") == "Analyze 7.5 (HDR/IMG)");
+  CHECK(imageFormatLongName("image.gipl.gz") == "Guy's Image Processing Lab (GIPL)");
+  CHECK(imageFormatLongName("image.mnc2") == "Medical Imaging NetCDF (MINC)");
+  CHECK(imageFormatLongName("image.vtk") == "Visualization Toolkit legacy image data (VTK)");
+  CHECK(imageFormatLongName("image.vti") == "Visualization Toolkit XML image data (VTI)");
+  CHECK(imageFormatLongName("image.hdf5") == "Hierarchical Data Format version 5 (HDF5)");
+  CHECK(imageFormatName("image") == "Unknown");
+  CHECK(imageFormatName("image.custom") == "custom");
+}
+
 TEST_CASE("Raster direction normalization produces a right-handed basis", "[image][header]")
 {
   std::string errorMessage;

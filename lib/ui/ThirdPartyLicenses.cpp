@@ -8,6 +8,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 CMRC_DECLARE(licenses);
 
@@ -38,47 +39,47 @@ constexpr std::size_t count(const LicenseDocument (&)[N])
   return N;
 }
 
-static const LicenseDocument sk_cli11Docs[] = {{"License", "licenses/CLI11.txt"}};
-static const LicenseDocument sk_cmakercDocs[] = {{"License", "licenses/CMakeRC.txt"}};
-static const LicenseDocument sk_glfwDocs[] = {{"License", "licenses/GLFW.txt"}};
-static const LicenseDocument sk_glmDocs[] = {{"License", "licenses/GLM.txt"}};
-static const LicenseDocument sk_iconFontDocs[] = {{"License", "licenses/IconFontCppHeaders.txt"}};
-static const LicenseDocument sk_imguiDocs[] = {{"License", "licenses/DearImGui.txt"}};
-static const LicenseDocument sk_implotDocs[] = {{"License", "licenses/ImPlot.txt"}};
+static const LicenseDocument sk_cli11Docs[] = {{"License text:", "licenses/CLI11.txt"}};
+static const LicenseDocument sk_cmakercDocs[] = {{"License text:", "licenses/CMakeRC.txt"}};
+static const LicenseDocument sk_glfwDocs[] = {{"License text:", "licenses/GLFW.txt"}};
+static const LicenseDocument sk_glmDocs[] = {{"License text:", "licenses/GLM.txt"}};
+static const LicenseDocument sk_iconFontDocs[] = {{"License text:", "licenses/IconFontCppHeaders.txt"}};
+static const LicenseDocument sk_imguiDocs[] = {{"License text:", "licenses/DearImGui.txt"}};
+static const LicenseDocument sk_implotDocs[] = {{"License text:", "licenses/ImPlot.txt"}};
 static const LicenseDocument sk_itkDocs[] = {
-  {"License", "licenses/Apache-2.0.txt"},
+  {"License text:", "licenses/Apache-2.0.txt"},
   {"Notice", "licenses/ITK-NOTICE.txt"}};
-static const LicenseDocument sk_nanovgDocs[] = {{"License", "licenses/NanoVG.txt"}};
-static const LicenseDocument sk_nfdDocs[] = {{"License", "licenses/NativeFileDialogExtended.txt"}};
-static const LicenseDocument sk_jsonDocs[] = {{"License", "licenses/nlohmann-json.txt"}};
-static const LicenseDocument sk_qtDocs[] = {{"LGPL-3.0-only", "licenses/Qt-LGPL-3.0-only.txt"}};
-static const LicenseDocument sk_spdlogDocs[] = {{"License", "licenses/spdlog.txt"}};
-static const LicenseDocument sk_stduuidDocs[] = {{"License", "licenses/stduuid.txt"}};
-static const LicenseDocument sk_tinyfsmDocs[] = {{"License", "licenses/TinyFSM.txt"}};
-static const LicenseDocument sk_vtkDocs[] = {{"Copyright and license", "licenses/VTK.txt"}};
-static const LicenseDocument sk_gladDocs[] = {{"License", "licenses/GLAD.txt"}};
-static const LicenseDocument sk_imguizmoDocs[] = {{"License", "licenses/imGuIZMO.quat.txt"}};
-static const LicenseDocument sk_imguiKnobsDocs[] = {{"License", "licenses/imgui-knobs.txt"}};
-static const LicenseDocument sk_pnpolyDocs[] = {{"License", "licenses/PNPOLY.txt"}};
-static const LicenseDocument sk_safeclibDocs[] = {{"License", "licenses/SafeCLib.txt"}};
-static const LicenseDocument sk_tdigestDocs[] = {{"License", "licenses/Apache-2.0.txt"}};
+static const LicenseDocument sk_nanovgDocs[] = {{"License text:", "licenses/NanoVG.txt"}};
+static const LicenseDocument sk_nfdDocs[] = {{"License text:", "licenses/NativeFileDialogExtended.txt"}};
+static const LicenseDocument sk_jsonDocs[] = {{"License text:", "licenses/nlohmann-json.txt"}};
+static const LicenseDocument sk_qtDocs[] = {{"License text:", "licenses/Qt-LGPL-3.0-only.txt"}};
+static const LicenseDocument sk_spdlogDocs[] = {{"License text:", "licenses/spdlog.txt"}};
+static const LicenseDocument sk_stduuidDocs[] = {{"License text:", "licenses/stduuid.txt"}};
+static const LicenseDocument sk_tinyfsmDocs[] = {{"License text:", "licenses/TinyFSM.txt"}};
+static const LicenseDocument sk_vtkDocs[] = {{"Copyright and license text:", "licenses/VTK.txt"}};
+static const LicenseDocument sk_gladDocs[] = {{"License text:", "licenses/GLAD.txt"}};
+static const LicenseDocument sk_imguizmoDocs[] = {{"License text:", "licenses/imGuIZMO.quat.txt"}};
+static const LicenseDocument sk_imguiKnobsDocs[] = {{"License text:", "licenses/imgui-knobs.txt"}};
+static const LicenseDocument sk_pnpolyDocs[] = {{"License text:", "licenses/PNPOLY.txt"}};
+static const LicenseDocument sk_safeclibDocs[] = {{"License text:", "licenses/SafeCLib.txt"}};
+static const LicenseDocument sk_tdigestDocs[] = {{"License text:", "licenses/Apache-2.0.txt"}};
 static const LicenseDocument sk_cubicDocs[] = {
   {"License and citation request", "licenses/CubicBSplineInterpolation.txt"}};
-static const LicenseDocument sk_cousineDocs[] = {{"License", "licenses/Cousine.txt"}};
+static const LicenseDocument sk_cousineDocs[] = {{"License text:", "licenses/Cousine.txt"}};
 static const LicenseDocument sk_forkAwesomeDocs[] = {{"Licenses", "licenses/ForkAwesome.txt"}};
-static const LicenseDocument sk_ibmPlexSansDocs[] = {{"License", "licenses/IBMPlexSans.txt"}};
-static const LicenseDocument sk_interDocs[] = {{"License", "licenses/Inter.txt"}};
-static const LicenseDocument sk_notoSansDocs[] = {{"License", "licenses/NotoSans.txt"}};
-static const LicenseDocument sk_robotoDocs[] = {{"License", "licenses/Roboto.txt"}};
-static const LicenseDocument sk_satoshiDocs[] = {{"License", "licenses/Satoshi.txt"}};
-static const LicenseDocument sk_sourceSans3Docs[] = {{"License", "licenses/SourceSans3.txt"}};
-static const LicenseDocument sk_spaceGroteskDocs[] = {{"License", "licenses/SpaceGrotesk.txt"}};
-static const LicenseDocument sk_supremeDocs[] = {{"License", "licenses/Supreme.txt"}};
-static const LicenseDocument sk_peterKovesiDocs[] = {{"License", "licenses/PeterKovesiColourMaps.txt"}};
+static const LicenseDocument sk_ibmPlexSansDocs[] = {{"License text:", "licenses/IBMPlexSans.txt"}};
+static const LicenseDocument sk_interDocs[] = {{"License text:", "licenses/Inter.txt"}};
+static const LicenseDocument sk_notoSansDocs[] = {{"License text:", "licenses/NotoSans.txt"}};
+static const LicenseDocument sk_robotoDocs[] = {{"License text:", "licenses/Roboto.txt"}};
+static const LicenseDocument sk_satoshiDocs[] = {{"License text:", "licenses/Satoshi.txt"}};
+static const LicenseDocument sk_sourceSans3Docs[] = {{"License text:", "licenses/SourceSans3.txt"}};
+static const LicenseDocument sk_spaceGroteskDocs[] = {{"License text:", "licenses/SpaceGrotesk.txt"}};
+static const LicenseDocument sk_supremeDocs[] = {{"License text:", "licenses/Supreme.txt"}};
+static const LicenseDocument sk_peterKovesiDocs[] = {{"License text:", "licenses/PeterKovesiColourMaps.txt"}};
 static const LicenseDocument sk_matplotlibDocs[] = {
   {"Attribution", "licenses/MatplotlibColourMaps.txt"},
   {"CC0-1.0", "licenses/CC0-1.0.txt"}};
-static const LicenseDocument sk_cividisDocs[] = {{"License", "licenses/Cividis.txt"}};
+static const LicenseDocument sk_cividisDocs[] = {{"License text:", "licenses/Cividis.txt"}};
 
 static const LicenseEntry sk_entries[] = {
   {"Cividis color map",
@@ -160,6 +161,13 @@ static const LicenseEntry sk_entries[] = {
    "v5.4.3",
    "https://github.com/InsightSoftwareConsortium/ITK",
    "Apache License 2.0",
+   "Enabled ITK modules: ITKCommon, ITKIOImageBase, ITKIONIFTI, ITKIONRRD, ITKIOMeta, ITKIOGDCM, ITKIOJPEG, "
+   "ITKIOPNG, ITKIOTIFF, ITKIOBMP, ITKImageFilterBase, ITKImageIntensity, ITKImageStatistics, ITKThresholding, "
+   "ITKDistanceMap, ITKDisplacementField, ITKImageGrid, ITKImageFunction, and ITKStatistics. Compiled ITK libraries, "
+   "including transitive dependencies: ITKCommon, ITKConvolution, ITKFFT, ITKIOBMP, ITKIOGDCM, ITKIOImageBase, "
+   "ITKIOJPEG, ITKIOMeta, ITKIONIFTI, ITKIONRRD, ITKIOPNG, ITKIOTIFF, ITKImageIntensity, ITKLabelMap, "
+   "ITKMathematicalMorphology, ITKMesh, ITKMetaIO, ITKNrrdIO, ITKPath, ITKSmoothing, ITKSpatialObjects, "
+   "ITKStatistics, ITKTransform, and ITKVNLInstantiation. ITKVTK and all other optional ITK modules are disabled. "
    "Includes upstream NOTICE text.",
    sk_itkDocs,
    count(sk_itkDocs)},
@@ -212,7 +220,8 @@ static const LicenseEntry sk_entries[] = {
    "6.8.1",
    "https://www.qt.io/product/qt6",
    "LGPL-3.0-only",
-   "Entropy uses Qt Core as a dynamically linked shared library.",
+   "Qt Base is built without GUI, Widgets, OpenGL, D-Bus, OpenSSL, or ICU support. The resulting Qt modules are "
+   "Core, Concurrent, Network, SQL, Test, and XML. Entropy links only Qt Core as a dynamically linked shared library.",
    sk_qtDocs,
    count(sk_qtDocs)},
   {"Roboto fonts",
@@ -271,7 +280,13 @@ static const LicenseEntry sk_entries[] = {
    "v9.6.2",
    "https://github.com/Kitware/VTK",
    "BSD-3-Clause",
-   "Entropy builds a selected VTK module set for CPU-side mesh extraction and processing.",
+   "Entropy builds a selected VTK module set for CPU-side mesh extraction and processing. VTK modules built, "
+   "including transitive dependencies: VTK::CommonComputationalGeometry, VTK::CommonCore, "
+   "VTK::CommonDataModel, VTK::CommonExecutionModel, VTK::CommonMath, VTK::CommonMisc, VTK::CommonSystem, "
+   "VTK::CommonTransforms, VTK::FiltersCellGrid, VTK::FiltersCore, VTK::FiltersGeneral, VTK::FiltersGeometry, "
+   "VTK::FiltersModeling, VTK::FiltersReduction, VTK::FiltersSources, VTK::FiltersVerdict, VTK::IOCellGrid, "
+   "VTK::IOCore, VTK::IOLegacy, VTK::ImagingCore, VTK::ImagingGeneral, VTK::ImagingSources, and "
+   "VTK::ImagingStatistics. Rendering, Views, Web, MPI, and Qt integration modules are disabled.",
    sk_vtkDocs,
    count(sk_vtkDocs)},
 };
@@ -323,6 +338,13 @@ bool isBundledResource(const LicenseEntry& entry)
          name.find("color maps") != std::string::npos;
 }
 
+bool hasToolkitBuildNote(const LicenseEntry& entry)
+{
+  return std::string_view(entry.name) == "Insight Toolkit (ITK)" ||
+         std::string_view(entry.name) == "Qt Base / Qt Core" ||
+         std::string_view(entry.name) == "Visualization Toolkit (VTK)";
+}
+
 void renderLicenseEntries(bool resources)
 {
   for (const auto& entry : sk_entries) {
@@ -336,7 +358,14 @@ void renderLicenseEntries(bool resources)
       ImGui::Text("License: %s", entry.license);
       renderSourceUrl(entry);
       if (entry.note && entry.note[0] != '\0') {
+        const bool disabledNote = hasToolkitBuildNote(entry);
+        if (disabledNote) {
+          ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+        }
         ImGui::TextWrapped("%s", entry.note);
+        if (disabledNote) {
+          ImGui::PopStyleColor();
+        }
       }
 
       ImGui::Spacing();

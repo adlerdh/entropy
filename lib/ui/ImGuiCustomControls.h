@@ -19,6 +19,18 @@ namespace ImGui
 {
 
 /**
+ * @brief Render a square icon-only button with the visible glyph optically centered.
+ *
+ * Unlike ImGui::Button(), centering uses the glyph's rendered bounds instead of its
+ * typographic advance and line height. The label may include an ImGui ID suffix.
+ *
+ * @param label A single icon glyph, optionally followed by an ImGui ID suffix.
+ * @param size Square button size.
+ * @return True when the button is pressed.
+ */
+bool IconButton(const char* label, const ImVec2& size);
+
+/**
  * @brief Render a button that opens a native file dialog and returns the selected file path.
  *
  * @param buttonText Text displayed on the ImGui button.

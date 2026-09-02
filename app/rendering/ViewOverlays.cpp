@@ -50,7 +50,7 @@ bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
     const uint32_t activeComponent = settings.activeComponent();
     for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComponent)) {
       const Isosurface* surface = appData.isosurface(imageUid, activeComponent, surfaceUid);
-      if (surface && surface->visible && surface->opacity > 0.0f) {
+      if (surface && surface->visibleIn3d && surface->opacity > 0.0f) {
         return true;
       }
     }

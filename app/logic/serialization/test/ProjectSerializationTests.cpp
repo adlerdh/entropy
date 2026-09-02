@@ -1537,6 +1537,8 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
 {
   const json defaultSurface = Isosurface{};
   CHECK_FALSE(defaultSurface.contains("fillAboveIsovalue"));
+  CHECK_FALSE(defaultSurface.contains("visibleIn2D"));
+  CHECK_FALSE(defaultSurface.contains("visibleIn3D"));
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
@@ -1549,7 +1551,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   imageSurface.m_surface.opacity = 0.65f;
   imageSurface.m_surface.fillOpacity = 0.15f;
   imageSurface.m_surface.fillAboveIsovalue = true;
-  imageSurface.m_surface.visible = false;
+  imageSurface.m_surface.visibleIn2d = false;
   project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
 
   const json root = project;
@@ -1558,6 +1560,9 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(savedSurface.at("surface").at("name") == "Rim surface");
   CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
   CHECK(savedSurface.at("surface").at("fillAboveIsovalue") == true);
+  CHECK(savedSurface.at("surface").at("visibleIn2D") == false);
+  CHECK_FALSE(savedSurface.at("surface").contains("visibleIn3D"));
+  CHECK_FALSE(savedSurface.at("surface").contains("visible"));
   CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
   CHECK_FALSE(savedSurface.at("surface").contains("rimLighting"));
 
@@ -1571,7 +1576,17 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(parsedSurface.m_surface.opacity == 0.65f);
   CHECK(parsedSurface.m_surface.fillOpacity == 0.15f);
   CHECK(parsedSurface.m_surface.fillAboveIsovalue);
-  CHECK_FALSE(parsedSurface.m_surface.visible);
+  CHECK_FALSE(parsedSurface.m_surface.visibleIn2d);
+  CHECK(parsedSurface.m_surface.visibleIn3d);
+
+  Isosurface hiddenIn3d;
+  hiddenIn3d.visibleIn3d = false;
+  const json hiddenIn3dJson = hiddenIn3d;
+  CHECK(hiddenIn3dJson.at("visibleIn3D") == false);
+  CHECK_FALSE(hiddenIn3dJson.contains("visibleIn2D"));
+  const Isosurface parsedHiddenIn3d = hiddenIn3dJson.get<Isosurface>();
+  CHECK(parsedHiddenIn3d.visibleIn2d);
+  CHECK_FALSE(parsedHiddenIn3d.visibleIn3d);
 }
 
 TEST_CASE("Project serialization preserves inverse and forward warp paths", "[project][serialization]")

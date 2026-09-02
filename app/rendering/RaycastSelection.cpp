@@ -111,7 +111,7 @@ std::optional<Rendering::ActiveIsosurfaceEdit> Rendering::activeIsosurfaceEdit(c
     const uint32_t activeComponent = settings.activeComponent();
     for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, activeComponent)) {
       const Isosurface* surface = m_appData.isosurface(imageUid, activeComponent, surfaceUid);
-      if (surface && surface->visible && surface->valueEditInProgress) {
+      if (surface && surface->visibleIn3d && surface->valueEditInProgress) {
         return ActiveIsosurfaceEdit{.imageSegPair = imgSegPair, .isosurfaceUid = surfaceUid};
       }
     }

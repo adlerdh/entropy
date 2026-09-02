@@ -16,6 +16,7 @@ set(entropy_UI_DIR "${entropy_LIB_DIR}/ui")
 set(entropy_RES_DIR "${CMAKE_SOURCE_DIR}/res")
 set(entropy_EXT_DIR "${CMAKE_SOURCE_DIR}/external")
 set(entropy_FIREANTS_BRIDGE_DIR "${entropy_LIB_DIR}/registration/fireants_bridge")
+set(entropy_ABOUT_ICON_RESOURCE_PATH "res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
 
 if(WIN32)
   set(entropy_WINDOWS_APP_ICON "${entropy_RES_DIR}/icons/Windows/Entropy.ico")

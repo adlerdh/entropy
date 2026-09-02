@@ -2,6 +2,7 @@
 #include "ui/toolbars/ToolbarCommon.h"
 #include "ui/GuiData.h"
 #include "ui/Helpers.h"
+#include "ui/ImGuiCustomControls.h"
 #include "ui/widgets/Widgets.h"
 
 #include "logic/app/Data.h"
@@ -311,7 +312,7 @@ void renderSegToolbar(
 
     ImGui::PushID(id);
     {
-      if (ImGui::Button(ICON_FK_RANDOM, buttonSize)) {
+      if (ImGui::IconButton(ICON_FK_RANDOM, buttonSize)) {
         appData.settings().swapForegroundAndBackgroundLabels(*activeLabelTable);
       }
       if (ImGui::IsItemHovered()) {
@@ -336,7 +337,7 @@ void renderSegToolbar(
       bool replaceBgWithFg = appData.settings().replaceBackgroundWithForeground();
       ImGui::PushStyleColor(ImGuiCol_Button, (replaceBgWithFg ? activeColor : inactiveColor));
       {
-        if (ImGui::Button(ICON_FK_PENCIL_SQUARE, buttonSize)) {
+        if (ImGui::IconButton(ICON_FK_PENCIL_SQUARE, buttonSize)) {
           replaceBgWithFg = !replaceBgWithFg;
           appData.settings().setReplaceBackgroundWithForeground(replaceBgWithFg);
         }
@@ -362,7 +363,7 @@ void renderSegToolbar(
         bool use3d = appData.settings().use3dBrush();
         ImGui::PushStyleColor(ImGuiCol_Button, (use3d ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_CUBE, buttonSize)) {
             use3d = !use3d;
             appData.settings().setUse3dBrush(use3d);
           }
@@ -385,7 +386,7 @@ void renderSegToolbar(
       {
         bool roundBrush = appData.settings().useRoundBrush();
 
-        if (ImGui::Button(roundBrush ? ICON_FK_CIRCLE_THIN : ICON_FK_SQUARE_O, buttonSize)) {
+        if (ImGui::IconButton(roundBrush ? ICON_FK_CIRCLE_THIN : ICON_FK_SQUARE_O, buttonSize)) {
           roundBrush = !roundBrush;
           appData.settings().setUseRoundBrush(roundBrush);
         }
@@ -402,7 +403,7 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize)) {
+      if (ImGui::IconButton(ICON_FK_BULLSEYE, buttonSize)) {
         ImGui::OpenPopup("brushSizePopup");
       }
 
@@ -420,7 +421,7 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_PLUS_CIRCLE, buttonSize)) {
+      if (ImGui::IconButton(ICON_FK_PLUS_CIRCLE, buttonSize)) {
         /// @todo replace with EntropyApp::cycleBrushSize
         uint32_t brushSizeVox = appData.settings().brushSizeInVoxels();
         brushSizeVox = std::max(brushSizeVox + 1, 1u);
@@ -463,7 +464,7 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_MINUS_CIRCLE, buttonSize)) {
+      if (ImGui::IconButton(ICON_FK_MINUS_CIRCLE, buttonSize)) {
         /// @todo replace with EntropyApp::cycleBrushSize
         uint32_t brushSizeVox = appData.settings().brushSizeInVoxels();
         brushSizeVox = std::max(brushSizeVox - 1, 1u);
@@ -705,7 +706,7 @@ void renderSegToolbar(
 
         ImGui::PushStyleColor(ImGuiCol_Button, (xhairsMove ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(xhairsMove ? ICON_FK_LINK : ICON_FK_CHAIN_BROKEN, buttonSize)) {
+          if (ImGui::IconButton(xhairsMove ? ICON_FK_LINK : ICON_FK_CHAIN_BROKEN, buttonSize)) {
             xhairsMove = !xhairsMove;
             appData.settings().setCrosshairsMoveWithBrush(xhairsMove);
           }
@@ -724,7 +725,7 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_RSS, buttonSize)) {
+      if (ImGui::IconButton(ICON_FK_RSS, buttonSize)) {
         ImGui::OpenPopup("segSyncPopup");
       }
 

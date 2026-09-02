@@ -101,6 +101,11 @@ void renderImageHeaderInformation(
 
   std::string format = dicomSource ? "DICOM" : imageFormatName(imgHeader.fileName());
   ImGui::InputText("Format", &format, ImGuiInputTextFlags_ReadOnly);
+  if (ImGui::IsItemHovered()) {
+    const std::string longFormatName = dicomSource ? "Digital Imaging and Communications in Medicine (DICOM)"
+                                                   : imageFormatLongName(imgHeader.fileName());
+    ImGui::SetTooltip("%s", longFormatName.c_str());
+  }
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -120,6 +125,9 @@ void renderImageHeaderInformation(
     nullptr,
     nullptr,
     ImGuiInputTextFlags_ReadOnly);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Number of components per pixel");
+  }
 
   // Component type:
   std::string componentType = lowerCaseCopy(componentTypeString(imgHeader.fileComponentType()));
@@ -132,27 +140,19 @@ void renderImageHeaderInformation(
     helpMarker("Complex image component interpretation");
   }
 
-  // Image size (bytes):
-  uint64_t fileSizeBytes = imgHeader.fileImageSizeInBytes();
-  ImGui::InputScalar(
-    "Size (bytes)",
-    ImGuiDataType_U64,
-    &fileSizeBytes,
-    nullptr,
-    nullptr,
-    nullptr,
-    ImGuiInputTextFlags_ReadOnly);
+  // Image size in bytes and MiB:
+  const uint64_t fileSizeBytes = imgHeader.fileImageSizeInBytes();
+  std::string fileSizeBytesText = fmt::format("{} bytes", fileSizeBytes);
+  std::string fileSizeMiBText = fmt::format("{:.3f} MiB", static_cast<double>(fileSizeBytes) / (1024.0 * 1024.0));
+  const float sizeInputWidth = 0.5f * (ImGui::CalcItemWidth() - ImGui::GetStyle().ItemSpacing.x);
 
-  // Image size (MiB):
-  double fileSizeMiB = static_cast<double>(imgHeader.fileImageSizeInBytes()) / (1024.0 * 1024.0);
-  ImGui::InputScalar(
-    "Size (MiB)",
-    ImGuiDataType_Double,
-    &fileSizeMiB,
-    nullptr,
-    nullptr,
-    nullptr,
-    ImGuiInputTextFlags_ReadOnly);
+  ImGui::SetNextItemWidth(sizeInputWidth);
+  ImGui::InputText("##SizeBytes", &fileSizeBytesText, ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(sizeInputWidth);
+  ImGui::InputText("##SizeMiB", &fileSizeMiBText, ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  ImGui::TextUnformatted("Size");
 
   ImGui::Spacing();
   ImGui::Separator();

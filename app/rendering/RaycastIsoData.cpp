@@ -58,7 +58,7 @@ void Rendering::updateIsosurfaceDataFor3d(
       continue;
     }
 
-    if (!surface->visible) {
+    if (!surface->visibleIn3d) {
       continue;
     }
 

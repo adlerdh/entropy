@@ -76,7 +76,10 @@ entropy_add_license_resource(entropy_LICENSES "Cividis.txt"
   "${CMAKE_CURRENT_SOURCE_DIR}/colormaps/ncl/LICENSE.txt")
 
 set(entropy_ABOUT_ICON_SOURCE
-  "${CMAKE_CURRENT_SOURCE_DIR}/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
+  "${CMAKE_SOURCE_DIR}/${entropy_ABOUT_ICON_RESOURCE_PATH}")
+if(NOT EXISTS "${entropy_ABOUT_ICON_SOURCE}")
+  message(FATAL_ERROR "About dialog icon not found: ${entropy_ABOUT_ICON_SOURCE}")
+endif()
 
 cmrc_add_resource_library(entropy-colormaps ALIAS entropy::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps
   WHENCE "${CMAKE_SOURCE_DIR}")

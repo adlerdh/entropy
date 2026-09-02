@@ -384,9 +384,9 @@ invocation, still fails the build. The analyzer build disables ccache so that CM
 directly.
 External and generated targets are excluded in
 [CMakeLists.txt](CMakeLists.txt). The Ubuntu 24.04
-[Include What You Use](.github/workflows/iwyu.yml) workflow runs for pull requests and pushes to `main`, weekly, and
-when manually dispatched. CI builds with GCC 13 and runs Ubuntu's packaged IWYU analyzer. Include recommendations do
-not fail the job, but IWYU and compiler failures do. CI uploads the full output as the `iwyu-log` artifact.
+[Include What You Use](.github/workflows/iwyu.yml) workflow runs only when manually dispatched from GitHub Actions. It
+builds with GCC 13 and runs Ubuntu's packaged IWYU analyzer. Include recommendations do not fail the job, but IWYU and
+compiler failures do. CI uploads the full output as the `iwyu-log` artifact.
 
 ## Packaging
 
@@ -541,13 +541,13 @@ The main CI build matrix is:
 | Windows x86_64 | `windows-2022` | Visual Studio 2022 / MSVC v143 | Debug build and tests, release packages, optional coverage |
 | Windows x86_64 compatibility | `windows-2025` | Visual Studio 2026 / MSVC | Scheduled/manual Debug build and tests on a newer Windows runner |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | `gcc-13` / `g++-13` | Debug build and tests, release packages, and primary coverage |
-| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | GCC 13 and Clang 17 | Debug build and tests with clang-tidy, cppcheck analysis, and IWYU analysis |
+| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | GCC 13 and Clang 17 | Debug build and tests with clang-tidy and cppcheck analysis, plus manually triggered IWYU analysis |
 | Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
 
 The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA. Ubuntu 24.04 uses GCC 13 for
-the regular build and Clang-based analysis, including a Clang 17 build for IWYU. It also runs cppcheck and hosts the
-Fedora container jobs. Ubuntu 22.04 remains the primary Linux packaging target because release packages should be
-built on the oldest supported distribution.
+the regular build and Clang-based analysis. Manually triggered IWYU analysis also runs there. Ubuntu 24.04 runs
+cppcheck and hosts the Fedora container jobs. Ubuntu 22.04 remains the primary Linux packaging target because release
+packages should be built on the oldest supported distribution.
 
 macOS release artifacts are built separately for `arm64` and `x86_64`. Entropy does not publish a universal macOS
 binary.

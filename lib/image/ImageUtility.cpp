@@ -235,16 +235,37 @@ std::string imageFormatName(const fs::path& fileName)
   if (extension == ".nii" || endsWith(lowerName, ".nii.gz")) return "NIfTI";
   if (extension == ".mha" || extension == ".mhd" || endsWith(lowerName, ".mhd.gz")) return "MetaImage";
   if (extension == ".hdr" || extension == ".img" || endsWith(lowerName, ".hdr.gz") || endsWith(lowerName, ".img.gz"))
-    return "Analyze";
+    return "Analyze 7.5";
   if (extension == ".jpg" || extension == ".jpeg" || extension == ".jpe") return "JPEG";
   if (extension == ".png") return "PNG";
   if (extension == ".tif" || extension == ".tiff") return "TIFF";
   if (extension == ".bmp" || extension == ".dib") return "BMP";
   if (extension == ".gipl" || endsWith(lowerName, ".gipl.gz")) return "GIPL";
   if (extension == ".mnc" || extension == ".mnc2" || endsWith(lowerName, ".mnc.gz")) return "MINC";
-  if (extension == ".vtk" || extension == ".vti") return "VTK";
+  if (extension == ".vtk") return "VTK Legacy";
+  if (extension == ".vti") return "VTK XML ImageData";
   if (extension == ".hdf5") return "HDF5";
   return extension.empty() ? "Unknown" : extension.substr(1);
+}
+
+std::string imageFormatLongName(const fs::path& fileName)
+{
+  const std::string formatName = imageFormatName(fileName);
+  if (formatName == "DICOM") return "Digital Imaging and Communications in Medicine (DICOM)";
+  if (formatName == "NRRD") return "Nearly Raw Raster Data (NRRD)";
+  if (formatName == "NIfTI") return "Neuroimaging Informatics Technology Initiative (NIfTI)";
+  if (formatName == "MetaImage") return "MetaImage (MHA/MHD)";
+  if (formatName == "Analyze 7.5") return "Analyze 7.5 (HDR/IMG)";
+  if (formatName == "JPEG") return "Joint Photographic Experts Group (JPEG)";
+  if (formatName == "PNG") return "Portable Network Graphics (PNG)";
+  if (formatName == "TIFF") return "Tagged Image File Format (TIFF)";
+  if (formatName == "BMP") return "Bitmap Image (BMP)";
+  if (formatName == "GIPL") return "Guy's Image Processing Lab (GIPL)";
+  if (formatName == "MINC") return "Medical Imaging NetCDF (MINC)";
+  if (formatName == "VTK Legacy") return "Visualization Toolkit legacy image data (VTK)";
+  if (formatName == "VTK XML ImageData") return "Visualization Toolkit XML image data (VTI)";
+  if (formatName == "HDF5") return "Hierarchical Data Format version 5 (HDF5)";
+  return formatName;
 }
 
 PixelType fromItkPixelType(const itk::IOPixelEnum& pixelType)

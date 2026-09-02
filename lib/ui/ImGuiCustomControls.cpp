@@ -29,6 +29,36 @@ static const ImGuiDataTypeInfo GDataTypeInfo[] = {
 namespace ImGui
 {
 
+bool IconButton(const char* label, const ImVec2& size)
+{
+  IM_ASSERT(label != nullptr);
+  IM_ASSERT(size.x == size.y);
+
+  PushID(label);
+  const bool pressed = Button("##icon", size);
+  PopID();
+
+  const char* const visibleTextEnd = FindRenderedTextEnd(label);
+  unsigned int codepoint = 0;
+  const int iconByteCount = ImTextCharFromUtf8(&codepoint, label, visibleTextEnd);
+  if (iconByteCount <= 0 || label + iconByteCount != visibleTextEnd) {
+    IM_ASSERT_USER_ERROR(false, "IconButton label must contain exactly one visible glyph");
+    return pressed;
+  }
+
+  ImFontGlyph* const glyph = GetFontBaked()->FindGlyph(static_cast<ImWchar>(codepoint));
+  if (glyph == nullptr || !glyph->Visible) {
+    return pressed;
+  }
+
+  const ImVec2 buttonCenter = (GetItemRectMin() + GetItemRectMax()) * 0.5f;
+  const ImVec2 glyphCenter{0.5f * (glyph->X0 + glyph->X1), 0.5f * (glyph->Y0 + glyph->Y1)};
+  const ImVec2 textPosition{ImFloor(buttonCenter.x - glyphCenter.x), ImFloor(buttonCenter.y - glyphCenter.y)};
+  GetWindowDrawList()->AddText(textPosition, GetColorU32(ImGuiCol_Text), label, visibleTextEnd);
+
+  return pressed;
+}
+
 std::optional<std::string> renderFileButtonDialogAndWindow(
   const char* buttonText,
   const char* dialogTitle,

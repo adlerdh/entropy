@@ -113,7 +113,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
         .renderWarped = renderWarped,
         .valueEditInProgress = surface->valueEditInProgress,
         .opacity = effectiveOpacity,
-        .visible = surface->visible};
+        .visible = surface->visibleIn3d};
       if (!rendering::mesh::canRenderIsosurfaceWithMesh(eligibility)) {
         if (eligibility.visible && eligibility.opacity > 0.0f) {
           allVisibleIsosurfacesHaveReadyMeshes = false;
@@ -173,7 +173,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
           effectiveOpacity,
           globalMaterial.rimLightingEnabled,
           globalMaterial.rimOpacityStrength),
-        .visible = surface->visible};
+        .visible = surface->visibleIn3d};
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);
       renderable.drawOptions.clipPlanes = clipPlanes;

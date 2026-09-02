@@ -132,6 +132,18 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   else if (path.ends_with("/settings/isosurfaces")) {
     preferredKeys = {"applyImageColormap", "modulateOpacityWithImageOpacity", "contourLineWidth2D", "opacityModulator"};
   }
+  else if (path.find("/isosurfaces/") != std::string::npos && path.ends_with("/surface")) {
+    preferredKeys = {
+      "name",
+      "value",
+      "visibleIn2D",
+      "visibleIn3D",
+      "color",
+      "opacity",
+      "contourFillOpacity",
+      "fillAboveIsovalue",
+      "material"};
+  }
 
   const auto append = [&](const std::string& key) {
     const std::string childPath = path.empty() ? key : std::string{path} + "/" + key;

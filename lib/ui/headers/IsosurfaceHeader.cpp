@@ -302,12 +302,22 @@ static const ImGuiTableFlags sk_isosurfaceTableFlags =
  */
 enum TableColumnId : uint32_t
 {
-  /// "Name" column shows several things: visibility checkbox, surface name, surface color picker
-  Name = 0,
+  /// "2D" column controls contour visibility on slice planes.
+  TwoD = 0,
+
+  /// "3D" column controls raycast and mesh visibility in 3D views.
+  ThreeD = 1,
+
+  /// "Surface" column shows the surface name and color picker.
+  Name = 2,
 
   /// "Value" column shows isosurface value input selector
-  Value = 1
+  Value = 3
 };
+
+static const ImGuiTableColumnFlags sk_visibilityColumnFlags =
+  ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoSort |
+  ImGuiTableColumnFlags_NoHide;
 
 static const ImGuiTableColumnFlags sk_nameColumnFlags = ImGuiTableColumnFlags_DefaultSort |
                                                         ImGuiTableColumnFlags_PreferSortDescending |
@@ -682,8 +692,11 @@ void renderIsosurfacesHeader(
 
   const ImVec2 outerSize = sk_outerSizeEnabled ? sk_outerSizeValue : ImVec2(0, 0);
 
-  if (ImGui::BeginTable("isosurfaceSettingsTable", 2, sk_isosurfaceTableFlags, outerSize, innerWidthToUse)) {
+  if (ImGui::BeginTable("isosurfaceSettingsTable", 4, sk_isosurfaceTableFlags, outerSize, innerWidthToUse)) {
     // Declare columns:
+    const float visibilityColumnWidth = ImGui::GetFrameHeight() + 2.0f * ImGui::GetStyle().CellPadding.x;
+    ImGui::TableSetupColumn("2D", sk_visibilityColumnFlags, visibilityColumnWidth, TableColumnId::TwoD);
+    ImGui::TableSetupColumn("3D", sk_visibilityColumnFlags, visibilityColumnWidth, TableColumnId::ThreeD);
     ImGui::TableSetupColumn("Surface", sk_nameColumnFlags, 150.0f, TableColumnId::Name);
     ImGui::TableSetupColumn("Isovalue", sk_isoValueColumnFlags, 150.0f, TableColumnId::Value);
 
@@ -705,7 +718,19 @@ void renderIsosurfacesHeader(
     }
 
     if (sk_showHeaders) {
-      ImGui::TableHeadersRow();
+      ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+      for (int column = 0; column < 4; ++column) {
+        ImGui::TableSetColumnIndex(column);
+        ImGui::TableHeader(ImGui::TableGetColumnName(column));
+        if (ImGui::IsItemHovered()) {
+          if (column == TableColumnId::TwoD) {
+            ImGui::SetTooltip("Show this isosurface on 2D views and 3D image planes");
+          }
+          else if (column == TableColumnId::ThreeD) {
+            ImGui::SetTooltip("Show this isosurface as a raycast or mesh surface in 3D views");
+          }
+        }
+      }
     }
 
     ImGui::PushButtonRepeat(true);
@@ -721,11 +746,14 @@ void renderIsosurfacesHeader(
 
       ImGui::TableNextRow(ImGuiTableRowFlags_None, sk_minRowHeight);
 
-      // Column with visibility checkbox, color picker, and name field:
-      ImGui::TableSetColumnIndex(TableColumnId::Name);
+      ImGui::TableSetColumnIndex(TableColumnId::TwoD);
+      ImGui::Checkbox("##visibleIn2d", &(item.m_surface->visibleIn2d));
 
-      ImGui::Checkbox("##visible", &(item.m_surface->visible));
-      ImGui::SameLine();
+      ImGui::TableSetColumnIndex(TableColumnId::ThreeD);
+      ImGui::Checkbox("##visibleIn3d", &(item.m_surface->visibleIn3d));
+
+      // Column with color picker and name field:
+      ImGui::TableSetColumnIndex(TableColumnId::Name);
 
       // Non-pm-RGBA:
       static constexpr bool premult = false;
@@ -910,9 +938,13 @@ void renderIsosurfacesHeader(
       helpMarker("Surface iso-value");
 
       ImGui::Spacing();
-      ImGui::Checkbox("Visible", &surface->visible);
+      ImGui::Checkbox("Show in 2D", &surface->visibleIn2d);
       ImGui::SameLine();
-      helpMarker("Show/hide the surface");
+      helpMarker("Show this isosurface on 2D views and 3D image planes");
+
+      ImGui::Checkbox("Show in 3D", &surface->visibleIn3d);
+      ImGui::SameLine();
+      helpMarker("Show this isosurface as a raycast or mesh surface in 3D views");
 
       static constexpr bool premult = false;
       glm::vec4 color = getIsosurfaceColor(appData, *surface, imgSettings, componentToAdjust, premult);

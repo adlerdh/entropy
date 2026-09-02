@@ -124,6 +124,14 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   auto changedIsosurface = project;
   changedIsosurface.m_referenceImage.m_isosurfaces.front().m_surface.opacity = 0.4f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurface));
+
+  auto changedIsosurfaceVisibility2d = project;
+  changedIsosurfaceVisibility2d.m_referenceImage.m_isosurfaces.front().m_surface.visibleIn2d = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurfaceVisibility2d));
+
+  auto changedIsosurfaceVisibility3d = project;
+  changedIsosurfaceVisibility3d.m_referenceImage.m_isosurfaces.front().m_surface.visibleIn3d = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurfaceVisibility3d));
 }
 
 TEST_CASE("Project snapshot comparison detects layout and interface changes", "[ProjectSnapshotComparison]")

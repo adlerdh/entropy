@@ -744,7 +744,7 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
         continue;
       }
-      if (!surface->visible) {
+      if (!surface->visibleIn2d) {
         continue;
       }
 

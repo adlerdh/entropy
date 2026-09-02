@@ -103,7 +103,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
               {.renderWarped = false,
                .valueEditInProgress = surface->valueEditInProgress,
                .opacity = effectiveOpacity,
-               .visible = surface->visible}))
+               .visible = surface->visibleIn3d}))
         {
           continue;
         }
@@ -133,7 +133,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
               effectiveOpacity,
               globalMaterial.rimLightingEnabled,
               globalMaterial.rimOpacityStrength),
-            .visible = surface->visible});
+            .visible = surface->visibleIn3d});
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));
       }

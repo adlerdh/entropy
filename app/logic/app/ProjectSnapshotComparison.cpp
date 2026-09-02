@@ -156,7 +156,7 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 {
   return a.name == b.name && a.value == b.value && a.color == b.color &&
          surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
-         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visible == b.visible;
+         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visibleIn2d == b.visibleIn2d && a.visibleIn3d == b.visibleIn3d;
 }
 
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)

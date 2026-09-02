@@ -35,6 +35,11 @@ bool isStandardRasterImageFile(const std::filesystem::path& fileName);
 std::string imageFormatName(const std::filesystem::path& fileName);
 
 /**
+ * @brief Return the expanded image format name derived from the file extension.
+ */
+std::string imageFormatLongName(const std::filesystem::path& fileName);
+
+/**
  * @brief Return true when a header represents a standard 2D RGB/RGBA raster image.
  */
 bool isStandardRasterColorImage(const ImageHeader& header);

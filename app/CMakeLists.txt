@@ -31,7 +31,6 @@ add_subdirectory(windowing)
 entropy_disable_linting_for_targets(entropy)
 
 target_compile_definitions(entropy PRIVATE
-  ENTROPY_ABOUT_ICON_RESOURCE_PATH="res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png"
   ENTROPY_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/entropy"
 )
 

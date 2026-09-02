@@ -1,10 +1,12 @@
-﻿#include "ui/ImGuiWrapper.h"
+﻿#define IMGUI_DEFINE_MATH_OPERATORS
+#include "ui/ImGuiWrapper.h"
 
 #include "common/MathFuncs.h"
 
 #include "ui/Helpers.h"
 #include "ui/GradientBackgroundRenderer.h"
 #include "ui/ImageExport.h"
+#include "ui/ImGuiCustomControls.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/menus/MainMenuBar.h"
 #ifdef __APPLE__
@@ -1273,7 +1275,7 @@ void renderGlobalTimeControl(AppData& appData)
     bool playing = image->settings().timePlaybackPlaying();
     const std::string playbackButtonLabel =
       std::string{playing ? ICON_FK_PAUSE : ICON_FK_PLAY} + "##globalToggleTimePlayback";
-    if (ImGui::Button(playbackButtonLabel.c_str(), buttonSize)) {
+    if (ImGui::IconButton(playbackButtonLabel.c_str(), buttonSize)) {
       playing = !playing;
       image->settings().setTimePlaybackPlaying(playing);
       if (playing) {
@@ -1285,14 +1287,14 @@ void renderGlobalTimeControl(AppData& appData)
       ImGui::SetTooltip(playing ? "Pause time-series playback" : "Play time series");
     }
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FK_FAST_BACKWARD "##globalFirstTimePoint", buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_FAST_BACKWARD "##globalFirstTimePoint", buttonSize)) {
       requestedTimePoint = 0u;
     }
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Go to first time frame");
     }
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FK_STEP_BACKWARD "##globalPreviousTimePoint", buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_STEP_BACKWARD "##globalPreviousTimePoint", buttonSize)) {
       requestedTimePoint =
         activeTimePoint == 0u ? (image->settings().timePlaybackLoop() ? maxTimePoint : 0u) : activeTimePoint - 1u;
     }
@@ -1300,7 +1302,7 @@ void renderGlobalTimeControl(AppData& appData)
       ImGui::SetTooltip("Go to previous time frame");
     }
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FK_STEP_FORWARD "##globalNextTimePoint", buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_STEP_FORWARD "##globalNextTimePoint", buttonSize)) {
       requestedTimePoint = activeTimePoint == maxTimePoint ? (image->settings().timePlaybackLoop() ? 0u : maxTimePoint)
                                                            : activeTimePoint + 1u;
     }
@@ -1308,7 +1310,7 @@ void renderGlobalTimeControl(AppData& appData)
       ImGui::SetTooltip("Go to next time frame");
     }
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FK_FAST_FORWARD "##globalLastTimePoint", buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_FAST_FORWARD "##globalLastTimePoint", buttonSize)) {
       requestedTimePoint = maxTimePoint;
     }
     if (ImGui::IsItemHovered()) {

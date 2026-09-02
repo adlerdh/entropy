@@ -399,7 +399,7 @@ bool renderAutoWindowButtons(Image& image, ImageSettings& settings, uint32_t com
 {
   ImGui::PushID(&image);
   ImGui::AlignTextToFramePadding();
-  ImGui::TextDisabled("Window:");
+  ImGui::TextDisabled("Auto:");
   ImGui::SameLine();
 
   bool changed = autoWindowButton("0-100%", image, settings, component, 0.0, 1.0);
@@ -1066,7 +1066,7 @@ void renderImageHeader(
   const float normalInputRightX = nameRowStartX + ImGui::CalcItemWidth() + 2.0f * ImGui::GetStyle().ItemSpacing.x;
 
   if (!isActiveImage) {
-    if (ImGui::Button(ICON_FK_TOGGLE_OFF, buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_TOGGLE_OFF, buttonSize)) {
       if (appData.setActiveImageUid(imageUid)) {
         ImGui::Spacing();
         ImGui::Separator();
@@ -1078,7 +1078,7 @@ void renderImageHeader(
   }
   else {
     ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    ImGui::Button(ICON_FK_TOGGLE_ON, buttonSize);
+    ImGui::IconButton(ICON_FK_TOGGLE_ON, buttonSize);
     ImGui::PopStyleColor(1); // ImGuiCol_Button
   }
 
@@ -1126,7 +1126,7 @@ void renderImageHeader(
   if (isRef) {
     ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
   }
-  if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize)) {
+  if (ImGui::IconButton(ICON_FK_BULLSEYE "##setReferenceImage", buttonSize)) {
     if (!isRef) {
       requestSetReferenceImage(imageUid);
     }
@@ -1142,7 +1142,7 @@ void renderImageHeader(
   ImGui::SameLine();
 
   ImGui::PushStyleColor(ImGuiCol_Button, (isLocked ? inactiveColor : activeColor));
-  if (ImGui::Button((isLocked ? ICON_FK_LOCK : ICON_FK_UNLOCK), buttonSize)) {
+  if (ImGui::IconButton((isLocked ? ICON_FK_LOCK : ICON_FK_UNLOCK), buttonSize)) {
     if (!forceLocked) {
       setLockManualImageTransformation(imageUid, !isLocked);
     }
@@ -1163,7 +1163,7 @@ void renderImageHeader(
 
   ImGui::SameLine();
 
-  if (ImGui::Button(ICON_FK_HAND_O_UP, buttonSize)) {
+  if (ImGui::IconButton(ICON_FK_HAND_O_UP, buttonSize)) {
     glm::vec3 worldPos{imgTx.worldDef_T_subject() * glm::vec4{imgHeader.subjectBBoxCenter(), 1.0f}};
 
     worldPos = data::snapWorldPointToImageVoxels(appData, worldPos);
@@ -1182,7 +1182,7 @@ void renderImageHeader(
     if (!canExportImage) {
       ImGui::BeginDisabled();
     }
-    if (ImGui::Button(exportDicomButtonText.c_str(), buttonSize)) {
+    if (ImGui::IconButton(exportDicomButtonText.c_str(), buttonSize)) {
       image_export::exportDicomImage(appData, imageUid);
     }
     if (!canExportImage) {
@@ -1198,7 +1198,7 @@ void renderImageHeader(
   if (isRef) {
     ImGui::BeginDisabled();
   }
-  if (ImGui::Button(ICON_FK_TIMES, buttonSize)) {
+  if (ImGui::IconButton(ICON_FK_TIMES, buttonSize)) {
     requestRemoveImage(imageUid);
   }
   if (isRef) {
@@ -1222,7 +1222,7 @@ void renderImageHeader(
     const bool canMoveForward = !isRef && imageIndex + 1 < numImages;
 
     ImGui::BeginDisabled(!canMoveBackward);
-    if (ImGui::Button(ICON_FK_FAST_BACKWARD, buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_FAST_BACKWARD, buttonSize)) {
       if (canMoveBackward) {
         moveImageToBack(imageUid);
       }
@@ -1234,7 +1234,7 @@ void renderImageHeader(
 
     ImGui::SameLine();
     ImGui::BeginDisabled(!canMoveBackward);
-    if (ImGui::Button(ICON_FK_BACKWARD, buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_BACKWARD, buttonSize)) {
       if (canMoveBackward) {
         moveImageBackward(imageUid);
       }
@@ -1246,7 +1246,7 @@ void renderImageHeader(
 
     ImGui::SameLine();
     ImGui::BeginDisabled(!canMoveForward);
-    if (ImGui::Button(ICON_FK_FORWARD, buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_FORWARD, buttonSize)) {
       if (canMoveForward) {
         moveImageForward(imageUid);
       }
@@ -1258,7 +1258,7 @@ void renderImageHeader(
 
     ImGui::SameLine();
     ImGui::BeginDisabled(!canMoveForward);
-    if (ImGui::Button(ICON_FK_FAST_FORWARD, buttonSize)) {
+    if (ImGui::IconButton(ICON_FK_FAST_FORWARD, buttonSize)) {
       if (canMoveForward) {
         moveImageToFront(imageUid);
       }
@@ -2407,6 +2407,9 @@ void renderImageHeader(
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", cmap->description().c_str());
       }
+
+      ImGui::SameLine();
+      ImGui::TextUnformatted("Color map");
 
       ImGui::SetNextItemOpen(false, ImGuiCond_Appearing);
 

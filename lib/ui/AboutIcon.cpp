@@ -6,6 +6,8 @@
 #include <stb_image.h>
 
 #include <cmrc/cmrc.hpp>
+#include <spdlog/spdlog.h>
+
 #include <exception>
 
 CMRC_DECLARE(icons);
@@ -20,7 +22,8 @@ GLuint loadTexture()
     const auto filesystem = cmrc::icons::get_filesystem();
     icon = filesystem.open(ENTROPY_ABOUT_ICON_RESOURCE_PATH);
   }
-  catch (const std::exception&) {
+  catch (const std::exception& error) {
+    spdlog::error("Unable to open embedded About dialog icon '{}': {}", ENTROPY_ABOUT_ICON_RESOURCE_PATH, error.what());
     return 0;
   }
 
@@ -36,6 +39,7 @@ GLuint loadTexture()
     4);
 
   if (!pixels || width <= 0 || height <= 0) {
+    spdlog::error("Unable to decode embedded About dialog icon '{}'", ENTROPY_ABOUT_ICON_RESOURCE_PATH);
     stbi_image_free(pixels);
     return 0;
   }

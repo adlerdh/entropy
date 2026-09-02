@@ -129,7 +129,7 @@ void Rendering::renderIsoContoursForImage(
       continue;
     }
 
-    if (!surface->visible) {
+    if (!surface->visibleIn2d) {
       continue;
     }
 

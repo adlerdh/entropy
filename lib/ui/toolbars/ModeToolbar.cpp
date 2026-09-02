@@ -2,6 +2,7 @@
 #include "ui/toolbars/ToolbarCommon.h"
 #include "ui/GuiData.h"
 #include "ui/Helpers.h"
+#include "ui/ImGuiCustomControls.h"
 #include "ui/widgets/Widgets.h"
 
 #include "logic/app/Data.h"
@@ -137,7 +138,7 @@ void renderModeToolbar(
 
         ImGui::PushStyleColor(ImGuiCol_Button, (isModeActive ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(toolbarButtonIcon(mouseMode), buttonSize)) {
+          if (ImGui::IconButton(toolbarButtonIcon(mouseMode), buttonSize)) {
             isModeActive = !isModeActive;
             if (isModeActive) {
               setMouseMode(mouseMode);
@@ -180,7 +181,7 @@ void renderModeToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_PICTURE_O, buttonSize)) {
+      if (ImGui::IconButton(ICON_FK_PICTURE_O, buttonSize)) {
         ImGui::OpenPopup("imagePopup");
       }
 
@@ -222,7 +223,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showImagePropertiesWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_SLIDERS, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_SLIDERS, buttonSize)) {
             guiData.m_showImagePropertiesWindow = !guiData.m_showImagePropertiesWindow;
           }
 
@@ -244,7 +245,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showSegmentationsWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_STAR_O, buttonSize)) // ICON_FK_LIST_OL
+          if (ImGui::IconButton(ICON_FK_STAR_O, buttonSize)) // ICON_FK_LIST_OL
           {
             guiData.m_showSegmentationsWindow = !guiData.m_showSegmentationsWindow;
           }
@@ -267,7 +268,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showRegistrationSetupWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_RANDOM, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_RANDOM, buttonSize)) {
             guiData.m_showRegistrationSetupWindow = !guiData.m_showRegistrationSetupWindow;
           }
 
@@ -289,7 +290,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
+          if (ImGui::IconButton(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
           {
             guiData.m_showAnnotationsWindow = !guiData.m_showAnnotationsWindow;
           }
@@ -312,7 +313,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showLandmarksWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_MAP_MARKER, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_MAP_MARKER, buttonSize)) {
             guiData.m_showLandmarksWindow = !guiData.m_showLandmarksWindow;
           }
 
@@ -334,7 +335,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showIsosurfacesWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_CUBE, buttonSize)) {
             guiData.m_showIsosurfacesWindow = !guiData.m_showIsosurfacesWindow;
           }
 
@@ -356,7 +357,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showSettingsWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_COGS, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_COGS, buttonSize)) {
             guiData.m_showSettingsWindow = !guiData.m_showSettingsWindow;
           }
 
@@ -378,7 +379,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showInspectionWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_INFO_CIRCLE, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_INFO_CIRCLE, buttonSize)) {
             guiData.m_showInspectionWindow = !guiData.m_showInspectionWindow;
           }
 
@@ -404,7 +405,7 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        if (ImGui::Button(ICON_FK_CROSSHAIRS, buttonSize)) {
+        if (ImGui::IconButton(ICON_FK_CROSSHAIRS, buttonSize)) {
           // Shift does a "hard" reset of the crosshairs, oblique orientations, rotated crosshairs,
           // and zoom
           const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
@@ -439,7 +440,7 @@ void renderModeToolbar(
 
         ImGui::PushStyleColor(ImGuiCol_Button, (isOverlayVisible ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_CLONE, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_CLONE, buttonSize)) {
             isOverlayVisible = !isOverlayVisible;
             setOverlayVisibility(isOverlayVisible);
           }
@@ -460,7 +461,7 @@ void renderModeToolbar(
       {
         //                ImGui::PushStyleColor( ImGuiCol_Button, highlightColor );
         {
-          if (ImGui::Button(ICON_FK_CHEVRON_LEFT, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_CHEVRON_LEFT, buttonSize)) {
             cycleViews(-1);
           }
           if (ImGui::IsItemHovered()) {
@@ -480,7 +481,7 @@ void renderModeToolbar(
       {
         //                ImGui::PushStyleColor( ImGuiCol_Button, highlightColor );
         {
-          if (ImGui::Button(ICON_FK_CHEVRON_RIGHT, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_CHEVRON_RIGHT, buttonSize)) {
             cycleViews(1);
           }
           if (ImGui::IsItemHovered()) {
@@ -501,7 +502,7 @@ void renderModeToolbar(
         bool syncEnabled = appData.settings().entropyInstanceSyncEnabled();
         ImGui::PushStyleColor(ImGuiCol_Button, (syncEnabled ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_EXCHANGE, buttonSize)) {
+          if (ImGui::IconButton(ICON_FK_EXCHANGE, buttonSize)) {
             appData.settings().setEntropyInstanceSyncEnabled(!syncEnabled);
           }
 
