@@ -2276,14 +2276,22 @@ void renderSurfaceLightingSettings(RenderData& renderData)
     "lighting contributions and the sharpness of specular highlights.");
 
   auto& material = renderData.m_meshSurfaceMaterialSettings;
-  int surfaceShading = material.flatShadingEnabled ? 1 : 0;
-  if (ImGui::Combo("Surface shading", &surfaceShading, "Smooth (per-pixel)\0Flat\0")) {
-    material.flatShadingEnabled = surfaceShading == 1;
+  int surfaceShading = material.triangleEdgesEnabled ? 2 : (material.flatShadingEnabled ? 1 : 0);
+  if (ImGui::Combo("Surface shading", &surfaceShading, "Smooth (per-pixel)\0Flat\0Flat with edges\0")) {
+    material.flatShadingEnabled = surfaceShading != 0;
+    material.triangleEdgesEnabled = surfaceShading == 2;
   }
   ImGui::SameLine();
   helpMarker(
     "Smooth shading interpolates vertex normals across each triangle. Flat shading uses one geometric normal per "
-    "triangle, making mesh facets visible. Lighting is evaluated per pixel in both modes.");
+    "triangle, making mesh facets visible. Flat with edges adds thin, anti-aliased triangle topology lines. Lighting "
+    "is evaluated per pixel in all modes.");
+
+  if (material.triangleEdgesEnabled) {
+    ImGui::ColorEdit3("Edge color", glm::value_ptr(material.triangleEdgeColor), k_colorEditFlags);
+    ImGui::SameLine();
+    helpMarker("Color of the triangle topology lines drawn over flat-shaded surfaces");
+  }
 
   ImGui::BeginDisabled(material.pbrShadingEnabled);
   const float lightingWidth = ImGui::CalcItemWidth();
@@ -2641,10 +2649,8 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
   ImGui::SeparatorText("Dual Depth Peeling");
   disabledTextWrapped(
     "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
-    "nearest and farthest remaining transparency layers.");
-
-  disabledTextWrapped(
-    "Rendering stops automatically when all transparency layers are resolved. The maximum remains a safety limit.");
+    "nearest and farthest remaining transparency layers. Rendering stops automatically when all transparency layers "
+    "are resolved, up to the maximum iteration limit.");
 
   int maxPeelPasses = static_cast<int>(renderData.m_meshDdpSettings.maxPeelPasses);
   if (ImGui::InputInt("Maximum dual-peel iterations", &maxPeelPasses)) {

@@ -142,6 +142,8 @@ struct RenderPreferences
   float lightingSpecular = 0.20f;
   float lightingSpecularPower = 16.0f;
   bool meshFlatShadingEnabled = false;
+  bool meshTriangleEdgesEnabled = false;
+  glm::vec3 meshTriangleEdgeColor{0.0f};
   bool meshPbrShadingEnabled = false;
   float meshPbrMetallic = 0.2f;
   float meshPbrRoughness = 0.3f;

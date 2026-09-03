@@ -19,10 +19,27 @@ bool isValidRequest(const camera3d::IsoSurfacePickRequest& request)
   const auto finiteVec = [](const glm::vec3& value) {
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
   };
+  const auto finiteMatrix = [](const glm::mat4& value) {
+    for (glm::length_t column = 0; column < 4; ++column) {
+      for (glm::length_t row = 0; row < 4; ++row) {
+        if (!std::isfinite(value[column][row])) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
   return finiteVec(request.worldRayOrigin) && finiteVec(request.worldRayDirection) &&
-         glm::dot(request.worldRayDirection, request.worldRayDirection) > 0.0f &&
+         glm::dot(request.worldRayDirection, request.worldRayDirection) > 0.0f && finiteMatrix(request.pixel_T_world) &&
+         finiteMatrix(request.world_T_pixel) && finiteVec(request.pixelDimensions) &&
          glm::all(glm::greaterThan(request.pixelDimensions, glm::vec3{0.0f})) && std::isfinite(request.stepLength) &&
-         request.stepLength > 0.0f && !request.isoValues.empty() && static_cast<bool>(request.sampleValue);
+         request.stepLength > 0.0f && (request.renderFrontFaces || request.renderBackFaces) &&
+         !request.isoValues.empty() &&
+         std::all_of(
+           request.isoValues.begin(),
+           request.isoValues.end(),
+           [](double value) { return std::isfinite(value); }) &&
+         static_cast<bool>(request.sampleValue);
 }
 
 bool crossesIso(double oldValue, double newValue, double isoValue, bool renderFrontFaces, bool renderBackFaces)
@@ -48,7 +65,7 @@ float refineIsoCrossing(
     const glm::vec3 pixelPos{
       request.pixel_T_world * glm::vec4{request.worldRayOrigin + mid * request.worldRayDirection, 1.0f}};
     const std::optional<double> value = request.sampleValue(pixelPos);
-    if (!value) {
+    if (!value || !std::isfinite(*value)) {
       break;
     }
 
@@ -82,7 +99,7 @@ std::optional<IsoSurfacePickHit> pickFirstIsoSurfaceHit(const IsoSurfacePickRequ
   const glm::vec3 pixelBoxMax = request.pixelDimensions - glm::vec3{0.5f};
 
   const auto [hitsBox, entryT, exitT] = math::slabs(pixelRayOrigin, pixelRayDirection, pixelBoxMin, pixelBoxMax);
-  if (!hitsBox || exitT <= 0.0f) {
+  if (!hitsBox || !std::isfinite(entryT) || !std::isfinite(exitT) || exitT <= 0.0f) {
     return std::nullopt;
   }
 
@@ -95,7 +112,7 @@ std::optional<IsoSurfacePickHit> pickFirstIsoSurfaceHit(const IsoSurfacePickRequ
   float oldT = tStart;
   glm::vec3 oldPixelPos{request.pixel_T_world * glm::vec4{request.worldRayOrigin + oldT * worldDir, 1.0f}};
   std::optional<double> oldValue = request.sampleValue(oldPixelPos);
-  if (!oldValue) {
+  if (!oldValue || !std::isfinite(*oldValue)) {
     return std::nullopt;
   }
 
@@ -103,7 +120,7 @@ std::optional<IsoSurfacePickHit> pickFirstIsoSurfaceHit(const IsoSurfacePickRequ
     const float clampedT = std::min(tStart + static_cast<float>(stepIndex) * step, tEnd);
     const glm::vec3 pixelPos{request.pixel_T_world * glm::vec4{request.worldRayOrigin + clampedT * worldDir, 1.0f}};
     const std::optional<double> value = request.sampleValue(pixelPos);
-    if (!value) {
+    if (!value || !std::isfinite(*value)) {
       oldT = clampedT;
       oldValue = std::nullopt;
       if (clampedT >= tEnd) {
@@ -125,6 +142,9 @@ std::optional<IsoSurfacePickHit> pickFirstIsoSurfaceHit(const IsoSurfacePickRequ
           const glm::vec3 hitPixelPos{
             request.pixel_T_world * glm::vec4{request.worldRayOrigin + hitT * worldDir, 1.0f}};
           const glm::vec4 worldH = request.world_T_pixel * glm::vec4{hitPixelPos, 1.0f};
+          if (!std::isfinite(worldH.w) || std::abs(worldH.w) <= std::numeric_limits<float>::epsilon()) {
+            continue;
+          }
           nearestStepHit =
             IsoSurfacePickHit{.worldPosition = glm::vec3{worldH} / worldH.w, .rayDistance = hitT, .isoIndex = i};
         }

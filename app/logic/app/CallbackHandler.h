@@ -110,18 +110,18 @@ public:
 
   /**
    * @brief 2D translation of the camera (panning)
-   * @param windowLastPos
-   * @param windowCurrPos
-   * @param windowStartPos
+   * @param startHit Initial pointer hit that identifies the view
+   * @param prevHit Previous pointer hit
+   * @param currHit Current pointer hit
    */
   void doCameraTranslate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
 
   /**
    * @brief 2D rotation of the camera
-   * @param[in] windowLastPos
-   * @param[in] windowCurrPos
-   * @param[in] windowStartPos
-   * @param[in] rotationOrigin
+   * @param[in] startHit Initial pointer hit that identifies the view
+   * @param[in] prevHit Previous pointer hit
+   * @param[in] currHit Current pointer hit
+   * @param[in] rotationOrigin Rotation pivot selection
    */
   void doCameraRotate2d(
     const ViewHit& startHit,
@@ -167,11 +167,11 @@ public:
 
   /**
    * @brief 2D zoom of the camera
-   * @param windowLastPos
-   * @param windowCurrPos
-   * @param windowStartPos
-   * @param zoomBehavior
-   * @param syncZoomForAllViews
+   * @param startHit Initial pointer hit that identifies the view and optional pointer pivot
+   * @param prevHit Previous pointer hit
+   * @param currHit Current pointer hit
+   * @param zoomBehavior Zoom-pivot selection
+   * @param syncZoomForAllViews Whether to zoom every current 2D view
    */
   void doCameraZoomDrag(
     const ViewHit& startHit,
@@ -181,11 +181,11 @@ public:
     bool syncZoomForAllViews);
 
   /**
-   * @brief doCameraZoomScroll
-   * @param scrollOffset
-   * @param windowStartPos
-   * @param zoomBehavior
-   * @param syncZoomForAllViews
+   * @brief Zoom a 2D camera from a wheel or trackpad scroll event
+   * @param hit Pointer hit that identifies the view and optional pointer pivot
+   * @param scrollOffset Horizontal and vertical scroll offsets
+   * @param zoomBehavior Zoom-pivot selection
+   * @param syncZoomForAllViews Whether to zoom every current 2D view
    */
   void doCameraZoomScroll(
     const ViewHit& hit,

@@ -27,7 +27,7 @@ namespace helper
  * @brief Create a camera projection of a given type
  * @param[in] type Type of camera projection
  * @return Unique pointer to camera projection
- * @throw Propagates exceptions from projection allocation
+ * @throw Exception if `projectionType` is unknown, or propagates projection-allocation exceptions
  */
 std::unique_ptr<Projection> createCameraProjection(const ProjectionType& projectionType);
 
@@ -265,7 +265,6 @@ void zoom(Camera& camera, float factor, const glm::vec2& cameraCenterPos);
 /**
  * @brief Translate the camera in or out using vertical NDC drag distance
  * @param camera Camera to mutate
- * @param ndcOldPos Previous pointer position in NDC
  * @param ndcNewPos Current pointer position in NDC
  * @param scale Translation scale
  */
@@ -428,7 +427,6 @@ glm::quat rotation2dInCameraPlane(
  * @brief Compute a snapped 2D in-plane camera rotation from an NDC drag
  * @param camera Camera that defines the view plane
  * @param ndcStartPos Start pointer position in NDC
- * @param ndcOldPos Previous pointer position in NDC
  * @param ndcNewPos Current pointer position in NDC
  * @param snapAngleDegrees Angle increment used for snapping
  * @param angleTolerance Tolerance around each snap angle
@@ -438,7 +436,6 @@ glm::quat rotation2dInCameraPlane(
 glm::quat rotation2dInCameraPlaneWithSnapping(
   const Camera& camera,
   const glm::vec2& ndcStartPos,
-  const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
   float snapAngleDegrees,
   float angleTolerance,

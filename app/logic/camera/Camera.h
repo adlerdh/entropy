@@ -64,7 +64,7 @@ public:
    * @brief Construct a camera with an owned projection and optional linked start-frame provider
    * @param projection Projection used to map Camera space to Clip space
    * @param anatomy_T_start_provider Optional callback that supplies the linked anatomical start frame
-   * @throw Throws `DebugException` when `projection` is null
+   * @throw Exception when `projection` is null
    */
   explicit Camera(
     std::unique_ptr<Projection> projection,
@@ -211,7 +211,7 @@ public:
 
   /**
    * @brief Set the camera zoom factor
-   * @param factor Zoom factor in the accepted camera range. Out-of-range values are ignored
+   * @param factor Positive zoom factor. Projection-specific limits are applied
    */
   void setZoom(float factor);
 
@@ -235,15 +235,22 @@ public:
 
   /**
    * @brief Set the near clipping plane distance from the camera origin
-   * @param d Near distance. Invalid values are ignored by the projection
+   * @param dist Near distance. Invalid values are ignored by the projection
    */
   void setNearDistance(float dist);
 
   /**
    * @brief Set the far clipping plane distance from the camera origin
-   * @param d Far distance. Invalid values are ignored by the projection
+   * @param dist Far distance. Invalid values are ignored by the projection
    */
   void setFarDistance(float dist);
+
+  /**
+   * @brief Set both clipping distances as one validated pair
+   * @param nearDistanceArg Positive near clipping distance
+   * @param farDistanceArg Far clipping distance greater than `nearDistanceArg`
+   */
+  void setClipDistances(float nearDistanceArg, float farDistanceArg);
 
   /**
    * @brief Get the near clipping plane distance
@@ -258,13 +265,6 @@ public:
   float farDistance() const;
 
 private:
-  /**
-   * @brief Reserved copy-swap helper
-   * @param other Camera whose contents would be swapped
-   * @throw Not implemented
-   */
-  void swap(const Camera& other);
-
   /** @brief Owned projection, either perspective or orthographic */
   std::unique_ptr<Projection> m_projection;
 

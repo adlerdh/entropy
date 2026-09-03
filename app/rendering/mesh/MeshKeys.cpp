@@ -31,6 +31,13 @@ void hashVec4(std::size_t& seed, const glm::vec4& value)
   hashCombine(seed, value.w);
 }
 
+void hashVec3(std::size_t& seed, const glm::vec3& value)
+{
+  hashCombine(seed, value.x);
+  hashCombine(seed, value.y);
+  hashCombine(seed, value.z);
+}
+
 } // namespace
 
 std::size_t MeshGeometryKeyHash::operator()(const MeshGeometryKey& key) const
@@ -56,6 +63,9 @@ std::size_t MeshStyleKeyHash::operator()(const MeshStyleKey& key) const
   hashCombine(seed, key.material.roughness);
   hashCombine(seed, key.material.ambientOcclusion);
   hashCombine(seed, static_cast<int>(key.material.shadingModel));
+  hashCombine(seed, key.material.flatShadingEnabled);
+  hashCombine(seed, key.material.triangleEdgesEnabled);
+  hashVec3(seed, key.material.triangleEdgeColor);
   hashCombine(seed, key.material.rimLightingEnabled);
   hashCombine(seed, key.material.rimOpacityStrength);
   hashCombine(seed, key.material.rimEmissionStrength);

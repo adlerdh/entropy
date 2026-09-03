@@ -170,6 +170,8 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.lightingSpecular = renderData.m_lightingSpecular;
   preferences.lightingSpecularPower = renderData.m_lightingSpecularPower;
   preferences.meshFlatShadingEnabled = renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled;
+  preferences.meshTriangleEdgesEnabled = renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled;
+  preferences.meshTriangleEdgeColor = renderData.m_meshSurfaceMaterialSettings.triangleEdgeColor;
   preferences.meshPbrShadingEnabled = renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled;
   preferences.meshPbrMetallic = renderData.m_meshSurfaceMaterialSettings.metallic;
   preferences.meshPbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness;
@@ -322,7 +324,11 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_lightingDiffuse = preferences.lightingDiffuse;
   renderData.m_lightingSpecular = preferences.lightingSpecular;
   renderData.m_lightingSpecularPower = preferences.lightingSpecularPower;
-  renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled = preferences.meshFlatShadingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled =
+    preferences.meshFlatShadingEnabled || preferences.meshTriangleEdgesEnabled;
+  renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled = preferences.meshTriangleEdgesEnabled;
+  renderData.m_meshSurfaceMaterialSettings.triangleEdgeColor =
+    glm::clamp(preferences.meshTriangleEdgeColor, glm::vec3{0.0f}, glm::vec3{1.0f});
   renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled = preferences.meshPbrShadingEnabled;
   renderData.m_meshSurfaceMaterialSettings.metallic = preferences.meshPbrMetallic;
   renderData.m_meshSurfaceMaterialSettings.roughness = preferences.meshPbrRoughness;

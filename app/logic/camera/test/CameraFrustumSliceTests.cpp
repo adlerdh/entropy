@@ -71,6 +71,7 @@ TEST_CASE("frustum slice overlay handles a plane parallel to near and far faces"
   const glm::vec3 planeNormal{0.0f, 1.0f, 0.0f};
   const camera3d::FrustumSliceOverlay overlay = camera3d::frustumSliceOverlay(camera, planePoint, planeNormal);
 
+  CHECK(overlay.eye.has_value());
   CHECK(overlay.segments.size() == 4);
   CHECK(countFace(overlay, Face::Near) == 0);
   CHECK(countFace(overlay, Face::Far) == 0);
@@ -112,7 +113,7 @@ TEST_CASE("frustum slice overlay draws near and far plane intersections", "[came
   }
 }
 
-TEST_CASE("frustum slice overlay returns only the eye when the plane misses the frustum", "[camera][frustum]")
+TEST_CASE("frustum slice overlay returns the perspective eye when the plane misses the frustum", "[camera][frustum]")
 {
   Camera camera(ProjectionType::Perspective);
   camera3d::State state;
@@ -121,6 +122,7 @@ TEST_CASE("frustum slice overlay returns only the eye when the plane misses the 
   const camera3d::FrustumSliceOverlay overlay =
     camera3d::frustumSliceOverlay(camera, glm::vec3{0.0f, 10000.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
 
+  CHECK(overlay.eye.has_value());
   CHECK(overlay.segments.empty());
 }
 
@@ -135,6 +137,7 @@ TEST_CASE("frustum slice overlay supports orthographic frusta", "[camera][frustu
   const glm::vec3 planeNormal{1.0f, 0.0f, 0.0f};
   const camera3d::FrustumSliceOverlay overlay = camera3d::frustumSliceOverlay(camera, planePoint, planeNormal);
 
+  CHECK_FALSE(overlay.eye.has_value());
   CHECK_FALSE(overlay.segments.empty());
   for (const auto& segment : overlay.segments) {
     checkPointOnPlane(segment.a, planePoint, planeNormal);

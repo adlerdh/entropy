@@ -94,6 +94,8 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   else if (path == "settings/rendering/mesh") {
     preferredKeys = {
       "flatShading",
+      "triangleEdges",
+      "triangleEdgeColor",
       "pbr",
       "shadows",
       "ambientOcclusion",

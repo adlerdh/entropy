@@ -3,12 +3,6 @@
 namespace camera3d
 {
 
-bool mouseModeAllowsCameraInteraction(MouseMode mouseMode) noexcept
-{
-  (void)mouseMode;
-  return true;
-}
-
 bool mouseModeAllowsPointPicking(const MouseMode mouseMode) noexcept
 {
   switch (mouseMode) {

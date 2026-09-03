@@ -3,6 +3,7 @@
 in vec3 v_worldPosition;
 in vec3 v_worldNormal;
 in vec4 v_color;
+noperspective in vec3 v_barycentric;
 
 uniform vec4 u_baseColor;
 uniform float u_metallic;
@@ -10,6 +11,8 @@ uniform float u_roughness;
 uniform float u_ambientOcclusion;
 uniform int u_shadingModel;
 uniform bool u_flatShadingEnabled;
+uniform bool u_triangleEdgesEnabled;
+uniform vec3 u_triangleEdgeColor;
 uniform float u_lightingAmbient;
 uniform float u_lightingDiffuse;
 uniform float u_lightingSpecular;
@@ -173,6 +176,18 @@ vec4 applyRimLighting(vec4 color, vec3 normal, vec3 viewDirection)
   return color;
 }
 
+vec4 applyTriangleEdges(vec4 color)
+{
+  if (!u_triangleEdgesEnabled) {
+    return color;
+  }
+
+  vec3 antialiasedInterior = smoothstep(vec3(0.0), fwidth(v_barycentric) * 1.25, v_barycentric);
+  float interior = min(min(antialiasedInterior.x, antialiasedInterior.y), antialiasedInterior.z);
+  color.rgb = mix(u_triangleEdgeColor, color.rgb, interior);
+  return color;
+}
+
 void main()
 {
   for (int i = 0; i < u_clipPlaneCount; ++i) {
@@ -194,5 +209,5 @@ void main()
                          ? physicallyBasedColor(color.rgb, shadingNormal, lightDirection, viewDirection, ao, shadow)
                          : simpleLitColor(color.rgb, shadingNormal, lightDirection, viewDirection, ao, shadow));
 
-  fragColor = applyRimLighting(vec4(litColor, color.a), normal, viewDirection);
+  fragColor = applyTriangleEdges(applyRimLighting(vec4(litColor, color.a), normal, viewDirection));
 }

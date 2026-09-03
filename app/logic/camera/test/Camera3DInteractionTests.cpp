@@ -17,21 +17,6 @@ ModifierState modifiers(bool alt, bool shift = false)
 
 } // namespace
 
-TEST_CASE("3D camera interaction is allowed in every mouse mode", "[camera][3d]")
-{
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::Pointer));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::CameraRotate));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::CameraTranslate));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::CameraZoom));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::CrosshairsRotate));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::WindowLevel));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::Segment));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::Annotate));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::ImageTranslate));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::ImageRotate));
-  CHECK(camera3d::mouseModeAllowsCameraInteraction(MouseMode::ImageScale));
-}
-
 TEST_CASE("3D point picking is allowed in general interaction modes", "[camera][3d][picking]")
 {
   CHECK(camera3d::mouseModeAllowsPointPicking(MouseMode::Pointer));

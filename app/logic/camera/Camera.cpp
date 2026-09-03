@@ -1,7 +1,5 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
-#include "logic/camera/OrthogonalProjection.h"
-#include "logic/camera/PerspectiveProjection.h"
 
 #include "common/Exception.hpp"
 
@@ -17,6 +15,7 @@
 #include <glm/gtx/orthonormalize.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <cmath>
 #include <utility>
 
 namespace
@@ -38,18 +37,11 @@ Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFram
 }
 
 Camera::Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider)
-  : m_anatomy_T_start_provider(std::move(anatomy_T_start_provider)), m_camera_T_anatomy(1.0f), m_start_T_world(1.0f)
+  : m_projection(helper::createCameraProjection(projType))
+  , m_anatomy_T_start_provider(std::move(anatomy_T_start_provider))
+  , m_camera_T_anatomy(1.0f)
+  , m_start_T_world(1.0f)
 {
-  switch (projType) {
-    case ProjectionType::Orthographic: {
-      m_projection = std::make_unique<OrthographicProjection>();
-      break;
-    }
-    case ProjectionType::Perspective: {
-      m_projection = std::make_unique<PerspectiveProjection>();
-      break;
-    }
-  }
 }
 
 Camera::Camera(const Camera& other)
@@ -63,28 +55,17 @@ Camera& Camera::operator=(const Camera& other)
     return *this;
   }
 
+  std::unique_ptr<Projection> projectionCopy = helper::createCameraProjection(other.projection()->type());
+
+  projectionCopy->setAspectRatio(other.projection()->aspectRatio());
+  projectionCopy->setDefaultFov(other.projection()->defaultFov());
+  projectionCopy->setClipDistances(other.projection()->nearDistance(), other.projection()->farDistance());
+  projectionCopy->setZoom(other.projection()->getZoom());
+
   m_anatomy_T_start_provider = other.anatomy_T_start_provider();
   m_camera_T_anatomy = other.camera_T_anatomy();
   m_start_T_world = other.start_T_world();
-
-  m_projection.reset();
-
-  switch (other.projection()->type()) {
-    case ProjectionType::Orthographic: {
-      m_projection = std::make_unique<OrthographicProjection>();
-      break;
-    }
-    case ProjectionType::Perspective: {
-      m_projection = std::make_unique<PerspectiveProjection>();
-      break;
-    }
-  }
-
-  m_projection->setAspectRatio(other.projection()->aspectRatio());
-  m_projection->setDefaultFov(other.projection()->defaultFov());
-  m_projection->setNearDistance(other.projection()->nearDistance());
-  m_projection->setFarDistance(other.projection()->farDistance());
-  m_projection->setZoom(other.projection()->getZoom());
+  m_projection = std::move(projectionCopy);
 
   return *this;
 }
@@ -130,6 +111,15 @@ void Camera::set_camera_T_anatomy(glm::mat4 camera_T_anatomyArg)
 {
   static constexpr float EPS = 1.0e-3f;
 
+  for (glm::length_t column = 0; column < 4; ++column) {
+    for (glm::length_t row = 0; row < 4; ++row) {
+      if (!std::isfinite(camera_T_anatomyArg[column][row])) {
+        spdlog::debug("Cannot set camera_T_anatomy because it contains non-finite values");
+        return;
+      }
+    }
+  }
+
   // Check that this is a rigid-body transformation that preserves the
   // right-handed coordinate system (i.e. determinant must equal 1):
   const float det = glm::determinant(glm::mat3{camera_T_anatomyArg});
@@ -140,6 +130,18 @@ void Camera::set_camera_T_anatomy(glm::mat4 camera_T_anatomyArg)
       glm::to_string(camera_T_anatomyArg),
       det);
     return;
+  }
+
+  const glm::mat3 rotation{camera_T_anatomyArg};
+  const glm::mat3 orthogonality = glm::transpose(rotation) * rotation;
+  for (glm::length_t column = 0; column < 3; ++column) {
+    for (glm::length_t row = 0; row < 3; ++row) {
+      const float expected = (column == row) ? 1.0f : 0.0f;
+      if (std::abs(orthogonality[column][row] - expected) > EPS) {
+        spdlog::debug("Cannot set camera_T_anatomy because its rotation is not orthonormal");
+        return;
+      }
+    }
   }
 
   if (
@@ -197,9 +199,7 @@ glm::mat4 Camera::camera_T_clip() const
 
 void Camera::setAspectRatio(float ratio)
 {
-  if (ratio > 0.0f) {
-    m_projection->setAspectRatio(ratio);
-  }
+  m_projection->setAspectRatio(ratio);
 }
 
 float Camera::aspectRatio() const
@@ -214,12 +214,7 @@ bool Camera::isOrthographic() const
 
 void Camera::setZoom(float factor)
 {
-  static constexpr float sk_minZoom = 0.001f;
-  static constexpr float sk_maxZoom = 1000.0f;
-
-  if (sk_minZoom <= factor && factor <= sk_maxZoom) {
-    m_projection->setZoom(factor);
-  }
+  m_projection->setZoom(factor);
 }
 
 void Camera::setNearDistance(float dist)
@@ -230,6 +225,11 @@ void Camera::setNearDistance(float dist)
 void Camera::setFarDistance(float dist)
 {
   m_projection->setFarDistance(dist);
+}
+
+void Camera::setClipDistances(float nearDistanceArg, float farDistanceArg)
+{
+  m_projection->setClipDistances(nearDistanceArg, farDistanceArg);
 }
 
 void Camera::setDefaultFov(const glm::vec2& fov)

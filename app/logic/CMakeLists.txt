@@ -24,6 +24,7 @@ target_sources(entropy PRIVATE
   annotation/SerializeAnnot.cpp
 
   camera/Camera.cpp
+  camera/Camera2DControls.cpp
   camera/Camera3DControls.cpp
   camera/CameraFrustumSlice.cpp
   camera/Camera3DInteraction.cpp

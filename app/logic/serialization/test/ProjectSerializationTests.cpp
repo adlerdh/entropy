@@ -399,6 +399,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
   project.m_meshRendering.m_renderingEnabled = false;
   project.m_meshRendering.m_flatShadingEnabled = true;
+  project.m_meshRendering.m_triangleEdgesEnabled = true;
+  project.m_meshRendering.m_triangleEdgeColor = {0.1f, 0.2f, 0.3f};
   project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pbrMetallic = 0.4f;
   project.m_meshRendering.m_pbrRoughness = 0.2f;
@@ -487,6 +489,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(raycasting.at("segmentationMasking") == "maskOut");
   CHECK(mesh.at("enabled") == false);
   CHECK(mesh.at("flatShading") == true);
+  CHECK(mesh.at("triangleEdges") == true);
+  CHECK(mesh.at("triangleEdgeColor") == json::array({0.1f, 0.2f, 0.3f}));
   CHECK(mesh.at("pbr").at("enabled") == true);
   CHECK(mesh.at("pbr").at("metallic") == 0.4f);
   CHECK(mesh.at("pbr").at("roughness") == 0.2f);
@@ -574,6 +578,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
   CHECK(parsed.m_meshRendering.m_renderingEnabled == false);
   CHECK(parsed.m_meshRendering.m_flatShadingEnabled == true);
+  CHECK(parsed.m_meshRendering.m_triangleEdgesEnabled == true);
+  CHECK(parsed.m_meshRendering.m_triangleEdgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
   CHECK(parsed.m_meshRendering.m_pbrShadingEnabled == true);
   CHECK(parsed.m_meshRendering.m_pbrMetallic == 0.4f);
   CHECK(parsed.m_meshRendering.m_pbrRoughness == 0.2f);
@@ -671,6 +677,8 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskIn;
   project.m_meshRendering.m_renderingEnabled = false;
   project.m_meshRendering.m_flatShadingEnabled = true;
+  project.m_meshRendering.m_triangleEdgesEnabled = true;
+  project.m_meshRendering.m_triangleEdgeColor = {0.2f, 0.3f, 0.4f};
   project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
@@ -735,6 +743,8 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   CHECK(
     objectKeys(orderedRendering.at("mesh")) == std::vector<std::string>{
                                                  "flatShading",
+                                                 "triangleEdges",
+                                                 "triangleEdgeColor",
                                                  "pbr",
                                                  "shadows",
                                                  "ambientOcclusion",

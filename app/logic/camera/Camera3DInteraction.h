@@ -24,13 +24,6 @@ enum class DragAction
 };
 
 /**
- * @brief Check whether a mouse mode permits 3D camera interaction
- * @param mouseMode Active application mouse mode
- * @return True when 3D navigation should handle pointer drags in the mode
- */
-bool mouseModeAllowsCameraInteraction(MouseMode mouseMode) noexcept;
-
-/**
  * @brief Check whether a mouse mode permits double-click surface picking in a 3D view.
  *
  * Picking is available in the general pointer/navigation/display-adjustment modes whose double-click gesture is not

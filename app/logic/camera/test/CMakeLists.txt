@@ -1,13 +1,16 @@
 add_executable(TestCamera
+  Camera2DControlsTests.cpp
   Camera3DInteractionTests.cpp
   Camera3DControlsTests.cpp
   CameraFrustumSliceTests.cpp
+  CameraProjectionTests.cpp
   CameraRecenterTests.cpp
   RaycastIsoSurfacePickerTests.cpp
 )
 
 target_sources(TestCamera PRIVATE
   "${entropy_APP_DIR}/logic/camera/Camera.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera2DControls.cpp"
   "${entropy_APP_DIR}/logic/camera/Camera3DControls.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraFrustumSlice.cpp"
   "${entropy_APP_DIR}/logic/camera/Camera3DInteraction.cpp"

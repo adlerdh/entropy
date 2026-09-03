@@ -10,6 +10,7 @@
 #include "image/SegUtil.h"
 
 #include "logic/app/Data.h"
+#include "logic/camera/Camera2DControls.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
 #include "logic/camera/RaycastIsoSurfacePicker.h"
@@ -50,6 +51,35 @@ constexpr float viewAABBoxScaleFactor = 1.10f;
 constexpr float parallelThreshold_degrees = 0.1f;
 
 constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
+
+glm::vec2 zoomCenterNdc(
+  const AppData& appData,
+  const View& view,
+  ZoomBehavior zoomBehavior,
+  const glm::vec4& pointerWorldPosition)
+{
+  const auto projectedNdc = [&view](const glm::vec3& worldPosition) {
+    const glm::vec2 ndc{helper::ndc_T_world(view.camera(), worldPosition)};
+    return (std::isfinite(ndc.x) && std::isfinite(ndc.y)) ? ndc : glm::vec2{0.0f};
+  };
+
+  switch (zoomBehavior) {
+    case ZoomBehavior::ToCrosshairs:
+      return projectedNdc(appData.state().worldCrosshairs().worldOrigin());
+    case ZoomBehavior::ToStartPosition:
+      if (
+        !std::isfinite(pointerWorldPosition.w) ||
+        std::abs(pointerWorldPosition.w) <= std::numeric_limits<float>::epsilon())
+      {
+        return glm::vec2{0.0f};
+      }
+      return projectedNdc(glm::vec3{pointerWorldPosition / pointerWorldPosition.w});
+    case ZoomBehavior::ToViewCenter:
+      return glm::vec2{0.0f};
+  }
+
+  return glm::vec2{0.0f};
+}
 
 std::pair<std::optional<uuid>, Image*> targetTimeSeriesImage(AppData& appData)
 {
@@ -1204,7 +1234,11 @@ void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit
   const auto& viewUidToTranslate = startHit.viewUid;
 
   const auto backupCamera = viewToTranslate->camera();
-  helper::panRelativeToWorldPosition(viewToTranslate->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
+  const std::optional<glm::vec3> worldTranslation =
+    camera2d::Controller{viewToTranslate->camera()}.pan(prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
+  if (!worldTranslation) {
+    return;
+  }
 
   if (const auto transGroupUid = viewToTranslate->cameraTranslationSyncGroupUid()) {
     for (const auto& syncedViewUid :
@@ -1225,7 +1259,7 @@ void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit
             Directions::View::Back,
             parallelThreshold_degrees))
       {
-        helper::panRelativeToWorldPosition(syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
+        camera2d::Controller{syncedView->camera()}.translateWorld(*worldTranslation);
       }
     }
   }
@@ -1244,37 +1278,29 @@ void CallbackHandler::doCameraRotate2d(
 
   const auto& viewUidToRotate = startHit.viewUid;
 
-  // Only allow rotation of oblique and 3D views
-  if (ViewType::Oblique != viewToRotate->viewType() && ViewType::ThreeD != viewToRotate->viewType()) {
+  // In-plane slice-camera rotation is meaningful only for oblique views.
+  // Three-dimensional views use the dedicated orbit, eye-rotation, and roll controllers.
+  if (ViewType::Oblique != viewToRotate->viewType()) {
     return;
   }
 
-  // Point about which to rotate the view:
-  glm::vec3 worldRotationCenterPos;
-
-  switch (rotationOrigin) {
-    case RotationOrigin::Crosshairs: {
-      worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
-      break;
-    }
-    case RotationOrigin::CameraEye:
-    case RotationOrigin::ViewCenter: {
-      worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
-      break;
-    }
+  const std::optional<glm::vec3> worldRotationPivot =
+    (RotationOrigin::Crosshairs == rotationOrigin) ? std::optional{m_appData.state().worldCrosshairs().worldOrigin()}
+                                                   : std::nullopt;
+  const std::optional<glm::vec2> rotationPivot =
+    camera2d::interactionPivotNdc(viewToRotate->camera(), worldRotationPivot);
+  if (!rotationPivot) {
+    return;
   }
 
-  glm::vec4 clipRotationCenterPos =
-    helper::clip_T_world(viewToRotate->camera()) * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
-
-  clipRotationCenterPos /= clipRotationCenterPos.w;
-
   const auto backupCamera = viewToRotate->camera();
-  helper::rotateInPlane(
-    viewToRotate->camera(),
+  const std::optional<float> rotationAngle = camera2d::Controller{viewToRotate->camera()}.rotateFromPointer(
     prevHit.viewClipPos,
     currHit.viewClipPos,
-    glm::vec2{clipRotationCenterPos});
+    *rotationPivot);
+  if (!rotationAngle) {
+    return;
+  }
 
   // Rotate the synchronized views:
   if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid()) {
@@ -1299,11 +1325,11 @@ void CallbackHandler::doCameraRotate2d(
         continue;
       }
 
-      helper::rotateInPlane(
-        syncedView->camera(),
-        prevHit.viewClipPos,
-        currHit.viewClipPos,
-        glm::vec2{clipRotationCenterPos});
+      const std::optional<glm::vec2> syncedPivot =
+        camera2d::interactionPivotNdc(syncedView->camera(), worldRotationPivot);
+      if (syncedPivot) {
+        camera2d::Controller{syncedView->camera()}.rotate(*rotationAngle, *syncedPivot);
+      }
     }
   }
 }
@@ -1469,10 +1495,6 @@ void CallbackHandler::doThreeDCameraOrbit(const ViewHit& startHit, const ViewHit
   const camera3d::SceneFrame scene = threeDSceneFrameForView(m_appData, *view);
   state.m_orbitTarget = threeDTargetForView(m_appData, *view, scene);
   camera3d::orbit(view->threeDCamera(), state, prevHit.viewClipPos, currHit.viewClipPos);
-  if (state.m_viewPositionFollowsCrosshairs) {
-    state.m_crosshairsFollowOffset =
-      helper::worldOrigin(view->threeDCamera()) - m_appData.state().worldCrosshairs().worldOrigin();
-  }
 }
 
 void CallbackHandler::doThreeDCameraRotateAboutEye(
@@ -1709,8 +1731,6 @@ void CallbackHandler::doCameraZoomDrag(
   const ZoomBehavior& zoomBehavior,
   bool syncZoomForAllViews)
 {
-  const glm::vec2 ndcCenter{0.0f, 0.0f};
-
   View* viewToZoom = startHit.view;
   if (!viewToZoom) {
     return;
@@ -1718,30 +1738,10 @@ void CallbackHandler::doCameraZoomDrag(
 
   const auto& viewUidToZoom = startHit.viewUid;
 
-  auto getCenterViewClipPos = [this, &zoomBehavior, &startHit, &ndcCenter](const View* view) -> glm::vec2 {
-    glm::vec2 viewClipCenterPos{0.0f};
-
-    switch (zoomBehavior) {
-      case ZoomBehavior::ToCrosshairs: {
-        viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
-        break;
-      }
-      case ZoomBehavior::ToStartPosition: {
-        const glm::vec4 _viewClipStartPos = helper::clip_T_world(view->camera()) * startHit.worldPos;
-        viewClipCenterPos = glm::vec2{_viewClipStartPos / _viewClipStartPos.w};
-        break;
-      }
-      case ZoomBehavior::ToViewCenter: {
-        viewClipCenterPos = ndcCenter;
-        break;
-      }
-    }
-
-    return viewClipCenterPos;
-  };
-
-  const float factor = 2.0f * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f + 1.0f;
-  helper::zoomNdc(viewToZoom->camera(), factor, getCenterViewClipPos(viewToZoom));
+  const float factor = camera2d::dragZoomFactor(currHit.windowClipPos.y - prevHit.windowClipPos.y);
+  camera2d::Controller{viewToZoom->camera()}.zoom(
+    factor,
+    zoomCenterNdc(m_appData, *viewToZoom, zoomBehavior, startHit.worldPos));
 
   if (syncZoomForAllViews) {
     // Apply zoom to all other views:
@@ -1753,7 +1753,9 @@ void CallbackHandler::doCameraZoomDrag(
       if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid);
           otherView && ViewType::ThreeD != otherView->viewType())
       {
-        helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
+        camera2d::Controller{otherView->camera()}.zoom(
+          factor,
+          zoomCenterNdc(m_appData, *otherView, zoomBehavior, startHit.worldPos));
       }
     }
   }
@@ -1769,7 +1771,9 @@ void CallbackHandler::doCameraZoomDrag(
       if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
           syncedView && ViewType::ThreeD != syncedView->viewType())
       {
-        helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
+        camera2d::Controller{syncedView->camera()}.zoom(
+          factor,
+          zoomCenterNdc(m_appData, *syncedView, zoomBehavior, startHit.worldPos));
       }
     }
   }
@@ -1781,9 +1785,6 @@ void CallbackHandler::doCameraZoomScroll(
   const ZoomBehavior& zoomBehavior,
   bool syncZoomForAllViews)
 {
-  constexpr float zoomFactor = 0.01f;
-  const glm::vec2 ndcCenter{0.0f, 0.0f};
-
   if (!hit.view) {
     return;
   }
@@ -1791,31 +1792,11 @@ void CallbackHandler::doCameraZoomScroll(
   // The pointer is in the view bounds! Make this the active view
   m_appData.windowData().setActiveViewUid(hit.viewUid);
 
-  auto getCenterViewClipPos = [this, &zoomBehavior, &hit, &ndcCenter](const View* view) -> glm::vec2 {
-    glm::vec2 viewClipCenterPos{0.0f};
+  const float factor = camera2d::scrollZoomFactor(scrollOffset.y);
 
-    switch (zoomBehavior) {
-      case ZoomBehavior::ToCrosshairs: {
-        viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
-        break;
-      }
-      case ZoomBehavior::ToStartPosition: {
-        const glm::vec4 _viewClipCurrPos = helper::clip_T_world(view->camera()) * hit.worldPos;
-        viewClipCenterPos = glm::vec2{_viewClipCurrPos / _viewClipCurrPos.w};
-        break;
-      }
-      case ZoomBehavior::ToViewCenter: {
-        viewClipCenterPos = ndcCenter;
-        break;
-      }
-    }
-
-    return viewClipCenterPos;
-  };
-
-  const float factor = 1.0f + zoomFactor * scrollOffset.y;
-
-  helper::zoomNdc(hit.view->camera(), factor, getCenterViewClipPos(hit.view));
+  camera2d::Controller{hit.view->camera()}.zoom(
+    factor,
+    zoomCenterNdc(m_appData, *hit.view, zoomBehavior, hit.worldPos));
 
   if (syncZoomForAllViews) {
     // Apply zoom to all other views:
@@ -1827,7 +1808,9 @@ void CallbackHandler::doCameraZoomScroll(
       if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid);
           otherView && ViewType::ThreeD != otherView->viewType())
       {
-        helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
+        camera2d::Controller{otherView->camera()}.zoom(
+          factor,
+          zoomCenterNdc(m_appData, *otherView, zoomBehavior, hit.worldPos));
       }
     }
   }
@@ -1843,7 +1826,9 @@ void CallbackHandler::doCameraZoomScroll(
       if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
           syncedView && ViewType::ThreeD != syncedView->viewType())
       {
-        helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
+        camera2d::Controller{syncedView->camera()}.zoom(
+          factor,
+          zoomCenterNdc(m_appData, *syncedView, zoomBehavior, hit.worldPos));
       }
     }
   }
@@ -2479,7 +2464,6 @@ void CallbackHandler::doCrosshairsRotate2D(
     const glm::quat R = helper::rotation2dInCameraPlaneWithSnapping(
       viewToUse->camera(),
       startHit.viewClipPos,
-      prevHit.viewClipPos,
       currHit.viewClipPos,
       snapAngleDegrees,
       clampToleranceDegrees,

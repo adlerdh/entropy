@@ -22,9 +22,14 @@ namespace
 constexpr float k_minSceneSize = 1.0e-4f;
 constexpr float k_minCameraDistance = k_minSceneSize;
 constexpr float k_minScrollDistance = k_minSceneSize;
-constexpr float k_defaultOrbitDistanceScale = 0.75f;
+constexpr float k_defaultOrbitDistanceScale = 1.0f;
 constexpr float k_minPanDistanceScale = 0.25f;
-constexpr float k_nearVoxelDiagonalFraction = 0.5f;
+constexpr float k_framePadding = 1.02f;
+// Permit close inspection without choosing a fixed world-space distance that is
+// inappropriate for either microscopic or very large images. Keeping the floor
+// nonzero and tied to sampling scale also limits the loss of perspective depth
+// precision when the camera enters the scene.
+constexpr float k_nearVoxelDiagonalFraction = 0.05f;
 constexpr float k_clipPlaneVoxelMarginFraction = 1.0f;
 constexpr float k_perspectiveScrollScale = 0.01f;
 constexpr float k_orthographicScrollScale = 0.22f;
@@ -36,9 +41,24 @@ float finiteAbs(float value)
   return std::isfinite(value) ? std::abs(value) : 0.0f;
 }
 
+bool finite(const glm::vec2& value)
+{
+  return std::isfinite(value.x) && std::isfinite(value.y);
+}
+
+bool finite(const glm::vec3& value)
+{
+  return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+}
+
 glm::vec3 safeSceneSize(const glm::vec3& size)
 {
   return glm::vec3{finiteAbs(size.x), finiteAbs(size.y), finiteAbs(size.z)};
+}
+
+glm::vec3 safeSceneCenter(const glm::vec3& center)
+{
+  return finite(center) ? center : glm::vec3{0.0f};
 }
 
 glm::vec3 worldCameraRight(const Camera& camera)
@@ -95,7 +115,8 @@ float distanceToTarget(const Camera& camera, const glm::vec3& target)
 AABB<float> sceneAabb(const camera3d::SceneFrame& scene)
 {
   const glm::vec3 halfSize = 0.5f * safeSceneSize(scene.m_size);
-  return {scene.m_center - halfSize, scene.m_center + halfSize};
+  const glm::vec3 center = safeSceneCenter(scene.m_center);
+  return {center - halfSize, center + halfSize};
 }
 
 std::array<glm::vec3, 8> sceneAabbCorners(const camera3d::SceneFrame& scene)
@@ -111,6 +132,37 @@ std::array<glm::vec3, 8> sceneAabbCorners(const camera3d::SceneFrame& scene)
     {boxMin.x, boxMax.y, boxMax.z},
     {boxMax.x, boxMax.y, boxMax.z},
   }};
+}
+
+float distanceThatFramesScene(const Camera& camera, const camera3d::SceneFrame& scene, const glm::vec3& target)
+{
+  const camera3d::SceneMetrics metrics = camera3d::sceneMetrics(scene);
+  const glm::vec3 front = worldCameraFront(camera);
+  float requiredDistance = k_minCameraDistance;
+
+  if (camera.isOrthographic()) {
+    for (const glm::vec3& corner : sceneAabbCorners(scene)) {
+      const float frontOffset = glm::dot(corner - target, front);
+      requiredDistance = std::max(requiredDistance, metrics.m_voxelDiagonal - frontOffset);
+    }
+    return requiredDistance;
+  }
+
+  const float tangentVertical = std::max(std::tan(0.5f * camera.angle()), k_minSceneSize);
+  const float tangentHorizontal = std::max(tangentVertical * camera.aspectRatio(), k_minSceneSize);
+  const glm::vec3 right = worldCameraRight(camera);
+  const glm::vec3 up = worldCameraUp(camera);
+
+  for (const glm::vec3& corner : sceneAabbCorners(scene)) {
+    const glm::vec3 offset = corner - target;
+    const float frontOffset = glm::dot(offset, front);
+    requiredDistance = std::max(
+      {requiredDistance,
+       k_framePadding * std::abs(glm::dot(offset, right)) / tangentHorizontal - frontOffset,
+       k_framePadding * std::abs(glm::dot(offset, up)) / tangentVertical - frontOffset,
+       metrics.m_voxelDiagonal - frontOffset});
+  }
+  return requiredDistance;
 }
 
 std::optional<glm::vec3>
@@ -197,7 +249,7 @@ float zoomForProjection(const camera3d::State& state, ProjectionType projectionT
 
 void saveCurrentProjectionZoom(const Camera& camera, camera3d::State& state)
 {
-  if (ProjectionType::Orthographic == state.m_projectionType) {
+  if (camera.isOrthographic()) {
     state.m_orthographicZoom = camera.getZoom();
   }
   else {
@@ -207,12 +259,15 @@ void saveCurrentProjectionZoom(const Camera& camera, camera3d::State& state)
 
 void applyPanTranslation(Camera& camera, camera3d::State& state, const glm::vec3& worldTranslation)
 {
+  if (!finite(worldTranslation) || glm::length(worldTranslation) < 1.0e-6f) {
+    return;
+  }
+
   helper::translateAboutCamera(camera, glm::vec3{camera.camera_T_world() * glm::vec4{worldTranslation, 0.0f}});
   state.m_orbitTarget += worldTranslation;
   if (state.m_viewPositionFollowsCrosshairs) {
     state.m_crosshairsFollowOffset += worldTranslation;
   }
-  state.m_orbitDistance = distanceToTarget(camera, state.m_orbitTarget);
   camera3d::markUserMoved(state);
 }
 
@@ -233,7 +288,7 @@ namespace camera3d
 SceneFrame sceneFrameFromAABB(const AABB<float>& worldBox)
 {
   return SceneFrame{
-    .m_center = math::computeAABBoxCenter(worldBox),
+    .m_center = safeSceneCenter(math::computeAABBoxCenter(worldBox)),
     .m_size = safeSceneSize(math::computeAABBoxSize(worldBox)),
     .m_voxelDiagonal = 1.0f};
 }
@@ -262,23 +317,25 @@ SceneMetrics sceneMetrics(const SceneFrame& scene)
     .m_diagonal = diagonal,
     .m_voxelDiagonal = voxelDiagonal,
     .m_defaultOrbitDistance = std::max(k_defaultOrbitDistanceScale * diagonal, k_minCameraDistance),
-    .m_minTargetDistance = std::max(0.55f * diagonal, k_minCameraDistance),
     .m_minPanDistance = std::max(k_minPanDistanceScale * diagonal, k_minCameraDistance),
     .m_scrollDistance = std::max(k_perspectiveScrollScale * diagonal, k_minScrollDistance),
-    .m_defaultFov = glm::vec2{std::max(glm::compMax(size), k_minSceneSize)}};
+    // A square field spanning the scene diagonal remains valid after arbitrary
+    // camera rotations and avoids projection-dependent scale changes while orbiting.
+    .m_defaultFov = glm::vec2{diagonal}};
 }
 
 Pose defaultCoronalPose(const SceneFrame& scene)
 {
   const SceneMetrics metrics = sceneMetrics(scene);
+  const glm::vec3 center = safeSceneCenter(scene.m_center);
   return Pose{
-    .m_eye = scene.m_center + metrics.m_defaultOrbitDistance * Directions::get(Directions::Cartesian::NegY),
+    .m_eye = center + metrics.m_defaultOrbitDistance * Directions::get(Directions::Cartesian::NegY),
     .m_right = Directions::get(Directions::Cartesian::PosX),
     .m_up = Directions::get(Directions::Cartesian::PosZ),
     .m_back = Directions::get(Directions::Cartesian::NegY)};
 }
 
-void configureClipPlanes(Camera& camera, const SceneFrame& scene, float)
+void configureClipPlanes(Camera& camera, const SceneFrame& scene)
 {
   const SceneMetrics metrics = sceneMetrics(scene);
   const float diagonal = metrics.m_diagonal;
@@ -298,11 +355,7 @@ void configureClipPlanes(Camera& camera, const SceneFrame& scene, float)
   const float nearDistance = std::max(minNearDistance, minDepth - voxelMargin);
   const float farDistance = std::max(maxDepth + voxelMargin, nearDistance + diagonal);
 
-  if (nearDistance >= camera.farDistance()) {
-    camera.setFarDistance(nearDistance + diagonal);
-  }
-  camera.setNearDistance(nearDistance);
-  camera.setFarDistance(farDistance);
+  camera.setClipDistances(nearDistance, farDistance);
 }
 
 void setDefaultCoronalPose(Camera& camera, State& state, const SceneFrame& scene)
@@ -312,7 +365,11 @@ void setDefaultCoronalPose(Camera& camera, State& state, const SceneFrame& scene
 
 void resetView(Camera& camera, State& state, const SceneFrame& scene, const glm::vec3& target)
 {
-  const ProjectionType projectionType = state.m_projectionType;
+  if (!finite(target)) {
+    return;
+  }
+
+  const ProjectionType projectionType = camera.projection()->type();
   const OrbitTargetMode orbitTargetMode = state.m_orbitTargetMode;
   const bool followsCrosshairs = state.m_viewPositionFollowsCrosshairs;
   const float aspectRatio = camera.aspectRatio();
@@ -339,6 +396,9 @@ void recenterFollowing(
   const glm::vec3& crosshairs,
   const glm::vec3& orbitTarget)
 {
+  if (!finite(crosshairs) || !finite(orbitTarget)) {
+    return;
+  }
   Controller{camera, state}.recenterFollowing(scene, crosshairs, orbitTarget);
 }
 
@@ -349,7 +409,11 @@ void resetFollowing(
   const glm::vec3& crosshairs,
   const glm::vec3& orbitTarget)
 {
-  const ProjectionType projectionType = state.m_projectionType;
+  if (!finite(crosshairs) || !finite(orbitTarget)) {
+    return;
+  }
+
+  const ProjectionType projectionType = camera.projection()->type();
   const OrbitTargetMode orbitTargetMode = state.m_orbitTargetMode;
   const float aspectRatio = camera.aspectRatio();
 
@@ -406,6 +470,13 @@ void panOnSceneAabbPlane(
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos)
 {
+  if (!finite(ndcStartPos) || !finite(ndcOldPos) || !finite(ndcNewPos)) {
+    return;
+  }
+  if (glm::length(ndcNewPos - ndcOldPos) < 1.0e-6f) {
+    return;
+  }
+
   if (camera.isOrthographic()) {
     panOrthographic(camera, state, ndcOldPos, ndcNewPos);
     state.m_panDragStartNdc = std::nullopt;
@@ -414,7 +485,8 @@ void panOnSceneAabbPlane(
     return;
   }
 
-  if (!sameDragStart(state.m_panDragStartNdc, ndcStartPos)) {
+  const bool firstDragUpdate = glm::length(ndcOldPos - ndcStartPos) < 1.0e-6f;
+  if (firstDragUpdate || !sameDragStart(state.m_panDragStartNdc, ndcStartPos)) {
     state.m_panDragStartNdc = ndcStartPos;
     state.m_panPlanePoint = pickPanPlanePoint(camera, scene, ndcStartPos, state.m_minPanDistance);
     state.m_panPlaneNormal = worldCameraFront(camera);
@@ -459,18 +531,23 @@ void markUserMoved(State& state)
   state.m_userMovedCamera = true;
 }
 
-Controller::Controller(Camera& camera, State& state) : m_camera(camera), m_state(state) {}
+Controller::Controller(Camera& camera, State& state) : m_camera(camera), m_state(state)
+{
+  m_state.m_projectionType = m_camera.projection()->type();
+  if (m_camera.isOrthographic()) {
+    m_state.m_viewPositionFollowsCrosshairs = false;
+  }
+}
 
 void Controller::initializeDefaultPose(const SceneFrame& scene)
 {
   const SceneMetrics metrics = sceneMetrics(scene);
   const Pose pose = defaultCoronalPose(scene);
+  const glm::vec3 center = safeSceneCenter(scene.m_center);
   const float perspectiveZoom = m_state.m_perspectiveZoom;
   const float orthographicZoom = m_state.m_orthographicZoom;
 
-  m_state.m_orbitTarget = scene.m_center;
-  m_state.m_orbitDistance = metrics.m_defaultOrbitDistance;
-  m_state.m_minTargetDistance = metrics.m_minTargetDistance;
+  m_state.m_orbitTarget = center;
   m_state.m_minPanDistance = metrics.m_minPanDistance;
   m_state.m_scrollDistance = metrics.m_scrollDistance;
   m_state.m_panDragStartNdc = std::nullopt;
@@ -482,27 +559,29 @@ void Controller::initializeDefaultPose(const SceneFrame& scene)
   m_camera.setDefaultFov(metrics.m_defaultFov);
   m_camera.setZoom(zoomForProjection(m_state, m_state.m_projectionType));
   setCameraPose(m_camera, pose.m_eye, pose.m_right, pose.m_up, pose.m_back);
-  configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
+  setCameraTargetPreservingOrientation(m_camera, center, distanceThatFramesScene(m_camera, scene, center));
+  configureClipPlanes(m_camera, scene);
 }
 
 void Controller::updateScene(const SceneFrame& scene)
 {
   const SceneMetrics metrics = sceneMetrics(scene);
-  m_state.m_minTargetDistance = metrics.m_minTargetDistance;
   m_state.m_minPanDistance = metrics.m_minPanDistance;
   m_state.m_scrollDistance = metrics.m_scrollDistance;
-  configureClipPlanes(m_camera, scene, distanceToTarget(m_camera, m_state.m_orbitTarget));
+  configureClipPlanes(m_camera, scene);
 }
 
 void Controller::recenter(const SceneFrame& scene, const glm::vec3& target)
 {
+  if (!finite(target)) {
+    return;
+  }
+
   const SceneMetrics metrics = sceneMetrics(scene);
   const float perspectiveZoom = m_state.m_perspectiveZoom;
   const float orthographicZoom = m_state.m_orthographicZoom;
   m_state.m_orbitTarget = target;
   m_state.m_crosshairsFollowOffset = glm::vec3{0.0f};
-  m_state.m_orbitDistance = metrics.m_defaultOrbitDistance;
-  m_state.m_minTargetDistance = metrics.m_minTargetDistance;
   m_state.m_minPanDistance = metrics.m_minPanDistance;
   m_state.m_scrollDistance = metrics.m_scrollDistance;
   m_state.m_perspectiveZoom = perspectiveZoom;
@@ -513,20 +592,23 @@ void Controller::recenter(const SceneFrame& scene, const glm::vec3& target)
     setCameraPose(m_camera, target, worldCameraRight(m_camera), worldCameraUp(m_camera), worldCameraBack(m_camera));
   }
   else {
-    setCameraTargetPreservingOrientation(m_camera, target, m_state.m_orbitDistance);
+    setCameraTargetPreservingOrientation(m_camera, target, distanceThatFramesScene(m_camera, scene, target));
   }
-  configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
+  configureClipPlanes(m_camera, scene);
   m_state.m_userMovedCamera = false;
 }
 
 void Controller::recenterFollowing(const SceneFrame& scene, const glm::vec3& crosshairs, const glm::vec3& orbitTarget)
 {
+  if (!finite(crosshairs) || !finite(orbitTarget)) {
+    return;
+  }
+
   const SceneMetrics metrics = sceneMetrics(scene);
   const float perspectiveZoom = m_state.m_perspectiveZoom;
   const float orthographicZoom = m_state.m_orthographicZoom;
   m_state.m_orbitTarget = orbitTarget;
   m_state.m_crosshairsFollowOffset = glm::vec3{0.0f};
-  m_state.m_minTargetDistance = metrics.m_minTargetDistance;
   m_state.m_minPanDistance = metrics.m_minPanDistance;
   m_state.m_scrollDistance = metrics.m_scrollDistance;
   m_state.m_perspectiveZoom = perspectiveZoom;
@@ -534,14 +616,13 @@ void Controller::recenterFollowing(const SceneFrame& scene, const glm::vec3& cro
   m_camera.setDefaultFov(metrics.m_defaultFov);
   m_camera.setZoom(zoomForProjection(m_state, m_state.m_projectionType));
   setCameraPose(m_camera, crosshairs, worldCameraRight(m_camera), worldCameraUp(m_camera), worldCameraBack(m_camera));
-  m_state.m_orbitDistance = distanceToTarget(m_camera, m_state.m_orbitTarget);
-  configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
+  configureClipPlanes(m_camera, scene);
   m_state.m_userMovedCamera = false;
 }
 
 void Controller::setProjection(ProjectionType projectionType)
 {
-  if (projectionType == m_state.m_projectionType) {
+  if (projectionType == m_state.m_projectionType && projectionType == m_camera.projection()->type()) {
     return;
   }
 
@@ -549,8 +630,7 @@ void Controller::setProjection(ProjectionType projectionType)
   auto projection = helper::createCameraProjection(projectionType);
   projection->setAspectRatio(m_camera.aspectRatio());
   projection->setDefaultFov(m_camera.projection()->defaultFov());
-  projection->setNearDistance(m_camera.nearDistance());
-  projection->setFarDistance(m_camera.farDistance());
+  projection->setClipDistances(m_camera.nearDistance(), m_camera.farDistance());
   projection->setZoom(zoomForProjection(m_state, projectionType));
   m_camera.setProjection(std::move(projection));
   m_state.m_projectionType = projectionType;
@@ -562,26 +642,41 @@ void Controller::setProjection(ProjectionType projectionType)
 
 void Controller::orbit(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos)
 {
+  if (!finite(ndcOldPos) || !finite(ndcNewPos) || glm::length(ndcNewPos - ndcOldPos) < 1.0e-6f) {
+    return;
+  }
+
+  const glm::vec3 oldEye = helper::worldOrigin(m_camera);
   helper::rotateAboutWorldPoint(m_camera, ndcOldPos, ndcNewPos, m_state.m_orbitTarget);
-  m_state.m_orbitDistance = distanceToTarget(m_camera, m_state.m_orbitTarget);
+  if (m_state.m_viewPositionFollowsCrosshairs) {
+    m_state.m_crosshairsFollowOffset += helper::worldOrigin(m_camera) - oldEye;
+  }
   markUserMoved(m_state);
 }
 
 void Controller::rotateAboutEye(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos)
 {
+  if (!finite(ndcOldPos) || !finite(ndcNewPos) || glm::length(ndcNewPos - ndcOldPos) < 1.0e-6f) {
+    return;
+  }
   helper::rotateAboutCameraOrigin(m_camera, ndcOldPos, ndcNewPos);
-  m_state.m_orbitDistance = distanceToTarget(m_camera, m_state.m_orbitTarget);
   markUserMoved(m_state);
 }
 
 void Controller::roll(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos)
 {
+  if (!finite(ndcOldPos) || !finite(ndcNewPos) || glm::length(ndcNewPos - ndcOldPos) < 1.0e-6f) {
+    return;
+  }
   helper::rotateInPlane(m_camera, ndcOldPos, ndcNewPos, glm::vec2{0.0f});
   markUserMoved(m_state);
 }
 
 void Controller::pan(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos)
 {
+  if (!finite(ndcOldPos) || !finite(ndcNewPos) || glm::length(ndcNewPos - ndcOldPos) < 1.0e-6f) {
+    return;
+  }
   const float panDistance = std::max(distanceToTarget(m_camera, m_state.m_orbitTarget), m_state.m_minPanDistance);
   const glm::vec3 panPlaneTarget = helper::worldOrigin(m_camera) + panDistance * worldCameraFront(m_camera);
   const float ndcZ = helper::ndcZofWorldPoint(m_camera, panPlaneTarget);
@@ -591,9 +686,13 @@ void Controller::pan(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos)
 
 void Controller::scroll(const glm::vec2& ndcPos, float scrollDelta, bool faster, bool adjustPerspectiveFov)
 {
+  if (!finite(ndcPos) || !std::isfinite(scrollDelta) || std::abs(scrollDelta) < 1.0e-6f) {
+    return;
+  }
+
   const float multiplier = faster ? k_fastMultiplier : 1.0f;
 
-  if (ProjectionType::Orthographic == m_state.m_projectionType) {
+  if (m_camera.isOrthographic()) {
     helper::zoomNdcDelta(m_camera, multiplier * k_orthographicScrollScale * scrollDelta, ndcPos);
     m_state.m_orthographicZoom = m_camera.getZoom();
   }
@@ -608,14 +707,13 @@ void Controller::scroll(const glm::vec2& ndcPos, float scrollDelta, bool faster,
     if (m_state.m_viewPositionFollowsCrosshairs) {
       m_state.m_crosshairsFollowOffset += glm::vec3{m_camera.world_T_camera() * glm::vec4{cameraVec, 0.0f}};
     }
-    m_state.m_orbitDistance = distanceToTarget(m_camera, m_state.m_orbitTarget);
   }
   markUserMoved(m_state);
 }
 
 void Controller::followCrosshairs(const glm::vec3& crosshairs)
 {
-  if (!m_state.m_viewPositionFollowsCrosshairs) {
+  if (!m_state.m_viewPositionFollowsCrosshairs || !finite(crosshairs)) {
     return;
   }
 

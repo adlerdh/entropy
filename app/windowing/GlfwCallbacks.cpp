@@ -263,6 +263,9 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
 
   if (!s_startHit) {
     s_startHit = getViewHit(app->appData(), windowCurrentPos);
+    if (!s_startHit) {
+      return;
+    }
   }
 
   View* startView = s_startHit->view;

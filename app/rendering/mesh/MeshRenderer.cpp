@@ -301,7 +301,6 @@ void MeshRenderer::drawBucket(
   program.setUniform("u_lightingDiffuse", context.lighting.y);
   program.setUniform("u_lightingSpecular", context.lighting.z);
   program.setUniform("u_lightingSpecularPower", context.lighting.w);
-  program.setUniform("u_flatShadingEnabled", context.flatShadingEnabled);
   uploadShadowUniforms(context, program);
   uploadAmbientOcclusionUniforms(context, program);
 
@@ -324,6 +323,9 @@ void MeshRenderer::drawBucket(
     program.setUniform("u_roughness", material.roughness);
     program.setUniform("u_ambientOcclusion", material.ambientOcclusion);
     program.setUniform("u_shadingModel", shaderValue(material.shadingModel));
+    program.setUniform("u_flatShadingEnabled", material.flatShadingEnabled);
+    program.setUniform("u_triangleEdgesEnabled", material.triangleEdgesEnabled);
+    program.setUniform("u_triangleEdgeColor", material.triangleEdgeColor);
     program.setUniform("u_rimLightingEnabled", material.rimLightingEnabled);
     program.setUniform("u_rimOpacityStrength", material.rimOpacityStrength);
     program.setUniform("u_rimEmissionStrength", material.rimEmissionStrength);

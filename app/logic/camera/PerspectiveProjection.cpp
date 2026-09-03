@@ -4,6 +4,8 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <cmath>
+
 namespace
 {
 constexpr float k_initAngle = glm::pi<float>() / 3.0f;
@@ -23,7 +25,7 @@ glm::mat4 PerspectiveProjection::clip_T_camera() const
 
 void PerspectiveProjection::setZoom(float factor)
 {
-  if (factor > 0.0f) {
+  if (std::isfinite(factor) && factor > 0.0f) {
     m_zoom = glm::clamp(factor, k_initAngle / k_maxAngle, k_initAngle / k_minAngle);
   }
 }

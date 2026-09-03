@@ -666,7 +666,6 @@ Layout instantiateLayoutSpec(
     view->setDefaultRenderAllImages(normalizedViewSpec.m_defaultRenderAllImages);
     applyImageSelectionSpec(*view, orderedImageUids, normalizedViewSpec.m_imageSelection);
     view->setThreeDProjectionType(projectionTypeFromInt(normalizedViewSpec.m_threeDProjectionType));
-    view->threeDState().m_projectionType = projectionTypeFromInt(normalizedViewSpec.m_threeDProjectionType);
     view->threeDState().m_orbitTargetMode = orbitTargetModeFromInt(normalizedViewSpec.m_threeDOrbitTargetMode);
     view->threeDState().m_viewPositionFollowsCrosshairs =
       ProjectionType::Perspective == view->threeDState().m_projectionType &&

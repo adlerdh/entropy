@@ -59,3 +59,22 @@ TEST_CASE("camera sync groups ignore missing optional group UIDs", "[viewer][cam
   REQUIRE(group != nullptr);
   CHECK(group->empty());
 }
+
+TEST_CASE("camera sync group membership is unique and idempotent per mode", "[viewer][camera_sync_groups]")
+{
+  viewer::CameraSyncGroups groups;
+  const auto firstGroupUid = groups.addGroup(CameraSyncMode::Zoom);
+  const auto secondGroupUid = groups.addGroup(CameraSyncMode::Zoom);
+  const auto viewUid = uuidFromIndex(1);
+
+  groups.addViewToGroup(CameraSyncMode::Zoom, firstGroupUid, viewUid);
+  groups.addViewToGroup(CameraSyncMode::Zoom, firstGroupUid, viewUid);
+  REQUIRE(groups.group(CameraSyncMode::Zoom, firstGroupUid));
+  CHECK(groups.group(CameraSyncMode::Zoom, firstGroupUid)->size() == 1);
+
+  groups.addViewToGroup(CameraSyncMode::Zoom, secondGroupUid, viewUid);
+  CHECK(groups.group(CameraSyncMode::Zoom, firstGroupUid)->empty());
+  REQUIRE(groups.group(CameraSyncMode::Zoom, secondGroupUid));
+  CHECK(*groups.group(CameraSyncMode::Zoom, secondGroupUid) == viewer::CameraSyncGroups::Group{viewUid});
+  CHECK(groups.groupUidContainingView(CameraSyncMode::Zoom, viewUid) == std::optional{secondGroupUid});
+}

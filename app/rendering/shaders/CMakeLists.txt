@@ -29,6 +29,8 @@ set(entropy_SHADERS
   mesh/MeshImagePlane.vs
   mesh/Mesh.fs
   mesh/Mesh.vs
+  mesh/MeshEdges.gs
+  mesh/MeshEdges.vs
   mesh/MeshDdpBackBlend.fs
   mesh/MeshDdpInit.fs
   mesh/MeshDdpPeel.fs

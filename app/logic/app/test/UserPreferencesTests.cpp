@@ -168,6 +168,8 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.lightingSpecular = 0.51f;
   preferences.lightingSpecularPower = 48.0f;
   preferences.meshFlatShadingEnabled = true;
+  preferences.meshTriangleEdgesEnabled = true;
+  preferences.meshTriangleEdgeColor = {0.1f, 0.2f, 0.3f};
   preferences.meshPbrShadingEnabled = true;
   preferences.meshPbrMetallic = 0.4f;
   preferences.meshPbrRoughness = 0.2f;
@@ -389,6 +391,8 @@ void requireRenderPreferencesEqual(
   CHECK(actual.lightingSpecular == Catch::Approx(expected.lightingSpecular));
   CHECK(actual.lightingSpecularPower == Catch::Approx(expected.lightingSpecularPower));
   CHECK(actual.meshFlatShadingEnabled == expected.meshFlatShadingEnabled);
+  CHECK(actual.meshTriangleEdgesEnabled == expected.meshTriangleEdgesEnabled);
+  CHECK(actual.meshTriangleEdgeColor == expected.meshTriangleEdgeColor);
   CHECK(actual.meshPbrShadingEnabled == expected.meshPbrShadingEnabled);
   CHECK(actual.meshPbrMetallic == Catch::Approx(expected.meshPbrMetallic));
   CHECK(actual.meshPbrRoughness == Catch::Approx(expected.meshPbrRoughness));
@@ -837,6 +841,11 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("rendering").contains("asciiShading"));
   CHECK_FALSE(root.at("rendering").contains("frameRate"));
   CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
+  CHECK(
+    root.at("rendering").at("mesh").at("triangleEdgeColor") == json::array(
+                                                                 {renderPreferences.meshTriangleEdgeColor.x,
+                                                                  renderPreferences.meshTriangleEdgeColor.y,
+                                                                  renderPreferences.meshTriangleEdgeColor.z}));
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
   CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));

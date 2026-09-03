@@ -77,7 +77,17 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
     preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
   }
   else if (path == "rendering/mesh") {
-    preferredKeys = {"pbr", "shadows", "ambientOcclusion", "rimLighting", "smoothing", "pointPicking", "clipPlane"};
+    preferredKeys = {
+      "flatShading",
+      "triangleEdges",
+      "triangleEdgeColor",
+      "pbr",
+      "shadows",
+      "ambientOcclusion",
+      "rimLighting",
+      "smoothing",
+      "pointPicking",
+      "clipPlane"};
   }
   else if (path == "rendering/mesh/smoothing") {
     preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};
@@ -532,6 +542,8 @@ json toJson(
           {"specularPower", renderPreferences.imagePlaneLightingSpecularPower}}}}},
       {"mesh",
        {{"flatShading", renderPreferences.meshFlatShadingEnabled},
+        {"triangleEdges", renderPreferences.meshTriangleEdgesEnabled},
+        {"triangleEdgeColor", vec3ToJson(renderPreferences.meshTriangleEdgeColor)},
         {"pbr",
          {{"enabled", renderPreferences.meshPbrShadingEnabled},
           {"metallic", renderPreferences.meshPbrMetallic},
@@ -854,6 +866,12 @@ void applyJson(
     }
     if (const auto mesh = rendering->find("mesh"); mesh != rendering->end() && mesh->is_object()) {
       setFromJson(renderPreferences.meshFlatShadingEnabled, *mesh, "flatShading");
+      setFromJson(renderPreferences.meshTriangleEdgesEnabled, *mesh, "triangleEdges");
+      setVec3FromJson(renderPreferences.meshTriangleEdgeColor, *mesh, "triangleEdgeColor");
+      renderPreferences.meshTriangleEdgeColor =
+        glm::clamp(renderPreferences.meshTriangleEdgeColor, glm::vec3{0.0f}, glm::vec3{1.0f});
+      renderPreferences.meshFlatShadingEnabled =
+        renderPreferences.meshFlatShadingEnabled || renderPreferences.meshTriangleEdgesEnabled;
       if (const auto pbr = mesh->find("pbr"); pbr != mesh->end() && pbr->is_object()) {
         setFromJson(renderPreferences.meshPbrShadingEnabled, *pbr, "enabled");
         setFloatFromJson(renderPreferences.meshPbrMetallic, *pbr, "metallic", 0.0f, 1.0f);

@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <cmath>
 #include <utility>
 
 namespace
@@ -48,7 +49,7 @@ glm::mat4 OrthographicProjection::clip_T_camera() const
 
 void OrthographicProjection::setZoom(float factor)
 {
-  if (factor > 0.0f) {
+  if (std::isfinite(factor) && factor > 0.0f) {
     m_zoom = glm::clamp(factor, sk_minMaxZoomFactors.first, sk_minMaxZoomFactors.second);
   }
 }

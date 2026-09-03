@@ -112,6 +112,8 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_ambientOcclusion", UniformType::Float, 1.0f);
   uniforms.insertUniform("u_shadingModel", UniformType::Int, 0);
   uniforms.insertUniform("u_flatShadingEnabled", UniformType::Bool, false);
+  uniforms.insertUniform("u_triangleEdgesEnabled", UniformType::Bool, false);
+  uniforms.insertUniform("u_triangleEdgeColor", UniformType::Vec3, glm::vec3{0.0f});
   uniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);
   uniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.50f);
   uniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.20f);
@@ -286,6 +288,14 @@ bool Rendering::createMeshProgram(GLShaderProgram& program)
   return linkMeshProgram(program);
 }
 
+bool Rendering::createMeshEdgesProgram(GLShaderProgram& program)
+{
+  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
+  attachShaderFile(program, ShaderType::Fragment, "app/rendering/shaders/mesh/Mesh.fs", meshFragmentUniforms());
+  return linkMeshProgram(program);
+}
+
 bool Rendering::createMeshShadowDepthProgram(GLShaderProgram& program)
 {
   attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
@@ -429,6 +439,18 @@ bool Rendering::createMeshDdpPeelProgram(GLShaderProgram& program)
   fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 1, k_optionalUniform);
 
   attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Fragment, "app/rendering/shaders/mesh/MeshDdpPeel.fs", std::move(fsUniforms));
+  return linkMeshProgram(program);
+}
+
+bool Rendering::createMeshDdpPeelEdgesProgram(GLShaderProgram& program)
+{
+  Uniforms fsUniforms = meshFragmentUniforms();
+  fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 0, k_optionalUniform);
+  fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 1, k_optionalUniform);
+
+  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
   attachShaderFile(program, ShaderType::Fragment, "app/rendering/shaders/mesh/MeshDdpPeel.fs", std::move(fsUniforms));
   return linkMeshProgram(program);
 }

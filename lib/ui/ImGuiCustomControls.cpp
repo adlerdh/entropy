@@ -46,7 +46,7 @@ bool IconButton(const char* label, const ImVec2& size)
     return pressed;
   }
 
-  ImFontGlyph* const glyph = GetFontBaked()->FindGlyph(static_cast<ImWchar>(codepoint));
+  const ImFontGlyph* const glyph = GetFontBaked()->FindGlyph(static_cast<ImWchar>(codepoint));
   if (glyph == nullptr || !glyph->Visible) {
     return pressed;
   }

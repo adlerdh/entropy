@@ -173,6 +173,7 @@ Rendering::Rendering(AppData& appData)
   , m_raycastIsoProgram("RaycastIsoSurfaceProgram")
   , m_raycastIsoWarpedProgram("RaycastIsoSurfaceWarpedProgram")
   , m_meshProgram("MeshSimpleLitProgram")
+  , m_meshEdgesProgram("MeshEdgesProgram")
   , m_meshShadowDepthProgram("MeshShadowDepthProgram")
   , m_meshAmbientOcclusionGeometryProgram("MeshAmbientOcclusionGeometryProgram")
   , m_meshAmbientOcclusionResolveProgram("MeshAmbientOcclusionResolveProgram")
@@ -187,6 +188,7 @@ Rendering::Rendering(AppData& appData)
   , m_meshImagePlaneDdpPeelTexture2DProgram("MeshImagePlaneDdpPeelTexture2DProgram")
   , m_meshDdpInitProgram("MeshDdpInitProgram")
   , m_meshDdpPeelProgram("MeshDdpPeelProgram")
+  , m_meshDdpPeelEdgesProgram("MeshDdpPeelEdgesProgram")
   , m_meshDdpBackBlendProgram("MeshDdpBackBlendProgram")
   , m_meshDdpResolveProgram("MeshDdpResolveProgram")
   , m_meshRenderer()
@@ -463,13 +465,13 @@ void Rendering::renderImageData()
     }
     else if (ViewType::ThreeD == view->viewType()) {
       const camera3d::SceneFrame scene = threeDSceneForView(*view);
-      camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
+      camera3d::Controller controller{view->threeDCamera(), view->threeDState()};
       if (view->threeDState().m_viewPositionFollowsCrosshairs) {
-        camera3d::followCrosshairs(
-          view->threeDCamera(),
-          view->threeDState(),
-          m_appData.state().worldCrosshairs().worldOrigin());
+        controller.followCrosshairs(m_appData.state().worldCrosshairs().worldOrigin());
       }
+      // Configure clipping after all camera motion so that a crosshairs-follow
+      // update cannot leave the projection using the previous frame's depths.
+      controller.updateScene(scene);
     }
 
     // Offset the crosshairs according to the image slice in the view

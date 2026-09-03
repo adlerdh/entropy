@@ -3,6 +3,7 @@
 #include <glm/vec3.hpp>
 
 #include <array>
+#include <optional>
 #include <vector>
 
 class Camera;
@@ -35,7 +36,8 @@ struct FrustumSliceSegment
  */
 struct FrustumSliceOverlay
 {
-  glm::vec3 eye{0.0f};
+  /** Camera eye for perspective projections; absent for direction-only orthographic projections. */
+  std::optional<glm::vec3> eye = std::nullopt;
   std::vector<FrustumSliceSegment> segments;
 };
 

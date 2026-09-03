@@ -50,7 +50,10 @@ public:
   std::optional<uuid> groupUidContainingView(CameraSyncMode mode, const uuid& viewUid) const;
 
   /**
-   * @brief Add a view to a group if the group UID is present and exists.
+   * @brief Add a view to one group for a synchronization mode.
+   *
+   * Existing membership in another group for the same mode is removed, and
+   * adding the same view repeatedly is idempotent.
    *
    * @param mode Camera property synchronized by the group.
    * @param groupUid Optional group UID to join.

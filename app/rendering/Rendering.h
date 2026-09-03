@@ -370,6 +370,8 @@ private:
 
   GLShaderProgram m_meshProgram; //!< Basic lit mesh shader program
 
+  GLShaderProgram m_meshEdgesProgram; //!< Lit mesh shader with anti-aliased triangle topology edges
+
   GLShaderProgram m_meshShadowDepthProgram; //!< Depth-only mesh shader for shadow-map generation
 
   GLShaderProgram m_meshAmbientOcclusionGeometryProgram; //!< Mesh normal/depth shader for screen-space AO
@@ -399,6 +401,8 @@ private:
   GLShaderProgram m_meshDdpInitProgram; //!< Mesh DDP attachment initialization shader
 
   GLShaderProgram m_meshDdpPeelProgram; //!< Mesh DDP per-layer peeling shader
+
+  GLShaderProgram m_meshDdpPeelEdgesProgram; //!< Mesh DDP peeling shader with triangle topology edges
 
   GLShaderProgram m_meshDdpBackBlendProgram; //!< Mesh DDP back-color accumulation shader
 

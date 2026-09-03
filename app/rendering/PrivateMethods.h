@@ -33,6 +33,9 @@ static bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
  */
 static bool createMeshProgram(GLShaderProgram& program);
 
+/** @brief Compile and link the mesh program that emits anti-aliased triangle topology coordinates. */
+static bool createMeshEdgesProgram(GLShaderProgram& program);
+
 /**
  * @brief Compile and link the mesh shadow-map depth shader program.
  *
@@ -139,6 +142,9 @@ static bool createMeshDdpInitProgram(GLShaderProgram& program);
  * @return True when the program compiled and linked successfully.
  */
 static bool createMeshDdpPeelProgram(GLShaderProgram& program);
+
+/** @brief Compile and link the DDP peel program that draws anti-aliased triangle topology edges. */
+static bool createMeshDdpPeelEdgesProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP back-color blend shader program.

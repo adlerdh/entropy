@@ -79,9 +79,11 @@ TEST_CASE("3D camera default pose is coronal and outside the scene", "[camera][3
   checkVec3Approx(
     helper::worldDirection(camera, Directions::View::Front),
     Directions::get(Directions::Cartesian::PosY));
-  CHECK(
-    glm::distance(helper::worldOrigin(camera), scene.m_center) ==
-    Catch::Approx(0.75f * camera3d::sceneDiagonal(scene.m_size)));
+  for (const glm::vec3& corner : sceneCorners(scene)) {
+    const glm::vec3 ndc = helper::ndc_T_world(camera, corner);
+    CHECK(std::abs(ndc.x) <= 1.0f);
+    CHECK(std::abs(ndc.y) <= 1.0f);
+  }
   CHECK(camera.nearDistance() > 0.0f);
   CHECK(camera.farDistance() > camera.nearDistance());
 }
@@ -92,7 +94,6 @@ TEST_CASE("3D camera scene metrics are finite for degenerate scenes", "[camera][
 
   CHECK(metrics.m_diagonal >= 1.0e-4f);
   CHECK(metrics.m_defaultOrbitDistance >= 1.0e-4f);
-  CHECK(metrics.m_minTargetDistance >= 1.0e-4f);
   CHECK(metrics.m_minPanDistance >= 1.0e-4f);
   CHECK(metrics.m_scrollDistance >= 1.0e-4f);
   CHECK(metrics.m_defaultFov.x >= 1.0e-4f);
@@ -108,10 +109,10 @@ TEST_CASE("3D camera scene metrics preserve sub-millimeter scene sizes", "[camer
 
   CHECK(metrics.m_diagonal == Catch::Approx(diagonal));
   CHECK(metrics.m_voxelDiagonal == Catch::Approx(0.005f));
-  CHECK(metrics.m_defaultOrbitDistance == Catch::Approx(0.75f * diagonal));
+  CHECK(metrics.m_defaultOrbitDistance == Catch::Approx(diagonal));
   CHECK(metrics.m_minPanDistance == Catch::Approx(0.25f * diagonal));
-  CHECK(metrics.m_defaultFov.x == Catch::Approx(0.03f));
-  CHECK(metrics.m_defaultFov.y == Catch::Approx(0.03f));
+  CHECK(metrics.m_defaultFov.x == Catch::Approx(diagonal));
+  CHECK(metrics.m_defaultFov.y == Catch::Approx(diagonal));
 }
 
 TEST_CASE("3D perspective scroll distance is a small fraction of scene size", "[camera][3d]")
@@ -132,10 +133,10 @@ TEST_CASE("3D clipping planes use visible scene corner depths outside the scene"
     .m_voxelDiagonal = 2.0f};
 
   camera3d::setDefaultCoronalPose(camera, state, scene);
-  camera3d::configureClipPlanes(camera, scene, 30.0f);
+  camera3d::configureClipPlanes(camera, scene);
 
   const auto [minDepth, maxDepth] = sceneDepthRange(camera, scene);
-  const float expectedNear = std::max(1.0f, minDepth - 2.0f);
+  const float expectedNear = std::max(0.1f, minDepth - 2.0f);
   const float expectedFar = std::max(maxDepth + 2.0f, expectedNear + camera3d::sceneDiagonal(scene.m_size));
 
   CHECK(camera.nearDistance() == Catch::Approx(expectedNear));
@@ -150,14 +151,79 @@ TEST_CASE("3D clipping planes support cameras inside the visible scene", "[camer
     .m_size = glm::vec3{20.0f, 20.0f, 20.0f},
     .m_voxelDiagonal = 2.0f};
 
-  camera3d::configureClipPlanes(camera, scene, 4.0f);
+  camera3d::configureClipPlanes(camera, scene);
 
   const auto [minDepth, maxDepth] = sceneDepthRange(camera, scene);
-  const float expectedNear = std::max(1.0f, minDepth - 2.0f);
+  const float expectedNear = std::max(0.1f, minDepth - 2.0f);
   const float expectedFar = std::max(maxDepth + 2.0f, expectedNear + camera3d::sceneDiagonal(scene.m_size));
 
   CHECK(camera.nearDistance() == Catch::Approx(expectedNear));
   CHECK(camera.farDistance() == Catch::Approx(expectedFar));
+}
+
+TEST_CASE("3D clipping planes adapt as a perspective camera approaches the scene", "[camera][3d]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  const camera3d::SceneFrame scene{.m_center = glm::vec3{0.0f}, .m_size = glm::vec3{20.0f}, .m_voxelDiagonal = 2.0f};
+
+  camera3d::setDefaultCoronalPose(camera, state, scene);
+  const float initialNear = camera.nearDistance();
+  const float initialMinDepth = sceneDepthRange(camera, scene).first;
+  REQUIRE(initialNear > 0.1f);
+
+  helper::translateAboutCamera(camera, Directions::View::Front, initialMinDepth - 1.0f);
+  camera3d::configureClipPlanes(camera, scene);
+
+  CHECK(camera.nearDistance() == Catch::Approx(0.1f));
+  CHECK(camera.nearDistance() < initialNear);
+  CHECK(camera.farDistance() > camera.nearDistance());
+}
+
+TEST_CASE("3D clipping-plane floor scales with image sampling", "[camera][3d]")
+{
+  Camera camera(ProjectionType::Perspective);
+  const camera3d::SceneFrame scene{
+    .m_center = helper::worldOrigin(camera),
+    .m_size = glm::vec3{20.0f},
+    .m_voxelDiagonal = 4.0f};
+
+  camera3d::configureClipPlanes(camera, scene);
+
+  CHECK(camera.nearDistance() == Catch::Approx(0.2f));
+  CHECK(camera.farDistance() > camera.nearDistance());
+}
+
+TEST_CASE("3D perspective framing accounts for portrait viewports", "[camera][3d]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera.setAspectRatio(0.4f);
+  camera3d::State state;
+  const camera3d::SceneFrame scene = testScene();
+
+  camera3d::setDefaultCoronalPose(camera, state, scene);
+
+  for (const glm::vec3& corner : sceneCorners(scene)) {
+    const glm::vec3 ndc = helper::ndc_T_world(camera, corner);
+    CHECK(std::abs(ndc.x) <= 1.0f);
+    CHECK(std::abs(ndc.y) <= 1.0f);
+  }
+}
+
+TEST_CASE("3D orthographic framing remains valid after orbiting", "[camera][3d]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  const camera3d::SceneFrame scene = testScene();
+  camera3d::setDefaultCoronalPose(camera, state, scene);
+  camera3d::orbit(camera, state, glm::vec2{0.0f}, glm::vec2{0.2f, -0.15f});
+  camera3d::setProjection(camera, state, ProjectionType::Orthographic);
+
+  for (const glm::vec3& corner : sceneCorners(scene)) {
+    const glm::vec3 ndc = helper::ndc_T_world(camera, corner);
+    CHECK(std::abs(ndc.x) <= 1.0f);
+    CHECK(std::abs(ndc.y) <= 1.0f);
+  }
 }
 
 TEST_CASE("3D camera default coronal pose is a pure helper", "[camera][3d]")
@@ -266,10 +332,70 @@ TEST_CASE("3D follow mode can preserve an orbit result through follow offset", "
   camera3d::orbit(camera, state, glm::vec2{0.0f}, glm::vec2{0.2f, 0.1f});
 
   const glm::vec3 orbitEye = helper::worldOrigin(camera);
-  state.m_crosshairsFollowOffset = orbitEye - crosshairs;
-  camera3d::followCrosshairs(camera, state, crosshairs);
+  const glm::vec3 nextCrosshairs = crosshairs + glm::vec3{2.0f, -3.0f, 4.0f};
+  camera3d::followCrosshairs(camera, state, nextCrosshairs);
 
-  checkVec3Approx(helper::worldOrigin(camera), orbitEye);
+  checkVec3Approx(helper::worldOrigin(camera), orbitEye + nextCrosshairs - crosshairs);
+}
+
+TEST_CASE("3D camera operations ignore zero and non-finite input", "[camera][3d][interaction]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  camera3d::setDefaultCoronalPose(camera, state, testScene());
+  const glm::mat4 cameraTransform = camera.camera_T_anatomy();
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+
+  camera3d::orbit(camera, state, glm::vec2{0.0f}, glm::vec2{0.0f});
+  camera3d::rotateAboutEye(camera, state, glm::vec2{nan, 0.0f}, glm::vec2{0.1f});
+  camera3d::roll(camera, state, glm::vec2{0.0f}, glm::vec2{0.0f});
+  camera3d::pan(camera, state, glm::vec2{0.0f}, glm::vec2{0.0f});
+  camera3d::dollyOrZoom(camera, state, glm::vec2{0.0f}, 0.0f, false);
+  camera3d::recenter(camera, state, testScene(), glm::vec3{nan});
+
+  CHECK_FALSE(state.m_userMovedCamera);
+  CHECK(camera.camera_T_anatomy() == cameraTransform);
+}
+
+TEST_CASE("3D camera sanitizes a non-finite scene center", "[camera][3d]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  camera3d::SceneFrame scene = testScene();
+  scene.m_center.x = std::numeric_limits<float>::quiet_NaN();
+
+  camera3d::setDefaultCoronalPose(camera, state, scene);
+
+  const glm::vec3 eye = helper::worldOrigin(camera);
+  CHECK(std::isfinite(eye.x));
+  CHECK(std::isfinite(eye.y));
+  CHECK(std::isfinite(eye.z));
+  checkVec3Approx(state.m_orbitTarget, glm::vec3{0.0f});
+}
+
+TEST_CASE("3D projection changes repair inconsistent camera and state types", "[camera][3d][projection]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  state.m_projectionType = ProjectionType::Orthographic;
+
+  camera3d::setProjection(camera, state, ProjectionType::Orthographic);
+
+  CHECK(camera.projection()->type() == ProjectionType::Orthographic);
+  CHECK(state.m_projectionType == ProjectionType::Orthographic);
+}
+
+TEST_CASE("3D camera state cannot follow crosshairs in orthographic projection", "[camera][3d][projection]")
+{
+  Camera camera(ProjectionType::Orthographic);
+  camera3d::State state;
+  state.m_projectionType = ProjectionType::Perspective;
+  state.m_viewPositionFollowsCrosshairs = true;
+
+  camera3d::Controller controller{camera, state};
+
+  CHECK(state.m_projectionType == ProjectionType::Orthographic);
+  CHECK_FALSE(state.m_viewPositionFollowsCrosshairs);
 }
 
 TEST_CASE("3D horizontal orbit rotates about the selected center", "[camera][3d]")
@@ -362,6 +488,28 @@ TEST_CASE("3D scene-AABB pan clamps too-near inside-scene pick planes", "[camera
   CHECK(frontDepth == Catch::Approx(state.m_minPanDistance).margin(1.0e-4f));
 }
 
+TEST_CASE("3D scene-AABB pan reanchors a new drag that starts at the same NDC position", "[camera][3d]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  const camera3d::SceneFrame scene = testScene();
+  camera3d::setDefaultCoronalPose(camera, state, scene);
+  const glm::vec2 start{0.0f};
+
+  camera3d::panOnSceneAabbPlane(camera, state, scene, start, start, glm::vec2{0.1f, 0.0f});
+  REQUIRE(state.m_panPlaneNormal.has_value());
+  const glm::vec3 firstNormal = *state.m_panPlaneNormal;
+
+  camera3d::rotateAboutEye(camera, state, glm::vec2{0.0f}, glm::vec2{0.2f, 0.1f});
+  const glm::vec3 rotatedFront = helper::worldDirection(camera, Directions::View::Front);
+  REQUIRE(glm::dot(firstNormal, rotatedFront) < 0.999f);
+
+  camera3d::panOnSceneAabbPlane(camera, state, scene, start, start, glm::vec2{-0.1f, 0.0f});
+
+  REQUIRE(state.m_panPlaneNormal.has_value());
+  checkVec3Approx(*state.m_panPlaneNormal, rotatedFront);
+}
+
 TEST_CASE("3D pan sensitivity does not collapse near the orbit target", "[camera][3d]")
 {
   const camera3d::SceneFrame scene = testScene();
@@ -445,6 +593,23 @@ TEST_CASE("3D perspective and orthographic projections keep independent zoom sta
 
   camera3d::setProjection(camera, state, ProjectionType::Orthographic);
   CHECK(camera.getZoom() == Catch::Approx(orthographicZoom));
+}
+
+TEST_CASE("3D orthographic scroll steps are reciprocal", "[camera][3d][interaction]")
+{
+  Camera camera(ProjectionType::Perspective);
+  camera3d::State state;
+  camera3d::setDefaultCoronalPose(camera, state, testScene());
+  camera3d::setProjection(camera, state, ProjectionType::Orthographic);
+  const glm::vec3 eye = helper::worldOrigin(camera);
+  const float zoom = camera.getZoom();
+  const glm::vec2 pointer{0.3f, -0.2f};
+
+  camera3d::dollyOrZoom(camera, state, pointer, 1.0f, false);
+  camera3d::dollyOrZoom(camera, state, pointer, -1.0f, false);
+
+  CHECK(camera.getZoom() == Catch::Approx(zoom).epsilon(1.0e-5f));
+  checkVec3Approx(helper::worldOrigin(camera), eye);
 }
 
 TEST_CASE("3D alternate scroll adjusts perspective field of view", "[camera][3d]")

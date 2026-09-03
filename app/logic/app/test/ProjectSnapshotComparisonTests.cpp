@@ -236,6 +236,14 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_triangleEdgesEnabled = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
+  changedMeshRendering.m_meshRendering.m_triangleEdgeColor = {0.1f, 0.2f, 0.3f};
+  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
+
+  changedMeshRendering = project;
   changedMeshRendering.m_meshRendering.m_pbrShadingEnabled = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 

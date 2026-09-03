@@ -142,6 +142,9 @@ void Rendering::createShaderPrograms()
   if (!createMeshProgram(m_meshProgram)) {
     throwDebug("Failed to create mesh program");
   }
+  if (!createMeshEdgesProgram(m_meshEdgesProgram)) {
+    throwDebug("Failed to create mesh triangle-edges program");
+  }
   if (!createMeshShadowDepthProgram(m_meshShadowDepthProgram)) {
     throwDebug("Failed to create mesh shadow-depth program");
   }
@@ -183,6 +186,9 @@ void Rendering::createShaderPrograms()
   }
   if (!createMeshDdpPeelProgram(m_meshDdpPeelProgram)) {
     throwDebug("Failed to create mesh DDP peel program");
+  }
+  if (!createMeshDdpPeelEdgesProgram(m_meshDdpPeelEdgesProgram)) {
+    throwDebug("Failed to create mesh DDP triangle-edges peel program");
   }
   if (!createMeshDdpBackBlendProgram(m_meshDdpBackBlendProgram)) {
     throwDebug("Failed to create mesh DDP back-blend program");

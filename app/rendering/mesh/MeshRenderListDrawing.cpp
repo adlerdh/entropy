@@ -196,7 +196,7 @@ void Rendering::drawMeshRenderListForView(
       renderData.m_lightingSpecular,
       renderData.m_lightingSpecularPower});
   context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
-  context.flatShadingEnabled = renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled;
+  context.triangleEdgesEnabled = renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled;
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
     renderData.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{
@@ -292,7 +292,7 @@ void Rendering::drawMeshRenderListForView(
       .plan = ddpPlan,
       .meshRenderer = m_meshRenderer,
       .initProgram = m_meshDdpInitProgram,
-      .peelProgram = m_meshDdpPeelProgram,
+      .peelProgram = context.triangleEdgesEnabled ? m_meshDdpPeelEdgesProgram : m_meshDdpPeelProgram,
       .backBlendProgram = m_meshDdpBackBlendProgram,
       .resolveProgram = m_meshDdpResolveProgram,
       .drawExtraDepthBounds = imagePlaneList
@@ -313,10 +313,11 @@ void Rendering::drawMeshRenderListForView(
                                : std::function<void(GLTexture&, GLTexture&)>{}});
   }
   else {
-    m_meshRenderer.drawOpaque(list, context, m_meshProgram);
+    m_meshRenderer.drawOpaque(list, context, context.triangleEdgesEnabled ? m_meshEdgesProgram : m_meshProgram);
   }
 
-  m_meshRenderer.drawAdditive(list, context, m_meshProgram);
-  m_meshRenderer.drawMultiplicative(list, context, m_meshProgram);
+  GLShaderProgram& visibleMeshProgram = context.triangleEdgesEnabled ? m_meshEdgesProgram : m_meshProgram;
+  m_meshRenderer.drawAdditive(list, context, visibleMeshProgram);
+  m_meshRenderer.drawMultiplicative(list, context, visibleMeshProgram);
   setupOpenGLState();
 }

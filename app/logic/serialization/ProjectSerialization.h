@@ -244,6 +244,8 @@ struct ProjectMeshRenderingSettings
 {
   bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
   bool m_flatShadingEnabled = false;                  //!< Use one geometric normal per rendered mesh triangle
+  bool m_triangleEdgesEnabled = false;                //!< Overlay anti-aliased triangle topology edges
+  glm::vec3 m_triangleEdgeColor{0.0f};                //!< Triangle topology edge color
   bool m_pbrShadingEnabled = false;                   //!< Use PBR shading for all rendered surface meshes
   float m_pbrMetallic = 0.2f;                         //!< Global PBR metallic factor
   float m_pbrRoughness = 0.3f;                        //!< Global PBR roughness factor

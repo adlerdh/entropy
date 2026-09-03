@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <vector>
 
 namespace
@@ -102,4 +103,41 @@ TEST_CASE("raycast isosurface picker returns no hit on ray or isovalue miss", "[
   const std::array<double, 1> visibleIso{4.5};
   CHECK_FALSE(camera3d::pickFirstIsoSurfaceHit(
     xGradientRequest(glm::vec3{-2.0f, 2.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, visibleIso)));
+}
+
+TEST_CASE("raycast isosurface picker rejects invalid numerical input", "[camera][raycast][picking]")
+{
+  const std::array<double, 1> isos{4.5};
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+
+  auto request = xGradientRequest(glm::vec3{-2.0f, 0.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, isos);
+  request.pixel_T_world[0][0] = nan;
+  CHECK_FALSE(camera3d::pickFirstIsoSurfaceHit(request));
+
+  request = xGradientRequest(glm::vec3{-2.0f, 0.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, isos);
+  request.pixelDimensions.x = nan;
+  CHECK_FALSE(camera3d::pickFirstIsoSurfaceHit(request));
+
+  const std::array<double, 1> invalidIsos{std::numeric_limits<double>::quiet_NaN()};
+  CHECK_FALSE(camera3d::pickFirstIsoSurfaceHit(
+    xGradientRequest(glm::vec3{-2.0f, 0.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, invalidIsos)));
+}
+
+TEST_CASE("raycast isosurface picker rejects non-finite samples", "[camera][raycast][picking]")
+{
+  const std::array<double, 1> isos{4.5};
+  auto request = xGradientRequest(glm::vec3{-2.0f, 0.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, isos);
+  request.sampleValue = [](const glm::vec3&) {
+    return std::optional<double>{std::numeric_limits<double>::infinity()};
+  };
+
+  CHECK_FALSE(camera3d::pickFirstIsoSurfaceHit(request));
+}
+
+TEST_CASE("raycast isosurface picker skips work when neither face is rendered", "[camera][raycast][picking]")
+{
+  const std::array<double, 1> isos{4.5};
+  const auto request = xGradientRequest(glm::vec3{-2.0f, 0.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}, isos, false, false);
+
+  CHECK_FALSE(camera3d::pickFirstIsoSurfaceHit(request));
 }

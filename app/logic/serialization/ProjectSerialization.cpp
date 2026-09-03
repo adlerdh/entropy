@@ -683,6 +683,12 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   j = json::object();
   addIfChanged(j, "enabled", settings.m_renderingEnabled, defaults.m_renderingEnabled);
   addIfChanged(j, "flatShading", settings.m_flatShadingEnabled, defaults.m_flatShadingEnabled);
+  addIfChanged(j, "triangleEdges", settings.m_triangleEdgesEnabled, defaults.m_triangleEdgesEnabled);
+  addIfChanged(
+    j,
+    "triangleEdgeColor",
+    vec3ToJson(settings.m_triangleEdgeColor),
+    vec3ToJson(defaults.m_triangleEdgeColor));
   json pbr = json::object();
   addIfChanged(pbr, "enabled", settings.m_pbrShadingEnabled, defaults.m_pbrShadingEnabled);
   addIfChanged(pbr, "metallic", settings.m_pbrMetallic, defaults.m_pbrMetallic);
@@ -736,6 +742,13 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
   }
   if (const auto value = j.find("flatShading"); value != j.end() && value->is_boolean()) {
     settings.m_flatShadingEnabled = value->get<bool>();
+  }
+  if (const auto value = j.find("triangleEdges"); value != j.end() && value->is_boolean()) {
+    settings.m_triangleEdgesEnabled = value->get<bool>();
+    settings.m_flatShadingEnabled = settings.m_flatShadingEnabled || settings.m_triangleEdgesEnabled;
+  }
+  if (const auto value = j.find("triangleEdgeColor"); value != j.end() && value->is_array()) {
+    settings.m_triangleEdgeColor = glm::clamp(vec3FromJson(*value), glm::vec3{0.0f}, glm::vec3{1.0f});
   }
   if (const auto pbr = j.find("pbr"); pbr != j.end() && pbr->is_object()) {
     if (const auto value = pbr->find("enabled"); value != pbr->end() && value->is_boolean()) {

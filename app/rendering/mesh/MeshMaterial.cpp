@@ -29,6 +29,10 @@ MeshMaterial sanitizedMaterial(const MeshMaterial& material, const glm::vec4& fa
   MeshMaterial sanitized = material;
   sanitized.baseColor =
     glm::clamp(finiteColorOrFallback(material.baseColor, fallbackColor), glm::vec4{0.0f}, glm::vec4{1.0f});
+  sanitized.triangleEdgeColor = glm::clamp(
+    isFinite(glm::vec4{material.triangleEdgeColor, 1.0f}) ? material.triangleEdgeColor : glm::vec3{0.0f},
+    glm::vec3{0.0f},
+    glm::vec3{1.0f});
   sanitized.metallic = glm::clamp(finiteValueOrFallback(material.metallic, 0.2f), 0.0f, 1.0f);
   sanitized.roughness = glm::clamp(finiteValueOrFallback(material.roughness, 0.3f), 0.001f, 1.0f);
   sanitized.ambientOcclusion = glm::clamp(finiteValueOrFallback(material.ambientOcclusion, 1.0f), 0.0f, 1.0f);
@@ -47,6 +51,9 @@ MeshMaterial meshMaterialForSurface(const glm::vec4& baseColor, const MeshSurfac
       .roughness = settings.roughness,
       .ambientOcclusion = settings.ambientOcclusion,
       .shadingModel = settings.pbrShadingEnabled ? MeshShadingModel::PhysicallyBased : MeshShadingModel::SimpleLit,
+      .flatShadingEnabled = settings.flatShadingEnabled,
+      .triangleEdgesEnabled = settings.triangleEdgesEnabled,
+      .triangleEdgeColor = settings.triangleEdgeColor,
       .rimLightingEnabled = settings.rimLightingEnabled,
       .rimOpacityStrength = settings.rimOpacityStrength,
       .rimEmissionStrength = settings.rimEmissionStrength,

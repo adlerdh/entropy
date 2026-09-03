@@ -7,8 +7,6 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraStartFrameType.h"
 #include "logic/camera/MathUtility.h"
-#include "logic/camera/OrthogonalProjection.h"
-#include "logic/camera/PerspectiveProjection.h"
 #include "rendering/utility/math/SliceIntersector.h"
 #include "windowing/ViewCameraDefaults.h"
 
@@ -277,29 +275,13 @@ void View::setViewType(const ViewType& newViewType)
   if (ViewType::ThreeD != newViewType && m_projectionType != newProjType) {
     spdlog::debug("Changing camera projection from {} to {}", typeString(m_projectionType), typeString(newProjType));
 
-    std::unique_ptr<Projection> newProj;
-    switch (newProjType) {
-      case ProjectionType::Orthographic: {
-        newProj = std::make_unique<OrthographicProjection>();
-        break;
-      }
-      case ProjectionType::Perspective: {
-        newProj = std::make_unique<PerspectiveProjection>();
-        break;
-      }
-    }
+    std::unique_ptr<Projection> newProj = helper::createCameraProjection(newProjType);
 
     // Transfer the current projection parameters to the new projection:
     const Projection* currProj = m_camera.projection();
-    if (!currProj) {
-      spdlog::error("Camera has null projection");
-      return;
-    }
-
     newProj->setAspectRatio(currProj->aspectRatio());
     newProj->setDefaultFov(currProj->defaultFov());
-    newProj->setFarDistance(currProj->farDistance());
-    newProj->setNearDistance(currProj->nearDistance());
+    newProj->setClipDistances(currProj->nearDistance(), currProj->farDistance());
     newProj->setZoom(currProj->getZoom());
 
     m_camera.setProjection(std::move(newProj));
@@ -426,6 +408,22 @@ const camera3d::State& View::threeDState() const
 camera3d::State& View::threeDState()
 {
   return m_threeDState;
+}
+
+bool View::isThreeDCameraInitialized() const
+{
+  return m_threeDCameraInitialized;
+}
+
+void View::restoreThreeDCamera(const Camera& cameraArg, const camera3d::State& state, bool initialized)
+{
+  m_threeDCamera = cameraArg;
+  m_threeDState = state;
+  m_threeDState.m_projectionType = m_threeDCamera.projection()->type();
+  if (m_threeDCamera.isOrthographic()) {
+    m_threeDState.m_viewPositionFollowsCrosshairs = false;
+  }
+  m_threeDCameraInitialized = initialized;
 }
 
 void View::setThreeDProjectionType(ProjectionType projectionType)

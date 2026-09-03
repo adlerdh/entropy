@@ -58,6 +58,7 @@ struct ViewCameraSnapshot
   Camera m_camera;
   Camera m_threeDCamera;
   camera3d::State m_threeDState;
+  bool m_threeDCameraInitialized = false;
   bool m_used = false;
 };
 
@@ -118,19 +119,21 @@ std::optional<uuid> firstImageUid(const std::list<uuid>& imageUids)
 
 void copyCameraState(const Camera& source, Camera& target)
 {
+  auto projection = helper::createCameraProjection(source.projection()->type());
+  projection->setAspectRatio(source.aspectRatio());
+  projection->setDefaultFov(source.projection()->defaultFov());
+  projection->setClipDistances(source.nearDistance(), source.farDistance());
+  projection->setZoom(source.getZoom());
+
   target.set_start_T_world(source.start_T_world());
   target.set_camera_T_anatomy(source.camera_T_anatomy());
-  target.setDefaultFov(source.projection()->defaultFov());
-  target.setNearDistance(source.nearDistance());
-  target.setFarDistance(source.farDistance());
-  target.setZoom(source.getZoom());
+  target.setProjection(std::move(projection));
 }
 
 void copyViewCameraState(const View& source, View& target)
 {
   copyCameraState(source.sliceCamera(), target.sliceCamera());
-  copyCameraState(source.threeDCamera(), target.threeDCamera());
-  target.threeDState() = source.threeDState();
+  target.restoreThreeDCamera(source.threeDCamera(), source.threeDState(), source.isThreeDCameraInitialized());
 }
 
 std::optional<uuid> layoutImageUid(const Layout& layout)
@@ -1009,6 +1012,7 @@ std::vector<ViewCameraSnapshot> createManagedLayoutCameraSnapshots(const std::ve
         .m_camera = view->sliceCamera(),
         .m_threeDCamera = view->threeDCamera(),
         .m_threeDState = view->threeDState(),
+        .m_threeDCameraInitialized = view->isThreeDCameraInitialized(),
         .m_used = false});
       ++viewIndex;
     }
@@ -1139,8 +1143,7 @@ CameraRestoreSummary restoreManagedLayoutCameraSnapshots(
       if (snapshotIt != snapshotIndex.end()) {
         ViewCameraSnapshot& snapshot = snapshots.at(snapshotIt->second);
         copyCameraState(snapshot.m_camera, view->sliceCamera());
-        copyCameraState(snapshot.m_threeDCamera, view->threeDCamera());
-        view->threeDState() = snapshot.m_threeDState;
+        view->restoreThreeDCamera(snapshot.m_threeDCamera, snapshot.m_threeDState, snapshot.m_threeDCameraInitialized);
         snapshot.m_used = true;
         ++summary.m_restored;
       }

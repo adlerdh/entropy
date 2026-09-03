@@ -126,6 +126,17 @@ public:
    */
   camera3d::State& threeDState();
 
+  /** @brief Return whether the dedicated 3D camera has been framed for a scene. */
+  bool isThreeDCameraInitialized() const;
+
+  /**
+   * @brief Restore a previously captured dedicated 3D camera and interaction state
+   * @param cameraArg Camera snapshot to restore
+   * @param state Interaction-state snapshot to restore
+   * @param initialized Whether the snapshot had already been framed for a scene
+   */
+  void restoreThreeDCamera(const Camera& cameraArg, const camera3d::State& state, bool initialized);
+
   /**
    * @brief Set the projection type of the dedicated 3D camera
    * @param projectionType Projection type to activate

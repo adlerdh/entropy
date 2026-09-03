@@ -68,17 +68,19 @@ void drawThreeDCameraFrustumOverlay(
   drawSegments(shadowColor, 4.0f);
   drawSegments(lineColor, 2.0f);
 
-  const glm::vec2 eye = vector_drawing::projectWorldToMiewport(windowViewport, windowClip_T_world, overlay.eye);
-  if (vector_drawing::isFiniteVec2(eye)) {
-    nvgBeginPath(nvg);
-    nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx + 2.0f);
-    nvgFillColor(nvg, shadowColor);
-    nvgFill(nvg);
+  if (overlay.eye) {
+    const glm::vec2 eye = vector_drawing::projectWorldToMiewport(windowViewport, windowClip_T_world, *overlay.eye);
+    if (vector_drawing::isFiniteVec2(eye)) {
+      nvgBeginPath(nvg);
+      nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx + 2.0f);
+      nvgFillColor(nvg, shadowColor);
+      nvgFill(nvg);
 
-    nvgBeginPath(nvg);
-    nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx);
-    nvgFillColor(nvg, lineColor);
-    nvgFill(nvg);
+      nvgBeginPath(nvg);
+      nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx);
+      nvgFillColor(nvg, lineColor);
+      nvgFill(nvg);
+    }
   }
 
   nvgResetScissor(nvg);

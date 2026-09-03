@@ -43,10 +43,6 @@ struct State
   std::optional<glm::vec3> m_panPlanePoint;
   /** @brief World-space normal of the current scene-plane pan plane */
   std::optional<glm::vec3> m_panPlaneNormal;
-  /** @brief Current eye-to-orbit-target distance */
-  float m_orbitDistance = 1.0f;
-  /** @brief Minimum target distance used to keep the camera outside tiny scenes */
-  float m_minTargetDistance = 1.0f;
   /** @brief Minimum panning depth used for stable perspective panning */
   float m_minPanDistance = 1.0f;
   /** @brief World distance moved by one perspective scroll unit before modifiers */
@@ -87,8 +83,6 @@ struct SceneMetrics
   float m_voxelDiagonal = 1.0f;
   /** @brief Default distance from the camera eye to the orbit target */
   float m_defaultOrbitDistance = 1.0f;
-  /** @brief Minimum distance used when framing a target */
-  float m_minTargetDistance = 1.0f;
   /** @brief Minimum depth used by perspective panning */
   float m_minPanDistance = 1.0f;
   /** @brief World distance moved by one perspective scroll unit */
@@ -158,9 +152,8 @@ Pose defaultCoronalPose(const SceneFrame& scene);
  * @brief Set near and far clipping planes from the scene extent and current camera pose
  * @param camera Camera whose projection clip distances are updated
  * @param scene Scene frame to keep visible
- * @param eyeToTargetDistance Reserved eye-to-target distance parameter
  */
-void configureClipPlanes(Camera& camera, const SceneFrame& scene, float);
+void configureClipPlanes(Camera& camera, const SceneFrame& scene);
 
 /**
  * @brief Reset to Entropy's default 3D pose

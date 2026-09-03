@@ -65,8 +65,23 @@ void CameraSyncGroups::addViewToGroup(CameraSyncMode mode, const std::optional<u
     return;
   }
 
-  if (auto* targetGroup = group(mode, *groupUid)) {
-    targetGroup->push_back(viewUid);
+  auto& groups = groupsFor(mode);
+  const auto target = groups.find(*groupUid);
+  if (target == groups.end()) {
+    return;
+  }
+
+  // A view may belong to at most one group for a given synchronization mode.
+  // Enforcing that invariant here prevents an interaction from being applied
+  // more than once and keeps groupUidContainingView deterministic.
+  for (auto& [uid, viewUids] : groups) {
+    if (uid != *groupUid) {
+      viewUids.remove(viewUid);
+    }
+  }
+
+  if (std::find(target->second.begin(), target->second.end(), viewUid) == target->second.end()) {
+    target->second.push_back(viewUid);
   }
 }
 

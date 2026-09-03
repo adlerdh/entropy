@@ -9,9 +9,9 @@
  */
 enum class ProjectionType
 {
-  Orthographic, //!< Orthographic projection for 2D views
+  Orthographic, //!< Parallel projection without perspective foreshortening
 
-  Perspective //!< Perspective projection for 3D views
+  Perspective //!< Perspective projection with distance-dependent foreshortening
 };
 
 /**

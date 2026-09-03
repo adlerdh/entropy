@@ -1125,14 +1125,25 @@ TEST_CASE("mesh style keys change for material and draw-state edits", "[renderin
   mesh::MeshStyleKey changedFill = base;
   changedFill.fillMode = mesh::MeshFillMode::Wireframe;
 
+  mesh::MeshStyleKey changedTopologyEdges = base;
+  changedTopologyEdges.material.flatShadingEnabled = true;
+  changedTopologyEdges.material.triangleEdgesEnabled = true;
+
+  mesh::MeshStyleKey changedTopologyEdgeColor = base;
+  changedTopologyEdgeColor.material.triangleEdgeColor = glm::vec3{1.0f, 0.0f, 0.0f};
+
   CHECK_FALSE(base == changedColor);
   CHECK_FALSE(base == changedFill);
+  CHECK_FALSE(base == changedTopologyEdges);
+  CHECK_FALSE(base == changedTopologyEdgeColor);
 
   std::unordered_set<mesh::MeshStyleKey, mesh::MeshStyleKeyHash> keys;
   keys.insert(base);
   keys.insert(changedColor);
   keys.insert(changedFill);
-  CHECK(keys.size() == 3);
+  keys.insert(changedTopologyEdges);
+  keys.insert(changedTopologyEdgeColor);
+  CHECK(keys.size() == 5);
 }
 
 TEST_CASE("mesh materials sanitize shader-facing values", "[rendering][mesh]")
@@ -1142,6 +1153,7 @@ TEST_CASE("mesh materials sanitize shader-facing values", "[rendering][mesh]")
   material.metallic = 2.0f;
   material.roughness = 0.0f;
   material.ambientOcclusion = -1.0f;
+  material.triangleEdgeColor = glm::vec3{-1.0f, 0.5f, 2.0f};
   material.shadingModel = mesh::MeshShadingModel::PhysicallyBased;
   material.rimLightingEnabled = true;
   material.rimOpacityStrength = 2.0f;
@@ -1154,6 +1166,7 @@ TEST_CASE("mesh materials sanitize shader-facing values", "[rendering][mesh]")
   CHECK(sanitized.metallic == Catch::Approx(1.0f));
   CHECK(sanitized.roughness == Catch::Approx(0.001f));
   CHECK(sanitized.ambientOcclusion == Catch::Approx(0.0f));
+  CHECK(sanitized.triangleEdgeColor == glm::vec3{0.0f, 0.5f, 1.0f});
   CHECK(sanitized.shadingModel == mesh::MeshShadingModel::PhysicallyBased);
   CHECK(sanitized.rimLightingEnabled);
   CHECK(sanitized.rimOpacityStrength == Catch::Approx(1.0f));
@@ -1168,6 +1181,7 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
   material.metallic = std::numeric_limits<float>::quiet_NaN();
   material.roughness = std::numeric_limits<float>::quiet_NaN();
   material.ambientOcclusion = std::numeric_limits<float>::quiet_NaN();
+  material.triangleEdgeColor = glm::vec3{std::numeric_limits<float>::quiet_NaN()};
   material.rimOpacityStrength = std::numeric_limits<float>::quiet_NaN();
   material.rimEmissionStrength = std::numeric_limits<float>::quiet_NaN();
   material.rimPower = std::numeric_limits<float>::quiet_NaN();
@@ -1178,6 +1192,7 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
   CHECK(sanitized.metallic == Catch::Approx(0.2f));
   CHECK(sanitized.roughness == Catch::Approx(0.3f));
   CHECK(sanitized.ambientOcclusion == Catch::Approx(1.0f));
+  CHECK(sanitized.triangleEdgeColor == glm::vec3{0.0f});
   CHECK(sanitized.rimOpacityStrength == Catch::Approx(1.0f));
   CHECK(sanitized.rimEmissionStrength == Catch::Approx(1.0f));
   CHECK(sanitized.rimPower == Catch::Approx(2.0f));
@@ -1186,6 +1201,9 @@ TEST_CASE("mesh material sanitization repairs non-finite values", "[rendering][m
 TEST_CASE("global surface settings create one material policy for every mesh type", "[rendering][mesh][material]")
 {
   const mesh::MeshSurfaceMaterialSettings settings{
+    .flatShadingEnabled = true,
+    .triangleEdgesEnabled = true,
+    .triangleEdgeColor = {0.1f, 0.2f, 0.3f},
     .pbrShadingEnabled = true,
     .metallic = 0.4f,
     .roughness = 0.2f,
@@ -1199,6 +1217,9 @@ TEST_CASE("global surface settings create one material policy for every mesh typ
   const mesh::MeshMaterial material = mesh::meshMaterialForSurface(color, settings);
   CHECK(material.baseColor == color);
   CHECK(material.shadingModel == mesh::MeshShadingModel::PhysicallyBased);
+  CHECK(material.flatShadingEnabled);
+  CHECK(material.triangleEdgesEnabled);
+  CHECK(material.triangleEdgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
   CHECK(material.metallic == Catch::Approx(0.4f));
   CHECK(material.roughness == Catch::Approx(0.2f));
   CHECK(material.ambientOcclusion == Catch::Approx(0.9f));

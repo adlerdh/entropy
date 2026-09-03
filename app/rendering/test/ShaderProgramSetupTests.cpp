@@ -145,6 +145,24 @@ TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths
   }
 }
 
+TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rendering][shaders][mesh]")
+{
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.vs");
+  const std::string geometry = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.gs");
+  CHECK(vertex.find("out vec3 edge_worldPosition") != std::string::npos);
+  CHECK(geometry.find("noperspective out vec3 v_barycentric") != std::string::npos);
+  CHECK(geometry.find("vec3(1.0, 0.0, 0.0)") != std::string::npos);
+
+  const std::array fragmentPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+  for (const char* fragmentPath : fragmentPaths) {
+    const std::string fragment = shader_setup::loadEmbeddedShaderSource(fragmentPath);
+    CHECK(fragment.find("uniform bool u_triangleEdgesEnabled") != std::string::npos);
+    CHECK(fragment.find("uniform vec3 u_triangleEdgeColor") != std::string::npos);
+    CHECK(fragment.find("fwidth(v_barycentric) * 1.25") != std::string::npos);
+    CHECK(fragment.find("applyTriangleEdges") != std::string::npos);
+  }
+}
+
 TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
 {
   const std::string resolve =

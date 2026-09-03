@@ -89,5 +89,8 @@ cmrc_add_resource_library(entropy-licenses ALIAS entropy::licenses ${entropy_LIC
   WHENCE "${entropy_LICENSE_RESOURCE_DIR}")
 cmrc_add_resource_library(entropy-icons ALIAS entropy::icons "${entropy_ABOUT_ICON_SOURCE}" NAMESPACE icons
   WHENCE "${CMAKE_SOURCE_DIR}")
+target_compile_definitions(entropy-icons INTERFACE
+  ENTROPY_ABOUT_ICON_RESOURCE_PATH="${entropy_ABOUT_ICON_RESOURCE_PATH}"
+)
 
 entropy_disable_linting_for_targets(entropy-colormaps entropy-fonts entropy-icons entropy-licenses)

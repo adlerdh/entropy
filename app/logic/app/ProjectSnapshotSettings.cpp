@@ -461,6 +461,8 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
   return serialize::ProjectMeshRenderingSettings{
     .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
     .m_flatShadingEnabled = renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled,
+    .m_triangleEdgesEnabled = renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled,
+    .m_triangleEdgeColor = renderData.m_meshSurfaceMaterialSettings.triangleEdgeColor,
     .m_pbrShadingEnabled = renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled,
     .m_pbrMetallic = renderData.m_meshSurfaceMaterialSettings.metallic,
     .m_pbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness,
@@ -493,7 +495,10 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
 {
   auto& renderData = appData.renderData();
   renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
-  renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled = settings.m_flatShadingEnabled;
+  renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled =
+    settings.m_flatShadingEnabled || settings.m_triangleEdgesEnabled;
+  renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled = settings.m_triangleEdgesEnabled;
+  renderData.m_meshSurfaceMaterialSettings.triangleEdgeColor = settings.m_triangleEdgeColor;
   renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled = settings.m_pbrShadingEnabled;
   renderData.m_meshSurfaceMaterialSettings.metallic = settings.m_pbrMetallic;
   renderData.m_meshSurfaceMaterialSettings.roughness = settings.m_pbrRoughness;

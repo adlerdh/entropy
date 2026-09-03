@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace rendering::mesh
@@ -20,15 +21,17 @@ enum class MeshShadingModel
  */
 struct MeshSurfaceMaterialSettings
 {
-  bool flatShadingEnabled = false;  //!< Use one geometric normal per triangle instead of interpolated vertex normals
-  bool pbrShadingEnabled = false;   //!< Use physically based shading instead of Blinn-Phong shading
-  float metallic = 0.2f;            //!< PBR metallic factor
-  float roughness = 0.3f;           //!< PBR roughness factor
-  float ambientOcclusion = 1.0f;    //!< PBR indirect-light occlusion factor
-  bool rimLightingEnabled = false;  //!< Enable view-angle rim opacity and glow
-  float rimOpacityStrength = 1.0f;  //!< Strength of silhouette opacity modulation
-  float rimEmissionStrength = 1.0f; //!< Strength of additive silhouette glow
-  float rimPower = 2.0f;            //!< Rim falloff exponent
+  bool flatShadingEnabled = false;   //!< Use one geometric normal per triangle instead of interpolated vertex normals
+  bool triangleEdgesEnabled = false; //!< Draw anti-aliased triangle topology edges over flat-shaded surfaces
+  glm::vec3 triangleEdgeColor{0.0f}; //!< Color of triangle topology edges
+  bool pbrShadingEnabled = false;    //!< Use physically based shading instead of Blinn-Phong shading
+  float metallic = 0.2f;             //!< PBR metallic factor
+  float roughness = 0.3f;            //!< PBR roughness factor
+  float ambientOcclusion = 1.0f;     //!< PBR indirect-light occlusion factor
+  bool rimLightingEnabled = false;   //!< Enable view-angle rim opacity and glow
+  float rimOpacityStrength = 1.0f;   //!< Strength of silhouette opacity modulation
+  float rimEmissionStrength = 1.0f;  //!< Strength of additive silhouette glow
+  float rimPower = 2.0f;             //!< Rim falloff exponent
 
   bool operator==(const MeshSurfaceMaterialSettings&) const = default;
 };
@@ -45,6 +48,9 @@ struct MeshMaterial
   float roughness = 0.3f;                                      //!< PBR roughness factor
   float ambientOcclusion = 1.0f;                               //!< PBR ambient occlusion factor
   MeshShadingModel shadingModel = MeshShadingModel::SimpleLit; //!< Selected lighting model
+  bool flatShadingEnabled = false;                             //!< Use a geometric triangle normal for this surface
+  bool triangleEdgesEnabled = false;                           //!< Draw this surface's anti-aliased topology edges
+  glm::vec3 triangleEdgeColor{0.0f};                           //!< Color of triangle topology edges
   bool rimLightingEnabled = false;                             //!< Enable view-angle rim opacity and glow
   float rimOpacityStrength = 1.0f;                             //!< Strength of silhouette opacity modulation
   float rimEmissionStrength = 1.0f;                            //!< Strength of additive silhouette glow

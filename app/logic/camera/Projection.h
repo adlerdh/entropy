@@ -84,6 +84,13 @@ public:
   float nearDistance() const;
 
   /**
+   * @brief Set both clipping distances as one validated pair
+   * @param nearDistanceArg Positive near clipping distance
+   * @param farDistanceArg Far clipping distance greater than `nearDistanceArg`
+   */
+  void setClipDistances(float nearDistanceArg, float farDistanceArg);
+
+  /**
    * @brief Set the far clipping plane distance from the Camera origin
    * @param distance Far distance. Invalid values are ignored
    */
@@ -96,7 +103,7 @@ public:
 
   /**
    * @brief Set the default field of view of the projection
-   * @param defaultFov Horizontal and vertical default field-of-view extents
+   * @param fov Horizontal and vertical default field-of-view extents
    */
   void setDefaultFov(const glm::vec2& fov);
   /**
