@@ -151,8 +151,7 @@ void Rendering::renderGrayImageForImage(
     }
 
     const auto boundTextures = bindScalarImageTextures(imgSegPair);
-    const auto boundDefTextures =
-      renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+    const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
 
     program->use();
     {
@@ -252,8 +251,7 @@ void Rendering::renderGrayImageForImage(
     }
 
     const auto boundTextures = bindScalarImageTextures(imgSegPair);
-    const auto boundDefTextures =
-      renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+    const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
 
     program->use();
     {

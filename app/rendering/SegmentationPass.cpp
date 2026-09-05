@@ -65,8 +65,7 @@ void Rendering::renderSegmentationForImage(
     shaderProgramForTextureDimension(m_shaderPrograms, m_shaderPrograms2D, segShaderType, segTextureLayout.dimension);
 
   const auto boundTextures = bindSegTextures(imgSegPair);
-  const auto boundDefTextures =
-    renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+  const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
   const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
 
   program.use();

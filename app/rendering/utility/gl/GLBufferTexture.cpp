@@ -66,7 +66,10 @@ std::size_t bytesPerTexel(const tex::SizedInternalBufferTextureFormat format)
 std::size_t texelCountForBufferSize(const std::size_t sizeInBytes, const tex::SizedInternalBufferTextureFormat format)
 {
   const std::size_t texelSize = bytesPerTexel(format);
-  return (sizeInBytes + texelSize - 1) / texelSize;
+  if (sizeInBytes % texelSize != 0u) {
+    throwDebug("Texture-buffer storage size must contain a whole number of texels");
+  }
+  return sizeInBytes / texelSize;
 }
 
 } // namespace
@@ -84,8 +87,6 @@ GLBufferTexture::GLBufferTexture(GLBufferTexture&& other) noexcept
 GLBufferTexture& GLBufferTexture::operator=(GLBufferTexture&& other) noexcept
 {
   if (this != &other) {
-    detachBufferFromTexture();
-
     m_buffer = std::move(other.m_buffer);
     m_texture = std::move(other.m_texture);
     m_format = other.m_format;
@@ -94,20 +95,12 @@ GLBufferTexture& GLBufferTexture::operator=(GLBufferTexture&& other) noexcept
   return *this;
 }
 
-GLBufferTexture::~GLBufferTexture()
-{
-  detachBufferFromTexture();
-}
+GLBufferTexture::~GLBufferTexture() = default;
 
 void GLBufferTexture::generate()
 {
   m_buffer.generate();
   m_texture.generate();
-}
-
-void GLBufferTexture::release(std::optional<uint32_t> textureUnit)
-{
-  m_texture.release(textureUnit);
 }
 
 void GLBufferTexture::bind(std::optional<uint32_t> textureUnit) const
@@ -120,15 +113,21 @@ bool GLBufferTexture::isBound(std::optional<uint32_t> textureUnit) const
   return m_texture.isBound(textureUnit);
 }
 
-void GLBufferTexture::unbind() const
+void GLBufferTexture::unbind(std::optional<uint32_t> textureUnit) const
 {
-  m_texture.unbind();
+  m_texture.unbind(textureUnit);
 }
 
 void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
 {
+  if (sizeInBytes == 0u) {
+    throwDebug("Texture-buffer storage cannot be empty");
+  }
   GLint maxSize = 0;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
+  if (maxSize <= 0) {
+    throwDebug("OpenGL reported an invalid maximum texture-buffer size");
+  }
 
   const std::size_t texelCount = texelCountForBufferSize(sizeInBytes, m_format);
 
@@ -142,14 +141,15 @@ void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
   }
 
   m_buffer.allocate(sizeInBytes, data);
+  m_texture.setBufferTextureStorage(underlyingType_asInt32(m_format), m_buffer.id(), texelCount);
 }
 
-void GLBufferTexture::write(GLintptr offset, GLsizeiptr sizeInBytes, const GLvoid* data)
+void GLBufferTexture::write(std::size_t offset, std::size_t sizeInBytes, const GLvoid* data)
 {
   m_buffer.write(offset, sizeInBytes, data);
 }
 
-void GLBufferTexture::read(GLintptr offset, GLsizeiptr sizeInBytes, GLvoid* data)
+void GLBufferTexture::read(std::size_t offset, std::size_t sizeInBytes, GLvoid* data) const
 {
   m_buffer.read(offset, sizeInBytes, data);
 }
@@ -159,49 +159,7 @@ BufferUsagePattern GLBufferTexture::usagePattern() const
   return m_buffer.usagePattern();
 }
 
-// size_t GLBufferTexture::numTexels() const
-// {
-//     return ( m_buffer.size() *
-//              sk_textureFormatToNumComponentsMap.at( m_format ) *
-//              sk_textureFormatToNumBytesPerComponentMap.at( m_format ) );
-// }
-
-size_t GLBufferTexture::numBytes() const
-{
-  return m_buffer.size();
-}
-
 GLuint GLBufferTexture::id() const
 {
   return m_texture.id();
-}
-
-void GLBufferTexture::attachBufferToTexture(std::optional<uint32_t> textureUnit)
-{
-  m_texture.bind(textureUnit);
-
-  glTexBuffer(GL_TEXTURE_BUFFER, underlyingType(m_format), m_buffer.id());
-  m_texture.markBufferTextureStorage(
-    underlyingType_asInt32(m_format),
-    texelCountForBufferSize(m_buffer.size(), m_format));
-  m_buffer.unbind();
-
-  CHECK_GL_ERROR(m_errorChecker);
-}
-
-void GLBufferTexture::detachBufferFromTexture()
-{
-  if (0 == m_texture.id()) {
-    return;
-  }
-
-  m_texture.bind();
-  glTexBuffer(GL_TEXTURE_BUFFER, 0, 0);
-  m_texture.markBufferTextureStorage(0, 0);
-  m_texture.unbind();
-}
-
-void GLBufferTexture::detatchBufferFromTexture()
-{
-  detachBufferFromTexture();
 }

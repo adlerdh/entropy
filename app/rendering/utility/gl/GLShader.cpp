@@ -1,6 +1,8 @@
 #include "rendering/utility/gl/GLShader.h"
 #include "rendering/utility/UnderlyingEnumType.h"
 
+#include "common/Exception.hpp"
+
 #include <glad/glad.h>
 
 #include <spdlog/fmt/ostr.h>
@@ -9,9 +11,7 @@
 #include <glm/glm.hpp>
 
 #include <cstddef>
-#include <fstream>
 #include <iterator>
-#include <sstream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -19,18 +19,29 @@
 namespace
 {
 
-static const std::unordered_map<std::string, ShaderType> sk_shaderFileExtensionTypes = {
-  {".vs", ShaderType::Vertex},
-  {".vert", ShaderType::Vertex},
-  {".gs", ShaderType::Geometry},
-  {".geom", ShaderType::Geometry},
-  {".tcs", ShaderType::TessControl},
-  {".tes", ShaderType::TessEvaluation},
-  {".fs", ShaderType::Fragment},
-  {".frag", ShaderType::Fragment}
+class ShaderHandleGuard
+{
+public:
+  explicit ShaderHandleGuard(const GLuint handle) : m_handle(handle) {}
+  ~ShaderHandleGuard()
+  {
+    if (m_handle != 0u) {
+      glDeleteShader(m_handle);
+    }
+  }
 
-  /// @note Compute shaders are not supported in OpenGL 3.3
-  //  { ".cs",   ShaderType::Compute }
+  ShaderHandleGuard(const ShaderHandleGuard&) = delete;
+  ShaderHandleGuard& operator=(const ShaderHandleGuard&) = delete;
+
+  GLuint release() noexcept
+  {
+    const GLuint handle = m_handle;
+    m_handle = 0u;
+    return handle;
+  }
+
+private:
+  GLuint m_handle;
 };
 
 static const std::unordered_map<ShaderType, std::string> sk_shaderTypeStrings = {
@@ -67,11 +78,7 @@ GLShader::GLShader(std::string name, const ShaderType& type, std::istream& sourc
 
 GLShader::~GLShader()
 {
-  if (!m_handle) {
-    return;
-  }
-
-  if (glIsShader(m_handle)) {
+  if (m_handle != 0u) {
     glDeleteShader(m_handle);
   }
 }
@@ -93,7 +100,7 @@ GLuint GLShader::handle() const
 
 bool GLShader::isValid() const
 {
-  return (m_handle && glIsShader(m_handle));
+  return m_handle != 0u;
 }
 
 bool GLShader::isCompiled() const
@@ -103,7 +110,19 @@ bool GLShader::isCompiled() const
 
 void GLShader::compileFromString(const char* source)
 {
+  if (source == nullptr) {
+    throwDebug("Cannot compile a shader from a null source pointer");
+  }
+  if (m_handle != 0u) {
+    glDeleteShader(m_handle);
+    m_handle = 0u;
+    m_isCompiled = false;
+  }
   const GLuint handleLocal = glCreateShader(underlyingType(m_type));
+  if (handleLocal == 0u) {
+    throwDebug("OpenGL could not create a shader object");
+  }
+  ShaderHandleGuard handleGuard(handleLocal);
 
   glShaderSource(handleLocal, 1, &source, nullptr);
   glCompileShader(handleLocal);
@@ -115,9 +134,8 @@ void GLShader::compileFromString(const char* source)
   else {
     m_isCompiled = true;
   }
-  m_handle = handleLocal;
-
-  CHECK_GL_ERROR(m_errorChecker)
+  CHECK_GL_ERROR(m_errorChecker);
+  m_handle = handleGuard.release();
 }
 
 // void GLShader::compileFromStrings( const std::vector< const char* >& sources )
@@ -152,7 +170,7 @@ const std::string& GLShader::shaderTypeString(const ShaderType& type)
   return sk_shaderTypeStrings.at(type);
 }
 
-bool GLShader::checkShaderStatus(GLuint handleArg)
+bool GLShader::checkShaderStatus(GLuint handleArg) const
 {
   GLint status = 0;
   glGetShaderiv(handleArg, GL_COMPILE_STATUS, &status);
@@ -166,8 +184,8 @@ bool GLShader::checkShaderStatus(GLuint handleArg)
     if (logLength > 0) {
       std::vector<GLchar> cLog(static_cast<size_t>(logLength));
       GLsizei actualLength = 0;
-      glGetShaderInfoLog(handleArg, logLength, &actualLength, &cLog[0]);
-      logString = &cLog[0];
+      glGetShaderInfoLog(handleArg, logLength, &actualLength, cLog.data());
+      logString.assign(cLog.data(), static_cast<std::size_t>(actualLength));
     }
 
     spdlog::error("Compilation of shader '{}' failed:\n{}", m_name, logString);

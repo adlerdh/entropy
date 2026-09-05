@@ -61,8 +61,7 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
     renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest);
   preview.texture->bind(s_segTexSampler.index);
   const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
-  const auto boundDeformationTextures =
-    renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+  const auto boundDeformationTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
 
   program.use();
   {

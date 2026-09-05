@@ -95,7 +95,7 @@ void Line::initVaos()
     m_vao.setAttributeBuffer(k_positionsIndex, m_positionInfo);
     m_vao.enableVertexAttribute(k_positionsIndex);
   }
-  m_vao.release();
+  m_vao.unbind();
 
   m_vaoParams = std::make_unique<GLVertexArrayObject::IndexedDrawParams>(m_indexInfo);
 }
@@ -196,7 +196,7 @@ void Line::doRender(const RenderStage& stage)
 
   m_vao.bind();
   m_vao.drawElements(*m_vaoParams);
-  m_vao.release();
+  m_vao.unbind();
 
   glPolygonOffset(0.0f, 0.0f);
   glDisable(GL_POLYGON_OFFSET_LINE);

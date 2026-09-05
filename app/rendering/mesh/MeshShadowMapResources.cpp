@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshShadowMapResources.h"
 
+#include "rendering/utility/gl/OpenGLStateGuard.h"
+
 #include "common/Exception.hpp"
 
 #include <glm/vec3.hpp>
@@ -28,6 +30,7 @@ bool MeshShadowMapResources::ensureSize(const uint32_t sizePixelsArg)
   }
 
   clear();
+  const OpenGLStateGuard state;
   m_depthTexture.emplace(makeDepthTexture());
   allocateDepthTexture(*m_depthTexture, sizePixelsArg);
   attachFramebuffer();

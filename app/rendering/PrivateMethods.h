@@ -550,37 +550,47 @@ void setRaycastIsoUniforms(
 /// @name Texture binding and deformation uniforms
 /// @{
 
+template<typename Texture>
+struct BoundTexture
+{
+  BoundTexture(Texture& textureArg, uint32_t unitArg) : texture(textureArg), unit(unitArg) {}
+
+  std::reference_wrapper<Texture> texture;
+  uint32_t unit;
+};
+
+using BoundTextures = std::list<BoundTexture<GLTexture>>;
+using BoundBufferTextures = std::list<BoundTexture<GLBufferTexture>>;
+
 /**
  * @brief Bind scalar image textures and associated color-map textures for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& p);
+BoundTextures bindScalarImageTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind multi-component color image textures for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& p);
+BoundTextures bindColorImageTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind the segmentation texture for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& p);
+BoundTextures bindSegTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind a deformation field with the default deformation shader sampler slots.
  */
-std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(const uuids::uuid& defUid);
+BoundTextures bindDeformationTextures(const uuids::uuid& defUid);
 
 /**
  * @brief Bind a deformation field with explicit sampler slots.
  */
-std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(
-  const uuids::uuid& defUid,
-  const Uniforms::SamplerIndexVectorType& samplers);
+BoundTextures bindDeformationTextures(const uuids::uuid& defUid, const Uniforms::SamplerIndexVectorType& samplers);
 
 /**
  * @brief Unbind every texture returned by one of the texture binding helpers.
  */
-static void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
+static void unbindTextures(const BoundTextures& textures);
 
 /**
  * @brief Ensure that a deformation field has a GPU texture available for rendering.
@@ -619,19 +629,17 @@ void setMetricDeformationUniforms(
 /**
  * @brief Bind textures needed by metric and comparison shaders.
  */
-std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(
-  const CurrentImages& imageSegPairs,
-  const ViewRenderMode& metricType);
+BoundTextures bindMetricImageTextures(const CurrentImages& imageSegPairs, const ViewRenderMode& metricType);
 
 /**
  * @brief Bind buffer textures such as segmentation label color tables.
  */
-std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& p);
+BoundBufferTextures bindSegBufferTextures(const ImgSegPair& p);
 
 /**
  * @brief Unbind every buffer texture returned by a buffer texture binding helper.
  */
-static void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures);
+static void unbindBufferTextures(const BoundBufferTextures& textures);
 
 /// @}
 /// @name Image selection helpers

@@ -69,6 +69,10 @@ void logOpenGLTextureLimits()
 
 void logTextureUnitZeroStateIfChanged(const char* phase)
 {
+  if (!spdlog::should_log(spdlog::level::trace)) {
+    return;
+  }
+
   struct UnitZeroState
   {
     GLint activeTexture = 0;
@@ -205,24 +209,26 @@ Rendering::Rendering(AppData& appData)
       "Proceeding without vector graphics.");
   }
 
-  try {
-    // Load the font for anatomical labels:
-    auto filesystem = cmrc::fonts::get_filesystem();
-    const cmrc::file robotoFont = filesystem.open("res/fonts/Roboto/Roboto-Light.ttf");
+  if (m_nvg) {
+    try {
+      // Load the font for anatomical labels:
+      auto filesystem = cmrc::fonts::get_filesystem();
+      const cmrc::file robotoFont = filesystem.open("res/fonts/Roboto/Roboto-Light.ttf");
 
-    const int robotoLightFont = nvgCreateFontMem(
-      m_nvg,
-      ROBOTO_LIGHT.c_str(),
-      reinterpret_cast<uint8_t*>(const_cast<char*>(robotoFont.begin())),
-      static_cast<int32_t>(robotoFont.size()),
-      0);
+      const int robotoLightFont = nvgCreateFontMem(
+        m_nvg,
+        ROBOTO_LIGHT.c_str(),
+        reinterpret_cast<uint8_t*>(const_cast<char*>(robotoFont.begin())),
+        static_cast<int32_t>(robotoFont.size()),
+        0);
 
-    if (-1 == robotoLightFont) {
-      spdlog::error("Could not load font {}", ROBOTO_LIGHT);
+      if (-1 == robotoLightFont) {
+        spdlog::error("Could not load font {}", ROBOTO_LIGHT);
+      }
     }
-  }
-  catch (const std::exception& e) {
-    spdlog::error("Exception when loading font file: {}", e.what());
+    catch (const std::exception& e) {
+      spdlog::error("Exception when loading font file: {}", e.what());
+    }
   }
 
   logOpenGLTextureLimits();
@@ -254,27 +260,27 @@ void Rendering::setupOpenGLState()
   glDisable(GL_SCISSOR_TEST);
   glEnable(GL_STENCIL_TEST);
 
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_POLYGON_OFFSET_FILL);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_TRUE);
+  glDepthFunc(GL_LESS);
+  glBlendEquation(GL_FUNC_ADD);
+  glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
-
-  // This is the state touched by NanoVG:
-  //    glEnable(GL_CULL_FACE);
-  //    glCullFace(GL_BACK);
-  //    glFrontFace(GL_CCW);
-  //    glEnable(GL_BLEND);
-  //    glDisable(GL_DEPTH_TEST);
-  //    glDisable(GL_SCISSOR_TEST);
-  //    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-  //    glStencilMask(0xffffffff);
-  //    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-  //    glStencilFunc(GL_ALWAYS, 0, 0xffffffff);
-  //    glActiveTexture(GL_TEXTURE0);
-  //    glBindTexture(GL_TEXTURE_2D, 0);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glPolygonOffset(0.0f, 0.0f);
+  glStencilMask(0xffffffffu);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+  glStencilFunc(GL_ALWAYS, 0, 0xffffffffu);
+  glActiveTexture(GL_TEXTURE0);
 }
 
 void Rendering::init()
 {
-  nvgReset(m_nvg);
+  if (m_nvg) {
+    nvgReset(m_nvg);
+  }
   m_asciiRenderer.init();
   m_pixelEdgeRenderer.init();
 }

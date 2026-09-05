@@ -400,9 +400,8 @@ void renderMetricSettingsPanel(
       }
       ImGui::EndCombo();
     }
-    ImGui::SameLine();
     bool inverted = metricParams.m_invertCmap;
-    if (ImGui::Checkbox("Invert", &inverted)) {
+    if (ImGui::Checkbox("Invert color map", &inverted)) {
       metricParams.m_invertCmap = inverted;
       updateMetricUniforms();
     }
@@ -541,6 +540,9 @@ bool renderLocalNccSettings(
     showWindowAsSignedCorrelation,
     useCompactColorMapControl);
 
+  if (useCompactColorMapControl) {
+    ImGui::Separator();
+  }
   ImGui::Spacing();
 
   if (RenderData::LocalNccPresentation::Dissimilarity == renderData.m_localNccPresentation) {
@@ -640,6 +642,9 @@ bool renderLocalLinearResidualSettings(
     false,
     useCompactColorMapControl);
 
+  if (useCompactColorMapControl) {
+    ImGui::Separator();
+  }
   ImGui::Spacing();
 
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
@@ -3085,7 +3090,6 @@ void renderComparisonModeQuickSettings(
       if (ImGui::RadioButton("Split Y", !quadrants.x && quadrants.y)) {
         renderData.m_quadrants = glm::ivec2{false, true};
       }
-      ImGui::SameLine();
       if (ImGui::RadioButton("Split X and Y", quadrants.x && quadrants.y)) {
         renderData.m_quadrants = glm::ivec2{true, true};
       }

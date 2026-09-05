@@ -113,6 +113,7 @@ GLint Uniforms::queryAndSetLocation(
   const std::function<GLint(const std::string&)>& locationGetter)
 {
   const GLint loc = locationGetter(name);
+  setLocation(name, loc);
 
   if (-1 == loc) {
     const Decl& uniform = m_uniformsMap.at(name);
@@ -124,23 +125,14 @@ GLint Uniforms::queryAndSetLocation(
     }
     return loc;
   }
-  else {
-    setLocation(name, loc);
-  }
   return loc;
 }
 
-int Uniforms::queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter)
+void Uniforms::queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter)
 {
-  bool foundOne = false;
   for (const auto& uniform : m_uniformsMap) {
-    const GLint loc = queryAndSetLocation(uniform.first, locationGetter);
-    if (-1 != loc) {
-      foundOne = true;
-    }
+    static_cast<void>(queryAndSetLocation(uniform.first, locationGetter));
   }
-
-  return (foundOne ? 0 : 1);
 }
 
 void Uniforms::setDirty(const std::string& name, bool isDirtyArg)

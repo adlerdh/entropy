@@ -4,6 +4,7 @@
 #include "common/MathFuncs.h"
 
 #include "ui/Helpers.h"
+#include "ui/AboutIcon.h"
 #include "ui/GradientBackgroundRenderer.h"
 #include "ui/ImageExport.h"
 #include "ui/ImGuiCustomControls.h"
@@ -1767,6 +1768,8 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
 
 ImGuiWrapper::~ImGuiWrapper()
 {
+  about_entropy_icon::releaseTexture();
+  ui::releaseGradientBackgroundResources();
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 

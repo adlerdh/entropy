@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/utility/gl/GLShader.h"
+#include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/containers/Uniforms.h"
 
 #include <glm/fwd.hpp>
@@ -19,7 +20,6 @@
  * uniform upload helpers. It is move-disabled by omission and copy-disabled because the OpenGL handle has unique
  * ownership semantics.
  *
- * @todo Implement call for `glDetachShader()` once shader object lifetime is revisited.
  */
 class GLShaderProgram
 {
@@ -43,28 +43,16 @@ public:
   /// Attach a compiled shader object before linking.
   bool attachShader(const GLShader& shader);
 
-  /**
-   * @brief Validate the linked program against the current OpenGL state.
-   *
-   * This is meant to be called directly before a draw call with this program bound and all required VAO and texture
-   * bindings already configured.
-   */
-  bool isValid();
-
-  /// Bind this shader program for subsequent draw calls.
+  /// Bind this linked shader program for subsequent draw calls. Throws if it is not ready.
   void use();
 
   /// Unbind the current shader program.
   static void stopUse();
 
-  void bindAttribLocation(const std::string& nameArg, GLuint location);
-  void bindFragDataLocation(const std::string& nameArg, GLuint location) const;
-
   bool setUniform(const std::string& nameArg, GLboolean val);
   bool setUniform(const std::string& nameArg, GLint val);
   bool setUniform(const std::string& nameArg, GLuint val);
   bool setUniform(const std::string& nameArg, GLfloat val);
-  bool setUniform(const std::string& nameArg, GLfloat x, GLfloat y, GLfloat z);
   bool setUniform(const std::string& nameArg, const glm::ivec2& v);
   bool setUniform(const std::string& nameArg, const glm::vec2& v);
   bool setUniform(const std::string& nameArg, const glm::vec3& v);
@@ -76,8 +64,10 @@ public:
 
   bool setSamplerUniform(const std::string& nameArg, const Uniforms::SamplerIndexVectorType& samplers);
   bool setUniform(const std::string& nameArg, const std::vector<float>& floats);
+  bool setUniform(const std::string& nameArg, const std::vector<GLint>& integers);
   bool setUniform(const std::string& nameArg, const std::vector<glm::vec2>& vectors);
   bool setUniform(const std::string& nameArg, const std::vector<glm::vec3>& vectors);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::vec4>& vectors);
   bool setUniform(const std::string& nameArg, const std::vector<glm::mat4>& matrices);
 
   /**
@@ -98,29 +88,17 @@ public:
   /// Upload every dirty uniform in the supplied registry, then mark successfully uploaded uniforms clean.
   void applyUniforms(Uniforms& uniforms);
 
-  /// Replace the registered uniform declarations copied from shader setup.
-  void setRegisteredUniforms(const Uniforms& uniforms);
-
-  /// Replace the registered uniform declarations moved from shader setup.
-  void setRegisteredUniforms(Uniforms&& uniforms);
-
   /// Return registered uniform declarations and their most recently queried locations.
   const Uniforms& getRegisteredUniforms() const;
 
-  /// Query an attribute location from the linked program.
-  GLint getAttribLocation(const std::string& nameArg) const;
-
   /// Query a uniform location from the linked program.
   GLint getUniformLocation(const std::string& nameArg);
-
-  void printActiveUniforms() const;
-  void printActiveUniformBlocks() const;
-  void printActiveAttribs() const;
 
 private:
   std::string m_name;
   GLuint m_handle;
   bool m_linked;
+  GLErrorChecker m_errorChecker;
 
   Uniforms m_registeredUniforms;
 
@@ -130,7 +108,7 @@ private:
   class UniformSetter
   {
   public:
-    explicit UniformSetter(GLShaderProgram&);
+    UniformSetter() = default;
     ~UniformSetter() = default;
 
     void setLocation(GLint loc);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rendering/utility/gl/GLBufferObject.h"
-#include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLTexture.h"
 
 #include <glad/glad.h>
@@ -38,53 +37,30 @@ public:
   /// Generate both the backing buffer object and texture object.
   void generate();
 
-  /// Unbind the texture from the current context or from a specific texture unit.
-  void release(std::optional<uint32_t> textureUnit = std::nullopt);
-
   /// Bind the texture to the current context or to a specific texture unit.
   void bind(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Return whether the texture object is bound, optionally on the supplied texture unit.
   bool isBound(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
-  /// Unbind the texture target from the current context.
-  void unbind() const;
+  /// Unbind the texture target from the current context or from a specific texture unit.
+  void unbind(std::optional<uint32_t> textureUnit = std::nullopt) const;
 
   /// Return the OpenGL texture name.
   GLuint id() const;
 
-  /// Allocate backing buffer storage and optionally initialize it with CPU data.
+  /// Allocate backing storage, optionally initialize it, and attach it to the texture object.
   void allocate(std::size_t sizeInBytes, const GLvoid* data);
 
   /// Replace a byte range in the backing buffer.
-  void write(GLintptr offset, GLsizeiptr sizeInBytes, const GLvoid* data);
+  void write(std::size_t offset, std::size_t sizeInBytes, const GLvoid* data);
 
   /// Read a byte range from the backing buffer.
-  void read(GLintptr offset, GLsizeiptr sizeInBytes, GLvoid* data);
+  void read(std::size_t offset, std::size_t sizeInBytes, GLvoid* data) const;
 
   BufferUsagePattern usagePattern() const;
 
-  /**
-   * @note When a buffer texture is accessed in a shader, the results of a texel fetch are undefined
-   * if the specified texel coordinate is negative, or greater than or equal to the clamped number
-   * of texels in the texel array.
-   *
-   * @return Number of texels in the buffer texture's texel array
-   */
-  std::size_t numBytes() const;
-
-  /// Attach the backing buffer object's data store to the texture object.
-  void attachBufferToTexture(std::optional<uint32_t> textureUnit = std::nullopt);
-
-  /// Detach any buffer storage currently attached to the texture object.
-  void detachBufferFromTexture();
-
-  /// @deprecated Use `detachBufferFromTexture()`.
-  void detatchBufferFromTexture();
-
 private:
-  GLErrorChecker m_errorChecker;
-
   GLBufferObject m_buffer;
 
   // Texture "wrapper" around buffer object: must be a buffer texture

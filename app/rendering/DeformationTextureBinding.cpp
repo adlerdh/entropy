@@ -38,16 +38,16 @@ uuid deformationSettingsOwnerImageUid(const AppData& appData, const uuid& imageU
 
 } // namespace
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(const uuid& defUid)
+Rendering::BoundTextures Rendering::bindDeformationTextures(const uuid& defUid)
 {
   return bindDeformationTextures(defUid, msk_defTexSamplers);
 }
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
+Rendering::BoundTextures Rendering::bindDeformationTextures(
   const uuid& defUid,
   const Uniforms::SamplerIndexVectorType& samplers)
 {
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  BoundTextures boundTextures;
   if (!ensureDeformationTexture(defUid)) {
     return boundTextures;
   }
@@ -66,7 +66,7 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
   for (std::size_t component = 0; component < 3; ++component) {
     GLTexture& texture = textureIt->second.at(component);
     texture.bind(samplers.indices[component]);
-    boundTextures.emplace_back(texture);
+    boundTextures.emplace_back(texture, samplers.indices[component]);
   }
 
   return boundTextures;

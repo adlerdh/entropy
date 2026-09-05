@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshDdpResources.h"
 
+#include "rendering/utility/gl/OpenGLStateGuard.h"
+
 #include "common/Exception.hpp"
 
 #include <glm/vec3.hpp>
@@ -47,6 +49,7 @@ bool MeshDdpResources::ensureSize(const glm::uvec2& viewportSize)
   }
 
   clear();
+  const OpenGLStateGuard state;
   allocateTextures(viewportSize);
   attachFramebuffers();
   m_size = viewportSize;

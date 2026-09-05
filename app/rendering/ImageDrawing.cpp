@@ -227,7 +227,7 @@ void drawImageQuad(
   {
     quad.m_vao.drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  quad.m_vao.unbind();
 }
 
 /// @todo We're going to have to put back std::vector<Image*>
@@ -323,7 +323,7 @@ void drawSegQuad(
   {
     quad.m_vao.drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  quad.m_vao.unbind();
 }
 
 void drawSegPreviewQuad(
@@ -407,7 +407,7 @@ void drawSegPreviewQuad(
   {
     quad.m_vao.drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  quad.m_vao.unbind();
 }
 
 void drawRaycastQuad(
@@ -451,5 +451,5 @@ void drawRaycastQuad(
   {
     quad.m_vao.drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  quad.m_vao.unbind();
 }

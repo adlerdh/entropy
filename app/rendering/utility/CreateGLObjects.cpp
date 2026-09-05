@@ -381,7 +381,6 @@ std::unique_ptr<GLBufferTexture> createLabelColorTableTextureBuffer(const Parcel
 
   colorMapTexture->generate();
   colorMapTexture->allocate(labels->numColorBytes_RGBA_U8(), labels->colorData_RGBA_nonpremult_U8());
-  colorMapTexture->attachBufferToTexture();
 
   return colorMapTexture;
 }

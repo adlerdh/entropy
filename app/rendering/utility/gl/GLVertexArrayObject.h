@@ -38,7 +38,7 @@ public:
     GLenum primitiveMode() const;
     std::size_t elementCount() const;
     GLenum indexType() const;
-    GLvoid* indices() const;
+    const GLvoid* indices() const;
 
     void setElementCount(std::size_t elementCountArg);
 
@@ -46,7 +46,7 @@ public:
     GLenum m_primitiveMode;
     std::size_t m_elementCount;
     GLenum m_indexType;
-    GLvoid* m_indices;
+    const GLvoid* m_indices;
   };
 
   GLVertexArrayObject();
@@ -68,7 +68,7 @@ public:
   void bind() const;
 
   /// Unbind the active VAO from the current context.
-  void release() const;
+  static void unbind();
 
   GLuint id() const;
 
@@ -79,7 +79,7 @@ public:
     const BufferComponentType& type,
     const BufferNormalizeValues& normalize,
     GLsizei stride,
-    GLint offset) const;
+    std::size_t offset) const;
 
   /// Configure a floating-point vertex attribute stream from a stored attribute descriptor.
   void setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo) const;
@@ -90,18 +90,23 @@ public:
     GLint size,
     const BufferComponentType& type,
     GLsizei stride,
-    GLint offset) const;
+    std::size_t offset) const;
 
   /// Enable one vertex attribute index.
-  static void enableVertexAttribute(GLuint index);
+  void enableVertexAttribute(GLuint index) const;
 
   /// Disable one vertex attribute index.
-  static void disableVertexAttribute(GLuint index);
+  void disableVertexAttribute(GLuint index) const;
 
   /// Issue `glDrawElements()` with precomputed draw arguments.
   static void drawElements(const IndexedDrawParams& params);
 
+  /// Issue `glDrawArrays()` for an already bound VAO.
+  static void drawArrays(const PrimitiveMode& primitiveMode, GLint first, std::size_t count);
+
 private:
+  void requireBound() const;
+
   GLuint m_id;
   GLErrorChecker m_errorChecker;
 };

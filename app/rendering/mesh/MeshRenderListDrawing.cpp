@@ -21,6 +21,7 @@
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/mesh/MeshViewContext.h"
 #include "rendering/mesh/MeshViewViewport.h"
+#include "rendering/utility/gl/OpenGLStateGuard.h"
 #include "windowing/View.h"
 
 #include <glad/glad.h>
@@ -167,14 +168,14 @@ void Rendering::updateMeshExtractionStatus()
 void Rendering::clearMeshViewBackgroundForView(const View& view)
 {
   const rendering::mesh::ScopedMeshViewViewport scopedViewport{view, m_appData.windowData()};
-
-  std::array<GLfloat, 4> previousClearColor{};
-  glGetFloatv(GL_COLOR_CLEAR_VALUE, previousClearColor.data());
+  const OpenGLStateGuard state;
 
   const auto& bg = m_appData.renderData().m_3dBackgroundColor;
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_TRUE);
+  glStencilMask(0xffffffffu);
   glClearColor(bg.r, bg.g, bg.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  glClearColor(previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
 }
 
 void Rendering::drawMeshRenderListForView(

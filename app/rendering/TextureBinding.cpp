@@ -2,12 +2,9 @@
 
 #include "rendering/utility/gl/GLTexture.h"
 
-#include <functional>
-#include <list>
-
-void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures)
+void Rendering::unbindTextures(const BoundTextures& textures)
 {
-  for (const auto& T : textures) {
-    T.get().unbind();
+  for (const BoundTexture<GLTexture>& binding : textures) {
+    binding.texture.get().unbind(binding.unit);
   }
 }

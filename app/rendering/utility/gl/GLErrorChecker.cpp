@@ -27,9 +27,10 @@ constexpr const char* k_unknownMessage = "Unknown error.";
 
 void GLErrorChecker::operator()(const char* file, const char* function, int line) const
 {
-  GLenum error = 0;
+  std::ostringstream errors;
+  bool foundError = false;
 
-  while (GL_NO_ERROR != (error = glGetError())) {
+  for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
     const char* msg = nullptr;
 
     switch (error) {
@@ -63,16 +64,16 @@ void GLErrorChecker::operator()(const char* file, const char* function, int line
         break;
     }
 
-    std::ostringstream ss;
-    ss << "OpenGL error " << error << ": " << msg << std::ends;
-
-    spdlog::error("{}", ss.str());
-
-    throwDebug(ss.str(), file, function, line);
+    if (foundError) {
+      errors << ' ';
+    }
+    errors << "OpenGL error " << error << ": " << msg;
+    foundError = true;
   }
-}
 
-void GLErrorChecker::operator()() const
-{
-  // no-op
+  if (foundError) {
+    const std::string message = errors.str();
+    spdlog::error("{}", message);
+    throwDebug(message, file, function, line);
+  }
 }

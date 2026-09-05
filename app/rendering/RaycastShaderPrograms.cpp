@@ -100,7 +100,9 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 
     GLShader vs("vsRaycast", ShaderType::Vertex, vsSource.c_str());
     vs.setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+    if (!program.attachShader(vs)) {
+      return false;
+    }
 
     spdlog::debug("Compiled vertex shader {}", vsFileName);
   }
@@ -151,7 +153,9 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 
     GLShader fs("fsRaycast", ShaderType::Fragment, fsSource.c_str());
     fs.setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
+    if (!program.attachShader(fs)) {
+      return false;
+    }
 
     spdlog::debug("Compiled fragment shader {}", fsFileName);
   }

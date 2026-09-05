@@ -62,10 +62,11 @@ target_sources(entropy PRIVATE
   utility/gl/GLBufferTexture.cpp
   utility/gl/GLErrorChecker.cpp
   utility/gl/GLFrameBufferObject.cpp
+  utility/gl/OpenGLStateGuard.cpp
   utility/gl/GLShader.cpp
   utility/gl/GLShaderProgram.cpp
   utility/gl/GLTexture.cpp
-  utility/gl/GLVersionChecker.cpp
+  utility/gl/OpenGLContext.cpp
   utility/gl/GLVertexArrayObject.cpp
   utility/math/SliceIntersector.cpp
 )

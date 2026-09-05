@@ -3,6 +3,7 @@
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
 #include "common/Viewport.h"
+#include "rendering/utility/gl/OpenGLContext.h"
 #include "ui/LinuxUiScale.h"
 #include "ui/ImGuiWrapper.h"
 #include "windowing/GlfwCallbacks.h"
@@ -400,12 +401,23 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
   // Load all OpenGL function pointers with GLAD
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    glfwDestroyWindow(m_window);
+    m_window = nullptr;
     glfwTerminate();
     spdlog::critical("Failed to load OpenGL function pointers with GLAD");
     throwDebug("Failed to load OpenGL function pointers with GLAD");
   }
 
   spdlog::debug("Loaded OpenGL function pointers with GLAD");
+  try {
+    validateOpenGLContext();
+  }
+  catch (...) {
+    glfwDestroyWindow(m_window);
+    m_window = nullptr;
+    glfwTerminate();
+    throw;
+  }
 }
 
 GlfwWrapper::~GlfwWrapper()

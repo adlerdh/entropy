@@ -13,9 +13,10 @@
 #include <cstdint>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 
 /**
- * @brief RAII wrapper around an OpenGL texture object and optional sampler object.
+ * @brief RAII wrapper around an OpenGL texture object.
  *
  * The wrapper owns the texture name, remembers its target and logical dimensions, and provides the typed format helpers
  * used when uploading native image component data to OpenGL.
@@ -129,8 +130,8 @@ public:
   /// Generate the GL texture name if needed.
   void generate();
 
-  /// Unbind the texture from the current context or from a specific texture unit.
-  void release(std::optional<uint32_t> textureUnit = std::nullopt);
+  /// Delete the owned texture name and reset allocation metadata.
+  void destroy();
 
   /// Bind the texture to the current context or to a specific texture unit.
   void bind(std::optional<uint32_t> textureUnit = std::nullopt) const;
@@ -140,14 +141,6 @@ public:
 
   /// Unbind this texture target from the current context, or from one specific texture unit.
   void unbind(std::optional<uint32_t> textureUnit = std::nullopt) const;
-
-  /// @todo Place Sampler Object in separate class.
-  /// @todo Store Sampler Object as member of GPU image record
-  /// Bind this texture's sampler object to a texture unit.
-  void bindSampler(uint32_t textureUnit) const;
-
-  /// Unbind this texture's sampler object from a texture unit.
-  static void unbindSampler(uint32_t textureUnit);
 
   tex::Target target() const;
 
@@ -160,7 +153,10 @@ public:
   void setSize(const glm::uvec3& sizeArg);
 
   /**
-   * @brief Allocate mutable storage for a mipmap level and optionally initialize it with pixel data.
+   * @brief Allocate mutable base-level storage and optionally initialize it with pixel data.
+   *
+   * Entropy allocates level zero directly and derives any lower-resolution levels through automatic mipmap
+   * generation. Passing a nonzero level is rejected.
    **/
   void setData(
     GLint level,
@@ -170,10 +166,10 @@ public:
     const GLvoid* data);
 
   /**
-   * @brief Write pixel data to a subregion of an existing texture level.
+   * @brief Write pixel data to a subregion of an existing texture's base level.
    *
    * Storage must already have been allocated by `setData()`. The data pointer and every region extent must be
-   * non-null/nonzero, and the complete region must lie within `size()`.
+   * non-null/nonzero, and the complete region must lie within `size()`. Passing a nonzero level is rejected.
    **/
   void setSubData(
     GLint level,
@@ -183,7 +179,7 @@ public:
     const tex::BufferPixelDataType& type,
     const GLvoid* data);
 
-  /// Allocate and upload one cube-map face.
+  /// Allocate and upload one base-level cube-map face. Passing a nonzero level is rejected.
   void setCubeMapFaceData(
     const tex::CubeMapFace& face,
     GLint level,
@@ -225,11 +221,6 @@ public:
 
   /// Enable or disable automatic mipmap generation after texture uploads.
   void setAutoGenerateMipmaps(bool enabled);
-
-  /// Record storage attached through `glTexBuffer()`, which does not use the normal `setData()` upload path.
-  void markBufferTextureStorage(GLint internalFormat, std::size_t texelCount);
-
-  void setMultisampleSettings(const MultisampleSettings& settings);
 
   void setPixelPackSettings(const PixelStoreSettings& settings);
   void setPixelUnpackSettings(const PixelStoreSettings& settings);
@@ -279,6 +270,8 @@ public:
   static tex::BufferPixelDataType getBufferPixelDataType(const ComponentType& componentType);
 
 private:
+  friend class GLBufferTexture;
+
   static const std::unordered_map<tex::Target, tex::Binding> s_bindingMap;
 
   // Sized internal normalized formats:
@@ -330,19 +323,19 @@ private:
 
   GLErrorChecker m_errorChecker;
 
-  const tex::Target m_target;
-  const GLenum m_targetEnum;
+  tex::Target m_target;
+  GLenum m_targetEnum;
   GLuint m_id;
   glm::uvec3 m_size{0u};
   bool m_hasAllocatedStorage = false;
+  std::unordered_set<GLint> m_allocatedLevels;
+  std::unordered_map<GLint, uint8_t> m_allocatedCubeFaces;
   bool m_autoGenerateMipmaps = false;
   mutable bool m_loggedSuspiciousBind = false;
   mutable bool m_loggedUnitZeroBind = false;
   GLint m_lastInternalFormat = 0;
   GLenum m_lastBufferFormat = 0;
   GLenum m_lastBufferType = 0;
-
-  GLuint m_samplerID = 0u;
 
   MultisampleSettings m_multisampleSettings;
   std::optional<PixelStoreSettings> m_pixelPackSettings;
@@ -359,9 +352,13 @@ private:
     GLint m_boundID;
   };
 
+  class PixelStoreGuard;
+
   static PixelStoreSettings getPixelPackSettings();
   static PixelStoreSettings getPixelUnpackSettings();
 
   static void applyPixelPackSettings(const PixelStoreSettings& settings);
   static void applyPixelUnpackSettings(const PixelStoreSettings& settings);
+
+  void setBufferTextureStorage(GLint internalFormat, GLuint bufferId, std::size_t texelCount);
 };

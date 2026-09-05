@@ -486,7 +486,7 @@ void TexturedMesh::initVao()
       // m_vao.setGenericAttribute4f( k_colorIndex, sk_defaultColor );
     }
   }
-  m_vao.release();
+  m_vao.unbind();
 
   m_vaoParams = std::make_unique<GLVertexArrayObject::IndexedDrawParams>(indicesInfo);
 }
@@ -757,7 +757,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
   {
     m_vao.drawElements(*m_vaoParams);
   }
-  m_vao.release();
+  m_vao.unbind();
 
   if (auto texture = m_texture2d.lock()) {
     // Note: unbind here wrecks render when mesh has transparency.

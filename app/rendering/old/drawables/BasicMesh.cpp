@@ -348,7 +348,7 @@ void BasicMesh::initVao()
       // m_vao.setGenericAttribute4f( k_colorIndex, sk_defaultColor );
     }
   }
-  m_vao.release();
+  m_vao.unbind();
 
   m_vaoParams = std::make_unique<GLVertexArrayObject::IndexedDrawParams>(indicesInfo);
 }
@@ -497,7 +497,7 @@ void BasicMesh::doRender(const RenderStage& stage)
   {
     m_vao.drawElements(*m_vaoParams);
   }
-  m_vao.release();
+  m_vao.unbind();
 
   // Reset default GL states:
 

@@ -10,4 +10,7 @@ constexpr int height = 128;
 
 ImTextureID textureId();
 
+/// Release the lazily created OpenGL texture while the application context is still current.
+void releaseTexture() noexcept;
+
 } // namespace about_entropy_icon

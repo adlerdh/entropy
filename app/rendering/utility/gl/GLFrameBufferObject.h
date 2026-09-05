@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/utility/gl/GLFBOAttachmentTypes.h"
+#include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
 
@@ -39,11 +40,20 @@ public:
   /// Bind the framebuffer to the requested draw, read, or draw/read target.
   void bind(const fbo::TargetType& target) const;
 
+  /// Bind the default framebuffer to the requested target.
+  static void unbind(const fbo::TargetType& target);
+
   /// Attach a 2D texture image to a framebuffer attachment point.
   void attach2DTexture(
     const fbo::TargetType& target,
     const fbo::AttachmentType& attachment,
     const GLTexture& texture,
+    std::optional<int> colorAttachmentIndex = std::nullopt);
+
+  /// Detach a 2D texture image from an attachment point.
+  void detach2DTexture(
+    const fbo::TargetType& target,
+    const fbo::AttachmentType& attachment,
     std::optional<int> colorAttachmentIndex = std::nullopt);
 
   /// Attach one cube-map face to a framebuffer attachment point.
@@ -58,8 +68,10 @@ public:
   GLuint id() const;
 
 private:
-  void checkStatus();
+  void requireBound(const fbo::TargetType& target) const;
+  void checkStatus(const fbo::TargetType& target) const;
 
+  GLErrorChecker m_errorChecker;
   std::string m_name;
   GLuint m_id;
 };

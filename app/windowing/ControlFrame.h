@@ -102,6 +102,9 @@ public:
   /**
    * @brief Set the frame view type
    * @param viewType New view type
+   *
+   * Entering 3D initializes its image selection from the rendered images when no
+   * explicit 3D selection has been made.
    */
   virtual void setViewType(const ViewType& viewTypeArg);
 

@@ -58,7 +58,9 @@ bool attachShaderFile(GLShaderProgram& program, const ShaderType shaderType, con
 
   GLShader shader(path, shaderType, source.c_str());
   shader.setRegisteredUniforms(std::move(uniforms));
-  program.attachShader(shader);
+  if (!program.attachShader(shader)) {
+    return false;
+  }
   spdlog::debug("Compiled shader {}", path);
   return true;
 }
@@ -72,7 +74,9 @@ bool attachShaderSource(
 {
   GLShader shader(name, shaderType, source.c_str());
   shader.setRegisteredUniforms(std::move(uniforms));
-  program.attachShader(shader);
+  if (!program.attachShader(shader)) {
+    return false;
+  }
   spdlog::debug("Compiled shader {}", name);
   return true;
 }

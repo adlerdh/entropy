@@ -1086,19 +1086,6 @@ std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(c
       continue;
     }
 
-    int maxBufTexSize = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
-
-    if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {
-      spdlog::error(
-        "Number of bytes ({}) in label color table {} exceeds "
-        "maximum buffer texture size of {} bytes",
-        table->numColorBytes_RGBA_U8(),
-        *tableUid,
-        maxBufTexSize);
-      continue;
-    }
-
     auto it = bufTextures.emplace(
       std::piecewise_construct,
       std::forward_as_tuple(*tableUid),

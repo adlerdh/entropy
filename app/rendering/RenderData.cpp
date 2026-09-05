@@ -253,8 +253,9 @@ RenderData::Quad::Quad()
     m_positionsObject.bind();
     m_vao.setAttributeBuffer(sk_positionIndex, m_positionsInfo);
     m_vao.enableVertexAttribute(sk_positionIndex);
+    m_positionsObject.unbind();
   }
-  m_vao.release();
+  m_vao.unbind();
 
   spdlog::debug("Created image quad vertex array object");
 }
@@ -292,8 +293,9 @@ RenderData::Circle::Circle()
     m_positionsObject.bind();
     m_vao.setAttributeBuffer(sk_positionIndex, m_positionsInfo);
     m_vao.enableVertexAttribute(sk_positionIndex);
+    m_positionsObject.unbind();
   }
-  m_vao.release();
+  m_vao.unbind();
 
   spdlog::debug("Created image quad vertex array object");
 }

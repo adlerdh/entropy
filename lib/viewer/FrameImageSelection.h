@@ -58,7 +58,7 @@ public:
   /** @brief Replace the 3D-rendered image selection. */
   void setVolumeRenderedImages(const std::list<uuids::uuid>& imageUids);
 
-  /** @brief Select the first rendered image for 3D rendering if no explicit 3D image is selected. */
+  /** @brief Select the rendered images for 3D rendering if no explicit 3D image is selected. */
   void ensureVolumeRenderedImageSelected();
 
   /** @brief Is the image selected for metric/comparison rendering? */

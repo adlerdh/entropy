@@ -145,7 +145,7 @@ public:
   GLint queryAndSetLocation(const std::string& name, const std::function<GLint(const std::string&)>& locationGetter);
 
   /// Query and store locations for every declared uniform.
-  int queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter);
+  void queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter);
 
   /// Mark one uniform declaration dirty or clean.
   void setDirty(const std::string& name, bool isDirtyArg);

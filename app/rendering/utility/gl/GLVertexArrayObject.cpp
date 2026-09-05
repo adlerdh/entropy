@@ -24,6 +24,49 @@ size_t bytesPerIndexType(const IndexType& indexType)
   throwDebug("Invalid index type");
 }
 
+const GLvoid* indexBufferOffset(const std::size_t indexOffset, const IndexType indexType)
+{
+  const std::size_t bytesPerIndex = bytesPerIndexType(indexType);
+  if (indexOffset > std::numeric_limits<std::uintptr_t>::max() / bytesPerIndex) {
+    throwDebug("Index-buffer byte offset exceeds the addressable range");
+  }
+  return reinterpret_cast<const GLvoid*>(static_cast<std::uintptr_t>(indexOffset * bytesPerIndex));
+}
+
+bool isIntegerAttributeType(const BufferComponentType type) noexcept
+{
+  switch (type) {
+    case BufferComponentType::Byte:
+    case BufferComponentType::UByte:
+    case BufferComponentType::Short:
+    case BufferComponentType::UShort:
+    case BufferComponentType::Int:
+    case BufferComponentType::UInt:
+      return true;
+    case BufferComponentType::HFloat:
+    case BufferComponentType::Float:
+    case BufferComponentType::Double:
+    case BufferComponentType::Int_2_10_10_10:
+    case BufferComponentType::UInt_2_10_10_10:
+    case BufferComponentType::UInt_10F_11F_11F:
+      return false;
+  }
+  return false;
+}
+
+void validateFloatingAttributeLayout(const GLint size, const BufferComponentType type, const GLsizei stride)
+{
+  if (size < 1 || size > 4 || stride < 0) {
+    throwDebug("Invalid floating-point vertex attribute layout");
+  }
+  if ((type == BufferComponentType::Int_2_10_10_10 || type == BufferComponentType::UInt_2_10_10_10) && size != 4) {
+    throwDebug("2-10-10-10 packed vertex attributes require four components");
+  }
+  if (type == BufferComponentType::UInt_10F_11F_11F && size != 3) {
+    throwDebug("10F-11F-11F packed vertex attributes require three components");
+  }
+}
+
 } // namespace
 
 GLVertexArrayObject::GLVertexArrayObject() : m_id(0) {}
@@ -51,27 +94,35 @@ GLVertexArrayObject& GLVertexArrayObject::operator=(GLVertexArrayObject&& other)
 
 void GLVertexArrayObject::generate()
 {
+  if (m_id != 0u) {
+    return;
+  }
   glGenVertexArrays(1, &m_id);
 
-  CHECK_GL_ERROR(m_errorChecker)
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLVertexArrayObject::destroy()
 {
-  glDeleteVertexArrays(1, &m_id);
+  if (m_id != 0u) {
+    glDeleteVertexArrays(1, &m_id);
+  }
   m_id = 0;
 }
 
 void GLVertexArrayObject::bind() const
 {
+  if (m_id == 0u) {
+    throwDebug("Cannot bind a vertex array before generating it");
+  }
   glBindVertexArray(m_id);
-  CHECK_GL_ERROR(m_errorChecker)
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
-void GLVertexArrayObject::release() const
+void GLVertexArrayObject::unbind()
 {
   glBindVertexArray(0);
-  CHECK_GL_ERROR(m_errorChecker)
+  GLErrorChecker{}(__FILE__, __FUNCTION__, __LINE__);
 }
 
 GLuint GLVertexArrayObject::id() const
@@ -85,8 +136,10 @@ void GLVertexArrayObject::setAttributeBuffer(
   const BufferComponentType& type,
   const BufferNormalizeValues& normalize,
   GLsizei stride,
-  GLint offset) const
+  std::size_t offset) const
 {
+  requireBound();
+  validateFloatingAttributeLayout(size, type, stride);
   glVertexAttribPointer(
     index,
     size,
@@ -95,7 +148,7 @@ void GLVertexArrayObject::setAttributeBuffer(
     stride,
     reinterpret_cast<const GLvoid*>(static_cast<std::uintptr_t>(offset)));
 
-  CHECK_GL_ERROR(m_errorChecker)
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLVertexArrayObject::setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo) const
@@ -114,8 +167,12 @@ void GLVertexArrayObject::setAttributeIntegerBuffer(
   GLint size,
   const BufferComponentType& type,
   GLsizei stride,
-  GLint offset) const
+  std::size_t offset) const
 {
+  requireBound();
+  if (size < 1 || size > 4 || stride < 0 || !isIntegerAttributeType(type)) {
+    throwDebug("Invalid integer vertex attribute layout");
+  }
   glVertexAttribIPointer(
     index,
     size,
@@ -123,17 +180,21 @@ void GLVertexArrayObject::setAttributeIntegerBuffer(
     stride,
     reinterpret_cast<const GLvoid*>(static_cast<std::uintptr_t>(offset)));
 
-  CHECK_GL_ERROR(m_errorChecker)
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
-void GLVertexArrayObject::enableVertexAttribute(GLuint index)
+void GLVertexArrayObject::enableVertexAttribute(const GLuint index) const
 {
+  requireBound();
   glEnableVertexAttribArray(index);
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
-void GLVertexArrayObject::disableVertexAttribute(GLuint index)
+void GLVertexArrayObject::disableVertexAttribute(const GLuint index) const
 {
+  requireBound();
   glDisableVertexAttribArray(index);
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 // If an attribute is disabled, its value comes from regular OpenGL state.
@@ -159,6 +220,14 @@ void GLVertexArrayObject::drawElements(const IndexedDrawParams& params)
     params.indices());
 }
 
+void GLVertexArrayObject::drawArrays(const PrimitiveMode& primitiveMode, const GLint first, const std::size_t count)
+{
+  if (first < 0 || count > static_cast<std::size_t>(std::numeric_limits<GLsizei>::max())) {
+    throwDebug("Invalid non-indexed draw range");
+  }
+  glDrawArrays(underlyingType(primitiveMode), first, static_cast<GLsizei>(count));
+}
+
 GLVertexArrayObject::IndexedDrawParams::IndexedDrawParams(
   const PrimitiveMode& primitiveMode,
   std::size_t elementCount,
@@ -167,19 +236,18 @@ GLVertexArrayObject::IndexedDrawParams::IndexedDrawParams(
   : m_primitiveMode(underlyingType(primitiveMode))
   , m_elementCount(0)
   , m_indexType(underlyingType(indexType))
-  , m_indices(reinterpret_cast<GLvoid*>(indexOffset * bytesPerIndexType(indexType)))
+  , m_indices(indexBufferOffset(indexOffset, indexType))
 {
   setElementCount(elementCount);
 }
 
 GLVertexArrayObject::IndexedDrawParams::IndexedDrawParams(const VertexIndicesInfo& indicesInfo)
   : m_primitiveMode(underlyingType(indicesInfo.primitiveMode()))
-  , m_elementCount(indicesInfo.indexCount())
+  , m_elementCount(0)
   , m_indexType(underlyingType(indicesInfo.indexType()))
-  ,
-
-  m_indices(reinterpret_cast<GLvoid*>(indicesInfo.indexOffset() * bytesPerIndexType(indicesInfo.indexType())))
+  , m_indices(indexBufferOffset(indicesInfo.indexOffset(), indicesInfo.indexType()))
 {
+  setElementCount(indicesInfo.indexCount());
 }
 
 GLenum GLVertexArrayObject::IndexedDrawParams::primitiveMode() const
@@ -206,7 +274,19 @@ GLenum GLVertexArrayObject::IndexedDrawParams::indexType() const
   return m_indexType;
 }
 
-GLvoid* GLVertexArrayObject::IndexedDrawParams::indices() const
+const GLvoid* GLVertexArrayObject::IndexedDrawParams::indices() const
 {
   return m_indices;
+}
+
+void GLVertexArrayObject::requireBound() const
+{
+  if (m_id == 0u) {
+    throwDebug("Cannot configure a vertex array before generating it");
+  }
+  GLint boundVertexArray = 0;
+  glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &boundVertexArray);
+  if (static_cast<GLuint>(boundVertexArray) != m_id) {
+    throwDebug("Vertex array must be bound before configuring its attributes");
+  }
 }

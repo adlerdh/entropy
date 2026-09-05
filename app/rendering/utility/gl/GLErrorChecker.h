@@ -2,17 +2,13 @@
 
 #include <glad/glad.h>
 
-#ifdef NDEBUG
-#define CHECK_GL_ERROR(checker) checker();
-#else
-#define CHECK_GL_ERROR(checker) checker((__FILE__), (__FUNCTION__), (__LINE__));
-#endif
+#define CHECK_GL_ERROR(checker) (checker)(__FILE__, __func__, __LINE__)
 
 /**
  * @brief Throws when OpenGL reports an error on the current context.
  *
- * The debug overload includes source location in the diagnostic. The release overload omits it to avoid carrying file
- * and function strings through release builds.
+ * Checks remain enabled in release builds because a queued OpenGL error can otherwise be reported much later at an
+ * unrelated call site, making driver failures difficult to diagnose.
  */
 class GLErrorChecker final
 {
@@ -21,5 +17,4 @@ public:
   ~GLErrorChecker() = default;
 
   void operator()(const char* file, const char* function, int line) const;
-  void operator()() const;
 };

@@ -12,6 +12,7 @@
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLTexture.h"
+#include "rendering/utility/gl/OpenGLStateGuard.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "viewer/ViewModes.h"
 #include "windowing/View.h"
@@ -42,73 +43,6 @@ constexpr Uniforms::SamplerIndexType sk_segLabelTableTexSampler{6};
 constexpr Uniforms::SamplerIndexType sk_previousDepthBoundsSampler{7};
 constexpr Uniforms::SamplerIndexType sk_previousFrontColorSampler{8};
 
-class ScopedImagePlaneBlendState
-{
-public:
-  ScopedImagePlaneBlendState()
-  {
-    m_blendEnabled = glIsEnabled(GL_BLEND);
-    glGetIntegerv(GL_BLEND_SRC_RGB, &m_srcRgb);
-    glGetIntegerv(GL_BLEND_DST_RGB, &m_dstRgb);
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, &m_srcAlpha);
-    glGetIntegerv(GL_BLEND_DST_ALPHA, &m_dstAlpha);
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_equationRgb);
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_equationAlpha);
-  }
-
-  ScopedImagePlaneBlendState(const ScopedImagePlaneBlendState&) = delete;
-  ScopedImagePlaneBlendState& operator=(const ScopedImagePlaneBlendState&) = delete;
-
-  ~ScopedImagePlaneBlendState()
-  {
-    glBlendEquationSeparate(static_cast<GLenum>(m_equationRgb), static_cast<GLenum>(m_equationAlpha));
-    glBlendFuncSeparate(
-      static_cast<GLenum>(m_srcRgb),
-      static_cast<GLenum>(m_dstRgb),
-      static_cast<GLenum>(m_srcAlpha),
-      static_cast<GLenum>(m_dstAlpha));
-    m_blendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-  }
-
-private:
-  GLboolean m_blendEnabled = GL_FALSE;
-  GLint m_srcRgb = GL_ONE;
-  GLint m_dstRgb = GL_ZERO;
-  GLint m_srcAlpha = GL_ONE;
-  GLint m_dstAlpha = GL_ZERO;
-  GLint m_equationRgb = GL_FUNC_ADD;
-  GLint m_equationAlpha = GL_FUNC_ADD;
-};
-
-class ScopedImagePlaneDepthState
-{
-public:
-  ScopedImagePlaneDepthState()
-  {
-    m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
-    m_stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
-    glGetBooleanv(GL_DEPTH_WRITEMASK, &m_depthWriteEnabled);
-    glGetIntegerv(GL_DEPTH_FUNC, &m_depthFunc);
-  }
-
-  ScopedImagePlaneDepthState(const ScopedImagePlaneDepthState&) = delete;
-  ScopedImagePlaneDepthState& operator=(const ScopedImagePlaneDepthState&) = delete;
-
-  ~ScopedImagePlaneDepthState()
-  {
-    glDepthFunc(static_cast<GLenum>(m_depthFunc));
-    glDepthMask(m_depthWriteEnabled);
-    m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-    m_stencilTestEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
-  }
-
-private:
-  GLboolean m_depthTestEnabled = GL_FALSE;
-  GLboolean m_stencilTestEnabled = GL_FALSE;
-  GLboolean m_depthWriteEnabled = GL_TRUE;
-  GLint m_depthFunc = GL_LESS;
-};
-
 GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
   // cppcheck-suppress constParameterReference -- returns the selected program as a mutable reference
   GLShaderProgram& texture3dProgram,
@@ -119,7 +53,13 @@ GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
   return rendering::TextureDimension::Texture2D == textureDimension ? texture2dProgram : texture3dProgram;
 }
 
-std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
+struct BoundImagePlaneTexture
+{
+  std::reference_wrapper<GLTexture> texture;
+  uint32_t unit;
+};
+
+std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
   AppData& appData,
   const uuids::uuid& sourceImageUid,
   const uuids::uuid& textureImageUid,
@@ -130,7 +70,7 @@ std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
   auto& renderData = appData.renderData();
   const Image* sourceImage = appData.image(sourceImageUid);
   const Image* textureImage = appData.image(textureImageUid);
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  std::list<BoundImagePlaneTexture> boundTextures;
   GLTexture& blankTexture = rendering::TextureDimension::Texture2D == textureLayout.dimension
                               ? renderData.m_blankImageBlackTransparentTexture2D
                               : renderData.m_blankImageBlackTransparentTexture;
@@ -152,7 +92,7 @@ std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
       }
     }
     texture->bind(sk_imgRgbaTexSamplers.indices[slot]);
-    boundTextures.emplace_back(*texture);
+    boundTextures.emplace_back(*texture, sk_imgRgbaTexSamplers.indices[slot]);
   }
 
   const std::optional<uuids::uuid> cmapUid =
@@ -160,13 +100,14 @@ std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
   GLTexture& colorMapTexture =
     cmapUid ? renderData.m_colormapTextures.at(*cmapUid) : std::begin(renderData.m_colormapTextures)->second;
   colorMapTexture.bind(sk_imgCmapTexSampler.index);
-  boundTextures.emplace_back(colorMapTexture);
+  boundTextures.emplace_back(colorMapTexture, sk_imgCmapTexSampler.index);
   return boundTextures;
 }
 
 struct BoundImagePlaneSegmentationTexture
 {
   std::reference_wrapper<GLTexture> texture;
+  uint32_t unit;
   bool hasSegmentation = false;
 };
 
@@ -189,14 +130,20 @@ BoundImagePlaneSegmentationTexture bindImagePlaneSegmentationTexture(
   }
 
   texture->bind(sk_segTexSampler.index);
-  return {*texture, hasSegmentation};
+  return {*texture, sk_segTexSampler.index, hasSegmentation};
 }
 
-std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLabelTableTextures(
+struct BoundImagePlaneBufferTexture
+{
+  std::reference_wrapper<GLBufferTexture> texture;
+  uint32_t unit;
+};
+
+std::list<BoundImagePlaneBufferTexture> bindImagePlaneSegmentationLabelTableTextures(
   AppData& appData,
   const std::optional<uuids::uuid>& segmentationUid)
 {
-  std::list<std::reference_wrapper<GLBufferTexture>> boundTextures;
+  std::list<BoundImagePlaneBufferTexture> boundTextures;
   if (appData.renderData().m_labelBufferTextures.empty()) {
     return boundTextures;
   }
@@ -210,15 +157,15 @@ std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLab
     tableIt = std::begin(appData.renderData().m_labelBufferTextures);
   }
 
-  tableIt->second.attachBufferToTexture(sk_segLabelTableTexSampler.index);
-  boundTextures.emplace_back(tableIt->second);
+  tableIt->second.bind(sk_segLabelTableTexSampler.index);
+  boundTextures.emplace_back(tableIt->second, sk_segLabelTableTexSampler.index);
   return boundTextures;
 }
 
-void unbindImagePlaneSegmentationLabelTableTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures)
+void unbindImagePlaneSegmentationLabelTableTextures(const std::list<BoundImagePlaneBufferTexture>& textures)
 {
-  for (const std::reference_wrapper<GLBufferTexture> texture : textures) {
-    texture.get().unbind();
+  for (const BoundImagePlaneBufferTexture& binding : textures) {
+    binding.texture.get().unbind(binding.unit);
   }
 }
 
@@ -530,7 +477,7 @@ void drawUploadedImagePlane(const rendering::mesh::MeshGpuData& gpuData)
 {
   gpuData.vao().bind();
   gpuData.vao().drawElements(gpuData.drawParams());
-  gpuData.vao().release();
+  gpuData.vao().unbind();
 }
 
 void drawImagePlaneRenderablesWithProgram(
@@ -618,10 +565,10 @@ void drawImagePlaneRenderablesWithProgram(
     drawUploadedImagePlane(*gpuData);
     program.stopUse();
 
-    for (std::reference_wrapper<GLTexture> texture : boundTextures) {
-      texture.get().unbind();
+    for (const BoundImagePlaneTexture& binding : boundTextures) {
+      binding.texture.get().unbind(binding.unit);
     }
-    boundSegTexture.texture.get().unbind();
+    boundSegTexture.texture.get().unbind(boundSegTexture.unit);
     unbindImagePlaneSegmentationLabelTableTextures(boundSegBufferTextures);
   }
 
@@ -657,13 +604,24 @@ void Rendering::drawMeshImagePlaneRenderListForView(
   }
 
   const rendering::mesh::ScopedMeshViewViewport scopedViewport{view, m_appData.windowData()};
+  const OpenGLStateGuard state{
+    {0u, GL_TEXTURE_2D},
+    {0u, GL_TEXTURE_3D},
+    {1u, GL_TEXTURE_2D},
+    {1u, GL_TEXTURE_3D},
+    {2u, GL_TEXTURE_2D},
+    {2u, GL_TEXTURE_3D},
+    {3u, GL_TEXTURE_2D},
+    {3u, GL_TEXTURE_3D},
+    {4u, GL_TEXTURE_1D},
+    {5u, GL_TEXTURE_2D},
+    {5u, GL_TEXTURE_3D},
+    {6u, GL_TEXTURE_BUFFER}};
   const rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(m_meshGpuStore, view);
   if (!context.meshLookup) {
     return;
   }
 
-  const ScopedImagePlaneDepthState scopedDepthState;
-  const ScopedImagePlaneBlendState scopedBlendState;
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glDepthMask(GL_TRUE);
@@ -767,10 +725,10 @@ void Rendering::drawMeshImagePlaneRenderListForView(
     }
     isoProgram.stopUse();
 
-    unbindTextures(boundTextures);
+    for (const BoundImagePlaneTexture& binding : boundTextures) {
+      binding.texture.get().unbind(binding.unit);
+    }
   }
-
-  setupOpenGLState();
 }
 
 void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(

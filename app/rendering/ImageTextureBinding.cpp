@@ -25,30 +25,30 @@ const Uniforms::SamplerIndexVectorType msk_metricImgTexSamplers{{0, 1}};
 
 } // namespace
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(const ImgSegPair& p)
+Rendering::BoundTextures Rendering::bindScalarImageTextures(const ImgSegPair& p)
 {
   const auto& imgUid = p.first;
   const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
 
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  BoundTextures boundTextures;
   auto& R = m_appData.renderData();
 
   if (!image) {
     // No image, so bind the blank one:
     GLTexture& imgTex = R.m_blankImageBlackTransparentTexture;
     imgTex.bind(msk_imgTexSampler.index);
-    boundTextures.emplace_back(imgTex);
+    boundTextures.emplace_back(imgTex, msk_imgTexSampler.index);
 
     // Bind the first available colormap:
     auto it = std::begin(R.m_colormapTextures);
     GLTexture& cmapTex = it->second;
     cmapTex.bind(msk_imgCmapTexSampler.index);
-    boundTextures.emplace_back(cmapTex);
+    boundTextures.emplace_back(cmapTex, msk_imgCmapTexSampler.index);
 
     // The scalar image binder also supplies the distance-map slot used by volume rendering.
     GLTexture& distTex = R.m_blankDistMapTexture;
     distTex.bind(msk_jumpTexSampler.index);
-    boundTextures.emplace_back(distTex);
+    boundTextures.emplace_back(distTex, msk_jumpTexSampler.index);
 
     return boundTextures;
   }
@@ -73,7 +73,7 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
                                ? 0u
                                : std::min<std::size_t>(S.activeComponent(), imageTextureIt->second.size() - 1u)];
   imgTex.bind(msk_imgTexSampler.index);
-  boundTextures.emplace_back(imgTex);
+  boundTextures.emplace_back(imgTex, msk_imgTexSampler.index);
 
   // Bind the color map
   const auto cmapUid = image ? m_appData.imageColorMapUid(image->settings().colorMapIndex()) : std::nullopt;
@@ -81,14 +81,14 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
   if (cmapUid) {
     GLTexture& cmapTex = R.m_colormapTextures.at(*cmapUid);
     cmapTex.bind(msk_imgCmapTexSampler.index);
-    boundTextures.emplace_back(cmapTex);
+    boundTextures.emplace_back(cmapTex, msk_imgCmapTexSampler.index);
   }
   else {
     // No colormap, so bind the first available one:
     auto it = std::begin(R.m_colormapTextures);
     GLTexture& cmapTex = it->second;
     cmapTex.bind(msk_imgCmapTexSampler.index);
-    boundTextures.emplace_back(cmapTex);
+    boundTextures.emplace_back(cmapTex, msk_imgCmapTexSampler.index);
   }
 
   const auto distTextureIt = R.m_distanceMapTextures.find(textureImageUid);
@@ -112,7 +112,7 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
       foundMap = true;
       GLTexture& distTex = it2->second;
       distTex.bind(msk_jumpTexSampler.index);
-      boundTextures.emplace_back(distTex);
+      boundTextures.emplace_back(distTex, msk_jumpTexSampler.index);
     }
   }
 
@@ -120,25 +120,25 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
     // Bind blank (zero) distance map:
     GLTexture& distTex = R.m_blankDistMapTexture;
     distTex.bind(msk_jumpTexSampler.index);
-    boundTextures.emplace_back(distTex);
+    boundTextures.emplace_back(distTex, msk_jumpTexSampler.index);
   }
 
   return boundTextures;
 }
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindColorImageTextures(const ImgSegPair& p)
+Rendering::BoundTextures Rendering::bindColorImageTextures(const ImgSegPair& p)
 {
   const auto& imgUid = p.first;
   const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
 
   auto& R = m_appData.renderData();
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  BoundTextures boundTextures;
 
   if (!image) {
     // No image, so bind the blank one:
     GLTexture& imgTex = R.m_blankImageBlackTransparentTexture;
     imgTex.bind(msk_imgTexSampler.index);
-    boundTextures.emplace_back(imgTex);
+    boundTextures.emplace_back(imgTex, msk_imgTexSampler.index);
     return boundTextures;
   }
 
@@ -153,17 +153,17 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindColorImageTextures(c
       (i < static_cast<std::size_t>(image->settings().numComponents()) && i < compTextures.size());
     GLTexture& tex = compExists ? compTextures.at(i) : blankTexture;
     tex.bind(msk_imgRgbaTexSamplers.indices[i]);
-    boundTextures.emplace_back(tex);
+    boundTextures.emplace_back(tex, msk_imgRgbaTexSamplers.indices[i]);
   }
 
   return boundTextures;
 }
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindMetricImageTextures(
+Rendering::BoundTextures Rendering::bindMetricImageTextures(
   const CurrentImages& imageSegPairs,
   const ViewRenderMode& metricType)
 {
-  std::list<std::reference_wrapper<GLTexture>> textures;
+  BoundTextures textures;
 
   auto& R = m_appData.renderData();
   bool usesMetricColormap = false;
@@ -208,13 +208,13 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindMetricImageTextures(
     if (cmapUid) {
       GLTexture& T = R.m_colormapTextures.at(*cmapUid);
       T.bind(msk_metricCmapTexSampler.index);
-      textures.emplace_back(T);
+      textures.emplace_back(T, msk_metricCmapTexSampler.index);
     }
     else {
       auto it = std::begin(R.m_colormapTextures);
       GLTexture& T = it->second;
       T.bind(msk_metricCmapTexSampler.index);
-      textures.emplace_back(T);
+      textures.emplace_back(T, msk_metricCmapTexSampler.index);
     }
   }
 
@@ -234,12 +234,12 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindMetricImageTextures(
                               ? 0u
                               : std::min<std::size_t>(activeComp, textureIt->second.size() - 1u)];
       T.bind(msk_metricImgTexSamplers.indices[i]);
-      textures.emplace_back(T);
+      textures.emplace_back(T, msk_metricImgTexSamplers.indices[i]);
     }
     else {
       GLTexture& T = R.m_blankImageBlackTransparentTexture;
       T.bind(msk_metricImgTexSamplers.indices[i]);
-      textures.emplace_back(T);
+      textures.emplace_back(T, msk_metricImgTexSamplers.indices[i]);
     }
     ++i;
   }

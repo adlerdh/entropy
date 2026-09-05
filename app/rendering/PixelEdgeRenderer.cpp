@@ -4,6 +4,7 @@
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/utility/gl/OpenGLStateGuard.h"
 
 #include <cmrc/cmrc.hpp>
 
@@ -20,86 +21,6 @@ namespace
 
 const glm::vec2 k_zeroVec2{0.0f, 0.0f};
 const glm::vec4 k_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
-
-class ScopedPixelEdgeGlState
-{
-public:
-  ScopedPixelEdgeGlState()
-  {
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_drawFramebuffer);
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_readFramebuffer);
-    glGetIntegerv(GL_VIEWPORT, m_viewport);
-    glGetIntegerv(GL_SCISSOR_BOX, m_scissorBox);
-    glGetFloatv(GL_COLOR_CLEAR_VALUE, m_clearColor);
-    glGetIntegerv(GL_ACTIVE_TEXTURE, &m_activeTexture);
-    glGetIntegerv(GL_CURRENT_PROGRAM, &m_program);
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &m_vertexArray);
-
-    glActiveTexture(GL_TEXTURE3);
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &m_texture2DUnit3);
-    glActiveTexture(GL_TEXTURE1);
-    glGetIntegerv(GL_TEXTURE_BINDING_1D, &m_texture1DUnit1);
-    glActiveTexture(static_cast<GLenum>(m_activeTexture));
-
-    m_scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
-    m_depthEnabled = glIsEnabled(GL_DEPTH_TEST);
-    m_stencilEnabled = glIsEnabled(GL_STENCIL_TEST);
-  }
-
-  ScopedPixelEdgeGlState(const ScopedPixelEdgeGlState&) = delete;
-  ScopedPixelEdgeGlState& operator=(const ScopedPixelEdgeGlState&) = delete;
-
-  ~ScopedPixelEdgeGlState()
-  {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(m_drawFramebuffer));
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(m_readFramebuffer));
-    glViewport(m_viewport[0], m_viewport[1], m_viewport[2], m_viewport[3]);
-    glScissor(m_scissorBox[0], m_scissorBox[1], m_scissorBox[2], m_scissorBox[3]);
-    glClearColor(m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]);
-
-    setEnabled(GL_SCISSOR_TEST, m_scissorEnabled);
-    setEnabled(GL_DEPTH_TEST, m_depthEnabled);
-    setEnabled(GL_STENCIL_TEST, m_stencilEnabled);
-
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(m_texture2DUnit3));
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_1D, static_cast<GLuint>(m_texture1DUnit1));
-    glActiveTexture(static_cast<GLenum>(m_activeTexture));
-    glUseProgram(static_cast<GLuint>(m_program));
-    glBindVertexArray(static_cast<GLuint>(m_vertexArray));
-  }
-
-  [[nodiscard]] GLuint drawFramebuffer() const
-  {
-    return static_cast<GLuint>(m_drawFramebuffer);
-  }
-
-private:
-  static void setEnabled(GLenum capability, GLboolean enabled)
-  {
-    if (enabled == GL_TRUE) {
-      glEnable(capability);
-    }
-    else {
-      glDisable(capability);
-    }
-  }
-
-  GLint m_drawFramebuffer = 0;
-  GLint m_readFramebuffer = 0;
-  GLint m_viewport[4] = {0, 0, 0, 0};
-  GLint m_scissorBox[4] = {0, 0, 0, 0};
-  GLfloat m_clearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-  GLint m_activeTexture = GL_TEXTURE0;
-  GLint m_program = 0;
-  GLint m_vertexArray = 0;
-  GLint m_texture2DUnit3 = 0;
-  GLint m_texture1DUnit1 = 0;
-  GLboolean m_scissorEnabled = GL_FALSE;
-  GLboolean m_depthEnabled = GL_FALSE;
-  GLboolean m_stencilEnabled = GL_FALSE;
-};
 
 std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildPixelEdgeShaderProgram()
 {
@@ -188,7 +109,7 @@ void PixelEdgeRenderer::render(
     return;
   }
 
-  const ScopedPixelEdgeGlState previousState;
+  const OpenGLStateGuard previousState{{3u, GL_TEXTURE_2D}, {1u, GL_TEXTURE_1D}};
   ensureSceneFboSize(deviceSize);
   if (!m_sceneColorTex) {
     return;
@@ -218,8 +139,7 @@ void PixelEdgeRenderer::render(
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_STENCIL_TEST);
 
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D, m_sceneColorTex->id());
+  m_sceneColorTex->bind(3u);
   bindPostTextures();
 
   GLShaderProgram& program = *shaderPrograms.at(ShaderProgramType::PixelEdgePost);
@@ -243,8 +163,8 @@ void PixelEdgeRenderer::render(
   program.setUniform("u_overlayEdges", uniforms.overlayEdges);
 
   m_postVao.bind();
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-  m_postVao.release();
+  m_postVao.drawArrays(PrimitiveMode::Triangles, 0, 3);
+  m_postVao.unbind();
   program.stopUse();
 }
 

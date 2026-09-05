@@ -36,16 +36,13 @@ public:
   /// Generate the GL buffer name if needed.
   void generate();
 
-  /// Unbind this buffer target from the current context.
-  void release();
-
   /// Delete the GL buffer name and reset local state.
   void destroy();
 
   /// Bind this buffer to its configured target.
-  void bind();
+  void bind() const;
 
-  void unbind();
+  void unbind() const;
 
   /**
    * @brief Allocate mutable storage and optionally initialize it with CPU data.
@@ -71,7 +68,7 @@ public:
    * @param sizeInBytes Number of bytes to read.
    * @param data Destination CPU buffer.
    */
-  void read(std::size_t offset, std::size_t sizeArg, GLvoid* data);
+  void read(std::size_t offset, std::size_t sizeInBytes, GLvoid* data) const;
 
   /**
    * @brief Map the full buffer into client address space.
@@ -89,19 +86,22 @@ public:
    * @param accessFlags Access flags requested for the mapped range.
    * @return Mapped pointer, or null if OpenGL cannot map the buffer.
    */
-  void* mapRange(GLintptr offset, GLsizeiptr length, const std::set<BufferMapRangeAccessFlag>& accessFlags);
+  void* mapRange(std::size_t offset, std::size_t length, const std::set<BufferMapRangeAccessFlag>& accessFlags);
+
+  /// Flush writes to a subrange of a mapping created with `FlushExplicitBit`.
+  /// The offset is relative to the start of the mapped range, matching `glFlushMappedBufferRange()`.
+  void flushMappedRange(std::size_t offset, std::size_t length);
 
   /// Unmap a previously mapped buffer range.
-  bool unmap() const;
+  bool unmap();
 
-  /// @todo Change GLsizeiptr and GLintptr to std::size_t
   /// Copy bytes between two buffer objects using OpenGL's copy buffer targets.
   static void copyData(
     GLBufferObject& readBuffer,
     GLBufferObject& writeBuffer,
-    GLintptr readOffset,
-    GLintptr writeOffset,
-    GLsizeiptr sizeArg);
+    std::size_t readOffset,
+    std::size_t writeOffset,
+    std::size_t sizeInBytes);
 
   GLuint id() const;
 
@@ -122,4 +122,7 @@ private:
   BufferUsagePattern m_usagePattern;
 
   std::size_t m_bufferSizeInBytes;
+  bool m_isMapped = false;
+  std::size_t m_mappedLength = 0;
+  bool m_requiresExplicitFlush = false;
 };

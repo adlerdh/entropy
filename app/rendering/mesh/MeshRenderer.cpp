@@ -4,12 +4,12 @@
 #include "rendering/mesh/MeshMaterial.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
+#include "rendering/utility/gl/OpenGLStateGuard.h"
 
 #include <glad/glad.h>
 
 #include <glm/gtc/matrix_inverse.hpp>
 
-#include <array>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -37,107 +37,6 @@ GLenum polygonModeForFillMode(const MeshFillMode fillMode) noexcept
 
   return GL_FILL;
 }
-
-class ScopedMeshRasterState
-{
-public:
-  ScopedMeshRasterState()
-  {
-    std::array<GLint, 2> polygonModes{};
-    glGetIntegerv(GL_POLYGON_MODE, polygonModes.data());
-    m_polygonMode = polygonModes[0];
-    m_cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
-    glGetIntegerv(GL_CULL_FACE_MODE, &m_cullFaceMode);
-  }
-
-  ScopedMeshRasterState(const ScopedMeshRasterState&) = delete;
-  ScopedMeshRasterState& operator=(const ScopedMeshRasterState&) = delete;
-
-  ~ScopedMeshRasterState()
-  {
-    // Core-profile OpenGL only accepts GL_FRONT_AND_BACK here. GL_FRONT and GL_BACK queue GL_INVALID_ENUM on macOS.
-    glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(m_polygonMode));
-    glCullFace(static_cast<GLenum>(m_cullFaceMode));
-    m_cullFaceEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
-  }
-
-private:
-  GLint m_polygonMode = GL_FILL;
-  GLboolean m_cullFaceEnabled = GL_FALSE;
-  GLint m_cullFaceMode = GL_BACK;
-};
-
-class ScopedMeshBlendState
-{
-public:
-  ScopedMeshBlendState()
-  {
-    m_blendEnabled = glIsEnabled(GL_BLEND);
-    glGetIntegerv(GL_BLEND_SRC_RGB, &m_srcRgb);
-    glGetIntegerv(GL_BLEND_DST_RGB, &m_dstRgb);
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, &m_srcAlpha);
-    glGetIntegerv(GL_BLEND_DST_ALPHA, &m_dstAlpha);
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_equationRgb);
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_equationAlpha);
-  }
-
-  ScopedMeshBlendState(const ScopedMeshBlendState&) = delete;
-  ScopedMeshBlendState& operator=(const ScopedMeshBlendState&) = delete;
-
-  ~ScopedMeshBlendState()
-  {
-    glBlendEquationSeparate(static_cast<GLenum>(m_equationRgb), static_cast<GLenum>(m_equationAlpha));
-    glBlendFuncSeparate(
-      static_cast<GLenum>(m_srcRgb),
-      static_cast<GLenum>(m_dstRgb),
-      static_cast<GLenum>(m_srcAlpha),
-      static_cast<GLenum>(m_dstAlpha));
-    m_blendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-  }
-
-private:
-  GLboolean m_blendEnabled = GL_FALSE;
-  GLint m_srcRgb = GL_ONE;
-  GLint m_dstRgb = GL_ZERO;
-  GLint m_srcAlpha = GL_ONE;
-  GLint m_dstAlpha = GL_ZERO;
-  GLint m_equationRgb = GL_FUNC_ADD;
-  GLint m_equationAlpha = GL_FUNC_ADD;
-};
-
-class ScopedVisibleMeshDepthState
-{
-public:
-  explicit ScopedVisibleMeshDepthState(const GLboolean depthWriteEnabled)
-  {
-    m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
-    m_stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
-    glGetBooleanv(GL_DEPTH_WRITEMASK, &m_depthWriteEnabled);
-    glGetIntegerv(GL_DEPTH_FUNC, &m_depthFunc);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(depthWriteEnabled);
-    glDisable(GL_STENCIL_TEST);
-  }
-
-  ScopedVisibleMeshDepthState(const ScopedVisibleMeshDepthState&) = delete;
-  ScopedVisibleMeshDepthState& operator=(const ScopedVisibleMeshDepthState&) = delete;
-
-  ~ScopedVisibleMeshDepthState()
-  {
-    glDepthFunc(static_cast<GLenum>(m_depthFunc));
-    glDepthMask(m_depthWriteEnabled);
-    m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-    m_stencilTestEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
-  }
-
-private:
-  GLboolean m_depthTestEnabled = GL_FALSE;
-  GLboolean m_stencilTestEnabled = GL_FALSE;
-  GLboolean m_depthWriteEnabled = GL_TRUE;
-  GLint m_depthFunc = GL_LESS;
-};
 
 // Visible mesh passes run after 2D image and NanoVG work, so they must not inherit stencil/depth state
 void applyRasterState(const MeshDrawOptions& drawOptions)
@@ -173,7 +72,7 @@ void drawUploadedMesh(const MeshGpuData& gpuData)
 {
   gpuData.vao().bind();
   gpuData.vao().drawElements(gpuData.drawParams());
-  gpuData.vao().release();
+  gpuData.vao().unbind();
 }
 
 int shaderValue(const MeshShadingModel shadingModel) noexcept
@@ -245,19 +144,25 @@ void releaseAmbientOcclusionTexture(const MeshDrawContext& context)
 
 void MeshRenderer::drawOpaque(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program)
 {
-  const ScopedMeshBlendState scopedBlendState;
-  const ScopedVisibleMeshDepthState scopedDepthState(GL_TRUE);
+  const OpenGLStateGuard state{{k_shadowMapTextureUnit, GL_TEXTURE_2D}, {k_ambientOcclusionTextureUnit, GL_TEXTURE_2D}};
   glDisable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glDepthMask(GL_TRUE);
+  glDisable(GL_STENCIL_TEST);
   drawBucket(list.opaque, context, program);
 }
 
 void MeshRenderer::drawAdditive(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program)
 {
-  const ScopedMeshBlendState scopedBlendState;
-  const ScopedVisibleMeshDepthState scopedDepthState(GL_FALSE);
+  const OpenGLStateGuard state{{k_shadowMapTextureUnit, GL_TEXTURE_2D}, {k_ambientOcclusionTextureUnit, GL_TEXTURE_2D}};
   glEnable(GL_BLEND);
   glBlendEquation(GL_FUNC_ADD);
   glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glDepthMask(GL_FALSE);
+  glDisable(GL_STENCIL_TEST);
   drawBucket(list.additive, context, program);
 }
 
@@ -266,11 +171,14 @@ void MeshRenderer::drawMultiplicative(
   const MeshDrawContext& context,
   GLShaderProgram& program)
 {
-  const ScopedMeshBlendState scopedBlendState;
-  const ScopedVisibleMeshDepthState scopedDepthState(GL_FALSE);
+  const OpenGLStateGuard state{{k_shadowMapTextureUnit, GL_TEXTURE_2D}, {k_ambientOcclusionTextureUnit, GL_TEXTURE_2D}};
   glEnable(GL_BLEND);
   glBlendEquation(GL_FUNC_ADD);
   glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_ONE, GL_ZERO);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glDepthMask(GL_FALSE);
+  glDisable(GL_STENCIL_TEST);
   drawBucket(list.multiplicative, context, program);
 }
 
@@ -293,7 +201,7 @@ void MeshRenderer::drawBucket(
     return;
   }
 
-  const ScopedMeshRasterState scopedRasterState;
+  const OpenGLStateGuard state{{k_shadowMapTextureUnit, GL_TEXTURE_2D}, {k_ambientOcclusionTextureUnit, GL_TEXTURE_2D}};
   program.use();
   program.setUniform("u_clip_T_world", context.clip_T_world);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);

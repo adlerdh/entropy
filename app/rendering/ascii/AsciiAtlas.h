@@ -1,11 +1,12 @@
 #pragma once
 
 #include "rendering/ascii/AsciiAtlasBaker.h"
+#include "rendering/utility/gl/GLTexture.h"
 
-#include <glad/glad.h>
 #include <glm/vec2.hpp>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -54,11 +55,15 @@ public:
    */
   bool build(const unsigned char* ttfData, int ttfBytes, const std::string& charset, glm::ivec2 glyphPx);
 
-  /// OpenGL texture handle (0 if not built)
-  GLuint textureId() const
+  /// Return whether the atlas owns an uploaded OpenGL texture.
+  bool isBuilt() const noexcept
   {
-    return m_texId;
+    return m_texture.has_value();
   }
+
+  /// Bind/unbind the uploaded atlas texture on one texture unit.
+  void bind(uint32_t textureUnit) const;
+  void unbind(uint32_t textureUnit) const;
 
   /// Number of glyphs in the atlas
   int glyphCount() const
@@ -114,7 +119,7 @@ public:
 private:
   void destroy();
 
-  GLuint m_texId = 0;
+  std::optional<GLTexture> m_texture;
   int m_glyphCount = 0;
   glm::ivec2 m_glyphPx = {0, 0};
   glm::ivec2 m_slotPx = {0, 0};

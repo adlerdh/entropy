@@ -18,4 +18,7 @@ struct GradientBackgroundOptions
 
 /** Draws a rectangular vignette gradient into the default framebuffer. */
 void renderGradientBackground(const GradientBackgroundOptions& options = {});
+
+/// Release lazily created OpenGL resources while the application context is still current.
+void releaseGradientBackgroundResources() noexcept;
 } // namespace ui

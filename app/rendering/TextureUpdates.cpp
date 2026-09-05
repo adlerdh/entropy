@@ -103,19 +103,6 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
     return false;
   }
 
-  int maxBufTexSize = 0;
-  glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
-
-  if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {
-    spdlog::error(
-      "Number of bytes ({}) in label color table {} exceeds "
-      "maximum buffer texture size of {} bytes",
-      table->numColorBytes_RGBA_U8(),
-      labelTableUid,
-      maxBufTexSize);
-    return false;
-  }
-
   auto it = m_appData.renderData().m_labelBufferTextures.emplace(
     std::piecewise_construct,
     std::forward_as_tuple(labelTableUid),

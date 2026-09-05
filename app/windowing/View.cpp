@@ -296,7 +296,7 @@ void View::setViewType(const ViewType& newViewType)
     }
   }
 
-  m_viewType = newViewType;
+  ControlFrame::setViewType(newViewType);
 
   if (ViewType::ThreeD != m_viewType) {
     if (wasThreeD && !m_sliceCameraActivated && m_sliceCameraDefaultWorldCenter && m_sliceCameraDefaultWorldFov) {

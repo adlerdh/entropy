@@ -387,7 +387,7 @@ void Polygonizer::initialize()
     m_vao.setAttributeBuffer(sk_positionIndex, *m_positionsInfo);
     m_vao.enableVertexAttribute(sk_positionIndex);
   }
-  m_vao.release();
+  m_vao.unbind();
 
   m_vaoParams = std::make_unique<GLVertexArrayObject::IndexedDrawParams>(*m_indicesInfo);
 
@@ -505,7 +505,7 @@ void Polygonizer::execute()
         std::cout << "START!!!!!!!!!!!" << std::endl;
         m_vao.drawElements(*m_vaoParams);
       }
-      m_vao.release();
+      m_vao.unbind();
     }
     glEndTransformFeedback();
   }

@@ -16,6 +16,10 @@ struct GradientGlResources
 {
   GLuint program = 0;
   GLuint vertexArray = 0;
+  GLint edgeColorLocation = -1;
+  GLint centerColorLocation = -1;
+  GLint rectangularExponentLocation = -1;
+  GLint ditherLocation = -1;
   bool programInitialized = false;
 };
 
@@ -68,6 +72,10 @@ void main()
 GLuint compileShader(GLenum type, const char* source)
 {
   const GLuint shader = glCreateShader(type);
+  if (shader == 0u) {
+    spdlog::error("Unable to create gradient background shader");
+    return 0u;
+  }
   glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
 
@@ -104,6 +112,12 @@ GLuint shaderProgram()
   }
 
   g_resources.program = glCreateProgram();
+  if (g_resources.program == 0u) {
+    spdlog::error("Unable to create gradient background shader program");
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return 0u;
+  }
   glAttachShader(g_resources.program, vertexShader);
   glAttachShader(g_resources.program, fragmentShader);
   glLinkProgram(g_resources.program);
@@ -113,6 +127,19 @@ GLuint shaderProgram()
   GLint linked = GL_FALSE;
   glGetProgramiv(g_resources.program, GL_LINK_STATUS, &linked);
   if (linked == GL_TRUE) {
+    g_resources.edgeColorLocation = glGetUniformLocation(g_resources.program, "u_edgeColor");
+    g_resources.centerColorLocation = glGetUniformLocation(g_resources.program, "u_centerColor");
+    g_resources.rectangularExponentLocation = glGetUniformLocation(g_resources.program, "u_rectangularExponent");
+    g_resources.ditherLocation = glGetUniformLocation(g_resources.program, "u_dither");
+    if (
+      g_resources.edgeColorLocation < 0 || g_resources.centerColorLocation < 0 ||
+      g_resources.rectangularExponentLocation < 0 || g_resources.ditherLocation < 0)
+    {
+      spdlog::error("Gradient background shader is missing one or more required uniforms");
+      glDeleteProgram(g_resources.program);
+      g_resources.program = 0u;
+      return 0u;
+    }
     return g_resources.program;
   }
 
@@ -128,6 +155,9 @@ GLuint vertexArrayObject()
 {
   if (g_resources.vertexArray == 0) {
     glGenVertexArrays(1, &g_resources.vertexArray);
+    if (g_resources.vertexArray == 0u) {
+      spdlog::error("Unable to create gradient background vertex array");
+    }
   }
   return g_resources.vertexArray;
 }
@@ -138,6 +168,10 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
 {
   const GLuint program = shaderProgram();
   if (program == 0) {
+    return;
+  }
+  const GLuint vertexArray = vertexArrayObject();
+  if (vertexArray == 0u) {
     return;
   }
 
@@ -173,19 +207,11 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   glDisable(GL_BLEND);
   glDisable(GL_CULL_FACE);
   glUseProgram(program);
-  glUniform3f(
-    glGetUniformLocation(program, "u_edgeColor"),
-    options.edgeColor.r,
-    options.edgeColor.g,
-    options.edgeColor.b);
-  glUniform3f(
-    glGetUniformLocation(program, "u_centerColor"),
-    options.centerColor.r,
-    options.centerColor.g,
-    options.centerColor.b);
-  glUniform1f(glGetUniformLocation(program, "u_rectangularExponent"), options.rectangularExponent);
-  glUniform1i(glGetUniformLocation(program, "u_dither"), options.dither ? GL_TRUE : GL_FALSE);
-  glBindVertexArray(vertexArrayObject());
+  glUniform3f(g_resources.edgeColorLocation, options.edgeColor.r, options.edgeColor.g, options.edgeColor.b);
+  glUniform3f(g_resources.centerColorLocation, options.centerColor.r, options.centerColor.g, options.centerColor.b);
+  glUniform1f(g_resources.rectangularExponentLocation, options.rectangularExponent);
+  glUniform1i(g_resources.ditherLocation, options.dither ? GL_TRUE : GL_FALSE);
+  glBindVertexArray(vertexArray);
   glDrawArrays(GL_TRIANGLES, 0, 3);
 
   glBindVertexArray(static_cast<GLuint>(previousVertexArray));
@@ -197,6 +223,17 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   previousStencilEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
   previousBlendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
   previousCullEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
+}
+
+void releaseGradientBackgroundResources() noexcept
+{
+  if (g_resources.vertexArray != 0u) {
+    glDeleteVertexArrays(1, &g_resources.vertexArray);
+  }
+  if (g_resources.program != 0u) {
+    glDeleteProgram(g_resources.program);
+  }
+  g_resources = {};
 }
 
 } // namespace ui

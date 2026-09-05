@@ -212,7 +212,7 @@ void CameraLabel::initVao()
     m_vao.setAttributeBuffer(sk_texCoordsIndex, *texCoordsInfo);
     m_vao.enableVertexAttribute(sk_texCoordsIndex);
   }
-  m_vao.release();
+  m_vao.unbind();
 
   m_vaoParams = std::make_unique<GLVertexArrayObject::IndexedDrawParams>(indicesInfo);
 }
@@ -259,7 +259,7 @@ void CameraLabel::doRender(const RenderStage& stage)
 
         m_vao.bind();
         m_vao.drawElements(*m_vaoParams);
-        m_vao.release();
+        m_vao.unbind();
 
         texture->unbind();
       }

@@ -108,8 +108,7 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   const Image* domainImage = referenceImageUid ? m_appData.image(*referenceImageUid) : image;
 
   const auto boundImageTextures = bindScalarImageTextures(imgSegPair);
-  const auto boundDefTextures =
-    renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+  const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
   const auto boundSegBufferTextures = bindSegBufferTextures(imgSegPair);
 
   const auto& U = m_appData.renderData().m_uniforms.at(*imgSegPair.first);

@@ -2,9 +2,13 @@
 
 #include "rendering/mesh/MeshDdpResources.h"
 #include "rendering/utility/gl/GLFrameBufferObject.h"
+#include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLVertexArrayObject.h"
+#include "rendering/utility/gl/OpenGLStateGuard.h"
+
+#include "common/Exception.hpp"
 
 #include <glad/glad.h>
 
@@ -12,6 +16,7 @@
 
 #include <array>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -35,6 +40,90 @@ constexpr uint32_t k_backTempTextureUnit = 0u;
 constexpr uint32_t k_resolveFrontTextureUnit = 0u;
 constexpr uint32_t k_resolveBackTextureUnit = 1u;
 
+std::size_t validatedQueryCount(const uint32_t count)
+{
+  if (count > static_cast<uint32_t>(std::numeric_limits<GLsizei>::max())) {
+    throwDebug("DDP query count exceeds the OpenGL object-count range");
+  }
+  return count;
+}
+
+class QueryObjects
+{
+public:
+  explicit QueryObjects(const uint32_t count) : m_ids(validatedQueryCount(count), 0u)
+  {
+    if (!m_ids.empty()) {
+      glGenQueries(static_cast<GLsizei>(m_ids.size()), m_ids.data());
+      CHECK_GL_ERROR(GLErrorChecker{});
+    }
+  }
+
+  ~QueryObjects()
+  {
+    if (!m_ids.empty()) {
+      glDeleteQueries(static_cast<GLsizei>(m_ids.size()), m_ids.data());
+    }
+  }
+
+  QueryObjects(const QueryObjects&) = delete;
+  QueryObjects& operator=(const QueryObjects&) = delete;
+
+  [[nodiscard]] bool empty() const noexcept
+  {
+    return m_ids.empty();
+  }
+  [[nodiscard]] GLuint operator[](const std::size_t index) const
+  {
+    return m_ids.at(index);
+  }
+
+private:
+  std::vector<GLuint> m_ids;
+};
+
+class ActiveSamplesPassedQuery
+{
+public:
+  explicit ActiveSamplesPassedQuery(const GLuint query)
+  {
+    GLint activeQuery = 0;
+    glGetQueryiv(GL_ANY_SAMPLES_PASSED, GL_CURRENT_QUERY, &activeQuery);
+    if (activeQuery != 0) {
+      throwDebug("Cannot begin a DDP completion query while another samples-passed query is active");
+    }
+    // Attribute any queued error to the call that produced it instead of risking a successful begin followed by a
+    // constructor exception that would leave the query active.
+    CHECK_GL_ERROR(GLErrorChecker{});
+    glBeginQuery(GL_ANY_SAMPLES_PASSED, query);
+    CHECK_GL_ERROR(GLErrorChecker{});
+    m_active = true;
+  }
+
+  ~ActiveSamplesPassedQuery()
+  {
+    if (m_active) {
+      glEndQuery(GL_ANY_SAMPLES_PASSED);
+    }
+  }
+
+  ActiveSamplesPassedQuery(const ActiveSamplesPassedQuery&) = delete;
+  ActiveSamplesPassedQuery& operator=(const ActiveSamplesPassedQuery&) = delete;
+
+  void finish()
+  {
+    if (!m_active) {
+      return;
+    }
+    glEndQuery(GL_ANY_SAMPLES_PASSED);
+    m_active = false;
+    CHECK_GL_ERROR(GLErrorChecker{});
+  }
+
+private:
+  bool m_active = false;
+};
+
 struct GlViewport
 {
   GLint x = 0;
@@ -56,84 +145,6 @@ glm::uvec2 viewportSize(const GlViewport& viewport) noexcept
     viewport.width > 0 ? static_cast<uint32_t>(viewport.width) : 0u,
     viewport.height > 0 ? static_cast<uint32_t>(viewport.height) : 0u};
 }
-
-class ScopedDdpGlState
-{
-public:
-  ScopedDdpGlState()
-  {
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_drawFramebuffer);
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_readFramebuffer);
-    glGetIntegerv(GL_VIEWPORT, m_viewport.data());
-    glGetIntegerv(GL_SCISSOR_BOX, m_scissor.data());
-    glGetIntegerv(GL_BLEND_SRC_RGB, &m_blendSrcRgb);
-    glGetIntegerv(GL_BLEND_DST_RGB, &m_blendDstRgb);
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, &m_blendSrcAlpha);
-    glGetIntegerv(GL_BLEND_DST_ALPHA, &m_blendDstAlpha);
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_blendEquationRgb);
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_blendEquationAlpha);
-    m_blendEnabled = glIsEnabled(GL_BLEND);
-    m_scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
-    m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
-    m_stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
-    m_cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
-    glGetBooleanv(GL_DEPTH_WRITEMASK, &m_depthMask);
-    glGetIntegerv(GL_CULL_FACE_MODE, &m_cullFaceMode);
-    std::array<GLint, 2> polygonModes{};
-    glGetIntegerv(GL_POLYGON_MODE, polygonModes.data());
-    m_polygonMode = polygonModes[0];
-  }
-
-  ScopedDdpGlState(const ScopedDdpGlState&) = delete;
-  ScopedDdpGlState& operator=(const ScopedDdpGlState&) = delete;
-
-  ~ScopedDdpGlState()
-  {
-    restore();
-    glBlendEquationSeparate(static_cast<GLenum>(m_blendEquationRgb), static_cast<GLenum>(m_blendEquationAlpha));
-    glBlendFuncSeparate(
-      static_cast<GLenum>(m_blendSrcRgb),
-      static_cast<GLenum>(m_blendDstRgb),
-      static_cast<GLenum>(m_blendSrcAlpha),
-      static_cast<GLenum>(m_blendDstAlpha));
-    m_blendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-    m_scissorEnabled ? glEnable(GL_SCISSOR_TEST) : glDisable(GL_SCISSOR_TEST);
-    m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-    m_stencilTestEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
-    glCullFace(static_cast<GLenum>(m_cullFaceMode));
-    m_cullFaceEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
-    glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(m_polygonMode));
-    glDepthMask(m_depthMask);
-  }
-
-  void restore() const noexcept
-  {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(m_drawFramebuffer));
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(m_readFramebuffer));
-    glViewport(m_viewport[0], m_viewport[1], m_viewport[2], m_viewport[3]);
-    glScissor(m_scissor[0], m_scissor[1], m_scissor[2], m_scissor[3]);
-  }
-
-private:
-  GLint m_drawFramebuffer = 0;
-  GLint m_readFramebuffer = 0;
-  std::array<GLint, 4> m_viewport{};
-  std::array<GLint, 4> m_scissor{};
-  GLint m_blendSrcRgb = GL_ONE;
-  GLint m_blendDstRgb = GL_ZERO;
-  GLint m_blendSrcAlpha = GL_ONE;
-  GLint m_blendDstAlpha = GL_ZERO;
-  GLint m_blendEquationRgb = GL_FUNC_ADD;
-  GLint m_blendEquationAlpha = GL_FUNC_ADD;
-  GLboolean m_blendEnabled = GL_FALSE;
-  GLboolean m_scissorEnabled = GL_FALSE;
-  GLboolean m_depthTestEnabled = GL_FALSE;
-  GLboolean m_stencilTestEnabled = GL_FALSE;
-  GLboolean m_cullFaceEnabled = GL_FALSE;
-  GLboolean m_depthMask = GL_TRUE;
-  GLint m_cullFaceMode = GL_BACK;
-  GLint m_polygonMode = GL_FILL;
-};
 
 void clearDdpTargets(MeshDdpResources& resources, const uint32_t textureId)
 {
@@ -165,8 +176,8 @@ void clearAccumulatedBackColor(MeshDdpResources& resources)
 void drawFullScreenTriangle(MeshDdpResources& resources)
 {
   resources.fullScreenVao().bind();
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-  resources.fullScreenVao().release();
+  resources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
+  resources.fullScreenVao().unbind();
 }
 
 void initializeDepthBounds(const MeshDdpRenderRequest& request)
@@ -246,9 +257,11 @@ void queryRemainingLayers(const MeshDdpRenderRequest& request, const uint32_t cu
   request.resources.depthTexture(currentId).bind(k_depthTextureUnit);
   request.completionProgram.use();
   request.completionProgram.setUniform("u_depthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
-  glBeginQuery(GL_ANY_SAMPLES_PASSED, completionQuery);
-  drawFullScreenTriangle(request.resources);
-  glEndQuery(GL_ANY_SAMPLES_PASSED);
+  {
+    ActiveSamplesPassedQuery query(completionQuery);
+    drawFullScreenTriangle(request.resources);
+    query.finish();
+  }
   request.completionProgram.stopUse();
   request.resources.depthTexture(currentId).unbind(k_depthTextureUnit);
 }
@@ -263,13 +276,14 @@ std::optional<bool> completedQueryHasSamples(const GLuint query)
 
   GLuint anySamplesPassed = GL_FALSE;
   glGetQueryObjectuiv(query, GL_QUERY_RESULT, &anySamplesPassed);
+  CHECK_GL_ERROR(GLErrorChecker{});
   return anySamplesPassed == GL_TRUE;
 }
 
-void resolveDdp(const MeshDdpRenderRequest& request, const ScopedDdpGlState& scopedState, const uint32_t currentId)
+void resolveDdp(const MeshDdpRenderRequest& request, const OpenGLStateGuard& scopedState, const uint32_t currentId)
 {
   // Resolve into the framebuffer and viewport that were active before the DDP pass.
-  scopedState.restore();
+  scopedState.restoreFramebufferAndViewport();
   glDisable(GL_DEPTH_TEST);
   glDepthMask(GL_FALSE);
   glEnable(GL_BLEND);
@@ -299,7 +313,22 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
     return;
   }
 
-  const ScopedDdpGlState scopedState;
+  const OpenGLStateGuard scopedState{
+    {0u, GL_TEXTURE_2D},
+    {0u, GL_TEXTURE_3D},
+    {1u, GL_TEXTURE_2D},
+    {1u, GL_TEXTURE_3D},
+    {2u, GL_TEXTURE_2D},
+    {2u, GL_TEXTURE_3D},
+    {3u, GL_TEXTURE_2D},
+    {3u, GL_TEXTURE_3D},
+    {4u, GL_TEXTURE_1D},
+    {5u, GL_TEXTURE_2D},
+    {5u, GL_TEXTURE_3D},
+    {6u, GL_TEXTURE_2D},
+    {6u, GL_TEXTURE_BUFFER},
+    {7u, GL_TEXTURE_2D},
+    {8u, GL_TEXTURE_2D}};
   const GlViewport originalViewport = currentViewport();
   const glm::uvec2 size = viewportSize(originalViewport);
   if (!request.resources.ensureSize(size) && !request.resources.initialized()) {
@@ -318,8 +347,7 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
   clearDdpTargets(request.resources, 0u);
   initializeDepthBounds(request);
 
-  std::vector<GLuint> completionQueries(request.plan.peelPasses, 0u);
-  glGenQueries(static_cast<GLsizei>(completionQueries.size()), completionQueries.data());
+  const QueryObjects completionQueries(request.plan.peelPasses);
 
   uint32_t currentId = 0u;
   uint32_t completedPasses = 0u;
@@ -347,10 +375,6 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
     blendBackLayer(request, currentId);
     queryRemainingLayers(request, currentId, completionQueries.empty() ? 0u : completionQueries[completedPasses]);
     ++completedPasses;
-  }
-
-  if (!completionQueries.empty()) {
-    glDeleteQueries(static_cast<GLsizei>(completionQueries.size()), completionQueries.data());
   }
 
   resolveDdp(request, scopedState, currentId);

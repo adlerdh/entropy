@@ -69,7 +69,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
   const RenderData::TextureDimension metricTextureDimension = metricTextureLayouts[0].dimension;
 
   const auto boundMetricTextures = bindMetricImageTextures(imageSegPairs, view.renderMode());
-  std::list<std::reference_wrapper<GLTexture>> boundMetricDefTextures;
+  BoundTextures boundMetricDefTextures;
   if (deformationUids[0]) {
     auto boundDefTextures = bindDeformationTextures(*deformationUids[0], s_metricDefTexSamplers0);
     boundMetricDefTextures.splice(boundMetricDefTextures.end(), boundDefTextures);

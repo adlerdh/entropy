@@ -27,7 +27,8 @@ namespace
 
 struct TextureLimits
 {
-  GLint maxTextureSize{0};        // GL_MAX_TEXTURE_SIZE: 1D and 2D max width/height
+  GLint maxTextureSize{0}; // GL_MAX_TEXTURE_SIZE: 1D and 2D max width/height
+  GLint maxRectangleTextureSize{0};
   GLint max3DTextureSize{0};      // GL_MAX_3D_TEXTURE_SIZE: 3D max width/height/depth
   GLint maxArrayTextureLayers{0}; // GL_MAX_ARRAY_TEXTURE_LAYERS: array texture layer count
   GLint maxCubeMapTextureSize{0};
@@ -37,6 +38,7 @@ TextureLimits queryTextureLimits()
 {
   TextureLimits limits;
   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &limits.maxTextureSize);
+  glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &limits.maxRectangleTextureSize);
   glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &limits.max3DTextureSize);
   glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &limits.maxArrayTextureLayers);
   glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &limits.maxCubeMapTextureSize);
@@ -49,10 +51,131 @@ bool textureTargetSupportsMipmaps(Target target) noexcept
          target != Target::Texture2DMultisampleArray && target != Target::TextureBuffer;
 }
 
-GLint mipmapMaxLevelForSize(const glm::ivec3& size) noexcept
+GLint mipmapMaxLevelForTarget(const Target target, const glm::ivec3& size) noexcept
 {
-  const GLint maxDimension = std::max({size.x, size.y, size.z, 1});
+  GLint maxDimension = 1;
+  switch (target) {
+    case Target::Texture1D:
+    case Target::Texture1DArray:
+      maxDimension = std::max(size.x, 1);
+      break;
+    case Target::Texture2D:
+    case Target::Texture2DArray:
+    case Target::TextureCubeMap:
+      maxDimension = std::max({size.x, size.y, 1});
+      break;
+    case Target::Texture3D:
+      maxDimension = std::max({size.x, size.y, size.z, 1});
+      break;
+    case Target::Texture2DMultisample:
+    case Target::TextureRectangle:
+    case Target::Texture2DMultisampleArray:
+    case Target::TextureBuffer:
+      return 0;
+  }
   return static_cast<GLint>(std::floor(std::log2(static_cast<double>(maxDimension))));
+}
+
+glm::ivec3 textureSizeForLevel(const Target target, const glm::uvec3& baseSize, const GLint level)
+{
+  if (level < 0) {
+    throwDebug("Texture mipmap level cannot be negative");
+  }
+  if (
+    (target == Target::Texture2DMultisample || target == Target::Texture2DMultisampleArray ||
+     target == Target::TextureRectangle || target == Target::TextureBuffer) &&
+    level != 0)
+  {
+    throwDebug("Texture target only supports mipmap level zero");
+  }
+  if (level > mipmapMaxLevelForTarget(target, glm::ivec3{baseSize})) {
+    throwDebug("Texture mipmap level exceeds the range supported by its base dimensions");
+  }
+
+  const auto reduced = [level](const uint32_t dimension) {
+    const uint32_t shift = std::min<uint32_t>(static_cast<uint32_t>(level), 31u);
+    return static_cast<GLint>(std::max(dimension >> shift, 1u));
+  };
+
+  glm::ivec3 size{baseSize};
+  switch (target) {
+    case Target::Texture1D:
+      return {reduced(baseSize.x), 1, 1};
+    case Target::Texture2D:
+    case Target::TextureRectangle:
+    case Target::Texture2DMultisample:
+    case Target::TextureCubeMap:
+      return {reduced(baseSize.x), reduced(baseSize.y), 1};
+    case Target::Texture3D:
+      return {reduced(baseSize.x), reduced(baseSize.y), reduced(baseSize.z)};
+    case Target::Texture1DArray:
+      return {reduced(baseSize.x), static_cast<GLint>(baseSize.y), 1};
+    case Target::Texture2DArray:
+    case Target::Texture2DMultisampleArray:
+      return {reduced(baseSize.x), reduced(baseSize.y), static_cast<GLint>(baseSize.z)};
+    case Target::TextureBuffer:
+      return size;
+  }
+  return size;
+}
+
+bool isMipmapFilter(const MinificationFilter filter) noexcept
+{
+  return filter != MinificationFilter::Nearest && filter != MinificationFilter::Linear;
+}
+
+bool supportsSamplingParameters(const Target target) noexcept
+{
+  return target != Target::Texture2DMultisample && target != Target::Texture2DMultisampleArray &&
+         target != Target::TextureBuffer;
+}
+
+void validatePixelStoreSettings(const GLTexture::PixelStoreSettings& settings)
+{
+  if (settings.m_alignment != 1 && settings.m_alignment != 2 && settings.m_alignment != 4 && settings.m_alignment != 8)
+  {
+    throwDebug("Pixel storage alignment must be 1, 2, 4, or 8 bytes");
+  }
+  if (
+    settings.m_skipImages < 0 || settings.m_skipRows < 0 || settings.m_skipPixels < 0 || settings.m_imageHeight < 0 ||
+    settings.m_rowLength < 0)
+  {
+    throwDebug("Pixel storage dimensions and offsets cannot be negative");
+  }
+}
+
+void validateTextureDimensions(const Target target, const glm::uvec3& size)
+{
+  switch (target) {
+    case Target::Texture1D:
+      if (size.y != 1u || size.z != 1u) {
+        throwDebug("One-dimensional textures require singleton y and z dimensions");
+      }
+      break;
+    case Target::Texture1DArray:
+      if (size.z != 1u) {
+        throwDebug("One-dimensional array textures require a singleton z dimension");
+      }
+      break;
+    case Target::Texture2D:
+    case Target::TextureRectangle:
+    case Target::Texture2DMultisample:
+      if (size.z != 1u) {
+        throwDebug("Two-dimensional textures require a singleton z dimension");
+      }
+      break;
+    case Target::TextureCubeMap:
+      if (size.z != 1u || size.x != size.y) {
+        throwDebug("Cube-map textures require square faces and a singleton z dimension");
+      }
+      break;
+    case Target::Texture3D:
+    case Target::Texture2DArray:
+    case Target::Texture2DMultisampleArray:
+      break;
+    case Target::TextureBuffer:
+      throwDebug("Buffer-texture size is defined by its attached buffer storage");
+  }
 }
 
 void setTextureLevelRange(GLenum target, GLint maxLevel)
@@ -100,6 +223,25 @@ void labelTextureObject(GLuint textureId, Target target, const glm::uvec3& size)
   glObjectLabel(GL_TEXTURE, textureId, static_cast<GLsizei>(label.size()), label.c_str());
 }
 
+uint8_t cubeMapFaceBit(const CubeMapFace face)
+{
+  switch (face) {
+    case CubeMapFace::PositiveX:
+      return 1u << 0u;
+    case CubeMapFace::NegativeX:
+      return 1u << 1u;
+    case CubeMapFace::PositiveY:
+      return 1u << 2u;
+    case CubeMapFace::NegativeY:
+      return 1u << 3u;
+    case CubeMapFace::PositiveZ:
+      return 1u << 4u;
+    case CubeMapFace::NegativeZ:
+      return 1u << 5u;
+  }
+  throwDebug("Invalid cube-map face");
+}
+
 const char* openGLErrorMessage(GLenum error)
 {
   switch (error) {
@@ -118,12 +260,6 @@ const char* openGLErrorMessage(GLenum error)
   }
 }
 
-void clearOpenGLErrors()
-{
-  while (GL_NO_ERROR != glGetError()) {
-  }
-}
-
 void throwIfOpenGLErrorAfterTextureUpload(
   GLenum target,
   GLint internalFormat,
@@ -131,13 +267,19 @@ void throwIfOpenGLErrorAfterTextureUpload(
   GLenum format,
   GLenum type)
 {
-  if (const GLenum error = glGetError(); GL_NO_ERROR != error) {
-    std::ostringstream ss;
-    ss << "OpenGL texture upload failed with error " << error << " (" << openGLErrorMessage(error) << ")"
-       << "; target=" << target << ", internalFormat=" << internalFormat << ", size=" << glm::to_string(size)
-       << ", format=" << format << ", type=" << type;
-    throwDebug(ss.str());
+  const GLenum firstError = glGetError();
+  if (firstError == GL_NO_ERROR) {
+    return;
   }
+
+  std::ostringstream ss;
+  ss << "OpenGL texture upload failed with error " << firstError << " (" << openGLErrorMessage(firstError) << ")";
+  for (GLenum error = glGetError(); error != GL_NO_ERROR; error = glGetError()) {
+    ss << ", followed by " << error << " (" << openGLErrorMessage(error) << ")";
+  }
+  ss << "; target=" << target << ", internalFormat=" << internalFormat << ", size=" << glm::to_string(size)
+     << ", format=" << format << ", type=" << type;
+  throwDebug(ss.str());
 }
 
 void throwIfTextureSizeExceedsLimits(Target target, const glm::ivec3& size)
@@ -153,8 +295,12 @@ void throwIfTextureSizeExceedsLimits(Target target, const glm::ivec3& size)
       limitName = "GL_MAX_TEXTURE_SIZE";
       limitValue = limits.maxTextureSize;
       break;
-    case Target::Texture2D:
     case Target::TextureRectangle:
+      valid = size.x <= limits.maxRectangleTextureSize && size.y <= limits.maxRectangleTextureSize;
+      limitName = "GL_MAX_RECTANGLE_TEXTURE_SIZE";
+      limitValue = limits.maxRectangleTextureSize;
+      break;
+    case Target::Texture2D:
     case Target::Texture2DMultisample:
       valid = size.x <= limits.maxTextureSize && size.y <= limits.maxTextureSize;
       limitName = "GL_MAX_TEXTURE_SIZE";
@@ -196,6 +342,34 @@ void throwIfTextureSizeExceedsLimits(Target target, const glm::ivec3& size)
 }
 
 } // namespace
+
+class GLTexture::PixelStoreGuard
+{
+public:
+  PixelStoreGuard(const bool pack, const std::optional<PixelStoreSettings>& requested) : m_pack(pack)
+  {
+    if (!requested) {
+      return;
+    }
+    validatePixelStoreSettings(*requested);
+    m_previous = pack ? getPixelPackSettings() : getPixelUnpackSettings();
+    pack ? applyPixelPackSettings(*requested) : applyPixelUnpackSettings(*requested);
+  }
+
+  PixelStoreGuard(const PixelStoreGuard&) = delete;
+  PixelStoreGuard& operator=(const PixelStoreGuard&) = delete;
+
+  ~PixelStoreGuard()
+  {
+    if (m_previous) {
+      m_pack ? applyPixelPackSettings(*m_previous) : applyPixelUnpackSettings(*m_previous);
+    }
+  }
+
+private:
+  bool m_pack;
+  std::optional<PixelStoreSettings> m_previous;
+};
 
 const std::unordered_map<Target, Binding> GLTexture::s_bindingMap = {
   {Target::Texture1D, Binding::TextureBinding1D},
@@ -467,6 +641,9 @@ BufferPixelDataType GLTexture::getBufferPixelDataType(const ComponentType& compo
 
 GLTexture::Binder::Binder(GLTexture& texture) : m_texture(texture), m_boundID(0)
 {
+  if (m_texture.m_id == 0u) {
+    throwDebug("Cannot bind a texture before generating it");
+  }
   glGetIntegerv(underlyingType(s_bindingMap.at(m_texture.m_target)), &m_boundID);
   glBindTexture(m_texture.m_targetEnum, static_cast<GLuint>(m_texture.m_id));
 }
@@ -497,13 +674,14 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
   , m_id(other.m_id)
   , m_size(other.m_size)
   , m_hasAllocatedStorage(other.m_hasAllocatedStorage)
+  , m_allocatedLevels(std::move(other.m_allocatedLevels))
+  , m_allocatedCubeFaces(std::move(other.m_allocatedCubeFaces))
   , m_autoGenerateMipmaps(other.m_autoGenerateMipmaps)
   , m_loggedSuspiciousBind(other.m_loggedSuspiciousBind)
   , m_loggedUnitZeroBind(other.m_loggedUnitZeroBind)
   , m_lastInternalFormat(other.m_lastInternalFormat)
   , m_lastBufferFormat(other.m_lastBufferFormat)
   , m_lastBufferType(other.m_lastBufferType)
-  , m_samplerID(other.m_samplerID)
   , m_multisampleSettings(other.m_multisampleSettings)
   , m_pixelPackSettings(other.m_pixelPackSettings)
   , m_pixelUnpackSettings(other.m_pixelUnpackSettings)
@@ -511,33 +689,37 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
   other.m_id = 0;
   other.m_size = glm::uvec3{1};
   other.m_hasAllocatedStorage = false;
+  other.m_allocatedLevels.clear();
+  other.m_allocatedCubeFaces.clear();
   other.m_autoGenerateMipmaps = false;
   other.m_loggedSuspiciousBind = false;
   other.m_loggedUnitZeroBind = false;
   other.m_lastInternalFormat = 0;
   other.m_lastBufferFormat = 0;
   other.m_lastBufferType = 0;
-  other.m_samplerID = 0;
   other.m_multisampleSettings = MultisampleSettings();
-  other.m_pixelPackSettings = PixelStoreSettings();
-  other.m_pixelUnpackSettings = PixelStoreSettings();
+  other.m_pixelPackSettings = std::nullopt;
+  other.m_pixelUnpackSettings = std::nullopt;
 }
 
 GLTexture& GLTexture::operator=(GLTexture&& other) noexcept
 {
   if (this != &other) {
-    release();
+    destroy();
 
+    std::swap(m_target, other.m_target);
+    std::swap(m_targetEnum, other.m_targetEnum);
     std::swap(m_id, other.m_id);
     std::swap(m_size, other.m_size);
     std::swap(m_hasAllocatedStorage, other.m_hasAllocatedStorage);
+    std::swap(m_allocatedLevels, other.m_allocatedLevels);
+    std::swap(m_allocatedCubeFaces, other.m_allocatedCubeFaces);
     std::swap(m_autoGenerateMipmaps, other.m_autoGenerateMipmaps);
     std::swap(m_loggedSuspiciousBind, other.m_loggedSuspiciousBind);
     std::swap(m_loggedUnitZeroBind, other.m_loggedUnitZeroBind);
     std::swap(m_lastInternalFormat, other.m_lastInternalFormat);
     std::swap(m_lastBufferFormat, other.m_lastBufferFormat);
     std::swap(m_lastBufferType, other.m_lastBufferType);
-    std::swap(m_samplerID, other.m_samplerID);
     std::swap(m_multisampleSettings, other.m_multisampleSettings);
     std::swap(m_pixelPackSettings, other.m_pixelPackSettings);
     std::swap(m_pixelUnpackSettings, other.m_pixelUnpackSettings);
@@ -548,49 +730,42 @@ GLTexture& GLTexture::operator=(GLTexture&& other) noexcept
 
 GLTexture::~GLTexture()
 {
-  release();
+  destroy();
 }
 
 void GLTexture::generate()
 {
+  if (m_id != 0u) {
+    return;
+  }
   glGenTextures(1, &m_id);
+  CHECK_GL_ERROR(m_errorChecker);
+  if (supportsSamplingParameters(m_target)) {
+    const Binder binder(*this);
+    // OpenGL's default minification filter requires mipmaps. Entropy textures begin with base-level-only storage, so
+    // choose a complete and predictable default until a caller explicitly requests another filter.
+    glTexParameteri(m_targetEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    CHECK_GL_ERROR(m_errorChecker);
+  }
   labelTextureObject(m_id, m_target, m_size);
-
-  // Generate sampler object for this texture
-  glGenSamplers(1, &m_samplerID);
 }
 
-void GLTexture::release(std::optional<uint32_t> textureUnit)
+void GLTexture::destroy()
 {
-  //    GLint oldTextureUnit = 0;
-  //    if (reset == QOpenGLTexture::ResetTextureUnit)
-  //        glGetIntegerv(GL_ACTIVE_TEXTURE, &oldTextureUnit);
-
-  //    texFuncs->glActiveTexture(GL_TEXTURE0 + unit);
-  //    glBindTexture(target, textureId);
-
-  //    if (reset == QOpenGLTexture::ResetTextureUnit)
-  //        texFuncs->glActiveTexture(GL_TEXTURE0 + oldTextureUnit);
-
-  if (textureUnit) {
-    glActiveTexture(GL_TEXTURE0 + *textureUnit);
+  if (m_id != 0u) {
+    glDeleteTextures(1, &m_id);
   }
-
-  glDeleteTextures(1, &m_id);
-
-  glDeleteSamplers(1, &m_samplerID);
-
   m_id = 0;
   m_size = glm::uvec3{1};
   m_hasAllocatedStorage = false;
+  m_allocatedLevels.clear();
+  m_allocatedCubeFaces.clear();
   m_autoGenerateMipmaps = false;
   m_loggedSuspiciousBind = false;
   m_loggedUnitZeroBind = false;
   m_lastInternalFormat = 0;
   m_lastBufferFormat = 0;
   m_lastBufferType = 0;
-  m_samplerID = 0;
-
   m_multisampleSettings = MultisampleSettings();
   m_pixelPackSettings = std::nullopt;
   m_pixelUnpackSettings = std::nullopt;
@@ -598,16 +773,21 @@ void GLTexture::release(std::optional<uint32_t> textureUnit)
 
 void GLTexture::bind(std::optional<uint32_t> textureUnit) const
 {
-  static constexpr bool rebind = false;
-
-  GLint prevUnit = 0;
-
+  if (m_id == 0u) {
+    throwDebug("Cannot bind a texture before generating it");
+  }
+  GLint previousTextureUnit = GL_TEXTURE0;
   if (textureUnit) {
-    if (rebind) glGetIntegerv(GL_ACTIVE_TEXTURE, &prevUnit);
-    glActiveTexture(GL_TEXTURE0 + *textureUnit);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &previousTextureUnit);
+    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + *textureUnit));
   }
 
   glBindTexture(m_targetEnum, m_id);
+
+  if (textureUnit) {
+    glActiveTexture(static_cast<GLenum>(previousTextureUnit));
+  }
+  CHECK_GL_ERROR(m_errorChecker);
 
   if (textureUnit && *textureUnit == 0 && !m_loggedUnitZeroBind) {
     spdlog::trace(
@@ -625,7 +805,7 @@ void GLTexture::bind(std::optional<uint32_t> textureUnit) const
     m_loggedUnitZeroBind = true;
   }
 
-  if ((m_id == 0 || (m_target != Target::TextureBuffer && !m_hasAllocatedStorage)) && !m_loggedSuspiciousBind) {
+  if (m_target != Target::TextureBuffer && !m_hasAllocatedStorage && !m_loggedSuspiciousBind) {
     spdlog::warn(
       "Binding suspicious GL texture: id={}, target={} ({}), unit={}, size={}, allocated={}, mipmaps={}",
       m_id,
@@ -637,16 +817,13 @@ void GLTexture::bind(std::optional<uint32_t> textureUnit) const
       m_autoGenerateMipmaps);
     m_loggedSuspiciousBind = true;
   }
-
-  if constexpr (rebind) {
-    if (textureUnit) {
-      glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + prevUnit));
-    }
-  }
 }
 
 bool GLTexture::isBound(std::optional<uint32_t> textureUnit) const
 {
+  if (m_id == 0u) {
+    return false;
+  }
   GLint prevUnit = 0;
 
   if (textureUnit) {
@@ -663,6 +840,8 @@ bool GLTexture::isBound(std::optional<uint32_t> textureUnit) const
     glActiveTexture(static_cast<GLenum>(prevUnit));
   }
 
+  CHECK_GL_ERROR(m_errorChecker);
+
   return result;
 }
 
@@ -672,10 +851,9 @@ void GLTexture::unbind(std::optional<uint32_t> textureUnit) const
     return;
   }
 
-  GLint previousTextureUnit = 0;
-  glGetIntegerv(GL_ACTIVE_TEXTURE, &previousTextureUnit);
-
   if (textureUnit) {
+    GLint previousTextureUnit = GL_TEXTURE0;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &previousTextureUnit);
     glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + *textureUnit));
     GLint boundId = 0;
     glGetIntegerv(underlyingType(s_bindingMap.at(m_target)), &boundId);
@@ -683,38 +861,16 @@ void GLTexture::unbind(std::optional<uint32_t> textureUnit) const
       glBindTexture(m_targetEnum, 0);
     }
     glActiveTexture(static_cast<GLenum>(previousTextureUnit));
+    CHECK_GL_ERROR(m_errorChecker);
     return;
   }
 
-  GLint maxTextureUnits = 0;
-  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-
-  const GLenum binding = underlyingType(s_bindingMap.at(m_target));
-  for (GLint unit = 0; unit < maxTextureUnits; ++unit) {
-    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + unit));
-
-    GLint boundId = 0;
-    glGetIntegerv(binding, &boundId);
-    if (static_cast<GLuint>(boundId) == m_id) {
-      glBindTexture(m_targetEnum, 0);
-    }
+  GLint boundId = 0;
+  glGetIntegerv(underlyingType(s_bindingMap.at(m_target)), &boundId);
+  if (static_cast<GLuint>(boundId) == m_id) {
+    glBindTexture(m_targetEnum, 0);
   }
-
-  glActiveTexture(static_cast<GLenum>(previousTextureUnit));
-}
-
-void GLTexture::bindSampler(uint32_t textureUnit) const
-{
-  /// When a sampler object is bound to a texture image unit, the internal sampling
-  /// parameters for a texture bound to the same image unit are all ignored.
-  /// Instead, the sampling parameters are taken from this sampler object.
-
-  glBindSampler(textureUnit, m_samplerID);
-}
-
-void GLTexture::unbindSampler(uint32_t textureUnit)
-{
-  glBindSampler(textureUnit, 0);
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 Target GLTexture::target() const
@@ -739,9 +895,15 @@ void GLTexture::setSize(const glm::uvec3& sizeArg)
     ss << "Invalid texture size " << glm::to_string(sizeArg) << std::ends;
     throwDebug(ss.str());
   }
+  if (glm::any(glm::greaterThan(sizeArg, glm::uvec3{static_cast<uint32_t>(std::numeric_limits<GLsizei>::max())}))) {
+    throwDebug("Texture dimensions exceed GLsizei range");
+  }
+  validateTextureDimensions(m_target, sizeArg);
 
   if (m_size != sizeArg) {
     m_hasAllocatedStorage = false;
+    m_allocatedLevels.clear();
+    m_allocatedCubeFaces.clear();
     m_loggedSuspiciousBind = false;
     m_loggedUnitZeroBind = false;
     m_size = sizeArg;
@@ -756,26 +918,46 @@ void GLTexture::setData(
   const BufferPixelDataType& type,
   const GLvoid* data)
 {
+  if (m_id == 0u) {
+    throwDebug("Cannot allocate texture storage before generating the texture");
+  }
   if (Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target) {
     throwDebug("Invalid texture target type ");
+  }
+  if (level != 0) {
+    throwDebug("Texture storage must be allocated at base mipmap level zero");
   }
 
   const GLint _internalFormat = underlyingType_asInt32(internalFormat);
   const GLenum _format = underlyingType(format);
   const GLenum _type = underlyingType(type);
-  const glm::ivec3 _size(m_size);
+  const glm::ivec3 _size = textureSizeForLevel(m_target, m_size, level);
+
+  if (
+    (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) &&
+    m_multisampleSettings.m_numSamples <= 0)
+  {
+    throwDebug("Multisample textures require at least one sample");
+  }
+  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
+    if (data != nullptr) {
+      throwDebug("Multisample texture allocation does not accept initial pixel data");
+    }
+    GLint maxSamples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+    if (m_multisampleSettings.m_numSamples > maxSamples) {
+      throwDebug("Requested multisample texture sample count exceeds GL_MAX_SAMPLES");
+    }
+  }
 
   throwIfTextureSizeExceedsLimits(m_target, _size);
-  clearOpenGLErrors();
+  // Do not silently discard an error queued by an earlier raw OpenGL call. Checking here keeps a stale error from
+  // being misreported as a texture-upload failure while preserving its original failure signal.
+  CHECK_GL_ERROR(m_errorChecker);
 
   Binder binder(*this);
 
-  std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
-
-  if (m_pixelUnpackSettings) {
-    oldUnpackSettings = getPixelUnpackSettings();
-    applyPixelUnpackSettings(*m_pixelUnpackSettings);
-  }
+  const PixelStoreGuard pixelStoreGuard(false, m_pixelUnpackSettings);
 
   switch (m_target) {
     case Target::Texture1D: {
@@ -831,6 +1013,7 @@ void GLTexture::setData(
 
   throwIfOpenGLErrorAfterTextureUpload(m_targetEnum, _internalFormat, _size, _format, _type);
   m_hasAllocatedStorage = true;
+  m_allocatedLevels.insert(level);
   m_loggedSuspiciousBind = false;
   m_loggedUnitZeroBind = false;
   m_lastInternalFormat = _internalFormat;
@@ -841,7 +1024,9 @@ void GLTexture::setData(
   if (textureTargetSupportsMipmaps(m_target)) {
     // Render-target and image fallback textures usually allocate only level 0. Advertising extra mip levels makes the
     // texture incomplete on some drivers, which can later surface as framebuffer or sampler errors.
-    setTextureLevelRange(m_targetEnum, m_autoGenerateMipmaps ? mipmapMaxLevelForSize(_size) : 0);
+    setTextureLevelRange(
+      m_targetEnum,
+      m_autoGenerateMipmaps ? mipmapMaxLevelForTarget(m_target, glm::ivec3{m_size}) : level);
 
     if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
@@ -859,12 +1044,10 @@ void GLTexture::setData(
     _internalFormat,
     _format,
     _type,
-    textureTargetSupportsMipmaps(m_target) ? (m_autoGenerateMipmaps ? mipmapMaxLevelForSize(_size) : 0) : 0,
+    textureTargetSupportsMipmaps(m_target)
+      ? (m_autoGenerateMipmaps ? mipmapMaxLevelForTarget(m_target, glm::ivec3{m_size}) : level)
+      : 0,
     m_autoGenerateMipmaps);
-
-  if (oldUnpackSettings) {
-    applyPixelUnpackSettings(*oldUnpackSettings);
-  }
 
   m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
 }
@@ -878,14 +1061,16 @@ void GLTexture::setSubData(
   const GLvoid* data)
 {
   if (
-    Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
-    Target::Texture2DMultisampleArray == m_target || Target::TextureCubeMap == m_target ||
-    Target::TextureBuffer == m_target)
+    Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target ||
+    Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target)
   {
     throwDebug("Invalid texture target type ");
   }
   if (level < 0) {
     throwDebug("Texture sub-data mipmap level cannot be negative");
+  }
+  if (level != 0) {
+    throwDebug("Texture sub-data updates must target base mipmap level zero");
   }
   if (!data) {
     throwDebug("Texture sub-data pointer cannot be null");
@@ -893,18 +1078,29 @@ void GLTexture::setSubData(
   if (!m_hasAllocatedStorage) {
     throwDebug("Cannot write texture sub-data before allocating texture storage");
   }
+  const bool levelAllocated =
+    m_allocatedLevels.contains(level) || (m_autoGenerateMipmaps && m_allocatedLevels.contains(0) &&
+                                          level <= mipmapMaxLevelForTarget(m_target, glm::ivec3{m_size}));
+  if (!levelAllocated) {
+    throwDebug("Cannot write texture sub-data to an unallocated mipmap level");
+  }
   if (glm::any(glm::equal(sizeArg, glm::uvec3{0u}))) {
     throwDebug("Texture sub-data dimensions must all be greater than zero");
   }
+  const glm::ivec3 levelSizeSigned = textureSizeForLevel(m_target, m_size, level);
+  const glm::uvec3 levelSize{levelSizeSigned};
   for (int axis = 0; axis < 3; ++axis) {
-    if (offset[axis] > m_size[axis] || sizeArg[axis] > m_size[axis] - offset[axis]) {
+    if (offset[axis] > levelSize[axis] || sizeArg[axis] > levelSize[axis] - offset[axis]) {
       throwDebug("Texture sub-data region exceeds allocated texture bounds");
     }
   }
   if (Target::Texture1D == m_target && (offset.y != 0u || offset.z != 0u || sizeArg.y != 1u || sizeArg.z != 1u)) {
     throwDebug("One-dimensional texture sub-data must use singleton y and z extents");
   }
-  if ((Target::Texture2D == m_target || Target::Texture1DArray == m_target) && (offset.z != 0u || sizeArg.z != 1u)) {
+  if (
+    (Target::Texture2D == m_target || Target::TextureRectangle == m_target || Target::Texture1DArray == m_target) &&
+    (offset.z != 0u || sizeArg.z != 1u))
+  {
     throwDebug("Two-dimensional texture sub-data must use a singleton z extent");
   }
 
@@ -915,12 +1111,7 @@ void GLTexture::setSubData(
 
   Binder binder(*this);
 
-  std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
-
-  if (m_pixelUnpackSettings) {
-    oldUnpackSettings = getPixelUnpackSettings();
-    applyPixelUnpackSettings(*m_pixelUnpackSettings);
-  }
+  const PixelStoreGuard pixelStoreGuard(false, m_pixelUnpackSettings);
 
   switch (m_target) {
     case Target::Texture1D:
@@ -928,6 +1119,7 @@ void GLTexture::setSubData(
       break;
 
     case Target::Texture2D:
+    case Target::TextureRectangle:
       glTexSubImage2D(m_targetEnum, level, _offset.x, _offset.y, _size.x, _size.y, _format, _type, data);
       break;
 
@@ -966,15 +1158,14 @@ void GLTexture::setSubData(
       break;
 
     case Target::Texture2DMultisample:
-    case Target::TextureRectangle:
     case Target::Texture2DMultisampleArray:
     case Target::TextureCubeMap:
     case Target::TextureBuffer:
       break;
   }
 
-  if (oldUnpackSettings) {
-    applyPixelUnpackSettings(*oldUnpackSettings);
+  if (m_autoGenerateMipmaps) {
+    glGenerateMipmap(m_targetEnum);
   }
 
   m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
@@ -988,38 +1179,57 @@ void GLTexture::setCubeMapFaceData(
   const BufferPixelDataType& type,
   const GLvoid* data)
 {
-  //    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+  if (m_target != Target::TextureCubeMap) {
+    throwDebug("Cube-map face data requires a cube-map texture");
+  }
+  if (m_id == 0u) {
+    throwDebug("Cannot allocate cube-map storage before generating the texture");
+  }
+  if (level != 0) {
+    throwDebug("Cube-map storage must be allocated at base mipmap level zero");
+  }
 
-  const glm::ivec3 _size(m_size);
+  const glm::ivec3 _size = textureSizeForLevel(m_target, m_size, level);
+  if (_size.x != _size.y) {
+    throwDebug("Cube-map faces must be square");
+  }
+  throwIfTextureSizeExceedsLimits(m_target, _size);
 
   Binder binder(*this);
+  const PixelStoreGuard pixelStoreGuard(false, m_pixelUnpackSettings);
 
-  std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
-
-  if (m_pixelUnpackSettings) {
-    oldUnpackSettings = getPixelUnpackSettings();
-    applyPixelUnpackSettings(*m_pixelUnpackSettings);
+  const GLint newInternalFormat = underlyingType_asInt32(internalFormat);
+  const GLenum newBufferFormat = underlyingType(format);
+  const GLenum newBufferType = underlyingType(type);
+  if (m_hasAllocatedStorage && m_lastInternalFormat != newInternalFormat) {
+    throwDebug("All faces of a cube-map texture must use the same internal format");
   }
 
   glTexImage2D(
     underlyingType(face),
     level,
-    underlyingType_asInt32(internalFormat),
+    newInternalFormat,
     _size.x,
     _size.y,
     0,
-    underlyingType(format),
-    underlyingType(type),
+    newBufferFormat,
+    newBufferType,
     data);
+  CHECK_GL_ERROR(m_errorChecker);
   m_hasAllocatedStorage = true;
+  m_allocatedCubeFaces[level] |= cubeMapFaceBit(face);
+  m_lastInternalFormat = newInternalFormat;
+  m_lastBufferFormat = newBufferFormat;
+  m_lastBufferType = newBufferType;
+  labelTextureObject(m_id, m_target, m_size);
 
-  //    if ( m_autoGenerateMipmaps )
-  //    {
-  //        glGenerateMipmap( m_targetEnum );
-  //    }
+  setTextureLevelRange(
+    m_targetEnum,
+    m_autoGenerateMipmaps ? mipmapMaxLevelForTarget(m_target, glm::ivec3{m_size}) : level);
 
-  if (oldUnpackSettings) {
-    applyPixelUnpackSettings(*oldUnpackSettings);
+  constexpr uint8_t allCubeFaces = (1u << 6u) - 1u;
+  if (m_autoGenerateMipmaps && level == 0 && m_allocatedCubeFaces.at(level) == allCubeFaces) {
+    glGenerateMipmap(m_targetEnum);
   }
 
   m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
@@ -1029,26 +1239,26 @@ void GLTexture::readData(GLint level, const BufferPixelFormat& format, const Buf
 {
   if (
     Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target ||
-    Target::TextureCubeMap == m_target)
+    Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target)
   {
-    throwDebug("Invalid texture target type ");
+    throwDebug("Texture target does not support direct pixel reads");
+  }
+  if (!m_hasAllocatedStorage || data == nullptr) {
+    throwDebug("Cannot read texture data without allocated storage and a destination buffer");
+  }
+  static_cast<void>(textureSizeForLevel(m_target, m_size, level));
+  const bool levelAllocated =
+    m_allocatedLevels.contains(level) || (m_autoGenerateMipmaps && m_allocatedLevels.contains(0) &&
+                                          level <= mipmapMaxLevelForTarget(m_target, glm::ivec3{m_size}));
+  if (!levelAllocated) {
+    throwDebug("Cannot read an unallocated texture mipmap level");
   }
 
-  // How slow is this?
   Binder binder(*this);
-
-  std::optional<PixelStoreSettings> oldPackSettings = std::nullopt;
-
-  if (m_pixelPackSettings) {
-    oldPackSettings = getPixelPackSettings();
-    applyPixelPackSettings(*m_pixelPackSettings);
-  }
+  const PixelStoreGuard pixelStoreGuard(true, m_pixelPackSettings);
 
   glGetTexImage(m_targetEnum, level, underlyingType(format), underlyingType(type), data);
-
-  if (oldPackSettings) {
-    applyPixelPackSettings(*oldPackSettings);
-  }
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::readCubeMapFaceData(
@@ -1058,64 +1268,56 @@ void GLTexture::readCubeMapFaceData(
   const BufferPixelDataType& type,
   GLvoid* data)
 {
-  Binder binder(*this);
-
-  std::optional<PixelStoreSettings> oldPackSettings = std::nullopt;
-
-  if (m_pixelPackSettings) {
-    oldPackSettings = getPixelPackSettings();
-    applyPixelPackSettings(*m_pixelPackSettings);
+  if (m_target != Target::TextureCubeMap) {
+    throwDebug("Cube-map face reads require a cube-map texture");
   }
+  if (!m_hasAllocatedStorage || data == nullptr) {
+    throwDebug("Cannot read cube-map data without allocated storage and a destination buffer");
+  }
+  static_cast<void>(textureSizeForLevel(m_target, m_size, level));
+  constexpr uint8_t allCubeFaces = (1u << 6u) - 1u;
+  const auto allocatedFaces = m_allocatedCubeFaces.find(level);
+  const bool explicitlyAllocated =
+    allocatedFaces != m_allocatedCubeFaces.end() && (allocatedFaces->second & cubeMapFaceBit(face)) != 0u;
+  const bool generatedFromCompleteBase = level > 0 && m_autoGenerateMipmaps && m_allocatedCubeFaces.contains(0) &&
+                                         m_allocatedCubeFaces.at(0) == allCubeFaces;
+  if (!explicitlyAllocated && !generatedFromCompleteBase) {
+    throwDebug("Cannot read an unallocated cube-map face");
+  }
+
+  Binder binder(*this);
+  const PixelStoreGuard pixelStoreGuard(true, m_pixelPackSettings);
 
   glGetTexImage(underlyingType(face), level, underlyingType(format), underlyingType(type), data);
-
-  if (oldPackSettings) {
-    applyPixelPackSettings(*oldPackSettings);
-  }
 
   CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::setMinificationFilter(const MinificationFilter& filter)
 {
-  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
-    throwDebug("Invalid texture target type ");
+  if (!supportsSamplingParameters(m_target)) {
+    throwDebug("Texture target does not support minification filtering");
+  }
+  if (Target::TextureRectangle == m_target && isMipmapFilter(filter)) {
+    throwDebug("Rectangle textures do not support mipmap minification filters");
   }
 
   Binder binder(*this);
 
-  if (
-    Target::Texture2DMultisample != m_target && Target::TextureRectangle != m_target &&
-    Target::Texture2DMultisampleArray != m_target)
-  {
-    if (m_autoGenerateMipmaps && m_hasAllocatedStorage) {
-      glGenerateMipmap(m_targetEnum);
-    }
-  }
-
   glTexParameteri(m_targetEnum, GL_TEXTURE_MIN_FILTER, underlyingType_asInt32(filter));
-  //    glSamplerParameteri( m_samplerID, GL_TEXTURE_MIN_FILTER, underlyingType_asInt32(filter) );
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::setMagnificationFilter(const MagnificationFilter& filter)
 {
-  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
-    throwDebug("Invalid texture target type ");
+  if (!supportsSamplingParameters(m_target)) {
+    throwDebug("Texture target does not support magnification filtering");
   }
 
   Binder binder(*this);
 
-  if (
-    Target::Texture2DMultisample != m_target && Target::TextureRectangle != m_target &&
-    Target::Texture2DMultisampleArray != m_target)
-  {
-    if (m_autoGenerateMipmaps && m_hasAllocatedStorage) {
-      glGenerateMipmap(m_targetEnum);
-    }
-  }
-
   glTexParameteri(m_targetEnum, GL_TEXTURE_MAG_FILTER, underlyingType_asInt32(filter));
-  //    glSamplerParameteri( m_samplerID, GL_TEXTURE_MAG_FILTER, underlyingType_asInt32(filter) );
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::setSwizzleMask(
@@ -1124,6 +1326,9 @@ void GLTexture::setSwizzleMask(
   const SwizzleValue& bValue,
   const SwizzleValue& aValue)
 {
+  if (!supportsSamplingParameters(m_target)) {
+    throwDebug("Texture target does not support component swizzling");
+  }
   const GLint mask[] = {
     static_cast<GLint>(underlyingType(rValue)),
     static_cast<GLint>(underlyingType(gValue)),
@@ -1132,67 +1337,82 @@ void GLTexture::setSwizzleMask(
 
   Binder binder(*this);
   glTexParameteriv(m_targetEnum, GL_TEXTURE_SWIZZLE_RGBA, mask);
-  //    glSamplerParameteriv( m_samplerID, GL_TEXTURE_SWIZZLE_RGBA, mask );
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::setWrapMode(const WrapMode& mode)
 {
+  if (!supportsSamplingParameters(m_target)) {
+    throwDebug("Texture target does not support wrapping modes");
+  }
   Binder binder(*this);
 
   if (Target::Texture1D == m_target || Target::Texture1DArray == m_target) {
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode));
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode) );
   }
   else if (
-    Target::Texture2D == m_target || Target::Texture2DArray == m_target || Target::Texture2DMultisample == m_target ||
-    Target::TextureRectangle == m_target || Target::Texture2DMultisampleArray == m_target)
+    Target::Texture2D == m_target || Target::Texture2DArray == m_target || Target::TextureRectangle == m_target ||
+    Target::TextureCubeMap == m_target)
   {
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode));
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode));
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode) );
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode) );
   }
   else if (Target::Texture3D == m_target) {
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode));
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode));
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_R, underlyingType_asInt32(mode));
-
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode) );
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode) );
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_R, underlyingType_asInt32(mode) );
   }
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::setBorderColor(const glm::vec4& color)
 {
+  if (!supportsSamplingParameters(m_target)) {
+    throwDebug("Texture target does not support border colors");
+  }
   Binder binder(*this);
   glTexParameterfv(m_targetEnum, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
-  glSamplerParameterfv(m_samplerID, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::setAutoGenerateMipmaps(bool enabled)
 {
+  if (enabled && !textureTargetSupportsMipmaps(m_target)) {
+    throwDebug("This texture target does not support mipmap generation");
+  }
   m_autoGenerateMipmaps = enabled;
 
   if (textureTargetSupportsMipmaps(m_target)) {
     Binder binder(*this);
-    setTextureLevelRange(m_targetEnum, m_autoGenerateMipmaps ? mipmapMaxLevelForSize(glm::ivec3{m_size}) : 0);
+    setTextureLevelRange(
+      m_targetEnum,
+      m_autoGenerateMipmaps ? mipmapMaxLevelForTarget(m_target, glm::ivec3{m_size}) : 0);
 
-    if (m_autoGenerateMipmaps && m_hasAllocatedStorage) {
+    constexpr uint8_t allCubeFaces = (1u << 6u) - 1u;
+    const bool cubeMapComplete = m_target != Target::TextureCubeMap ||
+                                 (m_allocatedCubeFaces.contains(0) && m_allocatedCubeFaces.at(0) == allCubeFaces);
+    if (m_autoGenerateMipmaps && m_hasAllocatedStorage && cubeMapComplete) {
       glGenerateMipmap(m_targetEnum);
     }
+    CHECK_GL_ERROR(m_errorChecker);
   }
 }
 
-void GLTexture::markBufferTextureStorage(const GLint internalFormat, const std::size_t texelCount)
+void GLTexture::setBufferTextureStorage(const GLint internalFormat, const GLuint bufferId, const std::size_t texelCount)
 {
   if (m_target != Target::TextureBuffer) {
-    throwDebug("Only texture buffer objects can record buffer texture storage");
+    throwDebug("Only texture-buffer objects can attach buffer storage");
   }
+
+  const Binder binder(*this);
+  glTexBuffer(m_targetEnum, static_cast<GLenum>(internalFormat), bufferId);
+  CHECK_GL_ERROR(m_errorChecker);
 
   m_size =
     glm::uvec3{static_cast<uint32_t>(std::min<std::size_t>(texelCount, std::numeric_limits<uint32_t>::max())), 1u, 1u};
   m_hasAllocatedStorage = texelCount > 0;
+  m_allocatedLevels.clear();
+  m_allocatedCubeFaces.clear();
   m_loggedSuspiciousBind = false;
   m_loggedUnitZeroBind = false;
   m_lastInternalFormat = internalFormat;
@@ -1209,18 +1429,15 @@ void GLTexture::markBufferTextureStorage(const GLint internalFormat, const std::
     internalFormat);
 }
 
-void GLTexture::setMultisampleSettings(const MultisampleSettings& settings)
-{
-  m_multisampleSettings = settings;
-}
-
 void GLTexture::setPixelPackSettings(const PixelStoreSettings& settings)
 {
+  validatePixelStoreSettings(settings);
   m_pixelPackSettings = settings;
 }
 
 void GLTexture::setPixelUnpackSettings(const PixelStoreSettings& settings)
 {
+  validatePixelStoreSettings(settings);
   m_pixelUnpackSettings = settings;
 }
 

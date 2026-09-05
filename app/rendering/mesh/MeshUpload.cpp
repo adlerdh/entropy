@@ -61,8 +61,9 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
     positionsObject.bind();
     vao.setAttributeBuffer(sk_positionAttribute, positionsInfo);
     vao.enableVertexAttribute(sk_positionAttribute);
+    positionsObject.unbind();
   }
-  vao.release();
+  vao.unbind();
 
   MeshGpuData
     gpuData(handle, std::move(vao), std::move(positionsObject), std::move(indicesObject), positionsInfo, indicesInfo);
@@ -80,8 +81,9 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
       normalsObject.bind();
       gpuVao.setAttributeBuffer(sk_normalAttribute, normalsInfo);
       gpuVao.enableVertexAttribute(sk_normalAttribute);
+      normalsObject.unbind();
     }
-    gpuVao.release();
+    gpuVao.unbind();
 
     gpuData.setNormals(std::move(normalsObject), normalsInfo);
   }
@@ -99,8 +101,9 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
       colorsObject.bind();
       gpuVao.setAttributeBuffer(sk_colorAttribute, colorsInfo);
       gpuVao.enableVertexAttribute(sk_colorAttribute);
+      colorsObject.unbind();
     }
-    gpuVao.release();
+    gpuVao.unbind();
 
     gpuData.setColors(std::move(colorsObject), colorsInfo);
   }
@@ -118,8 +121,9 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
       textureCoordsObject.bind();
       gpuVao.setAttributeBuffer(sk_textureCoordAttribute, textureCoordsInfo);
       gpuVao.enableVertexAttribute(sk_textureCoordAttribute);
+      textureCoordsObject.unbind();
     }
-    gpuVao.release();
+    gpuVao.unbind();
 
     gpuData.setTextureCoords(std::move(textureCoordsObject), textureCoordsInfo);
   }

@@ -136,8 +136,9 @@ bool FullScreenQuad::initVao()
     texCoordsObject->bind();
     m_vao.setAttributeBuffer(sk_texCoordsIndex, *texCoordsInfo);
     m_vao.enableVertexAttribute(sk_texCoordsIndex);
+    texCoordsObject->unbind();
   }
-  m_vao.release();
+  m_vao.unbind();
 
   m_vaoParams = std::make_unique<GLVertexArrayObject::IndexedDrawParams>(indicesInfo);
   return true;
@@ -152,6 +153,6 @@ bool FullScreenQuad::drawVao()
 
   m_vao.bind();
   m_vao.drawElements(*m_vaoParams);
-  m_vao.release();
+  m_vao.unbind();
   return true;
 }
