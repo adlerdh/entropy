@@ -51,7 +51,6 @@ set(entropy_SHADERS
   functions/AsciiComposite.glsl
   functions/ColorHelpers.glsl
   functions/DoRender.glsl
-  functions/ComputeEdge_FreiChen.glsl
   functions/ComputeEdge_Sobel.glsl
   functions/Helpers.glsl
   functions/IntensityProjection.glsl

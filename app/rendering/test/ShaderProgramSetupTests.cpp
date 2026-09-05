@@ -101,6 +101,24 @@ TEST_CASE("shader program setup exposes complete texture lookup replacement sour
   REQUIRE_FALSE(setup.lookupReplacementSources.uintLinear2D.empty());
 }
 
+TEST_CASE("image edge shaders use independent scale and threshold controls", "[rendering][shaders][pixel-edge]")
+{
+  const std::string voxel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/Edge.fs");
+  const std::string sobel =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/functions/ComputeEdge_Sobel.glsl");
+  const std::string screen = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/PixelEdgePost.fs");
+
+  CHECK(voxel.find("computeEdge(V) * u_edgeScale") != std::string::npos);
+  CHECK(voxel.find("gradMag >= u_edgeThreshold") != std::string::npos);
+  CHECK(voxel.find("gradMag * gradColormap.a * vec4(gradColormap.rgb, 1.0)") != std::string::npos);
+  CHECK(sobel.find("float computeEdge(mat3 V)") != std::string::npos);
+  CHECK(sobel.find("/ max(edgeMagnitude") == std::string::npos);
+
+  CHECK(screen.find("colorPM.rgb / colorPM.a") != std::string::npos);
+  CHECK(screen.find("edgePM *= sourcePM.a") != std::string::npos);
+  CHECK(screen.find("rawEdge >= edgeForward && rawEdge > edgeBackward") != std::string::npos);
+}
+
 TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributions", "[rendering][shaders]")
 {
   const std::string raycast = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.fs");

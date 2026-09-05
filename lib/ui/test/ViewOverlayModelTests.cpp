@@ -7,7 +7,7 @@ namespace view_overlay = ui::view_overlay;
 TEST_CASE("view overlay chooses image or metric selection by render mode", "[ui][view_overlay]")
 {
   CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::Image));
-  CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::VolumeRender));
+  CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::Isosurfaces));
   CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::SegmentationMesh));
   CHECK(view_overlay::usesVisibleImageSelection(ViewRenderMode::SegmentationAndIsosurfaces));
 

@@ -19,7 +19,30 @@ glm::vec2 windowNdc_T_window(const Viewport& windowViewport, const glm::vec2& wi
     2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f};
 }
 
+glm::vec3 normalizedVoxelDirectionToTexture(const glm::vec3& voxelOffset, const glm::vec3& invPixelDimensions)
+{
+  const float length = glm::length(voxelOffset);
+  if (!std::isfinite(length) || length <= 1.0e-7f) {
+    return glm::vec3{0.0f};
+  }
+  return (voxelOffset / length) * invPixelDimensions;
+}
+
 } // namespace
+
+EdgePassPlan computeEdgePassPlan(
+  bool showVoxelEdges,
+  bool showScreenPixelEdges,
+  bool overlayEdges,
+  bool allowScreenPixelEdgePostProcessing)
+{
+  EdgePassPlan plan;
+  plan.drawScreenPixelEdges = showScreenPixelEdges && allowScreenPixelEdgePostProcessing;
+  plan.drawVoxelEdges = showVoxelEdges;
+  plan.drawImageDirectly = !plan.drawScreenPixelEdges && (!showVoxelEdges || overlayEdges);
+  plan.disableIntensityProjectionForDirectImage = showVoxelEdges;
+  return plan;
+}
 
 glm::vec3 computeTextureSamplingDirectionForViewAxis(
   const glm::mat4& pixel_T_clip,
@@ -32,9 +55,7 @@ glm::vec3 computeTextureSamplingDirectionForViewAxis(
   const glm::vec4 pixelOrigin = pixel_T_clip * clipOrigin;
   const glm::vec4 pixelPos = pixel_T_clip * clipPos;
 
-  const glm::vec3 pixelDir = glm::normalize(pixelPos / pixelPos.w - pixelOrigin / pixelOrigin.w);
-
-  return glm::dot(glm::abs(pixelDir), invPixelDimensions) * pixelDir;
+  return normalizedVoxelDirectionToTexture(pixelPos / pixelPos.w - pixelOrigin / pixelOrigin.w, invPixelDimensions);
 }
 
 glm::vec3 computeTextureSamplingDirectionForViewPixelOffset(
@@ -83,10 +104,7 @@ glm::vec3 computeTextureSamplingDirectionForImageVoxelOffset(
   glm::vec4 voxelPos = voxel_T_viewClip * viewNdcPos;
   voxelPos /= voxelPos.w;
 
-  const glm::vec3 voxelDir = glm::normalize(voxelPos - voxelOrigin);
-  const glm::vec3 texDir = glm::dot(glm::abs(voxelDir), invPixelDimensions) * voxelDir;
-
-  return texDir;
+  return normalizedVoxelDirectionToTexture(voxelPos - voxelOrigin, invPixelDimensions);
 }
 
 MipSamplingParams

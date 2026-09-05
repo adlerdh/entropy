@@ -698,6 +698,7 @@ Layout instantiateLayoutSpec(
   }
   layout.ControlFrame::setMetricImages(
     imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_metricImageIndices));
+  layout.reconcileRenderModeForImageCount(orderedImageUids.size());
   return layout;
 }
 

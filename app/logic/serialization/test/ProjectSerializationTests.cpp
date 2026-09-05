@@ -1321,13 +1321,14 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_colorMapLevelIndices = {},
     .m_colorMapHsvModifierIndices = {},
     .m_interpolationModeIndices = {},
-    .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Pixel,
+    .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::ScreenPixel,
     .m_showEdges = true,
-    .m_thresholdEdges = false,
+    .m_hardEdges = false,
     .m_thinPixelEdges = true,
     .m_overlayEdges = false,
     .m_colormapEdges = true,
-    .m_edgeMagnitude = 0.33,
+    .m_voxelEdgeScale = 3.3,
+    .m_voxelEdgeThreshold = 0.33,
     .m_pixelEdgeScale = 2.5,
     .m_pixelEdgeThreshold = 0.44,
     .m_edgeColor = glm::vec3{0.1f, 0.2f, 0.3f},
@@ -1419,13 +1420,15 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(warpedGrid.at("scaleFactor") == 1.75f);
   CHECK(warpedGrid.at("foregroundColor") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
   CHECK(warpedGrid.at("backgroundColor") == json::array({0.5f, 0.6f, 0.7f, 0.8f}));
-  CHECK(edges.at("method") == "pixel");
+  CHECK(edges.at("method") == "screenPixel");
   CHECK(edges.at("visible") == true);
   CHECK_FALSE(edges.contains("hardEdges"));
   CHECK_FALSE(edges.contains("thinPixelEdges"));
   CHECK_FALSE(edges.contains("overlay"));
-  CHECK_FALSE(edges.contains("useColormap"));
-  CHECK(edges.at("magnitude") == 0.33);
+  CHECK(edges.at("useColormap") == true);
+  CHECK(edges.at("voxelScale") == 3.3);
+  CHECK(edges.at("voxelThreshold") == 0.33);
+  CHECK_FALSE(edges.contains("magnitude"));
   CHECK(edges.at("pixelScale") == 2.5);
   CHECK(edges.at("pixelThreshold") == 0.44);
   CHECK(edges.at("color") == json::array({0.1f, 0.2f, 0.3f}));
@@ -1505,13 +1508,14 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(
     parsedSettings.m_interpolationModes ==
     std::vector<InterpolationMode>{InterpolationMode::Linear, InterpolationMode::NearestNeighbor});
-  CHECK(parsedSettings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Pixel);
+  CHECK(parsedSettings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::ScreenPixel);
   CHECK(parsedSettings.m_showEdges);
-  CHECK_FALSE(parsedSettings.m_thresholdEdges);
+  CHECK_FALSE(parsedSettings.m_hardEdges);
   CHECK(parsedSettings.m_thinPixelEdges);
   CHECK_FALSE(parsedSettings.m_overlayEdges);
-  CHECK_FALSE(parsedSettings.m_colormapEdges);
-  CHECK(parsedSettings.m_edgeMagnitude == 0.33);
+  CHECK(parsedSettings.m_colormapEdges);
+  CHECK(parsedSettings.m_voxelEdgeScale == 3.3);
+  CHECK(parsedSettings.m_voxelEdgeThreshold == 0.33);
   CHECK(parsedSettings.m_pixelEdgeScale == 2.5);
   CHECK(parsedSettings.m_pixelEdgeThreshold == 0.44);
   CHECK(parsedSettings.m_edgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
@@ -1868,6 +1872,27 @@ TEST_CASE("Project serialization preserves voxel edge colormap setting", "[proje
   REQUIRE(parsed.m_referenceImage.m_settings.has_value());
   CHECK(parsed.m_referenceImage.m_settings->m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Voxel);
   CHECK(parsed.m_referenceImage.m_settings->m_colormapEdges);
+}
+
+TEST_CASE("Project serialization ignores removed edge settings", "[project][serialization]")
+{
+  const json image = {
+    {"path", "image.nii.gz"},
+    {"settings", {{"edges", {{"method", "pixel"}, {"magnitude", 0.9}, {"visible", true}}}}}};
+  const json root = {{"version", {{"major", 1}, {"minor", 0}}}, {"images", json::array({image})}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_settings.has_value());
+  const serialize::ImageSettings& settings = *parsed.m_referenceImage.m_settings;
+  CHECK(settings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Voxel);
+  CHECK(settings.m_voxelEdgeScale == 4.0);
+  CHECK(settings.m_voxelEdgeThreshold == 0.25);
+  CHECK(settings.m_showEdges);
+
+  const json rewritten = parsed;
+  const json& edges = rewritten.at("images").at(0).at("settings").at("edges");
+  CHECK_FALSE(edges.contains("method"));
+  CHECK_FALSE(edges.contains("magnitude"));
 }
 
 TEST_CASE("Project serialization preserves sparse image component setting indices", "[project][serialization]")

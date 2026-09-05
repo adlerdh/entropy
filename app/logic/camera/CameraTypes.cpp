@@ -30,7 +30,7 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
       return ShaderGroup::Metric;
     }
 
-    case ViewRenderMode::VolumeRender: {
+    case ViewRenderMode::Isosurfaces: {
       return ShaderGroup::Volume;
     }
 

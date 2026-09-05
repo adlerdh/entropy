@@ -18,6 +18,7 @@
 
 #include <uuid.h>
 
+#include <cstddef>
 #include <optional>
 
 class Image;
@@ -78,6 +79,12 @@ public:
    * @param renderMode Requested render mode
    */
   void setRenderMode(const ViewRenderMode& renderMode) override;
+
+  /**
+   * @brief Reconcile the current and cached render modes with the loaded image count
+   * @param imageCount Number of loaded images
+   */
+  void reconcileRenderModeForImageCount(std::size_t imageCount);
 
   /**
    * @brief Get the active camera for the current view type

@@ -45,8 +45,9 @@ uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
 // Edge properties:
-uniform bool u_thresholdEdges; // flag to threshold the edges
-uniform float u_edgeMagnitude; // magnitude of edges to compute
+uniform bool u_hardEdges;      // flag to threshold the scaled edge magnitude
+uniform float u_edgeScale;     // edge magnitude scale
+uniform float u_edgeThreshold; // hard-edge threshold after scaling
 uniform bool u_colormapEdges;  // flag to apply colormap to edges
 uniform vec4 u_edgeColor;      // edge color (premultiplied RGBA)
 uniform vec3 u_texelDirs[2];   // texture sampling direction for edges
@@ -54,7 +55,7 @@ uniform vec3 u_texelDirs[2];   // texture sampling direction for edges
 $$HELPER_FUNCTIONS$$
 $$COLOR_HELPER_FUNCTIONS$$
 
-/// float computeEdge(mat3 v, float edgeMagnitude);
+/// float computeEdge(mat3 v);
 $$COMPUTE_EDGE_FUNCTION$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
@@ -93,16 +94,16 @@ void main()
     }
   }
 
-  // If u_thresholdEdges is true, then threshold gradMag against u_edgeMagnitude:
-  float gradMag = computeEdge(V, u_edgeMagnitude);
-  gradMag = mix(gradMag, float(gradMag > u_edgeMagnitude), float(u_thresholdEdges));
+  float gradMag = clamp(computeEdge(V) * u_edgeScale, 0.0, 1.0);
+  gradMag = u_hardEdges ? float(gradMag >= u_edgeThreshold) : gradMag;
 
   float mask = float(isInsideTexture(sampleTc));
   float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds);
 
   vec4 gradColormap = texture(u_cmapTex, u_cmapSlopeIntercept[0] * gradMag + u_cmapSlopeIntercept[1]);
+  vec4 gradColormapPM = gradMag * gradColormap.a * vec4(gradColormap.rgb, 1.0);
 
   // Output color (premult. RGBA):
-  o_color = alpha * mix(gradMag * u_edgeColor, gradColormap, float(u_colormapEdges));
+  o_color = alpha * mix(gradMag * u_edgeColor, gradColormapPM, float(u_colormapEdges));
 }

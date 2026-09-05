@@ -82,7 +82,8 @@ const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
     {ViewRenderMode::Overlay, "overlay"},
     {ViewRenderMode::Difference, "difference"},
     {ViewRenderMode::JointHistogram, "jointHistogram"},
-    {ViewRenderMode::VolumeRender, "volumeRender"},
+    {ViewRenderMode::Isosurfaces, "isosurfaces"},
+    {ViewRenderMode::Isosurfaces, "volumeRender"}, // Legacy read-only alias
     {ViewRenderMode::Disabled, "disabled"},
     {ViewRenderMode::LocalNcc, "localNcc"},
     {ViewRenderMode::LocalLinearResidual, "localLinearResidual"},

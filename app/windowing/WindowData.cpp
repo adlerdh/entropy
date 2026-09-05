@@ -1646,6 +1646,9 @@ void WindowData::removeImageFromLayouts(const uuid& imageUid, const uuid_range_t
   }
 
   updateImageOrdering(orderedImageUids);
+  for (auto& layoutLocal : m_layouts) {
+    layoutLocal.reconcileRenderModeForImageCount(orderedImageUids.size());
+  }
 }
 
 void WindowData::appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid)

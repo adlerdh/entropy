@@ -83,11 +83,11 @@ void Rendering::renderGrayImageForImage(
   const std::optional<uuids::uuid>& deformationUid,
   const int displayModeUniform,
   const bool isFixedImage,
-  const bool allowImagePostProcessing)
+  const bool allowScreenPixelEdgePostProcessing)
 {
   const RenderData& renderData = m_appData.renderData();
   const glm::vec4 deviceViewport = m_appData.windowData().viewport().getDeviceAsVec4();
-  const glm::ivec4 defaultViewport{
+  const glm::ivec4 renderTargetViewport{
     static_cast<int>(deviceViewport.x),
     static_cast<int>(deviceViewport.y),
     static_cast<int>(deviceViewport.z),
@@ -196,7 +196,13 @@ void Rendering::renderGrayImageForImage(
     unbindTextures(boundTextures);
   };
 
-  if (uniforms.showPixelEdges && allowImagePostProcessing) {
+  const auto edgePassPlan = rendering::image_drawing::computeEdgePassPlan(
+    uniforms.showVoxelEdges,
+    uniforms.showScreenPixelEdges,
+    uniforms.overlayEdges,
+    allowScreenPixelEdgePostProcessing);
+
+  if (edgePassPlan.drawScreenPixelEdges) {
     const PixelEdgeRenderer::ViewRect viewRect =
       rendering::pixel_edge::computeViewRect(view.windowClipViewport(), deviceViewport);
 
@@ -213,17 +219,17 @@ void Rendering::renderGrayImageForImage(
 
     m_pixelEdgeRenderer.render(
       m_shaderPrograms,
-      defaultViewport,
+      renderTargetViewport,
       viewRect,
       uniforms,
       [&]() { drawGrayImage(false); },
       bindPixelEdgeColormap);
   }
-  else if (!uniforms.showEdges || uniforms.overlayEdges) {
-    drawGrayImage(uniforms.showEdges);
+  else if (edgePassPlan.drawImageDirectly) {
+    drawGrayImage(edgePassPlan.disableIntensityProjectionForDirectImage);
   }
 
-  if (!uniforms.showPixelEdges && uniforms.showEdges) {
+  if (edgePassPlan.drawVoxelEdges) {
     GLShaderProgram* program = nullptr;
     switch (image.settings().interpolationMode()) {
       case InterpolationMode::NearestNeighbor:
@@ -265,15 +271,16 @@ void Rendering::renderGrayImageForImage(
       program->setUniform("u_quadrants", renderData.m_quadrants);
       program->setUniform("u_showFix", isFixedImage);
       program->setUniform("u_renderMode", displayModeUniform);
-      program->setUniform("u_thresholdEdges", uniforms.thresholdEdges);
-      program->setUniform("u_edgeMagnitude", uniforms.edgeMagnitude);
+      program->setUniform("u_hardEdges", uniforms.hardEdges);
+      program->setUniform("u_edgeScale", uniforms.voxelEdgeScale);
+      program->setUniform("u_edgeThreshold", uniforms.voxelEdgeThreshold);
       program->setUniform("u_colormapEdges", uniforms.colormapEdges);
       program->setUniform("u_edgeColor", uniforms.edgeColor);
       if (renderWarped) {
         setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
       }
 
-      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, uniforms.showEdges);
+      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, true);
     }
     program->stopUse();
 

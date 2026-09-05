@@ -16,6 +16,21 @@ struct MipSamplingParams
   float samplingDistanceCm = 0.0f;
 };
 
+struct EdgePassPlan
+{
+  bool drawImageDirectly = true;
+  bool drawScreenPixelEdges = false;
+  bool drawVoxelEdges = false;
+  bool disableIntensityProjectionForDirectImage = false;
+};
+
+/** @brief Select image and edge passes without invoking screen-space post-processing in unsupported render targets. */
+EdgePassPlan computeEdgePassPlan(
+  bool showVoxelEdges,
+  bool showScreenPixelEdges,
+  bool overlayEdges,
+  bool allowScreenPixelEdgePostProcessing);
+
 /**
  * @brief Compute the texture-space sample direction corresponding to a canonical view axis.
  */

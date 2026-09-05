@@ -284,6 +284,7 @@ void renderViewSettingsComboWindow(
 
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
+  static const ImVec2 sk_popupWindowPadding(8.0f, 8.0f);
   static const float sk_windowRounding(0.0f);
   static const ImVec2 sk_itemSpacing(4.0f, 4.0f);
 
@@ -343,7 +344,7 @@ void renderViewSettingsComboWindow(
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
 
-          ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+          ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_popupWindowPadding);
           if (ImGui::BeginPopup("imageVisibilityPopup")) {
             renderPopupHeading(popupHeadingFont, "Visible images:");
             ImGui::PushID("visibleimages"); /*** ID = visibleimages ***/
@@ -438,6 +439,7 @@ void renderViewSettingsComboWindow(
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
 
+          ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_popupWindowPadding);
           if (ImGui::BeginPopup("metricVisibilityPopup")) {
             renderPopupHeading(popupHeadingFont, "Compared images:");
 
@@ -470,6 +472,7 @@ void renderViewSettingsComboWindow(
 
             ImGui::EndPopup();
           }
+          ImGui::PopStyleVar();
         }
       }
 
@@ -478,8 +481,10 @@ void renderViewSettingsComboWindow(
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
-        if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION)) {
-          ImGui::Spacing();
+        const ImGuiComboFlags renderModeComboFlags =
+          ViewType::ThreeD == viewType ? ImGuiComboFlags_None : ImGuiComboFlags_HeightLargest;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_popupWindowPadding);
+        if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION, renderModeComboFlags)) {
           renderPopupHeading(popupHeadingFont, "Render mode:");
           ImGui::Spacing();
           auto renderSelectablesForRenderModes = [&renderMode,
@@ -502,18 +507,18 @@ void renderViewSettingsComboWindow(
 
           if (ViewType::ThreeD == viewType) {
             renderThreeDRenderModeCheckboxes(renderMode, setRenderMode);
+            ImGui::TextDisabled("Planes show images layered");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+              ImGui::SetTooltip("%s", "3D image planes are always composited in image-stack order using Layers mode");
+            }
           }
-          else if (numImages > 1) {
-            // If there are two or more images, all shader types can be used:
-            renderSelectablesForRenderModes(All2dViewRenderModes);
-          }
-          else if (1 == numImages) {
-            // If there is only one image, then only non-metric shader types can be used:
-            renderSelectablesForRenderModes(All2dNonMetricRenderModes);
+          else {
+            renderSelectablesForRenderModes(twoDRenderModesForImageCount(numImages));
           }
 
           ImGui::EndCombo();
         }
+        ImGui::PopStyleVar();
         ImGui::PopItemWidth();
 
         if (ImGui::IsItemHovered()) {
@@ -527,14 +532,14 @@ void renderViewSettingsComboWindow(
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_popupWindowPadding);
         if (ImGui::BeginCombo("##mipModeCombo", ICON_FK_FILM, ImGuiComboFlags_HeightLargest)) {
-          ImGui::Spacing();
           renderPopupHeading(popupHeadingFont, "Intensity projection mode:");
 
           for (const auto& ip : AllIntensityProjectionModes) {
             const bool isSelected = (ip == intensityProjMode);
 
-            if (ImGui::Selectable(typeString(ip).c_str(), isSelected)) {
+            if (ImGui::Selectable(typeString(ip).c_str(), isSelected, ImGuiSelectableFlags_NoAutoClosePopups)) {
               setIntensityProjectionMode(ip);
             }
 
@@ -637,6 +642,7 @@ void renderViewSettingsComboWindow(
 
           ImGui::EndCombo();
         }
+        ImGui::PopStyleVar();
         ImGui::PopItemWidth();
 
         if (ImGui::IsItemHovered()) {

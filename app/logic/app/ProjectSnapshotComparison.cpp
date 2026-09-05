@@ -83,11 +83,12 @@ bool imageSettingsEqual(
          a->m_colorMapHsvModifierIndices == b->m_colorMapHsvModifierIndices &&
          a->m_interpolationModeIndices == b->m_interpolationModeIndices &&
          a->m_edgeDetectionMethod == b->m_edgeDetectionMethod && a->m_showEdges == b->m_showEdges &&
-         a->m_thresholdEdges == b->m_thresholdEdges && a->m_thinPixelEdges == b->m_thinPixelEdges &&
+         a->m_hardEdges == b->m_hardEdges && a->m_thinPixelEdges == b->m_thinPixelEdges &&
          a->m_overlayEdges == b->m_overlayEdges && a->m_colormapEdges == b->m_colormapEdges &&
-         a->m_edgeMagnitude == b->m_edgeMagnitude && a->m_pixelEdgeScale == b->m_pixelEdgeScale &&
-         a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold && a->m_edgeColor == b->m_edgeColor &&
-         a->m_hasEdgeColor == b->m_hasEdgeColor && a->m_edgeOpacity == b->m_edgeOpacity &&
+         a->m_voxelEdgeScale == b->m_voxelEdgeScale && a->m_voxelEdgeThreshold == b->m_voxelEdgeThreshold &&
+         a->m_pixelEdgeScale == b->m_pixelEdgeScale && a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold &&
+         a->m_edgeColor == b->m_edgeColor && a->m_hasEdgeColor == b->m_hasEdgeColor &&
+         a->m_edgeOpacity == b->m_edgeOpacity &&
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
          a->m_modulateIsosurfaceOpacityWithImageOpacity == b->m_modulateIsosurfaceOpacityWithImageOpacity &&
          a->m_isocontourLineWidthIn2D == b->m_isocontourLineWidthIn2D &&

@@ -101,7 +101,7 @@ void Rendering::renderAllImagesForView(
   const glm::vec3& worldOffsetXhairs,
   bool renderLandmarkAndAnnotationOverlays,
   bool renderImageBorders,
-  bool allowImagePostProcessing)
+  bool allowScreenPixelEdgePostProcessing)
 {
   const RenderData& R = m_appData.renderData();
 
@@ -189,7 +189,7 @@ void Rendering::renderAllImagesForView(
             deformationUid,
             displayModeUniform,
             isFixedImage,
-            allowImagePostProcessing);
+            allowScreenPixelEdgePostProcessing);
 
           renderIsoContoursForImage(
             view,
@@ -216,7 +216,8 @@ void Rendering::renderAllImagesForView(
             renderWarped,
             deformationUid,
             displayModeUniform,
-            isFixedImage);
+            isFixedImage,
+            allowScreenPixelEdgePostProcessing);
         }
 
         renderSegmentationForImage(

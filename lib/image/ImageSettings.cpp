@@ -7,6 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 
@@ -915,357 +916,149 @@ double ImageSettings::globalOpacity() const
   return m_globalOpacity;
 }
 
-void ImageSettings::setShowAnyEdges(uint32_t i, bool show)
-{
-  m_componentSettings[i].m_showEdges =
-    show && EdgeDetectionMethod::Voxel == m_componentSettings[i].m_edgeDetectionMethod;
-  m_componentSettings[i].m_showPixelEdges =
-    show && EdgeDetectionMethod::Pixel == m_componentSettings[i].m_edgeDetectionMethod;
-}
-
-void ImageSettings::setShowAnyEdges(bool show)
-{
-  setShowAnyEdges(m_activeComponent, show);
-}
-
-bool ImageSettings::showAnyEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_showEdges || m_componentSettings[i].m_showPixelEdges;
-}
-
-bool ImageSettings::showAnyEdges() const
-{
-  return showAnyEdges(m_activeComponent);
-}
-
-void ImageSettings::setEdgeDetectionMethod(uint32_t i, EdgeDetectionMethod method)
-{
-  const bool show = showAnyEdges(i);
-  m_componentSettings[i].m_edgeDetectionMethod = method;
-  setShowAnyEdges(i, show);
-}
-
-void ImageSettings::setEdgeDetectionMethod(EdgeDetectionMethod method)
-{
-  setEdgeDetectionMethod(m_activeComponent, method);
-}
-
-EdgeDetectionMethod ImageSettings::edgeDetectionMethod(uint32_t i) const
-{
-  return m_componentSettings[i].m_edgeDetectionMethod;
-}
-
-EdgeDetectionMethod ImageSettings::edgeDetectionMethod() const
-{
-  return edgeDetectionMethod(m_activeComponent);
-}
-
-void ImageSettings::setShowEdges(uint32_t i, bool show)
-{
-  if (show) {
-    m_componentSettings[i].m_edgeDetectionMethod = EdgeDetectionMethod::Voxel;
-    m_componentSettings[i].m_showPixelEdges = false;
-  }
-  m_componentSettings[i].m_showEdges = show;
-}
-
-void ImageSettings::setShowEdges(bool show)
-{
-  setShowEdges(m_activeComponent, show);
-}
-
-bool ImageSettings::showEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_showEdges;
-}
-
-bool ImageSettings::showEdges() const
-{
-  return showEdges(m_activeComponent);
-}
-
-void ImageSettings::setShowPixelEdges(uint32_t i, bool show)
-{
-  if (show) {
-    m_componentSettings[i].m_edgeDetectionMethod = EdgeDetectionMethod::Pixel;
-    m_componentSettings[i].m_showEdges = false;
-  }
-  m_componentSettings[i].m_showPixelEdges = show;
-}
-
-void ImageSettings::setShowPixelEdges(bool show)
-{
-  setShowPixelEdges(m_activeComponent, show);
-}
-
-bool ImageSettings::showPixelEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_showPixelEdges;
-}
-
-bool ImageSettings::showPixelEdges() const
-{
-  return showPixelEdges(m_activeComponent);
-}
-
-void ImageSettings::setThresholdEdges(uint32_t i, bool threshold)
-{
-  m_componentSettings[i].m_thresholdEdges = threshold;
-}
-
-void ImageSettings::setThresholdEdges(bool threshold)
-{
-  setThresholdEdges(m_activeComponent, threshold);
-}
-
-bool ImageSettings::thresholdEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_thresholdEdges;
-}
-
-bool ImageSettings::thresholdEdges() const
-{
-  return thresholdEdges(m_activeComponent);
-}
-
-void ImageSettings::setThresholdPixelEdges(uint32_t i, bool threshold)
-{
-  m_componentSettings[i].m_thresholdPixelEdges = threshold;
-}
-
-void ImageSettings::setThresholdPixelEdges(bool threshold)
-{
-  setThresholdPixelEdges(m_activeComponent, threshold);
-}
-
-bool ImageSettings::thresholdPixelEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_thresholdPixelEdges;
-}
-
-bool ImageSettings::thresholdPixelEdges() const
-{
-  return thresholdPixelEdges(m_activeComponent);
-}
-
-void ImageSettings::setThinPixelEdges(uint32_t i, bool thin)
-{
-  m_componentSettings[i].m_thinPixelEdges = thin;
-}
-
 void ImageSettings::setThinPixelEdges(bool thin)
 {
-  setThinPixelEdges(m_activeComponent, thin);
-}
-
-bool ImageSettings::thinPixelEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_thinPixelEdges;
+  m_thinPixelEdges = thin;
 }
 
 bool ImageSettings::thinPixelEdges() const
 {
-  return thinPixelEdges(m_activeComponent);
+  return m_thinPixelEdges;
 }
 
-void ImageSettings::setUseFreiChen(uint32_t i, bool use)
+void ImageSettings::setEdgesVisible(bool visible)
 {
-  m_componentSettings[i].m_useFreiChen = use;
+  m_edgesVisible = visible;
 }
 
-void ImageSettings::setUseFreiChen(bool use)
+bool ImageSettings::edgesVisible() const
 {
-  setUseFreiChen(m_activeComponent, use);
+  return m_edgesVisible;
 }
 
-bool ImageSettings::useFreiChen(uint32_t i) const
+void ImageSettings::setEdgeDetectionMethod(EdgeDetectionMethod method)
 {
-  return m_componentSettings[i].m_useFreiChen;
+  switch (method) {
+    case EdgeDetectionMethod::Voxel:
+    case EdgeDetectionMethod::ScreenPixel:
+      m_edgeDetectionMethod = method;
+      break;
+  }
 }
 
-bool ImageSettings::useFreiChen() const
+EdgeDetectionMethod ImageSettings::edgeDetectionMethod() const
 {
-  return useFreiChen(m_activeComponent);
+  return m_edgeDetectionMethod;
 }
 
-void ImageSettings::setEdgeMagnitude(uint32_t i, double mag)
+void ImageSettings::setHardEdges(bool hard)
 {
-  m_componentSettings[i].m_edgeMagnitude = mag;
+  m_hardEdges = hard;
 }
 
-void ImageSettings::setEdgeMagnitude(double mag)
+bool ImageSettings::hardEdges() const
 {
-  setEdgeMagnitude(m_activeComponent, mag);
+  return m_hardEdges;
 }
 
-double ImageSettings::edgeMagnitude(uint32_t i) const
+void ImageSettings::setVoxelEdgeScale(double scale)
 {
-  return m_componentSettings[i].m_edgeMagnitude;
+  m_voxelEdgeScale = std::isfinite(scale) ? std::clamp(scale, 0.01, 10.0) : 4.0;
 }
 
-double ImageSettings::edgeMagnitude() const
+double ImageSettings::voxelEdgeScale() const
 {
-  return edgeMagnitude(m_activeComponent);
+  return m_voxelEdgeScale;
 }
 
-void ImageSettings::setPixelEdgeScale(uint32_t i, double scale)
+void ImageSettings::setVoxelEdgeThreshold(double threshold)
 {
-  m_componentSettings[i].m_pixelEdgeScale = std::clamp(scale, 0.01, 10.0);
+  m_voxelEdgeThreshold = std::isfinite(threshold) ? std::clamp(threshold, 0.0, 1.0) : 0.25;
+}
+
+double ImageSettings::voxelEdgeThreshold() const
+{
+  return m_voxelEdgeThreshold;
 }
 
 void ImageSettings::setPixelEdgeScale(double scale)
 {
-  setPixelEdgeScale(m_activeComponent, scale);
-}
-
-double ImageSettings::pixelEdgeScale(uint32_t i) const
-{
-  return m_componentSettings[i].m_pixelEdgeScale;
+  m_pixelEdgeScale = std::isfinite(scale) ? std::clamp(scale, 0.01, 10.0) : 2.0;
 }
 
 double ImageSettings::pixelEdgeScale() const
 {
-  return pixelEdgeScale(m_activeComponent);
-}
-
-void ImageSettings::setPixelEdgeThreshold(uint32_t i, double threshold)
-{
-  m_componentSettings[i].m_pixelEdgeThreshold = std::clamp(threshold, 0.0, 1.0);
+  return m_pixelEdgeScale;
 }
 
 void ImageSettings::setPixelEdgeThreshold(double threshold)
 {
-  setPixelEdgeThreshold(m_activeComponent, threshold);
-}
-
-double ImageSettings::pixelEdgeThreshold(uint32_t i) const
-{
-  return m_componentSettings[i].m_pixelEdgeThreshold;
+  m_pixelEdgeThreshold = std::isfinite(threshold) ? std::clamp(threshold, 0.0, 1.0) : 0.2;
 }
 
 double ImageSettings::pixelEdgeThreshold() const
 {
-  return pixelEdgeThreshold(m_activeComponent);
-}
-
-void ImageSettings::setWindowedEdges(uint32_t i, bool windowed)
-{
-  m_componentSettings[i].m_windowedEdges = windowed;
-}
-
-void ImageSettings::setWindowedEdges(bool windowed)
-{
-  setWindowedEdges(m_activeComponent, windowed);
-}
-
-bool ImageSettings::windowedEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_windowedEdges;
-}
-
-bool ImageSettings::windowedEdges() const
-{
-  return windowedEdges(m_activeComponent);
-}
-
-void ImageSettings::setOverlayEdges(uint32_t i, bool overlay)
-{
-  m_componentSettings[i].m_overlayEdges = overlay;
+  return m_pixelEdgeThreshold;
 }
 
 void ImageSettings::setOverlayEdges(bool overlay)
 {
-  setOverlayEdges(m_activeComponent, overlay);
-}
-
-bool ImageSettings::overlayEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_overlayEdges;
+  m_overlayEdges = overlay;
 }
 
 bool ImageSettings::overlayEdges() const
 {
-  return overlayEdges(m_activeComponent);
-}
-
-void ImageSettings::setOverlayPixelEdges(uint32_t i, bool overlay)
-{
-  m_componentSettings[i].m_overlayPixelEdges = overlay;
-}
-
-void ImageSettings::setOverlayPixelEdges(bool overlay)
-{
-  setOverlayPixelEdges(m_activeComponent, overlay);
-}
-
-bool ImageSettings::overlayPixelEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_overlayPixelEdges;
-}
-
-bool ImageSettings::overlayPixelEdges() const
-{
-  return overlayPixelEdges(m_activeComponent);
-}
-
-void ImageSettings::setColormapEdges(uint32_t i, bool showEdgesArg)
-{
-  m_componentSettings[i].m_colormapEdges = showEdgesArg;
+  return m_overlayEdges;
 }
 
 void ImageSettings::setColormapEdges(bool showEdgesArg)
 {
-  setColormapEdges(m_activeComponent, showEdgesArg);
-}
-
-bool ImageSettings::colormapEdges(uint32_t i) const
-{
-  return m_componentSettings[i].m_colormapEdges;
+  m_colormapEdges = showEdgesArg;
 }
 
 bool ImageSettings::colormapEdges() const
 {
-  return colormapEdges(m_activeComponent);
-}
-
-void ImageSettings::setEdgeColor(uint32_t i, glm::vec3 color)
-{
-  m_componentSettings[i].m_edgeColor = color;
+  return m_colormapEdges;
 }
 
 void ImageSettings::setEdgeColor(glm::vec3 color)
 {
-  setEdgeColor(m_activeComponent, color);
+  if (!std::isfinite(color.r) || !std::isfinite(color.g) || !std::isfinite(color.b)) {
+    m_edgeColor = glm::vec3{1.0f, 0.0f, 1.0f};
+    return;
+  }
+  m_edgeColor = glm::clamp(color, glm::vec3{0.0f}, glm::vec3{1.0f});
 }
 
-glm::vec3 ImageSettings::edgeColor(uint32_t i) const
+const glm::vec3& ImageSettings::edgeColor() const
 {
-  return m_componentSettings[i].m_edgeColor;
-}
-
-glm::vec3 ImageSettings::edgeColor() const
-{
-  return edgeColor(m_activeComponent);
-}
-
-void ImageSettings::setEdgeOpacity(uint32_t i, double opacityArg)
-{
-  m_componentSettings[i].m_edgeOpacity = opacityArg;
+  return m_edgeColor;
 }
 
 void ImageSettings::setEdgeOpacity(double opacityArg)
 {
-  setEdgeOpacity(m_activeComponent, opacityArg);
-}
-
-double ImageSettings::edgeOpacity(uint32_t i) const
-{
-  return m_componentSettings[i].m_edgeOpacity;
+  m_edgeOpacity = std::isfinite(opacityArg) ? std::clamp(opacityArg, 0.0, 1.0) : 1.0;
 }
 
 double ImageSettings::edgeOpacity() const
 {
-  return edgeOpacity(m_activeComponent);
+  return m_edgeOpacity;
+}
+
+void ImageSettings::copyEdgeSettingsFrom(const ImageSettings& source)
+{
+  m_edgeDetectionMethod = source.m_edgeDetectionMethod;
+  m_edgesVisible = source.m_edgesVisible;
+  m_hardEdges = source.m_hardEdges;
+  m_thinPixelEdges = source.m_thinPixelEdges;
+  m_voxelEdgeScale = source.m_voxelEdgeScale;
+  m_voxelEdgeThreshold = source.m_voxelEdgeThreshold;
+  m_pixelEdgeScale = source.m_pixelEdgeScale;
+  m_pixelEdgeThreshold = source.m_pixelEdgeThreshold;
+  m_overlayEdges = source.m_overlayEdges;
+  m_colormapEdges = source.m_colormapEdges;
+  m_edgeColor = source.m_edgeColor;
+  m_edgeOpacity = source.m_edgeOpacity;
 }
 
 void ImageSettings::setColorMapIndex(uint32_t i, std::size_t index)
@@ -1598,6 +1391,21 @@ void ImageSettings::updateWithNewComponentStatistics(
 
   m_componentStats = std::move(componentStats);
 
+  if (setDefaultVisibilitySettings) {
+    m_edgeDetectionMethod = EdgeDetectionMethod::Voxel;
+    m_edgesVisible = false;
+    m_hardEdges = false;
+    m_thinPixelEdges = true;
+    m_voxelEdgeScale = 4.0;
+    m_voxelEdgeThreshold = 0.25;
+    m_pixelEdgeScale = 2.0;
+    m_pixelEdgeThreshold = 0.2;
+    m_overlayEdges = false;
+    m_colormapEdges = false;
+    m_edgeColor = glm::vec3{1.0f, 0.0f, 1.0f};
+    m_edgeOpacity = 1.0;
+  }
+
   for (std::size_t i = 0; i < m_numComponents; ++i) {
     const auto& stats = m_componentStats[i];
     ComponentSettings& setting = m_componentSettings[i];
@@ -1691,22 +1499,6 @@ void ImageSettings::updateWithNewComponentStatistics(
       setting.m_opacity = 1.0;
       setting.m_visible = true;
 
-      setting.m_edgeDetectionMethod = EdgeDetectionMethod::Voxel;
-      setting.m_showEdges = false;
-      setting.m_showPixelEdges = false;
-      setting.m_thresholdEdges = false;
-      setting.m_thresholdPixelEdges = false;
-      setting.m_thinPixelEdges = true;
-      setting.m_useFreiChen = false;
-      setting.m_edgeMagnitude = 0.25;
-      setting.m_pixelEdgeScale = 2.0;
-      setting.m_pixelEdgeThreshold = 0.2;
-      setting.m_windowedEdges = false;
-      setting.m_overlayEdges = false;
-      setting.m_overlayPixelEdges = false;
-      setting.m_colormapEdges = false;
-      setting.m_edgeColor = glm::vec3{1.0f, 0.0f, 1.0f};
-      setting.m_edgeOpacity = 1.0;
       setting.m_interpolationMode = InterpolationMode::Linear;
 
       // Use the first color map and label table

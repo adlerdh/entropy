@@ -16,7 +16,7 @@
 enum class EdgeDetectionMethod
 {
   Voxel,
-  Pixel
+  ScreenPixel
 };
 
 /// @brief Multi-component image rendering strategy.
@@ -519,175 +519,68 @@ public:
   /// @brief Get global opacity multiplier in [0, 1].
   double globalOpacity() const;
 
-  /// @brief Enable or disable edge visualization for a component using edgeDetectionMethod(component).
-  void setShowAnyEdges(uint32_t i, bool show);
-  /// @brief Enable or disable edge visualization for the active component.
-  void setShowAnyEdges(bool show);
+  /// @brief Enable or disable image edge visualization.
+  void setEdgesVisible(bool visible);
+  /// @brief Return whether image edge visualization is enabled.
+  bool edgesVisible() const;
 
-  /// @brief Return whether either edge-rendering method is enabled for a component.
-  bool showAnyEdges(uint32_t i) const;
-  /// @brief Return whether either edge-rendering method is enabled for the active component.
-  bool showAnyEdges() const;
-
-  /// @brief Set the edge-rendering method for a component.
-  void setEdgeDetectionMethod(uint32_t i, EdgeDetectionMethod method);
-  /// @brief Set the edge-rendering method for the active component.
+  /// @brief Set the image edge-rendering method.
   void setEdgeDetectionMethod(EdgeDetectionMethod method);
-
-  /// @brief Get the edge-rendering method for a component.
-  EdgeDetectionMethod edgeDetectionMethod(uint32_t i) const;
-  /// @brief Get the edge-rendering method for the active component.
+  /// @brief Get the image edge-rendering method.
   EdgeDetectionMethod edgeDetectionMethod() const;
 
-  /// @brief Set whether edge visualization is enabled for a component.
-  void setShowEdges(uint32_t i, bool show);
-  /// @brief Set edge visualization for the active component.
-  void setShowEdges(bool show);
-
-  /// @brief Return whether edge visualization is enabled for a component.
-  bool showEdges(uint32_t i) const;
-  /// @brief Return whether edge visualization is enabled for the active component.
-  bool showEdges() const;
-
-  /// @brief Set whether pixel-space edge visualization is enabled for a component.
-  void setShowPixelEdges(uint32_t i, bool show);
-  /// @brief Set pixel-space edge visualization for the active component.
-  void setShowPixelEdges(bool show);
-
-  /// @brief Return whether pixel-space edge visualization is enabled for a component.
-  bool showPixelEdges(uint32_t i) const;
-  /// @brief Return whether pixel-space edge visualization is enabled for the active component.
-  bool showPixelEdges() const;
-
-  /// @brief Set whether edge magnitudes are thresholded for a component.
-  void setThresholdEdges(uint32_t i, bool threshold);
-  /// @brief Set edge thresholding for the active component.
-  void setThresholdEdges(bool threshold);
-
-  /// @brief Return whether edge magnitudes are thresholded for a component.
-  bool thresholdEdges(uint32_t i) const;
-  /// @brief Return whether edge magnitudes are thresholded for the active component.
-  bool thresholdEdges() const;
-
-  /// @brief Set whether pixel-space edge magnitudes are thresholded for a component.
-  void setThresholdPixelEdges(uint32_t i, bool threshold);
-  /// @brief Set pixel-space edge thresholding for the active component.
-  void setThresholdPixelEdges(bool threshold);
-
-  /// @brief Return whether pixel-space edge magnitudes are thresholded for a component.
-  bool thresholdPixelEdges(uint32_t i) const;
-  /// @brief Return whether pixel-space edge magnitudes are thresholded for the active component.
-  bool thresholdPixelEdges() const;
+  /// @brief Set whether edge magnitudes are thresholded into a binary result.
+  void setHardEdges(bool hard);
+  /// @brief Return whether edge magnitudes are thresholded into a binary result.
+  bool hardEdges() const;
 
   /// @brief Set whether pixel-space edges are thinned using non-maximum suppression.
-  void setThinPixelEdges(uint32_t i, bool thin);
-  /// @brief Set pixel-space edge thinning for the active component.
   void setThinPixelEdges(bool thin);
-
-  /// @brief Return whether pixel-space edges are thinned for a component.
-  bool thinPixelEdges(uint32_t i) const;
-  /// @brief Return whether pixel-space edges are thinned for the active component.
+  /// @brief Return whether pixel-space edges are thinned.
   bool thinPixelEdges() const;
 
-  /// @brief Set whether Frei-Chen filters are used for edge computation for a component.
-  void setUseFreiChen(uint32_t i, bool use);
-  /// @brief Set Frei-Chen edge computation for the active component.
-  void setUseFreiChen(bool use);
+  /// @brief Set the voxel-space edge magnitude scale.
+  void setVoxelEdgeScale(double scale);
+  /// @brief Get the voxel-space edge magnitude scale.
+  double voxelEdgeScale() const;
 
-  /// @brief Return whether Frei-Chen filters are used for a component.
-  bool useFreiChen(uint32_t i) const;
-  /// @brief Return whether Frei-Chen filters are used for the active component.
-  bool useFreiChen() const;
+  /// @brief Set the voxel-space hard-edge threshold.
+  void setVoxelEdgeThreshold(double threshold);
+  /// @brief Get the voxel-space hard-edge threshold.
+  double voxelEdgeThreshold() const;
 
-  /// @brief Set edge magnitude threshold for a component.
-  void setEdgeMagnitude(uint32_t i, double mag);
-  /// @brief Set edge magnitude threshold for the active component.
-  void setEdgeMagnitude(double mag);
-
-  /// @brief Get edge magnitude threshold for a component.
-  double edgeMagnitude(uint32_t i) const;
-  /// @brief Get edge magnitude threshold for the active component.
-  double edgeMagnitude() const;
-
-  /// @brief Set pixel-space edge scale for a component.
-  void setPixelEdgeScale(uint32_t i, double scale);
-  /// @brief Set pixel-space edge scale for the active component.
+  /// @brief Set the screen-pixel-space edge magnitude scale.
   void setPixelEdgeScale(double scale);
-
-  /// @brief Get pixel-space edge scale for a component.
-  double pixelEdgeScale(uint32_t i) const;
-  /// @brief Get pixel-space edge scale for the active component.
+  /// @brief Get the screen-pixel-space edge magnitude scale.
   double pixelEdgeScale() const;
 
-  /// @brief Set pixel-space edge threshold for a component.
-  void setPixelEdgeThreshold(uint32_t i, double threshold);
-  /// @brief Set pixel-space edge threshold for the active component.
+  /// @brief Set the screen-pixel-space hard-edge threshold.
   void setPixelEdgeThreshold(double threshold);
-
-  /// @brief Get pixel-space edge threshold for a component.
-  double pixelEdgeThreshold(uint32_t i) const;
-  /// @brief Get pixel-space edge threshold for the active component.
+  /// @brief Get the screen-pixel-space hard-edge threshold.
   double pixelEdgeThreshold() const;
 
-  /// @brief Set whether edges are computed after applying window/level for a component.
-  void setWindowedEdges(uint32_t i, bool windowed);
-  /// @brief Set windowed edge computation for the active component.
-  void setWindowedEdges(bool windowed);
-
-  /// @brief Return whether edges are computed after window/level for a component.
-  bool windowedEdges(uint32_t i) const;
-  /// @brief Return whether edges are computed after window/level for the active component.
-  bool windowedEdges() const;
-
   /// @brief Set whether edges are drawn as an overlay rather than as a standalone image.
-  void setOverlayEdges(uint32_t i, bool overlay);
-  /// @brief Set edge overlay mode for the active component.
   void setOverlayEdges(bool overlay);
-
-  /// @brief Return whether edges are drawn as an overlay for a component.
-  bool overlayEdges(uint32_t i) const;
-  /// @brief Return whether edges are drawn as an overlay for the active component.
+  /// @brief Return whether edges are drawn as an overlay.
   bool overlayEdges() const;
 
-  /// @brief Set whether pixel-space edges are drawn as an overlay rather than as a standalone image.
-  void setOverlayPixelEdges(uint32_t i, bool overlay);
-  /// @brief Set pixel-space edge overlay mode for the active component.
-  void setOverlayPixelEdges(bool overlay);
-
-  /// @brief Return whether pixel-space edges are drawn as an overlay for a component.
-  bool overlayPixelEdges(uint32_t i) const;
-  /// @brief Return whether pixel-space edges are drawn as an overlay for the active component.
-  bool overlayPixelEdges() const;
-
-  /// @brief Set whether edges use the component colormap instead of edgeColor().
-  void setColormapEdges(uint32_t i, bool showEdgesArg);
-  /// @brief Set edge colormap mode for the active component.
+  /// @brief Set whether edges use the active component's colormap instead of edgeColor().
   void setColormapEdges(bool showEdgesArg);
-
-  /// @brief Return whether edges use the component colormap for a component.
-  bool colormapEdges(uint32_t i) const;
-  /// @brief Return whether edges use the component colormap for the active component.
+  /// @brief Return whether edges use the active component's colormap.
   bool colormapEdges() const;
 
-  /// @brief Set solid RGB edge color for a component.
-  void setEdgeColor(uint32_t i, glm::vec3 color);
-  /// @brief Set solid RGB edge color for the active component.
+  /// @brief Set solid RGB edge color.
   void setEdgeColor(glm::vec3 color);
+  /// @brief Get solid RGB edge color.
+  const glm::vec3& edgeColor() const;
 
-  /// @brief Get solid RGB edge color for a component.
-  glm::vec3 edgeColor(uint32_t i) const;
-  /// @brief Get solid RGB edge color for the active component.
-  glm::vec3 edgeColor() const;
-
-  /// @brief Set edge opacity in [0, 1] for a component.
-  void setEdgeOpacity(uint32_t i, double opacityArg);
-  /// @brief Set edge opacity for the active component.
+  /// @brief Set edge opacity in [0, 1].
   void setEdgeOpacity(double opacityArg);
-
-  /// @brief Get edge opacity in [0, 1] for a component.
-  double edgeOpacity(uint32_t i) const;
-  /// @brief Get edge opacity for the active component.
+  /// @brief Get edge opacity in [0, 1].
   double edgeOpacity() const;
+
+  /// @brief Copy all edge-visualization settings from another image.
+  void copyEdgeSettingsFrom(const ImageSettings& source);
 
   /// @brief Set the selected color-map index for a component.
   void setColorMapIndex(uint32_t i, std::size_t index);
@@ -909,24 +802,6 @@ private:
     double m_opacity{0.0}; //!< Opacity in range [0.0, 1.0]
     bool m_visible{false}; //!< Visibility flag (show/hide the component)
 
-    EdgeDetectionMethod m_edgeDetectionMethod{EdgeDetectionMethod::Voxel}; //!< Selected edge-rendering method
-    bool m_showEdges{false};                                               //!< Flag to show voxel-space edges
-    bool m_showPixelEdges{false};                                          //!< Flag to show pixel-space edges
-    bool m_thresholdEdges{false};                                          //!< Flag to threshold voxel-space edges
-    bool m_thresholdPixelEdges{false};                                     //!< Flag to threshold pixel-space edges
-    bool m_thinPixelEdges{true};                                           //!< Flag to thin pixel-space edges
-    bool m_useFreiChen{false};                                             //!< Flag to use Frei-Chen filters
-    double m_edgeMagnitude{0.0};      //!< Magnitude of edges to show [0.0, 4.0] if thresholding is on
-    double m_pixelEdgeScale{2.0};     //!< Pixel-space edge magnitude scale
-    double m_pixelEdgeThreshold{0.2}; //!< Pixel-space edge threshold
-    bool m_windowedEdges{false};      //!< Flag to compute edges after applying windowing (width/level) to the image
-    bool m_overlayEdges{false};       //!< Flag to overlay voxel-space edges atop image
-    bool m_overlayPixelEdges{false};  //!< Flag to overlay pixel-space edges atop image
-    bool m_colormapEdges{false};      //!< Flag to apply colormap to edges (true) or to render edges with
-                                      //!< a solid color (false)
-    glm::vec3 m_edgeColor{0.0f};      //!< Edge color (used if not rendering edges using colormap)
-    double m_edgeOpacity{0.0};        //!< Edge opacity: only applies when shown as an overlay atop the image
-
     std::size_t m_colorMapIndex{0}; //!< Color map index
     bool m_colorMapInverted{false}; //!< Whether the color map is inverted
 
@@ -986,6 +861,19 @@ private:
   bool m_vectorLogJacobianDeterminant{false};                            //!< Show log deformation Jacobian determinant
   bool m_ignoreAlpha{false};                                             //!< Ignore the alpha component of the image
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
+
+  EdgeDetectionMethod m_edgeDetectionMethod{EdgeDetectionMethod::Voxel}; //!< Selected edge-rendering method
+  bool m_edgesVisible{false};                                            //!< Show image edges
+  bool m_hardEdges{false};                 //!< Threshold edge magnitude into a binary result
+  bool m_thinPixelEdges{true};             //!< Thin screen-space edges
+  double m_voxelEdgeScale{4.0};            //!< Voxel-space edge magnitude scale
+  double m_voxelEdgeThreshold{0.25};       //!< Voxel-space hard-edge threshold
+  double m_pixelEdgeScale{2.0};            //!< Screen-space edge magnitude scale
+  double m_pixelEdgeThreshold{0.2};        //!< Screen-space hard-edge threshold
+  bool m_overlayEdges{false};              //!< Overlay edges atop the image
+  bool m_colormapEdges{false};             //!< Color edges with the image colormap
+  glm::vec3 m_edgeColor{1.0f, 0.0f, 1.0f}; //!< Solid edge color
+  double m_edgeOpacity{1.0};               //!< Edge opacity
 
   // These apply to the image's isosurfaces:
 

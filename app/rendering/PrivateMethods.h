@@ -185,7 +185,7 @@ void renderImageData();
  * @param worldOffsetXhairs Crosshairs position plus the view slice offset in world coordinates.
  * @param renderLandmarkAndAnnotationOverlays True to draw landmarks and annotations in this pass.
  * @param renderImageBorders True to draw image border/intersection overlays in this pass.
- * @param allowImagePostProcessing True to allow ASCII and pixel-edge post-processing.
+ * @param allowScreenPixelEdgePostProcessing True to allow the nested screen-space edge pass.
  */
 void renderAllImagesForView(
   const View& view,
@@ -193,7 +193,7 @@ void renderAllImagesForView(
   const glm::vec3& worldOffsetXhairs,
   bool renderLandmarkAndAnnotationOverlays = true,
   bool renderImageBorders = true,
-  bool allowImagePostProcessing = true);
+  bool allowScreenPixelEdgePostProcessing = true);
 
 /**
  * @brief Render only image border/intersection overlays for one view.
@@ -480,7 +480,8 @@ void renderColorImageForImage(
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
-  bool isFixedImage);
+  bool isFixedImage,
+  bool allowScreenPixelEdgePostProcessing);
 
 void renderGrayImageForImage(
   const View& view,
@@ -494,7 +495,7 @@ void renderGrayImageForImage(
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
   bool isFixedImage,
-  bool allowImagePostProcessing);
+  bool allowScreenPixelEdgePostProcessing);
 
 void renderIsoContoursForImage(
   const View& view,

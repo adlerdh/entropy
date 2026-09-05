@@ -24,6 +24,7 @@ void syncScalarProjectionLayerSettings(const ImageSettings& source, ImageSetting
   projection.setGlobalOpacity(source.globalOpacity());
   projection.setVisibility(k_projectionComponent, source.visibility());
   projection.setOpacity(k_projectionComponent, source.opacity());
+  projection.copyEdgeSettingsFrom(source);
 }
 
 void updateSegmentationUniformsForImage(
@@ -95,7 +96,8 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   if (!img) {
     uniforms.imgOpacity = 0.0f;
     uniforms.segOpacity = 0.0f;
-    uniforms.showEdges = false;
+    uniforms.showVoxelEdges = false;
+    uniforms.showScreenPixelEdges = false;
     spdlog::error("Image {} is null on updating its uniforms; setting default uniform values", imageUid);
     return;
   }
@@ -226,18 +228,19 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
     ((imgSettings.numComponents() > 0) ? imgSettings.globalOpacity() : 1.0));
 
   // Edges
-  uniforms.showEdges = imgSettings.showEdges();
-  uniforms.thresholdEdges = imgSettings.thresholdEdges();
-  uniforms.edgeMagnitude = static_cast<float>(imgSettings.edgeMagnitude());
+  uniforms.showVoxelEdges =
+    imgSettings.edgesVisible() && EdgeDetectionMethod::Voxel == imgSettings.edgeDetectionMethod();
+  uniforms.showScreenPixelEdges =
+    imgSettings.edgesVisible() && EdgeDetectionMethod::ScreenPixel == imgSettings.edgeDetectionMethod();
+  uniforms.hardEdges = imgSettings.hardEdges();
+  uniforms.voxelEdgeScale = static_cast<float>(imgSettings.voxelEdgeScale());
+  uniforms.voxelEdgeThreshold = static_cast<float>(imgSettings.voxelEdgeThreshold());
   uniforms.overlayEdges = imgSettings.overlayEdges();
   uniforms.colormapEdges = imgSettings.colormapEdges();
   uniforms.edgeColor = static_cast<float>(imgSettings.edgeOpacity()) * glm::vec4{imgSettings.edgeColor(), 1.0f};
-  uniforms.showPixelEdges = imgSettings.showPixelEdges();
-  uniforms.thresholdPixelEdges = imgSettings.thresholdPixelEdges();
   uniforms.thinPixelEdges = imgSettings.thinPixelEdges();
   uniforms.pixelEdgeScale = static_cast<float>(imgSettings.pixelEdgeScale());
   uniforms.pixelEdgeThreshold = static_cast<float>(imgSettings.pixelEdgeThreshold());
-  uniforms.overlayPixelEdges = imgSettings.overlayPixelEdges();
 
   updateSegmentationUniformsForImage(m_appData, imageUid, *img, uniforms);
 }

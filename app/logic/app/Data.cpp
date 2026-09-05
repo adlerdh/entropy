@@ -1410,10 +1410,7 @@ void AppData::setRainbowColorsForAllImages()
 
       img->settings().setBorderColor(color);
 
-      // All image components get the same edge color
-      for (uint32_t c = 0; c < img->header().numComponentsPerPixel(); ++c) {
-        img->settings().setEdgeColor(c, color);
-      }
+      img->settings().setEdgeColor(color);
     }
     ++i;
   }

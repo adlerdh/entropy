@@ -7,8 +7,8 @@ const mat3 Filter_Sobel[2] = mat3[](mat3(A, B, A, 0, 0, 0, -A, -B, -A), mat3(A, 
 
 const float SobelFactor = 1.0 / (2.0 * A + B);
 
-// Returns gradient magnitude of Sobel filter
-float computeEdge(mat3 V, float edgeMagnitude)
+// Returns the normalized gradient magnitude of the Sobel filter.
+float computeEdge(mat3 V)
 {
   // Convolutions for all masks:
   float C_Sobel[2];
@@ -17,5 +17,5 @@ float computeEdge(mat3 V, float edgeMagnitude)
     C_Sobel[i] *= C_Sobel[i];
   }
 
-  return SobelFactor * sqrt(C_Sobel[0] + C_Sobel[1]) / max(edgeMagnitude, 0.01);
+  return SobelFactor * sqrt(C_Sobel[0] + C_Sobel[1]);
 }

@@ -36,6 +36,7 @@ void syncScalarProjectionLayerSettings(const ImageSettings& source, ImageSetting
   projection.setGlobalOpacity(source.globalOpacity());
   projection.setVisibility(k_projectionComponent, source.visibility());
   projection.setOpacity(k_projectionComponent, source.opacity());
+  projection.copyEdgeSettingsFrom(source);
 }
 
 } // namespace

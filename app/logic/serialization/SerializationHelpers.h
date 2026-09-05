@@ -108,7 +108,7 @@ constexpr std::array k_crosshairsSnappingNames{
   EnumName{CrosshairsSnapping::ActiveImage, "activeImage"}};
 
 constexpr std::array k_edgeDetectionMethodNames{
-  EnumName{serialize::ProjectEdgeDetectionMethod::Pixel, "pixel"},
+  EnumName{serialize::ProjectEdgeDetectionMethod::ScreenPixel, "screenPixel"},
   EnumName{serialize::ProjectEdgeDetectionMethod::Voxel, "voxel"}};
 
 constexpr std::array k_componentRenderModeNames{

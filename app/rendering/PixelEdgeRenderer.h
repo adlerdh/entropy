@@ -20,7 +20,7 @@
  * @brief Renders screen-space image edges as a post-process over one view.
  *
  * The renderer captures the normal image pass into a reusable framebuffer, runs a
- * pixel-space edge shader, and composites the result back into the view rectangle.
+ * pixel-space edge shader, and composites the result back into the active draw target.
  */
 class PixelEdgeRenderer
 {
@@ -43,15 +43,15 @@ public:
   /**
    * @brief Capture one image pass, run pixel-space edge detection, and composite it.
    * @param shaderPrograms Rendering-owned shader program map.
-   * @param defaultViewport Default-framebuffer viewport in device pixels.
-   * @param viewRect View rectangle in scene and default-framebuffer coordinates.
+   * @param renderTargetViewport Main render-target viewport in device pixels.
+   * @param viewRect View rectangle in scene and render-target coordinates.
    * @param uniforms Image uniforms that control pixel-edge rendering.
    * @param drawImage Callback that renders the image into the capture framebuffer.
    * @param bindPostTextures Callback that binds image resources needed by the post-process shader.
    */
   void render(
     const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
-    glm::ivec4 defaultViewport,
+    glm::ivec4 renderTargetViewport,
     const ViewRect& viewRect,
     const RenderData::ImageUniforms& uniforms,
     const DrawImageFn& drawImage,

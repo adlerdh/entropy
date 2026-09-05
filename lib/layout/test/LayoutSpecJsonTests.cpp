@@ -171,6 +171,23 @@ TEST_CASE("layout spec JSON supports segmentation mesh render mode", "[layout][s
   CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::SegmentationMesh));
 }
 
+TEST_CASE("layout spec JSON supports isosurface render mode", "[layout][serialization]")
+{
+  layout::ViewSpec view;
+  view.m_renderMode = static_cast<int>(ViewRenderMode::Isosurfaces);
+
+  const nlohmann::json json = view;
+  CHECK(json.at("renderMode") == "isosurfaces");
+
+  const layout::ViewSpec restored = json.get<layout::ViewSpec>();
+  CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::Isosurfaces));
+
+  nlohmann::json legacyJson = json;
+  legacyJson["renderMode"] = "volumeRender";
+  const layout::ViewSpec restoredLegacy = legacyJson.get<layout::ViewSpec>();
+  CHECK(restoredLegacy.m_renderMode == static_cast<int>(ViewRenderMode::Isosurfaces));
+}
+
 TEST_CASE("layout spec JSON supports combined 3D render mode", "[layout][serialization]")
 {
   layout::ViewSpec view;

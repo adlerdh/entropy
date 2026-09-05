@@ -19,7 +19,9 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <atomic>
+#include <cstddef>
 #include <string_view>
 
 namespace
@@ -122,26 +124,19 @@ void drawImageQuad(
     mipSamplingDistance_cm = s.samplingDistanceCm;
   }
 
-  std::vector<glm::vec3> voxelSamplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
   std::vector<glm::vec3> texSamplingDirsForEdges{glm::vec3{0.0f}, glm::vec3{0.0f}};
 
   {
-    const auto posInfo = math::computeAnatomicalLabelsForView(
-      view.camera().camera_T_world(),
-      image0->transformations().worldDef_T_subject());
-
     const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
-    for (int i = 0; i < 2; ++i) {
-      voxelSamplingDirs[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
+    constexpr std::array viewPixelDirections{glm::vec2{1.0f, 0.0f}, glm::vec2{0.0f, 1.0f}};
+    for (std::size_t i = 0; i < viewPixelDirections.size(); ++i) {
+      texSamplingDirsForEdges[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
         voxel_T_viewClip,
         windowViewport,
         view.viewClip_T_windowClip(),
         image0->transformations().invPixelDimensions(),
-        posInfo[i].viewClipDir);
-
-      // For edges sampling, use sampling directions based on image voxels:
-      texSamplingDirsForEdges = voxelSamplingDirs;
+        viewPixelDirections[i]);
     }
   }
 

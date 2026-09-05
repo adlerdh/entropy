@@ -130,6 +130,12 @@ public:
   void setRenderMode(const ViewRenderMode& renderMode) override;
 
   /**
+   * @brief Reconcile layout and child-view render modes with the loaded image count
+   * @param imageCount Number of loaded images
+   */
+  void reconcileRenderModeForImageCount(std::size_t imageCount);
+
+  /**
    * @brief Set the layout intensity projection mode and propagate it to all child views
    * @param ipMode New intensity projection mode
    */

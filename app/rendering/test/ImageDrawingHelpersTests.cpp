@@ -39,6 +39,17 @@ TEST_CASE("image drawing view-axis sampling direction uses inverse pixel dimensi
     0.0f,
     0.0f,
     0.125f);
+
+  glm::mat4 obliquePixel_T_clip{1.0f};
+  obliquePixel_T_clip[0] = glm::vec4{1.0f, 1.0f, 0.0f, 0.0f};
+  requireVec3(
+    image_drawing::computeTextureSamplingDirectionForViewAxis(
+      obliquePixel_T_clip,
+      invPixelDimensions,
+      Directions::View::Right),
+    0.353553f,
+    0.176777f,
+    0.0f);
 }
 
 TEST_CASE("image drawing view-pixel sampling direction follows viewport scaling", "[rendering][image-drawing]")
@@ -79,8 +90,19 @@ TEST_CASE("image drawing voxel sampling direction normalizes projected view dire
       glm::mat4{1.0f},
       invPixelDimensions,
       glm::vec2{10.0f, 10.0f}),
-    0.375f,
-    0.375f,
+    0.353553f,
+    0.176777f,
+    0.0f);
+
+  requireVec3(
+    image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
+      glm::mat4{1.0f},
+      windowViewport,
+      glm::mat4{1.0f},
+      invPixelDimensions,
+      glm::vec2{0.0f}),
+    0.0f,
+    0.0f,
     0.0f);
 }
 
@@ -97,6 +119,33 @@ TEST_CASE("image drawing MIP sampling parameters cover slab and max-extent modes
   const auto invalidParams = image_drawing::computeMipSamplingParams(0.0f, glm::uvec3{3, 4, 12}, 10.0f, false);
   REQUIRE(invalidParams.halfNumSamples == 0);
   REQUIRE(invalidParams.samplingDistanceCm == Catch::Approx(0.0f));
+}
+
+TEST_CASE("image edge pass planning handles supported and offscreen targets", "[rendering][image-drawing][pixel-edge]")
+{
+  auto plan = image_drawing::computeEdgePassPlan(false, false, false, true);
+  CHECK(plan.drawImageDirectly);
+  CHECK_FALSE(plan.drawScreenPixelEdges);
+  CHECK_FALSE(plan.drawVoxelEdges);
+
+  plan = image_drawing::computeEdgePassPlan(false, true, false, true);
+  CHECK_FALSE(plan.drawImageDirectly);
+  CHECK(plan.drawScreenPixelEdges);
+  CHECK_FALSE(plan.drawVoxelEdges);
+
+  plan = image_drawing::computeEdgePassPlan(false, true, false, false);
+  CHECK(plan.drawImageDirectly);
+  CHECK_FALSE(plan.drawScreenPixelEdges);
+  CHECK_FALSE(plan.disableIntensityProjectionForDirectImage);
+
+  plan = image_drawing::computeEdgePassPlan(true, false, false, true);
+  CHECK_FALSE(plan.drawImageDirectly);
+  CHECK(plan.drawVoxelEdges);
+
+  plan = image_drawing::computeEdgePassPlan(true, false, true, true);
+  CHECK(plan.drawImageDirectly);
+  CHECK(plan.drawVoxelEdges);
+  CHECK(plan.disableIntensityProjectionForDirectImage);
 }
 
 TEST_CASE("image drawing estimates screen pixels per voxel axis", "[rendering][image-drawing]")

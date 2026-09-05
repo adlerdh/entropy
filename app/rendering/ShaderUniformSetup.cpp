@@ -216,9 +216,9 @@ ShaderUniformSet buildShaderUniformSet()
   fsEdgeUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
   fsEdgeUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
   fsEdgeUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsEdgeUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
-  fsEdgeUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
-  // fsEdgeUniforms.insertUniform("u_useFreiChen", UniformType::Bool, 0.0f);
+  fsEdgeUniforms.insertUniform("u_hardEdges", UniformType::Bool, false);
+  fsEdgeUniforms.insertUniform("u_edgeScale", UniformType::Float, 4.0f);
+  fsEdgeUniforms.insertUniform("u_edgeThreshold", UniformType::Float, 0.25f);
   fsEdgeUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
   fsEdgeUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
   fsEdgeUniforms.insertUniform("u_texelDirs", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});

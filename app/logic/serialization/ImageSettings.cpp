@@ -189,23 +189,18 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames),
     enumToName(defaults.m_edgeDetectionMethod, k_edgeDetectionMethodNames));
   addIfChanged(edges, "visible", settings.m_showEdges, defaults.m_showEdges);
-  addIfChanged(edges, "hardEdges", settings.m_thresholdEdges, defaults.m_thresholdEdges);
+  addIfChanged(edges, "hardEdges", settings.m_hardEdges, defaults.m_hardEdges);
   addIfChanged(edges, "thinPixelEdges", settings.m_thinPixelEdges, defaults.m_thinPixelEdges);
   addIfChanged(edges, "overlay", settings.m_overlayEdges, defaults.m_overlayEdges);
-  addIfChanged(edges, "magnitude", settings.m_edgeMagnitude, defaults.m_edgeMagnitude);
+  addIfChanged(edges, "useColormap", settings.m_colormapEdges, defaults.m_colormapEdges);
+  addIfChanged(edges, "voxelScale", settings.m_voxelEdgeScale, defaults.m_voxelEdgeScale);
+  addIfChanged(edges, "voxelThreshold", settings.m_voxelEdgeThreshold, defaults.m_voxelEdgeThreshold);
   addIfChanged(edges, "pixelScale", settings.m_pixelEdgeScale, defaults.m_pixelEdgeScale);
   addIfChanged(edges, "pixelThreshold", settings.m_pixelEdgeThreshold, defaults.m_pixelEdgeThreshold);
   if (settings.m_hasEdgeColor) {
     edges["color"] = vec3ToJson(settings.m_edgeColor);
   }
   addIfChanged(edges, "opacity", settings.m_edgeOpacity, defaults.m_edgeOpacity);
-
-  if (
-    serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod &&
-    settings.m_colormapEdges != defaults.m_colormapEdges)
-  {
-    edges["useColormap"] = settings.m_colormapEdges;
-  }
   addIfNotEmpty(j, "edges", std::move(edges));
 
   json isosurfaces = json::object();
@@ -603,7 +598,7 @@ void from_json(const json& j, serialize::ImageSettings& settings)
       settings.m_showEdges = visible->get<bool>();
     }
     if (const auto hard = edges->find("hardEdges"); hard != edges->end() && hard->is_boolean()) {
-      settings.m_thresholdEdges = hard->get<bool>();
+      settings.m_hardEdges = hard->get<bool>();
     }
     if (const auto thin = edges->find("thinPixelEdges"); thin != edges->end() && thin->is_boolean()) {
       settings.m_thinPixelEdges = thin->get<bool>();
@@ -611,13 +606,14 @@ void from_json(const json& j, serialize::ImageSettings& settings)
     if (const auto overlay = edges->find("overlay"); overlay != edges->end() && overlay->is_boolean()) {
       settings.m_overlayEdges = overlay->get<bool>();
     }
-    if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod) {
-      if (const auto colormap = edges->find("useColormap"); colormap != edges->end() && colormap->is_boolean()) {
-        settings.m_colormapEdges = colormap->get<bool>();
-      }
+    if (const auto colormap = edges->find("useColormap"); colormap != edges->end() && colormap->is_boolean()) {
+      settings.m_colormapEdges = colormap->get<bool>();
     }
-    if (const auto magnitude = edges->find("magnitude"); magnitude != edges->end() && magnitude->is_number()) {
-      settings.m_edgeMagnitude = magnitude->get<double>();
+    if (const auto scale = edges->find("voxelScale"); scale != edges->end() && scale->is_number()) {
+      settings.m_voxelEdgeScale = scale->get<double>();
+    }
+    if (const auto threshold = edges->find("voxelThreshold"); threshold != edges->end() && threshold->is_number()) {
+      settings.m_voxelEdgeThreshold = threshold->get<double>();
     }
     if (const auto scale = edges->find("pixelScale"); scale != edges->end() && scale->is_number()) {
       settings.m_pixelEdgeScale = scale->get<double>();

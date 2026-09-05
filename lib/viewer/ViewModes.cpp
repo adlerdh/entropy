@@ -21,7 +21,7 @@ std::string typeString(const ViewRenderMode& mode)
       return "Local linear residual";
     case ViewRenderMode::JointHistogram:
       return "Joint histogram";
-    case ViewRenderMode::VolumeRender:
+    case ViewRenderMode::Isosurfaces:
       return "Isosurfaces";
     case ViewRenderMode::SegmentationMesh:
       return "Segmentations";
@@ -77,7 +77,7 @@ std::string descriptionString(const ViewRenderMode& mode)
       return "Local linear residual metric";
     case ViewRenderMode::JointHistogram:
       return "Joint histogram metric";
-    case ViewRenderMode::VolumeRender:
+    case ViewRenderMode::Isosurfaces:
       return "Render visible image isosurfaces in 3D";
     case ViewRenderMode::SegmentationMesh:
       return "Render visible segmentation labels as 3D surface meshes";

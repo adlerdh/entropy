@@ -9,7 +9,7 @@ namespace rendering::pixel_edge
  * @brief Pixel rectangle used by the pixel-edge post-process pass.
  *
  * Scene coordinates are relative to the offscreen scene texture. Window coordinates
- * are relative to the default framebuffer.
+ * are relative to the active render target.
  */
 struct ViewRect
 {
@@ -25,7 +25,7 @@ struct ViewRect
  * @brief Convert a view's clip-space viewport into scene and framebuffer pixels.
  * @param clipViewport View rectangle in normalized window-clip coordinates.
  * @param deviceViewport Main render viewport in device pixels.
- * @return Pixel rectangle for offscreen capture and default-framebuffer compositing.
+ * @return Pixel rectangle for offscreen capture and render-target compositing.
  */
 ViewRect computeViewRect(glm::vec4 clipViewport, glm::vec4 deviceViewport);
 

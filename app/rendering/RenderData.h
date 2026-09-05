@@ -103,19 +103,17 @@ struct RenderData
 
     float segOpacity{0.0f}; //!< Segmentation opacity
 
-    bool showEdges = false;     //!< Render image-space edge overlay for this image
-    bool thresholdEdges = true; //!< Suppress edge samples below the configured edge magnitude
-    float edgeMagnitude = 0.0f; //!< Edge magnitude threshold used by edge shaders
-    bool overlayEdges = false;  //!< Composite edges over image intensity instead of replacing the image
-    bool colormapEdges = false; //!< Color edges by the current image color map instead of a fixed color
-    glm::vec4 edgeColor{0.0f};  //!< Fixed edge color as premultiplied RGBA
-
-    bool showPixelEdges = false;      //!< Render screen-space pixel-edge post-process overlay for this image
-    bool thresholdPixelEdges = false; //!< Suppress pixel edges below the configured post-process threshold
-    bool thinPixelEdges = true;       //!< Use thin pixel-edge rendering instead of thicker edge emphasis
-    float pixelEdgeScale = 2.0f;      //!< Pixel-edge post-process scale factor
-    float pixelEdgeThreshold = 0.2f;  //!< Pixel-edge post-process threshold
-    bool overlayPixelEdges = false;   //!< Composite pixel edges over image intensity instead of replacing the image
+    bool showVoxelEdges = false;       //!< Render voxel-space edges for this image
+    bool showScreenPixelEdges = false; //!< Render screen-space edges for this image
+    bool hardEdges = false;            //!< Threshold the scaled edge magnitude
+    bool thinPixelEdges = true;        //!< Apply non-maximum suppression to screen-space edges
+    bool overlayEdges = false;         //!< Composite edges over image intensity instead of replacing it
+    bool colormapEdges = false;        //!< Color edges with the image colormap
+    float voxelEdgeScale = 4.0f;       //!< Voxel-space edge magnitude scale
+    float voxelEdgeThreshold = 0.25f;  //!< Voxel-space hard-edge threshold
+    float pixelEdgeScale = 2.0f;       //!< Screen-space edge magnitude scale
+    float pixelEdgeThreshold = 0.2f;   //!< Screen-space hard-edge threshold
+    glm::vec4 edgeColor{0.0f};         //!< Fixed edge color as premultiplied RGBA
   };
 
   using TextureDimension = rendering::TextureDimension;
@@ -454,8 +452,6 @@ struct RenderData
   float m_localLinearResidualMinValidFraction = 0.75f;  //!< Required overlap fraction for paired patch samples
   float m_localLinearResidualVarianceEpsilon = 1.0e-5f; //!< Minimum reference variance before a patch is invalid
   LocalNccInvalidStyle m_localLinearResidualInvalidStyle = LocalNccInvalidStyle::Transparent; //!< Invalid patch display
-
-  glm::vec2 m_edgeMagnitudeSmoothing; //!< Edge detection magnitude threshold and smoothing factor
 
   /// Number of squares along the longest displayed dimension for checkerboard comparison mode.
   int m_numCheckerboardSquares;

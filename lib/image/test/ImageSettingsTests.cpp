@@ -172,21 +172,6 @@ TEST_CASE("ImageSettings routes component-specific setters through the active co
 
   settings.setVisibility(false);
   settings.setOpacity(0.25);
-  settings.setShowEdges(true);
-  settings.setShowPixelEdges(true);
-  settings.setThresholdEdges(true);
-  settings.setThresholdPixelEdges(true);
-  settings.setThinPixelEdges(false);
-  settings.setUseFreiChen(true);
-  settings.setEdgeMagnitude(0.75);
-  settings.setPixelEdgeScale(2.5);
-  settings.setPixelEdgeThreshold(0.4);
-  settings.setWindowedEdges(true);
-  settings.setOverlayEdges(true);
-  settings.setOverlayPixelEdges(false);
-  settings.setColormapEdges(true);
-  settings.setEdgeColor(glm::vec3(0.1f, 0.2f, 0.3f));
-  settings.setEdgeOpacity(0.6);
   settings.setColorMapIndex(3);
   settings.setColorMapInverted(true);
   settings.setColorMapQuantizationLevels(16);
@@ -198,22 +183,6 @@ TEST_CASE("ImageSettings routes component-specific setters through the active co
   CHECK(settings.visibility(0));
   CHECK_FALSE(settings.visibility(1));
   CHECK(settings.opacity(1) == Catch::Approx(0.25));
-  CHECK_FALSE(settings.showEdges(1));
-  CHECK(settings.showPixelEdges(1));
-  CHECK(settings.edgeDetectionMethod(1) == EdgeDetectionMethod::Pixel);
-  CHECK(settings.thresholdEdges(1));
-  CHECK(settings.thresholdPixelEdges(1));
-  CHECK_FALSE(settings.thinPixelEdges(1));
-  CHECK(settings.useFreiChen(1));
-  CHECK(settings.edgeMagnitude(1) == Catch::Approx(0.75));
-  CHECK(settings.pixelEdgeScale(1) == Catch::Approx(2.5));
-  CHECK(settings.pixelEdgeThreshold(1) == Catch::Approx(0.4));
-  CHECK(settings.windowedEdges(1));
-  CHECK(settings.overlayEdges(1));
-  CHECK_FALSE(settings.overlayPixelEdges(1));
-  CHECK(settings.colormapEdges(1));
-  CHECK(settings.edgeColor(1) == glm::vec3(0.1f, 0.2f, 0.3f));
-  CHECK(settings.edgeOpacity(1) == Catch::Approx(0.6));
   CHECK(settings.colorMapIndex(1) == 3);
   CHECK(settings.isColorMapInverted(1));
   CHECK(settings.colorMapQuantizationLevels(1) == 16);
@@ -223,38 +192,92 @@ TEST_CASE("ImageSettings routes component-specific setters through the active co
   CHECK(settings.interpolationMode(1) == InterpolationMode::NearestNeighbor);
 }
 
-TEST_CASE("ImageSettings keeps edge rendering mode mutually exclusive", "[image][settings]")
+TEST_CASE("ImageSettings stores one validated edge configuration per image", "[image][settings][edges]")
 {
   ImageSettings settings = makeSettings();
 
-  CHECK_FALSE(settings.showAnyEdges());
+  CHECK_FALSE(settings.edgesVisible());
   CHECK(settings.edgeDetectionMethod() == EdgeDetectionMethod::Voxel);
-  CHECK_FALSE(settings.thresholdEdges());
-  CHECK_FALSE(settings.thresholdPixelEdges());
+  CHECK_FALSE(settings.hardEdges());
   CHECK(settings.thinPixelEdges());
   CHECK_FALSE(settings.overlayEdges());
-  CHECK_FALSE(settings.overlayPixelEdges());
+  CHECK(settings.voxelEdgeScale() == Catch::Approx(4.0));
+  CHECK(settings.voxelEdgeThreshold() == Catch::Approx(0.25));
   CHECK(settings.pixelEdgeScale() == Catch::Approx(2.0));
+  CHECK(settings.pixelEdgeThreshold() == Catch::Approx(0.2));
 
-  settings.setShowAnyEdges(true);
-  CHECK(settings.showAnyEdges());
-  CHECK(settings.showEdges());
-  CHECK_FALSE(settings.showPixelEdges());
+  settings.setEdgesVisible(true);
+  settings.setEdgeDetectionMethod(EdgeDetectionMethod::ScreenPixel);
+  settings.setHardEdges(true);
+  settings.setThinPixelEdges(false);
+  settings.setVoxelEdgeScale(20.0);
+  settings.setVoxelEdgeThreshold(-1.0);
+  settings.setPixelEdgeScale(-1.0);
+  settings.setPixelEdgeThreshold(2.0);
+  settings.setOverlayEdges(true);
+  settings.setColormapEdges(true);
+  settings.setEdgeColor(glm::vec3{-1.0f, 0.2f, 2.0f});
+  settings.setEdgeOpacity(2.0);
 
-  settings.setShowAnyEdges(false);
-  CHECK_FALSE(settings.showAnyEdges());
-  CHECK_FALSE(settings.showEdges());
-  CHECK_FALSE(settings.showPixelEdges());
-  CHECK(settings.edgeDetectionMethod() == EdgeDetectionMethod::Voxel);
+  settings.setActiveComponent(1);
+  CHECK(settings.edgesVisible());
+  CHECK(settings.edgeDetectionMethod() == EdgeDetectionMethod::ScreenPixel);
+  CHECK(settings.hardEdges());
+  CHECK_FALSE(settings.thinPixelEdges());
+  CHECK(settings.voxelEdgeScale() == Catch::Approx(10.0));
+  CHECK(settings.voxelEdgeThreshold() == Catch::Approx(0.0));
+  CHECK(settings.pixelEdgeScale() == Catch::Approx(0.01));
+  CHECK(settings.pixelEdgeThreshold() == Catch::Approx(1.0));
+  CHECK(settings.overlayEdges());
+  CHECK(settings.colormapEdges());
+  CHECK(settings.edgeColor() == glm::vec3{0.0f, 0.2f, 1.0f});
+  CHECK(settings.edgeOpacity() == Catch::Approx(1.0));
 
-  settings.setShowAnyEdges(true);
-  CHECK(settings.showEdges());
-  CHECK_FALSE(settings.showPixelEdges());
+  settings.setVoxelEdgeScale(std::numeric_limits<double>::quiet_NaN());
+  settings.setVoxelEdgeThreshold(std::numeric_limits<double>::infinity());
+  settings.setPixelEdgeScale(std::numeric_limits<double>::quiet_NaN());
+  settings.setPixelEdgeThreshold(std::numeric_limits<double>::infinity());
+  settings.setEdgeColor(glm::vec3{std::numeric_limits<float>::quiet_NaN()});
+  settings.setEdgeOpacity(std::numeric_limits<double>::quiet_NaN());
+  CHECK(settings.voxelEdgeScale() == Catch::Approx(4.0));
+  CHECK(settings.voxelEdgeThreshold() == Catch::Approx(0.25));
+  CHECK(settings.pixelEdgeScale() == Catch::Approx(2.0));
+  CHECK(settings.pixelEdgeThreshold() == Catch::Approx(0.2));
+  CHECK(settings.edgeColor() == glm::vec3{1.0f, 0.0f, 1.0f});
+  CHECK(settings.edgeOpacity() == Catch::Approx(1.0));
+}
 
-  settings.setShowPixelEdges(true);
-  CHECK(settings.edgeDetectionMethod() == EdgeDetectionMethod::Pixel);
-  CHECK_FALSE(settings.showEdges());
-  CHECK(settings.showPixelEdges());
+TEST_CASE("ImageSettings copies complete edge configuration", "[image][settings][edges]")
+{
+  ImageSettings source = makeSettings();
+  ImageSettings destination = makeSettings();
+  source.setEdgesVisible(true);
+  source.setEdgeDetectionMethod(EdgeDetectionMethod::ScreenPixel);
+  source.setHardEdges(true);
+  source.setThinPixelEdges(false);
+  source.setVoxelEdgeScale(3.0);
+  source.setVoxelEdgeThreshold(0.4);
+  source.setPixelEdgeScale(5.0);
+  source.setPixelEdgeThreshold(0.6);
+  source.setOverlayEdges(true);
+  source.setColormapEdges(true);
+  source.setEdgeColor(glm::vec3{0.1f, 0.2f, 0.3f});
+  source.setEdgeOpacity(0.7);
+
+  destination.copyEdgeSettingsFrom(source);
+
+  CHECK(destination.edgesVisible());
+  CHECK(destination.edgeDetectionMethod() == EdgeDetectionMethod::ScreenPixel);
+  CHECK(destination.hardEdges());
+  CHECK_FALSE(destination.thinPixelEdges());
+  CHECK(destination.voxelEdgeScale() == Catch::Approx(3.0));
+  CHECK(destination.voxelEdgeThreshold() == Catch::Approx(0.4));
+  CHECK(destination.pixelEdgeScale() == Catch::Approx(5.0));
+  CHECK(destination.pixelEdgeThreshold() == Catch::Approx(0.6));
+  CHECK(destination.overlayEdges());
+  CHECK(destination.colormapEdges());
+  CHECK(destination.edgeColor() == glm::vec3{0.1f, 0.2f, 0.3f});
+  CHECK(destination.edgeOpacity() == Catch::Approx(0.7));
 }
 
 TEST_CASE("ImageSettings updates statistics without resetting visibility when requested", "[image][settings]")
@@ -395,34 +418,27 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
   settings.setForegroundThresholdHigh(12.0);
   CHECK(settings.foregroundThresholds() == std::pair<double, double>{-2.0, 12.0});
 
-  settings.setShowEdges(true);
-  settings.setShowPixelEdges(true);
-  settings.setThresholdEdges(true);
-  settings.setThresholdPixelEdges(true);
+  settings.setEdgesVisible(true);
+  settings.setEdgeDetectionMethod(EdgeDetectionMethod::ScreenPixel);
+  settings.setHardEdges(true);
   settings.setThinPixelEdges(false);
-  settings.setUseFreiChen(true);
-  settings.setEdgeMagnitude(0.55);
+  settings.setVoxelEdgeScale(5.5);
+  settings.setVoxelEdgeThreshold(0.55);
   settings.setPixelEdgeScale(20.0);
   settings.setPixelEdgeThreshold(-1.0);
-  settings.setWindowedEdges(true);
   settings.setOverlayEdges(true);
-  settings.setOverlayPixelEdges(false);
   settings.setColormapEdges(true);
   settings.setEdgeColor(glm::vec3{0.9f, 0.8f, 0.7f});
   settings.setEdgeOpacity(0.35);
-  CHECK_FALSE(settings.showEdges());
-  CHECK(settings.showPixelEdges());
-  CHECK(settings.edgeDetectionMethod() == EdgeDetectionMethod::Pixel);
-  CHECK(settings.thresholdEdges());
-  CHECK(settings.thresholdPixelEdges());
+  CHECK(settings.edgesVisible());
+  CHECK(settings.edgeDetectionMethod() == EdgeDetectionMethod::ScreenPixel);
+  CHECK(settings.hardEdges());
   CHECK_FALSE(settings.thinPixelEdges());
-  CHECK(settings.useFreiChen());
-  CHECK(settings.edgeMagnitude() == Catch::Approx(0.55));
+  CHECK(settings.voxelEdgeScale() == Catch::Approx(5.5));
+  CHECK(settings.voxelEdgeThreshold() == Catch::Approx(0.55));
   CHECK(settings.pixelEdgeScale() == Catch::Approx(10.0));
   CHECK(settings.pixelEdgeThreshold() == Catch::Approx(0.0));
-  CHECK(settings.windowedEdges());
   CHECK(settings.overlayEdges());
-  CHECK_FALSE(settings.overlayPixelEdges());
   CHECK(settings.colormapEdges());
   CHECK(settings.edgeColor() == glm::vec3{0.9f, 0.8f, 0.7f});
   CHECK(settings.edgeOpacity() == Catch::Approx(0.35));

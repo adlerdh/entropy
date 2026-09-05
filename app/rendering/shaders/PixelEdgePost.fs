@@ -8,7 +8,7 @@ uniform sampler1D u_cmapTex;
 uniform vec2 u_sceneSizePx;
 uniform vec2 u_viewOriginPx;
 uniform vec2 u_viewSizePx;
-uniform bool u_thresholdEdges;
+uniform bool u_hardEdges;
 uniform bool u_thinEdges;
 uniform float u_edgeScale;
 uniform float u_edgeThreshold;
@@ -17,7 +17,7 @@ uniform bool u_colormapEdges;
 uniform vec4 u_edgeColor;
 uniform bool u_overlayEdges;
 
-const float k_sourceAlphaEpsilon = 1.0 / 255.0;
+const float k_sourceAlphaEpsilon = 1.0e-6;
 
 bool isInsideView(ivec2 scenePx, ivec2 viewMin, ivec2 viewMax)
 {
@@ -31,7 +31,8 @@ vec4 sourceAt(ivec2 scenePx, ivec2 viewMin, ivec2 viewMax)
 
 float luminance(vec4 colorPM)
 {
-  return dot(colorPM.rgb, vec3(0.2126, 0.7152, 0.0722));
+  vec3 color = colorPM.a > k_sourceAlphaEpsilon ? colorPM.rgb / colorPM.a : vec3(0.0);
+  return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
 
 float neighborLuminanceAt(ivec2 scenePx, float centerLuminance, ivec2 viewMin, ivec2 viewMax)
@@ -101,15 +102,17 @@ void main()
     ivec2 stepPx = nonMaximumSuppressionStep(grad);
     float edgeForward = gradientMagnitudeAt(scenePx + stepPx, viewMin, viewMax);
     float edgeBackward = gradientMagnitudeAt(scenePx - stepPx, viewMin, viewMax);
-    rawEdge *= float(rawEdge >= edgeForward && rawEdge >= edgeBackward);
+    // Break ties consistently so a plateau does not produce a two-pixel ridge.
+    rawEdge *= float(rawEdge >= edgeForward && rawEdge > edgeBackward);
   }
 
   float edge = rawEdge * u_edgeScale;
-  edge = u_thresholdEdges ? float(edge >= u_edgeThreshold) : clamp(edge, 0.0, 1.0);
+  edge = u_hardEdges ? float(edge >= u_edgeThreshold) : clamp(edge, 0.0, 1.0);
 
   vec4 edgeColormap = texture(u_cmapTex, u_cmapSlopeIntercept[0] * edge + u_cmapSlopeIntercept[1]);
   vec4 edgeColormapPM = edge * edgeColormap.a * vec4(edgeColormap.rgb, 1.0);
   vec4 edgePM = mix(edge * u_edgeColor, edgeColormapPM, float(u_colormapEdges));
+  edgePM *= sourcePM.a;
 
   o_color = u_overlayEdges ? edgePM + sourcePM * (1.0 - edgePM.a) : edgePM;
 }

@@ -2564,17 +2564,20 @@ void renderImageHeader(
     ImGui::Spacing();
     ImGui::Spacing();
 
-    bool showEdges = viewSettings.showAnyEdges();
+    bool showEdges = imgSettings.edgesVisible();
     if (ImGui::Checkbox("Show edges", &showEdges)) {
-      viewSettings.setShowAnyEdges(showEdges);
+      imgSettings.setEdgesVisible(showEdges);
       updateImageUniforms();
     }
     ImGui::SameLine();
-    helpMarker("Show/hide image edges (E). Edge settings control whether edges are computed in voxel or pixel space");
+    helpMarker(
+      "Show or hide edges in supported 2D image render modes (Shift+E). Edge settings control whether edges are "
+      "computed in voxel or screen pixel space. Edges are not applied to metric views, vector visualizations, or 3D "
+      "image planes. Screen pixel edges are not applied to ASCII rendering");
 
     ImGui::SetNextItemOpen(showEdges, ImGuiCond_Appearing);
     if (showEdges && ImGui::TreeNode("Edge settings")) {
-      EdgeDetectionMethod edgeMethod = viewSettings.edgeDetectionMethod();
+      EdgeDetectionMethod edgeMethod = imgSettings.edgeDetectionMethod();
       int edgeMethodIndex = EdgeDetectionMethod::Voxel == edgeMethod ? 0 : 1;
       if (ImGui::RadioButton("Voxel space", edgeMethodIndex == 0)) {
         edgeMethodIndex = 0;
@@ -2584,9 +2587,9 @@ void renderImageHeader(
         edgeMethodIndex = 1;
       }
       const EdgeDetectionMethod selectedEdgeMethod =
-        edgeMethodIndex == 0 ? EdgeDetectionMethod::Voxel : EdgeDetectionMethod::Pixel;
+        edgeMethodIndex == 0 ? EdgeDetectionMethod::Voxel : EdgeDetectionMethod::ScreenPixel;
       if (selectedEdgeMethod != edgeMethod) {
-        viewSettings.setEdgeDetectionMethod(selectedEdgeMethod);
+        imgSettings.setEdgeDetectionMethod(selectedEdgeMethod);
         edgeMethod = selectedEdgeMethod;
         updateImageUniforms();
       }
@@ -2596,112 +2599,89 @@ void renderImageHeader(
         "sampled into the view");
 
       const bool useVoxelEdges = EdgeDetectionMethod::Voxel == edgeMethod;
-      const bool usePixelEdges = EdgeDetectionMethod::Pixel == edgeMethod;
+      const bool usePixelEdges = EdgeDetectionMethod::ScreenPixel == edgeMethod;
 
       if (useVoxelEdges && InterpolationMode::NearestNeighbor == viewSettings.interpolationMode()) {
         ImGui::Text("Note: Linear or cubic interpolation are recommended when showing edges.");
       }
 
-      bool hardEdges = useVoxelEdges ? viewSettings.thresholdEdges() : viewSettings.thresholdPixelEdges();
+      bool hardEdges = imgSettings.hardEdges();
       if (ImGui::Checkbox("Hard edges", &hardEdges)) {
-        if (useVoxelEdges) {
-          viewSettings.setThresholdEdges(hardEdges);
-        }
-        else {
-          viewSettings.setThresholdPixelEdges(hardEdges);
-        }
+        imgSettings.setHardEdges(hardEdges);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Apply thresholding to edge magnitude");
 
       if (usePixelEdges) {
-        bool thinPixelEdges = viewSettings.thinPixelEdges();
+        bool thinPixelEdges = imgSettings.thinPixelEdges();
         if (ImGui::Checkbox("Thin edges", &thinPixelEdges)) {
-          viewSettings.setThinPixelEdges(thinPixelEdges);
+          imgSettings.setThinPixelEdges(thinPixelEdges);
           updateImageUniforms();
         }
         ImGui::SameLine();
         helpMarker("Keep only local edge-magnitude maxima along the screen-space gradient direction");
       }
 
-      bool overlayEdges = useVoxelEdges ? viewSettings.overlayEdges() : viewSettings.overlayPixelEdges();
+      bool overlayEdges = imgSettings.overlayEdges();
       if (ImGui::Checkbox("Overlay edges on image", &overlayEdges)) {
-        viewSettings.setOverlayEdges(overlayEdges);
-        viewSettings.setOverlayPixelEdges(overlayEdges);
+        imgSettings.setOverlayEdges(overlayEdges);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Overlay edges on top of the image");
 
-      if (useVoxelEdges) {
-        if (overlayEdges || hardEdges) {
-          if (viewSettings.colormapEdges()) {
-            viewSettings.setColormapEdges(false);
-            updateImageUniforms();
-          }
-        }
-        bool colormapEdges = viewSettings.colormapEdges();
-        if (overlayEdges || hardEdges) {
-          ImGui::BeginDisabled();
-          ImGui::Checkbox("Apply colormap to edges", &colormapEdges);
-          ImGui::EndDisabled();
-        }
-        else if (ImGui::Checkbox("Apply colormap to edges", &colormapEdges)) {
-          viewSettings.setColormapEdges(colormapEdges);
-          updateImageUniforms();
-        }
-        ImGui::SameLine();
-        helpMarker("Apply the image colormap to voxel-space edge magnitudes");
-      }
-      else if (viewSettings.colormapEdges()) {
-        viewSettings.setColormapEdges(false);
+      bool colormapEdges = imgSettings.colormapEdges();
+      if (ImGui::Checkbox("Apply colormap to edges", &colormapEdges)) {
+        imgSettings.setColormapEdges(colormapEdges);
         updateImageUniforms();
       }
+      ImGui::SameLine();
+      helpMarker("Color edge magnitudes using the active image colormap");
 
       if (usePixelEdges) {
-        double edgeScale = viewSettings.pixelEdgeScale();
+        double edgeScale = imgSettings.pixelEdgeScale();
         if (mySliderF64("Scale", &edgeScale, 0.01, 10.00)) {
-          viewSettings.setPixelEdgeScale(edgeScale);
+          imgSettings.setPixelEdgeScale(edgeScale);
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Scale applied to screen-space edge magnitude");
+        helpMarker("Multiply the screen-space edge magnitude before display and thresholding");
       }
-      else if (!hardEdges) {
-        double edgeScale = 1.0 - viewSettings.edgeMagnitude();
-        if (mySliderF64("Scale", &edgeScale, 0.01, 1.00)) {
-          viewSettings.setEdgeMagnitude(1.0 - edgeScale);
+      else {
+        double edgeScale = imgSettings.voxelEdgeScale();
+        if (mySliderF64("Scale", &edgeScale, 0.01, 10.00)) {
+          imgSettings.setVoxelEdgeScale(edgeScale);
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Scale applied to voxel-space edge magnitude");
+        helpMarker("Multiply the voxel-space edge magnitude before display and thresholding");
       }
 
       if (hardEdges) {
         if (usePixelEdges) {
-          double edgeThreshold = viewSettings.pixelEdgeThreshold();
+          double edgeThreshold = imgSettings.pixelEdgeThreshold();
           if (mySliderF64("Threshold", &edgeThreshold, 0.0, 1.0)) {
-            viewSettings.setPixelEdgeThreshold(edgeThreshold);
+            imgSettings.setPixelEdgeThreshold(edgeThreshold);
             updateImageUniforms();
           }
         }
         else {
-          double edgeThreshold = viewSettings.edgeMagnitude();
-          if (mySliderF64("Threshold", &edgeThreshold, 0.01, 1.00)) {
-            viewSettings.setEdgeMagnitude(edgeThreshold);
+          double edgeThreshold = imgSettings.voxelEdgeThreshold();
+          if (mySliderF64("Threshold", &edgeThreshold, 0.0, 1.0)) {
+            imgSettings.setVoxelEdgeThreshold(edgeThreshold);
             updateImageUniforms();
           }
         }
         ImGui::SameLine();
-        helpMarker("Magnitude threshold above which hard edges are shown");
+        helpMarker("Scaled edge-magnitude threshold above which hard edges are shown");
       }
 
-      if (!(useVoxelEdges && viewSettings.colormapEdges())) {
-        glm::vec4 edgeColor{viewSettings.edgeColor(), viewSettings.edgeOpacity()};
+      if (!imgSettings.colormapEdges()) {
+        glm::vec4 edgeColor{imgSettings.edgeColor(), imgSettings.edgeOpacity()};
         if (ImGui::ColorEdit4("Edge color", glm::value_ptr(edgeColor), colorAlphaEditFlags)) {
-          viewSettings.setEdgeColor(edgeColor);
-          viewSettings.setEdgeOpacity(static_cast<double>(edgeColor.a));
+          imgSettings.setEdgeColor(glm::vec3{edgeColor});
+          imgSettings.setEdgeOpacity(static_cast<double>(edgeColor.a));
           updateImageUniforms();
         }
         ImGui::SameLine();

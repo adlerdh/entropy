@@ -64,12 +64,6 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
       {ViewType::Oblique, CameraStartFrameType::Crosshairs_Axial_RAS},
       {ViewType::ThreeD, CameraStartFrameType::Crosshairs_Coronal_LSA}}}};
 
-bool isRenderModeCompatibleWithViewType(const ViewType& viewType, const ViewRenderMode& renderMode)
-{
-  const auto& modes = (ViewType::ThreeD == viewType) ? All3dViewRenderModes : All2dViewRenderModes;
-  return std::find(modes.begin(), modes.end(), renderMode) != modes.end();
-}
-
 glm::quat get_world_T_startFrame(CameraStartFrameType startFrameType, const glm::mat3& world_T_frame)
 {
   // Axes of the start frame in World space
@@ -343,6 +337,17 @@ void View::setRenderMode(const ViewRenderMode& renderMode)
   }
 
   ControlFrame::setRenderMode(ViewType::ThreeD == m_viewType ? m_last3dRenderMode : m_last2dRenderMode);
+}
+
+void View::reconcileRenderModeForImageCount(const std::size_t imageCount)
+{
+  const ViewRenderModeState state = reconcileRenderModeState(
+    m_viewType,
+    {.current = m_renderMode, .last2d = m_last2dRenderMode, .last3d = m_last3dRenderMode},
+    imageCount);
+  ControlFrame::setRenderMode(state.current);
+  m_last2dRenderMode = state.last2d;
+  m_last3dRenderMode = state.last3d;
 }
 
 std::optional<uuid> View::cameraRotationSyncGroupUid() const

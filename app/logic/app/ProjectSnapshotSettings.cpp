@@ -798,20 +798,16 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
       defaultSettings.interpolationMode(component),
       InterpolationMode::Linear);
   }
-  settings.m_edgeDetectionMethod = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
-                                     ? serialize::ProjectEdgeDetectionMethod::Pixel
+  settings.m_edgeDetectionMethod = EdgeDetectionMethod::ScreenPixel == imageSettings.edgeDetectionMethod()
+                                     ? serialize::ProjectEdgeDetectionMethod::ScreenPixel
                                      : serialize::ProjectEdgeDetectionMethod::Voxel;
-  settings.m_showEdges = imageSettings.showAnyEdges();
-  settings.m_thresholdEdges = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
-                                ? imageSettings.thresholdPixelEdges()
-                                : imageSettings.thresholdEdges();
+  settings.m_showEdges = imageSettings.edgesVisible();
+  settings.m_hardEdges = imageSettings.hardEdges();
   settings.m_thinPixelEdges = imageSettings.thinPixelEdges();
-  settings.m_overlayEdges = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
-                              ? imageSettings.overlayPixelEdges()
-                              : imageSettings.overlayEdges();
-  settings.m_colormapEdges =
-    EdgeDetectionMethod::Voxel == imageSettings.edgeDetectionMethod() && imageSettings.colormapEdges();
-  settings.m_edgeMagnitude = imageSettings.edgeMagnitude();
+  settings.m_overlayEdges = imageSettings.overlayEdges();
+  settings.m_colormapEdges = imageSettings.colormapEdges();
+  settings.m_voxelEdgeScale = imageSettings.voxelEdgeScale();
+  settings.m_voxelEdgeThreshold = imageSettings.voxelEdgeThreshold();
   settings.m_pixelEdgeScale = imageSettings.pixelEdgeScale();
   settings.m_pixelEdgeThreshold = imageSettings.pixelEdgeThreshold();
   const glm::vec3 baselineEdgeColor = defaultBorderColor.value_or(defaultSettings.edgeColor());
@@ -1022,17 +1018,16 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
       settings.m_interpolationModes.at(component));
   }
   imageSettingsLocal.setEdgeDetectionMethod(
-    serialize::ProjectEdgeDetectionMethod::Pixel == settings.m_edgeDetectionMethod ? EdgeDetectionMethod::Pixel
-                                                                                   : EdgeDetectionMethod::Voxel);
-  imageSettingsLocal.setShowAnyEdges(settings.m_showEdges);
-  imageSettingsLocal.setThresholdEdges(settings.m_thresholdEdges);
-  imageSettingsLocal.setThresholdPixelEdges(settings.m_thresholdEdges);
+    serialize::ProjectEdgeDetectionMethod::ScreenPixel == settings.m_edgeDetectionMethod
+      ? EdgeDetectionMethod::ScreenPixel
+      : EdgeDetectionMethod::Voxel);
+  imageSettingsLocal.setEdgesVisible(settings.m_showEdges);
+  imageSettingsLocal.setHardEdges(settings.m_hardEdges);
   imageSettingsLocal.setThinPixelEdges(settings.m_thinPixelEdges);
   imageSettingsLocal.setOverlayEdges(settings.m_overlayEdges);
-  imageSettingsLocal.setOverlayPixelEdges(settings.m_overlayEdges);
-  imageSettingsLocal.setColormapEdges(
-    serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod && settings.m_colormapEdges);
-  imageSettingsLocal.setEdgeMagnitude(settings.m_edgeMagnitude);
+  imageSettingsLocal.setColormapEdges(settings.m_colormapEdges);
+  imageSettingsLocal.setVoxelEdgeScale(settings.m_voxelEdgeScale);
+  imageSettingsLocal.setVoxelEdgeThreshold(settings.m_voxelEdgeThreshold);
   imageSettingsLocal.setPixelEdgeScale(settings.m_pixelEdgeScale);
   imageSettingsLocal.setPixelEdgeThreshold(settings.m_pixelEdgeThreshold);
   if (settings.m_hasEdgeColor) {

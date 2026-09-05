@@ -115,7 +115,7 @@ void Rendering::renderVectorImageForImage(
     program->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
     program->setUniform("u_renderMode", displayModeUniform);
 
-    renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, uniforms.showEdges);
+    renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, false);
   }
   program->stopUse();
   unbindTextures(boundTextures);

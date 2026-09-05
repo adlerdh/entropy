@@ -16,14 +16,6 @@ using uuid = uuids::uuid;
 // Viewport of a full window, defined in window Clip space:
 static const glm::vec4 sk_winClipFullWindowViewport{-1.0f, -1.0f, 2.0f, 2.0f};
 
-ViewRenderMode reconcileRenderModeForViewType(ViewType viewType, ViewRenderMode renderMode)
-{
-  if (ViewType::ThreeD == viewType) {
-    return is3dRenderMode(renderMode) ? renderMode : ViewRenderMode::SegmentationAndIsosurfaces;
-  }
-
-  return is3dRenderMode(renderMode) && ViewRenderMode::Disabled != renderMode ? ViewRenderMode::Image : renderMode;
-}
 } // namespace
 
 Layout::Layout(bool isLightbox)
@@ -115,6 +107,23 @@ void Layout::setRenderMode(const ViewRenderMode& renderMode)
     m_last2dRenderMode = reconciled;
   }
   updateAllViewsInLayout();
+}
+
+void Layout::reconcileRenderModeForImageCount(const std::size_t imageCount)
+{
+  const ViewRenderModeState state = reconcileRenderModeState(
+    m_viewType,
+    {.current = m_renderMode, .last2d = m_last2dRenderMode, .last3d = m_last3dRenderMode},
+    imageCount);
+  ControlFrame::setRenderMode(state.current);
+  m_last2dRenderMode = state.last2d;
+  m_last3dRenderMode = state.last3d;
+
+  for (auto& [viewUid, view] : m_views) {
+    if (view) {
+      view->reconcileRenderModeForImageCount(imageCount);
+    }
+  }
 }
 
 void Layout::setIntensityProjectionMode(const IntensityProjectionMode& ipMode)

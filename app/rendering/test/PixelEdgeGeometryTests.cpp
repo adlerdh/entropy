@@ -49,3 +49,23 @@ TEST_CASE("pixel edge view rectangle preserves default framebuffer origin", "[re
 
   requireRect(rect, 0, 450, 24, 498, 600, 450);
 }
+
+TEST_CASE("pixel edge view rectangles partition odd-sized viewports without gaps", "[rendering][pixel-edge]")
+{
+  const glm::vec4 deviceViewport{10.0f, 20.0f, 801.0f, 601.0f};
+  const auto left = pixel_edge::computeViewRect(glm::vec4{-1.0f, -1.0f, 1.0f, 2.0f}, deviceViewport);
+  const auto right = pixel_edge::computeViewRect(glm::vec4{0.0f, -1.0f, 1.0f, 2.0f}, deviceViewport);
+
+  requireRect(left, 0, 0, 10, 20, 401, 601);
+  requireRect(right, 401, 0, 411, 20, 400, 601);
+  REQUIRE(left.sceneX + left.width == right.sceneX);
+  REQUIRE(right.sceneX + right.width == 801);
+}
+
+TEST_CASE("pixel edge view rectangle is clamped to the render target", "[rendering][pixel-edge]")
+{
+  const auto rect =
+    pixel_edge::computeViewRect(glm::vec4{-2.0f, -2.0f, 4.0f, 4.0f}, glm::vec4{5.0f, 7.0f, 101.0f, 99.0f});
+
+  requireRect(rect, 0, 0, 5, 7, 101, 99);
+}

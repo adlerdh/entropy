@@ -21,6 +21,86 @@ namespace
 const glm::vec2 k_zeroVec2{0.0f, 0.0f};
 const glm::vec4 k_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 
+class ScopedPixelEdgeGlState
+{
+public:
+  ScopedPixelEdgeGlState()
+  {
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_drawFramebuffer);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_readFramebuffer);
+    glGetIntegerv(GL_VIEWPORT, m_viewport);
+    glGetIntegerv(GL_SCISSOR_BOX, m_scissorBox);
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, m_clearColor);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &m_activeTexture);
+    glGetIntegerv(GL_CURRENT_PROGRAM, &m_program);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &m_vertexArray);
+
+    glActiveTexture(GL_TEXTURE3);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &m_texture2DUnit3);
+    glActiveTexture(GL_TEXTURE1);
+    glGetIntegerv(GL_TEXTURE_BINDING_1D, &m_texture1DUnit1);
+    glActiveTexture(static_cast<GLenum>(m_activeTexture));
+
+    m_scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
+    m_depthEnabled = glIsEnabled(GL_DEPTH_TEST);
+    m_stencilEnabled = glIsEnabled(GL_STENCIL_TEST);
+  }
+
+  ScopedPixelEdgeGlState(const ScopedPixelEdgeGlState&) = delete;
+  ScopedPixelEdgeGlState& operator=(const ScopedPixelEdgeGlState&) = delete;
+
+  ~ScopedPixelEdgeGlState()
+  {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(m_drawFramebuffer));
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(m_readFramebuffer));
+    glViewport(m_viewport[0], m_viewport[1], m_viewport[2], m_viewport[3]);
+    glScissor(m_scissorBox[0], m_scissorBox[1], m_scissorBox[2], m_scissorBox[3]);
+    glClearColor(m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]);
+
+    setEnabled(GL_SCISSOR_TEST, m_scissorEnabled);
+    setEnabled(GL_DEPTH_TEST, m_depthEnabled);
+    setEnabled(GL_STENCIL_TEST, m_stencilEnabled);
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(m_texture2DUnit3));
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_1D, static_cast<GLuint>(m_texture1DUnit1));
+    glActiveTexture(static_cast<GLenum>(m_activeTexture));
+    glUseProgram(static_cast<GLuint>(m_program));
+    glBindVertexArray(static_cast<GLuint>(m_vertexArray));
+  }
+
+  [[nodiscard]] GLuint drawFramebuffer() const
+  {
+    return static_cast<GLuint>(m_drawFramebuffer);
+  }
+
+private:
+  static void setEnabled(GLenum capability, GLboolean enabled)
+  {
+    if (enabled == GL_TRUE) {
+      glEnable(capability);
+    }
+    else {
+      glDisable(capability);
+    }
+  }
+
+  GLint m_drawFramebuffer = 0;
+  GLint m_readFramebuffer = 0;
+  GLint m_viewport[4] = {0, 0, 0, 0};
+  GLint m_scissorBox[4] = {0, 0, 0, 0};
+  GLfloat m_clearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  GLint m_activeTexture = GL_TEXTURE0;
+  GLint m_program = 0;
+  GLint m_vertexArray = 0;
+  GLint m_texture2DUnit3 = 0;
+  GLint m_texture1DUnit1 = 0;
+  GLboolean m_scissorEnabled = GL_FALSE;
+  GLboolean m_depthEnabled = GL_FALSE;
+  GLboolean m_stencilEnabled = GL_FALSE;
+};
+
 std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildPixelEdgeShaderProgram()
 {
   static const std::string shaderPath("app/rendering/shaders/");
@@ -47,7 +127,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildPixelEdgeShade
   fsUniforms.insertUniform("u_sceneSizePx", UniformType::Vec2, k_zeroVec2);
   fsUniforms.insertUniform("u_viewOriginPx", UniformType::Vec2, k_zeroVec2);
   fsUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, k_zeroVec2);
-  fsUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_hardEdges", UniformType::Bool, false);
   fsUniforms.insertUniform("u_thinEdges", UniformType::Bool, true);
   fsUniforms.insertUniform("u_edgeScale", UniformType::Float, 2.0f);
   fsUniforms.insertUniform("u_edgeThreshold", UniformType::Float, 0.2f);
@@ -97,29 +177,22 @@ void PixelEdgeRenderer::registerShaderPrograms(
 
 void PixelEdgeRenderer::render(
   const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
-  glm::ivec4 defaultViewport,
+  glm::ivec4 renderTargetViewport,
   const ViewRect& viewRect,
   const RenderData::ImageUniforms& uniforms,
   const DrawImageFn& drawImage,
   const BindPostTexturesFn& bindPostTextures)
 {
-  const glm::ivec2 deviceSize{defaultViewport.z, defaultViewport.w};
+  const glm::ivec2 deviceSize{renderTargetViewport.z, renderTargetViewport.w};
   if (deviceSize.x <= 0 || deviceSize.y <= 0 || viewRect.width <= 0 || viewRect.height <= 0) {
     return;
   }
 
+  const ScopedPixelEdgeGlState previousState;
   ensureSceneFboSize(deviceSize);
   if (!m_sceneColorTex) {
     return;
   }
-
-  GLboolean previousScissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
-  GLboolean previousDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
-  GLboolean previousStencilEnabled = glIsEnabled(GL_STENCIL_TEST);
-  GLint previousViewport[4] = {0, 0, 0, 0};
-  GLfloat previousClearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-  glGetIntegerv(GL_VIEWPORT, previousViewport);
-  glGetFloatv(GL_COLOR_CLEAR_VALUE, previousClearColor);
 
   m_sceneFbo.bind(fbo::TargetType::Draw);
   glViewport(0, 0, deviceSize.x, deviceSize.y);
@@ -129,12 +202,14 @@ void PixelEdgeRenderer::render(
     static_cast<GLint>(viewRect.sceneY),
     static_cast<GLsizei>(viewRect.width),
     static_cast<GLsizei>(viewRect.height));
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_STENCIL_TEST);
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   drawImage();
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(defaultViewport.x, defaultViewport.y, deviceSize.x, deviceSize.y);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, previousState.drawFramebuffer());
+  glViewport(renderTargetViewport.x, renderTargetViewport.y, deviceSize.x, deviceSize.y);
   glScissor(
     static_cast<GLint>(viewRect.windowX),
     static_cast<GLint>(viewRect.windowY),
@@ -158,31 +233,19 @@ void PixelEdgeRenderer::render(
   program.setUniform(
     "u_viewSizePx",
     glm::vec2{static_cast<float>(viewRect.width), static_cast<float>(viewRect.height)});
-  program.setUniform("u_thresholdEdges", uniforms.thresholdPixelEdges);
+  program.setUniform("u_hardEdges", uniforms.hardEdges);
   program.setUniform("u_thinEdges", uniforms.thinPixelEdges);
   program.setUniform("u_edgeScale", uniforms.pixelEdgeScale);
   program.setUniform("u_edgeThreshold", uniforms.pixelEdgeThreshold);
   program.setUniform("u_cmapSlopeIntercept", uniforms.cmapSlopeIntercept);
   program.setUniform("u_colormapEdges", uniforms.colormapEdges);
   program.setUniform("u_edgeColor", uniforms.edgeColor);
-  program.setUniform("u_overlayEdges", uniforms.overlayPixelEdges);
+  program.setUniform("u_overlayEdges", uniforms.overlayEdges);
 
   m_postVao.bind();
   glDrawArrays(GL_TRIANGLES, 0, 3);
   m_postVao.release();
   program.stopUse();
-
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_1D, 0);
-  glActiveTexture(GL_TEXTURE0);
-  glViewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3]);
-  glClearColor(previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
-
-  previousScissorEnabled ? glEnable(GL_SCISSOR_TEST) : glDisable(GL_SCISSOR_TEST);
-  previousDepthEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-  previousStencilEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
 }
 
 void PixelEdgeRenderer::ensureSceneFboSize(glm::ivec2 deviceSize)
@@ -204,10 +267,8 @@ void PixelEdgeRenderer::ensureSceneFboSize(glm::ivec2 deviceSize)
   }
 
   m_sceneColorTex->setSize(texSize);
-  m_sceneColorTex->bind(std::nullopt);
   m_sceneColorTex
-    ->setData(0, SizedInternalFormat::RGBA8_UNorm, BufferPixelFormat::RGBA, BufferPixelDataType::UInt8, nullptr);
-  m_sceneColorTex->unbind();
+    ->setData(0, SizedInternalFormat::RGBA16F, BufferPixelFormat::RGBA, BufferPixelDataType::Float32, nullptr);
 
   if (m_sceneFbo.id() == 0) {
     m_sceneFbo.generate();
@@ -215,5 +276,4 @@ void PixelEdgeRenderer::ensureSceneFboSize(glm::ivec2 deviceSize)
 
   m_sceneFbo.bind(fbo::TargetType::DrawAndRead);
   m_sceneFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_sceneColorTex, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
