@@ -325,7 +325,8 @@ void renderMetricSettingsPanel(
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
-  bool showWindowAsSignedCorrelation = false)
+  bool showWindowAsSignedCorrelation = false,
+  bool useCompactColorMapControl = false)
 {
   // Metric windowing range slider:
   const float slope = metricParams.m_slopeIntercept[0];
@@ -376,6 +377,40 @@ void renderMetricSettingsPanel(
   helpMarker(
     showWindowAsSignedCorrelation ? "Minimum and maximum NCC values. Internally these are mapped to the colormap range"
                                   : "Minimum and maximum of the metric window range");
+
+  if (useCompactColorMapControl) {
+    const ImageColorMap* selectedColorMap = getImageColorMap(metricParams.m_colorMapIndex);
+    if (selectedColorMap && ImGui::BeginCombo("Color map", selectedColorMap->name().c_str())) {
+      for (std::size_t index = 0; index < getNumImageColorMaps(); ++index) {
+        const ImageColorMap* colorMap = getImageColorMap(index);
+        if (!colorMap) {
+          continue;
+        }
+        const bool selected = index == metricParams.m_colorMapIndex;
+        if (ImGui::Selectable(colorMap->name().c_str(), selected)) {
+          metricParams.m_colorMapIndex = index;
+          updateMetricUniforms();
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", colorMap->description().c_str());
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    bool inverted = metricParams.m_invertCmap;
+    if (ImGui::Checkbox("Invert", &inverted)) {
+      metricParams.m_invertCmap = inverted;
+      updateMetricUniforms();
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Reverse the selected metric color map");
+    }
+    return;
+  }
 
   /*
   // Metric masking:
@@ -464,17 +499,24 @@ bool renderLocalNccSettings(
   RenderData& renderData,
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
-  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  const bool showSectionHeader = true,
+  const bool useCompactColorMapControl = false)
 {
-  if (!ImGui::CollapsingHeader("Local Normalized Cross-Correlation Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (
+    showSectionHeader &&
+    !ImGui::CollapsingHeader("Local Normalized Cross-Correlation Metric", ImGuiTreeNodeFlags_DefaultOpen))
+  {
     return false;
   }
 
-  disabledTextWrapped(
-    "Local NCC compares the pattern of intensities inside a small patch, so it can show agreement even when image "
-    "intensities differ by scale or offset. Higher correlation means better local agreement; dissimilarity converts "
-    "poor agreement into brighter mismatch values.");
-  ImGui::Spacing();
+  if (showSectionHeader) {
+    disabledTextWrapped(
+      "Local NCC compares the pattern of intensities inside a small patch, so it can show agreement even when image "
+      "intensities differ by scale or offset. Higher correlation means better local agreement; dissimilarity converts "
+      "poor agreement into brighter mismatch values.");
+    ImGui::Spacing();
+  }
 
   const RenderData::LocalNccPresentation presentation = renderData.m_localNccPresentation;
   if (ImGui::RadioButton("Dissimilarity", RenderData::LocalNccPresentation::Dissimilarity == presentation)) {
@@ -496,7 +538,8 @@ bool renderLocalNccSettings(
     updateMetricUniforms,
     getNumImageColorMaps,
     getImageColorMap,
-    showWindowAsSignedCorrelation);
+    showWindowAsSignedCorrelation,
+    useCompactColorMapControl);
 
   ImGui::Spacing();
 
@@ -571,17 +614,21 @@ bool renderLocalLinearResidualSettings(
   RenderData& renderData,
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
-  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  const bool showSectionHeader = true,
+  const bool useCompactColorMapControl = false)
 {
-  if (!ImGui::CollapsingHeader("Local Linear Residual Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (showSectionHeader && !ImGui::CollapsingHeader("Local Linear Residual Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
     return false;
   }
 
-  disabledTextWrapped(
-    "Local linear residual fits 'moving = a * fixed +b' inside each local patch and displays the remaining residual "
-    "error. Low values mean the images match after local gain and bias correction; the fitted a and b coefficients "
-    "are used internally and are not displayed by this residual map.");
-  ImGui::Spacing();
+  if (showSectionHeader) {
+    disabledTextWrapped(
+      "Local linear residual fits 'moving = a * fixed +b' inside each local patch and displays the remaining residual "
+      "error. Low values mean the images match after local gain and bias correction; the fitted a and b coefficients "
+      "are used internally and are not displayed by this residual map.");
+    ImGui::Spacing();
+  }
 
   renderMetricSettingsPanel(
     renderData.m_localLinearResidualParams,
@@ -589,7 +636,9 @@ bool renderLocalLinearResidualSettings(
     "localLinearResidual",
     updateMetricUniforms,
     getNumImageColorMaps,
-    getImageColorMap);
+    getImageColorMap,
+    false,
+    useCompactColorMapControl);
 
   ImGui::Spacing();
 
@@ -3000,6 +3049,158 @@ float settingsNavigationAutoWidth()
   return width + (2.0f * style.FramePadding.x) + (2.0f * style.WindowPadding.x);
 }
 
+void renderComparisonModeQuickSettings(
+  const ViewRenderMode renderMode,
+  AppData& appData,
+  const std::function<std::size_t(void)>& getNumImageColorMaps,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  const std::function<void(void)>& updateMetricUniforms)
+{
+  RenderData& renderData = appData.renderData();
+  const auto refreshMetricUniforms = [&updateMetricUniforms]() {
+    if (updateMetricUniforms) {
+      updateMetricUniforms();
+    }
+  };
+
+  ImGui::PushID("comparisonModeQuickSettings");
+  ImGui::PushItemWidth(220.0f);
+
+  switch (renderMode) {
+    case ViewRenderMode::Checkerboard: {
+      int numSquares = renderData.m_numCheckerboardSquares;
+      if (ImGui::InputInt("Number of checkers", &numSquares) && 2 <= numSquares && numSquares <= 2048) {
+        renderData.m_numCheckerboardSquares = numSquares;
+      }
+      ImGui::SameLine();
+      helpMarker("Number of squares along the longest view dimension");
+      break;
+    }
+    case ViewRenderMode::Quadrants: {
+      const glm::ivec2 quadrants = renderData.m_quadrants;
+      if (ImGui::RadioButton("Split X", quadrants.x && !quadrants.y)) {
+        renderData.m_quadrants = glm::ivec2{true, false};
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Split Y", !quadrants.x && quadrants.y)) {
+        renderData.m_quadrants = glm::ivec2{false, true};
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Split X and Y", quadrants.x && quadrants.y)) {
+        renderData.m_quadrants = glm::ivec2{true, true};
+      }
+      ImGui::SameLine();
+      helpMarker("Alternate the compared images across columns, rows, or all four quadrants");
+      break;
+    }
+    case ViewRenderMode::Flashlight: {
+      int radiusPercent = static_cast<int>(100.0f * renderData.m_flashlightRadius);
+      constexpr int k_minRadiusPercent = 1;
+      constexpr int k_maxRadiusPercent = 100;
+      if (ImGui::SliderScalar(
+            "Circle size",
+            ImGuiDataType_S32,
+            &radiusPercent,
+            &k_minRadiusPercent,
+            &k_maxRadiusPercent,
+            "%d%%"))
+      {
+        renderData.m_flashlightRadius = static_cast<float>(radiusPercent) / 100.0f;
+      }
+      ImGui::SameLine();
+      helpMarker("Diameter of the comparison circle as a percentage of the view size");
+
+      if (ImGui::RadioButton("Overlay moving image", renderData.m_flashlightOverlays)) {
+        renderData.m_flashlightOverlays = true;
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Blend the moving image over the fixed image inside the flashlight");
+      }
+      if (ImGui::RadioButton("Replace with moving image", !renderData.m_flashlightOverlays)) {
+        renderData.m_flashlightOverlays = false;
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Replace the fixed image with the moving image inside the flashlight");
+      }
+      break;
+    }
+    case ViewRenderMode::Overlay: {
+      if (ImGui::RadioButton("Red, green, yellow", !renderData.m_overlayMagentaCyan)) {
+        renderData.m_overlayMagentaCyan = false;
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Show the images in red and green, with overlap in yellow");
+      }
+      if (ImGui::RadioButton("Cyan, magenta, white", renderData.m_overlayMagentaCyan)) {
+        renderData.m_overlayMagentaCyan = true;
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Show the images in cyan and magenta, with overlap in white");
+      }
+      break;
+    }
+    case ViewRenderMode::Difference: {
+      if (ImGui::RadioButton("Absolute", !renderData.m_useSquare)) {
+        renderData.m_useSquare = false;
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Squared", renderData.m_useSquare)) {
+        renderData.m_useSquare = true;
+      }
+      ImGui::SameLine();
+      helpMarker("Compute absolute or squared intensity difference");
+      renderMetricSettingsPanel(
+        renderData.m_squaredDifferenceParams,
+        appData.guiData().m_showDifferenceColormapWindow,
+        "quickDifference",
+        refreshMetricUniforms,
+        getNumImageColorMaps,
+        getImageColorMap,
+        false,
+        true);
+      break;
+    }
+    case ViewRenderMode::LocalNcc:
+      renderLocalNccSettings(
+        appData,
+        renderData,
+        refreshMetricUniforms,
+        getNumImageColorMaps,
+        getImageColorMap,
+        false,
+        true);
+      break;
+    case ViewRenderMode::LocalLinearResidual:
+      renderLocalLinearResidualSettings(
+        appData,
+        renderData,
+        refreshMetricUniforms,
+        getNumImageColorMaps,
+        getImageColorMap,
+        false,
+        true);
+      break;
+    case ViewRenderMode::JointHistogram:
+      renderMetricSettingsPanel(
+        renderData.m_jointHistogramParams,
+        appData.guiData().m_showJointHistogramColormapWindow,
+        "quickJointHistogram",
+        refreshMetricUniforms,
+        getNumImageColorMaps,
+        getImageColorMap,
+        false,
+        true);
+      break;
+    case ViewRenderMode::Image:
+    case ViewRenderMode::Disabled:
+    case ViewRenderMode::NumElements:
+      break;
+  }
+
+  ImGui::PopItemWidth();
+  ImGui::PopID();
+}
+
 /**
  * @brief Render the selected settings page.
  * @param page Settings page to render.
@@ -3109,6 +3310,10 @@ void renderSettingsWindow(
 
   const bool settingsDirty = appData.guiData().m_appSettingsDirty;
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
+  if (appData.guiData().m_suppressSettingsFocusOnNextAppearance) {
+    windowFlags |= ImGuiWindowFlags_NoFocusOnAppearing;
+    appData.guiData().m_suppressSettingsFocusOnNextAppearance = false;
+  }
   if (settingsDirty) {
     windowFlags |= ImGuiWindowFlags_UnsavedDocument;
   }

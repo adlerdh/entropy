@@ -16,6 +16,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   spec.m_isLightbox = true;
   spec.m_viewType = 1;
   spec.m_renderMode = 2;
+  spec.m_threeDSceneContents = {ThreeDSceneContent::Isosurfaces};
   spec.m_intensityProjectionMode = 3;
   spec.m_preferredDefaultRenderedImages = {0, 2};
   spec.m_defaultRenderAllImages = false;
@@ -30,6 +31,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   first.m_height = 2.0f;
   first.m_viewType = 0;
   first.m_renderMode = 1;
+  first.m_threeDSceneContents = {};
   first.m_intensityProjectionMode = 2;
   first.m_offsetMode = 1;
   first.m_absoluteOffset = 4.5f;
@@ -88,6 +90,7 @@ void requireSame(const layout::ViewSpec& actual, const layout::ViewSpec& expecte
   REQUIRE(actual.m_height == expected.m_height);
   REQUIRE(actual.m_viewType == expected.m_viewType);
   REQUIRE(actual.m_renderMode == expected.m_renderMode);
+  REQUIRE(actual.m_threeDSceneContents == expected.m_threeDSceneContents);
   REQUIRE(actual.m_intensityProjectionMode == expected.m_intensityProjectionMode);
   REQUIRE(actual.m_offsetMode == expected.m_offsetMode);
   REQUIRE(actual.m_absoluteOffset == expected.m_absoluteOffset);
@@ -117,6 +120,7 @@ void requireSame(const layout::LayoutSpec& actual, const layout::LayoutSpec& exp
   REQUIRE(actual.m_isLightbox == expected.m_isLightbox);
   REQUIRE(actual.m_viewType == expected.m_viewType);
   REQUIRE(actual.m_renderMode == expected.m_renderMode);
+  REQUIRE(actual.m_threeDSceneContents == expected.m_threeDSceneContents);
   REQUIRE(actual.m_intensityProjectionMode == expected.m_intensityProjectionMode);
   REQUIRE(actual.m_preferredDefaultRenderedImages == expected.m_preferredDefaultRenderedImages);
   REQUIRE(actual.m_defaultRenderAllImages == expected.m_defaultRenderAllImages);
@@ -150,54 +154,59 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
   CHECK(json.at("displayName") == "Custom review");
   CHECK(json.at("viewType") == "coronal");
   CHECK(json.at("renderMode") == "quadrants");
+  CHECK(json.at("threeD").at("sceneContents") == nlohmann::json::array({"isosurfaces"}));
   CHECK(json.at("intensityProjectionMode") == "minimum");
   CHECK_FALSE(json.at("views").at(0).contains("viewType"));
   CHECK(json.at("views").at(0).at("offset").at("mode") == "relativeToImageScrolls");
   CHECK(json.at("views").at(0).at("threeD").at("projection") == "orthographic");
+  CHECK(json.at("views").at(0).at("threeD").at("sceneContents") == nlohmann::json::array());
   CHECK(json.at("views").at(0).at("threeD").at("orbitTarget") == "crosshairs");
   CHECK(json.at("views").at(0).at("threeD").at("imagePlanesVisible") == false);
   CHECK_FALSE(json.at("views").at(1).at("offset").contains("mode"));
 }
 
-TEST_CASE("layout spec JSON supports segmentation mesh render mode", "[layout][serialization]")
+TEST_CASE("layout spec JSON serializes 3D scene contents as an independent set", "[layout][serialization]")
 {
   layout::ViewSpec view;
-  view.m_renderMode = static_cast<int>(ViewRenderMode::SegmentationMesh);
+  view.m_threeDSceneContents = {ThreeDSceneContent::Segmentations};
 
   const nlohmann::json json = view;
-  CHECK(json.at("renderMode") == "segmentationMesh");
+  CHECK_FALSE(json.contains("renderMode"));
+  CHECK(json.at("threeD").at("sceneContents") == nlohmann::json::array({"segmentations"}));
 
   const layout::ViewSpec restored = json.get<layout::ViewSpec>();
-  CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::SegmentationMesh));
+  CHECK(restored.m_threeDSceneContents == ThreeDSceneContents{ThreeDSceneContent::Segmentations});
 }
 
-TEST_CASE("layout spec JSON supports isosurface render mode", "[layout][serialization]")
+TEST_CASE(
+  "layout spec JSON omits default 3D scene contents and preserves an explicit empty set",
+  "[layout][serialization]")
 {
-  layout::ViewSpec view;
-  view.m_renderMode = static_cast<int>(ViewRenderMode::Isosurfaces);
+  const nlohmann::json defaultJson = layout::ViewSpec{};
+  CHECK_FALSE(defaultJson.contains("threeD"));
 
-  const nlohmann::json json = view;
-  CHECK(json.at("renderMode") == "isosurfaces");
-
-  const layout::ViewSpec restored = json.get<layout::ViewSpec>();
-  CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::Isosurfaces));
-
-  nlohmann::json legacyJson = json;
-  legacyJson["renderMode"] = "volumeRender";
-  const layout::ViewSpec restoredLegacy = legacyJson.get<layout::ViewSpec>();
-  CHECK(restoredLegacy.m_renderMode == static_cast<int>(ViewRenderMode::Isosurfaces));
+  layout::ViewSpec empty;
+  empty.m_threeDSceneContents.clear();
+  const nlohmann::json emptyJson = empty;
+  CHECK(emptyJson.at("threeD").at("sceneContents") == nlohmann::json::array());
+  CHECK(emptyJson.get<layout::ViewSpec>().m_threeDSceneContents.empty());
 }
 
-TEST_CASE("layout spec JSON supports combined 3D render mode", "[layout][serialization]")
+TEST_CASE("layout spec JSON rejects legacy 3D render-mode values", "[layout][serialization]")
 {
-  layout::ViewSpec view;
-  view.m_renderMode = static_cast<int>(ViewRenderMode::SegmentationAndIsosurfaces);
+  for (const char* legacyMode : {"volumeRender", "isosurfaces", "segmentationMesh", "both"}) {
+    const nlohmann::json json{{"renderMode", legacyMode}};
+    CHECK_THROWS_AS(json.get<layout::ViewSpec>(), nlohmann::json::type_error);
+  }
 
-  const nlohmann::json json = view;
-  CHECK(json.at("renderMode") == "both");
+  const nlohmann::json legacyNumericJson{{"renderMode", 7}};
+  CHECK_THROWS_AS(legacyNumericJson.get<layout::ViewSpec>(), nlohmann::json::type_error);
+}
 
-  const layout::ViewSpec restored = json.get<layout::ViewSpec>();
-  CHECK(restored.m_renderMode == static_cast<int>(ViewRenderMode::SegmentationAndIsosurfaces));
+TEST_CASE("layout spec JSON rejects unknown 3D scene-content values", "[layout][serialization]")
+{
+  const nlohmann::json json{{"threeD", {{"sceneContents", {"segmentations", "diskMeshes"}}}}};
+  CHECK_THROWS_AS(json.get<layout::ViewSpec>(), nlohmann::json::type_error);
 }
 
 TEST_CASE("layout spec JSON writes compact regular grids without expanded views", "[layout][serialization]")

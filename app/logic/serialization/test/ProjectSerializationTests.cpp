@@ -948,6 +948,7 @@ TEST_CASE(
   layout::LayoutSpec layout;
   layout.m_displayName = "Review";
   layout.m_kind = 3;
+  layout.m_threeDSceneContents = {ThreeDSceneContent::Segmentations};
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = imageFile;
@@ -962,6 +963,8 @@ TEST_CASE(
   REQUIRE(serialized.at("layouts").at("embedded").is_array());
   REQUIRE(serialized.at("layouts").at("embedded").size() == 1);
   CHECK(serialized.at("layouts").at("embedded").at(0).at("displayName") == "Review");
+  CHECK(
+    serialized.at("layouts").at("embedded").at(0).at("threeD").at("sceneContents") == json::array({"segmentations"}));
   CHECK(serialized.at("layouts").at("current") == 1);
   CHECK_FALSE(serialized.contains("currentLayout"));
   CHECK_FALSE(serialized.contains("currentLayoutIndex"));
@@ -970,6 +973,7 @@ TEST_CASE(
   CHECK_FALSE(loaded.m_layoutsFileName);
   REQUIRE(loaded.m_layouts.size() == 1);
   CHECK(loaded.m_layouts.front().m_displayName == "Review");
+  CHECK(loaded.m_layouts.front().m_threeDSceneContents == ThreeDSceneContents{ThreeDSceneContent::Segmentations});
   REQUIRE(loaded.m_currentLayoutIndex);
   CHECK(*loaded.m_currentLayoutIndex == 1);
 }

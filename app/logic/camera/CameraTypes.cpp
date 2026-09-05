@@ -12,7 +12,7 @@ std::string typeString(const ProjectionType& projectionType)
   return "Unknown";
 }
 
-ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
+ShaderGroup getTwoDShaderGroup(const ViewRenderMode& renderMode)
 {
   switch (renderMode) {
     case ViewRenderMode::Image:
@@ -28,15 +28,6 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
     case ViewRenderMode::LocalLinearResidual:
     case ViewRenderMode::JointHistogram: {
       return ShaderGroup::Metric;
-    }
-
-    case ViewRenderMode::Isosurfaces: {
-      return ShaderGroup::Volume;
-    }
-
-    case ViewRenderMode::SegmentationMesh:
-    case ViewRenderMode::SegmentationAndIsosurfaces: {
-      return ShaderGroup::Mesh;
     }
 
     case ViewRenderMode::Disabled:

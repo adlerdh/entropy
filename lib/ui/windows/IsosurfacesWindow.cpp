@@ -23,7 +23,10 @@ void renderIsosurfacesWindow(
   setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(300.0f), ui::scaledPixel(240.0f));
   ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(380.0f, 480.0f), ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
-  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow))) {
+  const bool suppressFocus = appData.guiData().m_suppressIsosurfacesFocusOnNextAppearance;
+  appData.guiData().m_suppressIsosurfacesFocusOnNextAppearance = false;
+  const ImGuiWindowFlags windowFlags = suppressFocus ? ImGuiWindowFlags_NoFocusOnAppearing : ImGuiWindowFlags_None;
+  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), windowFlags)) {
     std::size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
     const std::size_t visibleImageCount =

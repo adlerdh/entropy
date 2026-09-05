@@ -280,9 +280,10 @@ void renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, co
 void renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXhairs);
 
 /**
- * @brief Render the volume/raycast mode for one 3D view.
+ * @brief Render image isosurfaces for one 3D view, using meshes and a transient raycast when needed.
+ * @return True when any isosurface scene content was rendered.
  */
-void renderVolumeImagesForView(const View& view, bool interactiveOverlay = false);
+bool renderVolumeImagesForView(const View& view, bool interactiveOverlay = false);
 
 /**
  * @brief Apply completed background mesh extraction jobs to the CPU mesh cache.
@@ -363,11 +364,12 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> collectMeshImagePlaneRend
   std::vector<rendering::mesh::MeshRenderable>& borderRenderables);
 
 /**
- * @brief Render enabled orthogonal image planes through the current 3D crosshairs position.
+ * @brief Render enabled image planes and the crosshairs glyph as one correctly composited 3D scene.
  *
- * @param view 3D view receiving the image planes.
+ * @param view 3D view receiving the scene.
+ * @return True when at least one plane, border, or crosshairs glyph was rendered.
  */
-void renderMeshImagePlanesForView(const View& view);
+bool renderMeshImagePlanesAndCrosshairsForView(const View& view);
 
 /**
  * @brief Return project-wide world-space mesh clipping planes enabled for the current renderer state.

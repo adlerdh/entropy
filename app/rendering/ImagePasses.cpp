@@ -105,7 +105,32 @@ void Rendering::renderAllImagesForView(
 {
   const RenderData& R = m_appData.renderData();
 
-  switch (getShaderGroup(view.renderMode())) {
+  if (ViewType::ThreeD == view.viewType()) {
+    clearMeshViewBackgroundForView(view);
+
+    const ThreeDSceneContents& contents = view.threeDSceneContents();
+    const bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
+    const bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
+    bool renderedSurface = false;
+
+    if (renderSegmentations && renderIsosurfaces) {
+      renderedSurface = renderCombinedSurfaceMeshesForView(view);
+    }
+    else if (renderIsosurfaces) {
+      renderedSurface = renderVolumeImagesForView(view);
+    }
+    else if (renderSegmentations) {
+      renderedSurface = renderSegmentationMeshesForView(view);
+    }
+
+    if (!renderedSurface) {
+      renderMeshImagePlanesAndCrosshairsForView(view);
+    }
+    renderMeshLandmarksForView(view);
+    return;
+  }
+
+  switch (getTwoDShaderGroup(view.renderMode())) {
     case ShaderGroup::Image: {
       CurrentImages imageSegPairs;
       CurrentImages sourceImages;
@@ -251,28 +276,6 @@ void Rendering::renderAllImagesForView(
 
     case ShaderGroup::Metric: {
       renderMetricImagesForView(view, worldOffsetXhairs);
-      break;
-    }
-
-    case ShaderGroup::Volume: {
-      clearMeshViewBackgroundForView(view);
-      renderVolumeImagesForView(view);
-      break;
-    }
-
-    case ShaderGroup::Mesh: {
-      clearMeshViewBackgroundForView(view);
-      bool renderedSurface = false;
-      if (ViewRenderMode::SegmentationAndIsosurfaces == view.renderMode()) {
-        renderedSurface = renderCombinedSurfaceMeshesForView(view);
-      }
-      else if (rendersSegmentations(view.renderMode())) {
-        renderedSurface = renderSegmentationMeshesForView(view);
-      }
-      if (!renderedSurface) {
-        renderMeshCrosshairsForView(view);
-      }
-      renderMeshLandmarksForView(view);
       break;
     }
 

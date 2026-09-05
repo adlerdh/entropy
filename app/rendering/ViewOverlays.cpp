@@ -30,7 +30,7 @@ using namespace uuids;
 
 bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
 {
-  if (ViewType::ThreeD != view.viewType()) {
+  if (ViewType::ThreeD != view.viewType() || !view.threeDSceneContents().contains(ThreeDSceneContent::Isosurfaces)) {
     return false;
   }
 
@@ -64,12 +64,12 @@ bool canDrawFrustumForThreeDView(const View& view)
   // A 3D camera exists independently of the current surface-rendering path. Image planes, segmentation meshes, and
   // an otherwise empty 3D view must all remain valid frustum sources; requiring a visible isosurface made the setting
   // appear broken whenever no isosurface mesh was present.
-  return ViewType::ThreeD == view.viewType() && ViewRenderMode::Disabled != view.renderMode();
+  return ViewType::ThreeD == view.viewType();
 }
 
 bool suppressTwoDVectorOverlays(const View& view)
 {
-  return is3dRenderMode(view.renderMode()) && ViewRenderMode::Disabled != view.renderMode();
+  return ViewType::ThreeD == view.viewType();
 }
 
 const View* activeThreeDFrustumSource(const AppData& appData)
@@ -192,7 +192,7 @@ void Rendering::renderVectorOverlays()
       data::computeViewOffsetDistance(m_appData, view->offsetSetting(), worldViewFront) * worldViewFront;
 
     // Do not render vector overlays when view is disabled
-    if (m_showOverlays && ViewRenderMode::Disabled != view->renderMode()) {
+    if (m_showOverlays && (ViewType::ThreeD == view->viewType() || ViewRenderMode::Disabled != view->renderMode())) {
       // Label positions are based on the reference image transform (world_T_refSubject)
       const auto labelPosInfo_forLabels = math::computeAnatomicalLabelPosInfo(
         miewportViewBounds,

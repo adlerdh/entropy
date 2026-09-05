@@ -4,6 +4,7 @@
 #include "viewer/FrameViewport.h"
 #include "viewer/ImageSelection.h"
 #include "viewer/LayoutTypes.h"
+#include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
 
@@ -20,5 +21,6 @@ TEST_CASE("viewer public headers are self-contained")
   CHECK(LayoutKind::Custom == LayoutKind::Custom);
   CHECK(ViewType::Axial == ViewType::Axial);
   CHECK(ViewRenderMode::Image == ViewRenderMode::Image);
+  CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Isosurfaces));
   CHECK(IntensityProjectionMode::None == IntensityProjectionMode::None);
 }

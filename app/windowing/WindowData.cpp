@@ -253,7 +253,7 @@ Layout createFourUpLayout(
       glm::vec4{-1.0f, -1.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::ThreeD,
-      ViewRenderMode::SegmentationAndIsosurfaces,
+      ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
       viewConvention,
@@ -2078,6 +2078,7 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewU
   }
 
   const auto renderedImages = referenceView->renderedImages();
+  const auto volumeRenderedImages = referenceView->volumeRenderedImages();
   const auto metricImages = referenceView->metricImages();
 
   for (const auto& viewUid : currentViewUids()) {
@@ -2087,11 +2088,12 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewU
     }
 
     view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
+    view->setVolumeRenderedImages(volumeRenderedImages);
     view->setMetricImages(metricImages);
   }
 }
 
-void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& referenceViewUid)
+void WindowData::applyViewRenderingAndProjectionToAllCurrentViews(const uuid& referenceViewUid)
 {
   const View* referenceView = getCurrentView(referenceViewUid);
   if (!referenceView) {
@@ -2099,6 +2101,7 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& r
   }
 
   const auto renderMode = referenceView->renderMode();
+  const auto threeDSceneContents = referenceView->threeDSceneContents();
   const auto ipMode = referenceView->intensityProjectionMode();
 
   for (const auto& viewUid : currentViewUids()) {
@@ -2108,6 +2111,7 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& r
     }
 
     view->setRenderMode(renderMode);
+    view->setThreeDSceneContents(threeDSceneContents);
     view->setIntensityProjectionMode(ipMode);
   }
 }

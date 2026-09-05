@@ -511,17 +511,17 @@ public:
   uuid_range_t cameraSyncGroupViewUids(CameraSyncMode mode, const uuid& syncGroupUid) const;
 
   /**
-   * @brief Apply one view's image selection to all views in the current layout
+   * @brief Apply one view's 2D, 3D, and comparison image selections to all views in the current layout
    * @param referenceViewUid UID of the view whose image selection should be copied
    * @throw Propagates exceptions from selection storage
    */
   void applyImageSelectionToAllCurrentViews(const uuid& referenceViewUid);
 
   /**
-   * @brief Apply one view's render and projection modes to the current layout
+   * @brief Apply one view's 2D mode, 3D scene contents, and projection mode to the current layout
    * @param referenceViewUid UID of the view whose modes should be copied
    */
-  void applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& referenceViewUid);
+  void applyViewRenderingAndProjectionToAllCurrentViews(const uuid& referenceViewUid);
 
   /**
    * @brief Find current-layout views with a matching or opposite normal

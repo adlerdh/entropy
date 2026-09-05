@@ -27,7 +27,7 @@ getViewHit(AppData& appData, const glm::vec2& windowPos, const std::optional<uui
     return std::nullopt; // Invalid view
   }
 
-  if (ViewRenderMode::Disabled == hit.view->renderMode()) {
+  if (ViewType::ThreeD != hit.view->viewType() && ViewRenderMode::Disabled == hit.view->renderMode()) {
     return std::nullopt;
   }
 

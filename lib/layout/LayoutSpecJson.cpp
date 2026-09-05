@@ -5,6 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -82,14 +83,59 @@ const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
     {ViewRenderMode::Overlay, "overlay"},
     {ViewRenderMode::Difference, "difference"},
     {ViewRenderMode::JointHistogram, "jointHistogram"},
-    {ViewRenderMode::Isosurfaces, "isosurfaces"},
-    {ViewRenderMode::Isosurfaces, "volumeRender"}, // Legacy read-only alias
-    {ViewRenderMode::Disabled, "disabled"},
     {ViewRenderMode::LocalNcc, "localNcc"},
     {ViewRenderMode::LocalLinearResidual, "localLinearResidual"},
-    {ViewRenderMode::SegmentationMesh, "segmentationMesh"},
-    {ViewRenderMode::SegmentationAndIsosurfaces, "both"}};
+    {ViewRenderMode::Disabled, "disabled"}};
   return names;
+}
+
+int renderModeFromJson(const nlohmann::json& j)
+{
+  // Render-mode persistence was deliberately replaced when 3D scene contents became an independent set. Accept
+  // only the canonical named 2D representation so old numeric 3D ordinals cannot silently become unrelated 2D modes.
+  if (!j.is_string()) {
+    throw nlohmann::json::type_error::create(302, "render mode must be a named 2D mode", &j);
+  }
+  return enumValueFromJson(j, renderModeNames());
+}
+
+const std::vector<std::pair<ThreeDSceneContent, const char*>>& threeDSceneContentNames()
+{
+  static const std::vector<std::pair<ThreeDSceneContent, const char*>> names{
+    {ThreeDSceneContent::Segmentations, "segmentations"},
+    {ThreeDSceneContent::Isosurfaces, "isosurfaces"}};
+  return names;
+}
+
+nlohmann::json threeDSceneContentsToJson(const ThreeDSceneContents& contents)
+{
+  nlohmann::json result = nlohmann::json::array();
+  for (const auto& [content, name] : threeDSceneContentNames()) {
+    if (contents.contains(content)) {
+      result.push_back(name);
+    }
+  }
+  return result;
+}
+
+ThreeDSceneContents threeDSceneContentsFromJson(const nlohmann::json& j)
+{
+  if (!j.is_array()) {
+    throw nlohmann::json::type_error::create(302, "3D scene contents must be an array", &j);
+  }
+
+  ThreeDSceneContents contents;
+  for (const auto& value : j) {
+    const std::string name = value.get<std::string>();
+    const auto& names = threeDSceneContentNames();
+    const auto it =
+      std::find_if(names.begin(), names.end(), [&name](const auto& entry) { return name == entry.second; });
+    if (it == names.end()) {
+      throw nlohmann::json::type_error::create(302, "unsupported 3D scene content: " + name, &value);
+    }
+    contents.insert(it->first);
+  }
+  return contents;
 }
 
 const std::vector<std::pair<IntensityProjectionMode, const char*>>& intensityProjectionModeNames()
@@ -318,6 +364,11 @@ void to_json(nlohmann::json& j, const ViewSpec& view)
   nlohmann::json threeD = nlohmann::json::object();
   addIfChanged(
     threeD,
+    "sceneContents",
+    threeDSceneContentsToJson(view.m_threeDSceneContents),
+    threeDSceneContentsToJson(defaults.m_threeDSceneContents));
+  addIfChanged(
+    threeD,
     "projection",
     enumValueToJson(view.m_threeDProjectionType, threeDProjectionTypeNames()),
     enumValueToJson(defaults.m_threeDProjectionType, threeDProjectionTypeNames()));
@@ -361,7 +412,7 @@ void from_json(const nlohmann::json& j, ViewSpec& view)
     view.m_viewType = enumValueFromJson(j.at("viewType"), viewTypeNames());
   }
   if (j.count("renderMode")) {
-    view.m_renderMode = enumValueFromJson(j.at("renderMode"), renderModeNames());
+    view.m_renderMode = renderModeFromJson(j.at("renderMode"));
   }
   if (j.count("intensityProjectionMode")) {
     view.m_intensityProjectionMode = enumValueFromJson(j.at("intensityProjectionMode"), intensityProjectionModeNames());
@@ -422,6 +473,9 @@ void from_json(const nlohmann::json& j, ViewSpec& view)
   }
   if (j.count("threeD")) {
     const auto& t = j.at("threeD");
+    if (t.count("sceneContents")) {
+      view.m_threeDSceneContents = threeDSceneContentsFromJson(t.at("sceneContents"));
+    }
     if (t.count("projection")) {
       view.m_threeDProjectionType = enumValueFromJson(t.at("projection"), threeDProjectionTypeNames());
     }
@@ -471,6 +525,14 @@ void to_json(nlohmann::json& j, const LayoutSpec& layout)
     enumValueToJson(layout.m_intensityProjectionMode, intensityProjectionModeNames()),
     enumValueToJson(defaults.m_intensityProjectionMode, intensityProjectionModeNames()));
 
+  nlohmann::json threeD = nlohmann::json::object();
+  addIfChanged(
+    threeD,
+    "sceneContents",
+    threeDSceneContentsToJson(layout.m_threeDSceneContents),
+    threeDSceneContentsToJson(defaults.m_threeDSceneContents));
+  addIfNotEmpty(j, "threeD", std::move(threeD));
+
   nlohmann::json defaultImages = nlohmann::json::object();
   addIfChanged(
     defaultImages,
@@ -508,11 +570,17 @@ void from_json(const nlohmann::json& j, LayoutSpec& layout)
     layout.m_viewType = enumValueFromJson(j.at("viewType"), viewTypeNames());
   }
   if (j.count("renderMode")) {
-    layout.m_renderMode = enumValueFromJson(j.at("renderMode"), renderModeNames());
+    layout.m_renderMode = renderModeFromJson(j.at("renderMode"));
   }
   if (j.count("intensityProjectionMode")) {
     layout.m_intensityProjectionMode =
       enumValueFromJson(j.at("intensityProjectionMode"), intensityProjectionModeNames());
+  }
+  if (j.count("threeD")) {
+    const auto& threeD = j.at("threeD");
+    if (threeD.count("sceneContents")) {
+      layout.m_threeDSceneContents = threeDSceneContentsFromJson(threeD.at("sceneContents"));
+    }
   }
   if (j.count("defaultImages")) {
     const auto& defaultImages = j.at("defaultImages");

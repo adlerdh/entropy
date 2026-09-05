@@ -222,9 +222,8 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
 bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
 {
-  // The combined Seg + Iso mode is a mesh shader group, so it does not pass through the normal volume-rendering
-  // branch. Preserve the interactive contract explicitly: draw segmentation meshes, image planes, and crosshairs,
-  // then composite only the changing raycast surface over them with a transparent no-hit background.
+  // Draw all enabled surface categories, image planes, and crosshairs in one mesh scene, then composite only a
+  // changing isosurface's transient raycast over it with a transparent no-hit background.
   std::vector<rendering::mesh::MeshRenderable> renderables;
   const CurrentImages imageSegPairs = meshSceneImagesForView(view);
   const bool isosurfaceMeshesReady = renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);

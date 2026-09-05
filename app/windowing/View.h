@@ -68,20 +68,20 @@ public:
   const uuid& uid() const;
 
   /**
-   * @brief Set the view type and reconcile camera projection and render mode
+   * @brief Set the view type and reconcile camera projection
    * @param newViewType New view type
    * @throw Propagates exceptions from projection allocation
    */
   void setViewType(const ViewType& newViewType) override;
 
   /**
-   * @brief Set the render mode if compatible with the current view type
-   * @param renderMode Requested render mode
+   * @brief Set the 2D image render mode retained independently of the view type
+   * @param renderMode Requested 2D render mode
    */
   void setRenderMode(const ViewRenderMode& renderMode) override;
 
   /**
-   * @brief Reconcile the current and cached render modes with the loaded image count
+   * @brief Reconcile the 2D render mode with the loaded image count
    * @param imageCount Number of loaded images
    */
   void reconcileRenderModeForImageCount(std::size_t imageCount);
@@ -275,11 +275,6 @@ private:
   std::optional<glm::vec3> m_sliceCameraDefaultWorldCenter = std::nullopt;
   /** @brief Last default field of view for the dedicated 2D camera */
   std::optional<glm::vec3> m_sliceCameraDefaultWorldFov = std::nullopt;
-
-  /** @brief Most recently selected render mode for a 2D view type */
-  ViewRenderMode m_last2dRenderMode = ViewRenderMode::Image;
-  /** @brief Most recently selected render mode for the 3D view type */
-  ViewRenderMode m_last3dRenderMode = ViewRenderMode::SegmentationAndIsosurfaces;
 
   /** @brief Referenced application-level view convention */
   const ViewConvention& m_viewConvention;

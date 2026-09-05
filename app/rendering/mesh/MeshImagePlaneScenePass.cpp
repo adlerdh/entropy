@@ -273,11 +273,12 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
   return renderables;
 }
 
-void Rendering::renderMeshImagePlanesForView(const View& view)
+bool Rendering::renderMeshImagePlanesAndCrosshairsForView(const View& view)
 {
   std::vector<rendering::mesh::MeshRenderable> borderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
     collectMeshImagePlaneRenderablesForView(view, borderRenderables);
+  appendMeshCrosshairsRenderableForView(view, borderRenderables);
 
   rendering::mesh::MeshScene imagePlaneScene;
   imagePlaneScene.setImagePlaneRenderables(std::move(imagePlaneRenderables));
@@ -289,8 +290,9 @@ void Rendering::renderMeshImagePlanesForView(const View& view)
   const rendering::mesh::MeshRenderList borderList = rendering::mesh::buildRenderList(borderScene.renderables());
 
   if (imagePlaneList.imagePlanes.empty() && rendering::mesh::visibleRenderableCount(borderList) == 0u) {
-    return;
+    return false;
   }
 
   drawMeshRenderListForView(view, borderList, &imagePlaneList);
+  return true;
 }

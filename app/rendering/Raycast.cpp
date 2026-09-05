@@ -33,11 +33,11 @@ void Rendering::volumeRenderOneImage(
   setupOpenGLState();
 }
 
-void Rendering::renderVolumeImagesForView(const View& view, const bool interactiveOverlay)
+bool Rendering::renderVolumeImagesForView(const View& view, const bool interactiveOverlay)
 {
   const CurrentImages imageSegPairs = raycastImagesForView(view);
   if (imageSegPairs.empty() || !imageSegPairs.front().first) {
-    return;
+    return false;
   }
 
   const std::optional<ActiveIsosurfaceEdit> activeEdit = activeIsosurfaceEdit(imageSegPairs);
@@ -51,8 +51,7 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
     meshSceneWasRendered = true;
     if (allMeshesReady) {
       m_isosurfaceRaycastHandoff.reset();
-      renderMeshLandmarksForView(view);
-      return;
+      return true;
     }
   }
 
@@ -63,13 +62,13 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   const std::optional<uuid> onlyIsosurfaceUid =
     handoffSurface ? std::optional<uuid>{handoffSurface->isosurfaceUid} : std::nullopt;
   if (!imgSegPair.first) {
-    return;
+    return meshSceneWasRendered;
   }
 
   const Image* image = m_appData.image(*imgSegPair.first);
   if (!image) {
     spdlog::warn("Null image {} when raycasting", *imgSegPair.first);
-    return;
+    return meshSceneWasRendered;
   }
 
   const ImageSettings& settings = image->settings();
@@ -78,7 +77,7 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
 
   const auto isosurfaceUids = m_appData.isosurfaceUids(*imgSegPair.first, activeComp);
   if (isosurfaceUids.empty()) {
-    return;
+    return meshSceneWasRendered;
   }
 
   const auto deformationUid = activeRenderableDeformationUid(*imgSegPair.first);
@@ -148,4 +147,5 @@ void Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   unbindTextures(boundDefTextures);
   unbindTextures(boundImageTextures);
   unbindBufferTextures(boundSegBufferTextures);
+  return true;
 }

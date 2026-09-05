@@ -486,7 +486,7 @@ void Rendering::renderImageData()
     renderAllImagesForView(*view, miewportViewBounds, worldXhairsOffset);
     renderSyntheticMeshSceneForView(*view);
 
-    // Do not render landmarks and annotations in 3D render modes.
+    // Do not render 2D landmark and annotation overlays in 3D views.
     if (ViewType::ThreeD != view->viewType()) {
       if (renderLandmarksOnTop) {
         renderAllLandmarksForView(*view, miewportViewBounds, worldXhairsOffset);

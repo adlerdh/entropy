@@ -37,7 +37,11 @@ void Rendering::renderAllImageBordersForView(
     return;
   }
 
-  switch (getShaderGroup(view.renderMode())) {
+  if (ViewType::ThreeD == view.viewType()) {
+    return;
+  }
+
+  switch (getTwoDShaderGroup(view.renderMode())) {
     case ShaderGroup::Image: {
       const CurrentImages imageSegPairs = getImageAndSegUidsForImageShaders(view.renderedImages());
       for (const auto& imgSegPair : imageSegPairs) {
@@ -65,8 +69,6 @@ void Rendering::renderAllImageBordersForView(
       setupOpenGLState();
       break;
     }
-    case ShaderGroup::Volume:
-    case ShaderGroup::Mesh:
     case ShaderGroup::None:
     case ShaderGroup::NumElements:
       break;

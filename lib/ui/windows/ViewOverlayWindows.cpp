@@ -63,23 +63,34 @@ void renderPopupHeading(ImFont* font, const char* text)
   }
 }
 
-void renderThreeDRenderModeCheckboxes(
-  ViewRenderMode renderMode,
-  const std::function<void(const ViewRenderMode&)>& setRenderMode)
+void renderThreeDSceneContentCheckboxes(
+  ThreeDSceneContents contents,
+  const std::function<void(ThreeDSceneContents)>& setContents)
 {
-  bool renderSegmentations = rendersSegmentations(renderMode);
-  bool renderIsosurfaceSurfaces = rendersIsosurfaces(renderMode);
+  bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
+  bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
 
-  if (ImGui::Checkbox("Segmentations", &renderSegmentations) && setRenderMode) {
-    renderMode = threeDRenderMode(renderSegmentations, renderIsosurfaceSurfaces);
-    setRenderMode(renderMode);
+  if (ImGui::Checkbox("Segmentations", &renderSegmentations) && setContents) {
+    if (renderSegmentations) {
+      contents.insert(ThreeDSceneContent::Segmentations);
+    }
+    else {
+      contents.erase(ThreeDSceneContent::Segmentations);
+    }
+    setContents(contents);
   }
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Render visible segmentation labels as 3D surface meshes");
   }
 
-  if (ImGui::Checkbox("Isosurfaces", &renderIsosurfaceSurfaces) && setRenderMode) {
-    setRenderMode(threeDRenderMode(renderSegmentations, renderIsosurfaceSurfaces));
+  if (ImGui::Checkbox("Isosurfaces", &renderIsosurfaces) && setContents) {
+    if (renderIsosurfaces) {
+      contents.insert(ThreeDSceneContent::Isosurfaces);
+    }
+    else {
+      contents.erase(ThreeDSceneContent::Isosurfaces);
+    }
+    setContents(contents);
   }
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Render visible image isosurfaces in 3D");
@@ -214,12 +225,47 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
     }
 
     ImGui::Separator();
-    if (ImGui::Button(ICON_FK_COG " 3D settings...") && modes.openThreeDRenderingSettings) {
-      modes.openThreeDRenderingSettings();
-      ImGui::CloseCurrentPopup();
+    const ImVec4 activeButtonColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
+    const bool settingsVisible = modes.isThreeDRenderingSettingsVisible && modes.isThreeDRenderingSettingsVisible();
+    if (settingsVisible) {
+      ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
+    }
+    if (ImGui::Button(ICON_FK_COG " 3D Settings")) {
+      if (settingsVisible && modes.hideThreeDRenderingSettings) {
+        modes.hideThreeDRenderingSettings();
+      }
+      else if (modes.openThreeDRenderingSettings) {
+        modes.openThreeDRenderingSettings();
+      }
+    }
+    if (settingsVisible) {
+      ImGui::PopStyleColor();
     }
     if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("%s", "Open Application Settings directly to the 3D Rendering page");
+      ImGui::SetTooltip("%s", "Show or hide Application Settings on the 3D Rendering page");
+    }
+
+    ImGui::SameLine();
+    const bool isosurfacesPanelVisible = modes.isIsosurfacesPanelVisible && modes.isIsosurfacesPanelVisible();
+    if (isosurfacesPanelVisible) {
+      ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
+    }
+    if (ImGui::Button(ICON_FK_CUBE " Isosurfaces Panel")) {
+      if (isosurfacesPanelVisible && modes.hideIsosurfacesPanel) {
+        modes.hideIsosurfacesPanel();
+      }
+      else if (modes.showIsosurfacesPanelForRaycastImage) {
+        modes.showIsosurfacesPanelForRaycastImage();
+      }
+      else if (modes.showIsosurfacesPanel) {
+        modes.showIsosurfacesPanel();
+      }
+    }
+    if (isosurfacesPanelVisible) {
+      ImGui::PopStyleColor();
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("%s", "Show or hide the Isosurfaces Panel for the image rendered in this view");
     }
 
     ImGui::EndPopup();
@@ -262,11 +308,14 @@ void renderViewSettingsComboWindow(
 
   const ViewType& viewType = modes.viewType;
   const ViewRenderMode& renderMode = modes.renderMode;
+  const ThreeDSceneContents& threeDSceneContents = modes.threeDSceneContents;
   const IntensityProjectionMode& intensityProjMode = modes.intensityProjectionMode;
   const auto& setViewType = modes.setViewType;
   const auto& setRenderMode = modes.setRenderMode;
+  const auto& setThreeDSceneContents = modes.setThreeDSceneContents;
   const auto& setIntensityProjectionMode = modes.setIntensityProjectionMode;
-  const auto& applyImageSelectionAndShaderToAllViews = modes.applyImageSelectionAndShaderToAllViews;
+  const auto& renderComparisonModeSettings = modes.renderComparisonModeSettings;
+  const auto& applyImageSelectionAndRenderingToAllViews = modes.applyImageSelectionAndRenderingToAllViews;
 
   const auto& getIntensityProjectionSlabThickness = projection.getIntensityProjectionSlabThickness;
   const auto& setIntensityProjectionSlabThickness = projection.setIntensityProjectionSlabThickness;
@@ -279,8 +328,7 @@ void renderViewSettingsComboWindow(
   const auto& getXrayProjectionEnergy = projection.getXrayProjectionEnergy;
   const auto& setXrayProjectionEnergy = projection.setXrayProjectionEnergy;
 
-  const bool usesThreeDImageSelection =
-    ViewType::ThreeD == viewType && is3dRenderMode(renderMode) && ViewRenderMode::Disabled != renderMode;
+  const bool usesThreeDImageSelection = ViewType::ThreeD == viewType;
 
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -303,7 +351,8 @@ void renderViewSettingsComboWindow(
   {
     const char* label = nullptr;
 
-    label = view_overlay::usesDisabledVisibilityIcon(renderMode) ? ICON_FK_EYE_SLASH : ICON_FK_EYE;
+    label = ViewType::ThreeD != viewType && view_overlay::usesDisabledVisibilityIcon(renderMode) ? ICON_FK_EYE_SLASH
+                                                                                                 : ICON_FK_EYE;
 
     const ImVec2 viewTopLeftPos(
       viewFrameBounds.bounds.xoffset + sk_framePad.x,
@@ -333,7 +382,7 @@ void renderViewSettingsComboWindow(
     if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
       // Popup window with images to be rendered and their visibility:
       if (uiControls.m_hasImageComboBox && allowImageSelection) {
-        if (view_overlay::usesVisibleImageSelection(renderMode)) {
+        if (usesThreeDImageSelection || view_overlay::usesVisibleImageSelection(renderMode)) {
           // Image visibility:
           if (ImGui::Button(label)) {
             ImGui::OpenPopup("imageVisibilityPopup");
@@ -476,7 +525,7 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      // Shader type combo box:
+      // 2D render-mode or 3D scene-content combo box:
       if (uiControls.m_hasShaderTypeComboBox) {
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
@@ -485,13 +534,13 @@ void renderViewSettingsComboWindow(
           ViewType::ThreeD == viewType ? ImGuiComboFlags_None : ImGuiComboFlags_HeightLargest;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_popupWindowPadding);
         if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION, renderModeComboFlags)) {
-          renderPopupHeading(popupHeadingFont, "Render mode:");
+          renderPopupHeading(popupHeadingFont, ViewType::ThreeD == viewType ? "Scene contents:" : "Render mode:");
           ImGui::Spacing();
           auto renderSelectablesForRenderModes = [&renderMode,
                                                   &setRenderMode](const std::vector<ViewRenderMode>& renderModes) {
             for (const auto& st : renderModes) {
               const bool isSelected = (st == renderMode);
-              if (ImGui::Selectable(typeString(st).c_str(), isSelected)) {
+              if (ImGui::Selectable(typeString(st).c_str(), isSelected, ImGuiSelectableFlags_NoAutoClosePopups)) {
                 setRenderMode(st);
               }
 
@@ -506,7 +555,7 @@ void renderViewSettingsComboWindow(
           };
 
           if (ViewType::ThreeD == viewType) {
-            renderThreeDRenderModeCheckboxes(renderMode, setRenderMode);
+            renderThreeDSceneContentCheckboxes(threeDSceneContents, setThreeDSceneContents);
             ImGui::TextDisabled("Planes show images layered");
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
               ImGui::SetTooltip("%s", "3D image planes are always composited in image-stack order using Layers mode");
@@ -514,6 +563,12 @@ void renderViewSettingsComboWindow(
           }
           else {
             renderSelectablesForRenderModes(twoDRenderModesForImageCount(numImages));
+            if (isComparisonRenderMode(renderMode) && renderComparisonModeSettings) {
+              ImGui::Spacing();
+              ImGui::Separator();
+              ImGui::Spacing();
+              renderComparisonModeSettings(renderMode);
+            }
           }
 
           ImGui::EndCombo();
@@ -522,8 +577,13 @@ void renderViewSettingsComboWindow(
         ImGui::PopItemWidth();
 
         if (ImGui::IsItemHovered()) {
-          static const std::string sk_viewTypeString("Render mode: ");
-          ImGui::SetTooltip("%s", (sk_viewTypeString + descriptionString(renderMode)).c_str());
+          if (ViewType::ThreeD == viewType) {
+            ImGui::SetTooltip("%s", "Select the categories of objects rendered in this 3D scene");
+          }
+          else {
+            static const std::string sk_viewTypeString("Render mode: ");
+            ImGui::SetTooltip("%s", (sk_viewTypeString + descriptionString(renderMode)).c_str());
+          }
         }
       }
 
@@ -654,10 +714,13 @@ void renderViewSettingsComboWindow(
         ImGui::SameLine();
         if (ImGui::Button(ICON_FK_RSS)) {
           // Apply image and shader settings to all views in this layout
-          applyImageSelectionAndShaderToAllViews(viewOrLayoutUid);
+          applyImageSelectionAndRenderingToAllViews(viewOrLayoutUid);
         }
         if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Apply this view's image selection and render mode to all views in the layout");
+          ImGui::SetTooltip(
+            "%s",
+            "Apply this view's image selection, 2D render mode, 3D scene contents, and projection mode to all views in "
+            "the layout");
         }
       }
 
@@ -737,33 +800,6 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      if (ViewType::ThreeD == viewType && rendersIsosurfaces(renderMode) && modes.showIsosurfacesPanel) {
-        ImGui::SameLine();
-        const bool isosurfacesPanelVisible =
-          modes.isIsosurfacesPanelVisible ? modes.isIsosurfacesPanelVisible() : false;
-        const ImVec4 activeButtonColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
-        if (isosurfacesPanelVisible) {
-          ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
-        }
-        if (ImGui::Button(ICON_FK_CUBE)) {
-          if (isosurfacesPanelVisible && modes.hideIsosurfacesPanel) {
-            modes.hideIsosurfacesPanel();
-          }
-          else if (modes.showIsosurfacesPanelForRaycastImage) {
-            modes.showIsosurfacesPanelForRaycastImage();
-          }
-          else {
-            modes.showIsosurfacesPanel();
-          }
-        }
-        if (isosurfacesPanelVisible) {
-          ImGui::PopStyleColor();
-        }
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Show Isosurfaces Panel");
-        }
-      }
-
       // Text label of visible images:
       /// @todo Replace this with NanoVG text
       {
@@ -772,7 +808,7 @@ void renderViewSettingsComboWindow(
         std::vector<view_overlay::ImageChoice> choices;
         choices.reserve(numImages);
 
-        if (view_overlay::usesVisibleImageSelection(renderMode)) {
+        if (usesThreeDImageSelection || view_overlay::usesVisibleImageSelection(renderMode)) {
           for (std::size_t i = 0; i < numImages; ++i) {
             const auto displayAndFileName = getImageDisplayAndFileName(i);
             choices.push_back(
@@ -784,7 +820,7 @@ void renderViewSettingsComboWindow(
           }
           imageNamesText = view_overlay::selectedVisibleImageNames(choices);
         }
-        else if (ViewRenderMode::Disabled == renderMode) {
+        else if (ViewType::ThreeD != viewType && ViewRenderMode::Disabled == renderMode) {
           // render no text
           imageNamesText = "";
         }

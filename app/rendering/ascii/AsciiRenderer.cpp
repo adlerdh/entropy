@@ -1027,7 +1027,7 @@ void AsciiRenderer::render(
 
   // Overlays on top of ASCII composite
   for (const auto& vd : viewDataList) {
-    if (!rendersIsosurfaces(vd.view->renderMode())) {
+    if (ViewType::ThreeD != vd.view->viewType()) {
       drawImageBorders(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
       if (renderLandmarksOnTop) {
         drawLandmarks(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);

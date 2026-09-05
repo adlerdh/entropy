@@ -118,12 +118,6 @@ View::View(
   , m_clipPlaneDepth(0.0f)
   , m_anatomy_T_start(get_anatomy_T_start(windowing::initialSliceViewType(m_viewType)))
 {
-  if (ViewType::ThreeD == viewType && isRenderModeCompatibleWithViewType(viewType, renderMode)) {
-    m_last3dRenderMode = renderMode;
-  }
-  else if (ViewType::ThreeD != viewType && isRenderModeCompatibleWithViewType(viewType, renderMode)) {
-    m_last2dRenderMode = renderMode;
-  }
   m_camera.set_anatomy_T_start_provider([this]() {
     return windowing::sliceCameraTracksCrosshairs(m_viewType) ? get_anatomy_T_start(m_viewType) : m_anatomy_T_start;
   });
@@ -282,14 +276,6 @@ void View::setViewType(const ViewType& newViewType)
     m_projectionType = newProjType;
   }
 
-  if (wasThreeD) {
-    m_last3dRenderMode = m_renderMode;
-  }
-  else {
-    m_last2dRenderMode = m_renderMode;
-  }
-  ControlFrame::setRenderMode(ViewType::ThreeD == newViewType ? m_last3dRenderMode : m_last2dRenderMode);
-
   if (ViewType::Oblique == newViewType) {
     // Transitioning to an Oblique view type from an Orthogonal view type:
     // The new anatomy_T_start frame is set to the (old) Orthogonal view type's anatomy_T_start
@@ -325,29 +311,12 @@ void View::setViewType(const ViewType& newViewType)
 
 void View::setRenderMode(const ViewRenderMode& renderMode)
 {
-  if (isRenderModeCompatibleWithViewType(m_viewType, renderMode)) {
-    ControlFrame::setRenderMode(renderMode);
-    if (ViewType::ThreeD == m_viewType) {
-      m_last3dRenderMode = renderMode;
-    }
-    else {
-      m_last2dRenderMode = renderMode;
-    }
-    return;
-  }
-
-  ControlFrame::setRenderMode(ViewType::ThreeD == m_viewType ? m_last3dRenderMode : m_last2dRenderMode);
+  ControlFrame::setRenderMode(renderMode);
 }
 
 void View::reconcileRenderModeForImageCount(const std::size_t imageCount)
 {
-  const ViewRenderModeState state = reconcileRenderModeState(
-    m_viewType,
-    {.current = m_renderMode, .last2d = m_last2dRenderMode, .last3d = m_last3dRenderMode},
-    imageCount);
-  ControlFrame::setRenderMode(state.current);
-  m_last2dRenderMode = state.last2d;
-  m_last3dRenderMode = state.last3d;
+  ControlFrame::setRenderMode(reconcileRenderMode(m_renderMode, imageCount));
 }
 
 std::optional<uuid> View::cameraRotationSyncGroupUid() const

@@ -74,7 +74,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
   const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
   std::vector<rendering::mesh::MeshRenderable> renderables;
-  if (rendersIsosurfaces(view.renderMode())) {
+  if (view.threeDSceneContents().contains(ThreeDSceneContent::Isosurfaces)) {
     for (const ImgSegPair& imageSegPair : imageSegPairs) {
       if (!imageSegPair.first) {
         continue;
@@ -145,7 +145,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
     }
   }
-  if (rendersSegmentations(view.renderMode())) {
+  if (view.threeDSceneContents().contains(ThreeDSceneContent::Segmentations)) {
     for (const ImgSegPair& imageSegPair : imageSegPairs) {
       if (!imageSegPair.second) {
         continue;
@@ -223,7 +223,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
     }
   }
-  if (!rendersIsosurfaces(view.renderMode()) && !rendersSegmentations(view.renderMode())) {
+  if (view.threeDSceneContents().empty()) {
     return std::nullopt;
   }
 

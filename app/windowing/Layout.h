@@ -129,6 +129,12 @@ public:
    */
   void setRenderMode(const ViewRenderMode& renderMode) override;
 
+  /** @brief Set the layout's enabled 3D scene contents and propagate them to all child views. */
+  void setThreeDSceneContents(ThreeDSceneContents contents) override;
+
+  /** @brief Enable or disable one 3D scene-content category throughout the layout. */
+  void setThreeDSceneContentVisible(ThreeDSceneContent content, bool visible) override;
+
   /**
    * @brief Reconcile layout and child-view render modes with the loaded image count
    * @param imageCount Number of loaded images
@@ -269,11 +275,6 @@ private:
   LayoutKind m_kind = LayoutKind::Custom;
   /** @brief User-facing name for custom non-lightbox layouts */
   std::string m_displayName = "Custom";
-
-  /** @brief Most recently selected layout-level render mode for 2D views */
-  ViewRenderMode m_last2dRenderMode = ViewRenderMode::Image;
-  /** @brief Most recently selected layout-level render mode for 3D views */
-  ViewRenderMode m_last3dRenderMode = ViewRenderMode::SegmentationAndIsosurfaces;
 
   /** @brief Owned views keyed by UID */
   std::unordered_map<uuid, std::unique_ptr<View>> m_views;

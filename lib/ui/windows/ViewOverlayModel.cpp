@@ -5,12 +5,12 @@ namespace ui::view_overlay
 
 bool usesVisibleImageSelection(const ViewRenderMode renderMode)
 {
-  return ViewRenderMode::Image == renderMode || rendersIsosurfaces(renderMode) || rendersSegmentations(renderMode);
+  return ViewRenderMode::Image == renderMode;
 }
 
 bool usesMetricImageSelection(const ViewRenderMode renderMode)
 {
-  return ViewRenderMode::Disabled != renderMode && !usesVisibleImageSelection(renderMode);
+  return isComparisonRenderMode(renderMode);
 }
 
 bool usesDisabledVisibilityIcon(const ViewRenderMode renderMode)

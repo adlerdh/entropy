@@ -80,9 +80,9 @@ public:
   void setMetricImages(const std::list<uuids::uuid>& imageUids);
 
   /**
-   * @brief Return the image list used by the given render mode.
+   * @brief Return the image list used by the given 2D render mode.
    *
-   * @param renderMode Render mode that chooses rendered, metric, or empty selections.
+   * @param renderMode 2D render mode that chooses rendered, metric, or empty selections.
    * @return Selected image UIDs used by the render mode.
    */
   const std::list<uuids::uuid>& visibleImages(ViewRenderMode renderMode) const;

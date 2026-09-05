@@ -21,8 +21,6 @@ enum class ShaderGroup
 {
   Image,
   Metric,
-  Volume,
-  Mesh,
   None,
   NumElements
 };
@@ -35,8 +33,8 @@ enum class ShaderGroup
 std::string typeString(const ProjectionType& projectionType);
 
 /**
- * @brief Get the shader group for a view render mode
+ * @brief Get the 2D image shader group for a view render mode
  * @param[in] renderMode
  * @return Shader group
  */
-ShaderGroup getShaderGroup(const ViewRenderMode& renderMode);
+ShaderGroup getTwoDShaderGroup(const ViewRenderMode& renderMode);

@@ -85,39 +85,31 @@ void Layout::updateImageOrdering(const uuid_range_t& orderedImageUids)
 
 void Layout::setViewType(const ViewType& viewType)
 {
-  if (ViewType::ThreeD == m_viewType) {
-    m_last3dRenderMode = m_renderMode;
-  }
-  else {
-    m_last2dRenderMode = m_renderMode;
-  }
   ControlFrame::setViewType(viewType);
-  ControlFrame::setRenderMode(ViewType::ThreeD == viewType ? m_last3dRenderMode : m_last2dRenderMode);
   updateAllViewsInLayout();
 }
 
 void Layout::setRenderMode(const ViewRenderMode& renderMode)
 {
-  const ViewRenderMode reconciled = reconcileRenderModeForViewType(viewType(), renderMode);
-  ControlFrame::setRenderMode(reconciled);
-  if (ViewType::ThreeD == viewType()) {
-    m_last3dRenderMode = reconciled;
-  }
-  else {
-    m_last2dRenderMode = reconciled;
-  }
+  ControlFrame::setRenderMode(renderMode);
+  updateAllViewsInLayout();
+}
+
+void Layout::setThreeDSceneContents(ThreeDSceneContents contents)
+{
+  ControlFrame::setThreeDSceneContents(std::move(contents));
+  updateAllViewsInLayout();
+}
+
+void Layout::setThreeDSceneContentVisible(const ThreeDSceneContent content, const bool visible)
+{
+  ControlFrame::setThreeDSceneContentVisible(content, visible);
   updateAllViewsInLayout();
 }
 
 void Layout::reconcileRenderModeForImageCount(const std::size_t imageCount)
 {
-  const ViewRenderModeState state = reconcileRenderModeState(
-    m_viewType,
-    {.current = m_renderMode, .last2d = m_last2dRenderMode, .last3d = m_last3dRenderMode},
-    imageCount);
-  ControlFrame::setRenderMode(state.current);
-  m_last2dRenderMode = state.last2d;
-  m_last3dRenderMode = state.last3d;
+  ControlFrame::setRenderMode(reconcileRenderMode(m_renderMode, imageCount));
 
   for (auto& [viewUid, view] : m_views) {
     if (view) {
@@ -141,6 +133,7 @@ void Layout::updateAllViewsInLayout()
       view->setMetricImages(metricImages());
       view->setViewType(m_viewType);
       view->setRenderMode(m_renderMode);
+      view->setThreeDSceneContents(m_threeDSceneContents);
       view->setIntensityProjectionMode(m_intensityProjectionMode);
     }
   }

@@ -4163,9 +4163,9 @@ void ImGuiWrapper::render()
     }
   };
 
-  auto applyImageSelectionAndRenderModesToAllViews = [this](const uuids::uuid& viewUid) {
+  auto applyImageSelectionAndRenderingToAllViews = [this](const uuids::uuid& viewUid) {
     m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
-    m_appData.windowData().applyViewRenderModeAndProjectionToAllCurrentViews(viewUid);
+    m_appData.windowData().applyViewRenderingAndProjectionToAllCurrentViews(viewUid);
   };
 
   auto applyImageSelectionToAllViews = [this](const uuids::uuid& viewUid) {
@@ -4797,6 +4797,15 @@ void ImGuiWrapper::render()
   const char* const boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
   const auto boldFontIt = m_appData.guiData().m_fonts.find(boldFontPath);
   ImFont* const popupHeadingFont = boldFontIt != m_appData.guiData().m_fonts.end() ? boldFontIt->second : nullptr;
+  const auto renderComparisonModeSettings =
+    [this, &getNumImageColorMaps, &getImageColorMap](const ViewRenderMode renderMode) {
+      renderComparisonModeQuickSettings(
+        renderMode,
+        m_appData,
+        getNumImageColorMaps,
+        getImageColorMap,
+        m_updateMetricUniforms);
+    };
 
   if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
@@ -4816,9 +4825,7 @@ void ImGuiWrapper::render()
       m_appData.windowData().getContentScaleRatios(),
       popupHeadingFont};
 
-    const bool useThreeDImageSelection = ViewType::ThreeD == currentLayout.viewType() &&
-                                         is3dRenderMode(currentLayout.renderMode()) &&
-                                         ViewRenderMode::Disabled != currentLayout.renderMode();
+    const bool useThreeDImageSelection = ViewType::ThreeD == currentLayout.viewType();
     auto canImageBeVolumeRendered = [this](std::size_t index) {
       const auto imageUid = m_appData.imageUid(index);
       if (!imageUid) {
@@ -4866,26 +4873,39 @@ void ImGuiWrapper::render()
     const ViewOverlayModeCallbacks modeCallbacks{
       .viewType = currentLayout.viewType(),
       .renderMode = currentLayout.renderMode(),
+      .threeDSceneContents = currentLayout.threeDSceneContents(),
       .intensityProjectionMode = currentLayout.intensityProjectionMode(),
       .setViewType =
         [this](const ViewType& viewType) { m_appData.windowData().setCurrentLayoutViewType(m_appData, viewType); },
       .setRenderMode =
         [&currentLayout](const ViewRenderMode& renderMode) { return currentLayout.setRenderMode(renderMode); },
+      .setThreeDSceneContents =
+        [&currentLayout](ThreeDSceneContents contents) { currentLayout.setThreeDSceneContents(std::move(contents)); },
       .setIntensityProjectionMode =
         [&currentLayout](const IntensityProjectionMode& ipMode) {
           return currentLayout.setIntensityProjectionMode(ipMode);
         },
-      .applyImageSelectionAndShaderToAllViews = nullptr,
+      .renderComparisonModeSettings = renderComparisonModeSettings,
+      .applyImageSelectionAndRenderingToAllViews = nullptr,
       .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
       .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
       .hideIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = false; },
       .showIsosurfacesPanelForRaycastImage =
         [this, &currentLayout]() {
+          m_appData.guiData().m_suppressIsosurfacesFocusOnNextAppearance = true;
           m_appData.guiData().m_showIsosurfacesWindow = true;
           if (!currentLayout.visibleImages().empty()) {
             m_appData.guiData().m_requestedIsosurfacesImageUid = currentLayout.visibleImages().front();
           }
         },
+      .isThreeDRenderingSettingsVisible = [this]() { return m_appData.guiData().m_showSettingsWindow; },
+      .openThreeDRenderingSettings =
+        [this]() {
+          m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Rendering;
+          m_appData.guiData().m_suppressSettingsFocusOnNextAppearance = true;
+          m_appData.guiData().m_showSettingsWindow = true;
+        },
+      .hideThreeDRenderingSettings = [this]() { m_appData.guiData().m_showSettingsWindow = false; },
       .selectableViewTypes = LayoutKind::Lightbox == currentLayout.kind()
                                ? std::vector<ViewType>{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}
                                : std::vector<ViewType>{}};
@@ -4953,8 +4973,7 @@ void ImGuiWrapper::render()
         m_appData.windowData().getContentScaleRatios(),
         popupHeadingFont};
 
-      const bool useThreeDImageSelection = ViewType::ThreeD == view->viewType() && is3dRenderMode(view->renderMode()) &&
-                                           ViewRenderMode::Disabled != view->renderMode();
+      const bool useThreeDImageSelection = ViewType::ThreeD == view->viewType();
       auto canImageBeVolumeRendered = [this](std::size_t index) {
         const auto imageUid = m_appData.imageUid(index);
         if (!imageUid) {
@@ -4999,16 +5018,21 @@ void ImGuiWrapper::render()
       const ViewOverlayModeCallbacks modeCallbacks{
         .viewType = view->viewType(),
         .renderMode = view->renderMode(),
+        .threeDSceneContents = view->threeDSceneContents(),
         .intensityProjectionMode = view->intensityProjectionMode(),
         .setViewType = setViewType,
         .setRenderMode = setRenderMode,
+        .setThreeDSceneContents =
+          [view](ThreeDSceneContents contents) { view->setThreeDSceneContents(std::move(contents)); },
         .setIntensityProjectionMode = setIntensityProjectionMode,
-        .applyImageSelectionAndShaderToAllViews = applyImageSelectionAndRenderModesToAllViews,
+        .renderComparisonModeSettings = renderComparisonModeSettings,
+        .applyImageSelectionAndRenderingToAllViews = applyImageSelectionAndRenderingToAllViews,
         .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
         .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
         .hideIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = false; },
         .showIsosurfacesPanelForRaycastImage =
           [this, view]() {
+            m_appData.guiData().m_suppressIsosurfacesFocusOnNextAppearance = true;
             m_appData.guiData().m_showIsosurfacesWindow = true;
             if (!view->visibleImages().empty()) {
               m_appData.guiData().m_requestedIsosurfacesImageUid = view->visibleImages().front();
@@ -5074,11 +5098,14 @@ void ImGuiWrapper::render()
           [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
         .setThreeDImageVolumeBoundsVisible =
           [this](bool visible) { m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = visible; },
+        .isThreeDRenderingSettingsVisible = [this]() { return m_appData.guiData().m_showSettingsWindow; },
         .openThreeDRenderingSettings =
           [this]() {
             m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Rendering;
+            m_appData.guiData().m_suppressSettingsFocusOnNextAppearance = true;
             m_appData.guiData().m_showSettingsWindow = true;
           },
+        .hideThreeDRenderingSettings = [this]() { m_appData.guiData().m_showSettingsWindow = false; },
         .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
                                          ? std::function<std::optional<ClipboardPayload>()>([this, viewUid]() {
                                              return m_exportAsciiClipboardPayloadForView(viewUid);

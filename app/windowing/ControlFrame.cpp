@@ -56,7 +56,7 @@ const std::list<uuids::uuid>& ControlFrame::renderedImages() const
 void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults)
 {
   m_imageSelection.setRenderedImages(imageUids, filterByDefaults);
-  if (is3dRenderMode(m_renderMode) && ViewRenderMode::Disabled != m_renderMode) {
+  if (ViewType::ThreeD == m_viewType && m_imageSelection.volumeRenderedImages().empty()) {
     m_imageSelection.ensureVolumeRenderedImageSelected();
   }
 }
@@ -135,6 +135,9 @@ void ControlFrame::setMetricImages(const std::list<uuids::uuid>& imageUids)
 
 const std::list<uuids::uuid>& ControlFrame::visibleImages() const
 {
+  if (ViewType::ThreeD == m_viewType) {
+    return m_imageSelection.volumeRenderedImages();
+  }
   return m_imageSelection.visibleImages(m_renderMode);
 }
 
@@ -198,11 +201,32 @@ ViewRenderMode ControlFrame::renderMode() const
   return m_renderMode;
 }
 
-void ControlFrame::setRenderMode(const ViewRenderMode& shaderType)
+void ControlFrame::setRenderMode(const ViewRenderMode& renderMode)
 {
-  m_renderMode = shaderType;
-  if (is3dRenderMode(m_renderMode) && ViewRenderMode::Disabled != m_renderMode) {
+  m_renderMode = renderMode;
+}
+
+const ThreeDSceneContents& ControlFrame::threeDSceneContents() const
+{
+  return m_threeDSceneContents;
+}
+
+void ControlFrame::setThreeDSceneContents(ThreeDSceneContents contents)
+{
+  m_threeDSceneContents = std::move(contents);
+  if (!m_threeDSceneContents.empty()) {
     m_imageSelection.ensureVolumeRenderedImageSelected();
+  }
+}
+
+void ControlFrame::setThreeDSceneContentVisible(const ThreeDSceneContent content, const bool visible)
+{
+  if (visible) {
+    m_threeDSceneContents.insert(content);
+    m_imageSelection.ensureVolumeRenderedImageSelected();
+  }
+  else {
+    m_threeDSceneContents.erase(content);
   }
 }
 

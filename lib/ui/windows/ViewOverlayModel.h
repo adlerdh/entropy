@@ -24,7 +24,7 @@ struct ImageChoice
 /**
  * @brief Return true when a render mode uses image-layer selection instead of metric selection.
  * @param renderMode View render mode.
- * @return True for image and volume rendering modes.
+ * @return True for layered image rendering.
  */
 bool usesVisibleImageSelection(ViewRenderMode renderMode);
 

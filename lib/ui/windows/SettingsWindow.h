@@ -2,6 +2,7 @@
 
 #include "common/PublicTypes.h"
 #include "logic/app/Settings.h"
+#include "viewer/ViewModes.h"
 
 #include <cstddef>
 #include <filesystem>
@@ -11,6 +12,16 @@
 
 class AppData;
 class ImageColorMap;
+
+/**
+ * @brief Render compact settings for one comparison mode inside a view overlay popup.
+ */
+void renderComparisonModeQuickSettings(
+  ViewRenderMode renderMode,
+  AppData& appData,
+  const std::function<std::size_t(void)>& getNumImageColorMaps,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  const std::function<void(void)>& updateMetricUniforms);
 
 /**
  * @brief File-backed user settings actions exposed to the Settings window.

@@ -112,10 +112,7 @@ void applyImageSelectionSpec(
 {
   frame.setRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
   frame.setVolumeRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_volumeRenderedImageIndices));
-  if (
-    is3dRenderMode(frame.renderMode()) && ViewRenderMode::Disabled != frame.renderMode() &&
-    frame.volumeRenderedImages().empty())
-  {
+  if (ViewType::ThreeD == frame.viewType() && frame.volumeRenderedImages().empty()) {
     frame.setVolumeRenderedImages(frame.renderedImages());
   }
   frame.setMetricImages(layout::imageUidsForIndices(orderedImageUids, selection.m_metricImageIndices));
@@ -259,6 +256,7 @@ layout::ViewSpec expectedGridViewSpec(
   viewSpec.m_height = height;
   viewSpec.m_viewType = layoutSpec.m_viewType;
   viewSpec.m_renderMode = layoutSpec.m_renderMode;
+  viewSpec.m_threeDSceneContents = layoutSpec.m_threeDSceneContents;
   viewSpec.m_intensityProjectionMode = layoutSpec.m_intensityProjectionMode;
 
   viewSpec.m_offsetMode = 0;
@@ -338,6 +336,9 @@ mergeGridViewOverrides(const layout::LayoutSpec& spec, const layout::GridSpec& g
     if (override.m_renderMode != defaults.m_renderMode) {
       view.m_renderMode = override.m_renderMode;
     }
+    if (override.m_threeDSceneContents != defaults.m_threeDSceneContents) {
+      view.m_threeDSceneContents = override.m_threeDSceneContents;
+    }
     if (override.m_intensityProjectionMode != defaults.m_intensityProjectionMode) {
       view.m_intensityProjectionMode = override.m_intensityProjectionMode;
     }
@@ -407,6 +408,10 @@ gridViewOverride(const layout::ViewSpec& viewSpec, const layout::ViewSpec& expec
   }
   if (viewSpec.m_renderMode != expected.m_renderMode) {
     override.m_renderMode = viewSpec.m_renderMode;
+    hasOverride = true;
+  }
+  if (viewSpec.m_threeDSceneContents != expected.m_threeDSceneContents) {
+    override.m_threeDSceneContents = viewSpec.m_threeDSceneContents;
     hasOverride = true;
   }
   if (viewSpec.m_intensityProjectionMode != expected.m_intensityProjectionMode) {
@@ -492,6 +497,7 @@ LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedIma
   layoutSpec.m_isLightbox = layout.isLightbox();
   layoutSpec.m_viewType = static_cast<int>(layout.viewType());
   layoutSpec.m_renderMode = static_cast<int>(layout.renderMode());
+  layoutSpec.m_threeDSceneContents = layout.threeDSceneContents();
   layoutSpec.m_intensityProjectionMode = static_cast<int>(layout.intensityProjectionMode());
   layoutSpec.m_preferredDefaultRenderedImages = layout.preferredDefaultRenderedImages();
   layoutSpec.m_defaultRenderAllImages = layout.defaultRenderAllImages();
@@ -517,6 +523,7 @@ LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedIma
     viewSpec.m_height = viewport.w;
     viewSpec.m_viewType = static_cast<int>(view.viewType());
     viewSpec.m_renderMode = static_cast<int>(view.renderMode());
+    viewSpec.m_threeDSceneContents = view.threeDSceneContents();
     viewSpec.m_intensityProjectionMode = static_cast<int>(view.intensityProjectionMode());
 
     const ViewOffsetSetting& offset = view.offsetSetting();
@@ -555,16 +562,31 @@ LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedIma
     const auto expectedViews = expectedGridViewSpecs(layoutSpec, *layoutSpec.m_grid, orderedImageUids.size());
     std::vector<ViewSpec> overrides;
     overrides.reserve(layoutSpec.m_views.size());
+    bool requiresExpandedViews = false;
     for (std::size_t viewIndex = 0; viewIndex < layoutSpec.m_views.size() && viewIndex < expectedViews.size();
          ++viewIndex)
     {
+      // A default-valued field is the sparse-override sentinel. If a view explicitly restores the default 3D
+      // contents while the layout has a different set, retain full view specs so that intent is not lost.
+      if (
+        layoutSpec.m_views.at(viewIndex).m_threeDSceneContents != expectedViews.at(viewIndex).m_threeDSceneContents &&
+        layoutSpec.m_views.at(viewIndex).m_threeDSceneContents == DefaultThreeDSceneContents)
+      {
+        requiresExpandedViews = true;
+        break;
+      }
       if (
         auto viewOverride = gridViewOverride(layoutSpec.m_views.at(viewIndex), expectedViews.at(viewIndex), viewIndex))
       {
         overrides.emplace_back(std::move(*viewOverride));
       }
     }
-    layoutSpec.m_views = std::move(overrides);
+    if (requiresExpandedViews) {
+      layoutSpec.m_grid.reset();
+    }
+    else {
+      layoutSpec.m_views = std::move(overrides);
+    }
   }
 
   return layoutSpec;
@@ -596,6 +618,7 @@ Layout instantiateLayoutSpec(
   }
   layout.setViewType(enumFromInt(spec.m_viewType, ViewType::Axial));
   layout.setRenderMode(enumFromInt(spec.m_renderMode, ViewRenderMode::Image));
+  layout.setThreeDSceneContents(spec.m_threeDSceneContents);
   layout.setIntensityProjectionMode(enumFromInt(spec.m_intensityProjectionMode, IntensityProjectionMode::None));
   layout.setPreferredDefaultRenderedImages(spec.m_preferredDefaultRenderedImages);
   layout.setDefaultRenderAllImages(spec.m_defaultRenderAllImages);
@@ -664,6 +687,7 @@ Layout instantiateLayoutSpec(
 
     view->setPreferredDefaultRenderedImages(normalizedViewSpec.m_preferredDefaultRenderedImages);
     view->setDefaultRenderAllImages(normalizedViewSpec.m_defaultRenderAllImages);
+    view->setThreeDSceneContents(normalizedViewSpec.m_threeDSceneContents);
     applyImageSelectionSpec(*view, orderedImageUids, normalizedViewSpec.m_imageSelection);
     view->setThreeDProjectionType(projectionTypeFromInt(normalizedViewSpec.m_threeDProjectionType));
     view->threeDState().m_orbitTargetMode = orbitTargetModeFromInt(normalizedViewSpec.m_threeDOrbitTargetMode);
@@ -690,10 +714,7 @@ Layout instantiateLayoutSpec(
     false);
   layout.ControlFrame::setVolumeRenderedImages(
     imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_volumeRenderedImageIndices));
-  if (
-    is3dRenderMode(layout.renderMode()) && ViewRenderMode::Disabled != layout.renderMode() &&
-    layout.volumeRenderedImages().empty())
-  {
+  if (ViewType::ThreeD == layout.viewType() && layout.volumeRenderedImages().empty()) {
     layout.ControlFrame::setVolumeRenderedImages(layout.renderedImages());
   }
   layout.ControlFrame::setMetricImages(

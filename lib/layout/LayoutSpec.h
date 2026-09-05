@@ -1,5 +1,7 @@
 #pragma once
 
+#include "viewer/ThreeDSceneContents.h"
+
 #include <cstddef>
 #include <optional>
 #include <set>
@@ -56,7 +58,7 @@ struct ViewSpec
   float m_height = 2.0f;  //!< Normalized height in layout coordinates
 
   int m_viewType = 0;                //!< Serialized `ViewType` value
-  int m_renderMode = 0;              //!< Serialized `ViewRenderMode` value
+  int m_renderMode = 0;              //!< Serialized 2D `ViewRenderMode` value
   int m_intensityProjectionMode = 0; //!< Serialized `IntensityProjectionMode` value
 
   int m_offsetMode = 3;                                         //!< Serialized view offset mode
@@ -75,8 +77,9 @@ struct ViewSpec
   bool m_defaultRenderAllImages = true;                   //!< Whether this view renders all images by default
   ImageSelectionSpec m_imageSelection;                    //!< Explicit image selection for this view
 
-  int m_threeDProjectionType = 1;               //!< Serialized 3D projection type
-  int m_threeDOrbitTargetMode = 0;              //!< Serialized 3D orbit target mode
+  int m_threeDProjectionType = 1;                                         //!< Serialized 3D projection type
+  ThreeDSceneContents m_threeDSceneContents = DefaultThreeDSceneContents; //!< Enabled 3D content categories
+  int m_threeDOrbitTargetMode = 0;                                        //!< Serialized 3D orbit target mode
   bool m_threeDCameraFollowsCrosshairs = false; //!< Whether 3D camera position follows crosshairs
   bool m_threeDImagePlanesVisible = true;       //!< Whether orthogonal image planes are shown in 3D
   float m_threeDPerspectiveZoom = 1.0f;         //!< Saved 3D perspective projection zoom
@@ -92,11 +95,12 @@ struct ViewSpec
  */
 struct LayoutSpec
 {
-  int m_kind = 0;                                         //!< Serialized `LayoutKind` value
-  std::string m_displayName;                              //!< User name for custom layouts
-  bool m_isLightbox = false;                              //!< Whether this layout behaves as a lightbox
-  int m_viewType = 0;                                     //!< Default serialized `ViewType` value
-  int m_renderMode = 0;                                   //!< Default serialized `ViewRenderMode` value
+  int m_kind = 0;            //!< Serialized `LayoutKind` value
+  std::string m_displayName; //!< User name for custom layouts
+  bool m_isLightbox = false; //!< Whether this layout behaves as a lightbox
+  int m_viewType = 0;        //!< Default serialized `ViewType` value
+  int m_renderMode = 0;      //!< Default serialized 2D `ViewRenderMode` value
+  ThreeDSceneContents m_threeDSceneContents = DefaultThreeDSceneContents; //!< Default 3D content categories
   int m_intensityProjectionMode = 0;                      //!< Default serialized `IntensityProjectionMode` value
   std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Preferred default rendered image indices
   bool m_defaultRenderAllImages = false;                  //!< Whether generated views render all images

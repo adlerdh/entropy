@@ -6,6 +6,7 @@
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraTypes.h"
 #include "ui/UiControls.h"
+#include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
 
@@ -67,14 +68,17 @@ struct ViewOverlayImageCallbacks
 struct ViewOverlayModeCallbacks
 {
   ViewType viewType = ViewType::Axial;                                             //!< Current view type
-  ViewRenderMode renderMode = ViewRenderMode::Image;                               //!< Current render mode
+  ViewRenderMode renderMode = ViewRenderMode::Image;                               //!< Current 2D render mode
+  ThreeDSceneContents threeDSceneContents = DefaultThreeDSceneContents;            //!< Enabled 3D scene contents
   IntensityProjectionMode intensityProjectionMode = IntensityProjectionMode::None; //!< Current projection mode
 
   std::function<void(const ViewType& viewType)> setViewType{};                               //!< Change view type
-  std::function<void(const ViewRenderMode& renderMode)> setRenderMode{};                     //!< Change render mode
+  std::function<void(const ViewRenderMode& renderMode)> setRenderMode{};                     //!< Change 2D render mode
+  std::function<void(ThreeDSceneContents)> setThreeDSceneContents{};                         //!< Change 3D contents
   std::function<void(const IntensityProjectionMode& projMode)> setIntensityProjectionMode{}; //!< Change projection
+  std::function<void(ViewRenderMode)> renderComparisonModeSettings{}; //!< Draw settings for the active comparison mode
 
-  std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndShaderToAllViews{}; //!< Apply to all views
+  std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndRenderingToAllViews{}; //!< Apply to all views
   std::function<bool()> isIsosurfacesPanelVisible{};                  //!< Is the isosurfaces panel currently visible
   std::function<void()> showIsosurfacesPanel{};                       //!< Open the isosurfaces panel
   std::function<void()> hideIsosurfacesPanel{};                       //!< Close the isosurfaces panel
@@ -98,7 +102,9 @@ struct ViewOverlayModeCallbacks
   std::function<void(bool)> setThreeDCrosshairsVisible{};                    //!< Set 3D crosshairs visibility
   std::function<bool()> getThreeDImageVolumeBoundsVisible{};                 //!< Whether image volume bounds are shown
   std::function<void(bool)> setThreeDImageVolumeBoundsVisible{};             //!< Set image volume bounds visibility
+  std::function<bool()> isThreeDRenderingSettingsVisible{};                  //!< Whether Application Settings is open
   std::function<void()> openThreeDRenderingSettings{};                       //!< Open full 3D rendering settings
+  std::function<void()> hideThreeDRenderingSettings{};                       //!< Close Application Settings
   std::function<std::optional<ClipboardPayload>()>
     exportAsciiClipboardPayload{};             //!< Export this view's ASCII clipboard payload
   std::vector<ViewType> selectableViewTypes{}; //!< Empty means all supported view types are selectable

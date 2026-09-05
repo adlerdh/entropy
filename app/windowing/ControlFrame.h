@@ -5,6 +5,7 @@
 #include "ui/UiControls.h"
 #include "viewer/FrameImageSelection.h"
 #include "viewer/FrameViewport.h"
+#include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
 
@@ -19,16 +20,16 @@
 class AppData;
 
 /**
- * @brief Shared view and layout controls: viewport, image selection, render mode, and UI flags
+ * @brief Shared view and layout controls: viewport, image selection, 2D render mode, 3D contents, and UI flags
  */
 class ControlFrame
 {
 public:
   /**
-   * @brief Construct a frame with viewport, view type, render mode, and UI-control state
+   * @brief Construct a frame with viewport, view type, 2D render mode, and UI-control state
    * @param winClipViewport Frame bounds in enclosing-window clip coordinates
    * @param viewType Initial view type
-   * @param renderMode Initial render mode
+   * @param renderMode Initial 2D render mode
    * @param ipMode Initial intensity projection mode
    * @param uiControls UI controls shown by the frame
    * @throw Propagates exceptions from viewport or selection construction
@@ -105,15 +106,24 @@ public:
   virtual void setViewType(const ViewType& viewTypeArg);
 
   /**
-   * @brief Get the frame render mode
-   * @return Current render mode
+   * @brief Get the frame's 2D image render mode
+   * @return Current 2D render mode
    */
   ViewRenderMode renderMode() const;
   /**
-   * @brief Set the frame render mode
-   * @param shaderType New render mode
+   * @brief Set the frame's 2D image render mode
+   * @param renderMode New 2D render mode
    */
-  virtual void setRenderMode(const ViewRenderMode& shaderType);
+  virtual void setRenderMode(const ViewRenderMode& renderMode);
+
+  /** @brief Get the independently enabled 3D scene-content categories. */
+  const ThreeDSceneContents& threeDSceneContents() const;
+
+  /** @brief Replace the independently enabled 3D scene-content categories. */
+  virtual void setThreeDSceneContents(ThreeDSceneContents contents);
+
+  /** @brief Enable or disable one 3D scene-content category. */
+  virtual void setThreeDSceneContentVisible(ThreeDSceneContent content, bool visible);
 
   /**
    * @brief Get the frame intensity projection mode
@@ -253,7 +263,7 @@ public:
 
   /**
    * @brief Get images visible through either render or metric selection
-   * @return Ordered visible image UIDs for the current render mode
+   * @return Ordered visible image UIDs for the current view type and 2D render mode
    */
   const std::list<uuids::uuid>& visibleImages() const;
 
@@ -303,8 +313,10 @@ protected:
 
   /** @brief View type */
   ViewType m_viewType;
-  /** @brief Render mode */
+  /** @brief Mutually exclusive 2D image render mode */
   ViewRenderMode m_renderMode;
+  /** @brief Independently enabled 3D scene-content categories */
+  ThreeDSceneContents m_threeDSceneContents = DefaultThreeDSceneContents;
   /** @brief Intensity projection mode */
   IntensityProjectionMode m_intensityProjectionMode;
   /** @brief UI controls shown in the frame */
