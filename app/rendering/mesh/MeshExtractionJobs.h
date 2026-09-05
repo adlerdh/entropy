@@ -3,7 +3,7 @@
 #include "rendering/mesh/MeshExtraction.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshGeneration.h"
-#include "rendering/mesh/MeshImageAdapter.h"
+#include "rendering/mesh/SegmentationExtractionBatch.h"
 
 #include <memory>
 
@@ -18,11 +18,9 @@ MeshExtractionJob makeIsosurfaceExtractionJob(
   const MeshGenerationOptions& options,
   std::shared_ptr<const Image> imageSnapshot);
 
-/** Build a CPU-only cropped binary-label extraction job from an immutable segmentation snapshot. */
+/** Build a CPU-only label extraction job backed by one shared multi-label segmentation batch. */
 MeshExtractionJob makeSegmentationExtractionJob(
   SegmentationMeshRequest request,
-  SegmentationLabelBounds bounds,
-  const MeshGenerationOptions& options,
-  std::shared_ptr<const Image> segmentationSnapshot);
+  std::shared_ptr<SegmentationExtractionBatch> batch);
 
 } // namespace rendering::mesh

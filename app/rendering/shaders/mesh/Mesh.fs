@@ -3,6 +3,7 @@
 in vec3 v_worldPosition;
 in vec3 v_worldNormal;
 in vec4 v_color;
+flat in vec3 v_worldFaceNormal;
 noperspective in vec3 v_barycentric;
 
 uniform vec4 u_baseColor;
@@ -113,12 +114,23 @@ vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 vi
 
 vec3 surfaceNormal()
 {
+  if (u_flatShadingEnabled && dot(v_worldFaceNormal, v_worldFaceNormal) > 0.000001) {
+    return normalize(v_worldFaceNormal);
+  }
+
   if (!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal) > 0.000001) {
     return normalize(v_worldNormal);
   }
 
   vec3 geometricNormal = cross(dFdx(v_worldPosition), dFdy(v_worldPosition));
   return dot(geometricNormal, geometricNormal) > 0.000001 ? normalize(geometricNormal) : vec3(0.0, 0.0, 1.0);
+}
+
+vec3 safeViewDirection()
+{
+  vec3 eyeVector = u_cameraWorldPosition - v_worldPosition;
+  float eyeDistance2 = dot(eyeVector, eyeVector);
+  return eyeDistance2 > 0.000000000001 ? eyeVector * inversesqrt(eyeDistance2) : normalize(u_lightDirectionWorld);
 }
 
 float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
@@ -197,7 +209,7 @@ void main()
   }
 
   vec3 normal = surfaceNormal();
-  vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
+  vec3 viewDirection = safeViewDirection();
   vec3 shadingNormal = faceforward(normal, -viewDirection, normal);
   vec3 lightDirection = u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;

@@ -135,6 +135,9 @@ static bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program
  */
 static bool createMeshDdpInitProgram(GLShaderProgram& program);
 
+/** @brief Compile and link the DDP initialization program matching the triangle-edges rasterization pipeline. */
+static bool createMeshDdpInitEdgesProgram(GLShaderProgram& program);
+
 /**
  * @brief Compile and link the mesh DDP peeling shader program.
  *
@@ -145,6 +148,9 @@ static bool createMeshDdpPeelProgram(GLShaderProgram& program);
 
 /** @brief Compile and link the DDP peel program that draws anti-aliased triangle topology edges. */
 static bool createMeshDdpPeelEdgesProgram(GLShaderProgram& program);
+
+/** @brief Compile and link the full-screen shader used to detect remaining DDP depth layers. */
+static bool createMeshDdpCompletionProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP back-color blend shader program.

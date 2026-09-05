@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <unordered_map>
+#include <vector>
 
 namespace rendering::mesh
 {
@@ -58,6 +60,19 @@ generateDiscreteLabelSurface(const ScalarGrid3D& grid, int64_t labelValue, const
 
 /** Generate the surface of a binary zero/one mask without exposing an ambiguous label-value parameter. */
 std::optional<MeshData> generateBinaryMaskSurface(const ScalarGrid3D& grid, const MeshGenerationOptions& options = {});
+
+using SegmentationLabelMeshes = std::unordered_map<int64_t, MeshData>;
+
+/**
+ * @brief Jointly extract all packed segmentation labels and split the shared surface into oriented label meshes
+ *
+ * Packed scalar value `i + 1` represents `labelValues[i]`; zero is background. Adjacent labels are extracted and
+ * smoothed together, so their oppositely oriented renderable sides share bit-identical geometry and cannot z-fight.
+ */
+std::optional<SegmentationLabelMeshes> generatePackedSegmentationLabelSurfaces(
+  const ScalarGrid3D& packedGrid,
+  const std::vector<int64_t>& labelValues,
+  const MeshGenerationOptions& options = {});
 
 /** Generate the canonical two-ended cylinder-and-cone mesh used for one 3D crosshair axis. */
 std::optional<MeshData> generateCrosshairsAxisMesh(double coneLengthRatio = 0.15);

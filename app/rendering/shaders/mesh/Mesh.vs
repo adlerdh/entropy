@@ -12,7 +12,10 @@ uniform bool u_hasVertexNormals;
 out vec3 v_worldPosition;
 out vec3 v_worldNormal;
 out vec4 v_color;
+flat out vec3 v_worldFaceNormal;
 noperspective out vec3 v_barycentric;
+
+invariant gl_Position;
 
 void main()
 {
@@ -21,6 +24,9 @@ void main()
   // A zero vector tells the fragment shader to reconstruct a flat geometric normal from screen-space derivatives.
   v_worldNormal = u_hasVertexNormals ? normalize(u_world_T_meshNormal * a_normal) : vec3(0.0);
   v_color = a_color;
+  // The non-geometry path cannot supply a primitive normal. Fragment shaders retain a derivative fallback for
+  // meshes drawn through this program without vertex normals.
+  v_worldFaceNormal = vec3(0.0);
   // The ordinary program does not draw topology edges. Its linked fragment shader still consumes this varying.
   v_barycentric = vec3(1.0);
   gl_Position = u_clip_T_world * worldPosition;

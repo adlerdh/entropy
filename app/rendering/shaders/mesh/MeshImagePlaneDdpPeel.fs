@@ -36,7 +36,7 @@ uniform float u_imgOpacity;
 uniform bool u_imagePlaneShadingEnabled;
 uniform vec4 u_imagePlaneBorderColor;
 uniform float u_imagePlaneBorderWidthPixels;
-uniform float u_ddpDepthBias;
+uniform uint u_ddpDepthOrder;
 uniform int u_boundaryVertexCount;
 uniform vec3 u_boundaryWorldPositions[6];
 uniform vec2 u_viewportOrigin;
@@ -79,9 +79,6 @@ layout(location = 0) out vec2 outDepthBounds;
 layout(location = 1) out vec4 outFrontColor;
 layout(location = 2) out vec4 outBackColor;
 
-const float kMaxDepth = 1.0;
-const float kDepthEpsilon = 0.000001;
-
 $$HELPER_FUNCTIONS$$
 $$COLOR_HELPER_FUNCTIONS$$
 $$TEXTURE_LOOKUP_FUNCTION$$
@@ -90,6 +87,7 @@ $$SAMPLE_TEX_COORD_FUNCTION$$
 $$DO_RENDER_FUNCTION$$
 $$IP_FUNCTION$$
 $$IMAGE_PLANE_DISPLAY_FUNCTIONS$$
+$$DDP_DEPTH_FUNCTIONS$$
 
 int when_lt(int x, int y)
 {
@@ -277,19 +275,17 @@ void main()
   vec2 previousDepthBounds = texelFetch(u_previousDepthBoundsTex, pixelCoord, 0).xy;
   vec4 previousFrontColor = texelFetch(u_previousFrontColorTex, pixelCoord, 0);
   // Resolve exactly coincident image planes according to the same bottom-to-top image order used by 2D views.
-  float fragmentDepth = clamp(gl_FragCoord.z - u_ddpDepthBias, 0.0, 1.0);
-  float nearestDepth = -previousDepthBounds.x;
-  float farthestDepth = previousDepthBounds.y;
+  float fragmentDepth = ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder);
 
-  outDepthBounds = vec2(-kMaxDepth);
+  outDepthBounds = vec2(-kDdpMaxDepth);
   outFrontColor = previousFrontColor;
   outBackColor = vec4(0.0);
 
-  if (fragmentDepth < nearestDepth - kDepthEpsilon || fragmentDepth > farthestDepth + kDepthEpsilon) {
+  if (ddpDepthIsOutside(fragmentDepth, previousDepthBounds)) {
     return;
   }
 
-  if (fragmentDepth > nearestDepth + kDepthEpsilon && fragmentDepth < farthestDepth - kDepthEpsilon) {
+  if (ddpDepthIsInterior(fragmentDepth, previousDepthBounds)) {
     outDepthBounds = vec2(-fragmentDepth, fragmentDepth);
     return;
   }
@@ -299,7 +295,7 @@ void main()
     discard;
   }
 
-  if (fragmentDepth >= nearestDepth - kDepthEpsilon && fragmentDepth <= nearestDepth + kDepthEpsilon) {
+  if (ddpDepthIsNearest(fragmentDepth, previousDepthBounds)) {
     outFrontColor = previousFrontColor + premultipliedColor * (1.0 - previousFrontColor.a);
   }
   else {

@@ -13,6 +13,7 @@
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshScene.h"
 #include "rendering/mesh/MeshSegmentationPolicy.h"
+#include "rendering/mesh/SegmentationExtractionBatch.h"
 #include "windowing/View.h"
 
 #include <glm/mat4x4.hpp>
@@ -174,6 +175,7 @@ bool Rendering::renderSegmentationMeshesForView(
       m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
     renderables.reserve(renderables.size() + labelTable->numLabels());
     std::shared_ptr<const Image> segmentationSnapshot;
+    std::shared_ptr<rendering::mesh::SegmentationExtractionBatch> extractionBatch;
 
     for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
       const rendering::mesh::SegmentationLabelMeshState labelState{
@@ -184,8 +186,7 @@ bool Rendering::renderSegmentationMeshesForView(
       }
 
       const int64_t labelValue = static_cast<int64_t>(labelIndex);
-      const auto labelInfo = presentLabels->find(labelValue);
-      if (labelInfo == presentLabels->end()) {
+      if (!presentLabels->contains(labelValue)) {
         continue;
       }
       const rendering::mesh::MeshGenerationOptions generationOptions{
@@ -210,16 +211,16 @@ bool Rendering::renderSegmentationMeshesForView(
           if (!segmentationSnapshot) {
             segmentationSnapshot = std::make_shared<Image>(*seg);
           }
+          if (!extractionBatch) {
+            extractionBatch = std::make_shared<rendering::mesh::SegmentationExtractionBatch>(
+              segmentationSnapshot,
+              timePoint,
+              generationOptions);
+          }
 
           const std::string description = segmentationMeshDescription(*seg, *labelTable, labelIndex);
-          if (m_meshExtractionQueue.submit(
-                key,
-                description,
-                rendering::mesh::makeSegmentationExtractionJob(
-                  request,
-                  labelInfo->second,
-                  generationOptions,
-                  segmentationSnapshot)))
+          if (m_meshExtractionQueue
+                .submit(key, description, rendering::mesh::makeSegmentationExtractionJob(request, extractionBatch)))
           {
             m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
           }

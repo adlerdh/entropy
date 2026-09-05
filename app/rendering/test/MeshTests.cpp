@@ -16,6 +16,7 @@
 #include "rendering/mesh/MeshDdpPolicy.h"
 #include "rendering/mesh/MeshDrawOptions.h"
 #include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshExtractionJobs.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionRunner.h"
 #include "rendering/mesh/MeshGeneration.h"
@@ -1231,6 +1232,12 @@ TEST_CASE("global surface settings create one material policy for every mesh typ
   const mesh::SegmentationLabelMeshStyle segmentation =
     mesh::segmentationLabelMeshStyle(4, color, {.showMesh = true, .opacity = 1.0f}, settings);
   CHECK(segmentation.material == material);
+  CHECK(segmentation.backfaceCulling);
+
+  CHECK(mesh::requiresMeshGeometryShader(settings));
+  CHECK(mesh::requiresMeshGeometryShader({.flatShadingEnabled = true}));
+  CHECK(mesh::requiresMeshGeometryShader({.triangleEdgesEnabled = true}));
+  CHECK_FALSE(mesh::requiresMeshGeometryShader({}));
 }
 
 TEST_CASE("isosurface and segmentation extraction requests build distinct geometry keys", "[rendering][mesh]")
@@ -2083,6 +2090,99 @@ TEST_CASE("segmentation label inventory contains only values present in the volu
   CHECK_FALSE(mesh::segmentationLabelInventory(image, 1));
 }
 
+TEST_CASE(
+  "joint segmentation extraction gives adjacent labels one oppositely oriented shared boundary",
+  "[rendering][mesh]")
+{
+  const Image image = makeMeshLabelImage();
+  const std::optional<mesh::PackedSegmentationGrid> packed = mesh::packedSegmentationGridFromImageComponent(image, 0);
+  REQUIRE(packed);
+  REQUIRE(packed->labelValues.size() == 2u);
+
+  mesh::MeshGenerationOptions options;
+  options.smoothSurface = true;
+  options.smoothingIterations = 10;
+  const std::optional<mesh::SegmentationLabelMeshes> meshes =
+    mesh::generatePackedSegmentationLabelSurfaces(packed->grid, packed->labelValues, options);
+  REQUIRE(meshes);
+  REQUIRE(meshes->size() == 2u);
+
+  const mesh::MeshData& first = meshes->at(packed->labelValues[0]);
+  const mesh::MeshData& second = meshes->at(packed->labelValues[1]);
+  CHECK(mesh::isValidMeshData(first));
+  CHECK(mesh::isValidMeshData(second));
+  CHECK(isClosedTriangleMesh(first));
+  CHECK(isClosedTriangleMesh(second));
+
+  const auto signedVolume = [](const mesh::MeshData& meshData) {
+    double volume = 0.0;
+    for (std::size_t index = 0; index < meshData.indices.size(); index += 3u) {
+      const glm::dvec3 p0{meshData.positions[meshData.indices[index]]};
+      const glm::dvec3 p1{meshData.positions[meshData.indices[index + 1u]]};
+      const glm::dvec3 p2{meshData.positions[meshData.indices[index + 2u]]};
+      volume += glm::dot(p0, glm::cross(p1, p2)) / 6.0;
+    }
+    return volume;
+  };
+  CHECK(signedVolume(first) > 0.0);
+  CHECK(signedVolume(second) > 0.0);
+
+  const auto triangle = [](const mesh::MeshData& meshData, const std::size_t index) {
+    return std::array{
+      meshData.positions[meshData.indices[index]],
+      meshData.positions[meshData.indices[index + 1u]],
+      meshData.positions[meshData.indices[index + 2u]]};
+  };
+  const auto sameVertices = [](const std::array<glm::vec3, 3>& lhs, const std::array<glm::vec3, 3>& rhs) {
+    return std::ranges::all_of(lhs, [&rhs](const glm::vec3& point) {
+      return std::ranges::any_of(rhs, [&point](const glm::vec3& other) { return point == other; });
+    });
+  };
+
+  std::size_t sharedTriangleCount = 0;
+  for (std::size_t firstIndex = 0; firstIndex < first.indices.size(); firstIndex += 3u) {
+    const auto firstTriangle = triangle(first, firstIndex);
+    for (std::size_t secondIndex = 0; secondIndex < second.indices.size(); secondIndex += 3u) {
+      const auto secondTriangle = triangle(second, secondIndex);
+      if (!sameVertices(firstTriangle, secondTriangle)) {
+        continue;
+      }
+      const glm::vec3 firstNormal =
+        glm::cross(firstTriangle[1] - firstTriangle[0], firstTriangle[2] - firstTriangle[0]);
+      const glm::vec3 secondNormal =
+        glm::cross(secondTriangle[1] - secondTriangle[0], secondTriangle[2] - secondTriangle[0]);
+      CHECK(glm::dot(firstNormal, secondNormal) < 0.0f);
+      ++sharedTriangleCount;
+    }
+  }
+  CHECK(sharedTriangleCount > 0u);
+}
+
+TEST_CASE("segmentation extraction jobs share one multi-label generation batch", "[rendering][mesh]")
+{
+  constexpr int64_t firstLabel = 16'777'216;
+  constexpr int64_t secondLabel = 16'777'217;
+  const uuids::uuid segmentationUid = generateRandomUuid();
+  const auto image = std::make_shared<Image>(makeMeshLabelImage());
+  mesh::MeshGenerationOptions options;
+  options.smoothSurface = false;
+  const auto batch = std::make_shared<mesh::SegmentationExtractionBatch>(image, 0, options);
+
+  const mesh::SegmentationMeshRequest firstRequest =
+    mesh::makeScalarGridSegmentationRequest(segmentationUid, 1, 1, firstLabel, 0, options);
+  const mesh::SegmentationMeshRequest secondRequest =
+    mesh::makeScalarGridSegmentationRequest(segmentationUid, 1, 1, secondLabel, 0, options);
+  mesh::MeshExtractionJobResult first = mesh::makeSegmentationExtractionJob(firstRequest, batch)();
+  mesh::MeshExtractionJobResult second = mesh::makeSegmentationExtractionJob(secondRequest, batch)();
+
+  REQUIRE(first.result);
+  REQUIRE(second.result);
+  CHECK(first.result->key == mesh::geometryKeyForRequest(firstRequest));
+  CHECK(second.result->key == mesh::geometryKeyForRequest(secondRequest));
+  CHECK(mesh::isValidMeshData(first.result->mesh));
+  CHECK(mesh::isValidMeshData(second.result->mesh));
+}
+
 TEST_CASE("scalar-grid segmentation extraction creates the requested label surface", "[rendering][mesh]")
 {
   const std::optional<mesh::MeshData> meshData = mesh::generateDiscreteLabelSurface(makeBinaryLabelGrid(), 7);
@@ -2284,15 +2384,25 @@ TEST_CASE("image plane render list filters non-drawable image planes", "[renderi
   CHECK(mesh::visibleImagePlaneCount(list) == 1);
 }
 
-TEST_CASE("image plane DDP depth bias follows bottom-to-top image order", "[rendering][mesh][ddp]")
+TEST_CASE("image plane DDP depth ordering uses minimal bottom-to-top tie breaks", "[rendering][mesh][ddp]")
 {
   using Orientation = mesh::MeshImagePlaneOrientation;
-  CHECK(mesh::imagePlaneDdpDepthBias(0u, Orientation::Axial) == Catch::Approx(0.0f));
-  CHECK(
-    mesh::imagePlaneDdpDepthBias(0u, Orientation::Coronal) == Catch::Approx(mesh::k_imagePlaneDdpDepthBiasPerSurface));
-  CHECK(
-    mesh::imagePlaneDdpDepthBias(0u, Orientation::Sagittal) > mesh::imagePlaneDdpDepthBias(0u, Orientation::Coronal));
-  CHECK(mesh::imagePlaneDdpDepthBias(1u, Orientation::Axial) > mesh::imagePlaneDdpDepthBias(0u, Orientation::Sagittal));
+  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Axial) == 1u);
+  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Coronal) == 2u);
+  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Sagittal) == 3u);
+  CHECK(mesh::imagePlaneDdpDepthOrder(1u, Orientation::Axial) == 4u);
+
+  const float depth = 0.5f;
+  const float axialDepth =
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(0u, Orientation::Axial));
+  const float coronalDepth =
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(0u, Orientation::Coronal));
+  const float nextImageDepth =
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(1u, Orientation::Axial));
+  CHECK(axialDepth < depth);
+  CHECK(coronalDepth < axialDepth);
+  CHECK(nextImageDepth < coronalDepth);
+  CHECK(depth - nextImageDepth < 1.0e-6f);
 }
 
 TEST_CASE("image plane borders are hidden with their source image", "[rendering][mesh]")

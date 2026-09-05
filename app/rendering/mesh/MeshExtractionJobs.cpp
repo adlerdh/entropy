@@ -1,6 +1,7 @@
 #include "rendering/mesh/MeshExtractionJobs.h"
 
 #include "image/Image.h"
+#include "rendering/mesh/MeshImageAdapter.h"
 
 #include <algorithm>
 #include <ranges>
@@ -61,43 +62,24 @@ MeshExtractionJob makeIsosurfaceExtractionJob(
 
 MeshExtractionJob makeSegmentationExtractionJob(
   SegmentationMeshRequest request,
-  SegmentationLabelBounds bounds,
-  const MeshGenerationOptions& options,
-  std::shared_ptr<const Image> segmentationSnapshot)
+  std::shared_ptr<SegmentationExtractionBatch> batch)
 {
   const MeshGeometryKey key = geometryKeyForRequest(request);
-  return [request = std::move(request),
-          key,
-          bounds,
-          options,
-          segmentationSnapshot = std::move(segmentationSnapshot)]() mutable {
-    if (!segmentationSnapshot) {
+  return [request = std::move(request), key, batch = std::move(batch)]() mutable {
+    if (!batch) {
       return MeshExtractionJobResult{
         .key = key,
         .result = std::nullopt,
-        .diagnostics = {"The segmentation snapshot is unavailable"}};
-    }
-    std::optional<ScalarGrid3D> grid = labelMaskGridFromImageComponent(
-      *segmentationSnapshot,
-      0,
-      request.labelValue,
-      bounds,
-      request.timePoint,
-      MeshCoordinateSpace::ImageSubject);
-    if (!grid) {
-      return MeshExtractionJobResult{
-        .key = key,
-        .result = std::nullopt,
-        .diagnostics = {"No segmentation label grid could be created"}};
+        .diagnostics = {"The shared segmentation extraction batch is unavailable"}};
     }
 
-    std::optional<MeshData> mesh = generateBinaryMaskSurface(*grid, options);
+    std::optional<MeshData> mesh = batch->takeLabelMesh(request.labelValue);
     if (!mesh) {
       return MeshExtractionJobResult{
         .key = key,
         .result = std::nullopt,
-        .empty = true,
-        .diagnostics = {"The segmentation label produced no surface triangles"}};
+        .empty = batch->generationSucceeded(),
+        .diagnostics = {batch->diagnostic()}};
     }
     return MeshExtractionJobResult{
       .key = key,

@@ -100,9 +100,7 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
   if (ImGui::BeginPopup("threeDViewOptionsPopup")) {
     renderPopupHeading(headingFont, "3D view options:");
 
-    ImGui::SeparatorText("Render mode");
-    renderThreeDRenderModeCheckboxes(modes.renderMode, modes.setRenderMode);
-
+    ImGui::Spacing();
     ImGui::SeparatorText("Projection");
     ProjectionType projectionType = ProjectionType::Perspective;
     if (modes.getThreeDProjectionType && modes.setThreeDProjectionType) {
@@ -111,12 +109,14 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
         modes.setThreeDProjectionType(ProjectionType::Perspective);
         projectionType = ProjectionType::Perspective;
       }
-      helpTooltip("Use perspective projection so distant objects appear smaller");
+      ImGui::SameLine();
       if (ImGui::RadioButton("Orthographic", ProjectionType::Orthographic == projectionType)) {
         modes.setThreeDProjectionType(ProjectionType::Orthographic);
         projectionType = ProjectionType::Orthographic;
       }
-      helpTooltip("Use orthographic projection so scale does not change with distance");
+      helpTooltip(
+        "Perspective projection makes distant objects appear smaller. Orthographic projection keeps scale constant "
+        "with distance.");
     }
 
     if (modes.getThreeDFovAngleDegrees && modes.setThreeDFovAngleDegrees) {
@@ -132,6 +132,7 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
       helpTooltip("Perspective view angle; larger values show more of the scene with stronger perspective");
     }
 
+    ImGui::Spacing();
     ImGui::SeparatorText("Camera");
     if (modes.getThreeDOrbitTargetMode && modes.setThreeDOrbitTargetMode) {
       camera3d::OrbitTargetMode targetMode = modes.getThreeDOrbitTargetMode();
@@ -139,11 +140,13 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
       if (ImGui::RadioButton("Image center", camera3d::OrbitTargetMode::VisibleImages == targetMode)) {
         modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::VisibleImages);
       }
-      helpTooltip("Rotate the camera around the center of the visible images");
+      ImGui::SameLine();
       if (ImGui::RadioButton("Crosshairs", camera3d::OrbitTargetMode::Crosshairs == targetMode)) {
         modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::Crosshairs);
       }
-      helpTooltip("Rotate the camera around the current crosshairs position");
+      helpTooltip(
+        "Image center rotates the camera around the center of the visible images. Crosshairs rotates the camera "
+        "around the current crosshairs position.");
     }
 
     if (modes.getThreeDViewPositionFollowsCrosshairs && modes.setThreeDViewPositionFollowsCrosshairs) {
@@ -161,13 +164,14 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
       helpTooltip("Move the 3D camera eye when the crosshairs position changes");
     }
 
+    ImGui::Spacing();
     ImGui::SeparatorText("Scene");
     const bool imagePlanesGloballyEnabled =
       !modes.areThreeDImagePlanesGloballyEnabled || modes.areThreeDImagePlanesGloballyEnabled();
     if (modes.getThreeDImagePlanesVisible && modes.setThreeDImagePlanesVisible) {
       bool showImagePlanes = modes.getThreeDImagePlanesVisible();
       ImGui::BeginDisabled(!imagePlanesGloballyEnabled);
-      if (ImGui::Checkbox("Show image planes", &showImagePlanes)) {
+      if (ImGui::Checkbox("Image planes", &showImagePlanes)) {
         modes.setThreeDImagePlanesVisible(showImagePlanes);
       }
       ImGui::EndDisabled();
@@ -177,8 +181,6 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
           : "Enable image planes in the full 3D Rendering settings before showing them in this view");
     }
 
-    ImGui::Spacing();
-    ImGui::TextDisabled("Global scene settings:");
     ImGui::BeginDisabled(!imagePlanesGloballyEnabled);
     if (modes.getThreeDImagePlaneOpacityFadeEnabled && modes.setThreeDImagePlaneOpacityFadeEnabled) {
       bool fadeOpacity = modes.getThreeDImagePlaneOpacityFadeEnabled();
@@ -189,7 +191,7 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
     }
     if (modes.getThreeDPlaneSegmentationsVisible && modes.setThreeDPlaneSegmentationsVisible) {
       bool showSegmentations = modes.getThreeDPlaneSegmentationsVisible();
-      if (ImGui::Checkbox("Show segmentations on planes", &showSegmentations)) {
+      if (ImGui::Checkbox("Segmentations on planes", &showSegmentations)) {
         modes.setThreeDPlaneSegmentationsVisible(showSegmentations);
       }
       helpTooltip("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
@@ -198,21 +200,21 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
 
     if (modes.getThreeDCrosshairsVisible && modes.setThreeDCrosshairsVisible) {
       bool showCrosshairs = modes.getThreeDCrosshairsVisible();
-      if (ImGui::Checkbox("Show crosshairs glyphs", &showCrosshairs)) {
+      if (ImGui::Checkbox("Crosshairs glyphs", &showCrosshairs)) {
         modes.setThreeDCrosshairsVisible(showCrosshairs);
       }
       helpTooltip("Show red, green, and blue crosshairs axes in mesh-rendered 3D views");
     }
     if (modes.getThreeDImageVolumeBoundsVisible && modes.setThreeDImageVolumeBoundsVisible) {
       bool showVolumeBounds = modes.getThreeDImageVolumeBoundsVisible();
-      if (ImGui::Checkbox("Show image volume bounds", &showVolumeBounds)) {
+      if (ImGui::Checkbox("Image volume bounds", &showVolumeBounds)) {
         modes.setThreeDImageVolumeBoundsVisible(showVolumeBounds);
       }
       helpTooltip("Draw an outline around the full spatial extent of each visible image in 3D views");
     }
 
     ImGui::Separator();
-    if (ImGui::Button("Open 3D rendering settings...") && modes.openThreeDRenderingSettings) {
+    if (ImGui::Button(ICON_FK_COG " 3D settings...") && modes.openThreeDRenderingSettings) {
       modes.openThreeDRenderingSettings();
       ImGui::CloseCurrentPopup();
     }

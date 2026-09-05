@@ -38,6 +38,9 @@ SegmentationLabelMeshStyle segmentationLabelMeshStyle(
     .labelValue = labelValue,
     .material = meshMaterialForSurface(glm::vec4{color.r, color.g, color.b, alpha}, materialSettings),
     .compositingMode = compositingModeForLabelAlpha(alpha, translucentMode),
+    // Joint extraction produces one oriented side per label at shared interfaces. Cull the opposite side so exactly
+    // one label owns every visible boundary sample instead of depth-testing two coincident polygons.
+    .backfaceCulling = true,
     .visible = shouldRenderSegmentationLabelMesh(state)};
 }
 

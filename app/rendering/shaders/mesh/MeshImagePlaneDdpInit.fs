@@ -36,7 +36,7 @@ uniform float u_imgOpacity;
 uniform bool u_imagePlaneShadingEnabled;
 uniform vec4 u_imagePlaneBorderColor;
 uniform float u_imagePlaneBorderWidthPixels;
-uniform float u_ddpDepthBias;
+uniform uint u_ddpDepthOrder;
 uniform int u_boundaryVertexCount;
 uniform vec3 u_boundaryWorldPositions[6];
 uniform vec2 u_viewportOrigin;
@@ -79,6 +79,7 @@ $$SAMPLE_TEX_COORD_FUNCTION$$
 $$DO_RENDER_FUNCTION$$
 $$IP_FUNCTION$$
 $$IMAGE_PLANE_DISPLAY_FUNCTIONS$$
+$$DDP_DEPTH_FUNCTIONS$$
 
 int when_lt(int x, int y)
 {
@@ -240,6 +241,6 @@ void main()
     discard;
   }
 
-  float orderedDepth = clamp(gl_FragCoord.z - u_ddpDepthBias, 0.0, 1.0);
+  float orderedDepth = ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder);
   outDepthBounds = vec2(-orderedDepth, orderedDepth);
 }

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 class Image;
 
@@ -18,6 +19,17 @@ struct SegmentationLabelBounds
 };
 
 using SegmentationLabelInventory = std::unordered_map<int64_t, SegmentationLabelBounds>;
+
+/**
+ * @brief Exact integer labels packed into consecutive, exactly representable scalar-grid values
+ *
+ * `labelValues[i]` is represented by scalar value `i + 1` in `grid`. Zero is reserved for background.
+ */
+struct PackedSegmentationGrid
+{
+  ScalarGrid3D grid;
+  std::vector<int64_t> labelValues;
+};
 
 /**
  * @brief Collect the exact label values present in one segmentation time point.
@@ -56,6 +68,18 @@ std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
   uint32_t component,
   int64_t labelValue,
   const SegmentationLabelBounds& bounds,
+  uint32_t timePoint = 0,
+  MeshCoordinateSpace coordinateSpace = MeshCoordinateSpace::ImageSubject);
+
+/**
+ * @brief Pack every nonzero label in a segmentation into one shared scalar grid
+ *
+ * Joint extraction from this representation gives adjacent labels one common boundary. Packing retains exact native
+ * integer comparisons while keeping the VTK-independent scalar-grid API.
+ */
+std::optional<PackedSegmentationGrid> packedSegmentationGridFromImageComponent(
+  const Image& image,
+  uint32_t component,
   uint32_t timePoint = 0,
   MeshCoordinateSpace coordinateSpace = MeshCoordinateSpace::ImageSubject);
 

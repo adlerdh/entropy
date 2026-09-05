@@ -136,8 +136,8 @@ TEST_CASE("3D clipping planes use visible scene corner depths outside the scene"
   camera3d::configureClipPlanes(camera, scene);
 
   const auto [minDepth, maxDepth] = sceneDepthRange(camera, scene);
-  const float expectedNear = std::max(0.1f, minDepth - 2.0f);
-  const float expectedFar = std::max(maxDepth + 2.0f, expectedNear + camera3d::sceneDiagonal(scene.m_size));
+  const float expectedNear = std::max(0.02f, minDepth - 2.0f);
+  const float expectedFar = std::max(maxDepth + 2.0f, expectedNear + 2.0f);
 
   CHECK(camera.nearDistance() == Catch::Approx(expectedNear));
   CHECK(camera.farDistance() == Catch::Approx(expectedFar));
@@ -154,8 +154,8 @@ TEST_CASE("3D clipping planes support cameras inside the visible scene", "[camer
   camera3d::configureClipPlanes(camera, scene);
 
   const auto [minDepth, maxDepth] = sceneDepthRange(camera, scene);
-  const float expectedNear = std::max(0.1f, minDepth - 2.0f);
-  const float expectedFar = std::max(maxDepth + 2.0f, expectedNear + camera3d::sceneDiagonal(scene.m_size));
+  const float expectedNear = std::max(0.02f, minDepth - 2.0f);
+  const float expectedFar = std::max(maxDepth + 2.0f, expectedNear + 2.0f);
 
   CHECK(camera.nearDistance() == Catch::Approx(expectedNear));
   CHECK(camera.farDistance() == Catch::Approx(expectedFar));
@@ -170,12 +170,12 @@ TEST_CASE("3D clipping planes adapt as a perspective camera approaches the scene
   camera3d::setDefaultCoronalPose(camera, state, scene);
   const float initialNear = camera.nearDistance();
   const float initialMinDepth = sceneDepthRange(camera, scene).first;
-  REQUIRE(initialNear > 0.1f);
+  REQUIRE(initialNear > 0.02f);
 
   helper::translateAboutCamera(camera, Directions::View::Front, initialMinDepth - 1.0f);
   camera3d::configureClipPlanes(camera, scene);
 
-  CHECK(camera.nearDistance() == Catch::Approx(0.1f));
+  CHECK(camera.nearDistance() == Catch::Approx(0.02f));
   CHECK(camera.nearDistance() < initialNear);
   CHECK(camera.farDistance() > camera.nearDistance());
 }
@@ -190,7 +190,7 @@ TEST_CASE("3D clipping-plane floor scales with image sampling", "[camera][3d]")
 
   camera3d::configureClipPlanes(camera, scene);
 
-  CHECK(camera.nearDistance() == Catch::Approx(0.2f));
+  CHECK(camera.nearDistance() == Catch::Approx(0.04f));
   CHECK(camera.farDistance() > camera.nearDistance());
 }
 

@@ -21,6 +21,8 @@ out VS_OUT
 }
 vs_out;
 
+invariant gl_Position;
+
 void main()
 {
   vec4 worldPosition = u_world_T_mesh * vec4(a_position, 1.0);

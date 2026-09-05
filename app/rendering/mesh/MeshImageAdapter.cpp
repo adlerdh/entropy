@@ -8,7 +8,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec4.hpp>
 
+#include <algorithm>
+#include <cstddef>
 #include <limits>
+#include <unordered_map>
 
 namespace rendering::mesh
 {
@@ -153,6 +156,80 @@ std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
     }
   }
   return grid;
+}
+
+std::optional<PackedSegmentationGrid> packedSegmentationGridFromImageComponent(
+  const Image& image,
+  const uint32_t component,
+  const uint32_t timePoint,
+  const MeshCoordinateSpace coordinateSpace)
+{
+  const std::optional<SegmentationLabelInventory> inventory = segmentationLabelInventory(image, component, timePoint);
+  if (!inventory) {
+    return std::nullopt;
+  }
+
+  PackedSegmentationGrid packed;
+  packed.labelValues.reserve(inventory->size());
+  for (const auto& [labelValue, bounds] : *inventory) {
+    static_cast<void>(bounds);
+    if (labelValue != 0) {
+      packed.labelValues.push_back(labelValue);
+    }
+  }
+  std::ranges::sort(packed.labelValues);
+  if (packed.labelValues.empty() || packed.labelValues.size() > 16'777'215u) {
+    return std::nullopt;
+  }
+
+  std::unordered_map<int64_t, float> packedValues;
+  packedValues.reserve(packed.labelValues.size());
+  for (std::size_t index = 0; index < packed.labelValues.size(); ++index) {
+    packedValues.emplace(packed.labelValues[index], static_cast<float>(index + 1u));
+  }
+
+  const glm::uvec3 imageDimensions = image.header().pixelDimensions();
+  if (glm::any(glm::greaterThan(imageDimensions, glm::uvec3{std::numeric_limits<uint32_t>::max() - 2u}))) {
+    return std::nullopt;
+  }
+  packed.grid.dimensions = imageDimensions + glm::uvec3{2u};
+  packed.grid.coordinateSpace = coordinateSpace;
+  const std::size_t width = packed.grid.dimensions.x;
+  const std::size_t height = packed.grid.dimensions.y;
+  const std::size_t depth = packed.grid.dimensions.z;
+  if (
+    height > std::numeric_limits<std::size_t>::max() / width ||
+    depth > std::numeric_limits<std::size_t>::max() / (width * height))
+  {
+    return std::nullopt;
+  }
+  const std::size_t voxelCount = width * height * depth;
+  packed.grid.values.assign(voxelCount, 0.0f);
+  packed.grid.grid_T_voxelIndex =
+    (MeshCoordinateSpace::World == coordinateSpace ? image.transformations().worldDef_T_pixel()
+                                                   : image.transformations().subject_T_pixel()) *
+    glm::translate(glm::mat4{1.0f}, glm::vec3{-1.0f});
+
+  for (uint32_t z = 0; z < imageDimensions.z; ++z) {
+    for (uint32_t y = 0; y < imageDimensions.y; ++y) {
+      for (uint32_t x = 0; x < imageDimensions.x; ++x) {
+        const std::optional<int64_t> value =
+          image.value<int64_t>(component, static_cast<int>(x), static_cast<int>(y), static_cast<int>(z), timePoint);
+        if (!value) {
+          return std::nullopt;
+        }
+        const auto packedValue = packedValues.find(*value);
+        if (packedValue == packedValues.end()) {
+          continue;
+        }
+        const glm::uvec3 destination = glm::uvec3{x, y, z} + glm::uvec3{1u};
+        packed.grid.values[scalarGridValueIndex(packed.grid.dimensions, destination.x, destination.y, destination.z)] =
+          packedValue->second;
+      }
+    }
+  }
+
+  return packed;
 }
 
 } // namespace rendering::mesh

@@ -32,6 +32,8 @@ set(entropy_SHADERS
   mesh/MeshEdges.gs
   mesh/MeshEdges.vs
   mesh/MeshDdpBackBlend.fs
+  mesh/MeshDdpCompletion.fs
+  mesh/MeshDdpDepth.glsl
   mesh/MeshDdpInit.fs
   mesh/MeshDdpPeel.fs
   mesh/MeshDdpResolve.fs

@@ -400,9 +400,13 @@ private:
 
   GLShaderProgram m_meshDdpInitProgram; //!< Mesh DDP attachment initialization shader
 
+  GLShaderProgram m_meshDdpInitEdgesProgram; //!< Mesh DDP initialization shader matching the topology-edges pipeline
+
   GLShaderProgram m_meshDdpPeelProgram; //!< Mesh DDP per-layer peeling shader
 
   GLShaderProgram m_meshDdpPeelEdgesProgram; //!< Mesh DDP peeling shader with triangle topology edges
+
+  GLShaderProgram m_meshDdpCompletionProgram; //!< Mesh DDP remaining-depth-layer query shader
 
   GLShaderProgram m_meshDdpBackBlendProgram; //!< Mesh DDP back-color accumulation shader
 

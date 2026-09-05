@@ -452,7 +452,7 @@ void setMeshImagePlaneUniforms(
   }
   program.setUniform("u_imagePlaneBorderColor", renderable.borderColor);
   program.setUniform("u_imagePlaneBorderWidthPixels", renderable.borderWidthPixels);
-  program.setUniform("u_ddpDepthBias", renderable.ddpDepthBias);
+  program.setUniform("u_ddpDepthOrder", renderable.ddpDepthOrder);
   program.setUniform("u_boundaryVertexCount", static_cast<int>(renderable.boundaryVertexCount));
   program.setUniform(
     "u_boundaryWorldPositions",

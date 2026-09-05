@@ -26,10 +26,11 @@ constexpr float k_defaultOrbitDistanceScale = 1.0f;
 constexpr float k_minPanDistanceScale = 0.25f;
 constexpr float k_framePadding = 1.02f;
 // Permit close inspection without choosing a fixed world-space distance that is
-// inappropriate for either microscopic or very large images. Keeping the floor
-// nonzero and tied to sampling scale also limits the loss of perspective depth
+// inappropriate for either microscopic or very large images. One percent of a
+// voxel diagonal is small enough to inspect surface topology closely. Keeping
+// the floor nonzero and tied to sampling scale still protects perspective depth
 // precision when the camera enters the scene.
-constexpr float k_nearVoxelDiagonalFraction = 0.05f;
+constexpr float k_nearVoxelDiagonalFraction = 0.01f;
 constexpr float k_clipPlaneVoxelMarginFraction = 1.0f;
 constexpr float k_perspectiveScrollScale = 0.01f;
 constexpr float k_orthographicScrollScale = 0.22f;
@@ -338,7 +339,6 @@ Pose defaultCoronalPose(const SceneFrame& scene)
 void configureClipPlanes(Camera& camera, const SceneFrame& scene)
 {
   const SceneMetrics metrics = sceneMetrics(scene);
-  const float diagonal = metrics.m_diagonal;
   const float voxelMargin = k_clipPlaneVoxelMarginFraction * metrics.m_voxelDiagonal;
   const float minNearDistance = std::max(k_nearVoxelDiagonalFraction * metrics.m_voxelDiagonal, k_minSceneSize);
   const glm::vec3 eye = helper::worldOrigin(camera);
@@ -353,7 +353,11 @@ void configureClipPlanes(Camera& camera, const SceneFrame& scene)
   }
 
   const float nearDistance = std::max(minNearDistance, minDepth - voxelMargin);
-  const float farDistance = std::max(maxDepth + voxelMargin, nearDistance + diagonal);
+  // Fit the far plane to the scene in front of the eye. Retaining a full scene
+  // diagonal behind the eye needlessly widens the perspective depth range just
+  // when close inspection requires a small near plane.
+  const float minimumClipRange = std::max(voxelMargin, k_minSceneSize);
+  const float farDistance = std::max(maxDepth + voxelMargin, nearDistance + minimumClipRange);
 
   camera.setClipDistances(nearDistance, farDistance);
 }

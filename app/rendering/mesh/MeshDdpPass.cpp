@@ -75,7 +75,13 @@ public:
     m_blendEnabled = glIsEnabled(GL_BLEND);
     m_scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
     m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+    m_stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
+    m_cullFaceEnabled = glIsEnabled(GL_CULL_FACE);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &m_depthMask);
+    glGetIntegerv(GL_CULL_FACE_MODE, &m_cullFaceMode);
+    std::array<GLint, 2> polygonModes{};
+    glGetIntegerv(GL_POLYGON_MODE, polygonModes.data());
+    m_polygonMode = polygonModes[0];
   }
 
   ScopedDdpGlState(const ScopedDdpGlState&) = delete;
@@ -93,6 +99,10 @@ public:
     m_blendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
     m_scissorEnabled ? glEnable(GL_SCISSOR_TEST) : glDisable(GL_SCISSOR_TEST);
     m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+    m_stencilTestEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
+    glCullFace(static_cast<GLenum>(m_cullFaceMode));
+    m_cullFaceEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
+    glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(m_polygonMode));
     glDepthMask(m_depthMask);
   }
 
@@ -118,7 +128,11 @@ private:
   GLboolean m_blendEnabled = GL_FALSE;
   GLboolean m_scissorEnabled = GL_FALSE;
   GLboolean m_depthTestEnabled = GL_FALSE;
+  GLboolean m_stencilTestEnabled = GL_FALSE;
+  GLboolean m_cullFaceEnabled = GL_FALSE;
   GLboolean m_depthMask = GL_TRUE;
+  GLint m_cullFaceMode = GL_BACK;
+  GLint m_polygonMode = GL_FILL;
 };
 
 void clearDdpTargets(MeshDdpResources& resources, const uint32_t textureId)
@@ -203,7 +217,7 @@ void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t 
   }
 }
 
-void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId, const GLuint completionQuery)
+void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentId)
 {
   request.resources.backBlendFbo().bind(fbo::TargetType::DrawAndRead);
   glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -215,15 +229,28 @@ void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentI
   request.resources.backTempTexture(currentId).bind(k_backTempTextureUnit);
   request.backBlendProgram.use();
   request.backBlendProgram.setUniform("u_backTempTex", static_cast<GLint>(k_backTempTextureUnit));
-  if (completionQuery != 0u) {
-    glBeginQuery(GL_ANY_SAMPLES_PASSED, completionQuery);
-  }
   drawFullScreenTriangle(request.resources);
-  if (completionQuery != 0u) {
-    glEndQuery(GL_ANY_SAMPLES_PASSED);
-  }
   request.backBlendProgram.stopUse();
   request.resources.backTempTexture(currentId).unbind(k_backTempTextureUnit);
+}
+
+void queryRemainingLayers(const MeshDdpRenderRequest& request, const uint32_t currentId, const GLuint completionQuery)
+{
+  if (completionQuery == 0u) {
+    return;
+  }
+
+  // Completion is determined from the next min/max depth bounds, not from back-layer alpha. A transparent boundary
+  // can contribute no color while deeper geometry still remains, so using back alpha can stop peeling too early.
+  request.resources.backBlendFbo().bind(fbo::TargetType::DrawAndRead);
+  request.resources.depthTexture(currentId).bind(k_depthTextureUnit);
+  request.completionProgram.use();
+  request.completionProgram.setUniform("u_depthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
+  glBeginQuery(GL_ANY_SAMPLES_PASSED, completionQuery);
+  drawFullScreenTriangle(request.resources);
+  glEndQuery(GL_ANY_SAMPLES_PASSED);
+  request.completionProgram.stopUse();
+  request.resources.depthTexture(currentId).unbind(k_depthTextureUnit);
 }
 
 std::optional<bool> completedQueryHasSamples(const GLuint query)
@@ -282,6 +309,9 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
   glViewport(0, 0, static_cast<GLsizei>(size.x), static_cast<GLsizei>(size.y));
   glDisable(GL_SCISSOR_TEST);
   glDisable(GL_DEPTH_TEST);
+  glDisable(GL_STENCIL_TEST);
+  glDisable(GL_CULL_FACE);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glDepthMask(GL_FALSE);
 
   clearAccumulatedBackColor(request.resources);
@@ -314,7 +344,8 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
     currentId = (completedPasses + 1u) % 2u;
     clearDdpTargets(request.resources, currentId);
     peelFrontAndBackLayers(request, currentId);
-    blendBackLayer(request, currentId, completionQueries.empty() ? 0u : completionQueries[completedPasses]);
+    blendBackLayer(request, currentId);
+    queryRemainingLayers(request, currentId, completionQueries.empty() ? 0u : completionQueries[completedPasses]);
     ++completedPasses;
   }
 

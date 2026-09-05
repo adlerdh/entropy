@@ -8,18 +8,17 @@
 #include <uuid.h>
 
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 
 namespace rendering::mesh
 {
 
-/** DDP depth separation applied per ordered image-plane surface. */
-inline constexpr float k_imagePlaneDdpDepthBiasPerSurface = 4.0e-6f;
-
-/** Return the DDP-only depth tie-break for an image layer and orthogonal plane orientation. */
-constexpr float imagePlaneDdpDepthBias(
+/** Return the DDP-only ULP tie-break for an image layer and orthogonal plane orientation. */
+constexpr uint32_t imagePlaneDdpDepthOrder(
   const std::size_t imageLayer,
   const MeshImagePlaneOrientation orientation) noexcept
 {
@@ -34,7 +33,19 @@ constexpr float imagePlaneDdpDepthBias(
     }
     return 0u;
   }();
-  return k_imagePlaneDdpDepthBiasPerSurface * static_cast<float>(3u * imageLayer + orientationLayer);
+  constexpr std::size_t k_maxImageLayer = (static_cast<std::size_t>(std::numeric_limits<uint32_t>::max()) - 3u) / 3u;
+  const std::size_t boundedImageLayer = imageLayer < k_maxImageLayer ? imageLayer : k_maxImageLayer;
+  // Reserve zero for ordinary geometry. Every plane receives at least a one-ULP tie-break so a geometric
+  // plane/surface intersection cannot collapse both fragments into one GL_MAX boundary layer.
+  return static_cast<uint32_t>(3u * boundedImageLayer + orientationLayer + 1u);
+}
+
+/** Apply the same representable-float ordering used by the image-plane DDP shaders. */
+constexpr float orderedImagePlaneDdpDepth(const float fragmentDepth, const uint32_t order) noexcept
+{
+  const float boundedDepth = fragmentDepth <= 0.0f ? 0.0f : (fragmentDepth >= 1.0f ? 1.0f : fragmentDepth);
+  const uint32_t depthBits = std::bit_cast<uint32_t>(boundedDepth);
+  return std::bit_cast<float>(order < depthBits ? depthBits - order : 0u);
 }
 
 /** Return border opacity gated by source-image visibility and modulated by the plane's view angle. */
@@ -70,7 +81,7 @@ struct MeshImagePlaneRenderable
   uint32_t boundaryVertexCount = 0u;        //!< Number of valid perimeter vertices
   MeshImagePlaneOrientation orientation = MeshImagePlaneOrientation::Axial; //!< Orthogonal plane orientation
   MeshImagePlaneTexture texture;                                            //!< Image texture sampled by the plane
-  float ddpDepthBias = 0.0f;               //!< DDP-only depth tie-break; larger values composite in front
+  uint32_t ddpDepthOrder = 0u;             //!< DDP-only ULP tie-break; larger values composite in front
   float opacityMultiplier = 1.0f;          //!< Additional opacity multiplier applied by the 3D view
   glm::vec4 borderColor = glm::vec4{0.0f}; //!< Premultiplied in the shader; zero alpha disables the analytic border
   float borderWidthPixels = 0.0f;          //!< Inward screen-space border width in device pixels

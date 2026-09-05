@@ -3,6 +3,7 @@
 in vec3 v_worldPosition;
 in vec3 v_worldNormal;
 in vec4 v_color;
+flat in vec3 v_worldFaceNormal;
 noperspective in vec3 v_barycentric;
 
 uniform vec4 u_baseColor;
@@ -41,8 +42,6 @@ layout(location = 0) out vec2 outDepthBounds;
 layout(location = 1) out vec4 outFrontColor;
 layout(location = 2) out vec4 outBackColor;
 
-const float kMaxDepth = 1.0;
-const float kDepthEpsilon = 0.000001;
 const int kShadingModelUnlit = 0;
 const int kShadingModelSimpleLit = 1;
 const int kShadingModelPhysicallyBased = 2;
@@ -52,6 +51,8 @@ const float kPbrFillLightStrength = 0.18;
 const float kPbrAmbientStrength = 0.30;
 const float kPbrDiffuseStrength = 0.50;
 const float kPbrSpecularStrength = 0.20;
+
+$$DDP_DEPTH_FUNCTIONS$$
 
 vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
@@ -119,12 +120,23 @@ vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 vi
 
 vec3 surfaceNormal()
 {
+  if (u_flatShadingEnabled && dot(v_worldFaceNormal, v_worldFaceNormal) > 0.000001) {
+    return normalize(v_worldFaceNormal);
+  }
+
   if (!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal) > 0.000001) {
     return normalize(v_worldNormal);
   }
 
   vec3 geometricNormal = cross(dFdx(v_worldPosition), dFdy(v_worldPosition));
   return dot(geometricNormal, geometricNormal) > 0.000001 ? normalize(geometricNormal) : vec3(0.0, 0.0, 1.0);
+}
+
+vec3 safeViewDirection()
+{
+  vec3 eyeVector = u_cameraWorldPosition - v_worldPosition;
+  float eyeDistance2 = dot(eyeVector, eyeVector);
+  return eyeDistance2 > 0.000000000001 ? eyeVector * inversesqrt(eyeDistance2) : normalize(u_lightDirectionWorld);
 }
 
 float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
@@ -197,7 +209,7 @@ vec4 applyTriangleEdges(vec4 color)
 vec4 shadedMeshColor()
 {
   vec3 normal = surfaceNormal();
-  vec3 viewDirection = normalize(u_cameraWorldPosition - v_worldPosition);
+  vec3 viewDirection = safeViewDirection();
   vec3 shadingNormal = faceforward(normal, -viewDirection, normal);
   vec3 lightDirection = u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
@@ -223,20 +235,17 @@ void main()
   vec2 previousDepthBounds = texelFetch(u_previousDepthBoundsTex, pixelCoord, 0).xy;
   vec4 previousFrontColor = texelFetch(u_previousFrontColorTex, pixelCoord, 0);
   float fragmentDepth = gl_FragCoord.z;
-  float nearestDepth = -previousDepthBounds.x;
-  float farthestDepth = previousDepthBounds.y;
-
-  outDepthBounds = vec2(-kMaxDepth);
+  outDepthBounds = vec2(-kDdpMaxDepth);
   outFrontColor = previousFrontColor;
   outBackColor = vec4(0.0);
 
   // Fragments outside the previous bounds were already peeled in an earlier pass.
-  if (fragmentDepth < nearestDepth - kDepthEpsilon || fragmentDepth > farthestDepth + kDepthEpsilon) {
+  if (ddpDepthIsOutside(fragmentDepth, previousDepthBounds)) {
     return;
   }
 
   // Interior fragments are candidates for the next pass. GL_MAX blending keeps the nearest and farthest candidates.
-  if (fragmentDepth > nearestDepth + kDepthEpsilon && fragmentDepth < farthestDepth - kDepthEpsilon) {
+  if (ddpDepthIsInterior(fragmentDepth, previousDepthBounds)) {
     outDepthBounds = vec2(-fragmentDepth, fragmentDepth);
     return;
   }
@@ -244,7 +253,7 @@ void main()
   // Boundary fragments are the frontmost and backmost layers for this pass.
   vec4 color = shadedMeshColor();
   vec4 premultipliedColor = vec4(color.rgb * color.a, color.a);
-  if (fragmentDepth >= nearestDepth - kDepthEpsilon && fragmentDepth <= nearestDepth + kDepthEpsilon) {
+  if (ddpDepthIsNearest(fragmentDepth, previousDepthBounds)) {
     outFrontColor = previousFrontColor + premultipliedColor * (1.0 - previousFrontColor.a);
   }
   else {

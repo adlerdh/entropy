@@ -13,6 +13,8 @@ out vec3 edge_worldPosition;
 out vec3 edge_worldNormal;
 out vec4 edge_color;
 
+invariant gl_Position;
+
 void main()
 {
   vec4 worldPosition = u_world_T_mesh * vec4(a_position, 1.0);

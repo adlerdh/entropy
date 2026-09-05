@@ -197,6 +197,8 @@ void Rendering::drawMeshRenderListForView(
       renderData.m_lightingSpecularPower});
   context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
   context.triangleEdgesEnabled = renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled;
+  const bool useTriangleGeometryProgram =
+    rendering::mesh::requiresMeshGeometryShader(renderData.m_meshSurfaceMaterialSettings);
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
     renderData.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{
@@ -291,8 +293,9 @@ void Rendering::drawMeshRenderListForView(
       .context = ddpContext,
       .plan = ddpPlan,
       .meshRenderer = m_meshRenderer,
-      .initProgram = m_meshDdpInitProgram,
-      .peelProgram = context.triangleEdgesEnabled ? m_meshDdpPeelEdgesProgram : m_meshDdpPeelProgram,
+      .initProgram = useTriangleGeometryProgram ? m_meshDdpInitEdgesProgram : m_meshDdpInitProgram,
+      .peelProgram = useTriangleGeometryProgram ? m_meshDdpPeelEdgesProgram : m_meshDdpPeelProgram,
+      .completionProgram = m_meshDdpCompletionProgram,
       .backBlendProgram = m_meshDdpBackBlendProgram,
       .resolveProgram = m_meshDdpResolveProgram,
       .drawExtraDepthBounds = imagePlaneList
@@ -313,10 +316,10 @@ void Rendering::drawMeshRenderListForView(
                                : std::function<void(GLTexture&, GLTexture&)>{}});
   }
   else {
-    m_meshRenderer.drawOpaque(list, context, context.triangleEdgesEnabled ? m_meshEdgesProgram : m_meshProgram);
+    m_meshRenderer.drawOpaque(list, context, useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram);
   }
 
-  GLShaderProgram& visibleMeshProgram = context.triangleEdgesEnabled ? m_meshEdgesProgram : m_meshProgram;
+  GLShaderProgram& visibleMeshProgram = useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram;
   m_meshRenderer.drawAdditive(list, context, visibleMeshProgram);
   m_meshRenderer.drawMultiplicative(list, context, visibleMeshProgram);
   setupOpenGLState();

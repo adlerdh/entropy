@@ -140,9 +140,16 @@ TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths
   for (const char* shaderPath : shaderPaths) {
     const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
     CHECK(shader.find("uniform bool u_flatShadingEnabled") != std::string::npos);
+    CHECK(shader.find("flat in vec3 v_worldFaceNormal") != std::string::npos);
+    CHECK(shader.find("u_flatShadingEnabled && dot(v_worldFaceNormal, v_worldFaceNormal)") != std::string::npos);
     CHECK(shader.find("!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal)") != std::string::npos);
     CHECK(shader.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
   }
+
+  const std::string geometry = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.gs");
+  CHECK(geometry.find("flat out vec3 v_worldFaceNormal") != std::string::npos);
+  CHECK(geometry.find("edge_worldPosition[1] - edge_worldPosition[0]") != std::string::npos);
+  CHECK(geometry.find("v_worldFaceNormal = faceNormal") != std::string::npos);
 }
 
 TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rendering][shaders][mesh]")
@@ -150,7 +157,9 @@ TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rend
   const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.vs");
   const std::string geometry = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.gs");
   CHECK(vertex.find("out vec3 edge_worldPosition") != std::string::npos);
+  CHECK(vertex.find("gl_Position = u_clip_T_world * worldPosition") != std::string::npos);
   CHECK(geometry.find("noperspective out vec3 v_barycentric") != std::string::npos);
+  CHECK(geometry.find("gl_Position = gl_in[corner].gl_Position") != std::string::npos);
   CHECK(geometry.find("vec3(1.0, 0.0, 0.0)") != std::string::npos);
 
   const std::array fragmentPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
@@ -199,15 +208,43 @@ TEST_CASE("raycasting does not render the mesh-only 3D crosshairs", "[rendering]
   CHECK(raycast.find("raySphereFirstHit") == std::string::npos);
 }
 
-TEST_CASE("image plane DDP shaders apply the ordered coplanar depth tie-break", "[rendering][shaders][ddp]")
+TEST_CASE("DDP shaders preserve exact physical depth ordering", "[rendering][shaders][ddp]")
 {
   const std::string init =
     shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
   const std::string peel =
     shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpPeel.fs");
+  const std::string depth = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpDepth.glsl");
 
-  CHECK(init.find("gl_FragCoord.z - u_ddpDepthBias") != std::string::npos);
-  CHECK(peel.find("gl_FragCoord.z - u_ddpDepthBias") != std::string::npos);
+  CHECK(init.find("ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder)") != std::string::npos);
+  CHECK(peel.find("ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder)") != std::string::npos);
+  CHECK(meshPeel.find("ddpDepthIsOutside(fragmentDepth, previousDepthBounds)") != std::string::npos);
+  CHECK(depth.find("floatBitsToUint(boundedDepth)") != std::string::npos);
+  CHECK(depth.find("depthBits - order") != std::string::npos);
+  CHECK(depth.find("epsilon") == std::string::npos);
+  CHECK(init.find("u_ddpDepthBias") == std::string::npos);
+  CHECK(peel.find("u_ddpDepthBias") == std::string::npos);
+  CHECK(meshPeel.find("kDepthEpsilon") == std::string::npos);
+}
+
+TEST_CASE("DDP uses invariant rasterization and depth-bound completion", "[rendering][shaders][ddp]")
+{
+  const std::array vertexPaths{
+    "app/rendering/shaders/mesh/Mesh.vs",
+    "app/rendering/shaders/mesh/MeshEdges.vs",
+    "app/rendering/shaders/mesh/MeshEdges.gs",
+    "app/rendering/shaders/mesh/MeshImagePlane.vs"};
+  for (const char* path : vertexPaths) {
+    const std::string source = shader_setup::loadEmbeddedShaderSource(path);
+    CHECK(source.find("invariant gl_Position") != std::string::npos);
+  }
+
+  const std::string completion =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpCompletion.fs");
+  CHECK(completion.find("u_depthBoundsTex") != std::string::npos);
+  CHECK(completion.find("ddpDepthBoundsAreValid") != std::string::npos);
+  CHECK(completion.find("u_backTempTex") == std::string::npos);
 }
 
 TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering][shaders][ddp]")
@@ -265,8 +302,24 @@ TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[r
   CHECK(peel.find("occludedSamples / 9.0") != std::string::npos);
   CHECK(opaque.find("u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection") != std::string::npos);
   CHECK(peel.find("u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection") != std::string::npos);
+  CHECK(opaque.find("eyeDistance2 > 0.000000000001") != std::string::npos);
+  CHECK(peel.find("eyeDistance2 > 0.000000000001") != std::string::npos);
   CHECK(opaque.find("u_shadowDepthBias * mix(1.0, 3.0, normalOffset)") != std::string::npos);
   CHECK(peel.find("u_shadowDepthBias * mix(1.0, 3.0, normalOffset)") != std::string::npos);
   CHECK(opaque.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
   CHECK(peel.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
+}
+
+TEST_CASE("mesh SSAO rejects clipped samples and follows the visible normal model", "[rendering][shaders][ssao]")
+{
+  const std::string geometry =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionGeometry.fs");
+  const std::string resolve =
+    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionResolve.fs");
+
+  CHECK(geometry.find("uniform bool u_flatShadingEnabled") != std::string::npos);
+  CHECK(geometry.find("flat in vec3 v_worldFaceNormal") != std::string::npos);
+  CHECK(geometry.find("u_flatShadingEnabled && dot(v_worldFaceNormal, v_worldFaceNormal)") != std::string::npos);
+  CHECK(geometry.find("!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal)") != std::string::npos);
+  CHECK(resolve.find("sampleNdc.z <= -1.0 || sampleNdc.z >= 1.0") != std::string::npos);
 }

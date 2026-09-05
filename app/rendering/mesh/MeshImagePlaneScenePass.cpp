@@ -236,7 +236,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           mesh.orientation);
         // Image selections are bottom layer first, just as in the 2D views. Coincident planes must have distinct DDP
         // depths because draw order alone cannot order fragments that share exactly the same depth bound.
-        renderable.ddpDepthBias = rendering::mesh::imagePlaneDdpDepthBias(imageLayer, mesh.orientation);
+        renderable.ddpDepthOrder = rendering::mesh::imagePlaneDdpDepthOrder(imageLayer, mesh.orientation);
         renderable.boundaryVertexCount = static_cast<uint32_t>(
           std::min<std::size_t>(renderable.boundaryWorld.size(), mesh.mesh.positions.size() - 1u));
         for (uint32_t i = 0u; i < renderable.boundaryVertexCount; ++i) {

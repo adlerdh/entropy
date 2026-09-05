@@ -27,6 +27,7 @@ struct MeshDdpRenderRequest
   const MeshRenderer& meshRenderer;           //!< Stateless mesh draw helper
   GLShaderProgram& initProgram;               //!< Mesh fragment shader that initializes depth bounds
   GLShaderProgram& peelProgram;               //!< Mesh fragment shader that peels front/back layers
+  GLShaderProgram& completionProgram;         //!< Full-screen shader that detects unpeeled depth layers
   GLShaderProgram& backBlendProgram;          //!< Full-screen shader that accumulates back colors
   GLShaderProgram& resolveProgram;            //!< Full-screen shader that resolves front over back
   std::function<void()> drawExtraDepthBounds; //!< Optional non-material renderables for the DDP initialization pass

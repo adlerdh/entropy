@@ -60,7 +60,9 @@ void main()
 
     vec4 sampleClip = u_clip_T_camera * vec4(samplePosition, 1.0);
     if (sampleClip.w <= 0.0) continue;
-    vec2 sampleUv = sampleClip.xy / sampleClip.w * 0.5 + 0.5;
+    vec3 sampleNdc = sampleClip.xyz / sampleClip.w;
+    if (sampleNdc.z <= -1.0 || sampleNdc.z >= 1.0) continue;
+    vec2 sampleUv = sampleNdc.xy * 0.5 + 0.5;
     if (any(lessThanEqual(sampleUv, vec2(0.0))) || any(greaterThanEqual(sampleUv, vec2(1.0)))) continue;
 
     float sampleDepth = texture(u_depthTex, sampleUv).r;

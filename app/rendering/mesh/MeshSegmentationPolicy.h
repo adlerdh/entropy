@@ -14,12 +14,12 @@ namespace rendering::mesh
 /**
  * @brief Algorithm name used by the built-in scalar-grid segmentation-label extractor
  */
-inline constexpr const char* kScalarGridSegmentationAlgorithm = "scalar-grid-vtk-discrete-flying-edges-3d";
+inline constexpr const char* kScalarGridSegmentationAlgorithm = "packed-label-vtk-surface-nets-3d";
 
 /**
  * @brief Version for the built-in scalar-grid segmentation-label extractor
  */
-inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 2;
+inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 3;
 
 /**
  * @brief User-facing label-table state needed to decide if a segmentation label should render as a mesh

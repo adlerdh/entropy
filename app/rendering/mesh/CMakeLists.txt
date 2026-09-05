@@ -46,6 +46,7 @@ target_sources(entropy PRIVATE
   MeshScene.cpp
   MeshSegmentationPolicy.cpp
   MeshSegmentationScene.cpp
+  SegmentationExtractionBatch.cpp
   MeshShaderPrograms.cpp
   MeshShadowMapPass.cpp
   MeshShadowMapProjection.cpp
