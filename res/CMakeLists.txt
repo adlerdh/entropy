@@ -56,7 +56,7 @@ entropy_add_license_resource(entropy_LICENSES "imgui-knobs.txt" "${entropy_EXT_D
 entropy_add_license_resource(entropy_LICENSES "PNPOLY.txt" "${entropy_EXT_DIR}/wrfranklin/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "SafeCLib.txt" "${entropy_EXT_DIR}/safeclib/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "CubicBSplineInterpolation.txt"
-  "${entropy_APP_DIR}/rendering/shaders/functions/TricubicReadme.txt")
+  "${entropy_LIB_DIR}/rendering/shaders/functions/TricubicReadme.txt")
 
 entropy_add_license_resource(entropy_LICENSES "Cousine.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Cousine/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "ForkAwesome.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/ForkAwesome/LICENSES.txt")

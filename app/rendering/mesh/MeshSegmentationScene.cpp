@@ -1,14 +1,11 @@
 #include "rendering/Rendering.h"
 
-#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "logic/app/Data.h"
 #include "logic/app/ParcellationLabelTable.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionJobs.h"
 #include "rendering/mesh/MeshGeneration.h"
-#include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshScene.h"
@@ -29,28 +26,11 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace
 {
-
-using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
-using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
-using MeshHandle = rendering::mesh::MeshHandle;
-using MeshHandleMap = std::unordered_map<MeshGeometryKey, MeshHandle, MeshGeometryKeyHash>;
-
-MeshHandle meshHandleForKey(const MeshGeometryKey& key, MeshHandleMap& handles)
-{
-  if (const auto existing = handles.find(key); existing != handles.end()) {
-    return existing->second;
-  }
-
-  MeshHandle handle{.uid = generateRandomUuid(), .geometryVersion = MeshGeometryKeyHash{}(key)};
-  handles.emplace(key, handle);
-  return handle;
-}
 
 glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const std::size_t labelIndex)
 {
@@ -189,12 +169,12 @@ bool Rendering::renderSegmentationMeshesForView(
     const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
       static_cast<float>(seg->settings().opacity()),
       imageOpacity,
-      m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
+      m_appData.renderSettings().m_modulateSegmentationOpacityWithImageOpacity3d);
     const rendering::mesh::MeshGenerationOptions generationOptions{
       .threadCount = 0,
-      .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
-      .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-      .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+      .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
+      .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+      .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
     renderables.reserve(renderables.size() + labelTable->numLabels());
     std::shared_ptr<const Image> segmentationSnapshot;
     bool snapshotNeededForFutureSubmission = false;
@@ -220,12 +200,11 @@ bool Rendering::renderSegmentationMeshesForView(
         timePoint,
         generationOptions);
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-      const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
+      const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
 
-      if (!m_meshCpuCache.readyMesh(key)) {
-        const rendering::mesh::MeshCacheEntry* cacheEntry = m_meshCpuCache.find(key);
-        const bool retry = m_meshCpuCache.canRetry(key);
-        if ((!cacheEntry || retry) && m_meshExtractionQueue.canSubmit(key)) {
+      const rendering::mesh::MeshData* readyMesh = m_meshExtractions.readyMesh(key);
+      if (!readyMesh) {
+        if (m_meshExtractions.canSubmit(key)) {
           if (!segmentationSnapshot) {
             const auto inventory = m_segmentationLabelInventories.find(segUid);
             if (
@@ -247,26 +226,22 @@ bool Rendering::renderSegmentationMeshesForView(
           }
 
           const std::string description = segmentationMeshDescription(*seg, *labelTable, labelIndex);
-          if (m_meshExtractionQueue.submit(
+          if (!m_meshExtractions.submit(
                 key,
                 description,
                 rendering::mesh::makeSegmentationExtractionJob(request, labelInfo->second, segmentationSnapshot)))
           {
-            m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
-          }
-          else {
             snapshotNeededForFutureSubmission = true;
           }
         }
-        else if (!cacheEntry || retry) {
+        else if (m_meshExtractions.needsExtraction(key)) {
           snapshotNeededForFutureSubmission = true;
         }
 
         continue;
       }
 
-      const rendering::mesh::MeshGpuSyncStatus syncStatus =
-        rendering::mesh::syncReadyMeshToGpu(key, handle, m_meshCpuCache, m_meshGpuStore);
+      const rendering::mesh::MeshGpuSyncStatus syncStatus = m_meshResources.synchronize(handle, *readyMesh);
       if (
         syncStatus != rendering::mesh::MeshGpuSyncStatus::Uploaded &&
         syncStatus != rendering::mesh::MeshGpuSyncStatus::AlreadyCurrent)
@@ -278,7 +253,7 @@ bool Rendering::renderSegmentationMeshesForView(
         labelValue,
         normalizedLabelColor(*labelTable, labelIndex),
         labelState,
-        m_appData.renderData().m_meshSurfaceMaterialSettings);
+        m_appData.renderSettings().m_meshSurfaceMaterialSettings);
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeSegmentationLabelRenderable(handle, seg->transformations().worldDef_T_subject(), style);
       renderable.drawOptions.clipPlanes = clipPlanes;

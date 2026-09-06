@@ -1,10 +1,12 @@
 #include "rendering/Rendering.h"
+#include "rendering/utility/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
 #include "logic/app/Data.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
@@ -27,11 +29,11 @@ void Rendering::renderAllImageBordersForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   const bool renderBordersInCurrentLayout =
-    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
+    renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
     (!m_appData.windowData().currentLayout().isLightbox() ||
-     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
+     renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
 
   if (!m_nvg || !renderBordersInCurrentLayout) {
     return;
@@ -53,7 +55,7 @@ void Rendering::renderAllImageBordersForView(
           view,
           CurrentImages{imgSegPair},
           true);
-        setupOpenGLState();
+        rendering::restoreOpenGLRenderState();
       }
       break;
     }
@@ -66,7 +68,7 @@ void Rendering::renderAllImageBordersForView(
         view,
         getImageAndSegUidsForMetricShaders(view.metricImages()),
         true);
-      setupOpenGLState();
+      rendering::restoreOpenGLRenderState();
       break;
     }
     case ShaderGroup::None:
@@ -89,7 +91,7 @@ void Rendering::renderAllLandmarksForView(
       const CurrentImages imageSegPairs = getImageAndSegUidsForImageShaders(view.renderedImages());
       for (const auto& imgSegPair : imageSegPairs) {
         drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-        setupOpenGLState();
+        rendering::restoreOpenGLRenderState();
       }
       break;
     }
@@ -99,7 +101,7 @@ void Rendering::renderAllLandmarksForView(
       const CurrentImages imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
       for (const auto& imgSegPair : imageSegPairs) {
         drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-        setupOpenGLState();
+        rendering::restoreOpenGLRenderState();
       }
       break;
     }
@@ -115,7 +117,7 @@ void Rendering::renderAllLandmarksForView(
         m_appData,
         view,
         getImageAndSegUidsForMetricShaders(view.metricImages()));
-      setupOpenGLState();
+      rendering::restoreOpenGLRenderState();
     }
   }
 }
@@ -134,7 +136,7 @@ void Rendering::renderAllAnnotationsForView(
       const CurrentImages imageSegPairs = getImageAndSegUidsForImageShaders(view.renderedImages());
       for (const auto& imgSegPair : imageSegPairs) {
         drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-        setupOpenGLState();
+        rendering::restoreOpenGLRenderState();
       }
       break;
     }
@@ -144,7 +146,7 @@ void Rendering::renderAllAnnotationsForView(
       const CurrentImages imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
       for (const auto& imgSegPair : imageSegPairs) {
         drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-        setupOpenGLState();
+        rendering::restoreOpenGLRenderState();
       }
       break;
     }
@@ -160,7 +162,7 @@ void Rendering::renderAllAnnotationsForView(
         m_appData,
         view,
         getImageAndSegUidsForMetricShaders(view.metricImages()));
-      setupOpenGLState();
+      rendering::restoreOpenGLRenderState();
     }
   }
 }

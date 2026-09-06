@@ -63,7 +63,7 @@ computeMipSamplingParams(const Camera& camera, const Image& image, float mipSlab
 void drawImageQuad(
   GLShaderProgram& program,
   const ViewRenderMode& renderMode,
-  RenderData::Quad& quad,
+  rendering::RenderResources::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -243,7 +243,7 @@ void drawImageQuad(
 /// as the input to this function, since the metric shaders render more than one seg.
 void drawSegQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const Image& seg,
   const Image& geometryImage,
   const View& view,
@@ -337,7 +337,7 @@ void drawSegQuad(
 
 void drawSegPreviewQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const glm::mat4& texture_T_world,
   const glm::mat4& voxel_T_world,
   const glm::uvec3& textureSize,
@@ -421,7 +421,7 @@ void drawSegPreviewQuad(
 
 void drawRaycastQuad(
   GLShaderProgram& program,
-  RenderData::Quad& quad,
+  rendering::RenderResources::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,

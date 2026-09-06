@@ -12,6 +12,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_set>
 
 namespace rendering::mesh
 {
@@ -46,6 +47,8 @@ struct MeshGeometryKeyHash
    */
   std::size_t operator()(const MeshGeometryKey& key) const;
 };
+
+using MeshGeometryKeySet = std::unordered_set<MeshGeometryKey, MeshGeometryKeyHash>;
 
 /**
  * @brief Inputs that change mesh appearance without changing geometry

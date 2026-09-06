@@ -142,7 +142,6 @@ target_link_libraries(EntropyUI
     entropy::fonts
     entropy::icons
     entropy::licenses
-    entropy::shaders
     entropy_warnings
 )
 

@@ -65,20 +65,20 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
   const uuids::uuid& textureImageUid,
   const uint32_t component,
   const bool bindMultipleComponents,
-  const RenderData::PlanarTextureLayout& textureLayout)
+  const rendering::PlanarTextureLayout& textureLayout)
 {
-  auto& renderData = appData.renderData();
+  auto& renderSettings = appData.renderResources();
   const Image* sourceImage = appData.image(sourceImageUid);
   const Image* textureImage = appData.image(textureImageUid);
   std::list<BoundImagePlaneTexture> boundTextures;
   GLTexture& blankTexture = rendering::TextureDimension::Texture2D == textureLayout.dimension
-                              ? renderData.m_blankImageBlackTransparentTexture2D
-                              : renderData.m_blankImageBlackTransparentTexture;
-  const auto textureIt = renderData.m_imageTextures.find(textureImageUid);
+                              ? renderSettings.m_blankImageBlackTransparentTexture2D
+                              : renderSettings.m_blankImageBlackTransparentTexture;
+  const auto textureIt = renderSettings.m_imageTextures.find(textureImageUid);
 
   for (std::size_t slot = 0; slot < sk_imgRgbaTexSamplers.indices.size(); ++slot) {
     GLTexture* texture = &blankTexture;
-    if (textureImage && textureIt != renderData.m_imageTextures.end() && !textureIt->second.empty()) {
+    if (textureImage && textureIt != renderSettings.m_imageTextures.end() && !textureIt->second.empty()) {
       const std::size_t requestedComponent = bindMultipleComponents ? slot : component;
       const bool componentExists =
         !bindMultipleComponents || requestedComponent < textureImage->header().numComponentsPerPixel();
@@ -98,7 +98,7 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
   const std::optional<uuids::uuid> cmapUid =
     sourceImage ? appData.imageColorMapUid(sourceImage->settings().colorMapIndex()) : std::nullopt;
   GLTexture& colorMapTexture =
-    cmapUid ? renderData.m_colormapTextures.at(*cmapUid) : std::begin(renderData.m_colormapTextures)->second;
+    cmapUid ? renderSettings.m_colormapTextures.at(*cmapUid) : std::begin(renderSettings.m_colormapTextures)->second;
   colorMapTexture.bind(sk_imgCmapTexSampler.index);
   boundTextures.emplace_back(colorMapTexture, sk_imgCmapTexSampler.index);
   return boundTextures;
@@ -114,16 +114,16 @@ struct BoundImagePlaneSegmentationTexture
 BoundImagePlaneSegmentationTexture bindImagePlaneSegmentationTexture(
   AppData& appData,
   const std::optional<uuids::uuid>& segmentationUid,
-  RenderData::TextureDimension textureDimension)
+  rendering::TextureDimension textureDimension)
 {
-  auto& renderData = appData.renderData();
-  GLTexture* texture = textureDimension == RenderData::TextureDimension::Texture2D ? &renderData.m_blankSegTexture2D
-                                                                                   : &renderData.m_blankSegTexture;
+  auto& renderSettings = appData.renderResources();
+  GLTexture* texture = textureDimension == rendering::TextureDimension::Texture2D ? &renderSettings.m_blankSegTexture2D
+                                                                                  : &renderSettings.m_blankSegTexture;
   bool hasSegmentation = false;
 
   if (segmentationUid) {
-    const auto textureIt = renderData.m_segTextures.find(*segmentationUid);
-    if (std::end(renderData.m_segTextures) != textureIt) {
+    const auto textureIt = renderSettings.m_segTextures.find(*segmentationUid);
+    if (std::end(renderSettings.m_segTextures) != textureIt) {
       texture = &textureIt->second;
       hasSegmentation = true;
     }
@@ -144,17 +144,17 @@ std::list<BoundImagePlaneBufferTexture> bindImagePlaneSegmentationLabelTableText
   const std::optional<uuids::uuid>& segmentationUid)
 {
   std::list<BoundImagePlaneBufferTexture> boundTextures;
-  if (appData.renderData().m_labelBufferTextures.empty()) {
+  if (appData.renderResources().m_labelBufferTextures.empty()) {
     return boundTextures;
   }
 
   const Image* segmentation = segmentationUid ? appData.seg(*segmentationUid) : nullptr;
   const std::optional<uuids::uuid> tableUid =
     segmentation ? appData.labelTableUid(segmentation->settings().labelTableIndex()) : std::nullopt;
-  auto tableIt = tableUid ? appData.renderData().m_labelBufferTextures.find(*tableUid)
-                          : appData.renderData().m_labelBufferTextures.end();
-  if (std::end(appData.renderData().m_labelBufferTextures) == tableIt) {
-    tableIt = std::begin(appData.renderData().m_labelBufferTextures);
+  auto tableIt = tableUid ? appData.renderResources().m_labelBufferTextures.find(*tableUid)
+                          : appData.renderResources().m_labelBufferTextures.end();
+  if (std::end(appData.renderResources().m_labelBufferTextures) == tableIt) {
+    tableIt = std::begin(appData.renderResources().m_labelBufferTextures);
   }
 
   tableIt->second.bind(sk_segLabelTableTexSampler.index);
@@ -286,13 +286,13 @@ void setMeshImagePlaneSegmentationUniforms(
   GLShaderProgram& program,
   AppData& appData,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   const bool segmentationVisible)
 {
   const Image* image = appData.image(renderable.texture.imageUid);
   const Image* segmentation =
     renderable.texture.segmentationUid ? appData.seg(*renderable.texture.segmentationUid) : nullptr;
-  const RenderData& renderData = appData.renderData();
+  const rendering::RenderSettings& renderSettings = appData.renderSettings();
   const bool drawSegmentation = segmentationVisible && image && segmentation && uniforms.segOpacity > 0.0f;
 
   program.setUniform("u_segVisible", drawSegmentation);
@@ -300,24 +300,25 @@ void setMeshImagePlaneSegmentationUniforms(
   program.setSamplerUniform("u_segLabelCmapTex", sk_segLabelTableTexSampler.index);
   program.setUniform(
     "u_segOpacity",
-    drawSegmentation
-      ? uniforms.segOpacity * (renderData.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f)
-      : 0.0f);
+    drawSegmentation ? uniforms.segOpacity *
+                         (renderSettings.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f)
+                     : 0.0f);
   program.setUniform(
     "u_segFillOpacity",
-    (SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle) ? 1.0f : renderData.m_segInteriorOpacity);
-  program.setUniform("u_segInterpCutoff", renderData.m_segInterpCutoff);
+    (SegmentationOutlineStyle::Disabled == renderSettings.m_segOutlineStyle) ? 1.0f
+                                                                             : renderSettings.m_segInteriorOpacity);
+  program.setUniform("u_segInterpCutoff", renderSettings.m_segInterpCutoff);
   program.setUniform(
     "u_segLinearInterpolation",
     drawSegmentation && InterpolationMode::NearestNeighbor != segmentation->settings().interpolationMode());
   program.setUniform(
     "u_segOutlineUsesScreenPixels",
-    drawSegmentation && SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle);
+    drawSegmentation && SegmentationOutlineStyle::ViewPixel == renderSettings.m_segOutlineStyle);
 
   const std::vector<glm::vec3> voxelSamplingDirs =
     image ? computeMeshImagePlaneSegmentationVoxelSamplingDirs(*image, renderable.orientation)
           : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
-  const bool useImageVoxelOutline = SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle;
+  const bool useImageVoxelOutline = SegmentationOutlineStyle::ImageVoxel == renderSettings.m_segOutlineStyle;
   const std::vector<glm::vec3> outlineSamplingDirs =
     useImageVoxelOutline ? voxelSamplingDirs : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
   program.setUniform("u_texSamplingDirsForSegOutline", outlineSamplingDirs);
@@ -328,9 +329,9 @@ void setMeshImagePlaneUniforms(
   GLShaderProgram& program,
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
-  const RenderData& renderData,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& textureLayout,
+  const rendering::RenderSettings& renderSettings,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& textureLayout,
   const Image& sourceImage,
   const ViewConvention viewConvention,
   const bool matchComponentRenderMode,
@@ -358,10 +359,10 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_hasVertexNormals", hasVertexNormals);
   program.setUniform("u_imagePlaneShadingEnabled", renderable.shadingEnabled);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
-  program.setUniform("u_lightingAmbient", renderData.m_imagePlaneLightingAmbient);
-  program.setUniform("u_lightingDiffuse", renderData.m_imagePlaneLightingDiffuse);
-  program.setUniform("u_lightingSpecular", renderData.m_imagePlaneLightingSpecular);
-  program.setUniform("u_lightingSpecularPower", renderData.m_imagePlaneLightingSpecularPower);
+  program.setUniform("u_lightingAmbient", renderSettings.m_imagePlaneLightingAmbient);
+  program.setUniform("u_lightingDiffuse", renderSettings.m_imagePlaneLightingDiffuse);
+  program.setUniform("u_lightingSpecular", renderSettings.m_imagePlaneLightingSpecular);
+  program.setUniform("u_lightingSpecularPower", renderSettings.m_imagePlaneLightingSpecularPower);
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_numCheckers", checkerboardSquares);
 
@@ -429,8 +430,8 @@ void setMeshImagePlaneIsoContourUniforms(
   GLShaderProgram& program,
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& textureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& textureLayout,
   const rendering::mesh::MeshDrawContext& context,
   const int checkerboardSquares,
   const ImageSettings& imageSettings,
@@ -517,13 +518,13 @@ void drawImagePlaneRenderablesWithProgram(
     const uuids::uuid renderImageUid = multipleComponents
                                          ? imagePlane.texture.imageUid
                                          : appData.effectiveImageUidForRendering(imagePlane.texture.imageUid);
-    const auto uniformsIt = appData.renderData().m_uniforms.find(renderImageUid);
-    if (uniformsIt == std::end(appData.renderData().m_uniforms)) {
+    const auto uniformsIt = appData.renderDerivedData().imageUniforms.find(renderImageUid);
+    if (uniformsIt == std::end(appData.renderDerivedData().imageUniforms)) {
       continue;
     }
 
-    const RenderData::PlanarTextureLayout textureLayout =
-      rendering::textureLayoutOrDefault(appData.renderData().m_imageTextureLayouts, renderImageUid);
+    const rendering::PlanarTextureLayout textureLayout =
+      rendering::textureLayoutOrDefault(appData.renderResources().m_imageTextureLayouts, renderImageUid);
     GLShaderProgram& program =
       shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
     const auto boundTextures = bindDdpImagePlaneTextures(
@@ -543,7 +544,7 @@ void drawImagePlaneRenderablesWithProgram(
       program,
       view,
       imagePlane,
-      appData.renderData(),
+      appData.renderSettings(),
       uniformsIt->second,
       textureLayout,
       *image,
@@ -551,7 +552,7 @@ void drawImagePlaneRenderablesWithProgram(
       true,
       context,
       gpuData->hasNormals(),
-      appData.renderData().m_numCheckerboardSquares);
+      appData.renderSettings().m_numCheckerboardSquares);
     setMeshImagePlaneSegmentationUniforms(
       program,
       appData,
@@ -617,7 +618,8 @@ void Rendering::drawMeshImagePlaneRenderListForView(
     {5u, GL_TEXTURE_2D},
     {5u, GL_TEXTURE_3D},
     {6u, GL_TEXTURE_BUFFER}};
-  const rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(m_meshGpuStore, view);
+  const rendering::mesh::MeshDrawContext context =
+    rendering::mesh::meshDrawContextForView(m_meshResources.gpuStore(), view);
   if (!context.meshLookup) {
     return;
   }
@@ -649,13 +651,13 @@ void Rendering::drawMeshImagePlaneRenderListForView(
     const uuids::uuid renderImageUid = multipleComponents
                                          ? imagePlane.texture.imageUid
                                          : m_appData.effectiveImageUidForRendering(imagePlane.texture.imageUid);
-    const auto uniformsIt = m_appData.renderData().m_uniforms.find(renderImageUid);
-    if (uniformsIt == std::end(m_appData.renderData().m_uniforms)) {
+    const auto uniformsIt = m_appData.renderDerivedData().imageUniforms.find(renderImageUid);
+    if (uniformsIt == std::end(m_appData.renderDerivedData().imageUniforms)) {
       continue;
     }
 
-    const RenderData::PlanarTextureLayout textureLayout =
-      rendering::textureLayoutOrDefault(m_appData.renderData().m_imageTextureLayouts, renderImageUid);
+    const rendering::PlanarTextureLayout textureLayout =
+      rendering::textureLayoutOrDefault(m_appData.renderResources().m_imageTextureLayouts, renderImageUid);
     GLShaderProgram& program = shaderProgramForImagePlaneTextureDimension(
       m_meshImagePlaneGrayLinearProgram,
       m_meshImagePlaneGrayLinearTexture2DProgram,
@@ -675,7 +677,7 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         program,
         view,
         imagePlane,
-        m_appData.renderData(),
+        m_appData.renderSettings(),
         uniformsIt->second,
         textureLayout,
         *image,
@@ -683,7 +685,7 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         false,
         context,
         gpuData->hasNormals(),
-        m_appData.renderData().m_numCheckerboardSquares);
+        m_appData.renderSettings().m_numCheckerboardSquares);
       drawUploadedImagePlane(*gpuData);
     }
     program.stopUse();
@@ -716,7 +718,7 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         uniformsIt->second,
         textureLayout,
         context,
-        m_appData.renderData().m_numCheckerboardSquares,
+        m_appData.renderSettings().m_numCheckerboardSquares,
         imageSettings,
         *surface,
         color,

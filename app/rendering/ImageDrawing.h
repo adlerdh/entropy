@@ -2,7 +2,8 @@
 
 #include "common/Viewport.h"
 #include "logic/camera/CameraTypes.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 
 #include <glm/fwd.hpp>
 
@@ -46,7 +47,7 @@ class View;
 void drawImageQuad(
   GLShaderProgram& program,
   const ViewRenderMode& renderMode,
-  RenderData::Quad& quad,
+  rendering::RenderResources::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -81,7 +82,7 @@ void drawImageQuad(
  */
 void drawSegQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const Image& seg,
   const Image& geometryImage,
   const View& view,
@@ -114,7 +115,7 @@ void drawSegQuad(
  */
 void drawSegPreviewQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const glm::mat4& texture_T_world,
   const glm::mat4& voxel_T_world,
   const glm::uvec3& textureSize,
@@ -142,7 +143,7 @@ void drawSegPreviewQuad(
  */
 void drawRaycastQuad(
   GLShaderProgram& program,
-  RenderData::Quad& quad,
+  rendering::RenderResources::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& imagePairs,

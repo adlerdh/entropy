@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/ShaderTextureDimension.h"
 
 #include <string>
 

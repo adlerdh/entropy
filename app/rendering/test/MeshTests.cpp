@@ -37,7 +37,6 @@
 #include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshRenderList.h"
-#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshScalarGrid.h"
 #include "rendering/mesh/MeshScene.h"
 #include "rendering/mesh/MeshSegmentationPolicy.h"
@@ -1559,7 +1558,7 @@ TEST_CASE("mesh cache stores pending, ready, failed, stale, and evicted states",
   CHECK(!evictedEntry->mesh);
 }
 
-TEST_CASE("mesh resource reconciliation releases only obsolete extracted geometry", "[rendering][mesh]")
+TEST_CASE("mesh cache reconciliation removes only obsolete extracted geometry", "[rendering][mesh]")
 {
   mesh::MeshGeometryKey retainedKey;
   retainedKey.sourceUid = generateRandomUuid();
@@ -1570,23 +1569,11 @@ TEST_CASE("mesh resource reconciliation releases only obsolete extracted geometr
   mesh::MeshCache cache;
   cache.markPending(retainedKey);
   cache.markPending(obsoleteKey);
-  const mesh::MeshHandle retainedHandle{.uid = generateRandomUuid(), .geometryVersion = 1};
-  const mesh::MeshHandle obsoleteHandle{.uid = generateRandomUuid(), .geometryVersion = 2};
-  mesh::MeshHandleMap handles{{retainedKey, retainedHandle}, {obsoleteKey, obsoleteHandle}};
-  std::vector<uuids::uuid> released;
-
-  const std::size_t removed = mesh::reconcileExtractedMeshResources(
-    mesh::MeshGeometryKeySet{retainedKey},
-    cache,
-    handles,
-    [&released](const uuids::uuid& uid) { released.push_back(uid); });
+  const std::size_t removed = cache.retainOnly(mesh::MeshGeometryKeySet{retainedKey});
 
   CHECK(removed == 1u);
-  CHECK(handles.contains(retainedKey));
-  CHECK_FALSE(handles.contains(obsoleteKey));
   CHECK(cache.contains(retainedKey));
   CHECK_FALSE(cache.contains(obsoleteKey));
-  CHECK(released == std::vector<uuids::uuid>{obsoleteHandle.uid});
 
   const mesh::MeshExtractionRunResult stale = mesh::applyExtractionJobResult(
     {.key = obsoleteKey,

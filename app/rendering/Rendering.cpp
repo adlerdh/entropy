@@ -6,6 +6,7 @@
 #include "logic/app/StackTrace.h"
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraHelpers.h"
+#include "rendering/utility/gl/OpenGLRenderState.h"
 #include "windowing/View.h"
 
 #include <cmrc/cmrc.hpp>
@@ -22,16 +23,15 @@
 #include <cmath>
 #include <limits>
 #include <list>
-#include <thread>
 #include <utility>
 
 CMRC_DECLARE(fonts);
 CMRC_DECLARE(shaders);
 
-static_assert(static_cast<int>(RenderData::LocalNccPresentation::Dissimilarity) == 0);
-static_assert(static_cast<int>(RenderData::LocalNccPresentation::Correlation) == 1);
-static_assert(static_cast<int>(RenderData::LocalNccInvalidStyle::Transparent) == 0);
-static_assert(static_cast<int>(RenderData::LocalNccInvalidStyle::Gray) == 1);
+static_assert(static_cast<int>(rendering::RenderSettings::LocalNccPresentation::Dissimilarity) == 0);
+static_assert(static_cast<int>(rendering::RenderSettings::LocalNccPresentation::Correlation) == 1);
+static_assert(static_cast<int>(rendering::RenderSettings::LocalNccInvalidStyle::Transparent) == 0);
+static_assert(static_cast<int>(rendering::RenderSettings::LocalNccInvalidStyle::Gray) == 1);
 
 namespace
 {
@@ -130,43 +130,6 @@ void logTextureUnitZeroStateIfChanged(const char* phase)
   ++logCount;
 }
 
-void clearTextureBindingsForAllUnits()
-{
-  GLint previousTextureUnit = GL_TEXTURE0;
-  GLint maxTextureUnits = 0;
-
-  glGetIntegerv(GL_ACTIVE_TEXTURE, &previousTextureUnit);
-  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-
-  for (GLint unit = 0; unit < maxTextureUnits; ++unit) {
-    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + unit));
-    glBindSampler(static_cast<GLuint>(unit), 0);
-    glBindTexture(GL_TEXTURE_1D, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindTexture(GL_TEXTURE_3D, 0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    glBindTexture(GL_TEXTURE_1D_ARRAY, 0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-    glBindTexture(GL_TEXTURE_RECTANGLE, 0);
-    glBindTexture(GL_TEXTURE_BUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 0);
-  }
-
-  glActiveTexture(static_cast<GLenum>(previousTextureUnit));
-}
-
-void clearOpenGLBindingsForShutdown()
-{
-  glUseProgram(0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-  glBindVertexArray(0);
-  clearTextureBindingsForAllUnits();
-  glActiveTexture(GL_TEXTURE0);
-}
-
 } // namespace
 
 Rendering::Rendering(AppData& appData)
@@ -248,32 +211,7 @@ Rendering::~Rendering()
 
 void Rendering::prepareForShutdown()
 {
-  clearOpenGLBindingsForShutdown();
-}
-
-void Rendering::setupOpenGLState()
-{
-  glEnable(GL_BLEND);
-  glDisable(GL_CULL_FACE);
-  glDisable(GL_DEPTH_TEST);
-  glEnable(GL_MULTISAMPLE);
-  glDisable(GL_SCISSOR_TEST);
-  glEnable(GL_STENCIL_TEST);
-
-  glDisable(GL_POLYGON_OFFSET_FILL);
-  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-  glDepthMask(GL_TRUE);
-  glDepthFunc(GL_LESS);
-  glBlendEquation(GL_FUNC_ADD);
-  glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-  glCullFace(GL_BACK);
-  glFrontFace(GL_CCW);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  glPolygonOffset(0.0f, 0.0f);
-  glStencilMask(0xffffffffu);
-  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-  glStencilFunc(GL_ALWAYS, 0, 0xffffffffu);
-  glActiveTexture(GL_TEXTURE0);
+  rendering::clearOpenGLBindingsForShutdown();
 }
 
 void Rendering::init()
@@ -289,7 +227,7 @@ void Rendering::init()
 /// std::vector<uuid> createImageTextures( AppData& appData, uuid_range_t imageUids )
 Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std::list<uuid>& metricImageUids) const
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderResources& resources = m_appData.renderResources();
   CurrentImages imageSegPairs;
 
   for (const auto& imageUid : metricImageUids) {
@@ -306,13 +244,13 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std
     }
 
     const uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
-    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(renderImageUid)) {
+    if (std::end(resources.m_imageTextures) != resources.m_imageTextures.find(renderImageUid)) {
       ImgSegPair imgSegPair;
       imgSegPair.first = renderImageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
       if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
-        if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
+        if (std::end(resources.m_segTextures) != resources.m_segTextures.find(*segUid)) {
           imgSegPair.second = *segUid; // The texture for this segmentation exists
         }
       }
@@ -331,7 +269,7 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std
 
 Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std::list<uuid>& imageUids) const
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderResources& resources = m_appData.renderResources();
   CurrentImages imageSegPairs;
 
   for (const auto& imageUid : imageUids) {
@@ -343,13 +281,13 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
     }
 
     const uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
-    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(renderImageUid)) {
+    if (std::end(resources.m_imageTextures) != resources.m_imageTextures.find(renderImageUid)) {
       std::pair<std::optional<uuid>, std::optional<uuid>> imgSegPair;
       imgSegPair.first = renderImageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
       if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
-        if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
+        if (std::end(resources.m_segTextures) != resources.m_segTextures.find(*segUid)) {
           imgSegPair.second = *segUid; // The texture for this segmentation exists
         }
       }
@@ -361,36 +299,20 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
   return imageSegPairs;
 }
 
-void Rendering::framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime)
-{
-  if (!m_appData.renderData().m_manualFramerateLimiter) {
-    return;
-  }
-
-  const double elapsed = std::chrono::duration<double>(Clock::now() - lastFrameTime).count();
-  const double targetTime = m_appData.renderData().m_targetFrameTimeSeconds;
-
-  if (elapsed < targetTime) {
-    std::this_thread::sleep_for(std::chrono::duration<double>(targetTime - elapsed));
-  }
-
-  lastFrameTime = Clock::now();
-}
-
 void Rendering::render()
 {
   // Rebuild ASCII atlas if the charset changed via the UI
   m_asciiRenderer.maybeRebuildAtlas();
 
   // Set up OpenGL state, because it changes after NanoVG calls in the render of the prior frame
-  setupOpenGLState();
-  logTextureUnitZeroStateIfChanged("setupOpenGLState");
+  rendering::restoreOpenGLRenderState();
+  logTextureUnitZeroStateIfChanged("restoreOpenGLRenderState");
 
   // Set the OpenGL viewport in device units:
   const glm::ivec4 deviceViewport = m_appData.windowData().viewport().getDeviceAsVec4();
   glViewport(deviceViewport[0], deviceViewport[1], deviceViewport[2], deviceViewport[3]);
 
-  const auto& bg = m_appData.renderData().m_2dBackgroundColor;
+  const auto& bg = m_appData.renderSettings().m_2dBackgroundColor;
   glClearColor(bg.r, bg.g, bg.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -438,7 +360,7 @@ void Rendering::renderImageData()
     return;
   }
 
-  const auto& R = m_appData.renderData();
+  const auto& R = m_appData.renderSettings();
 
   const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
   const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;

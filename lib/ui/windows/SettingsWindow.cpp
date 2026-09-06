@@ -18,7 +18,7 @@
 #include "logic/app/State.h"
 #include "registration/Config.h"
 #include "registration/Types.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
 #include "ui/GuiData.h"
@@ -319,7 +319,7 @@ GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement
 }
 
 void renderMetricSettingsPanel(
-  RenderData::MetricParams& metricParams,
+  rendering::RenderSettings::MetricParams& metricParams,
   bool& showColormapWindow,
   const char* name,
   const std::function<void(void)>& updateMetricUniforms,
@@ -495,7 +495,7 @@ void renderMetricSettingsPanel(
 
 bool renderLocalNccSettings(
   AppData& appData,
-  RenderData& renderData,
+  rendering::RenderSettings& renderData,
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
@@ -517,19 +517,22 @@ bool renderLocalNccSettings(
     ImGui::Spacing();
   }
 
-  const RenderData::LocalNccPresentation presentation = renderData.m_localNccPresentation;
-  if (ImGui::RadioButton("Dissimilarity", RenderData::LocalNccPresentation::Dissimilarity == presentation)) {
-    renderData.m_localNccPresentation = RenderData::LocalNccPresentation::Dissimilarity;
+  const rendering::RenderSettings::LocalNccPresentation presentation = renderData.m_localNccPresentation;
+  if (ImGui::RadioButton(
+        "Dissimilarity",
+        rendering::RenderSettings::LocalNccPresentation::Dissimilarity == presentation))
+  {
+    renderData.m_localNccPresentation = rendering::RenderSettings::LocalNccPresentation::Dissimilarity;
   }
   ImGui::SameLine();
-  if (ImGui::RadioButton("Correlation", RenderData::LocalNccPresentation::Correlation == presentation)) {
-    renderData.m_localNccPresentation = RenderData::LocalNccPresentation::Correlation;
+  if (ImGui::RadioButton("Correlation", rendering::RenderSettings::LocalNccPresentation::Correlation == presentation)) {
+    renderData.m_localNccPresentation = rendering::RenderSettings::LocalNccPresentation::Correlation;
   }
   ImGui::SameLine();
   helpMarker("Dissimilarity highlights disagreement; correlation shows local NCC directly");
 
   const bool showWindowAsSignedCorrelation =
-    RenderData::LocalNccPresentation::Correlation == renderData.m_localNccPresentation;
+    rendering::RenderSettings::LocalNccPresentation::Correlation == renderData.m_localNccPresentation;
   renderMetricSettingsPanel(
     renderData.m_localNccParams,
     appData.guiData().m_showLocalNccColormapWindow,
@@ -545,7 +548,7 @@ bool renderLocalNccSettings(
   }
   ImGui::Spacing();
 
-  if (RenderData::LocalNccPresentation::Dissimilarity == renderData.m_localNccPresentation) {
+  if (rendering::RenderSettings::LocalNccPresentation::Dissimilarity == renderData.m_localNccPresentation) {
     bool ignoreNegativeCorrelation = renderData.m_localNccIgnoreNegativeCorrelation;
     if (ImGui::Checkbox("Treat negative correlation as mismatch", &ignoreNegativeCorrelation)) {
       renderData.m_localNccIgnoreNegativeCorrelation = ignoreNegativeCorrelation;
@@ -597,13 +600,16 @@ bool renderLocalNccSettings(
   ImGui::SameLine();
   helpMarker("Patches with lower local variance in either image are treated as invalid");
 
-  const RenderData::LocalNccInvalidStyle invalidStyle = renderData.m_localNccInvalidStyle;
-  if (ImGui::RadioButton("Invalid transparent", RenderData::LocalNccInvalidStyle::Transparent == invalidStyle)) {
-    renderData.m_localNccInvalidStyle = RenderData::LocalNccInvalidStyle::Transparent;
+  const rendering::RenderSettings::LocalNccInvalidStyle invalidStyle = renderData.m_localNccInvalidStyle;
+  if (ImGui::RadioButton(
+        "Invalid transparent",
+        rendering::RenderSettings::LocalNccInvalidStyle::Transparent == invalidStyle))
+  {
+    renderData.m_localNccInvalidStyle = rendering::RenderSettings::LocalNccInvalidStyle::Transparent;
   }
   ImGui::SameLine();
-  if (ImGui::RadioButton("Invalid gray", RenderData::LocalNccInvalidStyle::Gray == invalidStyle)) {
-    renderData.m_localNccInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
+  if (ImGui::RadioButton("Invalid gray", rendering::RenderSettings::LocalNccInvalidStyle::Gray == invalidStyle)) {
+    renderData.m_localNccInvalidStyle = rendering::RenderSettings::LocalNccInvalidStyle::Gray;
   }
   ImGui::SameLine();
   helpMarker("How low-variance or insufficient-overlap patches are drawn");
@@ -613,7 +619,7 @@ bool renderLocalNccSettings(
 
 bool renderLocalLinearResidualSettings(
   AppData& appData,
-  RenderData& renderData,
+  rendering::RenderSettings& renderData,
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
@@ -690,13 +696,16 @@ bool renderLocalLinearResidualSettings(
   ImGui::SameLine();
   helpMarker("Patches with lower reference-image variance cannot produce a stable local gain");
 
-  const RenderData::LocalNccInvalidStyle invalidStyle = renderData.m_localLinearResidualInvalidStyle;
-  if (ImGui::RadioButton("Invalid transparent", RenderData::LocalNccInvalidStyle::Transparent == invalidStyle)) {
-    renderData.m_localLinearResidualInvalidStyle = RenderData::LocalNccInvalidStyle::Transparent;
+  const rendering::RenderSettings::LocalNccInvalidStyle invalidStyle = renderData.m_localLinearResidualInvalidStyle;
+  if (ImGui::RadioButton(
+        "Invalid transparent",
+        rendering::RenderSettings::LocalNccInvalidStyle::Transparent == invalidStyle))
+  {
+    renderData.m_localLinearResidualInvalidStyle = rendering::RenderSettings::LocalNccInvalidStyle::Transparent;
   }
   ImGui::SameLine();
-  if (ImGui::RadioButton("Invalid gray", RenderData::LocalNccInvalidStyle::Gray == invalidStyle)) {
-    renderData.m_localLinearResidualInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
+  if (ImGui::RadioButton("Invalid gray", rendering::RenderSettings::LocalNccInvalidStyle::Gray == invalidStyle)) {
+    renderData.m_localLinearResidualInvalidStyle = rendering::RenderSettings::LocalNccInvalidStyle::Gray;
   }
   ImGui::SameLine();
   helpMarker("How low-variance or insufficient-overlap patches are drawn");
@@ -707,7 +716,7 @@ bool renderLocalLinearResidualSettings(
 /**
  * @brief Render annotation and landmark display settings inside the Views page.
  */
-void renderAnnotationViewSettings(RenderData& renderData)
+void renderAnnotationViewSettings(rendering::RenderSettings& renderData)
 {
   ImGui::PushID("annotations"); /*** PushID annotations ***/
 
@@ -735,12 +744,15 @@ void renderAnnotationViewSettings(RenderData& renderData)
   ImGui::PopID(); /*** PopID annotations ***/
 }
 
-void renderAsciiShadingSettings(RenderData& renderData);
+void renderAsciiShadingSettings(rendering::RenderSettings& renderData);
 
 /**
  * @brief Render the Views settings page contents.
  */
-void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRecenterType& recenterAllViews)
+void renderViewsTab(
+  AppData& appData,
+  rendering::RenderSettings& renderData,
+  const AllViewsRecenterType& recenterAllViews)
 {
   ImGui::ColorEdit3("2D view background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
@@ -1403,13 +1415,13 @@ void renderInterfaceTab(
 /**
  * @brief Render the System settings page contents.
  */
-void renderFrameRateSettings(RenderData& renderData);
+void renderFrameRateSettings(rendering::RenderSettings& renderData);
 
 void renderSystemTab(AppData& appData)
 {
   const bool performanceOpen = ImGui::CollapsingHeader("Performance", ImGuiTreeNodeFlags_DefaultOpen);
   if (performanceOpen) {
-    renderFrameRateSettings(appData.renderData());
+    renderFrameRateSettings(appData.renderSettings());
   }
   finishSettingsSection(performanceOpen);
 
@@ -1446,7 +1458,7 @@ void renderSystemTab(AppData& appData)
 /**
  * @brief Render intensity projection default settings.
  */
-void renderIntensityProjectionDefaults(RenderData& renderData);
+void renderIntensityProjectionDefaults(rendering::RenderSettings& renderData);
 
 /**
  * @brief Render the image settings page contents.
@@ -1463,18 +1475,18 @@ void renderImagesTab(AppData& appData)
 
     renderFloatingPointInterpolationPolicyCombo(
       "Grayscale images",
-      appData.renderData().m_imageGrayFloatingPointInterpolationPolicy,
+      appData.renderSettings().m_imageGrayFloatingPointInterpolationPolicy,
       "Automatic switches to floating-point interpolation near 128 screen pixels per image voxel");
 
     renderFloatingPointInterpolationPolicyCombo(
       "Isocontours",
-      appData.renderData().m_isocontourFloatingPointInterpolationPolicy,
+      appData.renderSettings().m_isocontourFloatingPointInterpolationPolicy,
       "Automatic switches to floating-point interpolation near 16 screen pixels per image voxel because contour "
       "artifacts are visible earlier");
   }
   finishSettingsSection(imageDisplayDefaultsOpen);
 
-  renderIntensityProjectionDefaults(appData.renderData());
+  renderIntensityProjectionDefaults(appData.renderSettings());
 }
 
 struct RegistrationBackendInfo
@@ -1835,7 +1847,7 @@ void renderSynchronizeTab(AppData& appData)
 /**
  * @brief Render the Segmentation settings page contents.
  */
-void renderSegmentationTab(AppData& appData, RenderData& renderData)
+void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderData)
 {
   const bool displayOpen = ImGui::CollapsingHeader("Display", ImGuiTreeNodeFlags_DefaultOpen);
   if (displayOpen) {
@@ -2034,7 +2046,7 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
  */
 void renderMetricsTab(
   AppData& appData,
-  RenderData& renderData,
+  rendering::RenderSettings& renderData,
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
@@ -2098,7 +2110,7 @@ void renderMetricsTab(
 /**
  * @brief Render the Comparison modes settings section contents.
  */
-bool renderComparisonModesTab(RenderData& renderData)
+bool renderComparisonModesTab(rendering::RenderSettings& renderData)
 {
   ImGui::PushID("comparison"); /*** PushID metrics ***/
 
@@ -2196,7 +2208,7 @@ bool renderComparisonModesTab(RenderData& renderData)
 /**
  * @brief Render intensity projection default settings.
  */
-void renderIntensityProjectionDefaults(RenderData& renderData)
+void renderIntensityProjectionDefaults(rendering::RenderSettings& renderData)
 {
   if (!ImGui::CollapsingHeader("Intensity Projection Defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
     return;
@@ -2262,7 +2274,7 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
 /**
  * @brief Render 3D scene and camera settings.
  */
-void renderSceneAndCameraTab(RenderData& renderData)
+void renderSceneAndCameraTab(rendering::RenderSettings& renderData)
 {
   ImGui::PushID("3d_rendering"); /*** PushID 3d_rendering ***/
 
@@ -2322,7 +2334,7 @@ void renderSceneAndCameraTab(RenderData& renderData)
   ImGui::PopID(); /*** PopID 3d_rendering ***/
 }
 
-void renderSurfaceLightingSettings(RenderData& renderData)
+void renderSurfaceLightingSettings(rendering::RenderSettings& renderData)
 {
   ImGui::SeparatorText("Lighting");
   disabledTextWrapped(
@@ -2404,7 +2416,7 @@ void renderSurfaceLightingSettings(RenderData& renderData)
   }
 }
 
-void renderImagePlanesTab(RenderData& renderData)
+void renderImagePlanesTab(rendering::RenderSettings& renderData)
 {
   ImGui::PushID("image_planes");
   disabledTextWrapped("Image planes show the current orthogonal image slices at the 3D crosshairs position");
@@ -2452,7 +2464,7 @@ void renderImagePlanesTab(RenderData& renderData)
 /**
  * @brief Render the Surfaces settings section contents.
  */
-void renderMeshRenderingTab(RenderData& renderData)
+void renderMeshRenderingTab(rendering::RenderSettings& renderData)
 {
   ImGui::PushID("mesh_rendering"); /*** PushID mesh_rendering ***/
 
@@ -2651,7 +2663,7 @@ void renderMeshRenderingTab(RenderData& renderData)
   ImGui::PopID(); /*** PopID mesh_rendering ***/
 }
 
-void renderFrameRateSettings(RenderData& renderData)
+void renderFrameRateSettings(rendering::RenderSettings& renderData)
 {
   ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
   ImGui::SameLine();
@@ -2698,7 +2710,7 @@ void renderFrameRateSettings(RenderData& renderData)
 /**
  * @brief Render 3D rendering performance and quality settings.
  */
-void renderPerformanceAndQualityTab(RenderData& renderData)
+void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
 {
   ImGui::SeparatorText("Dual Depth Peeling");
   disabledTextWrapped(
@@ -2755,9 +2767,9 @@ void renderPerformanceAndQualityTab(RenderData& renderData)
   }
 }
 
-void renderAsciiShadingSettings(RenderData& renderData)
+void renderAsciiShadingSettings(rendering::RenderSettings& renderData)
 {
-  RenderData& rd = renderData;
+  rendering::RenderSettings& rd = renderData;
   ImGui::PushID("ascii");
 
   ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
@@ -2813,7 +2825,7 @@ void renderAsciiShadingSettings(RenderData& renderData)
   ImGui::PopID(); /*** PopID ascii ***/
 }
 
-void renderRenderingTab(RenderData& renderData)
+void renderRenderingTab(rendering::RenderSettings& renderData)
 {
   const bool sceneAndCameraOpen = ImGui::CollapsingHeader("Scene & Camera", ImGuiTreeNodeFlags_DefaultOpen);
   if (sceneAndCameraOpen) {
@@ -3061,7 +3073,7 @@ void renderComparisonModeQuickSettings(
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms)
 {
-  RenderData& renderData = appData.renderData();
+  rendering::RenderSettings& renderData = appData.renderSettings();
   const auto refreshMetricUniforms = [&updateMetricUniforms]() {
     if (updateMetricUniforms) {
       updateMetricUniforms();
@@ -3223,7 +3235,7 @@ void renderComparisonModeQuickSettings(
 static void renderSettingsPage(
   GuiData::SettingsTab page,
   AppData& appData,
-  RenderData& renderData,
+  rendering::RenderSettings& renderData,
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
@@ -3322,7 +3334,7 @@ void renderSettingsWindow(
     windowFlags |= ImGuiWindowFlags_UnsavedDocument;
   }
   if (ImGui::Begin("Application Settings", &(appData.guiData().m_showSettingsWindow), windowFlags)) {
-    RenderData& renderData = appData.renderData();
+    rendering::RenderSettings& renderData = appData.renderSettings();
 
     const ImGuiStyle& style = ImGui::GetStyle();
     static constexpr float k_navigationWidth = 156.0f;

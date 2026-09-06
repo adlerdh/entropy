@@ -1,15 +1,12 @@
 #include "rendering/Rendering.h"
 
-#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "image/Isosurface.h"
 #include "logic/SurfaceUtility.h"
 #include "logic/app/Data.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionJobs.h"
 #include "rendering/mesh/MeshGeneration.h"
-#include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
@@ -28,30 +25,11 @@
 #include <optional>
 #include <ranges>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace
 {
-
-using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
-using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
-using MeshHandle = rendering::mesh::MeshHandle;
-using MeshHandleMap = std::unordered_map<MeshGeometryKey, MeshHandle, MeshGeometryKeyHash>;
-
-rendering::mesh::MeshHandle meshHandleForKey(const MeshGeometryKey& key, MeshHandleMap& handles)
-{
-  if (const auto existing = handles.find(key); existing != handles.end()) {
-    return existing->second;
-  }
-
-  rendering::mesh::MeshHandle handle{
-    .uid = generateRandomUuid(),
-    .geometryVersion = rendering::mesh::MeshGeometryKeyHash{}(key)};
-  handles.emplace(key, handle);
-  return handle;
-}
 
 std::string isosurfaceMeshDescription(const Image& image, const Isosurface& surface, const std::size_t surfaceIndex)
 {
@@ -123,9 +101,9 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
-        .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
-        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+        .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
+        .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
       const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
         imageUid,
         image->pixelDataRevision(),
@@ -135,30 +113,27 @@ bool Rendering::renderIsosurfaceMeshesForView(
         surface->value,
         generationOptions);
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-      const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
+      const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
 
-      if (!m_meshCpuCache.readyMesh(key)) {
+      const rendering::mesh::MeshData* readyMesh = m_meshExtractions.readyMesh(key);
+      if (!readyMesh) {
         allVisibleIsosurfacesHaveReadyMeshes = false;
-        const rendering::mesh::MeshCacheEntry* cacheEntry = m_meshCpuCache.find(key);
-        const bool retry = m_meshCpuCache.canRetry(key);
-        if ((!cacheEntry || retry) && m_meshExtractionQueue.canSubmit(key)) {
+        if (m_meshExtractions.canSubmit(key)) {
           if (!imageSnapshot) {
             imageSnapshot = std::make_shared<Image>(*image);
           }
 
           const std::string description = isosurfaceMeshDescription(*image, *surface, surfaceIndex);
-          if (m_meshExtractionQueue
-                .submit(key, description, rendering::mesh::makeIsosurfaceExtractionJob(request, imageSnapshot)))
-          {
-            m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
-          }
+          m_meshExtractions.submit(
+            key,
+            description,
+            rendering::mesh::makeIsosurfaceExtractionJob(request, imageSnapshot));
         }
 
         continue;
       }
 
-      const rendering::mesh::MeshGpuSyncStatus syncStatus =
-        rendering::mesh::syncReadyMeshToGpu(key, handle, m_meshCpuCache, m_meshGpuStore);
+      const rendering::mesh::MeshGpuSyncStatus syncStatus = m_meshResources.synchronize(handle, *readyMesh);
       if (
         syncStatus != rendering::mesh::MeshGpuSyncStatus::Uploaded &&
         syncStatus != rendering::mesh::MeshGpuSyncStatus::AlreadyCurrent)
@@ -169,7 +144,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
       glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
       color.a = effectiveOpacity;
-      const auto& globalMaterial = m_appData.renderData().m_meshSurfaceMaterialSettings;
+      const auto& globalMaterial = m_appData.renderSettings().m_meshSurfaceMaterialSettings;
       const rendering::mesh::IsosurfaceMeshStyle style{
         .material = rendering::mesh::meshMaterialForSurface(color, globalMaterial),
         .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(

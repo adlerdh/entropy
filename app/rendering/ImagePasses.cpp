@@ -1,4 +1,5 @@
 #include "rendering/Rendering.h"
+#include "rendering/utility/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
 #include "image/Image.h"
@@ -7,7 +8,8 @@
 #include "logic/camera/CameraTypes.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/vector/VectorDrawing.h"
@@ -45,21 +47,22 @@ void Rendering::renderOneImage(
     return (imageUid ? m_appData.image(*imageUid) : nullptr);
   };
 
-  auto& R = m_appData.renderData();
+  auto& resources = m_appData.renderResources();
+  const auto& settings = m_appData.renderSettings();
 
   drawImageQuad(
     program,
     view.renderMode(),
-    R.m_quad,
+    resources.m_quad,
     view,
     m_appData.windowData().viewport(),
     worldOffsetXhairs,
-    R.m_flashlightRadius,
-    R.m_flashlightOverlays,
-    R.m_intensityProjectionSlabThickness,
-    R.m_doMaxExtentIntensityProjection,
-    R.m_xrayIntensityWindow,
-    R.m_xrayIntensityLevel,
+    settings.m_flashlightRadius,
+    settings.m_flashlightOverlays,
+    settings.m_intensityProjectionSlabThickness,
+    settings.m_doMaxExtentIntensityProjection,
+    settings.m_xrayIntensityWindow,
+    settings.m_xrayIntensityLevel,
     imageSegPairs,
     getImage,
     showEdges,
@@ -74,26 +77,26 @@ void Rendering::renderOneImage_overlays(
   bool renderLandmarkAndAnnotationOverlays,
   bool renderImageBorders)
 {
-  const auto& renderData = m_appData.renderData();
+  const auto& renderSettings = m_appData.renderSettings();
   const bool allowLandmarksAndAnnotations = renderLandmarkAndAnnotationOverlays && ViewType::ThreeD != view.viewType();
   const bool renderBordersInCurrentLayout =
-    renderImageBorders && renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
+    renderImageBorders && renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
     (!m_appData.windowData().currentLayout().isLightbox() ||
-     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
+     renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
 
-  if (allowLandmarksAndAnnotations && !renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
+  if (allowLandmarksAndAnnotations && !renderSettings.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, imageSegPairs);
-    setupOpenGLState();
+    rendering::restoreOpenGLRenderState();
   }
 
-  if (allowLandmarksAndAnnotations && !renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
+  if (allowLandmarksAndAnnotations && !renderSettings.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
     drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, imageSegPairs);
-    setupOpenGLState();
+    rendering::restoreOpenGLRenderState();
   }
 
   if (renderBordersInCurrentLayout) {
     drawImageViewIntersections(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, imageSegPairs, true);
-    setupOpenGLState();
+    rendering::restoreOpenGLRenderState();
   }
 }
 
@@ -105,7 +108,7 @@ void Rendering::renderAllImagesForView(
   bool renderImageBorders,
   bool allowScreenPixelEdgePostProcessing)
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderResources& resources = m_appData.renderResources();
 
   if (ViewType::ThreeD == view.viewType()) {
     clearMeshViewBackgroundForView(view);
@@ -182,11 +185,11 @@ void Rendering::renderAllImagesForView(
           return;
         }
 
-        const RenderData::ImageUniforms& U = R.m_uniforms.at(imgUid);
+        const rendering::RenderDerivedData::ImageUniforms& U = m_appData.renderDerivedData().imageUniforms.at(imgUid);
         const std::optional<uuid> deformationUid = activeRenderableDeformationUid(imgUid);
         const bool renderWarped = deformationUid.has_value();
-        const RenderData::PlanarTextureLayout imageTextureLayout =
-          rendering::textureLayoutOrDefault(R.m_imageTextureLayouts, imgSegPair.first);
+        const rendering::PlanarTextureLayout imageTextureLayout =
+          rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, imgSegPair.first);
 
         if (
           ComponentRenderMode::VectorDirectionColor == img->settings().componentRenderMode() ||

@@ -28,7 +28,7 @@ TextureLookupReplacementSources ShaderSourceSet::textureLookupReplacementSources
 
 ShaderSourceSet buildShaderSourceSet()
 {
-  static const std::string shaderPath("app/rendering/shaders/");
+  static const std::string shaderPath("rendering/shaders/");
 
   return ShaderSourceSet{
     .helpers = loadEmbeddedShaderSource(shaderPath + "functions/Helpers.glsl"),

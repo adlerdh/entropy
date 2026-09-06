@@ -18,37 +18,11 @@
 #include <glm/vec3.hpp>
 
 #include <optional>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace
 {
-
-using MeshHandleMap = std::
-  unordered_map<rendering::mesh::MeshGeometryKey, rendering::mesh::MeshHandle, rendering::mesh::MeshGeometryKeyHash>;
-
-const rendering::mesh::MeshHandle* findMeshHandle(
-  const rendering::mesh::MeshGeometryKey& key,
-  const MeshHandleMap& handles)
-{
-  const auto it = handles.find(key);
-  return it == handles.end() ? nullptr : &it->second;
-}
-
-const rendering::mesh::MeshData* meshDataForHandle(
-  const rendering::mesh::MeshHandle& handle,
-  const MeshHandleMap& handles,
-  const rendering::mesh::MeshCache& cache)
-{
-  for (const auto& [key, candidateHandle] : handles) {
-    if (candidateHandle == handle) {
-      return cache.readyMesh(key);
-    }
-  }
-
-  return nullptr;
-}
 
 glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const std::size_t labelIndex)
 {
@@ -63,7 +37,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
   if (ViewType::ThreeD != view.viewType()) {
     return std::nullopt;
   }
-  if (!m_appData.renderData().m_meshPickingEnabled) {
+  if (!m_appData.renderSettings().m_meshPickingEnabled) {
     return std::nullopt;
   }
 
@@ -110,9 +84,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
         const rendering::mesh::MeshGenerationOptions generationOptions{
           .threadCount = 0,
-          .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
-          .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-          .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+          .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
+          .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
         const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
           imageUid,
           image->pixelDataRevision(),
@@ -122,14 +96,14 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           surface->value,
           generationOptions);
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-        const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
-        if (!handle || !m_meshCpuCache.readyMesh(key)) {
+        const rendering::mesh::MeshHandle* handle = m_meshResources.findHandle(key);
+        if (!handle || !m_meshExtractions.readyMesh(key)) {
           continue;
         }
 
         glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
         color.a = effectiveOpacity;
-        const auto& globalMaterial = m_appData.renderData().m_meshSurfaceMaterialSettings;
+        const auto& globalMaterial = m_appData.renderSettings().m_meshSurfaceMaterialSettings;
         rendering::mesh::MeshRenderable renderable = rendering::mesh::makeIsosurfaceRenderable(
           *handle,
           image->transformations().worldDef_T_subject(),
@@ -179,7 +153,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
         static_cast<float>(seg->settings().opacity()),
         imageOpacity,
-        m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
+        m_appData.renderSettings().m_modulateSegmentationOpacityWithImageOpacity3d);
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
         const int64_t labelValue = static_cast<int64_t>(labelIndex);
         const auto labelInfo = presentLabels->find(labelValue);
@@ -195,9 +169,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         }
         const rendering::mesh::MeshGenerationOptions generationOptions{
           .threadCount = 0,
-          .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
-          .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-          .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+          .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
+          .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
         const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
           segUid,
           seg->pixelDataRevision(),
@@ -206,8 +180,8 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           timePoint,
           generationOptions);
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-        const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
-        if (!handle || !m_meshCpuCache.readyMesh(key)) {
+        const rendering::mesh::MeshHandle* handle = m_meshResources.findHandle(key);
+        if (!handle || !m_meshExtractions.readyMesh(key)) {
           continue;
         }
 
@@ -218,7 +192,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
             labelValue,
             normalizedLabelColor(*labelTable, labelIndex),
             labelState,
-            m_appData.renderData().m_meshSurfaceMaterialSettings));
+            m_appData.renderSettings().m_meshSurfaceMaterialSettings));
         renderable.drawOptions.clipPlanes = clipPlanes;
         renderables.push_back(std::move(renderable));
       }
@@ -239,7 +213,8 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
     {.worldRay = {.origin = worldRayOrigin, .direction = worldRayDirection},
      .renderables = renderables,
      .meshLookup = [this](const rendering::mesh::MeshHandle& handle) {
-       return meshDataForHandle(handle, m_meshHandles, m_meshCpuCache);
+       const rendering::mesh::MeshGeometryKey* key = m_meshResources.findKey(handle);
+       return key ? m_meshExtractions.readyMesh(*key) : nullptr;
      }});
 
   return hit ? std::optional<glm::vec3>{hit->triangleHit.worldPosition} : std::nullopt;

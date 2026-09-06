@@ -250,7 +250,7 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
     if (isosurfacesPanelVisible) {
       ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
     }
-    if (ImGui::Button(ICON_FK_CUBE " Isosurfaces Panel")) {
+    if (ImGui::Button(ICON_FK_CUBE " Isosurfaces")) {
       if (isosurfacesPanelVisible && modes.hideIsosurfacesPanel) {
         modes.hideIsosurfacesPanel();
       }

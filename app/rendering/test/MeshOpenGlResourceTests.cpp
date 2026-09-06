@@ -10,6 +10,7 @@
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/utility/gl/OpenGLRenderState.h"
 #include "rendering/utility/gl/GLVertexArrayObject.h"
 
 #include <catch2/catch_test_macros.hpp>
@@ -489,6 +490,43 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
   }
 
   CHECK(glGetError() == GL_NO_ERROR);
+#endif
+}
+
+TEST_CASE("render pass baseline restores mutable OpenGL state", "[rendering][gl][state]")
+{
+#if defined(__APPLE__)
+  SKIP("Headless GLFW initialization can deadlock in non-interactive macOS test workers");
+#else
+  HiddenOpenGlContext context;
+  if (!context.ready()) {
+    SKIP("No OpenGL context is available on this test worker");
+  }
+
+  glDisable(GL_BLEND);
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_SCISSOR_TEST);
+  glDepthMask(GL_FALSE);
+  glDepthFunc(GL_ALWAYS);
+  glActiveTexture(GL_TEXTURE3);
+
+  rendering::restoreOpenGLRenderState();
+
+  GLint activeTexture = 0;
+  GLint depthFunction = 0;
+  GLboolean depthWrite = GL_FALSE;
+  glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
+  glGetIntegerv(GL_DEPTH_FUNC, &depthFunction);
+  glGetBooleanv(GL_DEPTH_WRITEMASK, &depthWrite);
+  CHECK(glIsEnabled(GL_BLEND) == GL_TRUE);
+  CHECK(glIsEnabled(GL_CULL_FACE) == GL_FALSE);
+  CHECK(glIsEnabled(GL_DEPTH_TEST) == GL_FALSE);
+  CHECK(glIsEnabled(GL_SCISSOR_TEST) == GL_FALSE);
+  CHECK(glIsEnabled(GL_MULTISAMPLE) == GL_TRUE);
+  CHECK(activeTexture == GL_TEXTURE0);
+  CHECK(depthFunction == GL_LESS);
+  CHECK(depthWrite == GL_TRUE);
 #endif
 }
 

@@ -3,7 +3,8 @@
 #include "image/Image.h"
 #include "image/ImageSettings.h"
 #include "logic/app/Data.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLTexture.h"
@@ -30,7 +31,7 @@ Rendering::BoundTextures Rendering::bindSegTextures(const ImgSegPair& p)
   const auto& segUid = p.second;
 
   BoundTextures boundTextures;
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderResources();
 
   if (segUid) {
     // Uncomment this to render the image's distance map instead:
@@ -52,7 +53,7 @@ Rendering::BoundTextures Rendering::bindSegTextures(const ImgSegPair& p)
 Rendering::BoundBufferTextures Rendering::bindSegBufferTextures(const ImgSegPair& p)
 {
   BoundBufferTextures boundBufferTextures;
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderResources();
 
   const auto& segUid = p.second;
 

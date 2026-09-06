@@ -486,7 +486,7 @@ bool ItkSnapSync::ensureAttached()
 void ItkSnapSync::detach()
 {
   if (m_crosshairsSnappingBeforeCursorSend) {
-    m_appData.renderData().m_snapCrosshairs = *m_crosshairsSnappingBeforeCursorSend;
+    m_appData.renderSettings().m_snapCrosshairs = *m_crosshairsSnappingBeforeCursorSend;
     SPDLOG_TRACE(
       "Restored crosshairs snapping after ITK-SNAP cursor send disabled: mode={}",
       static_cast<int>(*m_crosshairsSnappingBeforeCursorSend));
@@ -512,7 +512,7 @@ void ItkSnapSync::updateCrosshairsSnappingForCursorSend()
 {
   const AppSettings& settings = m_appData.settings();
   const bool forceReferenceVoxelSnapping = settings.cursorSyncEnabled() && settings.sendCursorSync();
-  CrosshairsSnapping& snapMode = m_appData.renderData().m_snapCrosshairs;
+  CrosshairsSnapping& snapMode = m_appData.renderSettings().m_snapCrosshairs;
 
   if (forceReferenceVoxelSnapping) {
     if (CrosshairsSnapping::ReferenceImage != snapMode) {

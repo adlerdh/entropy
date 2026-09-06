@@ -1,12 +1,13 @@
 #include "rendering/Rendering.h"
 
 #include "common/Exception.hpp"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/ShaderProgramSetup.h"
 #include "rendering/ShaderPreprocessor.h"
 #include "rendering/ShaderSourceSetup.h"
+#include "rendering/ShaderTextureDimension.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/mesh/MeshDrawOptions.h"
 #include "rendering/utility/gl/GLShader.h"
 
@@ -43,7 +44,7 @@ std::string loadMeshDdpShaderFile(const std::string& path)
 {
   return rendering::preprocessShaderSource(
     loadShaderFile(path),
-    {{"DDP_DEPTH_FUNCTIONS", loadShaderFile("app/rendering/shaders/mesh/MeshDdpDepth.glsl")}});
+    {{"DDP_DEPTH_FUNCTIONS", loadShaderFile("rendering/shaders/mesh/MeshDdpDepth.glsl")}});
 }
 
 bool attachShaderFile(GLShaderProgram& program, const ShaderType shaderType, const std::string& path, Uniforms uniforms)
@@ -181,7 +182,7 @@ Uniforms meshAmbientOcclusionGeometryUniforms()
 
 bool createFullscreenMeshDdpProgram(GLShaderProgram& program, const std::string& fsFileName, Uniforms fsUniforms)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/FullScreenTriangle.vs", Uniforms{});
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/FullScreenTriangle.vs", Uniforms{});
   attachShaderSource(
     program,
     ShaderType::Fragment,
@@ -193,7 +194,7 @@ bool createFullscreenMeshDdpProgram(GLShaderProgram& program, const std::string&
 
 bool createFullscreenMeshProgram(GLShaderProgram& program, const std::string& fsFileName, Uniforms fsUniforms)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/FullScreenTriangle.vs", Uniforms{});
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/FullScreenTriangle.vs", Uniforms{});
   attachShaderFile(program, ShaderType::Fragment, fsFileName, std::move(fsUniforms));
   return linkMeshProgram(program);
 }
@@ -201,11 +202,11 @@ bool createFullscreenMeshProgram(GLShaderProgram& program, const std::string& fs
 bool createMeshImagePlaneProgram(
   GLShaderProgram& program,
   const ShaderProgramType shaderType,
-  const RenderData::TextureDimension textureDimension)
+  const rendering::TextureDimension textureDimension)
 {
   const rendering::shader_setup::ProgramSetup setup = rendering::shader_setup::buildProgramSetup();
   const rendering::shader_setup::ShaderInfo& imageShaderInfo = setup.shaderInfo.at(shaderType);
-  std::string fsSource = loadShaderFile("app/rendering/shaders/" + imageShaderInfo.fsFileName);
+  std::string fsSource = loadShaderFile("rendering/shaders/" + imageShaderInfo.fsFileName);
   fsSource = rendering::preprocessShaderSource(
     fsSource,
     rendering::shaderReplacementsForTextureDimension(
@@ -216,7 +217,7 @@ bool createMeshImagePlaneProgram(
   attachShaderFile(
     program,
     ShaderType::Vertex,
-    "app/rendering/shaders/mesh/MeshImagePlane.vs",
+    "rendering/shaders/mesh/MeshImagePlane.vs",
     meshImagePlaneVertexUniforms());
   attachShaderSource(program, ShaderType::Fragment, imageShaderInfo.fsFileName, fsSource, imageShaderInfo.fsUniforms);
   return linkMeshProgram(program);
@@ -225,7 +226,7 @@ bool createMeshImagePlaneProgram(
 bool createMeshImagePlaneDdpProgram(
   GLShaderProgram& program,
   const std::string& fragmentShaderPath,
-  const RenderData::TextureDimension textureDimension,
+  const rendering::TextureDimension textureDimension,
   const bool peelShader)
 {
   const rendering::shader_setup::ProgramSetup setup = rendering::shader_setup::buildProgramSetup();
@@ -235,13 +236,13 @@ bool createMeshImagePlaneDdpProgram(
   replacements["UINT_TEXTURE_LOOKUP_FUNCTION"] = sources.uintTextureLinear3D;
   std::unordered_map<std::string, std::string> dimensionReplacements =
     rendering::shaderReplacementsForTextureDimension(replacements, textureDimension, setup.lookupReplacementSources);
-  if (RenderData::TextureDimension::Texture2D == textureDimension) {
+  if (rendering::TextureDimension::Texture2D == textureDimension) {
     dimensionReplacements["UINT_TEXTURE_LOOKUP_FUNCTION"] =
-      loadShaderFile("app/rendering/shaders/functions/UIntTextureLookup_ImagePlane_2D.glsl");
+      loadShaderFile("rendering/shaders/functions/UIntTextureLookup_ImagePlane_2D.glsl");
   }
   dimensionReplacements["IMAGE_PLANE_DISPLAY_FUNCTIONS"] =
-    loadShaderFile("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
-  dimensionReplacements["DDP_DEPTH_FUNCTIONS"] = loadShaderFile("app/rendering/shaders/mesh/MeshDdpDepth.glsl");
+    loadShaderFile("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  dimensionReplacements["DDP_DEPTH_FUNCTIONS"] = loadShaderFile("rendering/shaders/mesh/MeshDdpDepth.glsl");
   const std::string fsSource =
     rendering::preprocessShaderSource(loadShaderFile(fragmentShaderPath), dimensionReplacements);
 
@@ -290,7 +291,7 @@ bool createMeshImagePlaneDdpProgram(
   attachShaderFile(
     program,
     ShaderType::Vertex,
-    "app/rendering/shaders/mesh/MeshImagePlane.vs",
+    "rendering/shaders/mesh/MeshImagePlane.vs",
     meshImagePlaneVertexUniforms());
   attachShaderSource(program, ShaderType::Fragment, fragmentShaderPath, fsSource, std::move(fsUniforms));
   return linkMeshProgram(program);
@@ -300,8 +301,8 @@ bool createMeshImagePlaneDdpProgram(
 
 bool Rendering::createMeshProgram(GLShaderProgram& program)
 {
-  static const std::string vsFileName{"app/rendering/shaders/mesh/Mesh.vs"};
-  static const std::string fsFileName{"app/rendering/shaders/mesh/Mesh.fs"};
+  static const std::string vsFileName{"rendering/shaders/mesh/Mesh.vs"};
+  static const std::string fsFileName{"rendering/shaders/mesh/Mesh.fs"};
 
   attachShaderFile(program, ShaderType::Vertex, vsFileName, meshVertexUniforms());
   attachShaderFile(program, ShaderType::Fragment, fsFileName, meshFragmentUniforms());
@@ -310,31 +311,31 @@ bool Rendering::createMeshProgram(GLShaderProgram& program)
 
 bool Rendering::createMeshEdgesProgram(GLShaderProgram& program)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
-  attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
-  attachShaderFile(program, ShaderType::Fragment, "app/rendering/shaders/mesh/Mesh.fs", meshFragmentUniforms());
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Geometry, "rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
+  attachShaderFile(program, ShaderType::Fragment, "rendering/shaders/mesh/Mesh.fs", meshFragmentUniforms());
   return linkMeshProgram(program);
 }
 
 bool Rendering::createMeshShadowDepthProgram(GLShaderProgram& program)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
   attachShaderFile(
     program,
     ShaderType::Fragment,
-    "app/rendering/shaders/mesh/MeshShadowDepth.fs",
+    "rendering/shaders/mesh/MeshShadowDepth.fs",
     meshClipFragmentUniforms());
   return linkMeshProgram(program);
 }
 
 bool Rendering::createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& program)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
-  attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Geometry, "rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
   attachShaderFile(
     program,
     ShaderType::Fragment,
-    "app/rendering/shaders/mesh/AmbientOcclusionGeometry.fs",
+    "rendering/shaders/mesh/AmbientOcclusionGeometry.fs",
     meshAmbientOcclusionGeometryUniforms());
   return linkMeshProgram(program);
 }
@@ -353,7 +354,7 @@ bool Rendering::createMeshAmbientOcclusionResolveProgram(GLShaderProgram& progra
   fsUniforms.insertUniform("u_sampleCount", UniformType::Int, 24);
   return createFullscreenMeshProgram(
     program,
-    "app/rendering/shaders/mesh/AmbientOcclusionResolve.fs",
+    "rendering/shaders/mesh/AmbientOcclusionResolve.fs",
     std::move(fsUniforms));
 }
 
@@ -370,7 +371,7 @@ bool Rendering::createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program
   fsUniforms.insertUniform("u_contrast", UniformType::Float, 1.0f);
   return createFullscreenMeshProgram(
     program,
-    "app/rendering/shaders/mesh/AmbientOcclusionFilter.fs",
+    "rendering/shaders/mesh/AmbientOcclusionFilter.fs",
     std::move(fsUniforms));
 }
 
@@ -379,7 +380,7 @@ bool Rendering::createMeshImagePlaneGrayLinearProgram(GLShaderProgram& program)
   return createMeshImagePlaneProgram(
     program,
     ShaderProgramType::ImageGrayLinear,
-    RenderData::TextureDimension::Texture3D);
+    rendering::TextureDimension::Texture3D);
 }
 
 bool Rendering::createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& program)
@@ -387,7 +388,7 @@ bool Rendering::createMeshImagePlaneGrayLinearTexture2DProgram(GLShaderProgram& 
   return createMeshImagePlaneProgram(
     program,
     ShaderProgramType::ImageGrayLinear,
-    RenderData::TextureDimension::Texture2D);
+    rendering::TextureDimension::Texture2D);
 }
 
 bool Rendering::createMeshImagePlaneIsoContourProgram(GLShaderProgram& program)
@@ -395,7 +396,7 @@ bool Rendering::createMeshImagePlaneIsoContourProgram(GLShaderProgram& program)
   return createMeshImagePlaneProgram(
     program,
     ShaderProgramType::IsoContourLinearFloating,
-    RenderData::TextureDimension::Texture3D);
+    rendering::TextureDimension::Texture3D);
 }
 
 bool Rendering::createMeshImagePlaneIsoContourTexture2DProgram(GLShaderProgram& program)
@@ -403,15 +404,15 @@ bool Rendering::createMeshImagePlaneIsoContourTexture2DProgram(GLShaderProgram& 
   return createMeshImagePlaneProgram(
     program,
     ShaderProgramType::IsoContourLinearFloating,
-    RenderData::TextureDimension::Texture2D);
+    rendering::TextureDimension::Texture2D);
 }
 
 bool Rendering::createMeshImagePlaneDdpInitProgram(GLShaderProgram& program)
 {
   return createMeshImagePlaneDdpProgram(
     program,
-    "app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs",
-    RenderData::TextureDimension::Texture3D,
+    "rendering/shaders/mesh/MeshImagePlaneDdpInit.fs",
+    rendering::TextureDimension::Texture3D,
     false);
 }
 
@@ -419,8 +420,8 @@ bool Rendering::createMeshImagePlaneDdpInitTexture2DProgram(GLShaderProgram& pro
 {
   return createMeshImagePlaneDdpProgram(
     program,
-    "app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs",
-    RenderData::TextureDimension::Texture2D,
+    "rendering/shaders/mesh/MeshImagePlaneDdpInit.fs",
+    rendering::TextureDimension::Texture2D,
     false);
 }
 
@@ -428,8 +429,8 @@ bool Rendering::createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program)
 {
   return createMeshImagePlaneDdpProgram(
     program,
-    "app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
-    RenderData::TextureDimension::Texture3D,
+    "rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
+    rendering::TextureDimension::Texture3D,
     true);
 }
 
@@ -437,31 +438,23 @@ bool Rendering::createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& pro
 {
   return createMeshImagePlaneDdpProgram(
     program,
-    "app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
-    RenderData::TextureDimension::Texture2D,
+    "rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
+    rendering::TextureDimension::Texture2D,
     true);
 }
 
 bool Rendering::createMeshDdpInitProgram(GLShaderProgram& program)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
-  attachShaderFile(
-    program,
-    ShaderType::Fragment,
-    "app/rendering/shaders/mesh/MeshDdpInit.fs",
-    meshClipFragmentUniforms());
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Fragment, "rendering/shaders/mesh/MeshDdpInit.fs", meshClipFragmentUniforms());
   return linkMeshProgram(program);
 }
 
 bool Rendering::createMeshDdpInitEdgesProgram(GLShaderProgram& program)
 {
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
-  attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
-  attachShaderFile(
-    program,
-    ShaderType::Fragment,
-    "app/rendering/shaders/mesh/MeshDdpInit.fs",
-    meshClipFragmentUniforms());
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Geometry, "rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
+  attachShaderFile(program, ShaderType::Fragment, "rendering/shaders/mesh/MeshDdpInit.fs", meshClipFragmentUniforms());
   return linkMeshProgram(program);
 }
 
@@ -473,12 +466,12 @@ bool Rendering::createMeshDdpPeelProgram(GLShaderProgram& program)
   fsUniforms
     .insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
 
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
   attachShaderSource(
     program,
     ShaderType::Fragment,
-    "app/rendering/shaders/mesh/MeshDdpPeel.fs",
-    loadMeshDdpShaderFile("app/rendering/shaders/mesh/MeshDdpPeel.fs"),
+    "rendering/shaders/mesh/MeshDdpPeel.fs",
+    loadMeshDdpShaderFile("rendering/shaders/mesh/MeshDdpPeel.fs"),
     std::move(fsUniforms));
   return linkMeshProgram(program);
 }
@@ -491,13 +484,13 @@ bool Rendering::createMeshDdpPeelEdgesProgram(GLShaderProgram& program)
   fsUniforms
     .insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
 
-  attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
-  attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
+  attachShaderFile(program, ShaderType::Vertex, "rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
+  attachShaderFile(program, ShaderType::Geometry, "rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
   attachShaderSource(
     program,
     ShaderType::Fragment,
-    "app/rendering/shaders/mesh/MeshDdpPeel.fs",
-    loadMeshDdpShaderFile("app/rendering/shaders/mesh/MeshDdpPeel.fs"),
+    "rendering/shaders/mesh/MeshDdpPeel.fs",
+    loadMeshDdpShaderFile("rendering/shaders/mesh/MeshDdpPeel.fs"),
     std::move(fsUniforms));
   return linkMeshProgram(program);
 }
@@ -506,20 +499,14 @@ bool Rendering::createMeshDdpCompletionProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
   fsUniforms.insertUniform("u_depthBoundsTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
-  return createFullscreenMeshDdpProgram(
-    program,
-    "app/rendering/shaders/mesh/MeshDdpCompletion.fs",
-    std::move(fsUniforms));
+  return createFullscreenMeshDdpProgram(program, "rendering/shaders/mesh/MeshDdpCompletion.fs", std::move(fsUniforms));
 }
 
 bool Rendering::createMeshDdpBackBlendProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
   fsUniforms.insertUniform("u_backTempTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
-  return createFullscreenMeshDdpProgram(
-    program,
-    "app/rendering/shaders/mesh/MeshDdpBackBlend.fs",
-    std::move(fsUniforms));
+  return createFullscreenMeshDdpProgram(program, "rendering/shaders/mesh/MeshDdpBackBlend.fs", std::move(fsUniforms));
 }
 
 bool Rendering::createMeshDdpResolveProgram(GLShaderProgram& program)
@@ -528,5 +515,5 @@ bool Rendering::createMeshDdpResolveProgram(GLShaderProgram& program)
   fsUniforms.insertUniform("u_frontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
   fsUniforms.insertUniform("u_backColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
   fsUniforms.insertUniform("u_viewportOrigin", UniformType::IVec2, glm::ivec2{0, 0});
-  return createFullscreenMeshDdpProgram(program, "app/rendering/shaders/mesh/MeshDdpResolve.fs", std::move(fsUniforms));
+  return createFullscreenMeshDdpProgram(program, "rendering/shaders/mesh/MeshDdpResolve.fs", std::move(fsUniforms));
 }

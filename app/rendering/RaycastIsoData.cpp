@@ -5,7 +5,8 @@
 #include "image/Isosurface.h"
 #include "logic/app/Data.h"
 #include "logic/SurfaceUtility.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 
 #include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
@@ -23,7 +24,7 @@ void Rendering::updateIsosurfaceDataFor3d(
 {
   constexpr int maxNumIsos = 8;
 
-  auto& isoData = appData.renderData().m_isosurfaceData;
+  auto& isoData = appData.renderDerivedData().isosurfaces;
   isoData.numIsos = 0;
   std::fill(std::begin(isoData.values), std::end(isoData.values), 0.0f);
   std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
@@ -38,7 +39,7 @@ void Rendering::updateIsosurfaceDataFor3d(
   }
 
   const ImageSettings& settings = image->settings();
-  const auto& rimLighting = appData.renderData().m_meshSurfaceMaterialSettings;
+  const auto& rimLighting = appData.renderSettings().m_meshSurfaceMaterialSettings;
 
   if (!settings.globalVisibility() || !settings.visibility()) {
     return;

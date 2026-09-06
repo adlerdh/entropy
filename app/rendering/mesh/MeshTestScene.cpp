@@ -54,9 +54,9 @@ void Rendering::renderSyntheticMeshSceneForView(const View& view)
   }
 
   const rendering::mesh::MeshHandle& handle = syntheticMeshHandle();
-  if (!m_meshGpuStore.lookup(handle)) {
+  if (!m_meshResources.lookup(handle)) {
     rendering::mesh::MeshData cube = rendering::mesh::makeCubeMesh(25.0f);
-    if (!m_meshGpuStore.uploadOrReplace(cube, handle)) {
+    if (!m_meshResources.uploadOrReplace(cube, handle)) {
       spdlog::error("Unable to upload synthetic mesh test scene");
       return;
     }

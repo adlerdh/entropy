@@ -60,14 +60,14 @@ void Rendering::renderIsoContoursForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   const bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   const int displayModeUniform,
   const bool isFixedImage)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   const std::optional<uuids::uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
   const CurrentImages renderGeometryImages{
@@ -90,7 +90,7 @@ void Rendering::renderIsoContoursForImage(
     }
     case InterpolationMode::Linear: {
       const bool useFloatingPoint = useFloatingPointLinearInterpolation(
-        renderData.m_isocontourFloatingPointInterpolationPolicy,
+        renderSettings.m_isocontourFloatingPointInterpolationPolicy,
         view,
         m_appData.windowData().viewport(),
         image,
@@ -141,7 +141,7 @@ void Rendering::renderIsoContoursForImage(
     program->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
     setTexture2DAxesUniforms(*program, imageTextureLayout);
 
-    program->setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
+    program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
     program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
     program->setUniform("u_isoValue", static_cast<float>(imageSettings.mapNativeIntensityToTexture(surface->value)));
     program->setUniform("u_fillOpacity", static_cast<float>(isosurfaceOpacity * surface->fillOpacity));
@@ -151,7 +151,7 @@ void Rendering::renderIsoContoursForImage(
     program->setUniform("u_color", color);
     program->setUniform("u_imgMinMax", uniforms.minMax);
     program->setUniform("u_imgThresholds", uniforms.thresholds);
-    program->setUniform("u_quadrants", renderData.m_quadrants);
+    program->setUniform("u_quadrants", renderSettings.m_quadrants);
     program->setUniform("u_showFix", isFixedImage);
     program->setUniform("u_renderMode", displayModeUniform);
     if (renderWarped) {

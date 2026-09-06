@@ -39,6 +39,8 @@ target_link_libraries(entropy PRIVATE
   Entropy::Common
   Entropy::Image
   Entropy::Layout
+  Entropy::Rendering
+  Entropy::RenderingMeshProcessing
   Entropy::UI
   Entropy::Viewer
   glfw

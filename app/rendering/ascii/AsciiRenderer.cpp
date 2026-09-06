@@ -11,7 +11,8 @@
 
 #include "rendering/ascii/AsciiAtlasBaker.h"
 #include "rendering/ascii/AsciiClipboard.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/ShaderPreprocessor.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -70,7 +71,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildAsciiShaderPro
   const Uniforms& vsUniforms,
   const Uniforms& fsUniforms)
 {
-  static const std::string shaderPath("app/rendering/shaders/");
+  static const std::string shaderPath("rendering/shaders/");
 
   spdlog::debug("Creating ASCII shader program '{}'", programName);
 
@@ -141,7 +142,7 @@ void AsciiRenderer::registerShaderPrograms(
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs)
 {
   // Load shared composite functions (rgb2hsv, hsv2rgb, sampleGlyphCoverage, asciiComposite)
-  static const std::string shaderPath("app/rendering/shaders/");
+  static const std::string shaderPath("rendering/shaders/");
   std::string compositeFunctions;
   try {
     const auto fs = cmrc::shaders::get_filesystem();
@@ -267,7 +268,7 @@ void AsciiRenderer::registerShaderPrograms(
 
 bool AsciiRenderer::enabled() const
 {
-  const auto& R = m_appData.renderData();
+  const auto& R = m_appData.renderSettings();
   return R.m_asciiEnabled && m_asciiAtlas.isBuilt();
 }
 
@@ -293,7 +294,7 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
     (logicalVP[2] > 0.0f) ? (deviceVP[2] / logicalVP[2]) : 1.0f,
     (logicalVP[3] > 0.0f) ? (deviceVP[3] / logicalVP[3]) : 1.0f};
 
-  const glm::vec2 cellPxDev = m_appData.renderData().m_asciiCellSizePx * dpr;
+  const glm::vec2 cellPxDev = m_appData.renderSettings().m_asciiCellSizePx * dpr;
   if (cellPxDev.x <= 0.0f || cellPxDev.y <= 0.0f) {
     return std::nullopt;
   }
@@ -322,7 +323,7 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
   std::vector<glm::vec4> cells(static_cast<size_t>(m_asciiCellMeanTexSize.x * m_asciiCellMeanTexSize.y));
   m_asciiCellMeanTex->readData(0, tex::BufferPixelFormat::RGBA, tex::BufferPixelDataType::Float32, cells.data());
 
-  const bool useSpatialMatching = m_appData.renderData().m_asciiSpatialMode && m_asciiCellRegionsTex &&
+  const bool useSpatialMatching = m_appData.renderSettings().m_asciiSpatialMode && m_asciiCellRegionsTex &&
                                   m_asciiCellRegionsTexB &&
                                   m_glyphProfilesPackedA.size() >= static_cast<size_t>(glyphCount) &&
                                   m_glyphProfilesPackedB.size() >= static_cast<size_t>(glyphCount) &&
@@ -356,7 +357,7 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
       std::max(std::max(profileA.x, profileA.y), std::max(profileA.z, profileA.w)),
       std::max(profileB.x, profileB.y));
     localMax = std::max(localMax, 1.0e-4f);
-    const float spatialExponent = m_appData.renderData().m_asciiSpatialExponent;
+    const float spatialExponent = m_appData.renderSettings().m_asciiSpatialExponent;
     profileA = glm::pow(glm::clamp(profileA / localMax, glm::vec4{0.0f}, glm::vec4{1.0f}), glm::vec4{spatialExponent}) *
                localMax;
     profileB = glm::pow(glm::clamp(profileB / localMax, glm::vec2{0.0f}, glm::vec2{1.0f}), glm::vec2{spatialExponent}) *
@@ -394,7 +395,7 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
   html.reserve(text.capacity() * 8u);
   richRuns.reserve(text.capacity());
 
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderSettings& R = m_appData.renderSettings();
   const clipboard::Rgb8 htmlBg = rendering::ascii_clipboard::toRgb8(R.m_asciiBgColor);
   html +=
     "<!DOCTYPE html><html><body><pre style=\"margin:0; white-space:pre; font-family:monospace; "
@@ -467,7 +468,7 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
 
 void AsciiRenderer::maybeRebuildAtlas()
 {
-  RenderData& R = m_appData.renderData();
+  rendering::RenderSettings& R = m_appData.renderSettings();
   if (R.m_asciiAtlasNeedsRebuild) {
     R.m_asciiAtlasNeedsRebuild = false;
     buildAtlas();
@@ -476,7 +477,7 @@ void AsciiRenderer::maybeRebuildAtlas()
 
 void AsciiRenderer::buildAtlas()
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderSettings& R = m_appData.renderSettings();
   const int charsetIdx = std::clamp(R.m_asciiCharsetIndex, 0, static_cast<int>(sk_asciiCharsets.size()) - 1);
   const std::string& charset = sk_asciiCharsets[charsetIdx];
 
@@ -594,7 +595,7 @@ void AsciiRenderer::render(
     {6u, GL_TEXTURE_2D},
     {7u, GL_TEXTURE_2D}};
 
-  const auto& R = m_appData.renderData();
+  const auto& R = m_appData.renderSettings();
   const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
   const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
@@ -614,12 +615,12 @@ void AsciiRenderer::render(
   {
     const glm::ivec2 slotPx = m_asciiAtlas.slotSize();
     if (slotPx.y > 0) {
-      m_appData.renderData().m_asciiCellSizePx.x =
-        m_appData.renderData().m_asciiCellSizePx.y * static_cast<float>(slotPx.x) / static_cast<float>(slotPx.y);
+      m_appData.renderSettings().m_asciiCellSizePx.x =
+        m_appData.renderSettings().m_asciiCellSizePx.y * static_cast<float>(slotPx.x) / static_cast<float>(slotPx.y);
     }
   }
 
-  const glm::vec2 cellPxDev = m_appData.renderData().m_asciiCellSizePx * dpr;
+  const glm::vec2 cellPxDev = m_appData.renderSettings().m_asciiCellSizePx * dpr;
   ensureAsciiCellFbo(sceneSize, cellPxDev);
 
   // Rebuild coverage LUT if cell size changed

@@ -15,7 +15,7 @@ target_sources(entropy PRIVATE
   app/StackTrace.cpp
   app/State.cpp
   app/UserPreferences.cpp
-  app/UserPreferencesRenderData.cpp
+  app/UserPreferencesRendering.cpp
   app/WindowTitleStatus.cpp
 
   annotation/Annotation.cpp

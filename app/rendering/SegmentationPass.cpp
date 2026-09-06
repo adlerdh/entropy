@@ -6,7 +6,8 @@
 #include "logic/app/Data.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -39,7 +40,7 @@ void Rendering::renderSegmentationForImage(
   const glm::vec3& worldOffsetXhairs,
   const ImgSegPair& imgSegPair,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   const bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   const int displayModeUniform,
@@ -51,7 +52,8 @@ void Rendering::renderSegmentationForImage(
     return;
   }
 
-  const RenderData& renderData = m_appData.renderData();
+  const auto& settings = m_appData.renderSettings();
+  auto& resources = m_appData.renderResources();
   const std::optional<uuids::uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
   const Image* geometryImage = referenceImageUid ? m_appData.image(*referenceImageUid) : seg;
@@ -59,8 +61,8 @@ void Rendering::renderSegmentationForImage(
     (InterpolationMode::NearestNeighbor == seg->settings().interpolationMode())
       ? (renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest)
       : (renderWarped ? ShaderProgramType::SegmentationLinearWarped : ShaderProgramType::SegmentationLinear);
-  const RenderData::PlanarTextureLayout segTextureLayout =
-    rendering::textureLayoutOrDefault(renderData.m_segTextureLayouts, segUid);
+  const rendering::PlanarTextureLayout segTextureLayout =
+    rendering::textureLayoutOrDefault(resources.m_segTextureLayouts, segUid);
   GLShaderProgram& program =
     shaderProgramForTextureDimension(m_shaderPrograms, m_shaderPrograms2D, segShaderType, segTextureLayout.dimension);
 
@@ -74,14 +76,14 @@ void Rendering::renderSegmentationForImage(
     program.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
     setTexture2DAxesUniforms(program, segTextureLayout);
 
-    program.setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
+    program.setUniform("u_numCheckers", static_cast<float>(settings.m_numCheckerboardSquares));
     program.setUniform("u_tex_T_world", uniforms.segTexture_T_world);
     program.setUniform(
       "u_segOpacity",
-      uniforms.segOpacity * (renderData.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f));
+      uniforms.segOpacity * (settings.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f));
     program.setUniform("u_useSegColorOverride", false);
     program.setUniform("u_segColorOverride", sk_zeroVec4);
-    program.setUniform("u_quadrants", renderData.m_quadrants);
+    program.setUniform("u_quadrants", settings.m_quadrants);
     program.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
     program.setUniform("u_renderMode", displayModeUniform);
     if (renderWarped) {
@@ -90,17 +92,17 @@ void Rendering::renderSegmentationForImage(
 
     drawSegQuad(
       program,
-      renderData.m_quad,
+      resources.m_quad,
       *seg,
       *(geometryImage ? geometryImage : seg),
       view,
       m_appData.windowData().viewport(),
       worldOffsetXhairs,
-      renderData.m_flashlightRadius,
-      renderData.m_flashlightOverlays,
-      renderData.m_segOutlineStyle,
-      renderData.m_segInteriorOpacity,
-      renderData.m_segInterpCutoff);
+      settings.m_flashlightRadius,
+      settings.m_flashlightOverlays,
+      settings.m_segOutlineStyle,
+      settings.m_segInteriorOpacity,
+      settings.m_segInterpCutoff);
   }
   program.stopUse();
 

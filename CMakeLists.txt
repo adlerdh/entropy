@@ -71,6 +71,7 @@ include(BuildStamp)
 BuildStamp()
 
 add_subdirectory(lib/common)
+add_subdirectory(lib/rendering)
 add_subdirectory(lib/image)
 add_subdirectory(lib/viewer)
 add_subdirectory(lib/layout)

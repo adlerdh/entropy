@@ -180,7 +180,7 @@ TEST_CASE("every main shader variant preprocesses without unresolved directives"
         info.fsReplacements,
         dimension,
         setup.lookupReplacementSources);
-      const std::string source = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/" + info.fsFileName);
+      const std::string source = shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName);
       INFO("shader type: " << to_string(shaderType));
       CHECK_NOTHROW(rendering::preprocessShaderSource(source, replacements));
     }
@@ -237,9 +237,9 @@ TEST_CASE("every declared main-shader uniform is represented in the C++ registri
         info.fsReplacements,
         dimension,
         setup.lookupReplacementSources);
-      const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/" + info.vsFileName);
+      const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.vsFileName);
       const std::string fragment = rendering::preprocessShaderSource(
-        shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/" + info.fsFileName),
+        shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName),
         replacements);
       auto declared = declaredUniforms(vertex);
       const auto fragmentUniforms = declaredUniforms(fragment);
@@ -271,10 +271,9 @@ TEST_CASE("main-shader uniform registry types match GLSL declarations", "[render
         info.fsReplacements,
         dimension,
         setup.lookupReplacementSources);
-      auto declared =
-        declaredUniforms(shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/" + info.vsFileName));
+      auto declared = declaredUniforms(shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.vsFileName));
       const auto fragmentUniforms = declaredUniforms(rendering::preprocessShaderSource(
-        shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/" + info.fsFileName),
+        shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName),
         replacements));
       declared.insert(declared.end(), fragmentUniforms.begin(), fragmentUniforms.end());
       for (const auto& [glslType, name] : declared) {
@@ -293,10 +292,10 @@ TEST_CASE("main-shader uniform registry types match GLSL declarations", "[render
 
 TEST_CASE("image edge shaders use independent scale and threshold controls", "[rendering][shaders][pixel-edge]")
 {
-  const std::string voxel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/Edge.fs");
+  const std::string voxel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/Edge.fs");
   const std::string sobel =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/functions/ComputeEdge_Sobel.glsl");
-  const std::string screen = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/PixelEdgePost.fs");
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/functions/ComputeEdge_Sobel.glsl");
+  const std::string screen = shader_setup::loadEmbeddedShaderSource("rendering/shaders/PixelEdgePost.fs");
 
   CHECK(voxel.find("computeEdge(V) * u_edgeScale") != std::string::npos);
   CHECK(voxel.find("gradMag >= u_edgeThreshold") != std::string::npos);
@@ -311,8 +310,8 @@ TEST_CASE("image edge shaders use independent scale and threshold controls", "[r
 
 TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributions", "[rendering][shaders]")
 {
-  const std::string raycast = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.fs");
-  const std::string mesh = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.fs");
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
+  const std::string mesh = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.fs");
 
   CHECK(raycast.find("u_isoColors[i] * (u_lightingAmbient + u_lightingDiffuse * d)") != std::string::npos);
   CHECK(raycast.find("vec3(u_lightingSpecular * s)") != std::string::npos);
@@ -326,8 +325,8 @@ TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributio
 
 TEST_CASE("raycast shaders use their screen-space transform contract", "[rendering][shaders][uniforms]")
 {
-  const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.vs");
-  const std::string fragment = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.fs");
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.vs");
+  const std::string fragment = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
 
   CHECK(vertex.find("uniform mat4 u_world_T_clip") != std::string::npos);
   CHECK(fragment.find("uniform mat4 u_clip_T_imgTex") != std::string::npos);
@@ -337,10 +336,10 @@ TEST_CASE("raycast shaders use their screen-space transform contract", "[renderi
 
 TEST_CASE("shader loops defend fixed-size inputs and unsupported projection modes", "[rendering][shaders]")
 {
-  const std::string difference = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/Difference.fs");
-  const std::string ascii = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/AsciiPostSpatial.fs");
-  const std::string mesh = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.fs");
-  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpPeel.fs");
+  const std::string difference = shader_setup::loadEmbeddedShaderSource("rendering/shaders/Difference.fs");
+  const std::string ascii = shader_setup::loadEmbeddedShaderSource("rendering/shaders/AsciiPostSpatial.fs");
+  const std::string mesh = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.fs");
+  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
 
   CHECK(difference.find("u_mipMode >= MAX_IP_MODE && u_mipMode <= MIN_IP_MODE") != std::string::npos);
   CHECK(ascii.find("clamp(u_asciiGlyphCount, 1, 128)") != std::string::npos);
@@ -352,7 +351,7 @@ TEST_CASE("shader loops defend fixed-size inputs and unsupported projection mode
 
 TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP paths", "[rendering][shaders][pbr]")
 {
-  const std::array shaderPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+  const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
 
   for (const char* shaderPath : shaderPaths) {
     const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
@@ -369,7 +368,7 @@ TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP 
 
 TEST_CASE("mesh rim lighting uses the same silhouette equation in opaque and DDP shaders", "[rendering][shaders][mesh]")
 {
-  const std::array shaderPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+  const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
 
   for (const char* shaderPath : shaderPaths) {
     const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
@@ -381,7 +380,7 @@ TEST_CASE("mesh rim lighting uses the same silhouette equation in opaque and DDP
 
 TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths", "[rendering][shaders][mesh]")
 {
-  const std::array shaderPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+  const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
 
   for (const char* shaderPath : shaderPaths) {
     const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
@@ -392,7 +391,7 @@ TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths
     CHECK(shader.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
   }
 
-  const std::string geometry = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.gs");
+  const std::string geometry = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshEdges.gs");
   CHECK(geometry.find("flat out vec3 v_worldFaceNormal") != std::string::npos);
   CHECK(geometry.find("edge_worldPosition[1] - edge_worldPosition[0]") != std::string::npos);
   CHECK(geometry.find("v_worldFaceNormal = faceNormal") != std::string::npos);
@@ -400,15 +399,15 @@ TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths
 
 TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rendering][shaders][mesh]")
 {
-  const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.vs");
-  const std::string geometry = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshEdges.gs");
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshEdges.vs");
+  const std::string geometry = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshEdges.gs");
   CHECK(vertex.find("out vec3 edge_worldPosition") != std::string::npos);
   CHECK(vertex.find("gl_Position = u_clip_T_world * worldPosition") != std::string::npos);
   CHECK(geometry.find("noperspective out vec3 v_barycentric") != std::string::npos);
   CHECK(geometry.find("gl_Position = gl_in[corner].gl_Position") != std::string::npos);
   CHECK(geometry.find("vec3(1.0, 0.0, 0.0)") != std::string::npos);
 
-  const std::array fragmentPaths{"app/rendering/shaders/mesh/Mesh.fs", "app/rendering/shaders/mesh/MeshDdpPeel.fs"};
+  const std::array fragmentPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
   for (const char* fragmentPath : fragmentPaths) {
     const std::string fragment = shader_setup::loadEmbeddedShaderSource(fragmentPath);
     CHECK(fragment.find("uniform bool u_triangleEdgesEnabled") != std::string::npos);
@@ -421,9 +420,8 @@ TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rend
 TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
 {
   const std::string resolve =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionResolve.fs");
-  const std::string filter =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionFilter.fs");
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionResolve.fs");
+  const std::string filter = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionFilter.fs");
 
   CHECK(resolve.find("u_camera_T_clip") != std::string::npos);
   CHECK(resolve.find("u_clip_T_camera") != std::string::npos);
@@ -439,8 +437,8 @@ TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter",
 
 TEST_CASE("ASCII compositing addresses the full framebuffer from the render viewport", "[rendering][shaders][ascii]")
 {
-  const std::string post = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/AsciiPost.fs");
-  const std::string spatial = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/AsciiPostSpatial.fs");
+  const std::string post = shader_setup::loadEmbeddedShaderSource("rendering/shaders/AsciiPost.fs");
+  const std::string spatial = shader_setup::loadEmbeddedShaderSource("rendering/shaders/AsciiPostSpatial.fs");
 
   CHECK(post.find("u_sceneOriginPx + v_uv * u_viewSizePx") != std::string::npos);
   CHECK(spatial.find("u_sceneOriginPx + v_uv * u_viewSizePx") != std::string::npos);
@@ -448,7 +446,7 @@ TEST_CASE("ASCII compositing addresses the full framebuffer from the render view
 
 TEST_CASE("raycasting does not render the mesh-only 3D crosshairs", "[rendering][shaders][crosshairs]")
 {
-  const std::string raycast = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/RaycastIso.fs");
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
 
   CHECK(raycast.find("u_showCrosshairs3D") == std::string::npos);
   CHECK(raycast.find("raySphereFirstHit") == std::string::npos);
@@ -456,12 +454,10 @@ TEST_CASE("raycasting does not render the mesh-only 3D crosshairs", "[rendering]
 
 TEST_CASE("DDP shaders preserve exact physical depth ordering", "[rendering][shaders][ddp]")
 {
-  const std::string init =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
-  const std::string peel =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
-  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpPeel.fs");
-  const std::string depth = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpDepth.glsl");
+  const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
+  const std::string depth = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpDepth.glsl");
 
   CHECK(init.find("ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder)") != std::string::npos);
   CHECK(peel.find("ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder)") != std::string::npos);
@@ -477,17 +473,16 @@ TEST_CASE("DDP shaders preserve exact physical depth ordering", "[rendering][sha
 TEST_CASE("DDP uses invariant rasterization and depth-bound completion", "[rendering][shaders][ddp]")
 {
   const std::array vertexPaths{
-    "app/rendering/shaders/mesh/Mesh.vs",
-    "app/rendering/shaders/mesh/MeshEdges.vs",
-    "app/rendering/shaders/mesh/MeshEdges.gs",
-    "app/rendering/shaders/mesh/MeshImagePlane.vs"};
+    "rendering/shaders/mesh/Mesh.vs",
+    "rendering/shaders/mesh/MeshEdges.vs",
+    "rendering/shaders/mesh/MeshEdges.gs",
+    "rendering/shaders/mesh/MeshImagePlane.vs"};
   for (const char* path : vertexPaths) {
     const std::string source = shader_setup::loadEmbeddedShaderSource(path);
     CHECK(source.find("invariant gl_Position") != std::string::npos);
   }
 
-  const std::string completion =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpCompletion.fs");
+  const std::string completion = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpCompletion.fs");
   CHECK(completion.find("u_depthBoundsTex") != std::string::npos);
   CHECK(completion.find("ddpDepthBoundsAreValid") != std::string::npos);
   CHECK(completion.find("u_backTempTex") == std::string::npos);
@@ -496,11 +491,9 @@ TEST_CASE("DDP uses invariant rasterization and depth-bound completion", "[rende
 TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering][shaders][ddp]")
 {
   const std::string display =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
-  const std::string init =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
-  const std::string peel =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
 
   CHECK(init.find("u_boundaryWorldPositions") != std::string::npos);
   CHECK(peel.find("u_boundaryWorldPositions") != std::string::npos);
@@ -517,11 +510,9 @@ TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering
 TEST_CASE("3D image planes use the same multi-component display modes as 2D images", "[rendering][shaders][ddp]")
 {
   const std::string display =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
-  const std::string init =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
-  const std::string peel =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
 
   CHECK(display.find("u_imgRgbaTex[4]") != std::string::npos);
   CHECK(display.find("colorImagePlaneColor") != std::string::npos);
@@ -536,9 +527,9 @@ TEST_CASE("3D image planes use the same multi-component display modes as 2D imag
 
 TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[rendering][shaders][mesh]")
 {
-  const std::string vertex = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.vs");
-  const std::string opaque = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/Mesh.fs");
-  const std::string peel = shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/MeshDdpPeel.fs");
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.vs");
+  const std::string opaque = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
 
   CHECK(vertex.find("normalLength2 > 1.0e-12") != std::string::npos);
   CHECK(opaque.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
@@ -558,9 +549,9 @@ TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[r
 TEST_CASE("mesh SSAO rejects clipped samples and follows the visible normal model", "[rendering][shaders][ssao]")
 {
   const std::string geometry =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionGeometry.fs");
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionGeometry.fs");
   const std::string resolve =
-    shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/mesh/AmbientOcclusionResolve.fs");
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionResolve.fs");
 
   CHECK(geometry.find("uniform bool u_flatShadingEnabled") != std::string::npos);
   CHECK(geometry.find("flat in vec3 v_worldFaceNormal") != std::string::npos);

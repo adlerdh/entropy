@@ -43,8 +43,8 @@ std::string loadFile(const std::string& path)
 
 bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 {
-  static const std::string vsFileName{"app/rendering/shaders/RaycastIso.vs"};
-  static const std::string fsFileName{"app/rendering/shaders/RaycastIso.fs"};
+  static const std::string vsFileName{"rendering/shaders/RaycastIso.vs"};
+  static const std::string fsFileName{"rendering/shaders/RaycastIso.fs"};
 
   auto filesystem = cmrc::shaders::get_filesystem();
   std::string vsSource;
@@ -62,7 +62,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
     throwDebug("Unable to load shader");
   }
 
-  const std::string shaderPath("app/rendering/shaders/functions/");
+  const std::string shaderPath("rendering/shaders/functions/");
   const std::string sampleTexCoordIdentityRep = loadFile(shaderPath + "SampleTexCoord_Identity.glsl");
   const std::string sampleTexCoordDeformationRep = loadFile(shaderPath + "SampleTexCoord_Deformation.glsl");
   const std::string sampleImageValueIdentityRep = loadFile(shaderPath + "SampleImageValue_Identity.glsl");

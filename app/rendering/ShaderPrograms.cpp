@@ -3,13 +3,14 @@
 #include "common/Exception.hpp"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/ShaderProgramSetup.h"
 #include "rendering/ShaderPreprocessor.h"
+#include "rendering/ShaderTextureDimension.h"
 #include "rendering/TextureLayout.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
@@ -40,7 +41,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> createShaderProgram
   const Uniforms& vsUniforms,
   const Uniforms& fsUniforms)
 {
-  static const std::string shaderPath("app/rendering/shaders/");
+  static const std::string shaderPath("rendering/shaders/");
 
   spdlog::debug("Creating shader program '{}'", programName);
 
@@ -101,7 +102,7 @@ void Rendering::createShaderPrograms()
       info.fsFileName,
       rendering::shaderReplacementsForTextureDimension(
         info.fsReplacements,
-        RenderData::TextureDimension::Texture3D,
+        rendering::TextureDimension::Texture3D,
         setup.lookupReplacementSources),
       info.vsUniforms,
       info.fsUniforms);
@@ -120,7 +121,7 @@ void Rendering::createShaderPrograms()
       info.fsFileName,
       rendering::shaderReplacementsForTextureDimension(
         info.fsReplacements,
-        RenderData::TextureDimension::Texture2D,
+        rendering::TextureDimension::Texture2D,
         setup.lookupReplacementSources),
       info.vsUniforms,
       info.fsUniforms);

@@ -555,11 +555,11 @@ void EntropyApp::saveAppSettingsQuietly()
 
   std::string error;
   const fs::path settingsFile = app_paths::userSettingsFile();
-  if (!user_preferences::save(m_data.settings(), m_data.renderData(), m_data.guiData(), settingsFile, &error)) {
+  if (!user_preferences::save(m_data.settings(), m_data.renderSettings(), m_data.guiData(), settingsFile, &error)) {
     spdlog::warn("Could not save recent file history to {}: {}", settingsFile, error);
     return;
   }
-  user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderData(), m_data.guiData());
+  user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
 }
 
 void EntropyApp::recordRecentImageGroup(const std::vector<fs::path>& fileNames)
@@ -895,7 +895,7 @@ void EntropyApp::requestCloseProject()
 
 void EntropyApp::requestQuitApp()
 {
-  user_preferences::updateAppSettingsDirtyState(m_data.settings(), m_data.renderData(), m_data.guiData());
+  user_preferences::updateAppSettingsDirtyState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
 
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;
@@ -997,15 +997,8 @@ void EntropyApp::closeProject()
   m_data.guiData().m_showConfirmCloseAppPopup = false;
   m_data.guiData().m_showLargeImageLoadPrompt = false;
 
-  auto& renderData = m_data.renderData();
-  renderData.m_imageTextures.clear();
-  renderData.m_imageTextureLayouts.clear();
-  renderData.m_distanceMapTextures.clear();
-  renderData.m_segTextures.clear();
-  renderData.m_segTextureLayouts.clear();
-  renderData.m_labelBufferTextures.clear();
-  renderData.m_colormapTextures.clear();
-  renderData.m_uniforms.clear();
+  m_data.renderResources().clearLoadedData();
+  m_data.renderDerivedData().clear();
 
   m_data.clearProjectData();
   m_glfw.setWindowTitleStatus("");

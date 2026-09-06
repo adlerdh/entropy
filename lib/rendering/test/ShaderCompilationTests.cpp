@@ -101,7 +101,7 @@ void validateProgram(
 
 std::string shader(const std::string& relativePath)
 {
-  return shader_setup::loadEmbeddedShaderSource("app/rendering/shaders/" + relativePath);
+  return shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + relativePath);
 }
 
 std::string preprocess(const std::string& relativePath, const rendering::ShaderReplacements& replacements)

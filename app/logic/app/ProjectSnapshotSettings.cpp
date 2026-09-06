@@ -8,7 +8,7 @@
 #include "logic/app/Data.h"
 #include "logic/app/ParcellationLabelTable.h"
 #include "logic/app/Settings.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
 #include "ui/GuiData.h"
@@ -194,50 +194,50 @@ void applySynchronizationSettings(AppData& appData, const serialize::ProjectSync
 serialize::ProjectViewSettings viewSettings(const AppData& appData)
 {
   return serialize::ProjectViewSettings{
-    .m_showImageBorders = appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections,
+    .m_showImageBorders = appData.renderSettings().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections,
     .m_showImageBordersInLightboxViews =
-      appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews,
-    .m_showCrosshairs = appData.renderData().m_showCrosshairs,
-    .m_showCrosshairsInLightboxViews = appData.renderData().m_showCrosshairsInLightboxViews,
-    .m_showAnatomicalLabels = appData.renderData().m_showAnatomicalLabels,
-    .m_showAnatomicalLabelsInLightboxViews = appData.renderData().m_showAnatomicalLabelsInLightboxViews,
-    .m_showScaleBars = appData.renderData().m_showScaleBars,
-    .m_showScaleBarsInLightboxViews = appData.renderData().m_showScaleBarsInLightboxViews,
-    .m_annotationsOnTop = appData.renderData().m_globalAnnotationParams.renderOnTopOfAllImagePlanes,
-    .m_landmarksOnTop = appData.renderData().m_globalLandmarkParams.renderOnTopOfAllImagePlanes,
-    .m_hideAnnotationVertices = appData.renderData().m_globalAnnotationParams.hidePolygonVertices,
-    .m_anatomicalLabelType = appData.renderData().m_anatomicalLabelType,
+      appData.renderSettings().m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews,
+    .m_showCrosshairs = appData.renderSettings().m_showCrosshairs,
+    .m_showCrosshairsInLightboxViews = appData.renderSettings().m_showCrosshairsInLightboxViews,
+    .m_showAnatomicalLabels = appData.renderSettings().m_showAnatomicalLabels,
+    .m_showAnatomicalLabelsInLightboxViews = appData.renderSettings().m_showAnatomicalLabelsInLightboxViews,
+    .m_showScaleBars = appData.renderSettings().m_showScaleBars,
+    .m_showScaleBarsInLightboxViews = appData.renderSettings().m_showScaleBarsInLightboxViews,
+    .m_annotationsOnTop = appData.renderSettings().m_globalAnnotationParams.renderOnTopOfAllImagePlanes,
+    .m_landmarksOnTop = appData.renderSettings().m_globalLandmarkParams.renderOnTopOfAllImagePlanes,
+    .m_hideAnnotationVertices = appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices,
+    .m_anatomicalLabelType = appData.renderSettings().m_anatomicalLabelType,
     .m_lockAnatomicalDirectionsToReferenceImage = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage(),
-    .m_crosshairsSnapping = appData.renderData().m_snapCrosshairs};
+    .m_crosshairsSnapping = appData.renderSettings().m_snapCrosshairs};
 }
 
 void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& settings)
 {
-  appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections =
+  appData.renderSettings().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections =
     settings.m_showImageBorders;
-  appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
+  appData.renderSettings().m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
     settings.m_showImageBorders && settings.m_showImageBordersInLightboxViews;
-  appData.renderData().m_showCrosshairs = settings.m_showCrosshairs;
-  appData.renderData().m_showCrosshairsInLightboxViews =
+  appData.renderSettings().m_showCrosshairs = settings.m_showCrosshairs;
+  appData.renderSettings().m_showCrosshairsInLightboxViews =
     settings.m_showCrosshairs && settings.m_showCrosshairsInLightboxViews;
-  appData.renderData().m_showAnatomicalLabels = settings.m_showAnatomicalLabels;
-  appData.renderData().m_showAnatomicalLabelsInLightboxViews =
+  appData.renderSettings().m_showAnatomicalLabels = settings.m_showAnatomicalLabels;
+  appData.renderSettings().m_showAnatomicalLabelsInLightboxViews =
     settings.m_showAnatomicalLabels && settings.m_showAnatomicalLabelsInLightboxViews;
-  appData.renderData().m_showScaleBars = settings.m_showScaleBars;
-  appData.renderData().m_showScaleBarsInLightboxViews =
+  appData.renderSettings().m_showScaleBars = settings.m_showScaleBars;
+  appData.renderSettings().m_showScaleBarsInLightboxViews =
     settings.m_showScaleBars && settings.m_showScaleBarsInLightboxViews;
-  appData.renderData().m_globalAnnotationParams.renderOnTopOfAllImagePlanes = settings.m_annotationsOnTop;
-  appData.renderData().m_globalLandmarkParams.renderOnTopOfAllImagePlanes = settings.m_landmarksOnTop;
-  appData.renderData().m_globalAnnotationParams.hidePolygonVertices = settings.m_hideAnnotationVertices;
-  appData.renderData().m_anatomicalLabelType = settings.m_anatomicalLabelType;
+  appData.renderSettings().m_globalAnnotationParams.renderOnTopOfAllImagePlanes = settings.m_annotationsOnTop;
+  appData.renderSettings().m_globalLandmarkParams.renderOnTopOfAllImagePlanes = settings.m_landmarksOnTop;
+  appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices = settings.m_hideAnnotationVertices;
+  appData.renderSettings().m_anatomicalLabelType = settings.m_anatomicalLabelType;
   appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
     settings.m_lockAnatomicalDirectionsToReferenceImage);
-  appData.renderData().m_snapCrosshairs = settings.m_crosshairsSnapping;
+  appData.renderSettings().m_snapCrosshairs = settings.m_crosshairsSnapping;
 }
 
 // Project-owned comparison metric and mode settings.
 
-serialize::ProjectMetricSettings metricSettings(const RenderData::MetricParams& params)
+serialize::ProjectMetricSettings metricSettings(const rendering::RenderSettings::MetricParams& params)
 {
   return serialize::ProjectMetricSettings{
     .m_colorMapIndex = params.m_colorMapIndex,
@@ -247,7 +247,9 @@ serialize::ProjectMetricSettings metricSettings(const RenderData::MetricParams& 
     .m_colormapLevels = params.m_cmapQuantizationLevels};
 }
 
-void applyMetricSettings(RenderData::MetricParams& params, const serialize::ProjectMetricSettings& settings)
+void applyMetricSettings(
+  rendering::RenderSettings::MetricParams& params,
+  const serialize::ProjectMetricSettings& settings)
 {
   params.m_colorMapIndex = settings.m_colorMapIndex;
   params.m_slopeIntercept = settings.m_slopeIntercept;
@@ -256,330 +258,337 @@ void applyMetricSettings(RenderData::MetricParams& params, const serialize::Proj
   params.m_cmapQuantizationLevels = settings.m_colormapLevels;
 }
 
-serialize::ProjectLocalNccPresentation localNccPresentation(RenderData::LocalNccPresentation presentation)
+serialize::ProjectLocalNccPresentation localNccPresentation(
+  rendering::RenderSettings::LocalNccPresentation presentation)
 {
-  return RenderData::LocalNccPresentation::Correlation == presentation
+  return rendering::RenderSettings::LocalNccPresentation::Correlation == presentation
            ? serialize::ProjectLocalNccPresentation::Correlation
            : serialize::ProjectLocalNccPresentation::Dissimilarity;
 }
 
-RenderData::LocalNccPresentation localNccPresentation(serialize::ProjectLocalNccPresentation presentation)
+rendering::RenderSettings::LocalNccPresentation localNccPresentation(
+  serialize::ProjectLocalNccPresentation presentation)
 {
   return serialize::ProjectLocalNccPresentation::Correlation == presentation
-           ? RenderData::LocalNccPresentation::Correlation
-           : RenderData::LocalNccPresentation::Dissimilarity;
+           ? rendering::RenderSettings::LocalNccPresentation::Correlation
+           : rendering::RenderSettings::LocalNccPresentation::Dissimilarity;
 }
 
-serialize::ProjectLocalMetricInvalidStyle localMetricInvalidStyle(RenderData::LocalNccInvalidStyle style)
+serialize::ProjectLocalMetricInvalidStyle localMetricInvalidStyle(rendering::RenderSettings::LocalNccInvalidStyle style)
 {
-  return RenderData::LocalNccInvalidStyle::Gray == style ? serialize::ProjectLocalMetricInvalidStyle::Gray
-                                                         : serialize::ProjectLocalMetricInvalidStyle::Transparent;
+  return rendering::RenderSettings::LocalNccInvalidStyle::Gray == style
+           ? serialize::ProjectLocalMetricInvalidStyle::Gray
+           : serialize::ProjectLocalMetricInvalidStyle::Transparent;
 }
 
-RenderData::LocalNccInvalidStyle localMetricInvalidStyle(serialize::ProjectLocalMetricInvalidStyle style)
+rendering::RenderSettings::LocalNccInvalidStyle localMetricInvalidStyle(serialize::ProjectLocalMetricInvalidStyle style)
 {
-  return serialize::ProjectLocalMetricInvalidStyle::Gray == style ? RenderData::LocalNccInvalidStyle::Gray
-                                                                  : RenderData::LocalNccInvalidStyle::Transparent;
+  return serialize::ProjectLocalMetricInvalidStyle::Gray == style
+           ? rendering::RenderSettings::LocalNccInvalidStyle::Gray
+           : rendering::RenderSettings::LocalNccInvalidStyle::Transparent;
 }
 
-serialize::ProjectSegmentationRaycastMasking raycastSegmentationMasking(RenderData::SegMaskingForRaycasting masking)
+serialize::ProjectSegmentationRaycastMasking raycastSegmentationMasking(
+  rendering::RenderSettings::SegMaskingForRaycasting masking)
 {
   switch (masking) {
-    case RenderData::SegMaskingForRaycasting::SegMasksIn:
+    case rendering::RenderSettings::SegMaskingForRaycasting::SegMasksIn:
       return serialize::ProjectSegmentationRaycastMasking::MaskIn;
-    case RenderData::SegMaskingForRaycasting::SegMasksOut:
+    case rendering::RenderSettings::SegMaskingForRaycasting::SegMasksOut:
       return serialize::ProjectSegmentationRaycastMasking::MaskOut;
-    case RenderData::SegMaskingForRaycasting::Disabled:
+    case rendering::RenderSettings::SegMaskingForRaycasting::Disabled:
       return serialize::ProjectSegmentationRaycastMasking::Disabled;
   }
 
   return serialize::ProjectSegmentationRaycastMasking::Disabled;
 }
 
-RenderData::SegMaskingForRaycasting raycastSegmentationMasking(serialize::ProjectSegmentationRaycastMasking masking)
+rendering::RenderSettings::SegMaskingForRaycasting raycastSegmentationMasking(
+  serialize::ProjectSegmentationRaycastMasking masking)
 {
   switch (masking) {
     case serialize::ProjectSegmentationRaycastMasking::MaskIn:
-      return RenderData::SegMaskingForRaycasting::SegMasksIn;
+      return rendering::RenderSettings::SegMaskingForRaycasting::SegMasksIn;
     case serialize::ProjectSegmentationRaycastMasking::MaskOut:
-      return RenderData::SegMaskingForRaycasting::SegMasksOut;
+      return rendering::RenderSettings::SegMaskingForRaycasting::SegMasksOut;
     case serialize::ProjectSegmentationRaycastMasking::Disabled:
-      return RenderData::SegMaskingForRaycasting::Disabled;
+      return rendering::RenderSettings::SegMaskingForRaycasting::Disabled;
   }
 
-  return RenderData::SegMaskingForRaycasting::Disabled;
+  return rendering::RenderSettings::SegMaskingForRaycasting::Disabled;
 }
 
 serialize::ProjectComparisonSettings comparisonSettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectComparisonSettings{
     .m_difference =
       serialize::ProjectDifferenceMetricSettings{
-        .m_squared = renderData.m_useSquare,
-        .m_metric = metricSettings(renderData.m_squaredDifferenceParams)},
+        .m_squared = renderSettings.m_useSquare,
+        .m_metric = metricSettings(renderSettings.m_squaredDifferenceParams)},
     .m_localNcc =
       serialize::ProjectLocalNccMetricSettings{
-        .m_metric = metricSettings(renderData.m_localNccParams),
-        .m_presentation = localNccPresentation(renderData.m_localNccPresentation),
-        .m_negativeCorrelationAsMismatch = renderData.m_localNccIgnoreNegativeCorrelation,
-        .m_patchRadius = renderData.m_localNccPatchRadius,
-        .m_sampleSpacing = renderData.m_localNccSampleSpacing,
-        .m_minimumValidFraction = renderData.m_localNccMinValidFraction,
-        .m_varianceEpsilon = renderData.m_localNccVarianceEpsilon,
-        .m_invalidStyle = localMetricInvalidStyle(renderData.m_localNccInvalidStyle)},
+        .m_metric = metricSettings(renderSettings.m_localNccParams),
+        .m_presentation = localNccPresentation(renderSettings.m_localNccPresentation),
+        .m_negativeCorrelationAsMismatch = renderSettings.m_localNccIgnoreNegativeCorrelation,
+        .m_patchRadius = renderSettings.m_localNccPatchRadius,
+        .m_sampleSpacing = renderSettings.m_localNccSampleSpacing,
+        .m_minimumValidFraction = renderSettings.m_localNccMinValidFraction,
+        .m_varianceEpsilon = renderSettings.m_localNccVarianceEpsilon,
+        .m_invalidStyle = localMetricInvalidStyle(renderSettings.m_localNccInvalidStyle)},
     .m_localLinearResidual =
       serialize::ProjectLocalLinearResidualMetricSettings{
-        .m_metric = metricSettings(renderData.m_localLinearResidualParams),
-        .m_patchRadius = renderData.m_localLinearResidualPatchRadius,
-        .m_sampleSpacing = renderData.m_localLinearResidualSampleSpacing,
-        .m_minimumValidFraction = renderData.m_localLinearResidualMinValidFraction,
-        .m_varianceEpsilon = renderData.m_localLinearResidualVarianceEpsilon,
-        .m_invalidStyle = localMetricInvalidStyle(renderData.m_localLinearResidualInvalidStyle)},
-    .m_overlayMagentaCyan = renderData.m_overlayMagentaCyan,
-    .m_quadrants = renderData.m_quadrants,
-    .m_checkerboardSquares = renderData.m_numCheckerboardSquares,
-    .m_flashlightRadiusFraction = renderData.m_flashlightRadius,
-    .m_flashlightOverlayMovingImage = renderData.m_flashlightOverlays};
+        .m_metric = metricSettings(renderSettings.m_localLinearResidualParams),
+        .m_patchRadius = renderSettings.m_localLinearResidualPatchRadius,
+        .m_sampleSpacing = renderSettings.m_localLinearResidualSampleSpacing,
+        .m_minimumValidFraction = renderSettings.m_localLinearResidualMinValidFraction,
+        .m_varianceEpsilon = renderSettings.m_localLinearResidualVarianceEpsilon,
+        .m_invalidStyle = localMetricInvalidStyle(renderSettings.m_localLinearResidualInvalidStyle)},
+    .m_overlayMagentaCyan = renderSettings.m_overlayMagentaCyan,
+    .m_quadrants = renderSettings.m_quadrants,
+    .m_checkerboardSquares = renderSettings.m_numCheckerboardSquares,
+    .m_flashlightRadiusFraction = renderSettings.m_flashlightRadius,
+    .m_flashlightOverlayMovingImage = renderSettings.m_flashlightOverlays};
 }
 
 void applyComparisonSettings(AppData& appData, const serialize::ProjectComparisonSettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_useSquare = settings.m_difference.m_squared;
-  applyMetricSettings(renderData.m_squaredDifferenceParams, settings.m_difference.m_metric);
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_useSquare = settings.m_difference.m_squared;
+  applyMetricSettings(renderSettings.m_squaredDifferenceParams, settings.m_difference.m_metric);
 
-  applyMetricSettings(renderData.m_localNccParams, settings.m_localNcc.m_metric);
-  renderData.m_localNccPresentation = localNccPresentation(settings.m_localNcc.m_presentation);
-  renderData.m_localNccIgnoreNegativeCorrelation = settings.m_localNcc.m_negativeCorrelationAsMismatch;
-  renderData.m_localNccPatchRadius = settings.m_localNcc.m_patchRadius;
-  renderData.m_localNccSampleSpacing = settings.m_localNcc.m_sampleSpacing;
-  renderData.m_localNccMinValidFraction = settings.m_localNcc.m_minimumValidFraction;
-  renderData.m_localNccVarianceEpsilon = settings.m_localNcc.m_varianceEpsilon;
-  renderData.m_localNccInvalidStyle = localMetricInvalidStyle(settings.m_localNcc.m_invalidStyle);
+  applyMetricSettings(renderSettings.m_localNccParams, settings.m_localNcc.m_metric);
+  renderSettings.m_localNccPresentation = localNccPresentation(settings.m_localNcc.m_presentation);
+  renderSettings.m_localNccIgnoreNegativeCorrelation = settings.m_localNcc.m_negativeCorrelationAsMismatch;
+  renderSettings.m_localNccPatchRadius = settings.m_localNcc.m_patchRadius;
+  renderSettings.m_localNccSampleSpacing = settings.m_localNcc.m_sampleSpacing;
+  renderSettings.m_localNccMinValidFraction = settings.m_localNcc.m_minimumValidFraction;
+  renderSettings.m_localNccVarianceEpsilon = settings.m_localNcc.m_varianceEpsilon;
+  renderSettings.m_localNccInvalidStyle = localMetricInvalidStyle(settings.m_localNcc.m_invalidStyle);
 
-  applyMetricSettings(renderData.m_localLinearResidualParams, settings.m_localLinearResidual.m_metric);
-  renderData.m_localLinearResidualPatchRadius = settings.m_localLinearResidual.m_patchRadius;
-  renderData.m_localLinearResidualSampleSpacing = settings.m_localLinearResidual.m_sampleSpacing;
-  renderData.m_localLinearResidualMinValidFraction = settings.m_localLinearResidual.m_minimumValidFraction;
-  renderData.m_localLinearResidualVarianceEpsilon = settings.m_localLinearResidual.m_varianceEpsilon;
-  renderData.m_localLinearResidualInvalidStyle = localMetricInvalidStyle(settings.m_localLinearResidual.m_invalidStyle);
+  applyMetricSettings(renderSettings.m_localLinearResidualParams, settings.m_localLinearResidual.m_metric);
+  renderSettings.m_localLinearResidualPatchRadius = settings.m_localLinearResidual.m_patchRadius;
+  renderSettings.m_localLinearResidualSampleSpacing = settings.m_localLinearResidual.m_sampleSpacing;
+  renderSettings.m_localLinearResidualMinValidFraction = settings.m_localLinearResidual.m_minimumValidFraction;
+  renderSettings.m_localLinearResidualVarianceEpsilon = settings.m_localLinearResidual.m_varianceEpsilon;
+  renderSettings.m_localLinearResidualInvalidStyle =
+    localMetricInvalidStyle(settings.m_localLinearResidual.m_invalidStyle);
 
-  renderData.m_overlayMagentaCyan = settings.m_overlayMagentaCyan;
-  renderData.m_quadrants = settings.m_quadrants;
-  renderData.m_numCheckerboardSquares = settings.m_checkerboardSquares;
-  renderData.m_flashlightRadius = settings.m_flashlightRadiusFraction;
-  renderData.m_flashlightOverlays = settings.m_flashlightOverlayMovingImage;
+  renderSettings.m_overlayMagentaCyan = settings.m_overlayMagentaCyan;
+  renderSettings.m_quadrants = settings.m_quadrants;
+  renderSettings.m_numCheckerboardSquares = settings.m_checkerboardSquares;
+  renderSettings.m_flashlightRadius = settings.m_flashlightRadiusFraction;
+  renderSettings.m_flashlightOverlays = settings.m_flashlightOverlayMovingImage;
 }
 
 // Project-owned rendering presentation settings.
 
 serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectThreeDRenderingSettings{
-    .m_transparentBackground = renderData.m_3dTransparentIfNoHit,
-    .m_imageBoxVisible = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
-    .m_imagePlanesVisible = renderData.m_showImagePlanesIn3D,
-    .m_imagePlaneViewAngleOpacity = renderData.m_modulateImagePlaneOpacityWithViewAngle,
-    .m_imagePlaneSegmentationsVisible = renderData.m_showSegmentationsOnImagePlanesIn3D,
-    .m_imagePlaneShading = renderData.m_shadeImagePlanesIn3D,
-    .m_imagePlaneLightingAmbient = renderData.m_imagePlaneLightingAmbient,
-    .m_imagePlaneLightingDiffuse = renderData.m_imagePlaneLightingDiffuse,
-    .m_imagePlaneLightingSpecular = renderData.m_imagePlaneLightingSpecular,
-    .m_imagePlaneLightingSpecularPower = renderData.m_imagePlaneLightingSpecularPower,
-    .m_lightingAmbient = renderData.m_lightingAmbient,
-    .m_lightingDiffuse = renderData.m_lightingDiffuse,
-    .m_lightingSpecular = renderData.m_lightingSpecular,
-    .m_lightingSpecularPower = renderData.m_lightingSpecularPower,
-    .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
-    .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    .m_crosshairs3DGlyphLengthVoxelDiagonals = renderData.m_crosshairs3DGlyphLengthVoxelDiagonals,
-    .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
-    .m_reverseThreeDRotateAboutEye = renderData.m_reverseThreeDRotateAboutEye,
-    .m_threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor};
+    .m_transparentBackground = renderSettings.m_3dTransparentIfNoHit,
+    .m_imageBoxVisible = renderSettings.m_raycastBackgroundEdgeBrighteningEnabled,
+    .m_imagePlanesVisible = renderSettings.m_showImagePlanesIn3D,
+    .m_imagePlaneViewAngleOpacity = renderSettings.m_modulateImagePlaneOpacityWithViewAngle,
+    .m_imagePlaneSegmentationsVisible = renderSettings.m_showSegmentationsOnImagePlanesIn3D,
+    .m_imagePlaneShading = renderSettings.m_shadeImagePlanesIn3D,
+    .m_imagePlaneLightingAmbient = renderSettings.m_imagePlaneLightingAmbient,
+    .m_imagePlaneLightingDiffuse = renderSettings.m_imagePlaneLightingDiffuse,
+    .m_imagePlaneLightingSpecular = renderSettings.m_imagePlaneLightingSpecular,
+    .m_imagePlaneLightingSpecularPower = renderSettings.m_imagePlaneLightingSpecularPower,
+    .m_lightingAmbient = renderSettings.m_lightingAmbient,
+    .m_lightingDiffuse = renderSettings.m_lightingDiffuse,
+    .m_lightingSpecular = renderSettings.m_lightingSpecular,
+    .m_lightingSpecularPower = renderSettings.m_lightingSpecularPower,
+    .m_showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D,
+    .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+    .m_crosshairs3DGlyphLengthVoxelDiagonals = renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals,
+    .m_showThreeDCameraFrustumIn2DViews = renderSettings.m_showThreeDCameraFrustumIn2DViews,
+    .m_reverseThreeDRotateAboutEye = renderSettings.m_reverseThreeDRotateAboutEye,
+    .m_threeDCameraFrustumColor = renderSettings.m_threeDCameraFrustumColor};
 }
 
 void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThreeDRenderingSettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_3dTransparentIfNoHit = settings.m_transparentBackground;
-  renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_imageBoxVisible;
-  renderData.m_showImagePlanesIn3D = settings.m_imagePlanesVisible;
-  renderData.m_modulateImagePlaneOpacityWithViewAngle = settings.m_imagePlaneViewAngleOpacity;
-  renderData.m_showSegmentationsOnImagePlanesIn3D = settings.m_imagePlaneSegmentationsVisible;
-  renderData.m_shadeImagePlanesIn3D = settings.m_imagePlaneShading;
-  renderData.m_imagePlaneLightingAmbient = settings.m_imagePlaneLightingAmbient;
-  renderData.m_imagePlaneLightingDiffuse = settings.m_imagePlaneLightingDiffuse;
-  renderData.m_imagePlaneLightingSpecular = settings.m_imagePlaneLightingSpecular;
-  renderData.m_imagePlaneLightingSpecularPower = settings.m_imagePlaneLightingSpecularPower;
-  renderData.m_lightingAmbient = settings.m_lightingAmbient;
-  renderData.m_lightingDiffuse = settings.m_lightingDiffuse;
-  renderData.m_lightingSpecular = settings.m_lightingSpecular;
-  renderData.m_lightingSpecularPower = settings.m_lightingSpecularPower;
-  renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
-  renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
-  renderData.m_crosshairs3DGlyphLengthVoxelDiagonals = settings.m_crosshairs3DGlyphLengthVoxelDiagonals;
-  renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
-  renderData.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
-  renderData.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_3dTransparentIfNoHit = settings.m_transparentBackground;
+  renderSettings.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_imageBoxVisible;
+  renderSettings.m_showImagePlanesIn3D = settings.m_imagePlanesVisible;
+  renderSettings.m_modulateImagePlaneOpacityWithViewAngle = settings.m_imagePlaneViewAngleOpacity;
+  renderSettings.m_showSegmentationsOnImagePlanesIn3D = settings.m_imagePlaneSegmentationsVisible;
+  renderSettings.m_shadeImagePlanesIn3D = settings.m_imagePlaneShading;
+  renderSettings.m_imagePlaneLightingAmbient = settings.m_imagePlaneLightingAmbient;
+  renderSettings.m_imagePlaneLightingDiffuse = settings.m_imagePlaneLightingDiffuse;
+  renderSettings.m_imagePlaneLightingSpecular = settings.m_imagePlaneLightingSpecular;
+  renderSettings.m_imagePlaneLightingSpecularPower = settings.m_imagePlaneLightingSpecularPower;
+  renderSettings.m_lightingAmbient = settings.m_lightingAmbient;
+  renderSettings.m_lightingDiffuse = settings.m_lightingDiffuse;
+  renderSettings.m_lightingSpecular = settings.m_lightingSpecular;
+  renderSettings.m_lightingSpecularPower = settings.m_lightingSpecularPower;
+  renderSettings.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
+  renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
+  renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals = settings.m_crosshairs3DGlyphLengthVoxelDiagonals;
+  renderSettings.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
+  renderSettings.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
+  renderSettings.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
 }
 
 serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectRaycastingSettings{
-    .m_samplingFactor = renderData.m_raycastSamplingFactor,
-    .m_useDistanceMap = renderData.m_useDistanceMapForRaycasting,
-    .m_distanceMapForegroundLowerPercentile = renderData.m_distanceMapForegroundLowerPercentile,
-    .m_distanceMapForegroundUpperPercentile = renderData.m_distanceMapForegroundUpperPercentile,
-    .m_renderFrontFaces = renderData.m_renderFrontFaces,
-    .m_renderBackFaces = renderData.m_renderBackFaces,
-    .m_segmentationMasking = raycastSegmentationMasking(renderData.m_segMasking)};
+    .m_samplingFactor = renderSettings.m_raycastSamplingFactor,
+    .m_useDistanceMap = renderSettings.m_useDistanceMapForRaycasting,
+    .m_distanceMapForegroundLowerPercentile = renderSettings.m_distanceMapForegroundLowerPercentile,
+    .m_distanceMapForegroundUpperPercentile = renderSettings.m_distanceMapForegroundUpperPercentile,
+    .m_renderFrontFaces = renderSettings.m_renderFrontFaces,
+    .m_renderBackFaces = renderSettings.m_renderBackFaces,
+    .m_segmentationMasking = raycastSegmentationMasking(renderSettings.m_segMasking)};
 }
 
 void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastingSettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_raycastSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
-  renderData.m_useDistanceMapForRaycasting = settings.m_useDistanceMap;
-  renderData.m_distanceMapForegroundLowerPercentile =
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_raycastSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
+  renderSettings.m_useDistanceMapForRaycasting = settings.m_useDistanceMap;
+  renderSettings.m_distanceMapForegroundLowerPercentile =
     std::clamp(settings.m_distanceMapForegroundLowerPercentile, 0.0f, 1.0f);
-  renderData.m_distanceMapForegroundUpperPercentile =
+  renderSettings.m_distanceMapForegroundUpperPercentile =
     std::clamp(settings.m_distanceMapForegroundUpperPercentile, 0.0f, 1.0f);
-  renderData.m_adaptiveRaycastSamplingEnabled = false;
-  renderData.m_adaptiveRaycastTargetFrameRate = 30.0f;
-  renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
-  renderData.m_renderFrontFaces = settings.m_renderFrontFaces;
-  renderData.m_renderBackFaces = settings.m_renderBackFaces;
-  renderData.m_segMasking = raycastSegmentationMasking(settings.m_segmentationMasking);
+  renderSettings.m_adaptiveRaycastSamplingEnabled = false;
+  renderSettings.m_adaptiveRaycastTargetFrameRate = 30.0f;
+  renderSettings.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
+  renderSettings.m_renderFrontFaces = settings.m_renderFrontFaces;
+  renderSettings.m_renderBackFaces = settings.m_renderBackFaces;
+  renderSettings.m_segMasking = raycastSegmentationMasking(settings.m_segmentationMasking);
 }
 
 serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectMeshRenderingSettings{
-    .m_renderingEnabled = renderData.m_isosurfaceMeshRenderingEnabled,
-    .m_flatShadingEnabled = renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled,
-    .m_triangleEdgesEnabled = renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled,
-    .m_triangleEdgeColor = renderData.m_meshSurfaceMaterialSettings.triangleEdgeColor,
-    .m_pbrShadingEnabled = renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled,
-    .m_pbrMetallic = renderData.m_meshSurfaceMaterialSettings.metallic,
-    .m_pbrRoughness = renderData.m_meshSurfaceMaterialSettings.roughness,
-    .m_pbrAmbientOcclusion = renderData.m_meshSurfaceMaterialSettings.ambientOcclusion,
-    .m_smoothSegmentationMeshes = renderData.m_smoothSegmentationMeshes,
-    .m_smoothIsosurfaceMeshes = renderData.m_smoothIsosurfaceMeshes,
-    .m_meshSmoothingIterations = renderData.m_meshSmoothingIterations,
-    .m_meshSmoothingPassBand = renderData.m_meshSmoothingPassBand,
-    .m_ddpMaxPeelPasses = renderData.m_meshDdpSettings.maxPeelPasses,
-    .m_pickingEnabled = renderData.m_meshPickingEnabled,
-    .m_clipPlaneEnabled = renderData.m_meshClipPlaneEnabled,
-    .m_clipPlaneWorld = renderData.m_meshClipPlaneWorld,
-    .m_shadowsEnabled = renderData.m_meshAdvancedLightingSettings.shadows.enabled,
-    .m_shadowMapSizePixels = renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels,
-    .m_shadowStrength = renderData.m_meshAdvancedLightingSettings.shadows.strength,
-    .m_shadowDepthBias = renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
-    .m_ambientOcclusionEnabled = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
-    .m_ambientOcclusionRadiusMm = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm,
-    .m_ambientOcclusionStrength = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
-    .m_ambientOcclusionPower = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power,
-    .m_ambientOcclusionContrast = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast,
-    .m_ambientOcclusionSampleCount = renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount,
-    .m_rimLightingEnabled = renderData.m_meshSurfaceMaterialSettings.rimLightingEnabled,
-    .m_rimOpacityStrength = renderData.m_meshSurfaceMaterialSettings.rimOpacityStrength,
-    .m_rimEmissionStrength = renderData.m_meshSurfaceMaterialSettings.rimEmissionStrength,
-    .m_rimPower = renderData.m_meshSurfaceMaterialSettings.rimPower};
+    .m_renderingEnabled = renderSettings.m_isosurfaceMeshRenderingEnabled,
+    .m_flatShadingEnabled = renderSettings.m_meshSurfaceMaterialSettings.flatShadingEnabled,
+    .m_triangleEdgesEnabled = renderSettings.m_meshSurfaceMaterialSettings.triangleEdgesEnabled,
+    .m_triangleEdgeColor = renderSettings.m_meshSurfaceMaterialSettings.triangleEdgeColor,
+    .m_pbrShadingEnabled = renderSettings.m_meshSurfaceMaterialSettings.pbrShadingEnabled,
+    .m_pbrMetallic = renderSettings.m_meshSurfaceMaterialSettings.metallic,
+    .m_pbrRoughness = renderSettings.m_meshSurfaceMaterialSettings.roughness,
+    .m_pbrAmbientOcclusion = renderSettings.m_meshSurfaceMaterialSettings.ambientOcclusion,
+    .m_smoothSegmentationMeshes = renderSettings.m_smoothSegmentationMeshes,
+    .m_smoothIsosurfaceMeshes = renderSettings.m_smoothIsosurfaceMeshes,
+    .m_meshSmoothingIterations = renderSettings.m_meshSmoothingIterations,
+    .m_meshSmoothingPassBand = renderSettings.m_meshSmoothingPassBand,
+    .m_ddpMaxPeelPasses = renderSettings.m_meshDdpSettings.maxPeelPasses,
+    .m_pickingEnabled = renderSettings.m_meshPickingEnabled,
+    .m_clipPlaneEnabled = renderSettings.m_meshClipPlaneEnabled,
+    .m_clipPlaneWorld = renderSettings.m_meshClipPlaneWorld,
+    .m_shadowsEnabled = renderSettings.m_meshAdvancedLightingSettings.shadows.enabled,
+    .m_shadowMapSizePixels = renderSettings.m_meshAdvancedLightingSettings.shadows.mapSizePixels,
+    .m_shadowStrength = renderSettings.m_meshAdvancedLightingSettings.shadows.strength,
+    .m_shadowDepthBias = renderSettings.m_meshAdvancedLightingSettings.shadows.depthBias,
+    .m_ambientOcclusionEnabled = renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.enabled,
+    .m_ambientOcclusionRadiusMm = renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm,
+    .m_ambientOcclusionStrength = renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.strength,
+    .m_ambientOcclusionPower = renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.power,
+    .m_ambientOcclusionContrast = renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.contrast,
+    .m_ambientOcclusionSampleCount = renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount,
+    .m_rimLightingEnabled = renderSettings.m_meshSurfaceMaterialSettings.rimLightingEnabled,
+    .m_rimOpacityStrength = renderSettings.m_meshSurfaceMaterialSettings.rimOpacityStrength,
+    .m_rimEmissionStrength = renderSettings.m_meshSurfaceMaterialSettings.rimEmissionStrength,
+    .m_rimPower = renderSettings.m_meshSurfaceMaterialSettings.rimPower};
 }
 
 void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRenderingSettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
-  renderData.m_meshSurfaceMaterialSettings.flatShadingEnabled =
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_isosurfaceMeshRenderingEnabled = settings.m_renderingEnabled;
+  renderSettings.m_meshSurfaceMaterialSettings.flatShadingEnabled =
     settings.m_flatShadingEnabled || settings.m_triangleEdgesEnabled;
-  renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled = settings.m_triangleEdgesEnabled;
-  renderData.m_meshSurfaceMaterialSettings.triangleEdgeColor = settings.m_triangleEdgeColor;
-  renderData.m_meshSurfaceMaterialSettings.pbrShadingEnabled = settings.m_pbrShadingEnabled;
-  renderData.m_meshSurfaceMaterialSettings.metallic = settings.m_pbrMetallic;
-  renderData.m_meshSurfaceMaterialSettings.roughness = settings.m_pbrRoughness;
-  renderData.m_meshSurfaceMaterialSettings.ambientOcclusion = settings.m_pbrAmbientOcclusion;
-  renderData.m_smoothSegmentationMeshes = settings.m_smoothSegmentationMeshes;
-  renderData.m_smoothIsosurfaceMeshes = settings.m_smoothIsosurfaceMeshes;
-  renderData.m_meshSmoothingIterations = std::clamp(settings.m_meshSmoothingIterations, 1u, 1000u);
-  renderData.m_meshSmoothingPassBand = std::clamp(settings.m_meshSmoothingPassBand, 0.001f, 2.0f);
-  renderData.m_meshDdpSettings.maxPeelPasses = std::clamp(settings.m_ddpMaxPeelPasses, 1u, 32u);
-  renderData.m_meshPickingEnabled = settings.m_pickingEnabled;
-  renderData.m_meshClipPlaneEnabled = settings.m_clipPlaneEnabled;
-  renderData.m_meshClipPlaneWorld = settings.m_clipPlaneWorld;
-  renderData.m_meshAdvancedLightingSettings.shadows.enabled = settings.m_shadowsEnabled;
-  renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = settings.m_shadowMapSizePixels;
-  renderData.m_meshAdvancedLightingSettings.shadows.strength = settings.m_shadowStrength;
-  renderData.m_meshAdvancedLightingSettings.shadows.depthBias = settings.m_shadowDepthBias;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_ambientOcclusionEnabled;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm = settings.m_ambientOcclusionRadiusMm;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_ambientOcclusionStrength;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.power = settings.m_ambientOcclusionPower;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.contrast = settings.m_ambientOcclusionContrast;
-  renderData.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = settings.m_ambientOcclusionSampleCount;
-  renderData.m_meshSurfaceMaterialSettings.rimLightingEnabled = settings.m_rimLightingEnabled;
-  renderData.m_meshSurfaceMaterialSettings.rimOpacityStrength = settings.m_rimOpacityStrength;
-  renderData.m_meshSurfaceMaterialSettings.rimEmissionStrength = settings.m_rimEmissionStrength;
-  renderData.m_meshSurfaceMaterialSettings.rimPower = settings.m_rimPower;
+  renderSettings.m_meshSurfaceMaterialSettings.triangleEdgesEnabled = settings.m_triangleEdgesEnabled;
+  renderSettings.m_meshSurfaceMaterialSettings.triangleEdgeColor = settings.m_triangleEdgeColor;
+  renderSettings.m_meshSurfaceMaterialSettings.pbrShadingEnabled = settings.m_pbrShadingEnabled;
+  renderSettings.m_meshSurfaceMaterialSettings.metallic = settings.m_pbrMetallic;
+  renderSettings.m_meshSurfaceMaterialSettings.roughness = settings.m_pbrRoughness;
+  renderSettings.m_meshSurfaceMaterialSettings.ambientOcclusion = settings.m_pbrAmbientOcclusion;
+  renderSettings.m_smoothSegmentationMeshes = settings.m_smoothSegmentationMeshes;
+  renderSettings.m_smoothIsosurfaceMeshes = settings.m_smoothIsosurfaceMeshes;
+  renderSettings.m_meshSmoothingIterations = std::clamp(settings.m_meshSmoothingIterations, 1u, 1000u);
+  renderSettings.m_meshSmoothingPassBand = std::clamp(settings.m_meshSmoothingPassBand, 0.001f, 2.0f);
+  renderSettings.m_meshDdpSettings.maxPeelPasses = std::clamp(settings.m_ddpMaxPeelPasses, 1u, 32u);
+  renderSettings.m_meshPickingEnabled = settings.m_pickingEnabled;
+  renderSettings.m_meshClipPlaneEnabled = settings.m_clipPlaneEnabled;
+  renderSettings.m_meshClipPlaneWorld = settings.m_clipPlaneWorld;
+  renderSettings.m_meshAdvancedLightingSettings.shadows.enabled = settings.m_shadowsEnabled;
+  renderSettings.m_meshAdvancedLightingSettings.shadows.mapSizePixels = settings.m_shadowMapSizePixels;
+  renderSettings.m_meshAdvancedLightingSettings.shadows.strength = settings.m_shadowStrength;
+  renderSettings.m_meshAdvancedLightingSettings.shadows.depthBias = settings.m_shadowDepthBias;
+  renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.enabled = settings.m_ambientOcclusionEnabled;
+  renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.radiusMm = settings.m_ambientOcclusionRadiusMm;
+  renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.strength = settings.m_ambientOcclusionStrength;
+  renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.power = settings.m_ambientOcclusionPower;
+  renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.contrast = settings.m_ambientOcclusionContrast;
+  renderSettings.m_meshAdvancedLightingSettings.ambientOcclusion.sampleCount = settings.m_ambientOcclusionSampleCount;
+  renderSettings.m_meshSurfaceMaterialSettings.rimLightingEnabled = settings.m_rimLightingEnabled;
+  renderSettings.m_meshSurfaceMaterialSettings.rimOpacityStrength = settings.m_rimOpacityStrength;
+  renderSettings.m_meshSurfaceMaterialSettings.rimEmissionStrength = settings.m_rimEmissionStrength;
+  renderSettings.m_meshSurfaceMaterialSettings.rimPower = settings.m_rimPower;
 }
 
 serialize::ProjectIntensityProjectionSettings intensityProjectionSettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectIntensityProjectionSettings{
-    .m_useMaximumImageExtent = renderData.m_doMaxExtentIntensityProjection,
-    .m_slabThicknessMm = renderData.m_intensityProjectionSlabThickness,
-    .m_xrayEnergyKeV = renderData.m_xrayEnergyKeV,
-    .m_xrayWindow = renderData.m_xrayIntensityWindow,
-    .m_xrayLevel = renderData.m_xrayIntensityLevel};
+    .m_useMaximumImageExtent = renderSettings.m_doMaxExtentIntensityProjection,
+    .m_slabThicknessMm = renderSettings.m_intensityProjectionSlabThickness,
+    .m_xrayEnergyKeV = renderSettings.m_xrayEnergyKeV,
+    .m_xrayWindow = renderSettings.m_xrayIntensityWindow,
+    .m_xrayLevel = renderSettings.m_xrayIntensityLevel};
 }
 
 void applyIntensityProjectionSettings(AppData& appData, const serialize::ProjectIntensityProjectionSettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_doMaxExtentIntensityProjection = settings.m_useMaximumImageExtent;
-  renderData.m_intensityProjectionSlabThickness = settings.m_slabThicknessMm;
-  renderData.setXrayEnergy(settings.m_xrayEnergyKeV);
-  renderData.m_xrayIntensityWindow = settings.m_xrayWindow;
-  renderData.m_xrayIntensityLevel = settings.m_xrayLevel;
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_doMaxExtentIntensityProjection = settings.m_useMaximumImageExtent;
+  renderSettings.m_intensityProjectionSlabThickness = settings.m_slabThicknessMm;
+  renderSettings.setXrayEnergy(settings.m_xrayEnergyKeV);
+  renderSettings.m_xrayIntensityWindow = settings.m_xrayWindow;
+  renderSettings.m_xrayIntensityLevel = settings.m_xrayLevel;
 }
 
 serialize::ProjectSegmentationDisplaySettings segmentationDisplaySettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectSegmentationDisplaySettings{
-    .m_modulateOpacityWithImageOpacity2d = renderData.m_modulateSegmentationOpacityWithImageOpacity2d,
-    .m_modulateOpacityWithImageOpacity3d = renderData.m_modulateSegmentationOpacityWithImageOpacity3d,
-    .m_outlineStyle = renderData.m_segOutlineStyle,
-    .m_interiorOpacity = renderData.m_segInteriorOpacity,
-    .m_erosionFactor = renderData.m_segInterpCutoff};
+    .m_modulateOpacityWithImageOpacity2d = renderSettings.m_modulateSegmentationOpacityWithImageOpacity2d,
+    .m_modulateOpacityWithImageOpacity3d = renderSettings.m_modulateSegmentationOpacityWithImageOpacity3d,
+    .m_outlineStyle = renderSettings.m_segOutlineStyle,
+    .m_interiorOpacity = renderSettings.m_segInteriorOpacity,
+    .m_erosionFactor = renderSettings.m_segInterpCutoff};
 }
 
 void applySegmentationDisplaySettings(AppData& appData, const serialize::ProjectSegmentationDisplaySettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_modulateSegmentationOpacityWithImageOpacity2d = settings.m_modulateOpacityWithImageOpacity2d;
-  renderData.m_modulateSegmentationOpacityWithImageOpacity3d = settings.m_modulateOpacityWithImageOpacity3d;
-  renderData.m_segOutlineStyle = settings.m_outlineStyle;
-  renderData.m_segInteriorOpacity = settings.m_interiorOpacity;
-  renderData.m_segInterpCutoff = settings.m_erosionFactor;
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_modulateSegmentationOpacityWithImageOpacity2d = settings.m_modulateOpacityWithImageOpacity2d;
+  renderSettings.m_modulateSegmentationOpacityWithImageOpacity3d = settings.m_modulateOpacityWithImageOpacity3d;
+  renderSettings.m_segOutlineStyle = settings.m_outlineStyle;
+  renderSettings.m_segInteriorOpacity = settings.m_interiorOpacity;
+  renderSettings.m_segInterpCutoff = settings.m_erosionFactor;
 }
 
 serialize::ProjectIsocontourDisplaySettings isocontourDisplaySettings(const AppData& appData)
 {
-  const auto& renderData = appData.renderData();
+  const auto& renderSettings = appData.renderSettings();
   return serialize::ProjectIsocontourDisplaySettings{
-    .m_floatingPointInterpolationPolicy = renderData.m_isocontourFloatingPointInterpolationPolicy};
+    .m_floatingPointInterpolationPolicy = renderSettings.m_isocontourFloatingPointInterpolationPolicy};
 }
 
 void applyIsocontourDisplaySettings(AppData& appData, const serialize::ProjectIsocontourDisplaySettings& settings)
 {
-  auto& renderData = appData.renderData();
-  renderData.m_isocontourFloatingPointInterpolationPolicy = settings.m_floatingPointInterpolationPolicy;
+  auto& renderSettings = appData.renderSettings();
+  renderSettings.m_isocontourFloatingPointInterpolationPolicy = settings.m_floatingPointInterpolationPolicy;
 }
 
 // Project-wide reset.

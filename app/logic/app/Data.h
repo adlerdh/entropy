@@ -16,7 +16,9 @@
 
 #include "registration/Jobs.h"
 
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderDerivedData.h"
+#include "rendering/RenderSettings.h"
 #include "windowing/WindowData.h"
 
 #include "ui/GuiData.h"
@@ -80,8 +82,14 @@ public:
   const GuiData& guiData() const;
   GuiData& guiData();
 
-  const RenderData& renderData() const;
-  RenderData& renderData();
+  const rendering::RenderSettings& renderSettings() const;
+  rendering::RenderSettings& renderSettings();
+
+  const rendering::RenderResources& renderResources() const;
+  rendering::RenderResources& renderResources();
+
+  const rendering::RenderDerivedData& renderDerivedData() const;
+  rendering::RenderDerivedData& renderDerivedData();
 
   const WindowData& windowData() const;
   WindowData& windowData();
@@ -558,10 +566,12 @@ private:
   AppSettings m_settings;
   AppState m_state; //!< Application state
 
-  GuiData m_guiData;                         //!< Data for the UI
-  RenderData m_renderData;                   //!< Data for rendering
-  WindowData m_windowData;                   //!< Data for windowing
-  registration::JobStore m_registrationJobs; //!< In-memory registration job records
+  GuiData m_guiData;                                //!< Data for the UI
+  rendering::RenderSettings m_renderSettings;       //!< Persistent rendering presentation settings
+  rendering::RenderDerivedData m_renderDerivedData; //!< Context-free transient inputs derived for rendering
+  rendering::RenderResources m_renderResources;     //!< Context-bound rendering resources and transient shader data
+  WindowData m_windowData;                          //!< Data for windowing
+  registration::JobStore m_registrationJobs;        //!< In-memory registration job records
 
   serialize::EntropyProject m_project;                    //!< Project that is used for serialization
   std::optional<std::filesystem::path> m_projectFileName; //!< File name of the currently loaded/saved project

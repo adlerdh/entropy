@@ -79,7 +79,6 @@ set(entropy_SHADERS
 list(TRANSFORM entropy_SHADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADERS} NAMESPACE shaders
-  WHENCE "${entropy_APP_DIR}"
-  PREFIX "app"
+  WHENCE "${entropy_LIB_DIR}"
 )
 entropy_disable_linting_for_targets(entropy-shaders)

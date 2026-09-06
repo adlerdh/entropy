@@ -401,7 +401,7 @@ std::optional<uuid> CallbackHandler::assignSegToImageWithColorTableAndTextures(
 
   SPDLOG_TRACE("Creating texture for segmentation {}", segUid);
 
-  if (m_appData.renderData().m_segTextures.count(segUid) == 0) {
+  if (!m_appData.renderResources().hasSegmentation(segUid)) {
     const std::vector<uuid> createdSegTexUids = createSegTextures(m_appData, std::vector<uuid>{segUid});
     if (createdSegTexUids.empty()) {
       spdlog::error("Unable to create texture for segmentation {}", segUid);
@@ -1143,8 +1143,8 @@ void CallbackHandler::doWindowLevel(
     constexpr float winMin = 0.0f;
     constexpr float winMax = 1.0f;
 
-    float oldLevel = m_appData.renderData().m_xrayIntensityLevel;
-    float oldWindow = m_appData.renderData().m_xrayIntensityWindow;
+    float oldLevel = m_appData.renderSettings().m_xrayIntensityLevel;
+    float oldWindow = m_appData.renderSettings().m_xrayIntensityWindow;
 
     const float levelDelta =
       multiplier * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
@@ -1153,8 +1153,8 @@ void CallbackHandler::doWindowLevel(
     const float newLevel = std::min(std::max(oldLevel + levelDelta, levelMin), levelMax);
     const float newWindow = std::min(std::max(oldWindow + winDelta, winMin), winMax);
 
-    m_appData.renderData().m_xrayIntensityLevel = newLevel;
-    m_appData.renderData().m_xrayIntensityWindow = newWindow;
+    m_appData.renderSettings().m_xrayIntensityLevel = newLevel;
+    m_appData.renderSettings().m_xrayIntensityWindow = newWindow;
   }
   else {
     const auto activeImageUid = m_appData.activeImageUid();
@@ -1475,7 +1475,7 @@ bool prepareThreeDView(AppData& appData, View* view)
     return false;
   }
 
-  appData.renderData().m_lastInteractedThreeDViewUid = view->uid();
+  appData.renderSettings().m_lastInteractedThreeDViewUid = view->uid();
   const camera3d::SceneFrame scene = threeDSceneFrameForView(appData, *view);
   view->initializeThreeDCameraIfNeeded(scene);
   camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
@@ -1506,7 +1506,7 @@ void CallbackHandler::doThreeDCameraRotateAboutEye(
   if (!prepareThreeDView(m_appData, view)) {
     return;
   }
-  const bool reverseRotation = m_appData.renderData().m_reverseThreeDRotateAboutEye;
+  const bool reverseRotation = m_appData.renderSettings().m_reverseThreeDRotateAboutEye;
   camera3d::rotateAboutEye(
     view->threeDCamera(),
     view->threeDState(),
@@ -1698,7 +1698,7 @@ void CallbackHandler::doThreeDIsosurfacePick(const ViewHit& hit)
     const uint32_t activeComponent = settings.activeComponent();
     const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
     const float stepLength =
-      std::max(1.0e-5f, m_appData.renderData().m_raycastSamplingFactor * minPositiveSpacing(*image));
+      std::max(1.0e-5f, m_appData.renderSettings().m_raycastSamplingFactor * minPositiveSpacing(*image));
     const glm::vec3 worldRayOrigin = helper::world_T_ndc(hit.view->threeDCamera(), glm::vec3{hit.viewClipPos, -1.0f});
     const glm::vec3 worldRayDirection = helper::worldRayDirection(hit.view->threeDCamera(), hit.viewClipPos);
 
@@ -1709,8 +1709,8 @@ void CallbackHandler::doThreeDIsosurfacePick(const ViewHit& hit)
        .world_T_pixel = image->transformations().worldDef_T_pixel(),
        .pixelDimensions = glm::vec3{image->header().pixelDimensions()},
        .stepLength = stepLength,
-       .renderFrontFaces = m_appData.renderData().m_renderFrontFaces,
-       .renderBackFaces = m_appData.renderData().m_renderBackFaces,
+       .renderFrontFaces = m_appData.renderSettings().m_renderFrontFaces,
+       .renderBackFaces = m_appData.renderSettings().m_renderBackFaces,
        .isoValues = isoValues,
        .sampleValue = [image, activeComponent, activeTimePoint](const glm::vec3& pixelPos) {
          return image->valueLinear<double>(activeComponent, pixelPos.x, pixelPos.y, pixelPos.z, activeTimePoint);
@@ -2105,8 +2105,8 @@ void CallbackHandler::changeImageOpacity(double delta)
 void CallbackHandler::changeSegOpacity(double delta, bool interior)
 {
   if (interior) {
-    const float op = m_appData.renderData().m_segInteriorOpacity;
-    m_appData.renderData().m_segInteriorOpacity = std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
+    const float op = m_appData.renderSettings().m_segInteriorOpacity;
+    m_appData.renderSettings().m_segInteriorOpacity = std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
   }
   else {
     const auto imgUid = m_appData.activeImageUid();
@@ -2158,14 +2158,14 @@ void CallbackHandler::toggleSegVisibility()
 
 void CallbackHandler::toggleSegGlobalOutline()
 {
-  switch (m_appData.renderData().m_segOutlineStyle) {
+  switch (m_appData.renderSettings().m_segOutlineStyle) {
     case SegmentationOutlineStyle::Disabled: {
-      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+      m_appData.renderSettings().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
       break;
     }
     case SegmentationOutlineStyle::ViewPixel:
     case SegmentationOutlineStyle::ImageVoxel: {
-      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+      m_appData.renderSettings().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
       break;
     }
   }
@@ -2334,7 +2334,7 @@ void CallbackHandler::setShowUserInterface(bool show)
 
 void CallbackHandler::toggleCrosshairs()
 {
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderSettings();
   R.m_showCrosshairs = !R.m_showCrosshairs;
   R.m_showCrosshairsInLightboxViews = R.m_showCrosshairs;
 }
@@ -2349,7 +2349,7 @@ void CallbackHandler::cycleViewOverlays()
     Mixed
   };
 
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderSettings();
 
   const bool anyOverlay = R.m_showCrosshairs || R.m_showAnatomicalLabels || R.m_showScaleBars ||
                           R.m_showLightboxOffsetLabels || R.m_showThreeDCameraFrustumIn2DViews;

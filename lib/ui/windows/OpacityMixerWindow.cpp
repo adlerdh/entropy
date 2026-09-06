@@ -2,7 +2,7 @@
 
 #include "image/Image.h"
 #include "logic/app/Data.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderSettings.h"
 #include "ui/Helpers.h"
 #include "ui/Scaling.h"
 #include "ui/windows/OpacityMixerModel.h"
@@ -17,7 +17,7 @@
 
 namespace
 {
-ImVec2 opacityMixerContentSize(const AppData& appData, const RenderData& renderData)
+ImVec2 opacityMixerContentSize(const AppData& appData, const rendering::RenderSettings& renderData)
 {
   const ImGuiStyle& style = ImGui::GetStyle();
   const float titleHeight = ImGui::GetFrameHeight();
@@ -40,7 +40,7 @@ void renderOpacityBlenderWindow(
   AppData& appData,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms)
 {
-  RenderData& renderData = appData.renderData();
+  rendering::RenderSettings& renderData = appData.renderSettings();
 
   const char* const windowName = "Image Opacity Mixer";
 

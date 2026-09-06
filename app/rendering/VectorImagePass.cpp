@@ -44,12 +44,12 @@ void Rendering::renderVectorImageForImage(
   const glm::vec3& worldOffsetXhairs,
   const ImgSegPair& imgSegPair,
   const Image& image,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   const int displayModeUniform,
   const bool isFixedImage)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   GLShaderProgram* program = nullptr;
   const bool signedNormalProjection =
     ComponentRenderMode::VectorSignedNormalProjection == image.settings().componentRenderMode();
@@ -97,7 +97,7 @@ void Rendering::renderVectorImageForImage(
   {
     program->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
     setTexture2DAxesUniforms(*program, imageTextureLayout);
-    program->setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
+    program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
     program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
     program->setUniform("u_imgSlope_native_T_texture", uniforms.slope_native_T_texture);
     program->setUniform("u_imgOpacity", uniforms.imgOpacity);
@@ -111,7 +111,7 @@ void Rendering::renderVectorImageForImage(
       program->setUniform("u_viewUp_subject", viewDirection_subject(image, view, Directions::View::Up));
       program->setUniform("u_signedColors", image.settings().vectorPlanarProjectionSignedColors());
     }
-    program->setUniform("u_quadrants", renderData.m_quadrants);
+    program->setUniform("u_quadrants", renderSettings.m_quadrants);
     program->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
     program->setUniform("u_renderMode", displayModeUniform);
 

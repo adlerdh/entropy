@@ -11,6 +11,7 @@
 #include "logic/sync/ItkSnapSync.h"
 
 #include "rendering/Rendering.h"
+#include "rendering/FramePacer.h"
 #include "ui/ImGuiWrapper.h"
 #include "viewer/ViewTypes.h"
 
@@ -541,6 +542,9 @@ private:
 
   /// GLFW window, input, and render-loop services.
   GlfwWrapper m_glfw;
+
+  /// Host-side frame pacing, kept independent from image and GPU rendering.
+  rendering::FramePacer m_framePacer;
 
   /// Application-owned project data, settings, runtime state, and window layouts.
   AppData m_data;

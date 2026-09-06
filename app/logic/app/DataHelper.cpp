@@ -589,7 +589,7 @@ glm::vec3 snapWorldPointToImageVoxels(
   const glm::vec3& worldPos,
   const std::optional<CrosshairsSnapping>& force)
 {
-  const CrosshairsSnapping snapping = force ? *force : appData.renderData().m_snapCrosshairs;
+  const CrosshairsSnapping snapping = force ? *force : appData.renderSettings().m_snapCrosshairs;
 
   switch (snapping) {
     case CrosshairsSnapping::ReferenceImage: {

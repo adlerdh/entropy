@@ -13,7 +13,8 @@
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraHelpers.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshGpuStore.h"
@@ -67,7 +68,7 @@ std::array<glm::vec3, 8> transformedCorners(const std::array<glm::vec3, 8>& corn
   return transformed;
 }
 
-float imagePlaneBorderWidthWorld(const RenderData::ImageUniforms& uniforms) noexcept
+float imagePlaneBorderWidthWorld(const rendering::RenderDerivedData::ImageUniforms& uniforms) noexcept
 {
   const glm::vec3 spacing = glm::abs(uniforms.voxelSpacing);
   const float minSpacing = std::min({spacing.x, spacing.y, spacing.z});
@@ -99,10 +100,10 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
   const View& view,
   std::vector<rendering::mesh::MeshRenderable>& borderRenderables)
 {
-  const bool showImagePlanes = m_appData.renderData().m_showImagePlanesIn3D && view.threeDState().m_showImagePlanes;
-  const bool showImageBox = m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled;
+  const bool showImagePlanes = m_appData.renderSettings().m_showImagePlanesIn3D && view.threeDState().m_showImagePlanes;
+  const bool showImageBox = m_appData.renderSettings().m_raycastBackgroundEdgeBrighteningEnabled;
   const bool showImagePlaneBorders =
-    m_appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
+    m_appData.renderSettings().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
   if (ViewType::ThreeD != view.viewType() || (!showImagePlanes && !showImageBox)) {
     return {};
   }
@@ -136,8 +137,8 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
 
     rendering::mesh::MeshHandle handle = handleIt->second;
     handle.geometryVersion = geometryVersion;
-    if (!m_meshGpuStore.lookup(handle)) {
-      if (!m_meshGpuStore.uploadOrReplace(mesh, handle, BufferUsagePattern::DynamicDraw)) {
+    if (!m_meshResources.lookup(handle)) {
+      if (!m_meshResources.uploadOrReplace(mesh, handle, BufferUsagePattern::DynamicDraw)) {
         return std::nullopt;
       }
       handleIt->second = handle;
@@ -158,8 +159,8 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       continue;
     }
 
-    const auto uniformsIt = m_appData.renderData().m_uniforms.find(imageUid);
-    if (std::end(m_appData.renderData().m_uniforms) == uniformsIt) {
+    const auto uniformsIt = m_appData.renderDerivedData().imageUniforms.find(imageUid);
+    if (std::end(m_appData.renderDerivedData().imageUniforms) == uniformsIt) {
       continue;
     }
 
@@ -206,7 +207,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       for (const rendering::mesh::MeshImagePlaneSceneMesh& mesh : meshes) {
         const std::uint64_t geometryVersion = rendering::mesh::imagePlaneSceneGeometryVersion(inputs, mesh.orientation);
         const float opacityMultiplier =
-          m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle
+          m_appData.renderSettings().m_modulateImagePlaneOpacityWithViewAngle
             ? rendering::mesh::imagePlaneViewOpacityMultiplier(
                 rendering::mesh::imagePlaneWorldNormal(mesh.orientation, world_T_crosshairs),
                 viewDirectionWorld)
@@ -227,11 +228,11 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           rendering::mesh::MeshImagePlaneTexture{
             .imageUid = imageUid,
             .segmentationUid =
-              m_appData.renderData().m_showSegmentationsOnImagePlanesIn3D ? imgSegPair.second : std::nullopt,
+              m_appData.renderSettings().m_showSegmentationsOnImagePlanesIn3D ? imgSegPair.second : std::nullopt,
             .component = activeComponent,
             .timePoint = activeTimePoint},
           opacityMultiplier,
-          m_appData.renderData().m_shadeImagePlanesIn3D,
+          m_appData.renderSettings().m_shadeImagePlanesIn3D,
           true,
           mesh.orientation);
         // Image selections are bottom layer first, just as in the 2D views. Coincident planes must have distinct DDP

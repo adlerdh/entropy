@@ -95,6 +95,9 @@ public:
   /** Remove one cache entry completely. */
   bool erase(const MeshGeometryKey& key) noexcept;
 
+  /** Remove every entry not present in the supplied live-key set. */
+  std::size_t retainOnly(const MeshGeometryKeySet& liveKeys) noexcept;
+
   /**
    * @brief Find an entry by exact geometry key
    * @param key Geometry key

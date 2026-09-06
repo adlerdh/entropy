@@ -31,7 +31,7 @@ void updateSegmentationUniformsForImage(
   const AppData& appData,
   const uuid& segmentationOwnerImageUid,
   const Image& image,
-  RenderData::ImageUniforms& uniforms)
+  rendering::RenderDerivedData::ImageUniforms& uniforms)
 {
   const ImageSettings& imageSettings = image.settings();
   const auto& segUid = appData.imageToActiveSegUid(segmentationOwnerImageUid);
@@ -79,19 +79,21 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
     if (source && effective) {
       syncScalarProjectionLayerSettings(source->settings(), effective->settings());
       updateImageUniforms(effectiveImageUid);
-      RenderData::ImageUniforms& effectiveUniforms = m_appData.renderData().m_uniforms[effectiveImageUid];
+      rendering::RenderDerivedData::ImageUniforms& effectiveUniforms =
+        m_appData.renderDerivedData().imageUniforms[effectiveImageUid];
       updateSegmentationUniformsForImage(m_appData, imageUid, *effective, effectiveUniforms);
     }
   }
 
-  auto it = m_appData.renderData().m_uniforms.find(imageUid);
+  auto it = m_appData.renderDerivedData().imageUniforms.find(imageUid);
 
-  if (std::end(m_appData.renderData().m_uniforms) == it) {
+  if (std::end(m_appData.renderDerivedData().imageUniforms) == it) {
     spdlog::debug("Adding rendering uniforms for image {}", imageUid);
-    m_appData.renderData().m_uniforms.insert(std::make_pair(imageUid, RenderData::ImageUniforms()));
+    m_appData.renderDerivedData().imageUniforms.insert(
+      std::make_pair(imageUid, rendering::RenderDerivedData::ImageUniforms()));
   }
 
-  RenderData::ImageUniforms& uniforms = m_appData.renderData().m_uniforms[imageUid];
+  rendering::RenderDerivedData::ImageUniforms& uniforms = m_appData.renderDerivedData().imageUniforms[imageUid];
   Image* img = m_appData.image(imageUid);
   if (!img) {
     uniforms.imgOpacity = 0.0f;

@@ -2173,7 +2173,7 @@ void ImGuiWrapper::processComponentProjectionFutures()
         continue;
       }
 
-      m_appData.renderData().m_imageTextures.erase(*projectionUid);
+      m_appData.renderResources().m_imageTextures.erase(*projectionUid);
       createImageTextures(m_appData, std::vector<uuids::uuid>{*projectionUid});
 
       if (m_updateImageUniforms) {
@@ -3484,22 +3484,23 @@ void ImGuiWrapper::render()
         m_callbackHandler.changeSegOpacity(0.05, false);
         break;
       case MainMenuAction::ToggleCrosshairsVoxelSnapping:
-        m_appData.renderData().m_snapCrosshairs =
-          CrosshairsSnapping::Disabled == m_appData.renderData().m_snapCrosshairs ? CrosshairsSnapping::ReferenceImage
-                                                                                  : CrosshairsSnapping::Disabled;
+        m_appData.renderSettings().m_snapCrosshairs =
+          CrosshairsSnapping::Disabled == m_appData.renderSettings().m_snapCrosshairs
+            ? CrosshairsSnapping::ReferenceImage
+            : CrosshairsSnapping::Disabled;
         break;
       case MainMenuAction::ToggleCrosshairs:
         m_callbackHandler.toggleCrosshairs();
         break;
       case MainMenuAction::ToggleScaleBars:
-        m_appData.renderData().m_showScaleBars = !m_appData.renderData().m_showScaleBars;
-        m_appData.renderData().m_showScaleBarsInLightboxViews = m_appData.renderData().m_showScaleBars;
+        m_appData.renderSettings().m_showScaleBars = !m_appData.renderSettings().m_showScaleBars;
+        m_appData.renderSettings().m_showScaleBarsInLightboxViews = m_appData.renderSettings().m_showScaleBars;
         break;
       case MainMenuAction::ToggleAsciiRendering:
-        m_appData.renderData().m_asciiEnabled = !m_appData.renderData().m_asciiEnabled;
+        m_appData.renderSettings().m_asciiEnabled = !m_appData.renderSettings().m_asciiEnabled;
         break;
       case MainMenuAction::ToggleLightboxOffsets:
-        m_appData.renderData().m_showLightboxOffsetLabels = !m_appData.renderData().m_showLightboxOffsetLabels;
+        m_appData.renderSettings().m_showLightboxOffsetLabels = !m_appData.renderSettings().m_showLightboxOffsetLabels;
         break;
       case MainMenuAction::CycleViewOverlays:
         m_callbackHandler.cycleViewOverlays();
@@ -4085,7 +4086,7 @@ void ImGuiWrapper::render()
         return image ? image->settings().edgesVisible() : false;
       }
       case MainMenuAction::ToggleSegmentationOutline:
-        return SegmentationOutlineStyle::Disabled != m_appData.renderData().m_segOutlineStyle;
+        return SegmentationOutlineStyle::Disabled != m_appData.renderSettings().m_segOutlineStyle;
       case MainMenuAction::ToggleActiveImageTransformationLock: {
         const auto imageUid = m_appData.activeImageUid();
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
@@ -4099,15 +4100,15 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleRegistrationJobsWindow:
         return m_appData.guiData().m_showRegistrationJobsWindow;
       case MainMenuAction::ToggleScaleBars:
-        return m_appData.renderData().m_showScaleBars;
+        return m_appData.renderSettings().m_showScaleBars;
       case MainMenuAction::ToggleCrosshairs:
-        return m_appData.renderData().m_showCrosshairs;
+        return m_appData.renderSettings().m_showCrosshairs;
       case MainMenuAction::ToggleCrosshairsVoxelSnapping:
-        return CrosshairsSnapping::Disabled != m_appData.renderData().m_snapCrosshairs;
+        return CrosshairsSnapping::Disabled != m_appData.renderSettings().m_snapCrosshairs;
       case MainMenuAction::ToggleAsciiRendering:
-        return m_appData.renderData().m_asciiEnabled;
+        return m_appData.renderSettings().m_asciiEnabled;
       case MainMenuAction::ToggleLightboxOffsets:
-        return m_appData.renderData().m_showLightboxOffsetLabels;
+        return m_appData.renderSettings().m_showLightboxOffsetLabels;
       case MainMenuAction::ToggleUserInterface:
         return m_callbackHandler.showUserInterface();
       case MainMenuAction::ToggleLayoutTabs:
@@ -4315,9 +4316,17 @@ void ImGuiWrapper::render()
   auto saveUserSettingsToDefault = [this]() {
     const std::filesystem::path settingsFile = app_paths::userSettingsFile();
     std::string error;
-    if (user_preferences::save(m_appData.settings(), m_appData.renderData(), m_appData.guiData(), settingsFile, &error))
+    if (user_preferences::save(
+          m_appData.settings(),
+          m_appData.renderSettings(),
+          m_appData.guiData(),
+          settingsFile,
+          &error))
     {
-      user_preferences::markSavedAppSettingsState(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
+      user_preferences::markSavedAppSettingsState(
+        m_appData.settings(),
+        m_appData.renderSettings(),
+        m_appData.guiData());
       s_settingsPersistenceStatus = "Saved";
       return true;
     }
@@ -4325,7 +4334,7 @@ void ImGuiWrapper::render()
     s_settingsPersistenceStatus = "Save failed: " + error;
     return false;
   };
-  user_preferences::updateAppSettingsDirtyState(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
+  user_preferences::updateAppSettingsDirtyState(m_appData.settings(), m_appData.renderSettings(), m_appData.guiData());
 
   renderConfirmCloseAppPopup(m_appData, m_quitAppWithoutPrompt);
   renderUnsavedAppSettingsPopup(m_appData, saveUserSettingsToDefault, m_quitAppWithoutPrompt);
@@ -4551,10 +4560,11 @@ void ImGuiWrapper::render()
             std::string error;
             if (user_preferences::save(
                   m_appData.settings(),
-                  m_appData.renderData(),
+                  m_appData.renderSettings(),
                   m_appData.guiData(),
                   fileName,
-                  &error)) {
+                  &error))
+            {
               s_settingsPersistenceStatus = "Saved " + fileName.filename().string();
               return true;
             }
@@ -4563,12 +4573,12 @@ void ImGuiWrapper::render()
           },
         .restoreDefaults =
           [this, applyActivePreferences]() {
-            user_preferences::applyDefaults(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
+            user_preferences::applyDefaults(m_appData.settings(), m_appData.renderSettings(), m_appData.guiData());
             applyActivePreferences();
             syncLayoutTabGuiDataFromSettings(m_appData);
             user_preferences::updateAppSettingsDirtyState(
               m_appData.settings(),
-              m_appData.renderData(),
+              m_appData.renderSettings(),
               m_appData.guiData());
             s_settingsPersistenceStatus = "Defaults restored";
           },
@@ -4834,9 +4844,9 @@ void ImGuiWrapper::render()
       if (!imageUid) {
         return false;
       }
-      const auto layoutIt = m_appData.renderData().m_imageTextureLayouts.find(*imageUid);
-      return layoutIt == std::end(m_appData.renderData().m_imageTextureLayouts) ||
-             RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
+      const auto layoutIt = m_appData.renderResources().m_imageTextureLayouts.find(*imageUid);
+      return layoutIt == std::end(m_appData.renderResources().m_imageTextureLayouts) ||
+             rendering::TextureDimension::Texture3D == layoutIt->second.dimension;
     };
     auto isLayoutVolumeImageRendered = [this, &currentLayout](std::size_t index) {
       const auto imageUid = m_appData.imageUid(index);
@@ -4914,17 +4924,17 @@ void ImGuiWrapper::render()
                                : std::vector<ViewType>{}};
 
     const ViewOverlayProjectionCallbacks projectionCallbacks{
-      [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
-      [this](float thickness) { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
-      [this]() { return m_appData.renderData().m_doMaxExtentIntensityProjection; },
-      [this](bool set) { m_appData.renderData().m_doMaxExtentIntensityProjection = set; },
-      [this]() { return m_appData.renderData().m_xrayIntensityWindow; },
-      [this](float window) { m_appData.renderData().m_xrayIntensityWindow = window; },
-      [this]() { return m_appData.renderData().m_xrayIntensityLevel; },
-      [this](float level) { m_appData.renderData().m_xrayIntensityLevel = level; },
-      [this]() { return m_appData.renderData().m_xrayEnergyKeV; },
+      [this]() { return m_appData.renderSettings().m_intensityProjectionSlabThickness; },
+      [this](float thickness) { m_appData.renderSettings().m_intensityProjectionSlabThickness = thickness; },
+      [this]() { return m_appData.renderSettings().m_doMaxExtentIntensityProjection; },
+      [this](bool set) { m_appData.renderSettings().m_doMaxExtentIntensityProjection = set; },
+      [this]() { return m_appData.renderSettings().m_xrayIntensityWindow; },
+      [this](float window) { m_appData.renderSettings().m_xrayIntensityWindow = window; },
+      [this]() { return m_appData.renderSettings().m_xrayIntensityLevel; },
+      [this](float level) { m_appData.renderSettings().m_xrayIntensityLevel = level; },
+      [this]() { return m_appData.renderSettings().m_xrayEnergyKeV; },
       [this](float energy) {
-        m_appData.renderData().setXrayEnergy(energy);
+        m_appData.renderSettings().setXrayEnergy(energy);
       }};
 
     renderViewSettingsComboWindow(overlayContext, imageCallbacks, modeCallbacks, projectionCallbacks);
@@ -4982,9 +4992,9 @@ void ImGuiWrapper::render()
         if (!imageUid) {
           return false;
         }
-        const auto layoutIt = m_appData.renderData().m_imageTextureLayouts.find(*imageUid);
-        return layoutIt == std::end(m_appData.renderData().m_imageTextureLayouts) ||
-               RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
+        const auto layoutIt = m_appData.renderResources().m_imageTextureLayouts.find(*imageUid);
+        return layoutIt == std::end(m_appData.renderResources().m_imageTextureLayouts) ||
+               rendering::TextureDimension::Texture3D == layoutIt->second.dimension;
       };
       auto isViewVolumeImageRendered = [this, view](std::size_t index) {
         const auto imageUid = m_appData.imageUid(index);
@@ -5084,23 +5094,24 @@ void ImGuiWrapper::render()
             view->threeDState().m_orbitTargetMode = mode;
             view->threeDState().m_userMovedCamera = false;
           },
-        .areThreeDImagePlanesGloballyEnabled = [this]() { return m_appData.renderData().m_showImagePlanesIn3D; },
+        .areThreeDImagePlanesGloballyEnabled = [this]() { return m_appData.renderSettings().m_showImagePlanesIn3D; },
         .getThreeDImagePlanesVisible = [view]() { return view->threeDState().m_showImagePlanes; },
         .setThreeDImagePlanesVisible = [view](bool visible) { view->threeDState().m_showImagePlanes = visible; },
         .getThreeDImagePlaneOpacityFadeEnabled =
-          [this]() { return m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle; },
+          [this]() { return m_appData.renderSettings().m_modulateImagePlaneOpacityWithViewAngle; },
         .setThreeDImagePlaneOpacityFadeEnabled =
-          [this](bool enabled) { m_appData.renderData().m_modulateImagePlaneOpacityWithViewAngle = enabled; },
+          [this](bool enabled) { m_appData.renderSettings().m_modulateImagePlaneOpacityWithViewAngle = enabled; },
         .getThreeDPlaneSegmentationsVisible =
-          [this]() { return m_appData.renderData().m_showSegmentationsOnImagePlanesIn3D; },
+          [this]() { return m_appData.renderSettings().m_showSegmentationsOnImagePlanesIn3D; },
         .setThreeDPlaneSegmentationsVisible =
-          [this](bool visible) { m_appData.renderData().m_showSegmentationsOnImagePlanesIn3D = visible; },
-        .getThreeDCrosshairsVisible = [this]() { return m_appData.renderData().m_showCrosshairsIn3D; },
-        .setThreeDCrosshairsVisible = [this](bool visible) { m_appData.renderData().m_showCrosshairsIn3D = visible; },
+          [this](bool visible) { m_appData.renderSettings().m_showSegmentationsOnImagePlanesIn3D = visible; },
+        .getThreeDCrosshairsVisible = [this]() { return m_appData.renderSettings().m_showCrosshairsIn3D; },
+        .setThreeDCrosshairsVisible =
+          [this](bool visible) { m_appData.renderSettings().m_showCrosshairsIn3D = visible; },
         .getThreeDImageVolumeBoundsVisible =
-          [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
+          [this]() { return m_appData.renderSettings().m_raycastBackgroundEdgeBrighteningEnabled; },
         .setThreeDImageVolumeBoundsVisible =
-          [this](bool visible) { m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = visible; },
+          [this](bool visible) { m_appData.renderSettings().m_raycastBackgroundEdgeBrighteningEnabled = visible; },
         .isThreeDRenderingSettingsVisible = [this]() { return m_appData.guiData().m_showSettingsWindow; },
         .openThreeDRenderingSettings =
           [this]() {
@@ -5109,24 +5120,24 @@ void ImGuiWrapper::render()
             m_appData.guiData().m_showSettingsWindow = true;
           },
         .hideThreeDRenderingSettings = [this]() { m_appData.guiData().m_showSettingsWindow = false; },
-        .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
-                                         ? std::function<std::optional<ClipboardPayload>()>([this, viewUid]() {
-                                             return m_exportAsciiClipboardPayloadForView(viewUid);
-                                           })
-                                         : std::function<std::optional<ClipboardPayload>()>{}};
+        .exportAsciiClipboardPayload =
+          (m_appData.renderSettings().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
+            ? std::function<std::optional<ClipboardPayload>()>(
+                [this, viewUid]() { return m_exportAsciiClipboardPayloadForView(viewUid); })
+            : std::function<std::optional<ClipboardPayload>()>{}};
 
       const ViewOverlayProjectionCallbacks projectionCallbacks{
-        [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
-        [this](float thickness) { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
-        [this]() { return m_appData.renderData().m_doMaxExtentIntensityProjection; },
-        [this](bool set) { m_appData.renderData().m_doMaxExtentIntensityProjection = set; },
-        [this]() { return m_appData.renderData().m_xrayIntensityWindow; },
-        [this](float window) { m_appData.renderData().m_xrayIntensityWindow = window; },
-        [this]() { return m_appData.renderData().m_xrayIntensityLevel; },
-        [this](float level) { m_appData.renderData().m_xrayIntensityLevel = level; },
-        [this]() { return m_appData.renderData().m_xrayEnergyKeV; },
+        [this]() { return m_appData.renderSettings().m_intensityProjectionSlabThickness; },
+        [this](float thickness) { m_appData.renderSettings().m_intensityProjectionSlabThickness = thickness; },
+        [this]() { return m_appData.renderSettings().m_doMaxExtentIntensityProjection; },
+        [this](bool set) { m_appData.renderSettings().m_doMaxExtentIntensityProjection = set; },
+        [this]() { return m_appData.renderSettings().m_xrayIntensityWindow; },
+        [this](float window) { m_appData.renderSettings().m_xrayIntensityWindow = window; },
+        [this]() { return m_appData.renderSettings().m_xrayIntensityLevel; },
+        [this](float level) { m_appData.renderSettings().m_xrayIntensityLevel = level; },
+        [this]() { return m_appData.renderSettings().m_xrayEnergyKeV; },
         [this](float energy) {
-          m_appData.renderData().setXrayEnergy(energy);
+          m_appData.renderSettings().setXrayEnergy(energy);
         }};
 
       renderViewSettingsComboWindow(overlayContext, imageCallbacks, modeCallbacks, projectionCallbacks);

@@ -1,4 +1,5 @@
 #include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/ShaderTextureDimension.h"
 
 #include <catch2/catch_test_macros.hpp>
 

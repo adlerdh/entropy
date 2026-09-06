@@ -4,7 +4,8 @@
 #include "image/Image.h"
 #include "logic/app/Data.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/mesh/MeshCrosshairsPolicy.h"
 #include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
@@ -32,7 +33,7 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
   const View& view,
   std::vector<rendering::mesh::MeshRenderable>& renderables)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   const std::optional<ImgSegPair> maybeImgSegPair = meshSceneImageForView(view);
   if (!maybeImgSegPair || !maybeImgSegPair->first) {
     return false;
@@ -44,19 +45,19 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
   }
 
   const rendering::mesh::MeshCrosshairsGlyphInputs inputs{
-    .showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
+    .showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D,
     .cameraFollowsCrosshairs = view.threeDState().m_viewPositionFollowsCrosshairs,
-    .diameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    .lengthVoxelDiagonals = renderData.m_crosshairs3DGlyphLengthVoxelDiagonals,
+    .diameterVoxelDiagonals = renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+    .lengthVoxelDiagonals = renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals,
     .voxelDiagonalWorld = glm::length(image->header().spacing())};
   if (!rendering::mesh::shouldRenderMeshCrosshairsGlyph(inputs)) {
     return false;
   }
 
   const rendering::mesh::MeshHandle& handle = crosshairsAxisMeshHandle();
-  if (!m_meshGpuStore.lookup(handle)) {
+  if (!m_meshResources.lookup(handle)) {
     const std::optional<rendering::mesh::MeshData> mesh = rendering::mesh::generateCrosshairsAxisMesh(0.15);
-    if (!mesh || !m_meshGpuStore.uploadOrReplace(*mesh, handle)) {
+    if (!mesh || !m_meshResources.uploadOrReplace(*mesh, handle)) {
       return false;
     }
   }

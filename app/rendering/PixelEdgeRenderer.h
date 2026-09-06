@@ -1,7 +1,9 @@
 #pragma once
 
 #include "rendering/geometry/PixelEdgeGeometry.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderDerivedData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLFrameBufferObject.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
@@ -53,7 +55,7 @@ public:
     const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
     glm::ivec4 renderTargetViewport,
     const ViewRect& viewRect,
-    const RenderData::ImageUniforms& uniforms,
+    const rendering::RenderDerivedData::ImageUniforms& uniforms,
     const DrawImageFn& drawImage,
     const BindPostTexturesFn& bindPostTextures);
 

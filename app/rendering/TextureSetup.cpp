@@ -1,6 +1,7 @@
 #include "rendering/TextureSetup.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
 #include "logic/app/Data.h"
+#include "rendering/RenderResources.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <spdlog/fmt/ostr.h>
@@ -57,9 +58,9 @@ bool shouldLogPlanarSegUpload(const uuids::uuid& segUid)
 
 bool imageUsesVolumeTexture(const AppData& appData, const uuids::uuid& imageUid)
 {
-  const auto layoutIt = appData.renderData().m_imageTextureLayouts.find(imageUid);
-  return layoutIt != std::end(appData.renderData().m_imageTextureLayouts) &&
-         RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
+  const auto layoutIt = appData.renderResources().m_imageTextureLayouts.find(imageUid);
+  return layoutIt != std::end(appData.renderResources().m_imageTextureLayouts) &&
+         rendering::TextureDimension::Texture3D == layoutIt->second.dimension;
 }
 
 TextureCreationFailure makeTextureFailure(
@@ -149,12 +150,12 @@ void handleTextureCreationFailures(AppData& appData, const std::vector<TextureCr
         }
         else if (appData.refImageUid() && *appData.refImageUid() == failure.uid) {
           spdlog::warn("Unloading non-renderable reference image {}; clearing loaded project data", failure.uid);
-          appData.renderData().m_imageTextures.clear();
-          appData.renderData().m_imageTextureLayouts.clear();
-          appData.renderData().m_distanceMapTextures.clear();
-          appData.renderData().m_segTextures.clear();
-          appData.renderData().m_segTextureLayouts.clear();
-          appData.renderData().m_uniforms.clear();
+          appData.renderResources().m_imageTextures.clear();
+          appData.renderResources().m_imageTextureLayouts.clear();
+          appData.renderResources().m_distanceMapTextures.clear();
+          appData.renderResources().m_segTextures.clear();
+          appData.renderResources().m_segTextureLayouts.clear();
+          appData.renderDerivedData().clear();
           appData.clearProjectData();
         }
         else {
@@ -241,8 +242,8 @@ bool appendScalarComponentTexture(
 
   static constexpr GLint k_mipmapLevel = 0;
   GLTexture& texture = componentTextures.emplace_back(
-    RenderData::TextureDimension::Texture2D == uploadLayout.layout.dimension ? tex::Target::Texture2D
-                                                                             : tex::Target::Texture3D,
+    rendering::TextureDimension::Texture2D == uploadLayout.layout.dimension ? tex::Target::Texture2D
+                                                                            : tex::Target::Texture3D,
     GLTexture::MultisampleSettings(),
     pixelPackSettings,
     pixelUnpackSettings);
@@ -505,7 +506,7 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
       continue;
     }
     if (
-      RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension && shouldLogPlanarImageUpload(imageUid))
+      rendering::TextureDimension::Texture2D == uploadLayout->layout.dimension && shouldLogPlanarImageUpload(imageUid))
     {
       spdlog::info(
         "Image {} ('{}') exceeds GL_MAX_3D_TEXTURE_SIZE but is planar; uploading as GL_TEXTURE_2D with axes ({}, {}) "
@@ -579,8 +580,8 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
             // A planar image's retained axes are ascending and its omitted axis is singleton, so the native
             // x-fastest component buffer is also contiguous in GL_TEXTURE_2D row order. No planar copy is needed.
             GLTexture& texture = componentTextures.emplace_back(
-              RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
-                                                                                        : tex::Target::Texture3D,
+              rendering::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
+                                                                                       : tex::Target::Texture3D,
               GLTexture::MultisampleSettings(),
               pixelPackSettings,
               pixelUnpackSettings);
@@ -639,8 +640,8 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid
       continue;
     }
 
-    appData.renderData().m_imageTextures.insert_or_assign(imageUid, std::move(componentTextures));
-    appData.renderData().m_imageTextureLayouts[imageUid] = uploadLayout->layout;
+    appData.renderResources().m_imageTextures.insert_or_assign(imageUid, std::move(componentTextures));
+    appData.renderResources().m_imageTextureLayouts[imageUid] = uploadLayout->layout;
 
     result.createdUids.push_back(imageUid);
 
@@ -678,17 +679,17 @@ bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid&
   const std::optional<TextureUploadLayout> uploadLayout =
     texture_setup::textureUploadLayoutForImage(image->header().pixelDimensions(), textureLimits);
   if (!uploadLayout) {
-    appData.renderData().m_imageTextures.erase(imageUid);
-    appData.renderData().m_imageTextureLayouts.erase(imageUid);
+    appData.renderResources().m_imageTextures.erase(imageUid);
+    appData.renderResources().m_imageTextureLayouts.erase(imageUid);
     recreateTextures();
     return false;
   }
 
-  auto textureIt = appData.renderData().m_imageTextures.find(imageUid);
-  const auto layoutIt = appData.renderData().m_imageTextureLayouts.find(imageUid);
+  auto textureIt = appData.renderResources().m_imageTextures.find(imageUid);
+  const auto layoutIt = appData.renderResources().m_imageTextureLayouts.find(imageUid);
   const bool canUpdateExisting =
-    textureIt != std::end(appData.renderData().m_imageTextures) &&
-    layoutIt != std::end(appData.renderData().m_imageTextureLayouts) &&
+    textureIt != std::end(appData.renderResources().m_imageTextures) &&
+    layoutIt != std::end(appData.renderResources().m_imageTextureLayouts) &&
     layoutIt->second.dimension == uploadLayout->layout.dimension &&
     layoutIt->second.axes == uploadLayout->layout.axes &&
     textureIt->second.size() == image->header().numComponentsPerPixel() &&
@@ -778,7 +779,7 @@ createDistanceMapTexture(const AppData& appData, const uuids::uuid& imageUid, ui
       dimensions.z);
     return std::nullopt;
   }
-  if (RenderData::TextureDimension::Texture3D != uploadLayout->layout.dimension) {
+  if (rendering::TextureDimension::Texture3D != uploadLayout->layout.dimension) {
     spdlog::warn(
       "Skipping distance map for component {} of image {} because raycasting requires a 3D texture",
       component,
@@ -913,7 +914,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
         texture_setup::textureLimitReason(textureSize, textureLimits)));
       continue;
     }
-    if (RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension && shouldLogPlanarSegUpload(segUid)) {
+    if (rendering::TextureDimension::Texture2D == uploadLayout->layout.dimension && shouldLogPlanarSegUpload(segUid)) {
       spdlog::info(
         "Segmentation {} ('{}') exceeds GL_MAX_3D_TEXTURE_SIZE but is planar; uploading as GL_TEXTURE_2D with axes "
         "({}, {}) and size {}",
@@ -926,8 +927,8 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
 
     try {
       GLTexture texture(
-        RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
-                                                                                  : tex::Target::Texture3D,
+        rendering::TextureDimension::Texture2D == uploadLayout->layout.dimension ? tex::Target::Texture2D
+                                                                                 : tex::Target::Texture3D,
         GLTexture::MultisampleSettings(),
         pixelStoreSettings,
         pixelStoreSettings);
@@ -951,8 +952,8 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
         GLTexture::getBufferPixelRedFormat(compType),
         GLTexture::getBufferPixelDataType(compType),
         segBuffer);
-      appData.renderData().m_segTextures.insert_or_assign(segUid, std::move(texture));
-      appData.renderData().m_segTextureLayouts[segUid] = uploadLayout->layout;
+      appData.renderResources().m_segTextures.insert_or_assign(segUid, std::move(texture));
+      appData.renderResources().m_segTextureLayouts[segUid] = uploadLayout->layout;
     }
     catch (const std::exception& e) {
       spdlog::error(

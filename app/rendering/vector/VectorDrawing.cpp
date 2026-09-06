@@ -618,7 +618,7 @@ void drawLandmarks(
     miewportViewBounds.viewport[2],
     miewportViewBounds.viewport[3]);
 
-  const float strokeWidth = appData.renderData().m_globalLandmarkParams.strokeWidth;
+  const float strokeWidth = appData.renderSettings().m_globalLandmarkParams.strokeWidth;
 
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
   const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
@@ -1001,7 +1001,7 @@ void drawAnnotations(
       }
 
       // Draw the annotation outer boundary vertices:
-      if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility()) {
+      if (!appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility()) {
         for (const glm::vec2& vertex : annotPlaneVertices) {
           const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, vertex);
           const float radius = std::max(sk_vertexRadius, annot->getLineThickness());
@@ -1084,9 +1084,9 @@ void drawVectorFieldArrows(
   const glm::vec2 viewMin{miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset};
   const glm::vec2 viewSize{miewportViewBounds.bounds.width, miewportViewBounds.bounds.height};
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
-  const RenderData& renderData = appData.renderData();
+  const rendering::RenderSettings& renderSettings = appData.renderSettings();
   const float aspectRatio = view.camera().aspectRatio();
-  const float numCheckers = static_cast<float>(renderData.m_numCheckerboardSquares);
+  const float numCheckers = static_cast<float>(renderSettings.m_numCheckerboardSquares);
   const glm::vec4 clipCrosshairs4 = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
   const glm::vec2 clipCrosshairs{clipCrosshairs4 / clipCrosshairs4.w};
 
@@ -1150,11 +1150,11 @@ void drawVectorFieldArrows(
             viewClipPos,
             checkerCoord,
             clipCrosshairs,
-            renderData.m_quadrants,
+            renderSettings.m_quadrants,
             isFixedImage,
             aspectRatio,
-            renderData.m_flashlightRadius,
-            renderData.m_flashlightOverlays))
+            renderSettings.m_flashlightRadius,
+            renderSettings.m_flashlightOverlays))
       {
         return;
       }

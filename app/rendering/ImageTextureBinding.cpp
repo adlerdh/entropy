@@ -31,7 +31,9 @@ Rendering::BoundTextures Rendering::bindScalarImageTextures(const ImgSegPair& p)
   const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
 
   BoundTextures boundTextures;
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderResources();
+  const auto& D = m_appData.renderDerivedData();
+  const auto& settings = m_appData.renderSettings();
 
   if (!image) {
     // No image, so bind the blank one:
@@ -94,12 +96,12 @@ Rendering::BoundTextures Rendering::bindScalarImageTextures(const ImgSegPair& p)
   const auto distTextureIt = R.m_distanceMapTextures.find(textureImageUid);
   const auto foregroundThresholds = rendering::texture_setup::distanceMapForegroundThresholds(
     S.componentStatistics(S.activeComponent()),
-    R.m_distanceMapForegroundLowerPercentile,
-    R.m_distanceMapForegroundUpperPercentile);
-  const auto activeIsovalues = std::span{R.m_isosurfaceData.values}.first(std::min<std::size_t>(
-    static_cast<std::size_t>(std::max(R.m_isosurfaceData.numIsos, 0)),
-    R.m_isosurfaceData.values.size()));
-  const bool useDistMap = R.m_useDistanceMapForRaycasting && std::end(R.m_distanceMapTextures) != distTextureIt &&
+    settings.m_distanceMapForegroundLowerPercentile,
+    settings.m_distanceMapForegroundUpperPercentile);
+  const auto activeIsovalues = std::span{D.isosurfaces.values}.first(
+    std::min<std::size_t>(static_cast<std::size_t>(std::max(D.isosurfaces.numIsos, 0)), D.isosurfaces.values.size()));
+  const bool useDistMap = settings.m_useDistanceMapForRaycasting &&
+                          std::end(R.m_distanceMapTextures) != distTextureIt &&
                           rendering::texture_setup::distanceMapSupportsIsovalues(
                             foregroundThresholds.first,
                             foregroundThresholds.second,
@@ -131,7 +133,7 @@ Rendering::BoundTextures Rendering::bindColorImageTextures(const ImgSegPair& p)
   const auto& imgUid = p.first;
   const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
 
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderResources();
   BoundTextures boundTextures;
 
   if (!image) {
@@ -165,29 +167,30 @@ Rendering::BoundTextures Rendering::bindMetricImageTextures(
 {
   BoundTextures textures;
 
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderResources();
+  const auto& settings = m_appData.renderSettings();
   bool usesMetricColormap = false;
   std::size_t metricCmapIndex = 0;
 
   switch (metricType) {
     case ViewRenderMode::Difference: {
       usesMetricColormap = true;
-      metricCmapIndex = R.m_squaredDifferenceParams.m_colorMapIndex;
+      metricCmapIndex = settings.m_squaredDifferenceParams.m_colorMapIndex;
       break;
     }
     case ViewRenderMode::LocalNcc: {
       usesMetricColormap = true;
-      metricCmapIndex = R.m_localNccParams.m_colorMapIndex;
+      metricCmapIndex = settings.m_localNccParams.m_colorMapIndex;
       break;
     }
     case ViewRenderMode::LocalLinearResidual: {
       usesMetricColormap = true;
-      metricCmapIndex = R.m_localLinearResidualParams.m_colorMapIndex;
+      metricCmapIndex = settings.m_localLinearResidualParams.m_colorMapIndex;
       break;
     }
     case ViewRenderMode::JointHistogram: {
       usesMetricColormap = true;
-      metricCmapIndex = R.m_jointHistogramParams.m_colorMapIndex;
+      metricCmapIndex = settings.m_jointHistogramParams.m_colorMapIndex;
       break;
     }
     case ViewRenderMode::Overlay: {

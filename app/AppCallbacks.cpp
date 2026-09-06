@@ -11,7 +11,11 @@ void EntropyApp::setCallbacks()
 {
   m_glfw.setCallbacks(
     [this](std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime) {
-      m_rendering.framerateLimiter(lastFrameTime);
+      const rendering::RenderSettings& renderSettings = m_data.renderSettings();
+      m_framePacer.wait(
+        {.enabled = renderSettings.m_manualFramerateLimiter,
+         .targetFrameTime = std::chrono::duration<double>{renderSettings.m_targetFrameTimeSeconds}},
+        lastFrameTime);
     },
     [this]() { m_rendering.render(); },
     [this]() { m_imgui.render(); },

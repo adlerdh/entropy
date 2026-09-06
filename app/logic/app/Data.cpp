@@ -98,6 +98,8 @@ void AppData::clearProjectData()
   m_landmarkGroupUidsOrdered.clear();
   m_annotations.clear();
 
+  m_renderDerivedData.clear();
+
   m_refImageUid = std::nullopt;
   m_activeImageUid = std::nullopt;
 
@@ -464,9 +466,8 @@ bool AppData::replaceImage(const uuid& imageUidArg, Image imageArg)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_componentProjectionToSourceImage.erase(projectionUid);
-      m_renderData.m_imageTextures.erase(projectionUid);
-      m_renderData.m_imageTextureLayouts.erase(projectionUid);
-      m_renderData.m_uniforms.erase(projectionUid);
+      m_renderResources.removeImage(projectionUid);
+      m_renderDerivedData.removeImage(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
   }
@@ -759,9 +760,8 @@ bool AppData::removeImage(const uuid& imageUidArg)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_componentProjectionToSourceImage.erase(projectionUid);
-      m_renderData.m_imageTextures.erase(projectionUid);
-      m_renderData.m_imageTextureLayouts.erase(projectionUid);
-      m_renderData.m_uniforms.erase(projectionUid);
+      m_renderResources.removeImage(projectionUid);
+      m_renderDerivedData.removeImage(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
   }
@@ -926,9 +926,8 @@ bool AppData::removeDef(const uuid& defUidArg)
     m_images.erase(defUidArg);
     m_imageUidsOrdered.erase(imageIt);
     m_imageToComponentData.erase(defUidArg);
-    m_renderData.m_imageTextures.erase(defUidArg);
-    m_renderData.m_imageTextureLayouts.erase(defUidArg);
-    m_renderData.m_uniforms.erase(defUidArg);
+    m_renderResources.removeImage(defUidArg);
+    m_renderDerivedData.removeImage(defUidArg);
   }
 
   // Remove all image warp assignments that reference this field.
@@ -2199,13 +2198,33 @@ GuiData& AppData::guiData()
   return m_guiData;
 }
 
-const RenderData& AppData::renderData() const
+const rendering::RenderSettings& AppData::renderSettings() const
 {
-  return m_renderData;
+  return m_renderSettings;
 }
-RenderData& AppData::renderData()
+rendering::RenderSettings& AppData::renderSettings()
 {
-  return m_renderData;
+  return m_renderSettings;
+}
+
+const rendering::RenderResources& AppData::renderResources() const
+{
+  return m_renderResources;
+}
+
+rendering::RenderResources& AppData::renderResources()
+{
+  return m_renderResources;
+}
+
+const rendering::RenderDerivedData& AppData::renderDerivedData() const
+{
+  return m_renderDerivedData;
+}
+
+rendering::RenderDerivedData& AppData::renderDerivedData()
+{
+  return m_renderDerivedData;
 }
 
 const WindowData& AppData::windowData() const

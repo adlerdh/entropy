@@ -1,5 +1,6 @@
 #include "rendering/mesh/MeshCache.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace rendering::mesh
@@ -116,6 +117,11 @@ std::size_t MeshCache::evictSource(const uuids::uuid& sourceUid)
 bool MeshCache::erase(const MeshGeometryKey& key) noexcept
 {
   return m_entries.erase(key) > 0u;
+}
+
+std::size_t MeshCache::retainOnly(const MeshGeometryKeySet& liveKeys) noexcept
+{
+  return std::erase_if(m_entries, [&liveKeys](const auto& entry) { return !liveKeys.contains(entry.first); });
 }
 
 const MeshCacheEntry* MeshCache::find(const MeshGeometryKey& key) const noexcept

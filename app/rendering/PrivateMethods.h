@@ -7,11 +7,6 @@
 /// @{
 
 /**
- * @brief Restore the OpenGL state expected by Entropy after third-party drawing calls.
- */
-static void setupOpenGLState();
-
-/**
  * @brief Compile and link all shader programs used by the renderer.
  */
 void createShaderPrograms();
@@ -467,7 +462,7 @@ void renderSegmentationForImage(
   const glm::vec3& worldOffsetXhairs,
   const ImgSegPair& imgSegPair,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -479,8 +474,8 @@ void renderColorImageForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -493,8 +488,8 @@ void renderGrayImageForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -507,8 +502,8 @@ void renderIsoContoursForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -519,8 +514,8 @@ void renderVectorImageForImage(
   const glm::vec3& worldOffsetXhairs,
   const ImgSegPair& imgSegPair,
   const Image& image,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   int displayModeUniform,
   bool isFixedImage);
 
@@ -544,7 +539,7 @@ void setRaycastIsoUniforms(
   GLShaderProgram& program,
   const ImgSegPair& imgSegPair,
   const Image& image,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid);
 

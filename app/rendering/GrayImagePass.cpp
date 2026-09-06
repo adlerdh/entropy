@@ -10,7 +10,8 @@
 #include "rendering/ImageDrawing.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/geometry/PixelEdgeGeometry.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
@@ -77,15 +78,15 @@ void Rendering::renderGrayImageForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   const bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   const int displayModeUniform,
   const bool isFixedImage,
   const bool allowScreenPixelEdgePostProcessing)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   const glm::vec4 deviceViewport = m_appData.windowData().viewport().getDeviceAsVec4();
   const glm::ivec4 renderTargetViewport{
     static_cast<int>(deviceViewport.x),
@@ -121,7 +122,7 @@ void Rendering::renderGrayImageForImage(
         }
         else {
           const bool useFloatingPoint = useFloatingPointLinearInterpolation(
-            renderData.m_imageGrayFloatingPointInterpolationPolicy,
+            renderSettings.m_imageGrayFloatingPointInterpolationPolicy,
             view,
             m_appData.windowData().viewport(),
             image,
@@ -159,13 +160,13 @@ void Rendering::renderGrayImageForImage(
       program->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
       setTexture2DAxesUniforms(*program, imageTextureLayout);
 
-      program->setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
+      program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
       program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
 
       if (doXray) {
         program->setUniform("u_imgSlope_native_T_texture", uniforms.slope_native_T_texture);
-        program->setUniform("u_waterAttenCoeff", renderData.m_waterMassAttenCoeff);
-        program->setUniform("u_airAttenCoeff", renderData.m_airMassAttenCoeff);
+        program->setUniform("u_waterAttenCoeff", renderSettings.m_waterMassAttenCoeff);
+        program->setUniform("u_airAttenCoeff", renderSettings.m_airMassAttenCoeff);
       }
       else {
         program->setUniform("u_imgSlopeIntercept", uniforms.slopeIntercept_normalized_T_texture);
@@ -180,7 +181,7 @@ void Rendering::renderGrayImageForImage(
       program->setUniform("u_imgThresholds", uniforms.thresholds);
       program->setUniform("u_imgMinMax", uniforms.minMax);
       program->setUniform("u_imgOpacity", uniforms.imgOpacity);
-      program->setUniform("u_quadrants", renderData.m_quadrants);
+      program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage);
       program->setUniform("u_renderMode", displayModeUniform);
       if (renderWarped) {
@@ -206,13 +207,13 @@ void Rendering::renderGrayImageForImage(
       rendering::pixel_edge::computeViewRect(view.windowClipViewport(), deviceViewport);
 
     auto bindPixelEdgeColormap = [&]() {
-      auto& mutableRenderData = m_appData.renderData();
+      auto& resources = m_appData.renderResources();
       const auto cmapUid = m_appData.imageColorMapUid(image.settings().colorMapIndex());
       if (cmapUid) {
-        mutableRenderData.m_colormapTextures.at(*cmapUid).bind(msk_imgCmapTexSampler.index);
+        resources.m_colormapTextures.at(*cmapUid).bind(msk_imgCmapTexSampler.index);
       }
-      else if (!mutableRenderData.m_colormapTextures.empty()) {
-        mutableRenderData.m_colormapTextures.begin()->second.bind(msk_imgCmapTexSampler.index);
+      else if (!resources.m_colormapTextures.empty()) {
+        resources.m_colormapTextures.begin()->second.bind(msk_imgCmapTexSampler.index);
       }
     };
 
@@ -259,14 +260,14 @@ void Rendering::renderGrayImageForImage(
       program->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
       setTexture2DAxesUniforms(*program, imageTextureLayout);
 
-      program->setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
+      program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
       program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
       program->setUniform("u_imgSlopeIntercept", uniforms.largestSlopeIntercept);
       program->setUniform("u_imgThresholds", uniforms.thresholds);
       program->setUniform("u_imgMinMax", uniforms.minMax);
       program->setUniform("u_imgOpacity", uniforms.imgOpacity);
       program->setUniform("u_cmapSlopeIntercept", uniforms.cmapSlopeIntercept);
-      program->setUniform("u_quadrants", renderData.m_quadrants);
+      program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage);
       program->setUniform("u_renderMode", displayModeUniform);
       program->setUniform("u_hardEdges", uniforms.hardEdges);

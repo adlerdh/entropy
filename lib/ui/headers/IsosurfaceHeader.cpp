@@ -940,11 +940,11 @@ void renderIsosurfacesHeader(
       ImGui::Spacing();
       ImGui::Checkbox("Show in 2D", &surface->visibleIn2d);
       ImGui::SameLine();
-      helpMarker("Show this isosurface on 2D views and 3D image planes");
-
-      ImGui::Checkbox("Show in 3D", &surface->visibleIn3d);
+      ImGui::Checkbox("3D", &surface->visibleIn3d);
       ImGui::SameLine();
-      helpMarker("Show this isosurface as a raycast or mesh surface in 3D views");
+      helpMarker(
+        "2D shows this isosurface in 2D views and on 3D image planes. "
+        "3D shows it as a raycast or mesh surface in 3D views.");
 
       static constexpr bool premult = false;
       glm::vec4 color = getIsosurfaceColor(appData, *surface, imgSettings, componentToAdjust, premult);
@@ -986,11 +986,11 @@ void renderIsosurfacesHeader(
       ImGui::Spacing();
 
       bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
-      if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {
+      if (ImGui::Checkbox("Color using image color map", &applyColormap)) {
         imgSettings.setApplyImageColormapToIsosurfaces(applyColormap);
       }
       ImGui::SameLine();
-      helpMarker("Color isosurfaces using the image colormap");
+      helpMarker("Color isosurfaces using the image color map");
 
       bool modulateIsosurfaceOpacity = imgSettings.modulateIsosurfaceOpacityWithImageOpacity();
       if (ImGui::Checkbox("Modulate isosurface opacity with image opacity", &modulateIsosurfaceOpacity)) {

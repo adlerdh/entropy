@@ -24,7 +24,7 @@ const glm::vec4 k_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 
 std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildPixelEdgeShaderProgram()
 {
-  static const std::string shaderPath("app/rendering/shaders/");
+  static const std::string shaderPath("rendering/shaders/");
   static const std::string vsName("AsciiPost.vs");
   static const std::string fsName("PixelEdgePost.fs");
 
@@ -100,7 +100,7 @@ void PixelEdgeRenderer::render(
   const std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
   glm::ivec4 renderTargetViewport,
   const ViewRect& viewRect,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   const DrawImageFn& drawImage,
   const BindPostTexturesFn& bindPostTextures)
 {

@@ -35,7 +35,7 @@ bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
   }
 
   for (const uuid& imageUid :
-       rendering::raycastableImageUids(view.visibleImages(), appData.renderData().m_imageTextureLayouts))
+       rendering::raycastableImageUids(view.visibleImages(), appData.renderResources().m_imageTextureLayouts))
   {
     const Image* image = appData.image(imageUid);
     if (!image) {
@@ -75,7 +75,7 @@ bool suppressTwoDVectorOverlays(const View& view)
 const View* activeThreeDFrustumSource(const AppData& appData)
 {
   const WindowData& windowData = appData.windowData();
-  const std::optional<uuid>& lastInteractedViewUid = appData.renderData().m_lastInteractedThreeDViewUid;
+  const std::optional<uuid>& lastInteractedViewUid = appData.renderSettings().m_lastInteractedThreeDViewUid;
   if (lastInteractedViewUid) {
     const View* view = windowData.getCurrentView(*lastInteractedViewUid);
     if (view && canDrawFrustumForThreeDView(*view)) {
@@ -123,7 +123,7 @@ void Rendering::renderVectorOverlays()
 
   const WindowData& windowData = m_appData.windowData();
   const Viewport& windowVP = windowData.viewport();
-  const auto& R = m_appData.renderData();
+  const auto& R = m_appData.renderSettings();
 
   if (ProjectLoadState::Loading == m_appData.state().projectLoadState()) {
     startNvgFrame(m_nvg, windowVP);

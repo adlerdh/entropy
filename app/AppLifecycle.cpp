@@ -217,7 +217,7 @@ void EntropyApp::init()
     const fs::path settingsFile = app_paths::userSettingsFile();
     if (!user_preferences::load(
           m_data.settings(),
-          m_data.renderData(),
+          m_data.renderSettings(),
           m_data.guiData(),
           settingsFile,
           &preferencesError))
@@ -230,7 +230,7 @@ void EntropyApp::init()
     m_imgui.applyUiDensityPreset(m_data.settings().uiDensityPreset());
     m_imgui.applyUiWindowBgOpacity(m_data.settings().uiWindowBgOpacity());
     project_snapshot::syncLayoutTabGuiData(m_data);
-    user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderData(), m_data.guiData());
+    user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
   }
 
   m_rendering.init();
@@ -330,15 +330,8 @@ void EntropyApp::onImagesReady()
     m_data.windowData().resetDefaultLayouts();
   }
 
-  auto& renderData = m_data.renderData();
-  renderData.m_imageTextures.clear();
-  renderData.m_imageTextureLayouts.clear();
-  renderData.m_distanceMapTextures.clear();
-  renderData.m_segTextures.clear();
-  renderData.m_segTextureLayouts.clear();
-  renderData.m_labelBufferTextures.clear();
-  renderData.m_colormapTextures.clear();
-  renderData.m_uniforms.clear();
+  m_data.renderResources().clearLoadedData();
+  m_data.renderDerivedData().clear();
 
   m_rendering.initTextures();
   if (0 == m_data.numImages() || !m_data.refImage()) {

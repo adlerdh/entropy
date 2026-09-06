@@ -5,19 +5,19 @@
 #include "image/ImageDerivedData.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/PixelEdgeRenderer.h"
+#include "rendering/RenderDerivedData.h"
+#include "rendering/RenderResources.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/mesh/MeshCache.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
-#include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtractionService.h"
 #include "rendering/mesh/MeshDdpResources.h"
-#include "rendering/mesh/MeshGpuStore.h"
+#include "rendering/mesh/MeshResourceStore.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshRenderer.h"
-#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -48,9 +48,9 @@ struct NVGcontext;
  *
  * Rendering is the integration point between application state and the lower-level drawing helpers. It owns the
  * OpenGL shader programs, texture objects, NanoVG context, ASCII renderer, and pixel-edge renderer. Most persistent
- * render settings live in AppData/RenderData; this class translates those settings into current GPU state and issues
- * the draw calls for image slices, metrics, raycast isosurfaces, overlays, segmentations, annotations, landmarks, and
- * brush previews.
+ * render settings live in `AppData::renderSettings()`. This adapter translates application models into library scene
+ * and pass inputs, then issues draw calls for image slices, metrics, raycast isosurfaces, overlays, segmentations,
+ * annotations, landmarks, and brush previews.
  *
  * The class is intentionally non-copyable through its OpenGL ownership. It should be initialized after an OpenGL
  * context exists and destroyed before the context is torn down.
@@ -64,7 +64,7 @@ public:
    * The OpenGL context must already be current. The constructor creates the NanoVG context, logs OpenGL texture limits,
    * and compiles shader programs.
    *
-   * @param appData Shared application state used to read images, views, settings, and render data.
+   * @param appData Shared application state used to read images, views, and settings.
    */
   explicit Rendering(AppData& appData);
 
@@ -91,17 +91,6 @@ public:
    */
   void initTextures();
 
-  using Clock = std::chrono::steady_clock;
-
-  /**
-   * @brief Sleep until the requested application frame interval has elapsed.
-   *
-   * Manual frame limiting is used when the application is configured for a target frame rate below the display rate.
-   *
-   * @param[in,out] lastFrameTime Time point of the last presented frame. Updated to the current frame time.
-   */
-  void framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime);
-
   /**
    * @brief Draw the current application layout.
    */
@@ -117,7 +106,7 @@ public:
   /**
    * @brief Update sampler interpolation for one image color map texture.
    *
-   * @param colorMapIndex Index into RenderData::m_imageColorMapTextures.
+   * @param colorMapIndex Index into the application image color-map collection.
    */
   void updateImageColorMapInterpolation(std::size_t colorMapIndex);
 
@@ -298,9 +287,7 @@ private:
 
   /// Logical mesh handles keyed by their geometry-producing inputs.
   using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
-  using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
   using MeshHandle = rendering::mesh::MeshHandle;
-  using MeshHandleMap = rendering::mesh::MeshHandleMap;
 
   struct MeshImagePlaneHandleKey
   {
@@ -420,13 +407,9 @@ private:
 
   rendering::mesh::MeshAmbientOcclusionResources m_meshAmbientOcclusionResources; //!< OpenGL attachments for mesh AO
 
-  rendering::mesh::MeshCache m_meshCpuCache; //!< CPU-side extracted mesh cache
+  rendering::mesh::MeshExtractionService m_meshExtractions; //!< CPU extraction scheduler and cache
 
-  rendering::mesh::MeshExtractionQueue m_meshExtractionQueue; //!< Background CPU mesh extraction queue
-
-  rendering::mesh::MeshGpuStore m_meshGpuStore; //!< Uploaded mesh buffers for the current OpenGL context
-
-  MeshHandleMap m_meshHandles; //!< Stable logical mesh handles keyed by geometry-producing inputs
+  rendering::mesh::MeshResourceStore m_meshResources; //!< Context-owned mesh handles and GPU uploads
 
   std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
   std::unordered_map<uuids::uuid, PendingSegmentationLabelInventory> m_pendingSegmentationLabelInventories;

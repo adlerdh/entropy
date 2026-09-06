@@ -478,7 +478,7 @@ void renderAnnotationsHeader(
   helpMarker("Show/hide the annotation");
 
   // Show vertices checkbox:
-  if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices) {
+  if (!appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices) {
     bool showVertices = activeAnnot->getVertexVisibility();
     if (ImGui::Checkbox("Show vertices", &showVertices)) {
       activeAnnot->setVertexVisibility(showVertices);

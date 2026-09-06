@@ -30,8 +30,10 @@ const Uniforms::SamplerIndexVectorType s_metricDefTexSamplers1{{6, 7, 8}};
 
 void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXhairs)
 {
-  static const RenderData::ImageUniforms sk_defaultImageUniforms;
-  const RenderData& R = m_appData.renderData();
+  static const rendering::RenderDerivedData::ImageUniforms sk_defaultImageUniforms;
+  const auto& settings = m_appData.renderSettings();
+  const auto& resources = m_appData.renderResources();
+  const auto& derived = m_appData.renderDerivedData();
   // This function guarantees that imageSegPairs has size at least 2:
   const CurrentImages imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages());
 
@@ -43,10 +45,10 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
     imageSegPairs[0].second ? m_appData.seg(*imageSegPairs[0].second) : nullptr,
     imageSegPairs[1].second ? m_appData.seg(*imageSegPairs[1].second) : nullptr};
 
-  const std::array<RenderData::ImageUniforms, 2> U{
-    (!imageSegPairs.empty() && imageSegPairs[0].first) ? R.m_uniforms.at(*imageSegPairs[0].first)
+  const std::array<rendering::RenderDerivedData::ImageUniforms, 2> U{
+    (!imageSegPairs.empty() && imageSegPairs[0].first) ? derived.imageUniforms.at(*imageSegPairs[0].first)
                                                        : sk_defaultImageUniforms,
-    (imageSegPairs.size() >= 2 && imageSegPairs[1].first) ? R.m_uniforms.at(*imageSegPairs[1].first)
+    (imageSegPairs.size() >= 2 && imageSegPairs[1].first) ? derived.imageUniforms.at(*imageSegPairs[1].first)
                                                           : sk_defaultImageUniforms};
 
   const bool useTricubic = imgs[0] && imgs[1] &&
@@ -56,9 +58,9 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
     (imageSegPairs[0].first ? activeRenderableDeformationUid(*imageSegPairs[0].first) : std::nullopt),
     (imageSegPairs[1].first ? activeRenderableDeformationUid(*imageSegPairs[1].first) : std::nullopt)};
   const bool renderWarpedMetric = deformationUids[0].has_value() || deformationUids[1].has_value();
-  const std::array<RenderData::PlanarTextureLayout, 2> metricTextureLayouts{
-    rendering::textureLayoutOrDefault(R.m_imageTextureLayouts, imageSegPairs[0].first),
-    rendering::textureLayoutOrDefault(R.m_imageTextureLayouts, imageSegPairs[1].first)};
+  const std::array<rendering::PlanarTextureLayout, 2> metricTextureLayouts{
+    rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, imageSegPairs[0].first),
+    rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, imageSegPairs[1].first)};
   const bool mixedMetricTextureDimensions = metricTextureLayouts[0].dimension != metricTextureLayouts[1].dimension;
 
   if (mixedMetricTextureDimensions) {
@@ -66,7 +68,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       "Metric rendering between mixed 2D-fallback and 3D textures is not supported yet; skipping metric view");
     return;
   }
-  const RenderData::TextureDimension metricTextureDimension = metricTextureLayouts[0].dimension;
+  const rendering::TextureDimension metricTextureDimension = metricTextureLayouts[0].dimension;
 
   const auto boundMetricTextures = bindMetricImageTextures(imageSegPairs, view.renderMode());
   BoundTextures boundMetricDefTextures;
@@ -109,7 +111,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
         : (renderWarpedMetric ? ShaderProgramType::DifferenceLinearWarped : ShaderProgramType::DifferenceLinear),
       metricTextureDimension);
 
-    const auto& params = R.m_squaredDifferenceParams;
+    const auto& params = settings.m_squaredDifferenceParams;
 
     program.use();
     {
@@ -124,7 +126,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
         std::vector<glm::vec2>{U[0].largestSlopeIntercept, U[1].largestSlopeIntercept});
       program.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
       program.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
-      program.setUniform("u_useSquare", R.m_useSquare);
+      program.setUniform("u_useSquare", settings.m_useSquare);
       setMetricWarpUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
@@ -139,7 +141,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
                   : (renderWarpedMetric ? ShaderProgramType::LocalNccLinearWarped : ShaderProgramType::LocalNccLinear),
       metricTextureDimension);
 
-    const auto& params = R.m_localNccParams;
+    const auto& params = settings.m_localNccParams;
 
     program.use();
     {
@@ -154,13 +156,13 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
         std::vector<glm::vec2>{U[0].largestSlopeIntercept, U[1].largestSlopeIntercept});
       program.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
       program.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
-      program.setUniform("u_patchRadius", R.m_localNccPatchRadius);
-      program.setUniform("u_sampleSpacing", R.m_localNccSampleSpacing);
-      program.setUniform("u_minValidFraction", R.m_localNccMinValidFraction);
-      program.setUniform("u_varianceEpsilon", R.m_localNccVarianceEpsilon);
-      program.setUniform("u_ignoreNegativeCorrelation", R.m_localNccIgnoreNegativeCorrelation);
-      program.setUniform("u_presentation", static_cast<int>(R.m_localNccPresentation));
-      program.setUniform("u_invalidStyle", static_cast<int>(R.m_localNccInvalidStyle));
+      program.setUniform("u_patchRadius", settings.m_localNccPatchRadius);
+      program.setUniform("u_sampleSpacing", settings.m_localNccSampleSpacing);
+      program.setUniform("u_minValidFraction", settings.m_localNccMinValidFraction);
+      program.setUniform("u_varianceEpsilon", settings.m_localNccVarianceEpsilon);
+      program.setUniform("u_ignoreNegativeCorrelation", settings.m_localNccIgnoreNegativeCorrelation);
+      program.setUniform("u_presentation", static_cast<int>(settings.m_localNccPresentation));
+      program.setUniform("u_invalidStyle", static_cast<int>(settings.m_localNccInvalidStyle));
       setMetricWarpUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
@@ -177,7 +179,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
                                         : ShaderProgramType::LocalLinearResidualLinear),
       metricTextureDimension);
 
-    const auto& params = R.m_localLinearResidualParams;
+    const auto& params = settings.m_localLinearResidualParams;
 
     program.use();
     {
@@ -192,11 +194,11 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
         std::vector<glm::vec2>{U[0].largestSlopeIntercept, U[1].largestSlopeIntercept});
       program.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
       program.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
-      program.setUniform("u_patchRadius", R.m_localLinearResidualPatchRadius);
-      program.setUniform("u_sampleSpacing", R.m_localLinearResidualSampleSpacing);
-      program.setUniform("u_minValidFraction", R.m_localLinearResidualMinValidFraction);
-      program.setUniform("u_varianceEpsilon", R.m_localLinearResidualVarianceEpsilon);
-      program.setUniform("u_invalidStyle", static_cast<int>(R.m_localLinearResidualInvalidStyle));
+      program.setUniform("u_patchRadius", settings.m_localLinearResidualPatchRadius);
+      program.setUniform("u_sampleSpacing", settings.m_localLinearResidualSampleSpacing);
+      program.setUniform("u_minValidFraction", settings.m_localLinearResidualMinValidFraction);
+      program.setUniform("u_varianceEpsilon", settings.m_localLinearResidualVarianceEpsilon);
+      program.setUniform("u_invalidStyle", static_cast<int>(settings.m_localLinearResidualInvalidStyle));
       setMetricWarpUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
@@ -224,7 +226,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_imgMinMax", std::vector<glm::vec2>{U[0].minMax, U[1].minMax});
       program.setUniform("u_imgThresholds", std::vector<glm::vec2>{U[0].thresholds, U[1].thresholds});
       program.setUniform("u_imgOpacity", std::vector<float>{U[0].imgOpacity, U[1].imgOpacity});
-      program.setUniform("u_magentaCyan", R.m_overlayMagentaCyan);
+      program.setUniform("u_magentaCyan", settings.m_overlayMagentaCyan);
       setMetricWarpUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
@@ -240,8 +242,8 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       continue;
     }
 
-    const RenderData::PlanarTextureLayout segTextureLayout =
-      rendering::textureLayoutOrDefault(R.m_segTextureLayouts, imageSegPairs[i].second);
+    const rendering::PlanarTextureLayout segTextureLayout =
+      rendering::textureLayoutOrDefault(resources.m_segTextureLayouts, imageSegPairs[i].second);
     GLShaderProgram& program = shaderProgramForTextureDimension(
       m_shaderPrograms,
       m_shaderPrograms2D,
@@ -263,24 +265,24 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_tex_T_world", U[i].segTexture_T_world);
       program.setUniform(
         "u_segOpacity",
-        U[i].segOpacity * (R.m_modulateSegmentationOpacityWithImageOpacity2d ? U[i].imgOpacity : 1.0f));
+        U[i].segOpacity * (settings.m_modulateSegmentationOpacityWithImageOpacity2d ? U[i].imgOpacity : 1.0f));
       program.setUniform("u_quadrants", glm::ivec2{0, 0});
       program.setUniform("u_showFix", true); // ignored if not checkerboard or quadrants
       program.setUniform("u_renderMode", 0); // disabled
 
       drawSegQuad(
         program,
-        R.m_quad,
+        resources.m_quad,
         *segs[i],
         *segs[i],
         view,
         m_appData.windowData().viewport(),
         worldOffsetXhairs,
-        R.m_flashlightRadius,
-        R.m_flashlightOverlays,
-        R.m_segOutlineStyle,
-        R.m_segInteriorOpacity,
-        R.m_segInterpCutoff);
+        settings.m_flashlightRadius,
+        settings.m_flashlightOverlays,
+        settings.m_segOutlineStyle,
+        settings.m_segInteriorOpacity,
+        settings.m_segInterpCutoff);
     }
     program.stopUse();
 

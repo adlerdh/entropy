@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/common/ShaderType.h"
-#include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/ShaderTextureDimension.h"
 #include "rendering/utility/containers/Uniforms.h"
 
 #include <string>
