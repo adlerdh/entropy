@@ -23,6 +23,11 @@ if(APPLE)
   set(CURL_LIBRARY_RELEASE "${CURL_LIBRARY}" CACHE FILEPATH "macOS SDK curl release library" FORCE)
   set(CURL_LIBRARY_DEBUG "CURL_LIBRARY_DEBUG-NOTFOUND" CACHE FILEPATH "macOS SDK curl debug library" FORCE)
   find_package(CURL REQUIRED MODULE COMPONENTS HTTPS)
+
+  # The SDK headers are already discovered through CMAKE_OSX_SYSROOT. Propagating
+  # the SDK's usr/include directory as an explicit include path can place C
+  # headers ahead of libc++ headers and break standard-library includes.
+  set_property(TARGET CURL::libcurl PROPERTY INTERFACE_INCLUDE_DIRECTORIES "")
 else()
   find_package(CURL ${curl_VERSION} REQUIRED CONFIG COMPONENTS HTTPS
     HINTS "${curl_PREFIX}/install" NO_DEFAULT_PATH)

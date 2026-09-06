@@ -107,7 +107,7 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
   GLTexture& colorMapTexture =
     cmapUid ? renderSettings.m_colormapTextures.at(*cmapUid) : std::begin(renderSettings.m_colormapTextures)->second;
   colorMapTexture.bind(sk_imgCmapTexSampler.index);
-  boundTextures.emplace_back(colorMapTexture, sk_imgCmapTexSampler.index);
+  boundTextures.push_back({colorMapTexture, sk_imgCmapTexSampler.index});
   return boundTextures;
 }
 
