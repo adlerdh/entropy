@@ -149,6 +149,9 @@ public:
   /// Mark one uniform declaration dirty or clean.
   void setDirty(const std::string& name, bool isDirtyArg);
 
+  /// Set whether a uniform is expected to remain active after shader linking.
+  void setRequired(const std::string& name, bool isRequired);
+
   /// Return whether a uniform declaration must be uploaded.
   bool isDirty(const std::string& name) const;
 

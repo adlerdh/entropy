@@ -322,13 +322,13 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
     CHECK(copied == values);
     CHECK_THROWS(destination.write(destination.size(), sizeof(uint32_t), values.data()));
 
-    auto* mappedValue = static_cast<uint32_t*>(destination.mapRange(
-      sizeof(uint32_t),
-      sizeof(uint32_t),
+    auto* mappedValues = static_cast<uint32_t*>(destination.mapRange(
+      0u,
+      2u * sizeof(uint32_t),
       {BufferMapRangeAccessFlag::MapWriteBit, BufferMapRangeAccessFlag::FlushExplicitBit}));
-    REQUIRE(mappedValue != nullptr);
-    *mappedValue = 13u;
-    destination.flushMappedRange(0u, sizeof(uint32_t));
+    REQUIRE(mappedValues != nullptr);
+    mappedValues[1] = 13u;
+    destination.flushMappedRange(sizeof(uint32_t), sizeof(uint32_t));
     CHECK(destination.unmap());
     destination.read(sizeof(uint32_t), sizeof(uint32_t), copied.data());
     CHECK(copied.front() == 13u);

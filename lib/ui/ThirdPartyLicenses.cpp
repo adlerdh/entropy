@@ -126,7 +126,7 @@ static const LicenseEntry sk_entries[] = {
    "",
    sk_gladDocs,
    count(sk_gladDocs)},
-  {"GLFW", "3.4", "https://github.com/glfw/glfw", "zlib/libpng", "", sk_glfwDocs, count(sk_glfwDocs)},
+  {"GLFW", "3.5.1", "https://github.com/glfw/glfw", "zlib/libpng", "", sk_glfwDocs, count(sk_glfwDocs)},
   {"GLM", "1.0.3", "https://github.com/g-truc/glm", "Happy Bunny License or MIT", "", sk_glmDocs, count(sk_glmDocs)},
   {"IconFontCppHeaders",
    "210b5a3",

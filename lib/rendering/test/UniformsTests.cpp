@@ -40,6 +40,17 @@ TEST_CASE("duplicate uniform declarations must retain the same type", "[renderin
   CHECK_THROWS_AS(uniforms.insertUniform("u_value", UniformType::Int, 0), std::invalid_argument);
 }
 
+TEST_CASE("uniform requirements can be specialized for shader variants", "[rendering][shaders][uniforms]")
+{
+  Uniforms uniforms;
+  uniforms.insertUniform("u_value", UniformType::Float, 0.0f);
+
+  CHECK(uniforms("u_value").m_isRequired);
+  uniforms.setRequired("u_value", false);
+  CHECK_FALSE(uniforms("u_value").m_isRequired);
+  CHECK_THROWS_AS(uniforms.setRequired("u_missing", false), std::out_of_range);
+}
+
 TEST_CASE("boolean-vector uniforms retain their GLSL declaration type", "[rendering][shaders][uniforms]")
 {
   Uniforms uniforms;

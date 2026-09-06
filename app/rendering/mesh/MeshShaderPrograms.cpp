@@ -255,6 +255,12 @@ bool createMeshImagePlaneDdpProgram(
   const std::string fsSource = rendering::preprocessShaderSource(fsTemplate, dimensionReplacements);
 
   Uniforms fsUniforms = imageShaderInfo.fsUniforms;
+  if (!peelShader && !compositeShader) {
+    // The DDP initialization pass consumes only displayedImagePlaneColor(...).a. Linkers therefore remove the
+    // HSV adjustments, which affect only RGB, even though their uniforms are present in the shared GLSL source.
+    fsUniforms.setRequired("u_cmapHsvModFactors", false);
+    fsUniforms.setRequired("u_applyHsvMod", false);
+  }
   fsUniforms.insertUniform("u_imgRgbaTex", UniformType::SamplerVector, Uniforms::SamplerIndexVectorType{{0, 1, 2, 3}});
   fsUniforms.insertUniform("u_componentRenderMode", UniformType::Int, 0);
   fsUniforms.insertUniform("u_imgSlopeInterceptRgba", UniformType::Vec2Vector, std::vector<glm::vec2>(4));

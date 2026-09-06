@@ -740,14 +740,17 @@ void GLTexture::generate()
   }
   glGenTextures(1, &m_id);
   CHECK_GL_ERROR(m_errorChecker);
-  if (supportsSamplingParameters(m_target)) {
+  {
     const Binder binder(*this);
-    // OpenGL's default minification filter requires mipmaps. Entropy textures begin with base-level-only storage, so
-    // choose a complete and predictable default until a caller explicitly requests another filter.
-    glTexParameteri(m_targetEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    CHECK_GL_ERROR(m_errorChecker);
+    if (supportsSamplingParameters(m_target)) {
+      // OpenGL's default minification filter requires mipmaps. Entropy textures begin with base-level-only storage, so
+      // choose a complete and predictable default until a caller explicitly requests another filter.
+      glTexParameteri(m_targetEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
   }
+  CHECK_GL_ERROR(m_errorChecker);
   labelTextureObject(m_id, m_target, m_size);
+  CHECK_GL_ERROR(m_errorChecker);
 }
 
 void GLTexture::destroy()

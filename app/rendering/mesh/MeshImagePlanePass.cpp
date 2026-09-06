@@ -99,7 +99,7 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
       }
     }
     texture->bind(sk_imgRgbaTexSamplers.indices[slot]);
-    boundTextures.emplace_back(*texture, sk_imgRgbaTexSamplers.indices[slot]);
+    boundTextures.push_back({*texture, static_cast<uint32_t>(sk_imgRgbaTexSamplers.indices[slot])});
   }
 
   const std::optional<uuids::uuid> cmapUid =
@@ -165,7 +165,7 @@ std::list<BoundImagePlaneBufferTexture> bindImagePlaneSegmentationLabelTableText
   }
 
   tableIt->second.bind(sk_segLabelTableTexSampler.index);
-  boundTextures.emplace_back(tableIt->second, sk_segLabelTableTexSampler.index);
+  boundTextures.push_back({tableIt->second, static_cast<uint32_t>(sk_segLabelTableTexSampler.index)});
   return boundTextures;
 }
 

@@ -184,6 +184,11 @@ void Uniforms::setDirty(const std::string& name, bool isDirtyArg)
   m_uniformsMap.at(name).m_isDirty = isDirtyArg;
 }
 
+void Uniforms::setRequired(const std::string& name, bool isRequired)
+{
+  m_uniformsMap.at(name).m_isRequired = isRequired;
+}
+
 bool Uniforms::isDirty(const std::string& name) const
 {
   return m_uniformsMap.at(name).m_isDirty;

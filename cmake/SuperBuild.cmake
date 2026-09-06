@@ -321,8 +321,8 @@ endif()
 message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")
 
 ExternalProject_Add(glfw
-  URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
-  URL_HASH SHA512=03de56a0599275ff57759ca19e8f69176058252b5e9976193cc3d9bb7b7b78b6a8dac6ed91de483d03c1b4807d21e1302e5e47c2f0c21e63becb4aba9d5affdc
+  URL "https://github.com/glfw/glfw/releases/download/${glfw_VERSION}/glfw-${glfw_VERSION}.zip"
+  URL_HASH SHA512=4ec83b8221763e344c3f50c1ca667afff22f6299101bbbb084c2e31e050348a322a46f25e50abdce7ecd8be82dc795d3a58e2298eac4d1dd5ac678b2a30739f0
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:

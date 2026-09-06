@@ -26,13 +26,13 @@ namespace shader_setup = rendering::shader_setup;
 namespace
 {
 
+#if defined(ENTROPY_GLSLANG_VALIDATOR)
 struct ShaderStageSource
 {
   std::string extension;
   std::string source;
 };
 
-#if defined(ENTROPY_GLSLANG_VALIDATOR)
 std::string shellQuote(const std::filesystem::path& path)
 {
 #ifdef _WIN32
