@@ -18,8 +18,7 @@ uniform float u_asciiSdfPadding;
 uniform float u_asciiPixDistScale;
 uniform sampler2D u_asciiLumLut;
 
-$$ASCII_COMPOSITE_FUNCTIONS$$
-
+#include "entropy/ASCII_COMPOSITE_FUNCTIONS.glsl"
 void main()
 {
   if (u_asciiGlyphCount <= 0) {
@@ -27,7 +26,8 @@ void main()
   }
 
   vec2 fragPx = u_sceneOriginPx + v_uv * u_viewSizePx;
-  vec2 cellCoord = floor(fragPx / u_asciiCellSizePx);
+  vec2 cellSizePx = max(u_asciiCellSizePx, vec2(1.0));
+  vec2 cellCoord = floor(fragPx / cellSizePx);
 
   vec4 srcPM = texelFetch(u_cellMeanTex, ivec2(cellCoord), 0);
   if (srcPM.a < 0.001) {
@@ -40,7 +40,7 @@ void main()
   float lutNorm = texture(u_asciiLumLut, vec2(lum, 0.5)).r;
   int gIdx = clamp(int(lutNorm * float(u_asciiGlyphCount - 1) + 0.5), 0, u_asciiGlyphCount - 1);
 
-  vec2 uvCell = (fragPx - cellCoord * u_asciiCellSizePx) / u_asciiCellSizePx;
+  vec2 uvCell = (fragPx - cellCoord * cellSizePx) / cellSizePx;
   float glyph = sampleGlyphCoverage(
     u_asciiAtlas,
     gIdx,
@@ -49,7 +49,7 @@ void main()
     u_asciiSlotSizePx,
     u_asciiSdfPadding,
     u_asciiPixDistScale,
-    u_asciiCellSizePx);
+    cellSizePx);
 
   o_color = asciiComposite(glyph, srcPM, u_asciiFgColor, u_asciiBgColor, u_asciiBgAlpha, u_asciiUseColormap);
 }

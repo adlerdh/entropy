@@ -19,9 +19,16 @@ float segmentationMeshOpacity(
   return glm::clamp(opacity, 0.0f, 1.0f);
 }
 
-MeshCompositingMode compositingModeForLabelAlpha(const float alpha, const MeshCompositingMode translucentMode) noexcept
+MeshCompositingMode compositingModeForLabelAlpha(
+  const float alpha,
+  const bool rimLightingEnabled,
+  const float rimOpacityStrength,
+  const MeshCompositingMode translucentMode) noexcept
 {
-  return alpha >= 0.999f ? MeshCompositingMode::Opaque : translucentMode;
+  return compositingModeForSurfaceAlpha(
+    alpha,
+    rimLightingModulatesOpacity(rimLightingEnabled, rimOpacityStrength),
+    translucentMode);
 }
 
 SegmentationLabelMeshStyle segmentationLabelMeshStyle(
@@ -35,7 +42,11 @@ SegmentationLabelMeshStyle segmentationLabelMeshStyle(
   return SegmentationLabelMeshStyle{
     .labelValue = labelValue,
     .material = meshMaterialForSurface(glm::vec4{color.r, color.g, color.b, alpha}, materialSettings),
-    .compositingMode = compositingModeForLabelAlpha(alpha, translucentMode),
+    .compositingMode = compositingModeForLabelAlpha(
+      alpha,
+      materialSettings.rimLightingEnabled,
+      materialSettings.rimOpacityStrength,
+      translucentMode),
     // Only labels that actually touch another nonzero label need one-sided rasterization to avoid depth-testing two
     // coincident, oppositely wound boundaries. Isolated labels retain two-sided rendering and clipping behavior.
     .backfaceCulling = state.hasSharedBoundary,

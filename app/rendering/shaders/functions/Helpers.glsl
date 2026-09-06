@@ -10,6 +10,13 @@ bool isInsideTexture(vec3 texCoord)
   return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) && all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
 }
 
+/** Normalize a direction without producing NaNs for a degenerate input. */
+vec3 normalizeOr(vec3 value, vec3 fallback)
+{
+  float length2 = dot(value, value);
+  return length2 > 1.0e-12 ? value * inversesqrt(length2) : fallback;
+}
+
 /**
  * @brief Hard lower and upper thresholding
  */

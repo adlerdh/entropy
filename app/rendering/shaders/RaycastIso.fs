@@ -90,9 +90,10 @@ float getImageValue(sampler3D tex, vec3 texCoord)
 {
   return texture(tex, texCoord)[0];
 }
-$$SAMPLE_TEX_COORD_FUNCTION$$
-$$SAMPLE_IMAGE_VALUE_FUNCTION$$
-$$RAYCAST_JUMP_DISTANCE_FUNCTION$$
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
+#include "entropy/SAMPLE_IMAGE_VALUE_FUNCTION.glsl"
+#include "entropy/RAYCAST_JUMP_DISTANCE_FUNCTION.glsl"
+
 const float EDGE_BRIGHTENING_DISTANCE_VOX = 1.0;
 const float EDGE_BACKGROUND_BRIGHTENING = 0.65;
 const float EDGE_OVERLAY_BRIGHTENING = 0.35;
@@ -168,10 +169,12 @@ vec2 slabs(vec3 texRayPos, vec3 texRayDir)
 
 vec3 gradient(vec3 texPos)
 {
-  return normalize(vec3(
+  vec3 valueGradient = vec3(
     sampleImageValue(texPos + u_texGrads[0]) - sampleImageValue(texPos - u_texGrads[0]),
     sampleImageValue(texPos + u_texGrads[1]) - sampleImageValue(texPos - u_texGrads[1]),
-    sampleImageValue(texPos + u_texGrads[2]) - sampleImageValue(texPos - u_texGrads[2])));
+    sampleImageValue(texPos + u_texGrads[2]) - sampleImageValue(texPos - u_texGrads[2]));
+  float magnitude2 = dot(valueGradient, valueGradient);
+  return magnitude2 > 1.0e-12 ? valueGradient * inversesqrt(magnitude2) : vec3(0.0, 0.0, 1.0);
 }
 
 vec3 worldNormalFromTextureGradient(vec3 texNormal)
@@ -179,7 +182,9 @@ vec3 worldNormalFromTextureGradient(vec3 texNormal)
   // Texture-space gradients are covectors. If tex = A * world, then
   // grad_world = transpose(A) * grad_tex. This keeps the rim term correct for
   // anisotropic spacing and oblique image orientations.
-  return normalize(transpose(mat3(u_tex_T_world)) * texNormal);
+  vec3 worldGradient = transpose(mat3(u_tex_T_world)) * texNormal;
+  float magnitude2 = dot(worldGradient, worldGradient);
+  return magnitude2 > 1.0e-12 ? worldGradient * inversesqrt(magnitude2) : vec3(0.0, 0.0, 1.0);
 }
 
 vec3 bisect(vec3 pos, vec3 dir, float t0, float t1, float sgn, float iso)
@@ -202,7 +207,9 @@ vec3 bisect(vec3 pos, vec3 dir, float t0, float t1, float sgn, float iso)
 vec4 shade(vec3 worldLightDir, vec3 worldViewDir, vec3 texNormal, int i)
 {
   vec3 normal = worldNormalFromTextureGradient(texNormal);
-  vec3 h = normalize(worldLightDir + worldViewDir);
+  vec3 halfDirection = worldLightDir + worldViewDir;
+  float halfLength2 = dot(halfDirection, halfDirection);
+  vec3 h = halfLength2 > 1.0e-12 ? halfDirection * inversesqrt(halfLength2) : normal;
   float d = abs(dot(normal, worldLightDir));
   float s = pow(abs(dot(normal, h)), max(u_lightingSpecularPower, 0.001));
   float rim = pow(clamp(1.0 - abs(dot(normal, worldViewDir)), 0.0, 1.0), max(u_isoRimPowers[i], 1.0e-3));
@@ -216,27 +223,33 @@ vec4 shade(vec3 worldLightDir, vec3 worldViewDir, vec3 texNormal, int i)
 
 void main()
 {
-  gl_FragDepth = gl_DepthRange.near;
+  gl_FragDepth = gl_DepthRange.far;
 
   // Final fragment color that gets composited by ray traversal through image volume:
   vec4 color = vec4(0.0);
 
   // The ray direction must be re-normalized after interpolation from Vertex to Fragment stage:
-  vec3 worldRayDir = normalize(fs_in.v_worldRayDir);
+  float worldRayLength2 = dot(fs_in.v_worldRayDir, fs_in.v_worldRayDir);
+  if (worldRayLength2 <= 1.0e-12) {
+    FragColor = vec4(0.0);
+    return;
+  }
+  vec3 worldRayDir = fs_in.v_worldRayDir * inversesqrt(worldRayLength2);
   vec3 texRayDir = mat3(u_tex_T_world) * worldRayDir;
 
-  // Convert physical (mm) to texel units along the ray direction
+  // Convert physical millimeters to normalized texture units along the ray direction.
   float texel_T_mm = length(texRayDir);
-  texRayDir /= texel_T_mm; // normalize the direction
+  if (texel_T_mm <= 1.0e-12) {
+    FragColor = vec4(0.0);
+    return;
+  }
+  texRayDir /= texel_T_mm;
 
-  vec3 dirSq = texRayDir * texRayDir;
-
-  // Step size computed as a u_samplingFactor fraction of the voxel spacing along the ray:
-  float texStep = u_samplingFactor * min(
-                                       min(
-                                         u_imgInvDims.x * sqrt(1.0 + (dirSq.y + dirSq.z)) / max(dirSq.x, 1.0e-6),
-                                         u_imgInvDims.y * sqrt(1.0 + (dirSq.z + dirSq.x)) / max(dirSq.y, 1.0e-6)),
-                                       u_imgInvDims.z * sqrt(1.0 + (dirSq.x + dirSq.y)) / max(dirSq.z, 1.0e-6));
+  // Measure the normalized texture direction in voxel-index space. Its reciprocal is the texture-coordinate distance
+  // corresponding to one voxel along this ray, including anisotropic image dimensions.
+  vec3 safeInvDims = max(u_imgInvDims, vec3(1.0e-12));
+  float voxelDirectionLength = length(texRayDir / safeInvDims);
+  float texStep = max(u_samplingFactor, 1.0e-3) / max(voxelDirectionLength, 1.0e-12);
 
   // Randomly perturb the ray starting positions along the ray direction. The vertex shader provides
   // the per-fragment ray start; using the camera eye here would break orthographic projection because
@@ -274,7 +287,6 @@ void main()
   // Current position along the ray
   vec3 texPos = texStartPos + tMin * texRayDir;
   vec3 texFirstHitPos = texPos; // Initialize first hit position to front of volume
-  float firstHitT = RAY_BOX_BIG;
   int firstHit = 1;
 
   // Save old value and position
@@ -295,6 +307,10 @@ void main()
     //    FragColor = vec4(vec3(float(numJumps)/10.0), 1.0);
     //    return;
 
+    if (t > tMax) {
+      break;
+    }
+
     float value = sampleImageValue(texPos);
     int hitIso = -1;
     float hitT = RAY_BOX_BIG;
@@ -302,7 +318,7 @@ void main()
 
     // A single ray interval can cross more than one enabled isosurface. Choose the closest estimated crossing first;
     // otherwise the rendered surface would depend on isosurface array order instead of ray depth.
-    for (int i = 0; i < u_numIsos; ++i) {
+    for (int i = 0; i < clamp(u_numIsos, 0, NISO); ++i) {
       bool frontHit = u_renderFrontFaces && value >= u_isoValues[i] && oldValue < u_isoValues[i];
       bool backHit = u_renderBackFaces && value < u_isoValues[i] && oldValue >= u_isoValues[i];
 
@@ -336,8 +352,7 @@ void main()
 
       // Record the first hit:
       texFirstHitPos = mix(texFirstHitPos, texHitPos, float(firstHit));
-      firstHitT = mix(firstHitT, dot(texHitPos - texStartPos, texRayDir), float(firstHit));
-      firstHit = firstHit ^ 1;
+      firstHit = 0;
     }
 
     if (color.a >= 0.95 || hitCount >= MAX_HITS) {
@@ -353,9 +368,12 @@ void main()
 
   FragColor = brightenRaycastResult(color + (1.0 - color.a) * bgColor, frontEdgeAmount);
 
-  vec4 clipFirstHitPos = u_clip_T_imgTex * vec4(texFirstHitPos, 1.0);
-  float ndcFirstHitDepth = clipFirstHitPos.z / clipFirstHitPos.w;
-
-  gl_FragDepth =
-    0.5 * ((gl_DepthRange.far - gl_DepthRange.near) * ndcFirstHitDepth + gl_DepthRange.near + gl_DepthRange.far);
+  if (firstHit == 0) {
+    vec4 clipFirstHitPos = u_clip_T_imgTex * vec4(texFirstHitPos, 1.0);
+    if (abs(clipFirstHitPos.w) > 1.0e-12) {
+      float ndcFirstHitDepth = clipFirstHitPos.z / clipFirstHitPos.w;
+      gl_FragDepth =
+        0.5 * ((gl_DepthRange.far - gl_DepthRange.near) * ndcFirstHitDepth + gl_DepthRange.near + gl_DepthRange.far);
+    }
+  }
 }

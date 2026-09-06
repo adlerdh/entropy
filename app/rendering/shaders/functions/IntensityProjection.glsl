@@ -8,6 +8,10 @@
  */
 float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img)
 {
+  if (u_mipMode == NO_IP_MODE || u_halfNumMipSamples <= 0) {
+    return img;
+  }
+
   // Number of samples used for computing the final image value:
   int numSamples = 1;
 

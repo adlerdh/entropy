@@ -52,6 +52,7 @@ sudo apt-get install --no-install-recommends -y \
   ccache \
   gcc-13 \
   g++-13 \
+  glslang-tools \
   libdbus-1-dev \
   libssl-dev \
   libgl1-mesa-dev \
@@ -298,6 +299,11 @@ ctest --test-dir build-release -C Release --parallel --output-on-failure
 Use the same logical-cores-minus-two value recommended for builds as the CTest `--parallel` level. For example, a
 machine with 14 logical cores would use `--parallel 12`. Lower the value if concurrently running tests compete for
 memory or graphics resources.
+
+Rendering tests use [glslangValidator](https://github.com/KhronosGroup/glslang) when it is available at CMake
+configuration time. The validator compiles and links every assembled GLSL shader variant without launching Entropy or
+requiring a GPU context. Install it with `brew install glslang` on macOS or `sudo apt-get install glslang-tools` on
+Ubuntu, then reconfigure the application build to enable the test. Ubuntu CI installs it for the Debug test job.
 
 ## Static Analysis
 

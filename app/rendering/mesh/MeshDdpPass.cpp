@@ -190,7 +190,7 @@ void initializeDepthBounds(const MeshDdpRenderRequest& request)
 
   // The initialization shader writes only depth bounds. Opaque and translucent surface meshes are both included when
   // DDP is active so opaque alpha-1 fragments correctly occlude transparent fragments behind them.
-  request.meshRenderer.drawBucket(request.renderables, request.context, request.initProgram);
+  request.meshRenderer.drawBucket(request.renderables, request.context, request.initProgram, MeshDrawPass::DepthBounds);
   if (request.drawExtraDepthBounds) {
     request.drawExtraDepthBounds();
   }
@@ -216,8 +216,8 @@ void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t 
   request.resources.depthTexture(previousId).bind(k_depthTextureUnit);
   request.resources.frontColorTexture(previousId).bind(k_frontColorTextureUnit);
   request.peelProgram.use();
-  request.peelProgram.setUniform("u_previousDepthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
-  request.peelProgram.setUniform("u_previousFrontColorTex", static_cast<GLint>(k_frontColorTextureUnit));
+  request.peelProgram.setSamplerUniform("u_previousDepthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
+  request.peelProgram.setSamplerUniform("u_previousFrontColorTex", static_cast<GLint>(k_frontColorTextureUnit));
   request.meshRenderer.drawBucket(request.renderables, request.context, request.peelProgram);
   request.resources.frontColorTexture(previousId).unbind(k_frontColorTextureUnit);
   request.resources.depthTexture(previousId).unbind(k_depthTextureUnit);
@@ -239,7 +239,7 @@ void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentI
   // Back layers are accumulated furthest-to-nearest into a single texture. Colors are premultiplied in the peel shader.
   request.resources.backTempTexture(currentId).bind(k_backTempTextureUnit);
   request.backBlendProgram.use();
-  request.backBlendProgram.setUniform("u_backTempTex", static_cast<GLint>(k_backTempTextureUnit));
+  request.backBlendProgram.setSamplerUniform("u_backTempTex", static_cast<GLint>(k_backTempTextureUnit));
   drawFullScreenTriangle(request.resources);
   request.backBlendProgram.stopUse();
   request.resources.backTempTexture(currentId).unbind(k_backTempTextureUnit);
@@ -256,7 +256,7 @@ void queryRemainingLayers(const MeshDdpRenderRequest& request, const uint32_t cu
   request.resources.backBlendFbo().bind(fbo::TargetType::DrawAndRead);
   request.resources.depthTexture(currentId).bind(k_depthTextureUnit);
   request.completionProgram.use();
-  request.completionProgram.setUniform("u_depthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
+  request.completionProgram.setSamplerUniform("u_depthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
   {
     ActiveSamplesPassedQuery query(completionQuery);
     drawFullScreenTriangle(request.resources);
@@ -293,8 +293,8 @@ void resolveDdp(const MeshDdpRenderRequest& request, const OpenGLStateGuard& sco
   request.resources.frontColorTexture(currentId).bind(k_resolveFrontTextureUnit);
   request.resources.backColorTexture().bind(k_resolveBackTextureUnit);
   request.resolveProgram.use();
-  request.resolveProgram.setUniform("u_frontColorTex", static_cast<GLint>(k_resolveFrontTextureUnit));
-  request.resolveProgram.setUniform("u_backColorTex", static_cast<GLint>(k_resolveBackTextureUnit));
+  request.resolveProgram.setSamplerUniform("u_frontColorTex", static_cast<GLint>(k_resolveFrontTextureUnit));
+  request.resolveProgram.setSamplerUniform("u_backColorTex", static_cast<GLint>(k_resolveBackTextureUnit));
   const GlViewport viewport = currentViewport();
   request.resolveProgram.setUniform("u_viewportOrigin", glm::ivec2{viewport.x, viewport.y});
   drawFullScreenTriangle(request.resources);

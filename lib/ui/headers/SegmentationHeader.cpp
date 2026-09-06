@@ -239,6 +239,25 @@ void renderSegmentationHeader(
     ImGui::SetTooltip("Add a segmentation from file to this image");
   }
 
+  // Create blank segmentation:
+  ImGui::SameLine();
+  if (ImGui::Button(addNewSegString.c_str())) {
+    const size_t numSegsForImage = appData.imageToSegUids(imageUid).size();
+
+    std::string segDisplayName = std::string("Untitled segmentation ") + std::to_string(numSegsForImage + 1) +
+                                 " for image '" + image->settings().displayName() + "'";
+
+    if (createBlankSeg(imageUid, segDisplayName)) {
+      updateImageUniforms();
+    }
+    else {
+      spdlog::error("Error creating new blank segmentation for image {}", imageUid);
+    }
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Create a new blank segmentation for this image");
+  }
+
   // Save segmentation:
   const char* const dialogTitle = "Select Segmentation Image";
   static const auto dialogFilters = native_dialog::segmentationFilters();
@@ -259,25 +278,6 @@ void renderSegmentationHeader(
     else {
       spdlog::error("Error saving segmentation image to file {}", *selectedFile);
     }
-  }
-
-  // Create blank segmentation:
-  ImGui::SameLine();
-  if (ImGui::Button(addNewSegString.c_str())) {
-    const size_t numSegsForImage = appData.imageToSegUids(imageUid).size();
-
-    std::string segDisplayName = std::string("Untitled segmentation ") + std::to_string(numSegsForImage + 1) +
-                                 " for image '" + image->settings().displayName() + "'";
-
-    if (createBlankSeg(imageUid, segDisplayName)) {
-      updateImageUniforms();
-    }
-    else {
-      spdlog::error("Error creating new blank segmentation for image {}", imageUid);
-    }
-  }
-  if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Create a new blank segmentation for this image");
   }
 
   // Clear segmentation:

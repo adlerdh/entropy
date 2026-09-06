@@ -1,5 +1,6 @@
 #include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/mesh/MeshDdpResources.h"
+#include "rendering/mesh/MeshRenderer.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
 #include "rendering/utility/gl/GLBufferObject.h"
@@ -18,11 +19,15 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <span>
+#include <utility>
 #include <vector>
 
 namespace mesh = rendering::mesh;
@@ -483,6 +488,60 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
     CHECK_FALSE(invalidProgram.attachShader(invalidShader));
   }
 
+  CHECK(glGetError() == GL_NO_ERROR);
+#endif
+}
+
+TEST_CASE("mesh depth-only passes do not upload surface-shading uniforms", "[rendering][mesh][gl]")
+{
+#if defined(__APPLE__)
+  SKIP("Headless GLFW initialization can deadlock in non-interactive macOS test workers");
+#else
+  HiddenOpenGlContext context;
+  if (!context.ready()) {
+    SKIP("No OpenGL context is available on this test worker");
+  }
+
+  constexpr const char* vertexSource = R"(
+#version 330 core
+uniform mat4 u_clip_T_world;
+void main()
+{
+  gl_Position = u_clip_T_world * vec4(0.0, 0.0, 0.0, 1.0);
+}
+)";
+  constexpr const char* fragmentSource = R"(
+#version 330 core
+layout(location = 0) out vec2 outDepthBounds;
+void main()
+{
+  outDepthBounds = vec2(-gl_FragCoord.z, gl_FragCoord.z);
+}
+)";
+
+  Uniforms vertexUniforms;
+  vertexUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
+  GLShader vertexShader("mesh depth-only regression vertex", ShaderType::Vertex, vertexSource);
+  vertexShader.setRegisteredUniforms(std::move(vertexUniforms));
+  GLShader fragmentShader("mesh depth-only regression fragment", ShaderType::Fragment, fragmentSource);
+  REQUIRE(vertexShader.isCompiled());
+  REQUIRE(fragmentShader.isCompiled());
+
+  GLShaderProgram program("mesh depth-only regression program");
+  REQUIRE(program.attachShader(vertexShader));
+  REQUIRE(program.attachShader(fragmentShader));
+  REQUIRE(program.link());
+
+  mesh::MeshDrawContext drawContext;
+  drawContext.meshLookup = [](const mesh::MeshHandle&) -> const mesh::MeshGpuData* {
+    return nullptr;
+  };
+  const std::span<const std::reference_wrapper<const mesh::MeshRenderable> > noRenderables;
+  for (const mesh::MeshDrawPass pass :
+       {mesh::MeshDrawPass::DepthBounds, mesh::MeshDrawPass::ShadowDepth, mesh::MeshDrawPass::AmbientOcclusionGeometry})
+  {
+    CHECK_NOTHROW(mesh::MeshRenderer::drawBucket(noRenderables, drawContext, program, pass));
+  }
   CHECK(glGetError() == GL_NO_ERROR);
 #endif
 }

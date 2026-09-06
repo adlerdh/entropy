@@ -72,6 +72,9 @@ MeshMaterial sanitizedMaterial(const MeshMaterial& material, const glm::vec4& fa
  */
 MeshMaterial meshMaterialForSurface(const glm::vec4& baseColor, const MeshSurfaceMaterialSettings& settings) noexcept;
 
+/** Return whether rim lighting can make an otherwise opaque surface translucent. */
+bool rimLightingModulatesOpacity(bool enabled, float opacityStrength) noexcept;
+
 /** Return whether the selected surface style needs per-triangle data emitted by the geometry shader. */
 bool requiresMeshGeometryShader(const MeshSurfaceMaterialSettings& settings) noexcept;
 

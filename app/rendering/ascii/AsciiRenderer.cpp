@@ -12,6 +12,7 @@
 #include "rendering/ascii/AsciiAtlasBaker.h"
 #include "rendering/ascii/AsciiClipboard.h"
 #include "rendering/RenderData.h"
+#include "rendering/ShaderPreprocessor.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
@@ -61,19 +62,6 @@ const glm::ivec2 sk_zeroIVec2{0, 0};
 // Sampler index for the ASCII atlas texture unit (must match Rendering.cpp)
 const Uniforms::SamplerIndexType sk_asciiAtlasSampler{2};
 
-std::string applyReplacements(const std::string& src, const std::unordered_map<std::string, std::string>& replacements)
-{
-  std::string result = src;
-  for (const auto& [placeholder, replacement] : replacements) {
-    std::size_t pos = 0;
-    while ((pos = result.find(placeholder, pos)) != std::string::npos) {
-      result.replace(pos, placeholder.length(), replacement);
-      pos += replacement.length();
-    }
-  }
-  return result;
-}
-
 std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildAsciiShaderProgram(
   const std::string& programName,
   const std::string& vsName,
@@ -100,7 +88,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> buildAsciiShaderPro
     return std::unexpected(std::format("Exception loading ASCII shader for program {}: {}", programName, e.what()));
   }
 
-  fsSource = applyReplacements(fsSource, fsReplacements);
+  fsSource = rendering::preprocessShaderSource(fsSource, fsReplacements);
 
   GLShader vs(vsName, ShaderType::Vertex, vsSource.c_str());
   vs.setRegisteredUniforms(vsUniforms);
@@ -165,7 +153,7 @@ void AsciiRenderer::registerShaderPrograms(
   }
 
   const std::unordered_map<std::string, std::string> compositePlaceholder{
-    {"$$ASCII_COMPOSITE_FUNCTIONS$$", compositeFunctions}};
+    {"ASCII_COMPOSITE_FUNCTIONS", compositeFunctions}};
 
   Uniforms fsAsciiCellMeanUniforms;
   fsAsciiCellMeanUniforms.insertUniform("u_sceneTex", UniformType::Sampler, Uniforms::SamplerIndexType{3});
@@ -175,6 +163,7 @@ void AsciiRenderer::registerShaderPrograms(
   Uniforms fsAsciiPostUniforms;
   fsAsciiPostUniforms.insertUniform("u_cellMeanTex", UniformType::Sampler, Uniforms::SamplerIndexType{4});
   fsAsciiPostUniforms.insertUniform("u_asciiAtlas", UniformType::Sampler, sk_asciiAtlasSampler);
+  fsAsciiPostUniforms.insertUniform("u_asciiLumLut", UniformType::Sampler, Uniforms::SamplerIndexType{5});
   fsAsciiPostUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostUniforms.insertUniform("u_sceneOriginPx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostUniforms.insertUniform("u_asciiCellSizePx", UniformType::Vec2, sk_zeroVec2);
@@ -195,6 +184,7 @@ void AsciiRenderer::registerShaderPrograms(
 
   Uniforms fsAsciiPostSpatialUniforms;
   fsAsciiPostSpatialUniforms.insertUniform("u_cellRegionsTex", UniformType::Sampler, Uniforms::SamplerIndexType{5});
+  fsAsciiPostSpatialUniforms.insertUniform("u_cellRegionsTexB", UniformType::Sampler, Uniforms::SamplerIndexType{7});
   fsAsciiPostSpatialUniforms.insertUniform("u_cellMeanTex", UniformType::Sampler, Uniforms::SamplerIndexType{4});
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiAtlas", UniformType::Sampler, sk_asciiAtlasSampler);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiLumLut", UniformType::Sampler, Uniforms::SamplerIndexType{6});
@@ -209,6 +199,13 @@ void AsciiRenderer::registerShaderPrograms(
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiSlotSizePx", UniformType::Vec2, sk_zeroVec2);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiSdfPadding", UniformType::Float, 0.f);
   fsAsciiPostSpatialUniforms.insertUniform("u_asciiPixDistScale", UniformType::Float, 0.f);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiSpatialDensityWindow", UniformType::Float, 0.0f);
+  fsAsciiPostSpatialUniforms.insertUniform("u_regionMaxA", UniformType::Vec4, glm::vec4{1.0f});
+  fsAsciiPostSpatialUniforms.insertUniform("u_regionMaxB", UniformType::Vec2, glm::vec2{1.0f});
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiSpatialExponent", UniformType::Float, 1.0f);
+  fsAsciiPostSpatialUniforms.insertUniform("u_glyphProfilesA", UniformType::Vec4Vector, std::vector<glm::vec4>(128));
+  fsAsciiPostSpatialUniforms.insertUniform("u_glyphProfilesB", UniformType::Vec4Vector, std::vector<glm::vec4>(128));
+  fsAsciiPostSpatialUniforms.insertUniform("u_glyphRankToIndex", UniformType::IntVector, std::vector<int>(128));
 
   struct AsciiShaderDesc
   {

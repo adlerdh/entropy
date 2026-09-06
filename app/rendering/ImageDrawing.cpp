@@ -75,7 +75,8 @@ void drawImageQuad(
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage,
-  bool showEdges)
+  bool showEdges,
+  const bool metricUsesWorldSampling)
 {
   if (imagePairs.empty()) {
     if (isLocalPatchMetric(renderMode)) {
@@ -181,7 +182,12 @@ void drawImageQuad(
   else if (ViewRenderMode::Difference == renderMode) {
     program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
-    program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    if (metricUsesWorldSampling) {
+      program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
+    }
+    else {
+      program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    }
   }
   else if (isLocalPatchMetric(renderMode)) {
     if (imagePairs.size() < 2) {
@@ -212,16 +218,19 @@ void drawImageQuad(
       view.viewClip_T_windowClip(),
       image0->transformations().invPixelDimensions(),
       posInfo[1].viewClipDir);
-    const glm::mat4 world_T_tex0 = glm::inverse(image0->transformations().texture_T_worldDef());
-    const glm::vec3 worldSamplingDirX = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirX, 0.0f}};
-    const glm::vec3 worldSamplingDirY = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirY, 0.0f}};
-
-    program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
-    program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
-    program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
-    program.setUniform("u_worldSamplingDirX", worldSamplingDirX);
-    program.setUniform("u_worldSamplingDirY", worldSamplingDirY);
-    program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
+    if (metricUsesWorldSampling) {
+      const glm::mat4 world_T_tex0 = glm::inverse(image0->transformations().texture_T_worldDef());
+      const glm::vec3 worldSamplingDirX = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirX, 0.0f}};
+      const glm::vec3 worldSamplingDirY = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirY, 0.0f}};
+      program.setUniform("u_worldSamplingDirX", worldSamplingDirX);
+      program.setUniform("u_worldSamplingDirY", worldSamplingDirY);
+      program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
+    }
+    else {
+      program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
+      program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
+      program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    }
   }
   quad.m_vao.bind();
   {
@@ -435,7 +444,9 @@ void drawRaycastQuad(
 
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", world_T_clip);
-  program.setUniform("u_clip_T_world", clip_T_world);
+  // RaycastIso is a screen-space pass. Its vertex shader reconstructs world-space rays from
+  // u_world_T_clip, while its fragment shader transforms texture-space hits directly to clip
+  // space with u_clip_T_imgTex. It does not declare the mesh-only u_clip_T_world uniform.
   program.setUniform("u_clip_T_imgTex", clip_T_world * glm::inverse(texture_T_world));
 
   // Raycasting is a screen-space pass. Draw the full viewport quad on the near clip plane and

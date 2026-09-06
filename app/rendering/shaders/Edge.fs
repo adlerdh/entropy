@@ -19,8 +19,8 @@ fs_in;
 layout(location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
 // Texture samplers:
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // image (scalar, red channel only)
-uniform sampler1D u_cmapTex;             // image color map (non-premultiplied RGBA)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex;            // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept; // slope/intercept for normalization to the largest window
@@ -52,21 +52,16 @@ uniform bool u_colormapEdges;  // flag to apply colormap to edges
 uniform vec4 u_edgeColor;      // edge color (premultiplied RGBA)
 uniform vec3 u_texelDirs[2];   // texture sampling direction for edges
 
-$$HELPER_FUNCTIONS$$
-$$COLOR_HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
+#include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
 /// float computeEdge(mat3 v);
-$$COMPUTE_EDGE_FUNCTION$$
-
+#include "entropy/COMPUTE_EDGE_FUNCTION.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
-$$SAMPLE_TEX_COORD_FUNCTION$$
-
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 bool isEdgeNeighborhoodInsideTexture(vec3 texCoord)
 {
   // Suppress the artificial image-domain contour by requiring the whole Sobel

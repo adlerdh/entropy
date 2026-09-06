@@ -38,7 +38,8 @@ void Rendering::renderOneImage(
   const glm::vec3& worldOffsetXhairs,
   GLShaderProgram& program,
   const CurrentImages& imageSegPairs,
-  bool showEdges)
+  bool showEdges,
+  const bool metricUsesWorldSampling)
 {
   auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image* {
     return (imageUid ? m_appData.image(*imageUid) : nullptr);
@@ -61,7 +62,8 @@ void Rendering::renderOneImage(
     R.m_xrayIntensityLevel,
     imageSegPairs,
     getImage,
-    showEdges);
+    showEdges,
+    metricUsesWorldSampling);
 }
 
 void Rendering::renderOneImage_overlays(

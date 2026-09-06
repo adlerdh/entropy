@@ -1445,11 +1445,13 @@ TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "
   CHECK(mesh::compositingModeForLabelAlpha(0.999f) == mesh::MeshCompositingMode::Opaque);
   CHECK(mesh::compositingModeForLabelAlpha(0.998f) == mesh::MeshCompositingMode::AlphaOverDdp);
   CHECK(
-    mesh::compositingModeForLabelAlpha(0.998f, mesh::MeshCompositingMode::Additive) ==
+    mesh::compositingModeForLabelAlpha(0.998f, false, 0.0f, mesh::MeshCompositingMode::Additive) ==
     mesh::MeshCompositingMode::Additive);
   CHECK(
-    mesh::compositingModeForLabelAlpha(1.0f, mesh::MeshCompositingMode::Multiplicative) ==
+    mesh::compositingModeForLabelAlpha(1.0f, false, 0.0f, mesh::MeshCompositingMode::Multiplicative) ==
     mesh::MeshCompositingMode::Opaque);
+  CHECK(mesh::compositingModeForLabelAlpha(1.0f, true, 1.0f) == mesh::MeshCompositingMode::AlphaOverDdp);
+  CHECK(mesh::compositingModeForLabelAlpha(1.0f, true, 0.0f) == mesh::MeshCompositingMode::Opaque);
 
   const mesh::SegmentationLabelMeshStyle style = mesh::segmentationLabelMeshStyle(
     4,
@@ -1472,6 +1474,13 @@ TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "
     glm::vec4{0.1f, 0.2f, 0.3f, 0.5f},
     {.showMesh = true, .opacity = 0.25f, .hasSharedBoundary = true});
   CHECK(touchingStyle.backfaceCulling);
+
+  const mesh::SegmentationLabelMeshStyle rimLitStyle = mesh::segmentationLabelMeshStyle(
+    4,
+    glm::vec4{0.1f, 0.2f, 0.3f, 1.0f},
+    {.showMesh = true, .opacity = 1.0f},
+    {.rimLightingEnabled = true, .rimOpacityStrength = 1.0f});
+  CHECK(rimLitStyle.compositingMode == mesh::MeshCompositingMode::AlphaOverDdp);
 }
 
 TEST_CASE("scalar-grid segmentation policy builds stable extraction requests", "[rendering][mesh]")

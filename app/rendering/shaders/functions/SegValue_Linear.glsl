@@ -18,7 +18,7 @@ int ge(int x, int y)
 
 bool isLabelVisible(int label)
 {
-  // Labels greater than the size of the segmentation labelc color texture are mapped to 0
+  // Labels greater than the size of the segmentation label color texture are mapped to 0.
   label -= label * ge(label, textureSize(u_segLabelCmapTex));
   return (texelFetch(u_segLabelCmapTex, label).a > 0.0);
 }
@@ -33,7 +33,7 @@ const uvec3 neigh[8] = uvec3[8](
   uvec3(1, 1, 0),
   uvec3(1, 1, 1));
 
-/// This does a LINEAR loookup over texture values in the segmentation.
+/// This does a linear lookup over texture values in the segmentation.
 uint getSegValue(vec3 texOffset, out float opacity)
 {
   opacity = 1.0;
@@ -43,7 +43,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
     return 0u;
   }
 
-  vec3 baseVoxCoord = baseTc * vec3(segTextureSize());
+  vec3 baseVoxCoord = baseTc * vec3(segTextureSize()) - vec3(0.5);
   vec3 c = floor(baseVoxCoord);
   vec3 d = pow(vec3(segTextureSize()), vec3(-1));
 
@@ -60,6 +60,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
 
   // float segEdgeWidth = 0.02;
   float maxInterp = 0.0;
+  uint bestLabel = 0u;
 
   // Look up texture values in the fragment and its 8 neighbors.
   // The center fragment (row = 0, col = 0) has index i = 4.
@@ -86,9 +87,9 @@ uint getSegValue(vec3 texOffset, out float opacity)
 
     if (interp > maxInterp && interp >= u_segInterpCutoff && isLabelVisible(int(label))) {
       maxInterp = interp;
-      return label;
+      bestLabel = label;
     }
   }
 
-  return 0u;
+  return bestLabel;
 }

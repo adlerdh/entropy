@@ -16,8 +16,8 @@ fs_in;
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[2]; // images (scalar, red channel only)
-uniform sampler1D u_metricCmapTex;          // metric color map (non-premultiplied RGBA)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex[2]; // images (scalar, red channel only)
+uniform sampler1D u_metricCmapTex;         // metric color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1], plus window/leveling
@@ -33,14 +33,11 @@ uniform vec3 u_tex0SamplingDirX;
 uniform vec3 u_tex0SamplingDirY;
 uniform vec3 u_texSamplingDirZ; // Z view camera direction (in texture sampling space)
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoords);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 metricTexCoord(int imageIndex, vec2 patchOffset, int slabOffset);
-$$METRIC_SAMPLING_FUNCTIONS$$
-
+#include "entropy/METRIC_SAMPLING_FUNCTIONS.glsl"
 /**
  * @brief Compute the  metric
  */
@@ -84,19 +81,24 @@ void main()
   float metric = computeMetricAndMask(0, hitBoundary);
   int numSamples = 1;
 
-  // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
-  for (int dir = -1; dir <= 1; dir += 2) // dir in {-1, 1}
-  {
-    for (int i = 1; i <= u_halfNumMipSamples; ++i) {
-      float m = computeMetricAndMask(dir * i, hitBoundary);
-      if (hitBoundary) {
-        break;
+  // X-ray projection has no meaningful definition for this derived metric. Treat it as an unprojected difference
+  // rather than letting the unsupported enum zero the result.
+  bool projectionEnabled = u_mipMode >= MAX_IP_MODE && u_mipMode <= MIN_IP_MODE && u_halfNumMipSamples > 0;
+  if (projectionEnabled) {
+    // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
+    for (int dir = -1; dir <= 1; dir += 2) // dir in {-1, 1}
+    {
+      for (int i = 1; i <= u_halfNumMipSamples; ++i) {
+        float m = computeMetricAndMask(dir * i, hitBoundary);
+        if (hitBoundary) {
+          break;
+        }
+
+        metric = float(MAX_IP_MODE == u_mipMode) * max(metric, m) + float(MEAN_IP_MODE == u_mipMode) * (metric + m) +
+                 float(MIN_IP_MODE == u_mipMode) * min(metric, m);
+
+        ++numSamples;
       }
-
-      metric = float(NO_IP_MODE == u_mipMode) * metric + float(MAX_IP_MODE == u_mipMode) * max(metric, m) +
-               float(MEAN_IP_MODE == u_mipMode) * (metric + m) + float(MIN_IP_MODE == u_mipMode) * min(metric, m);
-
-      ++numSamples;
     }
   }
 
@@ -108,5 +110,6 @@ void main()
   float cmapValue = u_metricCmapSlopeIntercept[0] * metric + u_metricCmapSlopeIntercept[1];
 
   // Output color (premult. RGBA)
-  o_color = texture(u_metricCmapTex, cmapValue);
+  vec4 color = texture(u_metricCmapTex, cmapValue);
+  o_color = vec4(color.rgb * color.a, color.a);
 }

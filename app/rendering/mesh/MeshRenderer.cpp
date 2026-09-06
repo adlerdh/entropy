@@ -110,7 +110,7 @@ void uploadShadowUniforms(const MeshDrawContext& context, GLShaderProgram& progr
   program.setUniform("u_shadowStrength", context.advancedLighting.shadows.strength);
   program.setUniform("u_shadowDepthBias", context.advancedLighting.shadows.depthBias);
   program.setUniform("u_lightDirectionWorld", context.lightDirectionWorld);
-  program.setUniform("u_shadowMapTex", static_cast<GLint>(k_shadowMapTextureUnit));
+  program.setSamplerUniform("u_shadowMapTex", static_cast<GLint>(k_shadowMapTextureUnit));
   if (enabled) {
     context.shadowDepthTexture->bind(k_shadowMapTextureUnit);
   }
@@ -120,7 +120,7 @@ void uploadAmbientOcclusionUniforms(const MeshDrawContext& context, GLShaderProg
 {
   const bool enabled = ambientOcclusionActive(context);
   program.setUniform("u_screenAmbientOcclusionEnabled", false);
-  program.setUniform("u_screenAmbientOcclusionTex", static_cast<GLint>(k_ambientOcclusionTextureUnit));
+  program.setSamplerUniform("u_screenAmbientOcclusionTex", static_cast<GLint>(k_ambientOcclusionTextureUnit));
   program.setUniform("u_viewportOrigin", context.viewportOrigin);
   if (enabled) {
     context.ambientOcclusionTexture->bind(k_ambientOcclusionTextureUnit);
@@ -196,7 +196,8 @@ void MeshRenderer::drawImplementedBuckets(
 void MeshRenderer::drawBucket(
   std::span<const std::reference_wrapper<const MeshRenderable>> renderables,
   const MeshDrawContext& context,
-  GLShaderProgram& program)
+  GLShaderProgram& program,
+  const MeshDrawPass pass)
 {
   if (!context.meshLookup) {
     return;
@@ -205,13 +206,15 @@ void MeshRenderer::drawBucket(
   const OpenGLStateGuard state{{k_shadowMapTextureUnit, GL_TEXTURE_2D}, {k_ambientOcclusionTextureUnit, GL_TEXTURE_2D}};
   program.use();
   program.setUniform("u_clip_T_world", context.clip_T_world);
-  program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
-  program.setUniform("u_lightingAmbient", context.lighting.x);
-  program.setUniform("u_lightingDiffuse", context.lighting.y);
-  program.setUniform("u_lightingSpecular", context.lighting.z);
-  program.setUniform("u_lightingSpecularPower", context.lighting.w);
-  uploadShadowUniforms(context, program);
-  uploadAmbientOcclusionUniforms(context, program);
+  if (pass == MeshDrawPass::Surface) {
+    program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
+    program.setUniform("u_lightingAmbient", context.lighting.x);
+    program.setUniform("u_lightingDiffuse", context.lighting.y);
+    program.setUniform("u_lightingSpecular", context.lighting.z);
+    program.setUniform("u_lightingSpecularPower", context.lighting.w);
+    uploadShadowUniforms(context, program);
+    uploadAmbientOcclusionUniforms(context, program);
+  }
 
   for (const std::reference_wrapper<const MeshRenderable> renderableRef : renderables) {
     const MeshRenderable& renderable = renderableRef.get();
@@ -223,39 +226,47 @@ void MeshRenderer::drawBucket(
     const glm::mat3 world_T_meshNormal = glm::inverseTranspose(glm::mat3{renderable.world_T_mesh});
     program.setUniform("u_world_T_mesh", renderable.world_T_mesh);
     program.setUniform("u_world_T_meshNormal", world_T_meshNormal);
-    const MeshMaterial material = sanitizedMaterial(renderable.material, context.fallbackColor);
-    program.setUniform(
-      "u_screenAmbientOcclusionEnabled",
-      ambientOcclusionActive(context) && renderable.compositingMode == MeshCompositingMode::Opaque);
-    program.setUniform("u_baseColor", material.baseColor);
-    program.setUniform("u_metallic", material.metallic);
-    program.setUniform("u_roughness", material.roughness);
-    program.setUniform("u_ambientOcclusion", material.ambientOcclusion);
-    program.setUniform("u_shadingModel", shaderValue(material.shadingModel));
-    program.setUniform("u_flatShadingEnabled", material.flatShadingEnabled);
-    program.setUniform("u_triangleEdgesEnabled", material.triangleEdgesEnabled);
-    program.setUniform("u_triangleEdgeColor", material.triangleEdgeColor);
-    program.setUniform("u_rimLightingEnabled", material.rimLightingEnabled);
-    program.setUniform("u_rimOpacityStrength", material.rimOpacityStrength);
-    program.setUniform("u_rimEmissionStrength", material.rimEmissionStrength);
-    program.setUniform("u_rimPower", material.rimPower);
     program.setUniform("u_hasVertexNormals", gpuData->hasNormals());
-    program.setUniform("u_hasVertexColors", gpuData->hasColors());
+    if (pass == MeshDrawPass::Surface) {
+      const MeshMaterial material = sanitizedMaterial(renderable.material, context.fallbackColor);
+      program.setUniform(
+        "u_screenAmbientOcclusionEnabled",
+        ambientOcclusionActive(context) && renderable.compositingMode == MeshCompositingMode::Opaque);
+      program.setUniform("u_baseColor", material.baseColor);
+      program.setUniform("u_metallic", material.metallic);
+      program.setUniform("u_roughness", material.roughness);
+      program.setUniform("u_ambientOcclusion", material.ambientOcclusion);
+      program.setUniform("u_shadingModel", shaderValue(material.shadingModel));
+      program.setUniform("u_flatShadingEnabled", material.flatShadingEnabled);
+      program.setUniform("u_triangleEdgesEnabled", material.triangleEdgesEnabled);
+      program.setUniform("u_triangleEdgeColor", material.triangleEdgeColor);
+      program.setUniform("u_rimLightingEnabled", material.rimLightingEnabled);
+      program.setUniform("u_rimOpacityStrength", material.rimOpacityStrength);
+      program.setUniform("u_rimEmissionStrength", material.rimEmissionStrength);
+      program.setUniform("u_rimPower", material.rimPower);
+      program.setUniform("u_hasVertexColors", gpuData->hasColors());
+    }
+    else if (pass == MeshDrawPass::AmbientOcclusionGeometry) {
+      const MeshMaterial material = sanitizedMaterial(renderable.material, context.fallbackColor);
+      program.setUniform("u_flatShadingEnabled", material.flatShadingEnabled);
+    }
     uploadClipPlanes(renderable.drawOptions, program);
 
-    context.shadowDepthPass ? applyShadowDepthRasterState()
-                            : applyRasterState(renderable.drawOptions, renderable.world_T_mesh);
+    pass == MeshDrawPass::ShadowDepth ? applyShadowDepthRasterState()
+                                      : applyRasterState(renderable.drawOptions, renderable.world_T_mesh);
     drawUploadedMesh(*gpuData);
 
-    if (!context.shadowDepthPass && renderable.drawOptions.fillMode == MeshFillMode::SurfaceWithWireframe) {
+    if (pass == MeshDrawPass::Surface && renderable.drawOptions.fillMode == MeshFillMode::SurfaceWithWireframe) {
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       drawUploadedMesh(*gpuData);
     }
   }
 
   program.stopUse();
-  releaseAmbientOcclusionTexture(context);
-  releaseShadowTexture(context);
+  if (pass == MeshDrawPass::Surface) {
+    releaseAmbientOcclusionTexture(context);
+    releaseShadowTexture(context);
+  }
 }
 
 } // namespace rendering::mesh

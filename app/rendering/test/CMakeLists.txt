@@ -10,11 +10,21 @@ add_executable(TestRendering
   PixelEdgeGeometryTests.cpp
   PipelineHelpersTests.cpp
   ShaderProgramSetupTests.cpp
+  ShaderCompilationTests.cpp
+  ShaderPreprocessorTests.cpp
   ScaleBarGeometryTests.cpp
   TextureSetupHelpersTests.cpp
+  UniformsTests.cpp
   VectorDrawingHelpersTests.cpp
   XrayAttenuationTests.cpp
 )
+
+find_program(entropy_GLSLANG_VALIDATOR NAMES glslangValidator)
+if(entropy_GLSLANG_VALIDATOR)
+  target_compile_definitions(TestRendering PRIVATE
+    ENTROPY_GLSLANG_VALIDATOR="${entropy_GLSLANG_VALIDATOR}"
+  )
+endif()
 
 target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/ascii/AsciiClipboard.cpp"
@@ -65,6 +75,7 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/physics/XrayAttenuation.cpp"
   "${entropy_APP_DIR}/rendering/ShaderInfoSetup.cpp"
   "${entropy_APP_DIR}/rendering/ShaderProgramSetup.cpp"
+  "${entropy_APP_DIR}/rendering/ShaderPreprocessor.cpp"
   "${entropy_APP_DIR}/rendering/ShaderSourceSetup.cpp"
   "${entropy_APP_DIR}/rendering/ShaderUniformSetup.cpp"
   "${entropy_APP_DIR}/rendering/common/ShaderType.cpp"

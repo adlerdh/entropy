@@ -19,6 +19,20 @@ namespace rendering::mesh
 {
 
 /**
+ * @brief Shader capabilities required by a mesh drawing pass
+ *
+ * Specialized geometry-only passes intentionally omit material and lighting uniforms. Keeping the pass explicit
+ * prevents the shared renderer from uploading surface-shading state to those smaller shader programs.
+ */
+enum class MeshDrawPass
+{
+  Surface,
+  DepthBounds,
+  ShadowDepth,
+  AmbientOcclusionGeometry
+};
+
+/**
  * @brief Camera and lookup state needed to draw a mesh render list
  */
 struct MeshDrawContext
@@ -34,7 +48,6 @@ struct MeshDrawContext
   glm::vec4 fallbackColor = glm::vec4{0.8f, 0.8f, 0.8f, 1.0f};     //!< Color used when material color is invalid
   bool triangleEdgesEnabled = false;                               //!< Overlay shader-rendered triangle topology edges
   glm::ivec2 viewportOrigin = glm::ivec2{0};                       //!< Lower-left origin of the active view viewport
-  bool shadowDepthPass = false;                                    //!< Force filled two-sided depth rasterization
   MeshAdvancedLightingPlan advancedLighting;                       //!< Sanitized optional lighting pass decisions
   glm::mat4 shadowLightClip_T_world = glm::mat4{1.0f};             //!< Transform from world to shadow-map clip space
   GLTexture* shadowDepthTexture = nullptr;                         //!< Shadow-map depth texture, if available
@@ -89,15 +102,17 @@ public:
   drawImplementedBuckets(const MeshRenderList& list, const MeshDrawContext& context, GLShaderProgram& program);
 
   /**
-   * @brief Draw one bucket of mesh renderables using the basic mesh shader
+   * @brief Draw one bucket of mesh renderables using a shader appropriate for the requested pass
    * @param renderables Renderables to draw
    * @param context Camera matrices and mesh lookup callback
    * @param program Linked mesh shader program
+   * @param pass Shader capabilities and rasterization behavior for this pass
    */
   static void drawBucket(
     std::span<const std::reference_wrapper<const MeshRenderable>> renderables,
     const MeshDrawContext& context,
-    GLShaderProgram& program);
+    GLShaderProgram& program,
+    MeshDrawPass pass = MeshDrawPass::Surface);
 };
 
 } // namespace rendering::mesh

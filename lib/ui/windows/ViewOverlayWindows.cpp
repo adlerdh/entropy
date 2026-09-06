@@ -333,6 +333,8 @@ void renderViewSettingsComboWindow(
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
   static const ImVec2 sk_popupWindowPadding(8.0f, 8.0f);
+  static const ImVec2 sk_projectionPopupWindowPadding(8.0f, 6.0f);
+  static constexpr float sk_projectionPopupExtraTopPadding = 2.0f;
   static const float sk_windowRounding(0.0f);
   static const ImVec2 sk_itemSpacing(4.0f, 4.0f);
 
@@ -592,8 +594,9 @@ void renderViewSettingsComboWindow(
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_popupWindowPadding);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_projectionPopupWindowPadding);
         if (ImGui::BeginCombo("##mipModeCombo", ICON_FK_FILM, ImGuiComboFlags_HeightLargest)) {
+          ImGui::SetCursorPosY(ImGui::GetCursorPosY() + sk_projectionPopupExtraTopPadding);
           renderPopupHeading(popupHeadingFont, "Intensity projection mode:");
 
           for (const auto& ip : AllIntensityProjectionModes) {

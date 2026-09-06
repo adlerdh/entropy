@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -49,7 +50,7 @@ public:
   /// Unbind the current shader program.
   static void stopUse();
 
-  bool setUniform(const std::string& nameArg, GLboolean val);
+  bool setUniform(const std::string& nameArg, bool val);
   bool setUniform(const std::string& nameArg, GLint val);
   bool setUniform(const std::string& nameArg, GLuint val);
   bool setUniform(const std::string& nameArg, GLfloat val);
@@ -76,7 +77,12 @@ public:
   template<std::uint32_t N>
   bool setUniform(const std::string& uniformName, const std::array<float, N>& a)
   {
-    const GLint loc = getUniformLocation(uniformName);
+    static_assert(N >= 2 && N <= 5, "Only the registered fixed-size float uniform arrays are supported");
+    constexpr UniformType type = N == 2   ? UniformType::FloatArray2
+                                 : N == 3 ? UniformType::FloatArray3
+                                 : N == 4 ? UniformType::FloatArray4
+                                          : UniformType::FloatArray5;
+    const GLint loc = getUniformLocationForTypes(uniformName, {type});
     if (loc < 0) {
       return false;
     }
@@ -95,6 +101,8 @@ public:
   GLint getUniformLocation(const std::string& nameArg);
 
 private:
+  GLint getUniformLocationForTypes(const std::string& nameArg, std::initializer_list<UniformType> acceptedTypes);
+
   std::string m_name;
   GLuint m_handle;
   bool m_linked;
@@ -129,6 +137,8 @@ private:
     void operator()(const std::vector<float>& floats) const;
     void operator()(const std::vector<glm::vec2>& vectors) const;
     void operator()(const std::vector<glm::vec3>& vectors) const;
+    void operator()(const std::vector<glm::vec4>& vectors) const;
+    void operator()(const std::vector<int>& integers) const;
     void operator()(const std::vector<glm::mat4>& matrices) const;
 
     void operator()(const std::array<float, 2>& a) const;

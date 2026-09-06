@@ -6,14 +6,6 @@
 #include <limits>
 #include <unordered_map>
 
-TEST_CASE("rendering helpers replace shader placeholders", "[rendering][helpers]")
-{
-  const std::string source = "vec4 SAMPLE = TEXTURE_LOOKUP(tc);";
-  const std::unordered_map<std::string, std::string> replacements{{"SAMPLE", "color"}, {"TEXTURE_LOOKUP", "texture3D"}};
-
-  REQUIRE(rendering::replacePlaceholders(source, replacements) == "vec4 color = texture3D(tc);");
-}
-
 TEST_CASE("rendering helpers preserve 3D shader texture lookup replacements", "[rendering][helpers]")
 {
   const rendering::TextureLookupReplacementSources lookupSources{
@@ -25,20 +17,20 @@ TEST_CASE("rendering helpers preserve 3D shader texture lookup replacements", "[
     .cubic2D = "cubic2D",
     .uintLinear2D = "uintLinear2D"};
   const std::unordered_map<std::string, std::string> replacements{
-    {"$$TEXTURE_LOOKUP_FUNCTION$$", "cubic3D"},
-    {"$$UINT_TEXTURE_LOOKUP_FUNCTION$$", "uintLinear3D"},
-    {"$$OTHER$$", "unchanged"}};
+    {"TEXTURE_LOOKUP_FUNCTION", "cubic3D"},
+    {"UINT_TEXTURE_LOOKUP_FUNCTION", "uintLinear3D"},
+    {"OTHER", "unchanged"}};
 
   const auto result = rendering::shaderReplacementsForTextureDimension(
     replacements,
     rendering::TextureDimension::Texture3D,
     lookupSources);
 
-  REQUIRE(result.at("$$IMAGE_SAMPLER_TYPE$$") == "sampler3D");
-  REQUIRE(result.at("$$SEG_SAMPLER_TYPE$$") == "usampler3D");
-  REQUIRE(result.at("$$TEXTURE_LOOKUP_FUNCTION$$") == "cubic3D");
-  REQUIRE(result.at("$$UINT_TEXTURE_LOOKUP_FUNCTION$$") == "uintLinear3D");
-  REQUIRE(result.at("$$OTHER$$") == "unchanged");
+  REQUIRE(result.at("IMAGE_SAMPLER_TYPE") == "sampler3D");
+  REQUIRE(result.at("SEG_SAMPLER_TYPE") == "usampler3D");
+  REQUIRE(result.at("TEXTURE_LOOKUP_FUNCTION") == "cubic3D");
+  REQUIRE(result.at("UINT_TEXTURE_LOOKUP_FUNCTION") == "uintLinear3D");
+  REQUIRE(result.at("OTHER") == "unchanged");
 }
 
 TEST_CASE("rendering helpers adapt shader texture lookup replacements for 2D textures", "[rendering][helpers]")
@@ -53,30 +45,30 @@ TEST_CASE("rendering helpers adapt shader texture lookup replacements for 2D tex
     .uintLinear2D = "uintLinear2D"};
 
   auto replacements = std::unordered_map<std::string, std::string>{
-    {"$$TEXTURE_LOOKUP_FUNCTION$$", "linear3D"},
-    {"$$UINT_TEXTURE_LOOKUP_FUNCTION$$", "uintLinear3D"}};
+    {"TEXTURE_LOOKUP_FUNCTION", "linear3D"},
+    {"UINT_TEXTURE_LOOKUP_FUNCTION", "uintLinear3D"}};
   auto result = rendering::shaderReplacementsForTextureDimension(
     replacements,
     rendering::TextureDimension::Texture2D,
     lookupSources);
-  REQUIRE(result.at("$$IMAGE_SAMPLER_TYPE$$") == "sampler2D");
-  REQUIRE(result.at("$$SEG_SAMPLER_TYPE$$") == "usampler2D");
-  REQUIRE(result.at("$$TEXTURE_LOOKUP_FUNCTION$$") == "linear2D");
-  REQUIRE(result.at("$$UINT_TEXTURE_LOOKUP_FUNCTION$$") == "uintLinear2D");
+  REQUIRE(result.at("IMAGE_SAMPLER_TYPE") == "sampler2D");
+  REQUIRE(result.at("SEG_SAMPLER_TYPE") == "usampler2D");
+  REQUIRE(result.at("TEXTURE_LOOKUP_FUNCTION") == "linear2D");
+  REQUIRE(result.at("UINT_TEXTURE_LOOKUP_FUNCTION") == "uintLinear2D");
 
-  replacements["$$TEXTURE_LOOKUP_FUNCTION$$"] = "floatingLinear3D";
+  replacements["TEXTURE_LOOKUP_FUNCTION"] = "floatingLinear3D";
   result = rendering::shaderReplacementsForTextureDimension(
     replacements,
     rendering::TextureDimension::Texture2D,
     lookupSources);
-  REQUIRE(result.at("$$TEXTURE_LOOKUP_FUNCTION$$") == "floatingLinear2D");
+  REQUIRE(result.at("TEXTURE_LOOKUP_FUNCTION") == "floatingLinear2D");
 
-  replacements["$$TEXTURE_LOOKUP_FUNCTION$$"] = "cubic3D";
+  replacements["TEXTURE_LOOKUP_FUNCTION"] = "cubic3D";
   result = rendering::shaderReplacementsForTextureDimension(
     replacements,
     rendering::TextureDimension::Texture2D,
     lookupSources);
-  REQUIRE(result.at("$$TEXTURE_LOOKUP_FUNCTION$$") == "cubic2D");
+  REQUIRE(result.at("TEXTURE_LOOKUP_FUNCTION") == "cubic2D");
 }
 
 TEST_CASE(
@@ -91,18 +83,18 @@ TEST_CASE(
     .cubic3D = "cubic3D",
     .cubic2D = "cubic2D",
     .uintLinear2D = "uintLinear2D"};
-  const std::unordered_map<std::string, std::string> replacements{{"$$OTHER$$", "unchanged"}};
+  const std::unordered_map<std::string, std::string> replacements{{"OTHER", "unchanged"}};
 
   const auto result = rendering::shaderReplacementsForTextureDimension(
     replacements,
     rendering::TextureDimension::Texture2D,
     lookupSources);
 
-  REQUIRE(result.at("$$IMAGE_SAMPLER_TYPE$$") == "sampler2D");
-  REQUIRE(result.at("$$SEG_SAMPLER_TYPE$$") == "usampler2D");
-  REQUIRE(result.at("$$OTHER$$") == "unchanged");
-  REQUIRE_FALSE(result.contains("$$TEXTURE_LOOKUP_FUNCTION$$"));
-  REQUIRE_FALSE(result.contains("$$UINT_TEXTURE_LOOKUP_FUNCTION$$"));
+  REQUIRE(result.at("IMAGE_SAMPLER_TYPE") == "sampler2D");
+  REQUIRE(result.at("SEG_SAMPLER_TYPE") == "usampler2D");
+  REQUIRE(result.at("OTHER") == "unchanged");
+  REQUIRE_FALSE(result.contains("TEXTURE_LOOKUP_FUNCTION"));
+  REQUIRE_FALSE(result.contains("UINT_TEXTURE_LOOKUP_FUNCTION"));
 }
 
 TEST_CASE("rendering helpers grow brush preview capacity conservatively", "[rendering][helpers]")

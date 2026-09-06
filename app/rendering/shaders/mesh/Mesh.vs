@@ -22,7 +22,10 @@ void main()
   vec4 worldPosition = u_world_T_mesh * vec4(a_position, 1.0);
   v_worldPosition = worldPosition.xyz;
   // A zero vector tells the fragment shader to reconstruct a flat geometric normal from screen-space derivatives.
-  v_worldNormal = u_hasVertexNormals ? normalize(u_world_T_meshNormal * a_normal) : vec3(0.0);
+  vec3 transformedNormal = u_world_T_meshNormal * a_normal;
+  float normalLength2 = dot(transformedNormal, transformedNormal);
+  v_worldNormal =
+    u_hasVertexNormals && normalLength2 > 1.0e-12 ? transformedNormal * inversesqrt(normalLength2) : vec3(0.0);
   v_color = a_color;
   // The non-geometry path cannot supply a primitive normal. Fragment shaders retain a derivative fallback for
   // meshes drawn through this program without vertex normals.

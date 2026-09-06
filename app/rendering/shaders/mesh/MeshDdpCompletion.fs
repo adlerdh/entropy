@@ -2,8 +2,7 @@
 
 uniform sampler2D u_depthBoundsTex;
 
-$$DDP_DEPTH_FUNCTIONS$$
-
+#include "entropy/DDP_DEPTH_FUNCTIONS.glsl"
 void main()
 {
   vec2 depthBounds = texelFetch(u_depthBoundsTex, ivec2(gl_FragCoord.xy), 0).xy;

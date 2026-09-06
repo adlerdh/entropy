@@ -25,7 +25,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // Texture unit 0: image (scalar)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex; // Texture unit 0: image (scalar)
 
 uniform float u_isoValue;
 uniform float u_fillOpacity;
@@ -68,44 +68,15 @@ uniform int u_halfNumMipSamples;
 uniform vec3 u_texSamplingDirZ;
 uniform vec3 u_worldSamplingDirZ;
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 // float textureLookup(sampler3D texture, vec3 texCoords);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
-$$SAMPLE_TEX_COORD_FUNCTION$$
-
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
-/// Compute min/mean/max projection. Returns img when MIP is not used (i.e. u_halfNumMipSamples ==
-/// 0)
-float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img)
-{
-  // Number of samples used for computing the final image value:
-  int numSamples = 1;
-
-  // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
-  for (int i = 1; i <= u_halfNumMipSamples; ++i) {
-    for (int dir = -1; dir <= 1; dir += 2) {
-      vec3 c = baseTc + dir * i * u_texSamplingDirZ;
-      vec3 worldPos = baseWorldPos + dir * i * u_worldSamplingDirZ;
-      vec3 sampleTc = sampleTexCoord(c, worldPos);
-      if (!isInsideTexture(sampleTc)) break;
-
-      float a = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
-
-      img = float(MAX_IP_MODE == u_mipMode) * max(img, a) + float(MEAN_IP_MODE == u_mipMode) * (img + a) +
-            float(MIN_IP_MODE == u_mipMode) * min(img, a);
-
-      ++numSamples;
-    }
-  }
-
-  // If using Mean Intensity Projection mode, then normalize by the number of samples:
-  return img / mix(1.0, float(numSamples), float(MEAN_IP_MODE == u_mipMode));
-}
+#include "entropy/DO_RENDER_FUNCTION.glsl"
+/// float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img);
+#include "entropy/IP_FUNCTION.glsl"
 
 bool isContourNeighborhoodInsideTexture(vec3 texCoord)
 {

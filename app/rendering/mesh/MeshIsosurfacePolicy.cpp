@@ -30,8 +30,10 @@ MeshCompositingMode compositingModeForIsosurfaceAlpha(
   const float rimOpacityStrength,
   const MeshCompositingMode translucentMode) noexcept
 {
-  const bool rimOpacityCanVary = rimLightingEnabled && rimOpacityStrength > 0.0f;
-  return alpha >= 0.999f && !rimOpacityCanVary ? MeshCompositingMode::Opaque : translucentMode;
+  return compositingModeForSurfaceAlpha(
+    alpha,
+    rimLightingModulatesOpacity(rimLightingEnabled, rimOpacityStrength),
+    translucentMode);
 }
 
 IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(

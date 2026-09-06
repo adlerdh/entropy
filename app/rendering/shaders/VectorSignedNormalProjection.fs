@@ -18,7 +18,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha)
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[4]; // vector field components; only x/y/z are used
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex[4]; // vector field components; only x/y/z are used
 
 uniform float u_imgSlope_native_T_texture; // map texture value to native component units
 uniform float u_projectionScale;           // native-unit scale for mapping projection to [-1, 1]
@@ -34,14 +34,11 @@ uniform float u_aspectRatio;
 uniform float u_flashlightRadius;
 uniform bool u_flashlightMovingOnFixed;
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 void main()
 {
   if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord) || !isInsideTexture(fs_in.v_texCoord)) {
@@ -53,7 +50,7 @@ void main()
                                                      textureLookup(u_imgTex[1], fs_in.v_texCoord),
                                                      textureLookup(u_imgTex[2], fs_in.v_texCoord));
 
-  float signedProjection = dot(vectorValue, normalize(u_viewNormal_subject));
+  float signedProjection = dot(vectorValue, normalizeOr(u_viewNormal_subject, vec3(0.0, 0.0, 1.0)));
   float normalizedProjection = clamp(signedProjection / max(u_projectionScale, 1.0e-6), -1.0, 1.0);
 
   vec3 negativeColor = vec3(0.10, 0.35, 1.00);

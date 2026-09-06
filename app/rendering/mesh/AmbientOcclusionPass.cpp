@@ -67,7 +67,8 @@ void renderGeometry(const MeshAmbientOcclusionRenderRequest& request, const glm:
   glClearColor(0.5f, 0.5f, 1.0f, 0.0f);
   glClearDepth(1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  request.meshRenderer.drawBucket(request.renderables, request.context, request.geometryProgram);
+  request.meshRenderer
+    .drawBucket(request.renderables, request.context, request.geometryProgram, MeshDrawPass::AmbientOcclusionGeometry);
 }
 
 void resolveOcclusion(const MeshAmbientOcclusionRenderRequest& request, const glm::uvec2& size)
@@ -86,8 +87,8 @@ void resolveOcclusion(const MeshAmbientOcclusionRenderRequest& request, const gl
   request.resources.normalTexture().bind(k_normalTextureUnit);
   request.resources.depthTexture().bind(k_depthTextureUnit);
   request.resolveProgram.use();
-  request.resolveProgram.setUniform("u_normalTex", static_cast<GLint>(k_normalTextureUnit));
-  request.resolveProgram.setUniform("u_depthTex", static_cast<GLint>(k_depthTextureUnit));
+  request.resolveProgram.setSamplerUniform("u_normalTex", static_cast<GLint>(k_normalTextureUnit));
+  request.resolveProgram.setSamplerUniform("u_depthTex", static_cast<GLint>(k_depthTextureUnit));
   request.resolveProgram.setUniform("u_viewportSize", glm::vec2{size});
   request.resolveProgram.setUniform("u_camera_T_clip", request.context.camera_T_clip);
   request.resolveProgram.setUniform("u_clip_T_camera", request.context.clip_T_camera);
@@ -115,9 +116,9 @@ void filterOcclusion(const MeshAmbientOcclusionRenderRequest& request, const glm
   request.resources.depthTexture().bind(k_depthTextureUnit);
   request.resources.rawOcclusionTexture().bind(k_rawOcclusionTextureUnit);
   request.filterProgram.use();
-  request.filterProgram.setUniform("u_normalTex", static_cast<GLint>(k_normalTextureUnit));
-  request.filterProgram.setUniform("u_depthTex", static_cast<GLint>(k_depthTextureUnit));
-  request.filterProgram.setUniform("u_occlusionTex", static_cast<GLint>(k_rawOcclusionTextureUnit));
+  request.filterProgram.setSamplerUniform("u_normalTex", static_cast<GLint>(k_normalTextureUnit));
+  request.filterProgram.setSamplerUniform("u_depthTex", static_cast<GLint>(k_depthTextureUnit));
+  request.filterProgram.setSamplerUniform("u_occlusionTex", static_cast<GLint>(k_rawOcclusionTextureUnit));
   request.filterProgram.setUniform("u_viewportSize", glm::vec2{size});
   request.filterProgram.setUniform("u_camera_T_clip", request.context.camera_T_clip);
   request.filterProgram.setUniform("u_radiusMm", request.plan.radiusMm);

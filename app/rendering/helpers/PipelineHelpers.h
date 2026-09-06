@@ -23,17 +23,7 @@ namespace rendering
 {
 
 /**
- * @brief Replace every occurrence of each placeholder string in source text.
- *
- * Replacements are applied in the iteration order of the supplied map. This is intended for shader source generation,
- * where placeholder keys are unique sentinel tokens rather than overlapping natural-language text.
- */
-std::string replacePlaceholders(
-  const std::string& source,
-  const std::unordered_map<std::string, std::string>& placeholdersToStringMap);
-
-/**
- * @brief Shader source snippets used to adapt shader placeholders for 2D fallback textures.
+ * @brief Shader source snippets used to adapt shader templates for 2D fallback textures.
  */
 struct TextureLookupReplacementSources
 {
@@ -47,10 +37,10 @@ struct TextureLookupReplacementSources
 };
 
 /**
- * @brief Return shader placeholder replacements for the requested texture dimension.
+ * @brief Return shader substitutions for the requested texture dimension.
  *
- * The 3D path only sets sampler placeholder types. The 2D fallback path also swaps texture lookup helpers to
- * dimension-specific implementations while preserving all unrelated placeholders.
+ * The 3D path only sets sampler types. The 2D fallback path also swaps texture lookup helpers to dimension-specific
+ * implementations while preserving all unrelated substitutions.
  */
 std::unordered_map<std::string, std::string> shaderReplacementsForTextureDimension(
   const std::unordered_map<std::string, std::string>& replacements,

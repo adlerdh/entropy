@@ -24,8 +24,8 @@ fs_in;
 
 layout(location = 0) out vec2 outDepthBounds;
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex;
-uniform $$SEG_SAMPLER_TYPE$$ u_segTex;
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex;
+uniform ${SEG_SAMPLER_TYPE} u_segTex;
 uniform sampler1D u_cmapTex;
 uniform samplerBuffer u_segLabelCmapTex;
 
@@ -71,16 +71,15 @@ uniform bool u_segOutlineUsesScreenPixels;
 uniform vec3 u_texSamplingDirsForSegOutline[2];
 uniform vec3 u_texSamplingDirsForSmoothSeg[2];
 
-$$HELPER_FUNCTIONS$$
-$$COLOR_HELPER_FUNCTIONS$$
-$$TEXTURE_LOOKUP_FUNCTION$$
-$$UINT_TEXTURE_LOOKUP_FUNCTION$$
-$$SAMPLE_TEX_COORD_FUNCTION$$
-$$DO_RENDER_FUNCTION$$
-$$IP_FUNCTION$$
-$$IMAGE_PLANE_DISPLAY_FUNCTIONS$$
-$$DDP_DEPTH_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
+#include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
+#include "entropy/UINT_TEXTURE_LOOKUP_FUNCTION.glsl"
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
+#include "entropy/DO_RENDER_FUNCTION.glsl"
+#include "entropy/IP_FUNCTION.glsl"
+#include "entropy/IMAGE_PLANE_DISPLAY_FUNCTIONS.glsl"
+#include "entropy/DDP_DEPTH_FUNCTIONS.glsl"
 int when_lt(int x, int y)
 {
   return max(sign(y - x), 0);
@@ -105,8 +104,7 @@ bool isLabelVisible(int label)
 float labelPremultipliedAlpha(int label)
 {
   label -= label * when_ge(label, textureSize(u_segLabelCmapTex));
-  vec4 color = texelFetch(u_segLabelCmapTex, label);
-  return (color.a * color).a;
+  return texelFetch(u_segLabelCmapTex, label).a;
 }
 
 uint getNearestSegValue(vec3 texCoord, vec3 texOffset, out float opacity)
@@ -134,7 +132,7 @@ uint getLinearSegValue(vec3 texCoord, vec3 texOffset, out float opacity)
     return 0u;
   }
 
-  vec3 baseVoxCoord = baseTc * vec3(segTextureSize());
+  vec3 baseVoxCoord = baseTc * vec3(segTextureSize()) - vec3(0.5);
   vec3 c = floor(baseVoxCoord);
   vec3 d = pow(vec3(segTextureSize()), vec3(-1));
   vec3 t = vec3(c.x * d.x, c.y * d.y, c.z * d.z) + 0.5 * d;
@@ -148,6 +146,7 @@ uint getLinearSegValue(vec3 texCoord, vec3 texOffset, out float opacity)
   vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart);
 
   float maxInterp = 0.0;
+  uint bestLabel = 0u;
   for (int i = 0; i <= 8; ++i) {
     int neighborIndex = int(mod(i + 4, 9));
     float row = float(mod(neighborIndex, 3) - 1);
@@ -163,11 +162,11 @@ uint getLinearSegValue(vec3 texCoord, vec3 texOffset, out float opacity)
 
     if (interp > maxInterp && interp >= u_segInterpCutoff && isLabelVisible(int(label))) {
       maxInterp = interp;
-      return label;
+      bestLabel = label;
     }
   }
 
-  return 0u;
+  return bestLabel;
 }
 
 uint getSegValue(vec3 texCoord, vec3 texOffset, out float opacity)

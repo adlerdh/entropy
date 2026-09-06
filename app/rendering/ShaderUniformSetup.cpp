@@ -50,7 +50,7 @@ ShaderUniformSet buildShaderUniformSet()
 
   Uniforms vsViewModeUniforms;
   vsViewModeUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsViewModeUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
+  vsViewModeUniforms.insertUniform("u_numCheckers", UniformType::Float, 1.0f);
 
   Uniforms vsImageUniforms;
   vsImageUniforms.insertUniforms(vsClipWorldUniforms);
@@ -108,7 +108,7 @@ ShaderUniformSet buildShaderUniformSet()
     UniformType::Int,
     0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
   fsRenderModeUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-  fsRenderModeUniforms.insertUniform("u_quadrants", UniformType::IVec2,
+  fsRenderModeUniforms.insertUniform("u_quadrants", UniformType::BVec2,
                                      sk_zeroIVec2);                         // For quadrants
   fsRenderModeUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
   fsRenderModeUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
@@ -261,6 +261,14 @@ ShaderUniformSet buildShaderUniformSet()
   fsSegNearestUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_segLabelTableTexSampler);
   fsSegNearestUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   fsSegNearestUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  // Seg.fs declares the interpolation controls for both generated variants. They are optimized out of nearest-neighbor
+  // programs, but retaining optional declarations keeps the C++ registry faithful to the assembled GLSL source.
+  fsSegNearestUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f, sk_optionalUniform);
+  fsSegNearestUniforms.insertUniform(
+    "u_texSamplingDirsForSmoothSeg",
+    UniformType::Vec3Vector,
+    Vec3Vector{sk_zeroVec3},
+    sk_optionalUniform);
   Uniforms fsSegNearestWarpedUniforms = fsSegNearestUniforms;
   fsSegNearestWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
@@ -304,6 +312,10 @@ ShaderUniformSet buildShaderUniformSet()
     UniformType::FloatVector,
     FloatVector{1.0f, 1.0f});
   fsMetricDeformationUniforms.insertUniform("u_deformationStrength", UniformType::FloatVector, FloatVector{1.0f, 1.0f});
+  fsMetricDeformationUniforms.insertUniform("u_warpEnabled[0]", UniformType::Bool, false);
+  fsMetricDeformationUniforms.insertUniform("u_warpEnabled[1]", UniformType::Bool, false);
+  fsMetricDeformationUniforms.insertUniform("u_defInterleaved[0]", UniformType::Bool, false);
+  fsMetricDeformationUniforms.insertUniform("u_defInterleaved[1]", UniformType::Bool, false);
   fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
@@ -317,6 +329,8 @@ ShaderUniformSet buildShaderUniformSet()
   fsDiffUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsDiffUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
   fsDiffUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4, sk_optionalUniform);
+  fsDiffUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsDiffUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsDiffUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   fsDiffUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsDiffWarpedUniforms = fsDiffUniforms;

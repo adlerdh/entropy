@@ -10,10 +10,13 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <variant>
 
@@ -26,6 +29,151 @@ GLsizei uniformElementCount(const std::size_t count)
     throwDebug("Uniform array exceeds the OpenGL element-count range");
   }
   return static_cast<GLsizei>(count);
+}
+
+bool isSamplerType(const GLenum type)
+{
+  switch (type) {
+    case GL_SAMPLER_1D:
+    case GL_SAMPLER_2D:
+    case GL_SAMPLER_3D:
+    case GL_SAMPLER_CUBE:
+    case GL_SAMPLER_1D_SHADOW:
+    case GL_SAMPLER_2D_SHADOW:
+    case GL_SAMPLER_1D_ARRAY:
+    case GL_SAMPLER_2D_ARRAY:
+    case GL_SAMPLER_1D_ARRAY_SHADOW:
+    case GL_SAMPLER_2D_ARRAY_SHADOW:
+    case GL_SAMPLER_2D_MULTISAMPLE:
+    case GL_SAMPLER_2D_MULTISAMPLE_ARRAY:
+    case GL_SAMPLER_CUBE_SHADOW:
+    case GL_SAMPLER_BUFFER:
+    case GL_SAMPLER_2D_RECT:
+    case GL_SAMPLER_2D_RECT_SHADOW:
+    case GL_INT_SAMPLER_1D:
+    case GL_INT_SAMPLER_2D:
+    case GL_INT_SAMPLER_3D:
+    case GL_INT_SAMPLER_CUBE:
+    case GL_INT_SAMPLER_1D_ARRAY:
+    case GL_INT_SAMPLER_2D_ARRAY:
+    case GL_INT_SAMPLER_2D_MULTISAMPLE:
+    case GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
+    case GL_INT_SAMPLER_BUFFER:
+    case GL_INT_SAMPLER_2D_RECT:
+    case GL_UNSIGNED_INT_SAMPLER_1D:
+    case GL_UNSIGNED_INT_SAMPLER_2D:
+    case GL_UNSIGNED_INT_SAMPLER_3D:
+    case GL_UNSIGNED_INT_SAMPLER_CUBE:
+    case GL_UNSIGNED_INT_SAMPLER_1D_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:
+    case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
+    case GL_UNSIGNED_INT_SAMPLER_BUFFER:
+    case GL_UNSIGNED_INT_SAMPLER_2D_RECT:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool registeredTypeMatchesActiveType(const UniformType registered, const GLenum active)
+{
+  switch (registered) {
+    case UniformType::Sampler:
+    case UniformType::SamplerVector:
+      return isSamplerType(active);
+    case UniformType::FloatVector:
+    case UniformType::FloatArray2:
+    case UniformType::FloatArray3:
+    case UniformType::FloatArray4:
+    case UniformType::FloatArray5:
+      return active == GL_FLOAT;
+    case UniformType::Vec2Vector:
+      return active == GL_FLOAT_VEC2;
+    case UniformType::Vec3Vector:
+    case UniformType::Vec3Array8:
+      return active == GL_FLOAT_VEC3;
+    case UniformType::Vec4Vector:
+      return active == GL_FLOAT_VEC4;
+    case UniformType::Mat4Vector:
+      return active == GL_FLOAT_MAT4;
+    case UniformType::UIntArray5:
+      return active == GL_UNSIGNED_INT;
+    case UniformType::IntVector:
+      return active == GL_INT;
+    case UniformType::Undefined:
+      return true;
+    default:
+      return static_cast<GLenum>(registered) == active;
+  }
+}
+
+std::string canonicalUniformName(const std::string_view name)
+{
+  constexpr std::string_view firstArrayElement{"[0]"};
+  if (name.ends_with(firstArrayElement)) {
+    return std::string{name.substr(0, name.size() - firstArrayElement.size())};
+  }
+  return std::string{name};
+}
+
+bool validateRegisteredUniformTypes(const GLuint program, const Uniforms& uniforms, const std::string& programName)
+{
+  GLint uniformCount = 0;
+  GLint maxNameLength = 0;
+  glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &uniformCount);
+  glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
+  if (uniformCount <= 0 || maxNameLength <= 0) {
+    return true;
+  }
+
+  std::vector<GLchar> nameBuffer(static_cast<std::size_t>(maxNameLength));
+  bool valid = true;
+  for (GLint index = 0; index < uniformCount; ++index) {
+    GLsizei nameLength = 0;
+    GLint arraySize = 0;
+    GLenum activeType = GL_NONE;
+    glGetActiveUniform(
+      program,
+      static_cast<GLuint>(index),
+      maxNameLength,
+      &nameLength,
+      &arraySize,
+      &activeType,
+      nameBuffer.data());
+    const std::string activeName{nameBuffer.data(), static_cast<std::size_t>(nameLength)};
+    // Some drivers expose built-in GLSL state such as gl_DepthRange through the active-uniform reflection API. These
+    // values are owned by OpenGL rather than Entropy and must not have application-side registry declarations.
+    if (activeName.starts_with("gl_")) {
+      continue;
+    }
+    const std::string canonicalName = canonicalUniformName(activeName);
+    const Uniforms::Decl* declaration = nullptr;
+    if (uniforms.containsKey(activeName)) {
+      declaration = &uniforms(activeName);
+    }
+    else if (uniforms.containsKey(canonicalName)) {
+      declaration = &uniforms(canonicalName);
+    }
+    if (declaration == nullptr) {
+      spdlog::error("Active uniform '{}' in program '{}' has no C++ registry declaration", activeName, programName);
+      valid = false;
+      continue;
+    }
+    if (registeredTypeMatchesActiveType(declaration->m_type, activeType)) {
+      continue;
+    }
+
+    spdlog::error(
+      "Uniform '{}' in program '{}' is active as {}[{}], but its registry type is {}",
+      activeName,
+      programName,
+      Uniforms::getUniformTypeString(activeType),
+      arraySize,
+      Uniforms::getUniformTypeString(static_cast<GLenum>(declaration->m_type)));
+    valid = false;
+  }
+  return valid;
 }
 
 } // namespace
@@ -118,8 +266,6 @@ bool GLShaderProgram::link()
     return false;
   }
 
-  m_linked = true;
-
   auto locationGetter = [this](const std::string& name) -> GLint {
     return glGetUniformLocation(m_handle, name.c_str());
   };
@@ -127,6 +273,13 @@ bool GLShaderProgram::link()
   // A program with no active registered uniforms is still valid. Individual missing required uniforms are diagnosed
   // by the registry without incorrectly turning a successful OpenGL link into a failure.
   m_registeredUniforms.queryAndSetAllLocations(locationGetter);
+
+  if (!validateRegisteredUniformTypes(m_handle, m_registeredUniforms, m_name)) {
+    spdlog::error("Linked shader program '{}' has incompatible registered uniform types", m_name);
+    return false;
+  }
+
+  m_linked = true;
 
   return true;
 }
@@ -162,9 +315,25 @@ GLint GLShaderProgram::getUniformLocation(const std::string& nameArg)
   }
 }
 
-bool GLShaderProgram::setUniform(const std::string& nameArg, GLboolean val)
+GLint GLShaderProgram::getUniformLocationForTypes(
+  const std::string& nameArg,
+  const std::initializer_list<UniformType> acceptedTypes)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  if (!m_registeredUniforms.containsKey(nameArg)) {
+    throwDebug("Uniform '" + nameArg + "' is not registered for shader program '" + m_name + "'");
+  }
+
+  const UniformType registeredType = m_registeredUniforms(nameArg).m_type;
+  if (std::find(acceptedTypes.begin(), acceptedTypes.end(), registeredType) == acceptedTypes.end()) {
+    throwDebug(
+      "Uniform '" + nameArg + "' in shader program '" + m_name + "' cannot be uploaded with this C++ value type");
+  }
+  return getUniformLocation(nameArg);
+}
+
+bool GLShaderProgram::setUniform(const std::string& nameArg, const bool val)
+{
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Bool});
   if (loc < 0) {
     return false;
   }
@@ -175,7 +344,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, GLboolean val)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, GLint val)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Int});
   if (loc < 0) {
     return false;
   }
@@ -186,7 +355,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, GLint val)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, GLuint val)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::UInt});
   if (loc < 0) {
     return false;
   }
@@ -197,7 +366,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, GLuint val)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, GLfloat val)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Float});
   if (loc < 0) {
     return false;
   }
@@ -208,7 +377,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, GLfloat val)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::ivec2& v)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::IVec2, UniformType::BVec2});
   if (loc < 0) {
     return false;
   }
@@ -219,7 +388,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::ivec2& v
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec2& v)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Vec2});
   if (loc < 0) {
     return false;
   }
@@ -230,7 +399,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec2& v)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec3& v)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Vec3});
   if (loc < 0) {
     return false;
   }
@@ -241,7 +410,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec3& v)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec4& v)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Vec4});
   if (loc < 0) {
     return false;
   }
@@ -252,7 +421,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::vec4& v)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat2& m)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Mat2});
   if (loc < 0) {
     return false;
   }
@@ -263,7 +432,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat2& m)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat3& m)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Mat3});
   if (loc < 0) {
     return false;
   }
@@ -274,7 +443,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat3& m)
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat4& m)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Mat4});
   if (loc < 0) {
     return false;
   }
@@ -285,7 +454,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const glm::mat4& m)
 
 bool GLShaderProgram::setSamplerUniform(const std::string& nameArg, GLint sampler)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Sampler});
   if (loc < 0) {
     return false;
   }
@@ -296,7 +465,7 @@ bool GLShaderProgram::setSamplerUniform(const std::string& nameArg, GLint sample
 
 bool GLShaderProgram::setSamplerUniform(const std::string& nameArg, const Uniforms::SamplerIndexVectorType& samplers)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::SamplerVector});
   if (loc < 0 || samplers.indices.empty()) {
     return false;
   }
@@ -307,7 +476,7 @@ bool GLShaderProgram::setSamplerUniform(const std::string& nameArg, const Unifor
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::mat4>& matrices)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Mat4Vector});
   if (loc < 0 || matrices.empty()) {
     return false;
   }
@@ -318,7 +487,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<g
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::vec2>& vectors)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Vec2Vector});
   if (loc < 0 || vectors.empty()) {
     return false;
   }
@@ -329,7 +498,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<g
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::vec3>& vectors)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Vec3Vector});
   if (loc < 0 || vectors.empty()) {
     return false;
   }
@@ -340,7 +509,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<g
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<glm::vec4>& vectors)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::Vec4Vector});
   if (loc < 0 || vectors.empty()) {
     return false;
   }
@@ -351,7 +520,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<g
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<float>& floats)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::FloatVector});
   if (loc < 0 || floats.empty()) {
     return false;
   }
@@ -362,7 +531,7 @@ bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<f
 
 bool GLShaderProgram::setUniform(const std::string& nameArg, const std::vector<GLint>& integers)
 {
-  const GLint loc = getUniformLocation(nameArg);
+  const GLint loc = getUniformLocationForTypes(nameArg, {UniformType::IntVector});
   if (loc < 0 || integers.empty()) {
     return false;
   }
@@ -377,12 +546,11 @@ void GLShaderProgram::applyUniforms(Uniforms& uniforms)
 
   for (const auto& uniform : uniforms()) {
     const Uniforms::Decl& u = uniform.second;
-    if (u.m_isDirty) {
+    if (u.m_isDirty && u.m_location >= 0) {
       setter.setLocation(u.m_location);
       std::visit(setter, u.m_value);
-
-      uniforms.setDirty(uniform.first, false);
     }
+    uniforms.setDirty(uniform.first, false);
   }
 }
 
@@ -476,6 +644,20 @@ void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec3>& ve
 {
   if (!vectors.empty()) {
     glUniform3fv(m_loc, uniformElementCount(vectors.size()), glm::value_ptr(vectors.front()));
+  }
+}
+
+void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec4>& vectors) const
+{
+  if (!vectors.empty()) {
+    glUniform4fv(m_loc, uniformElementCount(vectors.size()), glm::value_ptr(vectors.front()));
+  }
+}
+
+void GLShaderProgram::UniformSetter::operator()(const std::vector<int>& integers) const
+{
+  if (!integers.empty()) {
+    glUniform1iv(m_loc, uniformElementCount(integers.size()), integers.data());
   }
 }
 

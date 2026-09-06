@@ -26,9 +26,10 @@ void main()
   vs_out.v_clipPos = clipPos;
 
   vec2 C = u_numCheckers * 0.5 * (clipPos + vec2(1.0, 1.0));
+  float safeAspectRatio = max(abs(u_aspectRatio), 1.0e-6);
 
   vs_out.v_checkerCoord =
-    mix(vec2(C.x, C.y / u_aspectRatio), vec2(C.x * u_aspectRatio, C.y), float(u_aspectRatio <= 1.0));
+    mix(vec2(C.x, C.y / safeAspectRatio), vec2(C.x * safeAspectRatio, C.y), float(safeAspectRatio <= 1.0));
 
   vec4 clipPos3d = vec4(clipPos, u_clipDepth, 1.0);
   gl_Position = u_view_T_clip * clipPos3d;

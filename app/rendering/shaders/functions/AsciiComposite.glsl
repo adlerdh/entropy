@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // Shared SDF sampling, anti-aliasing, and colormap compositing for ASCII shaders.
-// Injected via {{ASCII_COMPOSITE_FUNCTIONS}} placeholder.
+// Included by Entropy's shader preprocessor.
 // ---------------------------------------------------------------------------
 
 vec3 rgb2hsv(vec3 c)
@@ -32,13 +32,16 @@ float sampleGlyphCoverage(
   float pixDistScale,
   vec2 cellSizePx)
 {
-  vec2 halfTexel = vec2(0.5) / slotSizePx;
-  vec2 padFrac = vec2(sdfPadding) / slotSizePx + halfTexel;
+  vec2 safeSlotSizePx = max(slotSizePx, vec2(1.0));
+  vec2 safeCellSizePx = max(cellSizePx, vec2(1.0));
+  int safeGlyphCount = max(glyphCount, 1);
+  vec2 halfTexel = vec2(0.5) / safeSlotSizePx;
+  vec2 padFrac = min(vec2(max(sdfPadding, 0.0)) / safeSlotSizePx + halfTexel, vec2(0.499));
   vec2 uvSlot = padFrac + uvCell * (vec2(1.0) - 2.0 * padFrac);
-  vec2 uvAtlas = vec2((float(gIdx) + uvSlot.x) / float(glyphCount), uvSlot.y);
+  vec2 uvAtlas = vec2((float(clamp(gIdx, 0, safeGlyphCount - 1)) + uvSlot.x) / float(safeGlyphCount), uvSlot.y);
   float sdf = texture(atlas, uvAtlas).r;
 
-  float atlasTexelsPerScreenPx = slotSizePx.y / cellSizePx.y;
+  float atlasTexelsPerScreenPx = safeSlotSizePx.y / safeCellSizePx.y;
   float sdfPerScreenPx = (pixDistScale / 255.0) * atlasTexelsPerScreenPx;
   float soft = clamp((atlasTexelsPerScreenPx - 2.0) * 0.5, 0.0, 1.0);
   float aaSharp = max(sdfPerScreenPx * 0.5, 1.0 / 255.0);

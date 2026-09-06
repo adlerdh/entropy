@@ -233,7 +233,6 @@ void Rendering::drawMeshRenderListForView(
     if (projection) {
       shadowContext.clip_T_world = projection->lightClip_T_world;
       shadowContext.lightDirectionWorld = projection->lightDirectionWorld;
-      shadowContext.shadowDepthPass = true;
       shadowContext.advancedLighting.shadows.state = rendering::mesh::MeshAdvancedLightingFeatureState::Disabled;
       shadowContext.shadowDepthTexture = nullptr;
     }

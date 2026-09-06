@@ -40,8 +40,7 @@ uniform vec4 u_glyphProfilesA[128];  // regions 0–3 per glyph
 uniform vec4 u_glyphProfilesB[128];  // regions 4–5 in .xy, .zw unused
 uniform int u_glyphRankToIndex[128]; // rank -> glyph index
 
-$$ASCII_COMPOSITE_FUNCTIONS$$
-
+#include "entropy/ASCII_COMPOSITE_FUNCTIONS.glsl"
 void main()
 {
   if (u_asciiGlyphCount <= 0) {
@@ -49,7 +48,8 @@ void main()
   }
 
   vec2 fragPx = u_sceneOriginPx + v_uv * u_viewSizePx;
-  vec2 cellCoord = floor(fragPx / u_asciiCellSizePx);
+  vec2 cellSizePx = max(u_asciiCellSizePx, vec2(1.0));
+  vec2 cellCoord = floor(fragPx / cellSizePx);
 
   // Cell mean for alpha discard and colormap
   vec4 srcPM = texelFetch(u_cellMeanTex, ivec2(cellCoord), 0);
@@ -73,17 +73,19 @@ void main()
       max(max(cellProfileA.x, cellProfileA.y), max(cellProfileA.z, cellProfileA.w)),
       max(cellProfileB.x, cellProfileB.y));
     localMax = max(localMax, 1e-4);
-    cellProfileA = pow(clamp(cellProfileA / localMax, vec4(0.0), vec4(1.0)), vec4(u_asciiSpatialExponent)) * localMax;
-    cellProfileB = pow(clamp(cellProfileB / localMax, vec2(0.0), vec2(1.0)), vec2(u_asciiSpatialExponent)) * localMax;
+    float spatialExponent = max(u_asciiSpatialExponent, 1.0e-3);
+    cellProfileA = pow(clamp(cellProfileA / localMax, vec4(0.0), vec4(1.0)), vec4(spatialExponent)) * localMax;
+    cellProfileB = pow(clamp(cellProfileB / localMax, vec2(0.0), vec2(1.0)), vec2(spatialExponent)) * localMax;
   }
 
   // Luminance LUT gives density rank for this cell
+  int glyphCount = clamp(u_asciiGlyphCount, 1, 128);
   float lum = dot(srcRgb, vec3(0.299, 0.587, 0.114));
   float lutNorm = texture(u_asciiLumLut, vec2(lum, 0.5)).r;
-  int baseRank = clamp(int(lutNorm * float(u_asciiGlyphCount - 1) + 0.5), 0, u_asciiGlyphCount - 1);
-  int W = int(u_asciiSpatialDensityWindow);
+  int baseRank = clamp(int(lutNorm * float(glyphCount - 1) + 0.5), 0, glyphCount - 1);
+  int W = max(int(u_asciiSpatialDensityWindow), 0);
   int rLo = max(0, baseRank - W);
-  int rHi = min(u_asciiGlyphCount - 1, baseRank + W);
+  int rHi = min(glyphCount - 1, baseRank + W);
 
   // Density-windowed argmin: search only glyphs near expected density rank
   int gIdx = u_glyphRankToIndex[baseRank]; // fallback = LUT selection
@@ -99,16 +101,16 @@ void main()
     }
   }
 
-  vec2 uvCell = (fragPx - cellCoord * u_asciiCellSizePx) / u_asciiCellSizePx;
+  vec2 uvCell = (fragPx - cellCoord * cellSizePx) / cellSizePx;
   float glyph = sampleGlyphCoverage(
     u_asciiAtlas,
     gIdx,
-    u_asciiGlyphCount,
+    glyphCount,
     uvCell,
     u_asciiSlotSizePx,
     u_asciiSdfPadding,
     u_asciiPixDistScale,
-    u_asciiCellSizePx);
+    cellSizePx);
 
   o_color = asciiComposite(glyph, srcPM, u_asciiFgColor, u_asciiBgColor, u_asciiBgAlpha, u_asciiUseColormap);
 }

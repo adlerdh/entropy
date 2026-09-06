@@ -61,6 +61,11 @@ MeshMaterial meshMaterialForSurface(const glm::vec4& baseColor, const MeshSurfac
     glm::vec4{0.8f, 0.8f, 0.8f, 1.0f});
 }
 
+bool rimLightingModulatesOpacity(const bool enabled, const float opacityStrength) noexcept
+{
+  return enabled && opacityStrength > 0.0f;
+}
+
 bool requiresMeshGeometryShader(const MeshSurfaceMaterialSettings& settings) noexcept
 {
   return settings.flatShadingEnabled || settings.triangleEdgesEnabled;

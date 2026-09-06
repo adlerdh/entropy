@@ -44,11 +44,15 @@ float segmentationMeshOpacity(float segmentationOpacity, float imageOpacity, boo
 /**
  * @brief Select the mesh compositing path for a label alpha value
  * @param alpha Effective non-premultiplied label alpha
+ * @param rimLightingEnabled Whether view-angle rim lighting is active
+ * @param rimOpacityStrength Strength of view-angle opacity modulation
  * @param translucentMode Compositing path used for translucent labels
- * @return Opaque compositing for fully opaque labels, otherwise the requested translucent compositing path
+ * @return Opaque compositing only when neither base nor rim lighting requires transparency
  */
 MeshCompositingMode compositingModeForLabelAlpha(
   float alpha,
+  bool rimLightingEnabled = false,
+  float rimOpacityStrength = 0.0f,
   MeshCompositingMode translucentMode = MeshCompositingMode::AlphaOverDdp) noexcept;
 
 /**

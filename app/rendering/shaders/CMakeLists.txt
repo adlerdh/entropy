@@ -62,6 +62,10 @@ set(entropy_SHADERS
   functions/SegValue_Nearest.glsl
   functions/SampleTexCoord_Deformation.glsl
   functions/SampleTexCoord_Identity.glsl
+  functions/SampleImageValue_Deformation.glsl
+  functions/SampleImageValue_Identity.glsl
+  functions/RaycastJumpDistance_Disabled.glsl
+  functions/RaycastJumpDistance_Texture.glsl
   functions/TextureLookup_Cubic.glsl
   functions/TextureLookup_Cubic_2D.glsl
   functions/TextureLookup_Linear.glsl
@@ -70,6 +74,7 @@ set(entropy_SHADERS
   functions/TextureLookup_FloatingPoint_Linear_2D.glsl
   functions/UIntTextureLookup_Linear.glsl
   functions/UIntTextureLookup_Linear_2D.glsl
+  functions/UIntTextureLookup_ImagePlane_2D.glsl
 )
 list(TRANSFORM entropy_SHADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 

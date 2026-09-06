@@ -17,7 +17,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha)
 
-uniform $$SEG_SAMPLER_TYPE$$ u_segTex;   // segmentation (scalar, red channel only)
+uniform ${SEG_SAMPLER_TYPE} u_segTex;    // segmentation (scalar, red channel only)
 uniform samplerBuffer u_segLabelCmapTex; // seg label color map (non-premultiplied RGBA)
 
 // Segmentation adjustment uniforms:
@@ -43,14 +43,11 @@ uniform float u_aspectRatio;            // view aspect ratio (width / height)
 uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float uintTextureLookup(sampler3D texture, vec3 texCoord);
-$$UINT_TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/UINT_TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
-$$SAMPLE_TEX_COORD_FUNCTION$$
-
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
 /**
  * @brief Look up a segmentation label, treating samples outside the image domain as background.
  */
@@ -61,15 +58,12 @@ uint safeSegLookup(vec3 texCoord)
 
 /// Look up segmentation texture label value (after mapping to GL texture units):
 /// uint getSegValue(vec3 texOffset, out float opacity);
-$$GET_SEG_VALUE_FUNCTION$$
-
+#include "entropy/GET_SEG_VALUE_FUNCTION.glsl"
 /// Look up alpha of segmentation interior:
 /// float getSegInteriorAlpha(uint seg)
-$$GET_SEG_INTERIOR_ALPHA_FUNCTION$$
-
+#include "entropy/GET_SEG_INTERIOR_ALPHA_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 int when_lt(int x, int y)
 {
   return max(sign(y - x), 0);
@@ -85,11 +79,11 @@ int when_ge(int x, int y)
  */
 vec4 getLabelColor(int label)
 {
-  // Labels greater than the size of the segmentation labelc color texture are mapped to 0
+  // Labels greater than the size of the segmentation label color texture are mapped to 0.
   label -= label * when_ge(label, textureSize(u_segLabelCmapTex));
 
   vec4 color = texelFetch(u_segLabelCmapTex, label);
-  return color.a * color;
+  return vec4(color.rgb * color.a, color.a);
 }
 
 void main()
@@ -103,7 +97,11 @@ void main()
   float mask = float(isInsideTexture(sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos)));
   float overrideMask = u_useSegColorOverride ? float(seg != uint(0)) : 1.0;
   float alpha = u_segOpacity * interpOpacity * getSegInteriorAlpha(seg) * mask * overrideMask;
+  vec4 segmentationColor = getLabelColor(int(seg));
+  if (u_useSegColorOverride) {
+    segmentationColor = vec4(u_segColorOverride.rgb * u_segColorOverride.a, u_segColorOverride.a);
+  }
 
   // Output color (premult. RGBA)
-  o_color = alpha * (u_useSegColorOverride ? u_segColorOverride : getLabelColor(int(seg)));
+  o_color = alpha * segmentationColor;
 }

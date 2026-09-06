@@ -10,7 +10,7 @@ fs_in;
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[2]; // images (scalar, red channel only)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex[2]; // images (scalar, red channel only)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[2]; // map texture to normalized intensity [0, 1], plus window/leveling
@@ -24,14 +24,11 @@ uniform vec3 u_tex0SamplingDirX;
 uniform vec3 u_tex0SamplingDirY;
 uniform vec3 u_texSamplingDirZ;
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 metricTexCoord(int imageIndex, vec2 patchOffset, int slabOffset);
-$$METRIC_SAMPLING_FUNCTIONS$$
-
+#include "entropy/METRIC_SAMPLING_FUNCTIONS.glsl"
 void main()
 {
   vec4 overlapColor = vec4(0.0, 0.0, 0.0, 0.0);

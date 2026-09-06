@@ -250,13 +250,15 @@ void renderVectorWarpedGridOverlaysForView(
  * @param program Linked shader program for the selected image render mode.
  * @param imageSegPairs Image/segmentation ids to render.
  * @param showEdges True when edge overlays should be included in this image pass.
+ * @param metricUsesWorldSampling Whether a warped metric program samples offsets in world space.
  */
 void renderOneImage(
   const View& view,
   const glm::vec3& worldOffsetXhairs,
   GLShaderProgram& program,
   const CurrentImages& imageSegPairs,
-  bool showEdges);
+  bool showEdges,
+  bool metricUsesWorldSampling = false);
 
 /**
  * @brief Render NanoVG overlays associated with one rendered image pass.

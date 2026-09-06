@@ -52,8 +52,7 @@ const float kPbrAmbientStrength = 0.30;
 const float kPbrDiffuseStrength = 0.50;
 const float kPbrSpecularStrength = 0.20;
 
-$$DDP_DEPTH_FUNCTIONS$$
-
+#include "entropy/DDP_DEPTH_FUNCTIONS.glsl"
 vec3 simpleLitColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
   vec3 halfDirection = lightDirection + viewDirection;
@@ -95,13 +94,15 @@ vec3 physicallyBasedDirectColor(vec3 albedo, vec3 normal, vec3 lightDirection, v
   float nDotV = max(dot(normal, viewDirection), 0.0);
   float hDotV = max(dot(halfVector, viewDirection), 0.0);
 
-  vec3 f0 = mix(vec3(0.04), albedo, u_metallic);
-  float distribution = distributionGgx(normal, halfVector, u_roughness);
-  float geometry = geometrySchlickGgx(nDotV, u_roughness) * geometrySchlickGgx(nDotL, u_roughness);
+  float metallic = clamp(u_metallic, 0.0, 1.0);
+  float roughness = clamp(u_roughness, 0.04, 1.0);
+  vec3 f0 = mix(vec3(0.04), albedo, metallic);
+  float distribution = distributionGgx(normal, halfVector, roughness);
+  float geometry = geometrySchlickGgx(nDotV, roughness) * geometrySchlickGgx(nDotL, roughness);
   vec3 fresnel = fresnelSchlick(hDotV, f0);
 
   vec3 specular = (distribution * geometry * fresnel) / max(4.0 * nDotV * nDotL, 0.000001);
-  vec3 diffuse = (vec3(1.0) - fresnel) * (1.0 - u_metallic) * albedo / kPi;
+  vec3 diffuse = (vec3(1.0) - fresnel) * (1.0 - metallic) * albedo / kPi;
   // Fixed neutral light strengths keep PBR independent of the disabled Blinn-Phong controls.
   // Multiplying by pi treats the strengths as irradiance and keeps brightness comparable.
   vec3 diffuseLighting = diffuse * (kPi * kPbrDiffuseStrength);
@@ -111,7 +112,7 @@ vec3 physicallyBasedDirectColor(vec3 albedo, vec3 normal, vec3 lightDirection, v
 
 vec3 physicallyBasedColor(vec3 albedo, vec3 normal, vec3 lightDirection, vec3 viewDirection, float ao, float shadow)
 {
-  vec3 ambient = albedo * kPbrAmbientStrength * u_ambientOcclusion * ao;
+  vec3 ambient = albedo * kPbrAmbientStrength * clamp(u_ambientOcclusion, 0.0, 1.0) * clamp(ao, 0.0, 1.0);
   vec3 keyLighting = physicallyBasedDirectColor(albedo, normal, lightDirection, viewDirection, shadow);
   vec3 fillLighting =
     physicallyBasedDirectColor(albedo, normal, kPbrFillLightDirection, viewDirection, kPbrFillLightStrength);
@@ -136,7 +137,10 @@ vec3 safeViewDirection()
 {
   vec3 eyeVector = u_cameraWorldPosition - v_worldPosition;
   float eyeDistance2 = dot(eyeVector, eyeVector);
-  return eyeDistance2 > 0.000000000001 ? eyeVector * inversesqrt(eyeDistance2) : normalize(u_lightDirectionWorld);
+  float lightLength2 = dot(u_lightDirectionWorld, u_lightDirectionWorld);
+  return eyeDistance2 > 1.0e-12
+           ? eyeVector * inversesqrt(eyeDistance2)
+           : (lightLength2 > 1.0e-12 ? u_lightDirectionWorld * inversesqrt(lightLength2) : vec3(0.0, 0.0, 1.0));
 }
 
 float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
@@ -146,6 +150,9 @@ float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
   }
 
   vec4 lightClip = u_lightClip_T_world * vec4(worldPosition, 1.0);
+  if (abs(lightClip.w) <= 1.0e-12) {
+    return 1.0;
+  }
   vec3 lightNdc = lightClip.xyz / lightClip.w;
   vec3 shadowCoord = lightNdc * 0.5 + 0.5;
   if (
@@ -158,7 +165,7 @@ float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
   float currentDepth = shadowCoord.z;
   float normalOffset = 1.0 - clamp(abs(dot(normal, lightDirection)), 0.0, 1.0);
   float receiverBias = u_shadowDepthBias * mix(1.0, 3.0, normalOffset);
-  vec2 texelSize = 1.0 / vec2(textureSize(u_shadowMapTex, 0));
+  vec2 texelSize = 1.0 / vec2(max(textureSize(u_shadowMapTex, 0), ivec2(1)));
   float occludedSamples = 0.0;
   for (int y = -1; y <= 1; ++y) {
     for (int x = -1; x <= 1; ++x) {
@@ -166,7 +173,7 @@ float shadowVisibility(vec3 worldPosition, vec3 normal, vec3 lightDirection)
       occludedSamples += currentDepth - receiverBias > closestDepth ? 1.0 : 0.0;
     }
   }
-  return 1.0 - u_shadowStrength * occludedSamples / 9.0;
+  return 1.0 - clamp(u_shadowStrength, 0.0, 1.0) * occludedSamples / 9.0;
 }
 
 float screenAmbientOcclusion()
@@ -200,7 +207,7 @@ vec4 applyTriangleEdges(vec4 color)
     return color;
   }
 
-  vec3 antialiasedInterior = smoothstep(vec3(0.0), fwidth(v_barycentric) * 1.25, v_barycentric);
+  vec3 antialiasedInterior = smoothstep(vec3(0.0), max(fwidth(v_barycentric) * 1.25, vec3(1.0e-6)), v_barycentric);
   float interior = min(min(antialiasedInterior.x, antialiasedInterior.y), antialiasedInterior.z);
   color.rgb = mix(u_triangleEdgeColor, color.rgb, interior);
   return color;
@@ -211,7 +218,9 @@ vec4 shadedMeshColor()
   vec3 normal = surfaceNormal();
   vec3 viewDirection = safeViewDirection();
   vec3 shadingNormal = faceforward(normal, -viewDirection, normal);
-  vec3 lightDirection = u_shadowMapEnabled ? normalize(u_lightDirectionWorld) : viewDirection;
+  float lightLength2 = dot(u_lightDirectionWorld, u_lightDirectionWorld);
+  vec3 lightDirection =
+    u_shadowMapEnabled && lightLength2 > 1.0e-12 ? u_lightDirectionWorld * inversesqrt(lightLength2) : viewDirection;
   vec4 color = u_hasVertexColors ? v_color * u_baseColor : u_baseColor;
   float shadow = shadowVisibility(v_worldPosition, shadingNormal, lightDirection);
   float ao = screenAmbientOcclusion();
@@ -225,7 +234,7 @@ vec4 shadedMeshColor()
 
 void main()
 {
-  for (int i = 0; i < u_clipPlaneCount; ++i) {
+  for (int i = 0; i < clamp(u_clipPlaneCount, 0, 8); ++i) {
     if (dot(u_clipPlanes[i].xyz, v_worldPosition) + u_clipPlanes[i].w < 0.0) {
       discard;
     }

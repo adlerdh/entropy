@@ -10,8 +10,9 @@ bool doRender(vec2 clipPos, vec2 checkerCoord)
   bvec2 quadrant = bvec2(clipPos.x <= u_clipCrosshairs.x, clipPos.y > u_clipCrosshairs.y);
 
   // Distance of the fragment from the crosshairs, accounting for aspect ratio:
-  float flashlightDist =
-    sqrt(pow(u_aspectRatio * (clipPos.x - u_clipCrosshairs.x), 2.0) + pow(clipPos.y - u_clipCrosshairs.y, 2.0));
+  vec2 flashlightOffset = clipPos - u_clipCrosshairs;
+  flashlightOffset.x *= max(abs(u_aspectRatio), 1.0e-6);
+  float flashlightDist = length(flashlightOffset);
 
   // Flag indicating whether the fragment is rendered
   bool render = (IMAGE_RENDER_MODE == u_renderMode);

@@ -3,6 +3,7 @@
 #include "common/Exception.hpp"
 #include "rendering/RenderData.h"
 #include "rendering/ShaderProgramSetup.h"
+#include "rendering/ShaderPreprocessor.h"
 #include "rendering/ShaderSourceSetup.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/helpers/PipelineHelpers.h"
@@ -40,9 +41,9 @@ std::string loadShaderFile(const std::string& path)
 
 std::string loadMeshDdpShaderFile(const std::string& path)
 {
-  return rendering::replacePlaceholders(
+  return rendering::preprocessShaderSource(
     loadShaderFile(path),
-    {{"$$DDP_DEPTH_FUNCTIONS$$", loadShaderFile("app/rendering/shaders/mesh/MeshDdpDepth.glsl")}});
+    {{"DDP_DEPTH_FUNCTIONS", loadShaderFile("app/rendering/shaders/mesh/MeshDdpDepth.glsl")}});
 }
 
 bool attachShaderFile(GLShaderProgram& program, const ShaderType shaderType, const std::string& path, Uniforms uniforms)
@@ -136,13 +137,17 @@ Uniforms meshFragmentUniforms()
   uniforms.insertUniform("u_hasVertexColors", UniformType::Bool, false);
   uniforms.insertUniform("u_cameraWorldPosition", UniformType::Vec3, glm::vec3{0.0f});
   uniforms.insertUniform("u_shadowMapEnabled", UniformType::Bool, false);
-  uniforms.insertUniform("u_shadowMapTex", UniformType::Sampler, 7, k_optionalUniform);
+  uniforms.insertUniform("u_shadowMapTex", UniformType::Sampler, Uniforms::SamplerIndexType{7}, k_optionalUniform);
   uniforms.insertUniform("u_lightClip_T_world", UniformType::Mat4, glm::mat4{1.0f});
   uniforms.insertUniform("u_shadowStrength", UniformType::Float, 0.35f);
   uniforms.insertUniform("u_shadowDepthBias", UniformType::Float, 0.001f);
   uniforms.insertUniform("u_lightDirectionWorld", UniformType::Vec3, glm::vec3{0.0f, 0.0f, 1.0f});
   uniforms.insertUniform("u_screenAmbientOcclusionEnabled", UniformType::Bool, false);
-  uniforms.insertUniform("u_screenAmbientOcclusionTex", UniformType::Sampler, 6, k_optionalUniform);
+  uniforms.insertUniform(
+    "u_screenAmbientOcclusionTex",
+    UniformType::Sampler,
+    Uniforms::SamplerIndexType{6},
+    k_optionalUniform);
   uniforms.insertUniform("u_viewportOrigin", UniformType::IVec2, glm::ivec2{0});
   uniforms.insertUniform("u_clipPlaneCount", UniformType::Int, 0);
   for (int i = 0; i < rendering::mesh::MaxMeshClipPlanes; ++i) {
@@ -201,7 +206,7 @@ bool createMeshImagePlaneProgram(
   const rendering::shader_setup::ProgramSetup setup = rendering::shader_setup::buildProgramSetup();
   const rendering::shader_setup::ShaderInfo& imageShaderInfo = setup.shaderInfo.at(shaderType);
   std::string fsSource = loadShaderFile("app/rendering/shaders/" + imageShaderInfo.fsFileName);
-  fsSource = rendering::replacePlaceholders(
+  fsSource = rendering::preprocessShaderSource(
     fsSource,
     rendering::shaderReplacementsForTextureDimension(
       imageShaderInfo.fsReplacements,
@@ -226,36 +231,19 @@ bool createMeshImagePlaneDdpProgram(
   const rendering::shader_setup::ProgramSetup setup = rendering::shader_setup::buildProgramSetup();
   const rendering::shader_setup::ShaderInfo& imageShaderInfo = setup.shaderInfo.at(ShaderProgramType::ImageGrayLinear);
   const rendering::shader_setup::ShaderSourceSet sources = rendering::shader_setup::buildShaderSourceSet();
-  static const std::string sk_uintTextureLinear2DUsingExistingAxes = R"(
-ivec3 segTextureSize()
-{
-  ivec2 texSize = textureSize(u_segTex, 0);
-  ivec3 size = ivec3(1);
-  size[u_tex2DAxes[0].x] = texSize.x;
-  size[u_tex2DAxes[0].y] = texSize.y;
-  return size;
-}
-
-uint uintTextureLookup(usampler2D tex, vec3 texCoord)
-{
-  return texture(tex, texCoord2D(texCoord, 0))[0];
-}
-)";
   std::unordered_map<std::string, std::string> replacements = imageShaderInfo.fsReplacements;
-  replacements["$$UINT_TEXTURE_LOOKUP_FUNCTION$$"] = sources.uintTextureLinear3D;
-  std::string fsSource = loadShaderFile(fragmentShaderPath);
-  fsSource = rendering::replacePlaceholders(
-    fsSource,
-    {
-      {"$$IMAGE_PLANE_DISPLAY_FUNCTIONS$$", loadShaderFile("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl")},
-      {"$$DDP_DEPTH_FUNCTIONS$$", loadShaderFile("app/rendering/shaders/mesh/MeshDdpDepth.glsl")},
-    });
+  replacements["UINT_TEXTURE_LOOKUP_FUNCTION"] = sources.uintTextureLinear3D;
   std::unordered_map<std::string, std::string> dimensionReplacements =
     rendering::shaderReplacementsForTextureDimension(replacements, textureDimension, setup.lookupReplacementSources);
   if (RenderData::TextureDimension::Texture2D == textureDimension) {
-    dimensionReplacements["$$UINT_TEXTURE_LOOKUP_FUNCTION$$"] = sk_uintTextureLinear2DUsingExistingAxes;
+    dimensionReplacements["UINT_TEXTURE_LOOKUP_FUNCTION"] =
+      loadShaderFile("app/rendering/shaders/functions/UIntTextureLookup_ImagePlane_2D.glsl");
   }
-  fsSource = rendering::replacePlaceholders(fsSource, dimensionReplacements);
+  dimensionReplacements["IMAGE_PLANE_DISPLAY_FUNCTIONS"] =
+    loadShaderFile("app/rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  dimensionReplacements["DDP_DEPTH_FUNCTIONS"] = loadShaderFile("app/rendering/shaders/mesh/MeshDdpDepth.glsl");
+  const std::string fsSource =
+    rendering::preprocessShaderSource(loadShaderFile(fragmentShaderPath), dimensionReplacements);
 
   Uniforms fsUniforms = imageShaderInfo.fsUniforms;
   fsUniforms.insertUniform("u_imgRgbaTex", UniformType::SamplerVector, Uniforms::SamplerIndexVectorType{{0, 1, 2, 3}});
@@ -274,8 +262,8 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   fsUniforms.insertUniform("u_planeUp_subject", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 0.0f});
   fsUniforms.insertUniform("u_vectorSignedColors", UniformType::Bool, true);
   fsUniforms.insertUniform("u_segVisible", UniformType::Bool, false);
-  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, 5);
-  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, 6);
+  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, Uniforms::SamplerIndexType{5});
+  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, Uniforms::SamplerIndexType{6});
   fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
   fsUniforms.insertUniform("u_segFillOpacity", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
@@ -290,8 +278,13 @@ uint uintTextureLookup(usampler2D tex, vec3 texCoord)
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
   if (peelShader) {
-    fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 7, k_optionalUniform);
-    fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 8, k_optionalUniform);
+    fsUniforms.insertUniform(
+      "u_previousDepthBoundsTex",
+      UniformType::Sampler,
+      Uniforms::SamplerIndexType{7},
+      k_optionalUniform);
+    fsUniforms
+      .insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{8}, k_optionalUniform);
   }
 
   attachShaderFile(
@@ -349,8 +342,8 @@ bool Rendering::createMeshAmbientOcclusionGeometryProgram(GLShaderProgram& progr
 bool Rendering::createMeshAmbientOcclusionResolveProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_normalTex", UniformType::Sampler, 0, k_optionalUniform);
-  fsUniforms.insertUniform("u_depthTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms.insertUniform("u_normalTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
+  fsUniforms.insertUniform("u_depthTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_camera_T_clip", UniformType::Mat4, glm::mat4{1.0f});
   fsUniforms.insertUniform("u_clip_T_camera", UniformType::Mat4, glm::mat4{1.0f});
@@ -367,9 +360,9 @@ bool Rendering::createMeshAmbientOcclusionResolveProgram(GLShaderProgram& progra
 bool Rendering::createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_occlusionTex", UniformType::Sampler, 2, k_optionalUniform);
-  fsUniforms.insertUniform("u_normalTex", UniformType::Sampler, 0, k_optionalUniform);
-  fsUniforms.insertUniform("u_depthTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms.insertUniform("u_occlusionTex", UniformType::Sampler, Uniforms::SamplerIndexType{2}, k_optionalUniform);
+  fsUniforms.insertUniform("u_normalTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
+  fsUniforms.insertUniform("u_depthTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_camera_T_clip", UniformType::Mat4, glm::mat4{1.0f});
   fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
@@ -475,8 +468,10 @@ bool Rendering::createMeshDdpInitEdgesProgram(GLShaderProgram& program)
 bool Rendering::createMeshDdpPeelProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms = meshFragmentUniforms();
-  fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 0, k_optionalUniform);
-  fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms
+    .insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
+  fsUniforms
+    .insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
 
   attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/Mesh.vs", meshVertexUniforms());
   attachShaderSource(
@@ -491,8 +486,10 @@ bool Rendering::createMeshDdpPeelProgram(GLShaderProgram& program)
 bool Rendering::createMeshDdpPeelEdgesProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms = meshFragmentUniforms();
-  fsUniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, 0, k_optionalUniform);
-  fsUniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms
+    .insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
+  fsUniforms
+    .insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
 
   attachShaderFile(program, ShaderType::Vertex, "app/rendering/shaders/mesh/MeshEdges.vs", meshVertexUniforms());
   attachShaderFile(program, ShaderType::Geometry, "app/rendering/shaders/mesh/MeshEdges.gs", Uniforms{});
@@ -508,7 +505,7 @@ bool Rendering::createMeshDdpPeelEdgesProgram(GLShaderProgram& program)
 bool Rendering::createMeshDdpCompletionProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_depthBoundsTex", UniformType::Sampler, 0, k_optionalUniform);
+  fsUniforms.insertUniform("u_depthBoundsTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
   return createFullscreenMeshDdpProgram(
     program,
     "app/rendering/shaders/mesh/MeshDdpCompletion.fs",
@@ -518,7 +515,7 @@ bool Rendering::createMeshDdpCompletionProgram(GLShaderProgram& program)
 bool Rendering::createMeshDdpBackBlendProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_backTempTex", UniformType::Sampler, 0, k_optionalUniform);
+  fsUniforms.insertUniform("u_backTempTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
   return createFullscreenMeshDdpProgram(
     program,
     "app/rendering/shaders/mesh/MeshDdpBackBlend.fs",
@@ -528,8 +525,8 @@ bool Rendering::createMeshDdpBackBlendProgram(GLShaderProgram& program)
 bool Rendering::createMeshDdpResolveProgram(GLShaderProgram& program)
 {
   Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_frontColorTex", UniformType::Sampler, 0, k_optionalUniform);
-  fsUniforms.insertUniform("u_backColorTex", UniformType::Sampler, 1, k_optionalUniform);
+  fsUniforms.insertUniform("u_frontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{0}, k_optionalUniform);
+  fsUniforms.insertUniform("u_backColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{1}, k_optionalUniform);
   fsUniforms.insertUniform("u_viewportOrigin", UniformType::IVec2, glm::ivec2{0, 0});
   return createFullscreenMeshDdpProgram(program, "app/rendering/shaders/mesh/MeshDdpResolve.fs", std::move(fsUniforms));
 }

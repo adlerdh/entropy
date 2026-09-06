@@ -36,6 +36,7 @@ target_sources(entropy PRIVATE
   SegmentationPass.cpp
   ShaderInfoSetup.cpp
   ShaderProgramSetup.cpp
+  ShaderPreprocessor.cpp
   ShaderPrograms.cpp
   ShaderSourceSetup.cpp
   ShaderUniformSetup.cpp

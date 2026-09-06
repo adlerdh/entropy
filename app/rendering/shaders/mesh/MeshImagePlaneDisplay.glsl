@@ -3,7 +3,7 @@
 #define COMPONENT_RENDER_VECTOR_NORMAL_PROJECTION 3
 #define COMPONENT_RENDER_VECTOR_PLANAR_PROJECTION 4
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgRgbaTex[4];
+uniform ${IMAGE_SAMPLER_TYPE} u_imgRgbaTex[4];
 uniform int u_componentRenderMode;
 uniform vec2 u_imgSlopeInterceptRgba[4];
 uniform vec2 u_imgMinMaxRgba[4];
@@ -60,8 +60,8 @@ vec4 vectorImagePlaneColor(vec3 sampleTc)
   }
 
   if (u_componentRenderMode == COMPONENT_RENDER_VECTOR_NORMAL_PROJECTION) {
-    float projection =
-      clamp(dot(vectorValue, normalize(u_planeNormal_subject)) / max(u_projectionScale, 1.0e-6), -1.0, 1.0);
+    vec3 planeNormal = normalizeOr(u_planeNormal_subject, vec3(0.0, 0.0, 1.0));
+    float projection = clamp(dot(vectorValue, planeNormal) / max(u_projectionScale, 1.0e-6), -1.0, 1.0);
     vec3 negativeColor = vec3(0.10, 0.35, 1.00);
     vec3 zeroColor = vec3(0.92);
     vec3 positiveColor = vec3(1.00, 0.16, 0.10);
@@ -71,7 +71,9 @@ vec4 vectorImagePlaneColor(vec3 sampleTc)
     return vec4(color * alpha, alpha);
   }
 
-  vec2 planar = vec2(dot(vectorValue, normalize(u_planeRight_subject)), dot(vectorValue, normalize(u_planeUp_subject)));
+  vec3 planeRight = normalizeOr(u_planeRight_subject, vec3(1.0, 0.0, 0.0));
+  vec3 planeUp = normalizeOr(u_planeUp_subject, vec3(0.0, 1.0, 0.0));
+  vec2 planar = vec2(dot(vectorValue, planeRight), dot(vectorValue, planeUp));
   float magnitude = length(planar);
   if (magnitude <= 0.0) {
     return vec4(0.0);

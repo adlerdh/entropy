@@ -22,7 +22,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha)
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[4]; // vector field components; only x/y/z are used
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex[4]; // vector field components; only x/y/z are used
 
 uniform float u_imgSlope_native_T_texture; // map texture value to native component units
 uniform mat4 u_subject_T_texture;          // texture coordinates to subject/LPS coordinates
@@ -45,14 +45,11 @@ uniform float u_aspectRatio;
 uniform float u_flashlightRadius;
 uniform bool u_flashlightMovingOnFixed;
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 float gridLineAlpha(vec2 gridCoord, float lineThicknessPx)
 {
   vec2 distanceToLine = min(fract(gridCoord), 1.0 - fract(gridCoord));
@@ -87,9 +84,10 @@ void main()
   }
 
   float spacing = max(u_gridSpacing_subject, 1.0e-6);
-  vec2 gridCoord =
-    vec2(dot(warpedSubjectPos, normalize(u_viewRight_subject)), dot(warpedSubjectPos, normalize(u_viewUp_subject))) /
-    spacing;
+  vec2 gridCoord = vec2(
+                     dot(warpedSubjectPos, normalizeOr(u_viewRight_subject, vec3(1.0, 0.0, 0.0))),
+                     dot(warpedSubjectPos, normalizeOr(u_viewUp_subject, vec3(0.0, 1.0, 0.0)))) /
+                   spacing;
   float lineAlpha = gridLineAlpha(gridCoord, u_lineThickness_px);
 
   vec4 background = premultiply(clamp(u_backgroundColor, vec4(0.0), vec4(1.0)));

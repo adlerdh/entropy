@@ -15,8 +15,8 @@ namespace rendering::shader_setup
  * @brief Static description of one linked shader program.
  *
  * The filenames identify shader resources embedded in the application. Fragment shader replacements contain source
- * snippets that are substituted before compilation. Uniform sets describe the vertex and fragment uniforms expected by
- * the linked program.
+ * snippets and inline values consumed by the strict shader preprocessor. Uniform sets describe the vertex and fragment
+ * uniforms expected by the linked program.
  */
 struct ShaderInfo
 {

@@ -18,7 +18,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[4]; // image RGBA components
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex[4]; // image RGBA components
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[4]; // map texture to normalized intensity [0, 1], plus window/leveling
@@ -40,17 +40,13 @@ uniform float u_aspectRatio;            // view aspect ratio (width / height)
 uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
-$$SAMPLE_TEX_COORD_FUNCTION$$
-
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 void main()
 {
   if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {

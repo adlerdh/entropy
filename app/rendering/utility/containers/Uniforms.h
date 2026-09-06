@@ -29,10 +29,7 @@ class Uniforms
 {
 public:
   // To avoid ambiguity, we define types used to specifically encapsulate sampler indices.
-  // Note that OpenGL expects sampler indices to be set with int32_t (signed) in glUniform1i(v).
-  // However, the signed integer type conflicts with other OpenGL function calls that expect
-  // sampler indices to be unsigned. Let's just use unsigned uint32_t, with the understanding
-  // that sampler indices will never exceed the maximum signed value.
+  // OpenGL expects sampler indices to be signed 32-bit integers in glUniform1i(v).
   struct SamplerIndexType
   {
     std::int32_t index;
@@ -64,6 +61,8 @@ public:
     std::vector<glm::vec2>,
     std::vector<glm::mat4>,
     std::vector<glm::vec3>,
+    std::vector<glm::vec4>,
+    std::vector<int>,
     std::array<float, 2>,
     std::array<float, 3>,
     std::array<float, 4>,
@@ -161,6 +160,9 @@ public:
 
   /// Return whether this registry contains a declaration with the given name.
   bool containsKey(const std::string& name) const;
+
+  /// Return whether a C++ payload has the representation required by a declared uniform type.
+  static bool valueMatchesType(UniformType type, const ValueType& value) noexcept;
 
   static std::string getUniformTypeString(const GLenum type);
 

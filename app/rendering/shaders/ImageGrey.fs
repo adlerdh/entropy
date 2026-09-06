@@ -25,8 +25,8 @@ fs_in;
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // image (scalar, red channel only)
-uniform sampler1D u_cmapTex;             // image color map (non-premultiplied RGBA)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex;            // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept;        // map texture to normalized intensity [0, 1], plus window/leveling
@@ -65,21 +65,16 @@ uniform int u_halfNumMipSamples;  // half number of MIP samples (0 when no proje
 uniform vec3 u_texSamplingDirZ;   // Z view camera direction (in texture sampling space)
 uniform vec3 u_worldSamplingDirZ; // Z view camera direction (in world space)
 
-$$HELPER_FUNCTIONS$$
-$$COLOR_HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
+#include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
-$$SAMPLE_TEX_COORD_FUNCTION$$
-
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 /// float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img);
-$$IP_FUNCTION$$
-
+#include "entropy/IP_FUNCTION.glsl"
 float blinnPhongImagePlaneLighting(vec3 worldPosition, vec3 worldNormal)
 {
   if (!u_imagePlaneShadingEnabled) {

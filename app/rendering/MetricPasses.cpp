@@ -127,7 +127,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_useSquare", R.m_useSquare);
       setMetricWarpUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false);
+      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
     program.stopUse();
   }
@@ -163,7 +163,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_invalidStyle", static_cast<int>(R.m_localNccInvalidStyle));
       setMetricWarpUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false);
+      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
     program.stopUse();
   }
@@ -199,7 +199,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_invalidStyle", static_cast<int>(R.m_localLinearResidualInvalidStyle));
       setMetricWarpUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false);
+      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
     program.stopUse();
   }
@@ -227,7 +227,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_magentaCyan", R.m_overlayMagentaCyan);
       setMetricWarpUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false);
+      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
     program.stopUse();
   }

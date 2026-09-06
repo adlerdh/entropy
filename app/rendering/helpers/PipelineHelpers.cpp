@@ -10,21 +10,6 @@
 namespace rendering
 {
 
-std::string replacePlaceholders(
-  const std::string& source,
-  const std::unordered_map<std::string, std::string>& placeholdersToStringMap)
-{
-  std::string result = source;
-  for (const auto& [placeholder, replacement] : placeholdersToStringMap) {
-    std::size_t pos = 0;
-    while ((pos = result.find(placeholder, pos)) != std::string::npos) {
-      result.replace(pos, placeholder.length(), replacement);
-      pos += replacement.length();
-    }
-  }
-  return result;
-}
-
 std::unordered_map<std::string, std::string> shaderReplacementsForTextureDimension(
   const std::unordered_map<std::string, std::string>& replacements,
   const TextureDimension dimension,
@@ -33,10 +18,10 @@ std::unordered_map<std::string, std::string> shaderReplacementsForTextureDimensi
   std::unordered_map<std::string, std::string> result = replacements;
 
   if (TextureDimension::Texture2D == dimension) {
-    result["$$IMAGE_SAMPLER_TYPE$$"] = "sampler2D";
-    result["$$SEG_SAMPLER_TYPE$$"] = "usampler2D";
+    result["IMAGE_SAMPLER_TYPE"] = "sampler2D";
+    result["SEG_SAMPLER_TYPE"] = "usampler2D";
 
-    if (const auto it = result.find("$$TEXTURE_LOOKUP_FUNCTION$$"); it != std::end(result)) {
+    if (const auto it = result.find("TEXTURE_LOOKUP_FUNCTION"); it != std::end(result)) {
       if (it->second == lookupSources.cubic3D) {
         it->second = std::string{lookupSources.cubic2D};
       }
@@ -48,15 +33,15 @@ std::unordered_map<std::string, std::string> shaderReplacementsForTextureDimensi
       }
     }
 
-    if (const auto it = result.find("$$UINT_TEXTURE_LOOKUP_FUNCTION$$"); it != std::end(result)) {
+    if (const auto it = result.find("UINT_TEXTURE_LOOKUP_FUNCTION"); it != std::end(result)) {
       it->second = std::string{lookupSources.uintLinear2D};
     }
 
     return result;
   }
 
-  result["$$IMAGE_SAMPLER_TYPE$$"] = "sampler3D";
-  result["$$SEG_SAMPLER_TYPE$$"] = "usampler3D";
+  result["IMAGE_SAMPLER_TYPE"] = "sampler3D";
+  result["SEG_SAMPLER_TYPE"] = "usampler3D";
   return result;
 }
 

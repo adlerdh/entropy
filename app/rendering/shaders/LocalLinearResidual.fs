@@ -12,8 +12,8 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[2]; // images (scalar, red channel only)
-uniform sampler1D u_metricCmapTex;          // metric color map (non-premultiplied RGBA)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex[2]; // images (scalar, red channel only)
+uniform sampler1D u_metricCmapTex;         // metric color map (non-premultiplied RGBA)
 
 uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1]
 uniform vec2 u_metricCmapSlopeIntercept; // slope and intercept for the metric colormap
@@ -29,14 +29,11 @@ uniform float u_minValidFraction;
 uniform float u_varianceEpsilon;
 uniform int u_invalidStyle; // INVALID_TRANSPARENT or INVALID_GRAY
 
-$$HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoords);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 metricTexCoord(int imageIndex, vec2 patchOffset, int slabOffset);
-$$METRIC_SAMPLING_FUNCTIONS$$
-
+#include "entropy/METRIC_SAMPLING_FUNCTIONS.glsl"
 bool pairedSample(vec2 patchOffset, out float value0, out float value1)
 {
   vec3 tex0 = metricTexCoord(0, patchOffset, 0);
@@ -63,8 +60,9 @@ void main()
   float sum1 = 0.0;
   float count = 0.0;
 
-  for (int y = -u_patchRadius; y <= u_patchRadius; ++y) {
-    for (int x = -u_patchRadius; x <= u_patchRadius; ++x) {
+  int patchRadius = max(u_patchRadius, 0);
+  for (int y = -patchRadius; y <= patchRadius; ++y) {
+    for (int x = -patchRadius; x <= patchRadius; ++x) {
       float value0 = 0.0;
       float value1 = 0.0;
       if (pairedSample(u_sampleSpacing * vec2(float(x), float(y)), value0, value1)) {
@@ -75,7 +73,7 @@ void main()
     }
   }
 
-  float sideLength = float(2 * u_patchRadius + 1);
+  float sideLength = float(2 * patchRadius + 1);
   float requiredCount = ceil(clamp(u_minValidFraction, 0.0, 1.0) * sideLength * sideLength);
   bool valid = count >= max(requiredCount, 1.0);
 
@@ -84,8 +82,8 @@ void main()
   float variance0 = 0.0;
   float covariance = 0.0;
 
-  for (int y = -u_patchRadius; y <= u_patchRadius; ++y) {
-    for (int x = -u_patchRadius; x <= u_patchRadius; ++x) {
+  for (int y = -patchRadius; y <= patchRadius; ++y) {
+    for (int x = -patchRadius; x <= patchRadius; ++x) {
       float value0 = 0.0;
       float value1 = 0.0;
       if (pairedSample(u_sampleSpacing * vec2(float(x), float(y)), value0, value1)) {
@@ -96,7 +94,7 @@ void main()
     }
   }
 
-  valid = valid && variance0 > u_varianceEpsilon;
+  valid = valid && variance0 > max(u_varianceEpsilon, 1.0e-12);
   if (!valid) {
     if (INVALID_TRANSPARENT == u_invalidStyle) {
       discard;
@@ -109,8 +107,8 @@ void main()
   float bias = mean1 - gain * mean0;
   float residualSum = 0.0;
 
-  for (int y = -u_patchRadius; y <= u_patchRadius; ++y) {
-    for (int x = -u_patchRadius; x <= u_patchRadius; ++x) {
+  for (int y = -patchRadius; y <= patchRadius; ++y) {
+    for (int x = -patchRadius; x <= patchRadius; ++x) {
       float value0 = 0.0;
       float value1 = 0.0;
       if (pairedSample(u_sampleSpacing * vec2(float(x), float(y)), value0, value1)) {
@@ -124,5 +122,6 @@ void main()
   metric = clamp(u_metricSlopeIntercept[0] * metric + u_metricSlopeIntercept[1], 0.0, 1.0);
   float cmapValue = u_metricCmapSlopeIntercept[0] * metric + u_metricCmapSlopeIntercept[1];
 
-  o_color = texture(u_metricCmapTex, cmapValue);
+  vec4 color = texture(u_metricCmapTex, cmapValue);
+  o_color = vec4(color.rgb * color.a, color.a);
 }

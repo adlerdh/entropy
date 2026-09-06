@@ -21,8 +21,8 @@ fs_in;
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // image (scalar, red channel only)
-uniform sampler1D u_cmapTex;             // image color map (non-premultiplied RGBA)
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex;            // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept;          // slope/intercept for window-leveling the attenuation value
@@ -67,18 +67,14 @@ uniform float u_mipSamplingDistance_cm;
 uniform float u_waterAttenCoeff;
 uniform float u_airAttenCoeff;
 
-$$HELPER_FUNCTIONS$$
-$$COLOR_HELPER_FUNCTIONS$$
-
+#include "entropy/HELPER_FUNCTIONS.glsl"
+#include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-$$TEXTURE_LOOKUP_FUNCTION$$
-
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
-$$SAMPLE_TEX_COORD_FUNCTION$$
-
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-$$DO_RENDER_FUNCTION$$
-
+#include "entropy/DO_RENDER_FUNCTION.glsl"
 /**
  * @brief Convert texture intensity to Hounsfield units, then to a photon linear attenuation coefficient.
  *
@@ -126,12 +122,12 @@ void main()
   }
 
   // Inverse of the total photon attenuation, which is in range [0.0, 1):
-  float invAtten = 1.0 - exp(-atten * u_mipSamplingDistance_cm);
-  float invAttenWL = u_imgSlopeIntercept[0] * invAtten + u_imgSlopeIntercept[1]; // apply W/L
+  float invAtten = 1.0 - exp(-atten * max(u_mipSamplingDistance_cm, 0.0));
+  float invAttenWL = clamp(u_imgSlopeIntercept[0] * invAtten + u_imgSlopeIntercept[1], 0.0, 1.0); // apply W/L
 
   // Compute coords into the image color map, accounting for quantization levels:
   float cmapCoord = mix(
-    floor(float(u_cmapQuantLevels) * invAttenWL) / float(u_cmapQuantLevels - 1),
+    floor(float(u_cmapQuantLevels) * invAttenWL) / max(float(u_cmapQuantLevels - 1), 1.0),
     invAttenWL,
     float(0 == u_cmapQuantLevels));
   cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1]; // normalize coords

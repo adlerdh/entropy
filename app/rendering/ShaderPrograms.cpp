@@ -5,6 +5,7 @@
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderData.h"
 #include "rendering/ShaderProgramSetup.h"
+#include "rendering/ShaderPreprocessor.h"
 #include "rendering/TextureLayout.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
@@ -57,7 +58,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> createShaderProgram
     return std::unexpected(std::format("Exception loading shader for program {}: {}", programName, e.what()));
   }
 
-  fsSource = rendering::replacePlaceholders(fsSource, fsReplacements);
+  fsSource = rendering::preprocessShaderSource(fsSource, fsReplacements);
 
   GLShader vs(vsName, ShaderType::Vertex, vsSource.c_str());
   vs.setRegisteredUniforms(vsUniforms);
