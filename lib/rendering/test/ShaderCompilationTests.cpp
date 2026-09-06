@@ -187,6 +187,12 @@ TEST_CASE("all assembled GLSL programs compile and link offline", "[rendering][s
       {{".vert", shader("mesh/FullScreenTriangle.vs")},
        {".frag", preprocess("mesh/" + std::string(fragment), ddpReplacements)}});
   }
+  for (const char* fragment : {"MeshImagePlaneCompositeDdpInit.fs", "MeshImagePlaneCompositeDdpPeel.fs"}) {
+    validate(
+      fragment,
+      {{".vert", shader("mesh/FullScreenTriangle.vs")},
+       {".frag", preprocess("mesh/" + std::string(fragment), ddpReplacements)}});
+  }
 
   const rendering::ShaderReplacements raycastCommon{
     {"SAMPLE_TEX_COORD_FUNCTION", shader("functions/SampleTexCoord_Identity.glsl")},
@@ -239,6 +245,15 @@ TEST_CASE("all assembled GLSL programs compile and link offline", "[rendering][s
         {{".vert", shader("mesh/MeshImagePlane.vs")},
          {".frag", preprocess("mesh/" + std::string(fragment), replacements)}});
     }
+
+    std::string compositeSource = shader("mesh/MeshImagePlaneDdpPeel.fs");
+    const std::size_t versionLineEnd = compositeSource.find('\n');
+    REQUIRE(versionLineEnd != std::string::npos);
+    compositeSource.insert(versionLineEnd + 1u, "#define IMAGE_PLANE_COMPOSITE_PASS\n");
+    validate(
+      "image-plane stack composite",
+      {{".vert", shader("mesh/MeshImagePlane.vs")},
+       {".frag", rendering::preprocessShaderSource(compositeSource, replacements)}});
   }
 #endif
 }

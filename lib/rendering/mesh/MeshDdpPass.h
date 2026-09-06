@@ -30,6 +30,7 @@ struct MeshDdpRenderRequest
   GLShaderProgram& completionProgram;         //!< Full-screen shader that detects unpeeled depth layers
   GLShaderProgram& backBlendProgram;          //!< Full-screen shader that accumulates back colors
   GLShaderProgram& resolveProgram;            //!< Full-screen shader that resolves front over back
+  std::function<void()> prepareExtraLayers;   //!< Optional pre-pass that builds non-material DDP layer inputs
   std::function<void()> drawExtraDepthBounds; //!< Optional non-material renderables for the DDP initialization pass
   std::function<void(GLTexture&, GLTexture&)> drawExtraPeelLayers; //!< Optional non-material peel pass
 };

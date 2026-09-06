@@ -29,6 +29,18 @@ struct MeshImagePlaneRenderList
 MeshImagePlaneRenderList buildImagePlaneRenderList(std::span<const MeshImagePlaneRenderable> imagePlanes);
 
 /**
+ * Return one orientation's planes without changing their image-layer order.
+ *
+ * The preserved order is used to alpha-compose image 0, then image 1, and so on before the resulting plane enters DDP.
+ */
+MeshImagePlaneRenderList imagePlaneRenderListForOrientation(
+  const MeshImagePlaneRenderList& list,
+  MeshImagePlaneOrientation orientation);
+
+/** Return the number of orthogonal orientations that contain at least one drawable image plane. */
+std::size_t visibleImagePlaneOrientationCount(const MeshImagePlaneRenderList& list) noexcept;
+
+/**
  * @brief Return the number of drawable image planes in a render list
  * @param list Image-plane render list
  * @return Drawable image-plane count

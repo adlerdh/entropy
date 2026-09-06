@@ -328,7 +328,9 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
     {6u, GL_TEXTURE_2D},
     {6u, GL_TEXTURE_BUFFER},
     {7u, GL_TEXTURE_2D},
-    {8u, GL_TEXTURE_2D}};
+    {8u, GL_TEXTURE_2D},
+    {9u, GL_TEXTURE_2D},
+    {10u, GL_TEXTURE_2D}};
   const GlViewport originalViewport = currentViewport();
   const glm::uvec2 size = viewportSize(originalViewport);
   if (!request.resources.ensureSize(size) && !request.resources.initialized()) {
@@ -340,8 +342,14 @@ void renderMeshDdpAlphaOver(const MeshDdpRenderRequest& request)
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_STENCIL_TEST);
   glDisable(GL_CULL_FACE);
+  glDisable(GL_POLYGON_OFFSET_FILL);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_FALSE);
+
+  if (request.prepareExtraLayers) {
+    request.prepareExtraLayers();
+  }
 
   clearAccumulatedBackColor(request.resources);
   clearDdpTargets(request.resources, 0u);

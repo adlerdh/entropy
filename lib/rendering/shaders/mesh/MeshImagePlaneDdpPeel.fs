@@ -26,8 +26,10 @@ uniform ${IMAGE_SAMPLER_TYPE} u_imgTex;
 uniform ${SEG_SAMPLER_TYPE} u_segTex;
 uniform sampler1D u_cmapTex;
 uniform samplerBuffer u_segLabelCmapTex;
+#ifndef IMAGE_PLANE_COMPOSITE_PASS
 uniform sampler2D u_previousDepthBoundsTex;
 uniform sampler2D u_previousFrontColorTex;
+#endif
 
 uniform vec2 u_imgSlopeIntercept;
 uniform vec2 u_imgMinMax;
@@ -36,7 +38,9 @@ uniform float u_imgOpacity;
 uniform bool u_imagePlaneShadingEnabled;
 uniform vec4 u_imagePlaneBorderColor;
 uniform float u_imagePlaneBorderWidthPixels;
+#ifndef IMAGE_PLANE_COMPOSITE_PASS
 uniform uint u_ddpDepthOrder;
+#endif
 uniform int u_boundaryVertexCount;
 uniform vec3 u_boundaryWorldPositions[6];
 uniform vec2 u_viewportOrigin;
@@ -75,9 +79,13 @@ uniform bool u_segOutlineUsesScreenPixels;
 uniform vec3 u_texSamplingDirsForSegOutline[2];
 uniform vec3 u_texSamplingDirsForSmoothSeg[2];
 
+#ifdef IMAGE_PLANE_COMPOSITE_PASS
+layout(location = 0) out vec4 outCompositeColor;
+#else
 layout(location = 0) out vec2 outDepthBounds;
 layout(location = 1) out vec4 outFrontColor;
 layout(location = 2) out vec4 outBackColor;
+#endif
 
 #include "entropy/HELPER_FUNCTIONS.glsl"
 #include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
@@ -87,7 +95,9 @@ layout(location = 2) out vec4 outBackColor;
 #include "entropy/DO_RENDER_FUNCTION.glsl"
 #include "entropy/IP_FUNCTION.glsl"
 #include "entropy/IMAGE_PLANE_DISPLAY_FUNCTIONS.glsl"
+#ifndef IMAGE_PLANE_COMPOSITE_PASS
 #include "entropy/DDP_DEPTH_FUNCTIONS.glsl"
+#endif
 int when_lt(int x, int y)
 {
   return max(sign(y - x), 0);
@@ -271,6 +281,21 @@ vec4 imagePlaneColor()
 
 void main()
 {
+  // Depth initialization rejects fragments that contribute no color. Apply exactly the same coverage rule before
+  // classifying this fragment against the previous depth bounds. Letting an alpha-zero fragment advance the bounds
+  // creates phantom peel layers; with intersecting planes those layers vary by screen region and can exhaust the
+  // pass budget before the visible plane is reached.
+  vec4 premultipliedColor = imagePlaneColor();
+  if (premultipliedColor.a <= 0.0) {
+    discard;
+  }
+
+#ifdef IMAGE_PLANE_COMPOSITE_PASS
+  // Image layers are submitted bottom-to-top and blended with premultiplied source-over. The resulting texture is one
+  // geometric transparency layer for this plane orientation, so coincident images never compete in DDP depth bounds.
+  outCompositeColor = premultipliedColor;
+#else
+
   ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
   vec2 previousDepthBounds = texelFetch(u_previousDepthBoundsTex, pixelCoord, 0).xy;
   vec4 previousFrontColor = texelFetch(u_previousFrontColorTex, pixelCoord, 0);
@@ -290,15 +315,11 @@ void main()
     return;
   }
 
-  vec4 premultipliedColor = imagePlaneColor();
-  if (premultipliedColor.a <= 0.0) {
-    discard;
-  }
-
   if (ddpDepthIsNearest(fragmentDepth, previousDepthBounds)) {
     outFrontColor = previousFrontColor + premultipliedColor * (1.0 - previousFrontColor.a);
   }
   else {
     outBackColor = premultipliedColor;
   }
+#endif
 }

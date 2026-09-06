@@ -269,7 +269,7 @@ void Rendering::drawMeshRenderListForView(
     ddpPlan = rendering::mesh::meshDdpPlanWithExtraRenderables(
       ddpPlan,
       ddpSettings,
-      static_cast<uint32_t>(imagePlaneList->imagePlanes.size()));
+      static_cast<uint32_t>(rendering::mesh::visibleImagePlaneOrientationCount(*imagePlaneList)));
   }
   for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, ddpSettings)) {
     spdlog::debug("{}", diagnostic);
@@ -292,18 +292,23 @@ void Rendering::drawMeshRenderListForView(
       .completionProgram = m_meshDdpCompletionProgram,
       .backBlendProgram = m_meshDdpBackBlendProgram,
       .resolveProgram = m_meshDdpResolveProgram,
+      .prepareExtraLayers = imagePlaneList
+                              ? [this, &view, imagePlaneList, &ddpContext]() {
+                                  prepareMeshImagePlaneDdpCompositesForView(view, *imagePlaneList, ddpContext);
+                                }
+                              : std::function<void()>{},
       .drawExtraDepthBounds = imagePlaneList
-                                 ? [this, &view, imagePlaneList, &context]() {
-                                     drawMeshImagePlaneDdpDepthBoundsForView(view, *imagePlaneList, context);
+                                 ? [this, &view, imagePlaneList, &ddpContext]() {
+                                     drawMeshImagePlaneDdpDepthBoundsForView(view, *imagePlaneList, ddpContext);
                                    }
                                  : std::function<void()>{},
       .drawExtraPeelLayers = imagePlaneList
-                               ? [this, &view, imagePlaneList, &context](GLTexture& previousDepthBounds,
-                                                                           GLTexture& previousFrontColor) {
+                               ? [this, &view, imagePlaneList, &ddpContext](GLTexture& previousDepthBounds,
+                                                                              GLTexture& previousFrontColor) {
                                    drawMeshImagePlaneDdpPeelLayersForView(
                                      view,
                                      *imagePlaneList,
-                                     context,
+                                     ddpContext,
                                      previousDepthBounds,
                                      previousFrontColor);
                                  }

@@ -122,6 +122,18 @@ static bool createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program);
  */
 static bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program);
 
+/** Compile the shader that alpha-composes one orientation's 3D-texture image stack. */
+static bool createMeshImagePlaneCompositeProgram(GLShaderProgram& program);
+
+/** Compile the shader that alpha-composes one orientation's planar-texture image stack. */
+static bool createMeshImagePlaneCompositeTexture2DProgram(GLShaderProgram& program);
+
+/** Compile the full-screen shader that contributes pre-composed image planes to DDP initialization. */
+static bool createMeshImagePlaneCompositeDdpInitProgram(GLShaderProgram& program);
+
+/** Compile the full-screen shader that contributes pre-composed image planes to DDP peeling. */
+static bool createMeshImagePlaneCompositeDdpPeelProgram(GLShaderProgram& program);
+
 /**
  * @brief Compile and link the mesh DDP initialization shader program.
  *
@@ -348,6 +360,12 @@ void drawMeshImagePlaneDdpPeelLayersForView(
   const rendering::mesh::MeshDrawContext& context,
   GLTexture& previousDepthBounds,
   GLTexture& previousFrontColor);
+
+/** Alpha-compose each orientation's coincident image stack before it participates in DDP. */
+void prepareMeshImagePlaneDdpCompositesForView(
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context);
 
 /**
  * @brief Build enabled 3D image-plane renderables without drawing them.

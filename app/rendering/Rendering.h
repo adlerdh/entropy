@@ -385,6 +385,14 @@ private:
 
   GLShaderProgram m_meshImagePlaneDdpPeelTexture2DProgram; //!< Mesh image-plane DDP peeling shader for 2D textures
 
+  GLShaderProgram m_meshImagePlaneCompositeProgram; //!< Alpha-composes an orientation's 3D-texture image layers
+
+  GLShaderProgram m_meshImagePlaneCompositeTexture2DProgram; //!< Alpha-composes planar 2D-texture image layers
+
+  GLShaderProgram m_meshImagePlaneCompositeDdpInitProgram; //!< Adds composite plane depth to DDP initialization
+
+  GLShaderProgram m_meshImagePlaneCompositeDdpPeelProgram; //!< Adds composite plane color to a DDP peel pass
+
   GLShaderProgram m_meshDdpInitProgram; //!< Mesh DDP attachment initialization shader
 
   GLShaderProgram m_meshDdpInitEdgesProgram; //!< Mesh DDP initialization shader matching the topology-edges pipeline

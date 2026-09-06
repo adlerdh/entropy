@@ -111,6 +111,10 @@ vec4 scalarImagePlaneColor(vec3 sampleTc, vec3 worldPos)
 
 vec4 displayedImagePlaneColor(vec3 sampleTc, vec3 worldPos)
 {
+  if (!isInsideTexture(sampleTc)) {
+    return vec4(0.0);
+  }
+
   if (u_componentRenderMode == COMPONENT_RENDER_COLOR) {
     return colorImagePlaneColor(sampleTc);
   }

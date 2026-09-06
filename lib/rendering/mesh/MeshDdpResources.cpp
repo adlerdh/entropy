@@ -19,7 +19,8 @@ glm::uvec3 textureSize3D(const glm::uvec2& viewportSize) noexcept
   return glm::uvec3{viewportSize, 1u};
 }
 
-GLTexture& textureAt(std::array<std::optional<GLTexture>, 2>& textures, const std::size_t index)
+template<std::size_t Size>
+GLTexture& textureAt(std::array<std::optional<GLTexture>, Size>& textures, const std::size_t index)
 {
   if (index >= textures.size() || !textures[index]) {
     throwDebug("Mesh DDP texture is not allocated");
@@ -30,7 +31,12 @@ GLTexture& textureAt(std::array<std::optional<GLTexture>, 2>& textures, const st
 
 } // namespace
 
-MeshDdpResources::MeshDdpResources() : m_peelFbo("Mesh DDP peel FBO"), m_backBlendFbo("Mesh DDP back-blend FBO") {}
+MeshDdpResources::MeshDdpResources()
+  : m_peelFbo("Mesh DDP peel FBO")
+  , m_backBlendFbo("Mesh DDP back-blend FBO")
+  , m_imagePlaneCompositeFbo("Mesh image-plane composite FBO")
+{
+}
 
 MeshDdpResources::~MeshDdpResources()
 {
@@ -61,6 +67,10 @@ void MeshDdpResources::clear() noexcept
 {
   m_fullScreenVao.destroy();
   m_backColorTexture.reset();
+  for (std::size_t i = 0; i < k_imagePlaneCompositeCount; ++i) {
+    m_imagePlaneCompositeColorTextures[i].reset();
+    m_imagePlaneCompositeDepthTextures[i].reset();
+  }
   for (std::size_t i = 0; i < m_depthTextures.size(); ++i) {
     m_depthTextures[i].reset();
     m_frontColorTextures[i].reset();
@@ -69,6 +79,7 @@ void MeshDdpResources::clear() noexcept
 
   m_peelFbo.destroy();
   m_backBlendFbo.destroy();
+  m_imagePlaneCompositeFbo.destroy();
   m_size = glm::uvec2{0u, 0u};
   m_initialized = false;
 }
@@ -115,6 +126,25 @@ GLTexture& MeshDdpResources::backColorTexture()
   }
 
   return *m_backColorTexture;
+}
+
+void MeshDdpResources::bindImagePlaneCompositeTarget(const std::size_t orientationIndex)
+{
+  GLTexture& color = textureAt(m_imagePlaneCompositeColorTextures, orientationIndex);
+  GLTexture& depth = textureAt(m_imagePlaneCompositeDepthTextures, orientationIndex);
+  m_imagePlaneCompositeFbo.bind(fbo::TargetType::DrawAndRead);
+  m_imagePlaneCompositeFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, color, 0);
+  m_imagePlaneCompositeFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Depth, depth);
+}
+
+GLTexture& MeshDdpResources::imagePlaneCompositeColorTexture(const std::size_t orientationIndex)
+{
+  return textureAt(m_imagePlaneCompositeColorTextures, orientationIndex);
+}
+
+GLTexture& MeshDdpResources::imagePlaneCompositeDepthTexture(const std::size_t orientationIndex)
+{
+  return textureAt(m_imagePlaneCompositeDepthTextures, orientationIndex);
 }
 
 GLVertexArrayObject& MeshDdpResources::fullScreenVao() noexcept
@@ -171,6 +201,19 @@ void MeshDdpResources::allocateTextures(const glm::uvec2& viewportSize)
 
   m_backColorTexture.emplace(makeAttachmentTexture());
   allocateColorTexture(*m_backColorTexture, viewportSize);
+
+  for (std::size_t i = 0; i < k_imagePlaneCompositeCount; ++i) {
+    m_imagePlaneCompositeColorTextures[i].emplace(makeAttachmentTexture());
+    m_imagePlaneCompositeDepthTextures[i].emplace(makeAttachmentTexture());
+    allocateColorTexture(*m_imagePlaneCompositeColorTextures[i], viewportSize);
+    m_imagePlaneCompositeDepthTextures[i]->setSize(textureSize3D(viewportSize));
+    m_imagePlaneCompositeDepthTextures[i]->setData(
+      0,
+      tex::SizedInternalFormat::Depth32F,
+      tex::BufferPixelFormat::DepthComponent,
+      tex::BufferPixelDataType::Float32,
+      nullptr);
+  }
 }
 
 void MeshDdpResources::attachFramebuffers()
@@ -192,6 +235,9 @@ void MeshDdpResources::attachFramebuffers()
   m_backBlendFbo.generate();
   m_backBlendFbo.bind(fbo::TargetType::DrawAndRead);
   m_backBlendFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_backColorTexture, 0);
+
+  m_imagePlaneCompositeFbo.generate();
+  bindImagePlaneCompositeTarget(0u);
 }
 
 } // namespace rendering::mesh

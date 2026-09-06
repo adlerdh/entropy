@@ -53,6 +53,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -2487,25 +2488,75 @@ TEST_CASE("image plane render list filters non-drawable image planes", "[renderi
   CHECK(mesh::visibleImagePlaneCount(list) == 1);
 }
 
-TEST_CASE("image plane DDP depth ordering uses minimal bottom-to-top tie breaks", "[rendering][mesh][ddp]")
+TEST_CASE("image plane orientation lists preserve bottom-to-top image order", "[rendering][mesh][ddp]")
+{
+  const mesh::MeshHandle handle{.uid = generateRandomUuid(), .geometryVersion = 1};
+  const auto makePlane = [&handle](const mesh::MeshImagePlaneOrientation orientation) {
+    return mesh::makeImagePlaneRenderable(
+      handle,
+      glm::mat4{1.0f},
+      glm::vec3{0.0f},
+      mesh::MeshImagePlaneTexture{
+        .imageUid = generateRandomUuid(),
+        .segmentationUid = std::nullopt,
+        .component = 0,
+        .timePoint = 0},
+      1.0f,
+      false,
+      true,
+      orientation);
+  };
+
+  const std::vector imagePlanes{
+    makePlane(mesh::MeshImagePlaneOrientation::Axial),
+    makePlane(mesh::MeshImagePlaneOrientation::Coronal),
+    makePlane(mesh::MeshImagePlaneOrientation::Sagittal),
+    makePlane(mesh::MeshImagePlaneOrientation::Axial)};
+  const mesh::MeshImagePlaneRenderList list = mesh::buildImagePlaneRenderList(imagePlanes);
+  const mesh::MeshImagePlaneRenderList axial =
+    mesh::imagePlaneRenderListForOrientation(list, mesh::MeshImagePlaneOrientation::Axial);
+
+  REQUIRE(axial.imagePlanes.size() == 2u);
+  CHECK(&axial.imagePlanes[0].get() == &imagePlanes[0]);
+  CHECK(&axial.imagePlanes[1].get() == &imagePlanes[3]);
+  CHECK(mesh::visibleImagePlaneOrientationCount(list) == 3u);
+  CHECK(mesh::visibleImagePlaneOrientationCount(axial) == 1u);
+}
+
+TEST_CASE("pre-composited image-plane orientations use only adjacent DDP depths", "[rendering][mesh][ddp]")
 {
   using Orientation = mesh::MeshImagePlaneOrientation;
-  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Axial) == 1u);
-  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Coronal) == 2u);
-  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Sagittal) == 3u);
-  CHECK(mesh::imagePlaneDdpDepthOrder(1u, Orientation::Axial) == 4u);
+  CHECK(mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Axial) == 1u);
+  CHECK(mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Coronal) == 2u);
+  CHECK(mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Sagittal) == 3u);
 
   const float depth = 0.5f;
   const float axialDepth =
-    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(0u, Orientation::Axial));
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Axial));
   const float coronalDepth =
-    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(0u, Orientation::Coronal));
-  const float nextImageDepth =
-    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(1u, Orientation::Axial));
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Coronal));
+  const float sagittalDepth =
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Sagittal));
   CHECK(axialDepth < depth);
   CHECK(coronalDepth < axialDepth);
-  CHECK(nextImageDepth < coronalDepth);
-  CHECK(depth - nextImageDepth < 1.0e-6f);
+  CHECK(sagittalDepth < coronalDepth);
+  CHECK(std::bit_cast<uint32_t>(axialDepth) - std::bit_cast<uint32_t>(coronalDepth) == 1u);
+  CHECK(std::bit_cast<uint32_t>(coronalDepth) - std::bit_cast<uint32_t>(sagittalDepth) == 1u);
+
+  // Adjacent representable values remain distinct near the camera without the broad false-depth band that previously
+  // changed quadrants around orthogonal plane intersections.
+  constexpr float nearCameraDepth = 1.0e-8f;
+  const float nearAxial =
+    mesh::orderedImagePlaneDdpDepth(nearCameraDepth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Axial));
+  const float nearCoronal =
+    mesh::orderedImagePlaneDdpDepth(nearCameraDepth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Coronal));
+  const float nearSagittal =
+    mesh::orderedImagePlaneDdpDepth(nearCameraDepth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Sagittal));
+  CHECK(nearAxial > 0.0f);
+  CHECK(nearCoronal > 0.0f);
+  CHECK(nearSagittal > 0.0f);
+  CHECK(nearCoronal < nearAxial);
+  CHECK(nearSagittal < nearCoronal);
 }
 
 TEST_CASE("image plane borders are hidden with their source image", "[rendering][mesh]")

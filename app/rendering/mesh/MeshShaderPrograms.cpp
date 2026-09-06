@@ -227,7 +227,8 @@ bool createMeshImagePlaneDdpProgram(
   GLShaderProgram& program,
   const std::string& fragmentShaderPath,
   const rendering::TextureDimension textureDimension,
-  const bool peelShader)
+  const bool peelShader,
+  const bool compositeShader = false)
 {
   const rendering::shader_setup::ProgramSetup setup = rendering::shader_setup::buildProgramSetup();
   const rendering::shader_setup::ShaderInfo& imageShaderInfo = setup.shaderInfo.at(ShaderProgramType::ImageGrayLinear);
@@ -243,8 +244,15 @@ bool createMeshImagePlaneDdpProgram(
   dimensionReplacements["IMAGE_PLANE_DISPLAY_FUNCTIONS"] =
     loadShaderFile("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
   dimensionReplacements["DDP_DEPTH_FUNCTIONS"] = loadShaderFile("rendering/shaders/mesh/MeshDdpDepth.glsl");
-  const std::string fsSource =
-    rendering::preprocessShaderSource(loadShaderFile(fragmentShaderPath), dimensionReplacements);
+  std::string fsTemplate = loadShaderFile(fragmentShaderPath);
+  if (compositeShader) {
+    const std::size_t versionLineEnd = fsTemplate.find('\n');
+    if (versionLineEnd == std::string::npos) {
+      throwDebug("Image-plane shader has no GLSL version line");
+    }
+    fsTemplate.insert(versionLineEnd + 1u, "#define IMAGE_PLANE_COMPOSITE_PASS\n");
+  }
+  const std::string fsSource = rendering::preprocessShaderSource(fsTemplate, dimensionReplacements);
 
   Uniforms fsUniforms = imageShaderInfo.fsUniforms;
   fsUniforms.insertUniform("u_imgRgbaTex", UniformType::SamplerVector, Uniforms::SamplerIndexVectorType{{0, 1, 2, 3}});
@@ -274,11 +282,11 @@ bool createMeshImagePlaneDdpProgram(
   fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
   fsUniforms.insertUniform("u_boundaryVertexCount", UniformType::Int, 0);
   fsUniforms.insertUniform("u_boundaryWorldPositions", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
-  fsUniforms.insertUniform("u_ddpDepthOrder", UniformType::UInt, 0u);
+  fsUniforms.insertUniform("u_ddpDepthOrder", UniformType::UInt, 0u, !compositeShader);
   fsUniforms.insertUniform("u_viewportOrigin", UniformType::Vec2, glm::vec2{0.0f});
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
-  if (peelShader) {
+  if (peelShader && !compositeShader) {
     fsUniforms.insertUniform(
       "u_previousDepthBoundsTex",
       UniformType::Sampler,
@@ -441,6 +449,52 @@ bool Rendering::createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& pro
     "rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
     rendering::TextureDimension::Texture2D,
     true);
+}
+
+bool Rendering::createMeshImagePlaneCompositeProgram(GLShaderProgram& program)
+{
+  return createMeshImagePlaneDdpProgram(
+    program,
+    "rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
+    rendering::TextureDimension::Texture3D,
+    false,
+    true);
+}
+
+bool Rendering::createMeshImagePlaneCompositeTexture2DProgram(GLShaderProgram& program)
+{
+  return createMeshImagePlaneDdpProgram(
+    program,
+    "rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs",
+    rendering::TextureDimension::Texture2D,
+    false,
+    true);
+}
+
+bool Rendering::createMeshImagePlaneCompositeDdpInitProgram(GLShaderProgram& program)
+{
+  Uniforms uniforms;
+  uniforms.insertUniform("u_compositeColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{9});
+  uniforms.insertUniform("u_compositeDepthTex", UniformType::Sampler, Uniforms::SamplerIndexType{10});
+  uniforms.insertUniform("u_ddpDepthOrder", UniformType::UInt, 0u);
+  return createFullscreenMeshDdpProgram(
+    program,
+    "rendering/shaders/mesh/MeshImagePlaneCompositeDdpInit.fs",
+    std::move(uniforms));
+}
+
+bool Rendering::createMeshImagePlaneCompositeDdpPeelProgram(GLShaderProgram& program)
+{
+  Uniforms uniforms;
+  uniforms.insertUniform("u_compositeColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{9});
+  uniforms.insertUniform("u_compositeDepthTex", UniformType::Sampler, Uniforms::SamplerIndexType{10});
+  uniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, Uniforms::SamplerIndexType{7});
+  uniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{8});
+  uniforms.insertUniform("u_ddpDepthOrder", UniformType::UInt, 0u);
+  return createFullscreenMeshDdpProgram(
+    program,
+    "rendering/shaders/mesh/MeshImagePlaneCompositeDdpPeel.fs",
+    std::move(uniforms));
 }
 
 bool Rendering::createMeshDdpInitProgram(GLShaderProgram& program)

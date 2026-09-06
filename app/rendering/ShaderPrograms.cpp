@@ -183,6 +183,18 @@ void Rendering::createShaderPrograms()
   if (!createMeshImagePlaneDdpPeelTexture2DProgram(m_meshImagePlaneDdpPeelTexture2DProgram)) {
     throwDebug("Failed to create mesh image-plane DDP peel Texture2D program");
   }
+  if (!createMeshImagePlaneCompositeProgram(m_meshImagePlaneCompositeProgram)) {
+    throwDebug("Failed to create mesh image-plane composite program");
+  }
+  if (!createMeshImagePlaneCompositeTexture2DProgram(m_meshImagePlaneCompositeTexture2DProgram)) {
+    throwDebug("Failed to create mesh image-plane composite Texture2D program");
+  }
+  if (!createMeshImagePlaneCompositeDdpInitProgram(m_meshImagePlaneCompositeDdpInitProgram)) {
+    throwDebug("Failed to create mesh image-plane composite DDP init program");
+  }
+  if (!createMeshImagePlaneCompositeDdpPeelProgram(m_meshImagePlaneCompositeDdpPeelProgram)) {
+    throwDebug("Failed to create mesh image-plane composite DDP peel program");
+  }
   if (!createMeshDdpInitProgram(m_meshDdpInitProgram)) {
     throwDebug("Failed to create mesh DDP init program");
   }

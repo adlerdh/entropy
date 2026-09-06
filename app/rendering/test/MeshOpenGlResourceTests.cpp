@@ -131,6 +131,14 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
     CHECK(resources.ensureSize(glm::uvec2{31u, 29u}));
     CHECK(resources.initialized());
     CHECK(resources.size() == glm::uvec2{31u, 29u});
+    for (std::size_t orientation = 0; orientation < mesh::MeshDdpResources::k_imagePlaneCompositeCount; ++orientation) {
+      resources.bindImagePlaneCompositeTarget(orientation);
+      resources.imagePlaneCompositeColorTexture(orientation).bind(0u);
+      resources.imagePlaneCompositeColorTexture(orientation).unbind(0u);
+      resources.imagePlaneCompositeDepthTexture(orientation).bind(0u);
+      resources.imagePlaneCompositeDepthTexture(orientation).unbind(0u);
+      CHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    }
     CHECK_FALSE(resources.ensureSize(glm::uvec2{31u, 29u}));
     CHECK(resources.ensureSize(glm::uvec2{17u, 19u}));
     resources.clear();

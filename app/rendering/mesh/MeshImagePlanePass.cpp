@@ -42,6 +42,13 @@ constexpr Uniforms::SamplerIndexType sk_segTexSampler{5};
 constexpr Uniforms::SamplerIndexType sk_segLabelTableTexSampler{6};
 constexpr Uniforms::SamplerIndexType sk_previousDepthBoundsSampler{7};
 constexpr Uniforms::SamplerIndexType sk_previousFrontColorSampler{8};
+constexpr Uniforms::SamplerIndexType sk_compositeColorSampler{9};
+constexpr Uniforms::SamplerIndexType sk_compositeDepthSampler{10};
+
+constexpr std::array<rendering::mesh::MeshImagePlaneOrientation, 3> sk_imagePlaneOrientations{
+  rendering::mesh::MeshImagePlaneOrientation::Axial,
+  rendering::mesh::MeshImagePlaneOrientation::Coronal,
+  rendering::mesh::MeshImagePlaneOrientation::Sagittal};
 
 GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
   // cppcheck-suppress constParameterReference -- returns the selected program as a mutable reference
@@ -400,7 +407,9 @@ void setMeshImagePlaneUniforms(
   }
   program.setUniform("u_imagePlaneBorderColor", renderable.borderColor);
   program.setUniform("u_imagePlaneBorderWidthPixels", renderable.borderWidthPixels);
-  program.setUniform("u_ddpDepthOrder", renderable.ddpDepthOrder);
+  // Direct image draws and stack composition preserve physical depth. The later DDP contribution applies its small
+  // tie-break only between the three pre-composited plane orientations.
+  program.setUniform("u_ddpDepthOrder", 0u);
   program.setUniform("u_boundaryVertexCount", static_cast<int>(renderable.boundaryVertexCount));
   program.setUniform(
     "u_boundaryWorldPositions",
@@ -734,34 +743,110 @@ void Rendering::drawMeshImagePlaneRenderListForView(
 }
 
 void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(
+  const View&,
+  const rendering::mesh::MeshImagePlaneRenderList&,
+  const rendering::mesh::MeshDrawContext&)
+{
+  for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
+    GLTexture& color = m_meshDdpResources.imagePlaneCompositeColorTexture(index);
+    GLTexture& depth = m_meshDdpResources.imagePlaneCompositeDepthTexture(index);
+    color.bind(sk_compositeColorSampler.index);
+    depth.bind(sk_compositeDepthSampler.index);
+    m_meshImagePlaneCompositeDdpInitProgram.use();
+    m_meshImagePlaneCompositeDdpInitProgram.setSamplerUniform(
+      "u_compositeColorTex",
+      static_cast<GLint>(sk_compositeColorSampler.index));
+    m_meshImagePlaneCompositeDdpInitProgram.setSamplerUniform(
+      "u_compositeDepthTex",
+      static_cast<GLint>(sk_compositeDepthSampler.index));
+    m_meshImagePlaneCompositeDdpInitProgram.setUniform(
+      "u_ddpDepthOrder",
+      rendering::mesh::imagePlaneCompositeDdpDepthOrder(sk_imagePlaneOrientations[index]));
+    m_meshDdpResources.fullScreenVao().bind();
+    m_meshDdpResources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
+    m_meshDdpResources.fullScreenVao().unbind();
+    m_meshImagePlaneCompositeDdpInitProgram.stopUse();
+    depth.unbind(sk_compositeDepthSampler.index);
+    color.unbind(sk_compositeColorSampler.index);
+  }
+}
+
+void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
+  const View&,
+  const rendering::mesh::MeshImagePlaneRenderList&,
+  const rendering::mesh::MeshDrawContext&,
+  GLTexture& previousDepthBounds,
+  GLTexture& previousFrontColor)
+{
+  previousDepthBounds.bind(sk_previousDepthBoundsSampler.index);
+  previousFrontColor.bind(sk_previousFrontColorSampler.index);
+  for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
+    GLTexture& color = m_meshDdpResources.imagePlaneCompositeColorTexture(index);
+    GLTexture& depth = m_meshDdpResources.imagePlaneCompositeDepthTexture(index);
+    color.bind(sk_compositeColorSampler.index);
+    depth.bind(sk_compositeDepthSampler.index);
+    m_meshImagePlaneCompositeDdpPeelProgram.use();
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_compositeColorTex",
+      static_cast<GLint>(sk_compositeColorSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_compositeDepthTex",
+      static_cast<GLint>(sk_compositeDepthSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_previousDepthBoundsTex",
+      static_cast<GLint>(sk_previousDepthBoundsSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_previousFrontColorTex",
+      static_cast<GLint>(sk_previousFrontColorSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setUniform(
+      "u_ddpDepthOrder",
+      rendering::mesh::imagePlaneCompositeDdpDepthOrder(sk_imagePlaneOrientations[index]));
+    m_meshDdpResources.fullScreenVao().bind();
+    m_meshDdpResources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
+    m_meshDdpResources.fullScreenVao().unbind();
+    m_meshImagePlaneCompositeDdpPeelProgram.stopUse();
+    depth.unbind(sk_compositeDepthSampler.index);
+    color.unbind(sk_compositeColorSampler.index);
+  }
+  previousFrontColor.unbind(sk_previousFrontColorSampler.index);
+  previousDepthBounds.unbind(sk_previousDepthBoundsSampler.index);
+}
+
+void Rendering::prepareMeshImagePlaneDdpCompositesForView(
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderList& list,
   const rendering::mesh::MeshDrawContext& context)
 {
-  drawImagePlaneRenderablesWithProgram(
-    m_appData,
-    view,
-    list,
-    context,
-    m_meshImagePlaneDdpInitProgram,
-    m_meshImagePlaneDdpInitTexture2DProgram);
-}
+  for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
+    const rendering::mesh::MeshImagePlaneRenderList orientationList =
+      rendering::mesh::imagePlaneRenderListForOrientation(list, sk_imagePlaneOrientations[index]);
+    m_meshDdpResources.bindImagePlaneCompositeTarget(index);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
-  const View& view,
-  const rendering::mesh::MeshImagePlaneRenderList& list,
-  const rendering::mesh::MeshDrawContext& context,
-  GLTexture& previousDepthBounds,
-  GLTexture& previousFrontColor)
-{
-  drawImagePlaneRenderablesWithProgram(
-    m_appData,
-    view,
-    list,
-    context,
-    m_meshImagePlaneDdpPeelProgram,
-    m_meshImagePlaneDdpPeelTexture2DProgram,
-    true,
-    &previousDepthBounds,
-    &previousFrontColor);
+    // All images for an orientation represent one geometric slice. Compose them in the same bottom-to-top order as
+    // 2D views before DDP so equal-depth image fragments never rely on an artificial depth offset.
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_ALWAYS);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    drawImagePlaneRenderablesWithProgram(
+      m_appData,
+      view,
+      orientationList,
+      context,
+      m_meshImagePlaneCompositeProgram,
+      m_meshImagePlaneCompositeTexture2DProgram,
+      false,
+      nullptr,
+      nullptr);
+  }
+
+  glDisable(GL_DEPTH_TEST);
+  glDepthMask(GL_FALSE);
 }

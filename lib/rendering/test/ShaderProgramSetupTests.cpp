@@ -452,21 +452,30 @@ TEST_CASE("raycasting does not render the mesh-only 3D crosshairs", "[rendering]
   CHECK(raycast.find("raySphereFirstHit") == std::string::npos);
 }
 
-TEST_CASE("DDP shaders preserve exact physical depth ordering", "[rendering][shaders][ddp]")
+TEST_CASE("DDP receives pre-composited image stacks as three geometric layers", "[rendering][shaders][ddp]")
 {
-  const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
   const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+  const std::string compositeInit =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneCompositeDdpInit.fs");
+  const std::string compositePeel =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneCompositeDdpPeel.fs");
   const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
   const std::string depth = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpDepth.glsl");
 
-  CHECK(init.find("ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder)") != std::string::npos);
-  CHECK(peel.find("ddpOrderedImagePlaneDepth(gl_FragCoord.z, u_ddpDepthOrder)") != std::string::npos);
+  CHECK(peel.find("IMAGE_PLANE_COMPOSITE_PASS") != std::string::npos);
+  CHECK(peel.find("outCompositeColor = premultipliedColor") != std::string::npos);
+  CHECK(compositeInit.find("u_compositeColorTex") != std::string::npos);
+  CHECK(compositeInit.find("u_compositeDepthTex") != std::string::npos);
+  CHECK(compositePeel.find("u_compositeColorTex") != std::string::npos);
+  CHECK(compositePeel.find("u_compositeDepthTex") != std::string::npos);
+  CHECK(compositeInit.find("ddpOrderedImagePlaneDepth(depth, u_ddpDepthOrder)") != std::string::npos);
+  CHECK(compositePeel.find("ddpOrderedImagePlaneDepth(depth, u_ddpDepthOrder)") != std::string::npos);
   CHECK(meshPeel.find("ddpDepthIsOutside(fragmentDepth, previousDepthBounds)") != std::string::npos);
   CHECK(depth.find("floatBitsToUint(boundedDepth)") != std::string::npos);
-  CHECK(depth.find("depthBits - order") != std::string::npos);
+  CHECK(depth.find("depthBits - depthOrder") != std::string::npos);
   CHECK(depth.find("epsilon") == std::string::npos);
-  CHECK(init.find("u_ddpDepthBias") == std::string::npos);
-  CHECK(peel.find("u_ddpDepthBias") == std::string::npos);
+  CHECK(depth.find("image layer") == std::string::npos);
+  CHECK(depth.find("fragmentDepth - depthBias") == std::string::npos);
   CHECK(meshPeel.find("kDepthEpsilon") == std::string::npos);
 }
 
@@ -486,6 +495,33 @@ TEST_CASE("DDP uses invariant rasterization and depth-bound completion", "[rende
   CHECK(completion.find("u_depthBoundsTex") != std::string::npos);
   CHECK(completion.find("ddpDepthBoundsAreValid") != std::string::npos);
   CHECK(completion.find("u_backTempTex") == std::string::npos);
+}
+
+TEST_CASE("image plane DDP rejects transparent fragments before depth classification", "[rendering][shaders][ddp]")
+{
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  const std::size_t colorEvaluation = peel.find("vec4 premultipliedColor = imagePlaneColor()");
+  const std::size_t transparentDiscard = peel.find("if (premultipliedColor.a <= 0.0)");
+  const std::size_t depthClassification = peel.find("if (ddpDepthIsOutside(fragmentDepth, previousDepthBounds))");
+  REQUIRE(colorEvaluation != std::string::npos);
+  REQUIRE(transparentDiscard != std::string::npos);
+  REQUIRE(depthClassification != std::string::npos);
+  CHECK(colorEvaluation < transparentDiscard);
+  CHECK(transparentDiscard < depthClassification);
+}
+
+TEST_CASE("image-plane color evaluation rejects samples outside each pre-composited image", "[rendering][shaders][ddp]")
+{
+  const std::string display =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::size_t displayFunction = display.find("vec4 displayedImagePlaneColor");
+  const std::size_t boundsCheck = display.find("if (!isInsideTexture(sampleTc))", displayFunction);
+  const std::size_t componentDispatch = display.find("if (u_componentRenderMode", displayFunction);
+  REQUIRE(displayFunction != std::string::npos);
+  REQUIRE(boundsCheck != std::string::npos);
+  REQUIRE(componentDispatch != std::string::npos);
+  CHECK(boundsCheck < componentDispatch);
 }
 
 TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering][shaders][ddp]")

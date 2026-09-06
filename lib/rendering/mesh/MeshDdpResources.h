@@ -7,6 +7,7 @@
 #include <glm/vec2.hpp>
 
 #include <array>
+#include <cstddef>
 #include <optional>
 
 namespace rendering::mesh
@@ -21,6 +22,8 @@ namespace rendering::mesh
 class MeshDdpResources
 {
 public:
+  static constexpr std::size_t k_imagePlaneCompositeCount = 3u;
+
   /**
    * @brief Construct an empty DDP resource owner
    */
@@ -101,6 +104,15 @@ public:
    */
   GLTexture& backColorTexture();
 
+  /** Bind the target used to pre-compose one orthogonal image-plane stack. */
+  void bindImagePlaneCompositeTarget(std::size_t orientationIndex);
+
+  /** Return the pre-composed color for one orthogonal image-plane stack. */
+  GLTexture& imagePlaneCompositeColorTexture(std::size_t orientationIndex);
+
+  /** Return the raster depth for one orthogonal image-plane stack. */
+  GLTexture& imagePlaneCompositeDepthTexture(std::size_t orientationIndex);
+
   /**
    * @brief Empty VAO used for full-screen triangle shaders based on `gl_VertexID`
    * @return Full-screen triangle VAO
@@ -120,9 +132,12 @@ private:
   std::array<std::optional<GLTexture>, 2> m_frontColorTextures;
   std::array<std::optional<GLTexture>, 2> m_backTempTextures;
   std::optional<GLTexture> m_backColorTexture;
+  std::array<std::optional<GLTexture>, k_imagePlaneCompositeCount> m_imagePlaneCompositeColorTextures;
+  std::array<std::optional<GLTexture>, k_imagePlaneCompositeCount> m_imagePlaneCompositeDepthTextures;
   GLVertexArrayObject m_fullScreenVao;
   GLFrameBufferObject m_peelFbo;
   GLFrameBufferObject m_backBlendFbo;
+  GLFrameBufferObject m_imagePlaneCompositeFbo;
 };
 
 } // namespace rendering::mesh

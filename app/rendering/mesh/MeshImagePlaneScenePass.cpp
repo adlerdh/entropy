@@ -147,7 +147,6 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     return handle;
   };
 
-  std::size_t imageLayer = 0u;
   for (const ImgSegPair& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
       continue;
@@ -235,9 +234,6 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           m_appData.renderSettings().m_shadeImagePlanesIn3D,
           true,
           mesh.orientation);
-        // Image selections are bottom layer first, just as in the 2D views. Coincident planes must have distinct DDP
-        // depths because draw order alone cannot order fragments that share exactly the same depth bound.
-        renderable.ddpDepthOrder = rendering::mesh::imagePlaneDdpDepthOrder(imageLayer, mesh.orientation);
         renderable.boundaryVertexCount = static_cast<uint32_t>(
           std::min<std::size_t>(renderable.boundaryWorld.size(), mesh.mesh.positions.size() - 1u));
         for (uint32_t i = 0u; i < renderable.boundaryVertexCount; ++i) {
@@ -267,8 +263,6 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
         }
       }
     }
-
-    ++imageLayer;
   }
 
   return renderables;

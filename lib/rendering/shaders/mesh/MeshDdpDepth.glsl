@@ -27,12 +27,12 @@ bool ddpDepthBoundsAreValid(vec2 depthBounds)
   return -depthBounds.x <= depthBounds.y;
 }
 
-// Coplanar image planes need a deterministic secondary order because GL_MAX cannot alpha-composite fragments at an
-// identical depth. Moving by representable float values preserves physical depth ordering far better than subtracting
-// a fixed window-depth bias. Higher order values are composited in front, matching the 2D image stack.
-float ddpOrderedImagePlaneDepth(float fragmentDepth, uint order)
+// Coincident images are alpha-composited into one layer before DDP. The only remaining tie is the exact intersection
+// of two orthogonal composite planes, so adjacent representable depths provide a deterministic result without
+// displacing their real front/back relationship around the intersection.
+float ddpOrderedImagePlaneDepth(float fragmentDepth, uint depthOrder)
 {
   float boundedDepth = clamp(fragmentDepth, 0.0, 1.0);
   uint depthBits = floatBitsToUint(boundedDepth);
-  return uintBitsToFloat(order < depthBits ? depthBits - order : 0u);
+  return uintBitsToFloat(depthOrder < depthBits ? depthBits - depthOrder : 0u);
 }
