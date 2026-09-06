@@ -1,5 +1,16 @@
+#include "common/Types.h"
+#include "rendering/TextureLayout.h"
+#include "rendering/gl/GLBufferTypes.h"
+#include "rendering/gl/GLDrawTypes.h"
+#include "rendering/gl/GLShaderType.h"
+#include "rendering/gl/GLTextureTypes.h"
+#include "rendering/gl/GLUniformTypes.h"
+#include "rendering/gl/Uniforms.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/mesh/MeshDdpResources.h"
+#include "rendering/mesh/MeshGpuData.h"
+#include "rendering/mesh/MeshHandle.h"
+#include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderer.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
@@ -23,10 +34,15 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <initializer_list>
 #include <limits>
+#include <optional>
+#include <set>
 #include <span>
 #include <utility>
 #include <vector>
@@ -387,7 +403,9 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
     texture2d = std::move(texture3d);
     CHECK(texture2d.target() == tex::Target::Texture3D);
     CHECK(texture2d.id() == texture3dId);
+    // cppcheck-suppress accessMoved -- move assignment specifies that the source wrapper is reset
     CHECK(texture3d.id() == 0u);
+    // cppcheck-suppress accessMoved -- querying the specified reset state is intentional
     CHECK_FALSE(texture3d.isBound());
   }
 
@@ -548,7 +566,7 @@ TEST_CASE("mesh depth-only passes do not upload surface-shading uniforms", "[ren
     SKIP("No OpenGL context is available on this test worker");
   }
 
-  constexpr const char* vertexSource = R"(
+  static constexpr char vertexSource[] = R"(
 #version 330 core
 uniform mat4 u_clip_T_world;
 void main()
@@ -556,7 +574,7 @@ void main()
   gl_Position = u_clip_T_world * vec4(0.0, 0.0, 0.0, 1.0);
 }
 )";
-  constexpr const char* fragmentSource = R"(
+  static constexpr char fragmentSource[] = R"(
 #version 330 core
 layout(location = 0) out vec2 outDepthBounds;
 void main()

@@ -3,6 +3,8 @@
 #include "common/DirectionMaps.h"
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/camera/CameraTypes.h"
+#include "logic/camera/Projection.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -11,7 +13,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <limits>
+#include <optional>
+#include <utility>
 
 namespace
 {
@@ -393,6 +398,7 @@ TEST_CASE("3D camera state cannot follow crosshairs in orthographic projection",
   state.m_viewPositionFollowsCrosshairs = true;
 
   camera3d::Controller controller{camera, state};
+  static_cast<void>(controller);
 
   CHECK(state.m_projectionType == ProjectionType::Orthographic);
   CHECK_FALSE(state.m_viewPositionFollowsCrosshairs);

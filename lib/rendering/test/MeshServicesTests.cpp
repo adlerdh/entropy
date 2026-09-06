@@ -1,9 +1,19 @@
+#include "rendering/mesh/MeshData.h"
+#include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtractionRunner.h"
 #include "rendering/mesh/MeshExtractionService.h"
+#include "rendering/mesh/MeshHandle.h"
+#include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshResourceStore.h"
+
+#include <uuid.h>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <thread>
@@ -26,6 +36,8 @@ MeshGeometryKey testKey(const uuids::uuid& sourceUid, const double isoValue)
     .sourceUid = sourceUid,
     .sourceDataVersion = 1,
     .sourceGeometryVersion = 2,
+    .component = {},
+    .labelValue = {},
     .isoValue = isoValue,
     .extractionAlgorithm = "test",
     .extractionAlgorithmVersion = 1};
@@ -36,7 +48,9 @@ MeshData triangleMesh()
   return MeshData{
     .positions = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
     .normals = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-    .indices = {0, 1, 2}};
+    .indices = {0, 1, 2},
+    .colors = {},
+    .textureCoords = {}};
 }
 
 std::vector<MeshExtractionRunResult> waitForCompletion(MeshExtractionService& service)
@@ -62,7 +76,8 @@ TEST_CASE("mesh extraction service owns scheduling and CPU cache transitions", "
   REQUIRE(service.submit(key, "test mesh", [key] {
     return MeshExtractionJobResult{
       .key = key,
-      .result = MeshExtractionResult{.key = key, .mesh = triangleMesh(), .diagnostics = {"complete"}}};
+      .result = MeshExtractionResult{.key = key, .mesh = triangleMesh(), .diagnostics = {"complete"}},
+      .diagnostics = {}};
   }));
   CHECK_FALSE(service.canSubmit(key));
 
@@ -83,13 +98,15 @@ TEST_CASE("mesh extraction service discards cache and queued work outside the li
   REQUIRE(service.submit(retainedKey, "retained", [retainedKey] {
     return MeshExtractionJobResult{
       .key = retainedKey,
-      .result = MeshExtractionResult{.key = retainedKey, .mesh = triangleMesh(), .diagnostics = {}}};
+      .result = MeshExtractionResult{.key = retainedKey, .mesh = triangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
   REQUIRE(waitForCompletion(service).size() == 1u);
   REQUIRE(service.submit(obsoleteKey, "obsolete", [obsoleteKey] {
     return MeshExtractionJobResult{
       .key = obsoleteKey,
-      .result = MeshExtractionResult{.key = obsoleteKey, .mesh = triangleMesh(), .diagnostics = {}}};
+      .result = MeshExtractionResult{.key = obsoleteKey, .mesh = triangleMesh(), .diagnostics = {}},
+      .diagnostics = {}};
   }));
   REQUIRE(waitForCompletion(service).size() == 1u);
 

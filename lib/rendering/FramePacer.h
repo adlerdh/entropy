@@ -29,7 +29,7 @@ public:
   using SleepFunction = std::function<void(Duration)>;
 
   FramePacer();
-  FramePacer(NowFunction now, SleepFunction sleep);
+  FramePacer(NowFunction now, SleepFunction sleepFunction);
 
   /**
    * Wait for the remainder of the configured frame interval and record presentation time.

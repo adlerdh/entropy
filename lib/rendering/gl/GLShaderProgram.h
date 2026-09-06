@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLUniformTypes.h"
 #include "rendering/gl/GLErrorChecker.h"
 #include "rendering/gl/Uniforms.h"
 
@@ -92,7 +93,7 @@ public:
   }
 
   /// Upload every dirty uniform in the supplied registry, then mark successfully uploaded uniforms clean.
-  void applyUniforms(Uniforms& uniforms);
+  static void applyUniforms(Uniforms& uniforms);
 
   /// Return registered uniform declarations and their most recently queried locations.
   const Uniforms& getRegisteredUniforms() const;

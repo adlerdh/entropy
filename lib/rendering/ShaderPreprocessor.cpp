@@ -1,9 +1,12 @@
 #include "rendering/ShaderPreprocessor.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace rendering
 {
@@ -46,10 +49,8 @@ std::string includeToken(std::string_view line)
   if (token.empty()) {
     throw std::runtime_error("Shader include token must not be empty");
   }
-  for (const char character : token) {
-    if (!isTokenCharacter(character)) {
-      throw std::runtime_error("Invalid shader include token '" + std::string(token) + "'");
-    }
+  if (std::any_of(token.begin(), token.end(), [](const char character) { return !isTokenCharacter(character); })) {
+    throw std::runtime_error("Invalid shader include token '" + std::string(token) + "'");
   }
   return std::string(token);
 }
@@ -110,10 +111,8 @@ std::string preprocess(std::string_view source, const ShaderReplacements& replac
     if (token.empty()) {
       throw std::runtime_error("Shader substitution token must not be empty");
     }
-    for (const char character : token) {
-      if (!isTokenCharacter(character)) {
-        throw std::runtime_error("Invalid shader substitution token '" + token + "'");
-      }
+    if (std::any_of(token.begin(), token.end(), [](const char character) { return !isTokenCharacter(character); })) {
+      throw std::runtime_error("Invalid shader substitution token '" + token + "'");
     }
 
     const auto replacement = replacements.find(token);

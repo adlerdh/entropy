@@ -2,7 +2,6 @@
 
 #include "rendering/gl/GLBufferTypes.h"
 #include "rendering/gl/GLErrorChecker.h"
-#include "rendering/gl/GLTextureTypes.h"
 
 #include <glad/glad.h>
 
@@ -98,7 +97,7 @@ public:
   /// Copy bytes between two buffer objects using OpenGL's copy buffer targets.
   static void copyData(
     GLBufferObject& readBuffer,
-    GLBufferObject& writeBuffer,
+    const GLBufferObject& writeBuffer,
     std::size_t readOffset,
     std::size_t writeOffset,
     std::size_t sizeInBytes);

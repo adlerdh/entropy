@@ -1,5 +1,6 @@
 #include "rendering/FramePacer.h"
 
+#include <compare>
 #include <thread>
 #include <utility>
 
@@ -11,7 +12,10 @@ FramePacer::FramePacer()
 {
 }
 
-FramePacer::FramePacer(NowFunction now, SleepFunction sleep) : m_now(std::move(now)), m_sleep(std::move(sleep)) {}
+FramePacer::FramePacer(NowFunction now, SleepFunction sleepFunction)
+  : m_now(std::move(now)), m_sleep(std::move(sleepFunction))
+{
+}
 
 void FramePacer::wait(const FramePacingSettings& settings, TimePoint& lastFrameTime) const
 {

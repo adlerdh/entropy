@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshDdpResources.h"
 
+#include "rendering/gl/GLFBOAttachmentTypes.h"
+#include "rendering/gl/GLTextureTypes.h"
 #include "rendering/gl/OpenGLStateGuard.h"
 
 #include "common/Exception.hpp"
@@ -7,6 +9,7 @@
 #include <glm/vec3.hpp>
 
 #include <cstddef>
+#include <memory>
 
 namespace rendering::mesh
 {
@@ -130,8 +133,8 @@ GLTexture& MeshDdpResources::backColorTexture()
 
 void MeshDdpResources::bindImagePlaneCompositeTarget(const std::size_t orientationIndex)
 {
-  GLTexture& color = textureAt(m_imagePlaneCompositeColorTextures, orientationIndex);
-  GLTexture& depth = textureAt(m_imagePlaneCompositeDepthTextures, orientationIndex);
+  const GLTexture& color = textureAt(m_imagePlaneCompositeColorTextures, orientationIndex);
+  const GLTexture& depth = textureAt(m_imagePlaneCompositeDepthTextures, orientationIndex);
   m_imagePlaneCompositeFbo.bind(fbo::TargetType::DrawAndRead);
   m_imagePlaneCompositeFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, color, 0);
   m_imagePlaneCompositeFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Depth, depth);

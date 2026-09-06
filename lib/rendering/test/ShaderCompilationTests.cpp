@@ -1,16 +1,24 @@
 #include "rendering/ShaderPreprocessor.h"
 #include "rendering/ShaderProgramSetup.h"
 #include "rendering/ShaderSourceSetup.h"
+#include "rendering/ShaderTextureDimension.h"
+#include "rendering/TextureLayout.h"
+#include "rendering/common/ShaderType.h"
 
+#include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iterator>
 #include <string>
 #include <string_view>
+#include <system_error>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace shader_setup = rendering::shader_setup;
@@ -118,7 +126,7 @@ TEST_CASE("all assembled GLSL programs compile and link offline", "[rendering][s
   SKIP("glslangValidator was not found when TestRendering was configured");
 #else
   std::size_t programIndex = 0;
-  const auto validate = [&programIndex](const std::string_view name, std::vector<ShaderStageSource> stages) {
+  const auto validate = [&programIndex](const std::string_view name, const std::vector<ShaderStageSource>& stages) {
     validateProgram(name, stages, programIndex++);
   };
 
@@ -139,7 +147,10 @@ TEST_CASE("all assembled GLSL programs compile and link offline", "[rendering][s
   validate("simple", {{".vert", shader("Simple.vs")}, {".frag", shader("Simple.fs")}});
   validate("ASCII cell mean", {{".vert", shader("AsciiPost.vs")}, {".frag", shader("AsciiCellMean.fs")}});
   validate("ASCII cell regions", {{".vert", shader("AsciiPost.vs")}, {".frag", shader("AsciiCellRegions.fs")}});
-  validate("ASCII luminance", {{".vert", shader("AsciiPost.vs")}, {".frag", shader("AsciiPost.fs")}});
+  validate(
+    "ASCII luminance",
+    {{".vert", shader("AsciiPost.vs")},
+     {".frag", preprocess("AsciiPost.fs", {{"ASCII_COMPOSITE_FUNCTIONS", shader("functions/AsciiComposite.glsl")}})}});
   validate(
     "ASCII spatial",
     {{".vert", shader("AsciiPost.vs")},

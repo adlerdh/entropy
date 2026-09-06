@@ -1,4 +1,6 @@
 # Add narrowly scoped, reviewed false-positive suppressions here.
+# Cppcheck cannot parse one Catch2 test registration boundary after the preceding test body.
+syntaxError:*lib/rendering/test/FramePacerTests.cpp
 # The thread-safety addon mistakes this state-machine callback for C exit().
 threadsafety-unsafe-call:*app/logic/states/annotation/AnnotationStateMachine.h
 # tinyfsm requires an exit() callback. The addon mistakes its name for C exit().

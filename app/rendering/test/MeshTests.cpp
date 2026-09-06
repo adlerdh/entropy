@@ -21,6 +21,7 @@
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionRunner.h"
 #include "rendering/mesh/MeshGeneration.h"
+#include "rendering/mesh/MeshGenerationOptions.h"
 #include "rendering/mesh/MeshGlyphs.h"
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImageAdapter.h"
@@ -62,6 +63,7 @@
 #include <filesystem>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <ranges>
@@ -1303,6 +1305,7 @@ TEST_CASE("isosurface and segmentation extraction requests build distinct geomet
     .component = 2,
     .timePoint = 5,
     .isoValue = 42.5,
+    .generationOptions = {},
     .algorithm = "flying-edges",
     .algorithmVersion = 6};
 
@@ -1312,6 +1315,7 @@ TEST_CASE("isosurface and segmentation extraction requests build distinct geomet
     .segmentationGeometryVersion = 8,
     .labelValue = 9,
     .timePoint = 10,
+    .generationOptions = {},
     .algorithm = "marching-cubes-label",
     .algorithmVersion = 11};
 
@@ -1893,6 +1897,7 @@ TEST_CASE("isosurface extraction runner stores ready mesh results", "[rendering]
     .component = 3,
     .timePoint = 4,
     .isoValue = 5.0,
+    .generationOptions = {},
     .algorithm = "test",
     .algorithmVersion = 6};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
@@ -1912,7 +1917,10 @@ TEST_CASE("isosurface extraction runner stores ready mesh results", "[rendering]
 
 TEST_CASE("isosurface extraction runner stores failure when no mesh is produced", "[rendering][mesh]")
 {
-  const mesh::IsosurfaceMeshRequest request{.imageUid = generateRandomUuid(), .algorithm = "test"};
+  const mesh::IsosurfaceMeshRequest request{
+    .imageUid = generateRandomUuid(),
+    .generationOptions = {},
+    .algorithm = "test"};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   FakeIsosurfaceExtractor extractor;
@@ -1930,7 +1938,10 @@ TEST_CASE("isosurface extraction runner stores failure when no mesh is produced"
 
 TEST_CASE("isosurface extraction runner rejects wrong-key backend results", "[rendering][mesh]")
 {
-  const mesh::IsosurfaceMeshRequest request{.imageUid = generateRandomUuid(), .algorithm = "test"};
+  const mesh::IsosurfaceMeshRequest request{
+    .imageUid = generateRandomUuid(),
+    .generationOptions = {},
+    .algorithm = "test"};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   FakeIsosurfaceExtractor extractor;
@@ -1951,7 +1962,10 @@ TEST_CASE("isosurface extraction runner rejects wrong-key backend results", "[re
 
 TEST_CASE("isosurface extraction runner discards results when request becomes stale", "[rendering][mesh]")
 {
-  const mesh::IsosurfaceMeshRequest request{.imageUid = generateRandomUuid(), .algorithm = "test"};
+  const mesh::IsosurfaceMeshRequest request{
+    .imageUid = generateRandomUuid(),
+    .generationOptions = {},
+    .algorithm = "test"};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   mesh::MeshCache cache;
@@ -1977,6 +1991,7 @@ TEST_CASE("segmentation extraction runner stores label mesh results", "[renderin
     .segmentationGeometryVersion = 2,
     .labelValue = 11,
     .timePoint = 3,
+    .generationOptions = {},
     .algorithm = "test-label",
     .algorithmVersion = 4};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);

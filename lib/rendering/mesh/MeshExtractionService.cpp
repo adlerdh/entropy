@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshExtractionService.h"
 
+#include <algorithm>
+#include <iterator>
 #include <utility>
 
 namespace rendering::mesh
@@ -49,9 +51,11 @@ std::vector<MeshExtractionRunResult> MeshExtractionService::consumeCompleted()
   std::vector<MeshExtractionJobResult> completed = m_queue.takeCompleted();
   std::vector<MeshExtractionRunResult> summaries;
   summaries.reserve(completed.size());
-  for (MeshExtractionJobResult& result : completed) {
-    summaries.push_back(applyExtractionJobResult(std::move(result), m_cache));
-  }
+  std::transform(
+    completed.begin(),
+    completed.end(),
+    std::back_inserter(summaries),
+    [this](MeshExtractionJobResult& result) { return applyExtractionJobResult(std::move(result), m_cache); });
   return summaries;
 }
 
