@@ -7,7 +7,7 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraStartFrameType.h"
 #include "logic/camera/MathUtility.h"
-#include "rendering/utility/math/SliceIntersector.h"
+#include "rendering/helpers/SliceIntersector.h"
 #include "windowing/ViewCameraDefaults.h"
 
 #include <glm/glm.hpp>

@@ -1,4 +1,4 @@
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include "common/Exception.hpp"
 

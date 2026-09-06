@@ -1,10 +1,10 @@
 #include "rendering/PixelEdgeRenderer.h"
 
 #include "common/Exception.hpp"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShader.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLTextureTypes.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include <cmrc/cmrc.hpp>
 

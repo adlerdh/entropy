@@ -5,10 +5,10 @@
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/utility/gl/GLFrameBufferObject.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLVertexArrayObject.h"
+#include "rendering/gl/GLFrameBufferObject.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLVertexArrayObject.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>

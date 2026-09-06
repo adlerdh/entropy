@@ -6,7 +6,7 @@
 #include "logic/app/StackTrace.h"
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraHelpers.h"
-#include "rendering/utility/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLRenderState.h"
 #include "windowing/View.h"
 
 #include <cmrc/cmrc.hpp>

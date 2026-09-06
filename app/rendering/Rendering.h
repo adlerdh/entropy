@@ -19,8 +19,8 @@
 #include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshRenderer.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <glm/fwd.hpp>
 #include <uuid.h>

@@ -9,9 +9,9 @@
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
 #include "rendering/TextureSetup.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <glm/mat4x4.hpp>
 #include <uuid.h>

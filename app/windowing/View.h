@@ -7,7 +7,7 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraTypes.h"
-#include "rendering/utility/math/SliceIntersectorTypes.h"
+#include "rendering/helpers/SliceIntersectorTypes.h"
 #include "ui/UiControls.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"

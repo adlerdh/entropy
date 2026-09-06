@@ -3,7 +3,7 @@
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
 #include "common/Viewport.h"
-#include "rendering/utility/gl/OpenGLContext.h"
+#include "rendering/gl/OpenGLContext.h"
 #include "ui/LinuxUiScale.h"
 #include "ui/ImGuiWrapper.h"
 #include "windowing/GlfwCallbacks.h"

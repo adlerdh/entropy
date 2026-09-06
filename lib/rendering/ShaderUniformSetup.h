@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/Uniforms.h"
 
 namespace rendering::shader_setup
 {

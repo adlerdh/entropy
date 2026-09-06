@@ -1,6 +1,6 @@
-#include "rendering/utility/gl/OpenGLContext.h"
+#include "rendering/gl/OpenGLContext.h"
 
-#include "rendering/utility/gl/GLErrorChecker.h"
+#include "rendering/gl/GLErrorChecker.h"
 
 #include "common/Exception.hpp"
 

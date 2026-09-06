@@ -1,4 +1,4 @@
-#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/gl/GLShaderProgram.h"
 
 #include "common/Exception.hpp"
 

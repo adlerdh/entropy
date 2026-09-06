@@ -1,9 +1,9 @@
 #pragma once
 
-#include "rendering/utility/gl/GLFBOAttachmentTypes.h"
-#include "rendering/utility/gl/GLErrorChecker.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLFBOAttachmentTypes.h"
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <glad/glad.h>
 

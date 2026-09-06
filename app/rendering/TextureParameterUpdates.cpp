@@ -9,9 +9,9 @@
 #include "logic/app/ParcellationLabelTable.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>

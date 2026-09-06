@@ -1,4 +1,4 @@
-#include "rendering/utility/math/SliceIntersector.h"
+#include "rendering/helpers/SliceIntersector.h"
 #include "common/Geometry.h"
 
 #include <glm/glm.hpp>

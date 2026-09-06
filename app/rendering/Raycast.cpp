@@ -1,10 +1,10 @@
 #include "rendering/Rendering.h"
-#include "rendering/utility/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLRenderState.h"
 
 #include "logic/app/Data.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 
 #include <spdlog/spdlog.h>

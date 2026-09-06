@@ -20,8 +20,8 @@
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/mesh/MeshViewContext.h"
 #include "rendering/mesh/MeshViewViewport.h"
-#include "rendering/utility/gl/OpenGLStateGuard.h"
-#include "rendering/utility/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/gl/OpenGLRenderState.h"
 #include "windowing/View.h"
 
 #include <glad/glad.h>

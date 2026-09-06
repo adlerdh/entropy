@@ -3,7 +3,7 @@
 #include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshGpuData.h"
 #include "rendering/mesh/MeshHandle.h"
-#include "rendering/utility/gl/GLBufferTypes.h"
+#include "rendering/gl/GLBufferTypes.h"
 
 #include <optional>
 

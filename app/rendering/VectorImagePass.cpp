@@ -3,7 +3,7 @@
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 #include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 
 #include <glm/glm.hpp>

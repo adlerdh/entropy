@@ -12,10 +12,10 @@
 #include "rendering/TextureSetup.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLBufferTypes.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLBufferTypes.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <glad/glad.h>
 

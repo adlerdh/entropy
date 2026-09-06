@@ -1,10 +1,10 @@
 #pragma once
 
-#include "rendering/utility/containers/VertexAttributeInfo.h"
-#include "rendering/utility/containers/VertexIndicesInfo.h"
-#include "rendering/utility/gl/GLBufferTypes.h"
-#include "rendering/utility/gl/GLDrawTypes.h"
-#include "rendering/utility/gl/GLErrorChecker.h"
+#include "rendering/gl/VertexAttributeInfo.h"
+#include "rendering/gl/VertexIndicesInfo.h"
+#include "rendering/gl/GLBufferTypes.h"
+#include "rendering/gl/GLDrawTypes.h"
+#include "rendering/gl/GLErrorChecker.h"
 
 #include <glm/vec4.hpp>
 

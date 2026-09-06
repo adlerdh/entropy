@@ -1,4 +1,4 @@
-#include "rendering/utility/containers/VertexAttributeInfo.h"
+#include "rendering/gl/VertexAttributeInfo.h"
 
 #include <utility>
 

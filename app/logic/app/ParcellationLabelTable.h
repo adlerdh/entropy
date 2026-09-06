@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <glm/gtc/type_precision.hpp>
 

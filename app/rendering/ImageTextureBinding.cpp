@@ -2,7 +2,7 @@
 
 #include "logic/app/Data.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <spdlog/spdlog.h>
 

@@ -15,10 +15,10 @@
 #include "rendering/RenderSettings.h"
 #include "rendering/ShaderPreprocessor.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShader.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLTextureTypes.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include "windowing/View.h"
 

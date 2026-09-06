@@ -1,8 +1,8 @@
 #pragma once
 
-#include "rendering/utility/gl/GLBufferTypes.h"
-#include "rendering/utility/gl/GLErrorChecker.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLBufferTypes.h"
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <glad/glad.h>
 

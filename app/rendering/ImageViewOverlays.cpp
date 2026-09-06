@@ -1,5 +1,5 @@
 #include "rendering/Rendering.h"
-#include "rendering/utility/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
 #include "logic/app/Data.h"

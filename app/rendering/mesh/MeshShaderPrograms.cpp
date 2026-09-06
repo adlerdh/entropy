@@ -9,7 +9,7 @@
 #include "rendering/ShaderTextureDimension.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/mesh/MeshDrawOptions.h"
-#include "rendering/utility/gl/GLShader.h"
+#include "rendering/gl/GLShader.h"
 
 #include <cmrc/cmrc.hpp>
 #include <glm/mat3x3.hpp>

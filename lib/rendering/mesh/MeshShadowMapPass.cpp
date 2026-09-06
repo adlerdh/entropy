@@ -1,8 +1,8 @@
 #include "rendering/mesh/MeshShadowMapPass.h"
 
 #include "rendering/mesh/MeshShadowMapResources.h"
-#include "rendering/utility/gl/GLFrameBufferObject.h"
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/GLFrameBufferObject.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include <glad/glad.h>
 

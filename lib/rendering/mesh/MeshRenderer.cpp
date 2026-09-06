@@ -2,9 +2,9 @@
 
 #include "rendering/mesh/MeshClipPlanes.h"
 #include "rendering/mesh/MeshMaterial.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include <glad/glad.h>
 

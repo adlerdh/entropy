@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rendering/utility/gl/GLFrameBufferObject.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLFrameBufferObject.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <glm/vec2.hpp>
 

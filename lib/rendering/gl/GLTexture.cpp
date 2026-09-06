@@ -1,5 +1,5 @@
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/UnderlyingEnumType.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
 

@@ -1,6 +1,6 @@
 #include "rendering/Rendering.h"
 
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 
 void Rendering::unbindTextures(const BoundTextures& textures)
 {

@@ -1,4 +1,4 @@
-#include "rendering/utility/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLRenderState.h"
 
 #include <glad/glad.h>
 

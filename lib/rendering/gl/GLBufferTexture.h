@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rendering/utility/gl/GLBufferObject.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLBufferObject.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <glad/glad.h>
 

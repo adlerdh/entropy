@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/utility/gl/GLDrawTypes.h"
+#include "rendering/gl/GLDrawTypes.h"
 
 #include <cstdint>
 

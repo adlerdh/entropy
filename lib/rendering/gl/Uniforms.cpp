@@ -1,4 +1,4 @@
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <glad/glad.h>
 

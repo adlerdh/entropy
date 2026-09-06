@@ -5,7 +5,7 @@
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/ImageDrawing.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 
 #include "logic/camera/CameraHelpers.h"

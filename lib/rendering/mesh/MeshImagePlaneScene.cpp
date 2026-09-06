@@ -1,7 +1,7 @@
 #include "rendering/mesh/MeshImagePlaneScene.h"
 
 #include "rendering/mesh/MeshImagePlane.h"
-#include "rendering/utility/math/SliceIntersector.h"
+#include "rendering/helpers/SliceIntersector.h"
 
 #include <glm/vec4.hpp>
 

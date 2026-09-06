@@ -1,5 +1,5 @@
-#include "rendering/utility/gl/GLBufferObject.h"
-#include "rendering/utility/UnderlyingEnumType.h"
+#include "rendering/gl/GLBufferObject.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
 

@@ -1,5 +1,5 @@
-#include "rendering/utility/gl/GLVertexArrayObject.h"
-#include "rendering/utility/UnderlyingEnumType.h"
+#include "rendering/gl/GLVertexArrayObject.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
 

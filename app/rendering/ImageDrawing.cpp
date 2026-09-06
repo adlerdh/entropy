@@ -1,7 +1,7 @@
 #include "rendering/ImageDrawing.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
-#include "rendering/utility/UnderlyingEnumType.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
+#include "rendering/gl/GLShaderProgram.h"
 
 #include "image/Image.h"
 #include "logic/app/DataHelper.h"

@@ -2,7 +2,7 @@
 
 #include "rendering/common/ShaderType.h"
 #include "rendering/ShaderTextureDimension.h"
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <string>
 #include <unordered_map>

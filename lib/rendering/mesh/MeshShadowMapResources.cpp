@@ -1,6 +1,6 @@
 #include "rendering/mesh/MeshShadowMapResources.h"
 
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include "common/Exception.hpp"
 

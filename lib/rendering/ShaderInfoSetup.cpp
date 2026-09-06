@@ -1,6 +1,6 @@
 #include "rendering/ShaderInfoSetup.h"
 
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <string>
 

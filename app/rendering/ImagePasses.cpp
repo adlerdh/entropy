@@ -1,5 +1,5 @@
 #include "rendering/Rendering.h"
-#include "rendering/utility/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
 #include "image/Image.h"
@@ -11,7 +11,7 @@
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
 #include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/gl/GLShaderProgram.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"

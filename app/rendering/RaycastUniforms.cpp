@@ -5,9 +5,9 @@
 #include "logic/app/Data.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 
 #include <glm/glm.hpp>

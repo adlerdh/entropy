@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/ascii/AsciiAtlasBaker.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <glm/vec2.hpp>
 

@@ -1,4 +1,4 @@
-#include "rendering/utility/gl/GLErrorChecker.h"
+#include "rendering/gl/GLErrorChecker.h"
 #include "common/Exception.hpp"
 
 #include <glad/glad.h>

@@ -28,7 +28,7 @@
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshRenderList.h"
 #include "rendering/mesh/MeshScene.h"
-#include "rendering/utility/gl/GLBufferTypes.h"
+#include "rendering/gl/GLBufferTypes.h"
 #include "viewer/ViewTypes.h"
 #include "windowing/View.h"
 

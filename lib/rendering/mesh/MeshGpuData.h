@@ -1,10 +1,10 @@
 #pragma once
 
 #include "rendering/mesh/MeshHandle.h"
-#include "rendering/utility/containers/VertexAttributeInfo.h"
-#include "rendering/utility/containers/VertexIndicesInfo.h"
-#include "rendering/utility/gl/GLBufferObject.h"
-#include "rendering/utility/gl/GLVertexArrayObject.h"
+#include "rendering/gl/VertexAttributeInfo.h"
+#include "rendering/gl/VertexIndicesInfo.h"
+#include "rendering/gl/GLBufferObject.h"
+#include "rendering/gl/GLVertexArrayObject.h"
 
 #include <optional>
 

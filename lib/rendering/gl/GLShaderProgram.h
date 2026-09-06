@@ -1,8 +1,8 @@
 #pragma once
 
-#include "rendering/utility/gl/GLShader.h"
-#include "rendering/utility/gl/GLErrorChecker.h"
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <glm/fwd.hpp>
 

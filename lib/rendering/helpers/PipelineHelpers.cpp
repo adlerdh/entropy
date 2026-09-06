@@ -1,6 +1,6 @@
 #include "rendering/helpers/PipelineHelpers.h"
 
-#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/gl/GLShaderProgram.h"
 
 #include <cstddef>
 #include <limits>

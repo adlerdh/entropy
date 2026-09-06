@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/utility/gl/GLBufferTypes.h"
+#include "rendering/gl/GLBufferTypes.h"
 
 #include <cstdint>
 

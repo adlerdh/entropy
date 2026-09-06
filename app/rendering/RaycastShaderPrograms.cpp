@@ -3,7 +3,7 @@
 #include "common/Exception.hpp"
 #include "rendering/ShaderPreprocessor.h"
 #include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/gl/GLShader.h"
+#include "rendering/gl/GLShader.h"
 
 #include <cmrc/cmrc.hpp>
 #include <glm/mat3x3.hpp>

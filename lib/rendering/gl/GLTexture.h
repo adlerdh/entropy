@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rendering/utility/gl/GLErrorChecker.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include "common/Types.h"
 

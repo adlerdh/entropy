@@ -11,10 +11,10 @@
 #include "rendering/TextureLayout.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShader.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLShaderType.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLShaderType.h"
 
 #include <cmrc/cmrc.hpp>
 #include <spdlog/spdlog.h>

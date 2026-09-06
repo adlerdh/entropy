@@ -1,12 +1,12 @@
 #include "rendering/mesh/MeshDdpPass.h"
 
 #include "rendering/mesh/MeshDdpResources.h"
-#include "rendering/utility/gl/GLFrameBufferObject.h"
-#include "rendering/utility/gl/GLErrorChecker.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLVertexArrayObject.h"
-#include "rendering/utility/gl/OpenGLStateGuard.h"
+#include "rendering/gl/GLFrameBufferObject.h"
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLVertexArrayObject.h"
+#include "rendering/gl/OpenGLStateGuard.h"
 
 #include "common/Exception.hpp"
 

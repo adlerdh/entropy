@@ -1,5 +1,5 @@
-#include "rendering/utility/gl/GLShader.h"
-#include "rendering/utility/UnderlyingEnumType.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
 

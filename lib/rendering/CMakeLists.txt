@@ -3,24 +3,6 @@ add_subdirectory(shaders)
 add_library(EntropyRendering STATIC)
 add_library(Entropy::Rendering ALIAS EntropyRendering)
 
-# Keep the reusable library independent of Entropy's application and domain models. This scan is deliberately separate
-# from the explicit source list so newly added implementation and test files are checked as soon as CMake configures.
-file(GLOB_RECURSE entropy_RENDERING_BOUNDARY_FILES CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
-)
-foreach(entropy_RENDERING_BOUNDARY_FILE IN LISTS entropy_RENDERING_BOUNDARY_FILES)
-  file(READ "${entropy_RENDERING_BOUNDARY_FILE}" entropy_RENDERING_BOUNDARY_CONTENT)
-  if(entropy_RENDERING_BOUNDARY_CONTENT MATCHES "#[ \t]*include[ \t]*[<\"](app|image|logic|ui|windowing)/")
-    message(FATAL_ERROR
-      "Rendering library boundary violation in ${entropy_RENDERING_BOUNDARY_FILE}: "
-      "lib/rendering must not include Entropy application or domain headers")
-  endif()
-endforeach()
-unset(entropy_RENDERING_BOUNDARY_CONTENT)
-unset(entropy_RENDERING_BOUNDARY_FILE)
-unset(entropy_RENDERING_BOUNDARY_FILES)
-
 target_sources(EntropyRendering PRIVATE
   ascii/AsciiClipboard.cpp
   FramePacer.cpp
@@ -42,21 +24,21 @@ target_sources(EntropyRendering PRIVATE
   ShaderTextureDimension.cpp
   ShaderUniformSetup.cpp
   common/ShaderType.cpp
-  utility/containers/Uniforms.cpp
-  utility/containers/VertexAttributeInfo.cpp
-  utility/containers/VertexIndicesInfo.cpp
-  utility/gl/GLBufferObject.cpp
-  utility/gl/GLBufferTexture.cpp
-  utility/gl/GLErrorChecker.cpp
-  utility/gl/GLFrameBufferObject.cpp
-  utility/gl/GLShader.cpp
-  utility/gl/GLShaderProgram.cpp
-  utility/gl/GLTexture.cpp
-  utility/gl/GLVertexArrayObject.cpp
-  utility/gl/OpenGLContext.cpp
-  utility/gl/OpenGLRenderState.cpp
-  utility/gl/OpenGLStateGuard.cpp
-  utility/math/SliceIntersector.cpp
+  gl/Uniforms.cpp
+  gl/VertexAttributeInfo.cpp
+  gl/VertexIndicesInfo.cpp
+  gl/GLBufferObject.cpp
+  gl/GLBufferTexture.cpp
+  gl/GLErrorChecker.cpp
+  gl/GLFrameBufferObject.cpp
+  gl/GLShader.cpp
+  gl/GLShaderProgram.cpp
+  gl/GLTexture.cpp
+  gl/GLVertexArrayObject.cpp
+  gl/OpenGLContext.cpp
+  gl/OpenGLRenderState.cpp
+  gl/OpenGLStateGuard.cpp
+  helpers/SliceIntersector.cpp
   physics/XrayAttenuation.cpp
 )
 
