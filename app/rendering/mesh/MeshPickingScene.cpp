@@ -181,15 +181,16 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         imageOpacity,
         m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
-        const rendering::mesh::SegmentationLabelMeshState labelState{
-          .showMesh = labelTable->getShowMesh(labelIndex),
-          .opacity = segmentationOpacity};
-        if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
+        const int64_t labelValue = static_cast<int64_t>(labelIndex);
+        const auto labelInfo = presentLabels->find(labelValue);
+        if (labelInfo == presentLabels->end()) {
           continue;
         }
-
-        const int64_t labelValue = static_cast<int64_t>(labelIndex);
-        if (!presentLabels->contains(labelValue)) {
+        const rendering::mesh::SegmentationLabelMeshState labelState{
+          .showMesh = labelTable->getShowMesh(labelIndex),
+          .opacity = segmentationOpacity,
+          .hasSharedBoundary = labelInfo->second.hasSharedBoundary};
+        if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
           continue;
         }
         const rendering::mesh::MeshGenerationOptions generationOptions{

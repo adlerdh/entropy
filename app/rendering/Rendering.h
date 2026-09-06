@@ -320,15 +320,15 @@ private:
 
   struct SegmentationLabelInventory
   {
-    uint64_t pixelDataRevision = 0;                     //!< Pixel revision represented by this inventory
-    uint32_t timePoint = 0;                             //!< Time point represented by this inventory
-    rendering::mesh::SegmentationLabelInventory labels; //!< Exact labels and their occupied voxel bounds
+    rendering::mesh::SegmentationSourceIdentity identity; //!< Revisions and time represented by labels/snapshot
+    rendering::mesh::SegmentationLabelInventory labels;   //!< Exact labels and their occupied voxel bounds
+    std::shared_ptr<const Image> snapshot; //!< Temporary immutable pixels reused by pending label extractions
   };
 
   struct PendingSegmentationLabelInventory
   {
-    uint64_t pixelDataRevision = 0;
-    uint32_t timePoint = 0;
+    rendering::mesh::SegmentationSourceIdentity identity;
+    std::shared_ptr<const Image> snapshot;
     std::future<std::optional<rendering::mesh::SegmentationLabelInventory>> future;
   };
 

@@ -1,7 +1,5 @@
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
 
-#include <bit>
-
 namespace rendering::mesh
 {
 
@@ -46,13 +44,8 @@ IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(
   const MeshGenerationOptions& generationOptions)
 {
   // Thread count affects execution only. Smoothing values change geometry and therefore must invalidate the cache.
-  uint64_t algorithmVersion = kScalarGridIsosurfaceAlgorithmVersion;
-  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothSurface) + 0x9e3779b97f4a7c15ULL +
-                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
-  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothingIterations) + 0x9e3779b97f4a7c15ULL +
-                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
-  algorithmVersion ^= std::bit_cast<uint64_t>(generationOptions.smoothingPassBand) + 0x9e3779b97f4a7c15ULL +
-                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
+  const uint64_t algorithmVersion =
+    meshGenerationAlgorithmVersion(kScalarGridIsosurfaceAlgorithmVersion, generationOptions);
   return IsosurfaceMeshRequest{
     .imageUid = imageUid,
     .imageDataVersion = imageDataVersion,
@@ -60,6 +53,7 @@ IsosurfaceMeshRequest makeScalarGridIsosurfaceRequest(
     .component = component,
     .timePoint = timePoint,
     .isoValue = isoValue,
+    .generationOptions = generationOptions,
     .algorithm = kScalarGridIsosurfaceAlgorithm,
     .algorithmVersion = algorithmVersion};
 }

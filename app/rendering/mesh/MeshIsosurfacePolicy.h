@@ -17,7 +17,7 @@ inline constexpr const char* kScalarGridIsosurfaceAlgorithm = "scalar-grid-vtk-f
 /**
  * @brief Version for the built-in scalar-grid isosurface extractor
  */
-inline constexpr uint64_t kScalarGridIsosurfaceAlgorithmVersion = 1;
+inline constexpr uint64_t kScalarGridIsosurfaceAlgorithmVersion = 2;
 
 /**
  * @brief Inputs that determine whether an isosurface can use the current mesh renderer without changing appearance

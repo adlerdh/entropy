@@ -98,9 +98,11 @@ std::optional<MeshTriangleHit> pickNearestTriangle(
   const MeshData& mesh,
   const MeshPickRay& ray,
   const glm::mat4& world_T_mesh,
-  std::span<const MeshClipPlane> clipPlanes)
+  std::span<const MeshClipPlane> clipPlanes,
+  const bool backfaceCulling)
 {
   std::optional<MeshTriangleHit> nearestHit;
+  const bool reversedOrientation = meshTransformReversesOrientation(world_T_mesh);
 
   for (size_t index = 0; index + 2 < mesh.indices.size(); index += 3) {
     const uint32_t ia = mesh.indices[index];
@@ -113,6 +115,14 @@ std::optional<MeshTriangleHit> pickNearestTriangle(
     const glm::vec3 a = glm::vec3{world_T_mesh * glm::vec4{mesh.positions[ia], 1.0f}};
     const glm::vec3 b = glm::vec3{world_T_mesh * glm::vec4{mesh.positions[ib], 1.0f}};
     const glm::vec3 c = glm::vec3{world_T_mesh * glm::vec4{mesh.positions[ic], 1.0f}};
+
+    if (backfaceCulling) {
+      const float facing = glm::dot(glm::cross(b - a, c - a), ray.direction);
+      const bool frontFacing = reversedOrientation ? facing > 0.0f : facing < 0.0f;
+      if (!frontFacing) {
+        continue;
+      }
+    }
 
     std::optional<MeshTriangleHit> hit = intersectRayTriangle(ray, a, b, c);
     if (!hit || !pointInsideEnabledClipPlanes(hit->worldPosition, clipPlanes)) {
@@ -156,8 +166,12 @@ std::optional<MeshScenePickHit> pickNearestRenderable(const MeshScenePickRequest
       continue;
     }
 
-    const std::optional<MeshTriangleHit> hit =
-      pickNearestTriangle(*mesh, *ray, renderable.world_T_mesh, renderable.drawOptions.clipPlanes);
+    const std::optional<MeshTriangleHit> hit = pickNearestTriangle(
+      *mesh,
+      *ray,
+      renderable.world_T_mesh,
+      renderable.drawOptions.clipPlanes,
+      renderable.drawOptions.backfaceCulling);
     if (!hit) {
       continue;
     }

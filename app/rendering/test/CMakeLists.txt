@@ -57,7 +57,6 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/mesh/MeshScalarGrid.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshScene.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshSegmentationPolicy.cpp"
-  "${entropy_APP_DIR}/rendering/mesh/SegmentationExtractionBatch.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshShadowMapProjection.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshShadowMapResources.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshValidation.cpp"

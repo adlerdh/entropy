@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshData.h"
+#include "rendering/mesh/MeshGenerationOptions.h"
 #include "rendering/mesh/MeshKeys.h"
 
 #include <cstdint>
@@ -33,14 +34,15 @@ enum class MeshCacheState
  */
 struct IsosurfaceMeshRequest
 {
-  uuids::uuid imageUid = {};             //!< Source image UID
-  uint64_t imageDataVersion = 0;         //!< Version of source voxel values
-  uint64_t imageGeometryVersion = 0;     //!< Version of image spatial metadata and transforms
-  uint32_t component = 0;                //!< Scalar component used for extraction
-  uint32_t timePoint = 0;                //!< Time frame used for extraction
-  double isoValue = 0.0;                 //!< Isosurface value
-  std::string algorithm = "unspecified"; //!< Extraction algorithm identifier
-  uint64_t algorithmVersion = 0;         //!< Version of algorithm settings that change geometry
+  uuids::uuid imageUid = {};               //!< Source image UID
+  uint64_t imageDataVersion = 0;           //!< Version of source voxel values
+  uint64_t imageGeometryVersion = 0;       //!< Version of image spatial metadata and transforms
+  uint32_t component = 0;                  //!< Scalar component used for extraction
+  uint32_t timePoint = 0;                  //!< Time frame used for extraction
+  double isoValue = 0.0;                   //!< Isosurface value
+  MeshGenerationOptions generationOptions; //!< Options used to generate this request's geometry
+  std::string algorithm = "unspecified";   //!< Extraction algorithm identifier
+  uint64_t algorithmVersion = 0;           //!< Version of algorithm settings that change geometry
 };
 
 /**
@@ -53,6 +55,7 @@ struct SegmentationMeshRequest
   uint64_t segmentationGeometryVersion = 0; //!< Version of segmentation spatial metadata and transforms
   int64_t labelValue = 0;                   //!< Label value to extract
   uint32_t timePoint = 0;                   //!< Time frame used for extraction
+  MeshGenerationOptions generationOptions;  //!< Options used to generate this request's geometry
   std::string algorithm = "unspecified";    //!< Extraction algorithm identifier
   uint64_t algorithmVersion = 0;            //!< Version of algorithm settings that change geometry
 };

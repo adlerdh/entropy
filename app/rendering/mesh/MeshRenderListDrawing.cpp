@@ -106,9 +106,13 @@ void Rendering::reconcileExtractedMeshResources()
     }
     const uint32_t timePoint = segmentation->timeAxis().clamp(segmentation->settings().activeTimePoint());
     const auto inventory = m_segmentationLabelInventories.find(segmentationUid);
-    const bool inventoryIsCurrent = inventory != m_segmentationLabelInventories.end() &&
-                                    inventory->second.pixelDataRevision == segmentation->pixelDataRevision() &&
-                                    inventory->second.timePoint == timePoint;
+    const bool inventoryIsCurrent =
+      inventory != m_segmentationLabelInventories.end() && rendering::mesh::sameSegmentationValues(
+                                                             inventory->second.identity,
+                                                             rendering::mesh::SegmentationSourceIdentity{
+                                                               .pixelDataRevision = segmentation->pixelDataRevision(),
+                                                               .geometryRevision = segmentation->geometryRevision(),
+                                                               .timePoint = timePoint});
     for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
       if (inventoryIsCurrent && !inventory->second.labels.contains(static_cast<int64_t>(labelIndex))) {
         continue;

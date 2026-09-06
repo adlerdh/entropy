@@ -1,5 +1,8 @@
 #pragma once
 
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
 
 #include <vector>
@@ -8,6 +11,12 @@ namespace rendering::mesh
 {
 
 inline constexpr int MaxMeshClipPlanes = 8; //!< Maximum active clip planes uploaded to the basic mesh shader
+
+/** Return whether a mesh-to-world transform reverses triangle winding. */
+inline bool meshTransformReversesOrientation(const glm::mat4& world_T_mesh) noexcept
+{
+  return glm::determinant(glm::mat3{world_T_mesh}) < 0.0f;
+}
 
 /**
  * @brief Rasterization style used to draw mesh geometry

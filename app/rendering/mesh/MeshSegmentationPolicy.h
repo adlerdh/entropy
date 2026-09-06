@@ -14,20 +14,21 @@ namespace rendering::mesh
 /**
  * @brief Algorithm name used by the built-in scalar-grid segmentation-label extractor
  */
-inline constexpr const char* kScalarGridSegmentationAlgorithm = "packed-label-vtk-surface-nets-3d";
+inline constexpr const char* kScalarGridSegmentationAlgorithm = "cropped-binary-vtk-discrete-flying-edges-3d";
 
 /**
  * @brief Version for the built-in scalar-grid segmentation-label extractor
  */
-inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 3;
+inline constexpr uint64_t kScalarGridSegmentationAlgorithmVersion = 4;
 
 /**
  * @brief User-facing label-table state needed to decide if a segmentation label should render as a mesh
  */
 struct SegmentationLabelMeshState
 {
-  bool showMesh = true; //!< 3D mesh visibility
-  float opacity = 1.0f; //!< Effective label opacity after segmentation-level modulation
+  bool showMesh = true;           //!< 3D mesh visibility
+  float opacity = 1.0f;           //!< Effective label opacity after segmentation-level modulation
+  bool hasSharedBoundary = false; //!< Whether another nonzero label touches this label by a voxel face
 };
 
 /**

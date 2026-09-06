@@ -7,10 +7,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-#include <vtkAlgorithm.h>
-#include <vtkAlgorithmOutput.h>
 #include <vtkCellArray.h>
-#include <vtkCellData.h>
 #include <vtkCleanPolyData.h>
 #include <vtkDataArray.h>
 #include <vtkDiscreteFlyingEdges3D.h>
@@ -25,7 +22,6 @@
 #include <vtkReverseSense.h>
 #include <vtkSMPTools.h>
 #include <vtkSmartPointer.h>
-#include <vtkSurfaceNets3D.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkTriangleFilter.h>
@@ -40,8 +36,6 @@
 #include <limits>
 #include <mutex>
 #include <thread>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 namespace rendering::mesh
@@ -95,7 +89,13 @@ auto withVtkThreading(const MeshGenerationOptions& options, Callable&& callable)
   return result;
 }
 
-vtkSmartPointer<vtkImageData> makeVtkImageData(const ScalarGrid3D& grid)
+struct VtkGridInput
+{
+  vtkSmartPointer<vtkImageData> imageData;
+  glm::mat4 mesh_T_vtkPhysical{1.0f};
+};
+
+std::optional<VtkGridInput> makeVtkImageData(const ScalarGrid3D& grid)
 {
   if (
     !isValidScalarGrid(grid) || grid.dimensions.x > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
@@ -103,7 +103,18 @@ vtkSmartPointer<vtkImageData> makeVtkImageData(const ScalarGrid3D& grid)
     grid.dimensions.z > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
     !isFiniteInvertibleAffine(grid.grid_T_voxelIndex))
   {
-    return nullptr;
+    return std::nullopt;
+  }
+
+  const glm::vec3 spacing{
+    glm::length(glm::vec3{grid.grid_T_voxelIndex[0]}),
+    glm::length(glm::vec3{grid.grid_T_voxelIndex[1]}),
+    glm::length(glm::vec3{grid.grid_T_voxelIndex[2]})};
+  if (
+    !std::isfinite(spacing.x) || !std::isfinite(spacing.y) || !std::isfinite(spacing.z) ||
+    glm::any(glm::lessThanEqual(spacing, glm::vec3{std::numeric_limits<float>::epsilon()})))
+  {
+    return std::nullopt;
   }
 
   vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
@@ -112,16 +123,20 @@ vtkSmartPointer<vtkImageData> makeVtkImageData(const ScalarGrid3D& grid)
     static_cast<int>(grid.dimensions.y),
     static_cast<int>(grid.dimensions.z));
   imageData->SetOrigin(0.0, 0.0, 0.0);
-  imageData->SetSpacing(1.0, 1.0, 1.0);
+  imageData->SetSpacing(spacing.x, spacing.y, spacing.z);
   imageData->AllocateScalars(VTK_FLOAT, 1);
 
   auto* destination = static_cast<float*>(imageData->GetScalarPointer());
   if (!destination) {
-    return nullptr;
+    return std::nullopt;
   }
 
   std::ranges::copy(grid.values, destination);
-  return imageData;
+  glm::mat4 mesh_T_vtkPhysical = grid.grid_T_voxelIndex;
+  mesh_T_vtkPhysical[0] /= spacing.x;
+  mesh_T_vtkPhysical[1] /= spacing.y;
+  mesh_T_vtkPhysical[2] /= spacing.z;
+  return VtkGridInput{.imageData = std::move(imageData), .mesh_T_vtkPhysical = mesh_T_vtkPhysical};
 }
 
 vtkSmartPointer<vtkTransform> makeGridTransform(const glm::mat4& grid_T_voxelIndex)
@@ -145,7 +160,7 @@ bool flipsOrientation(const glm::mat4& transform)
 
 vtkAlgorithmOutput* transformToGridOutput(
   vtkAlgorithmOutput* input,
-  const ScalarGrid3D& grid,
+  const glm::mat4& mesh_T_vtkPhysical,
   vtkTransformPolyDataFilter& transformFilter,
   vtkReverseSense& reverseSense)
 {
@@ -154,10 +169,10 @@ vtkAlgorithmOutput* transformToGridOutput(
   }
 
   transformFilter.SetInputConnection(input);
-  transformFilter.SetTransform(makeGridTransform(grid.grid_T_voxelIndex));
+  transformFilter.SetTransform(makeGridTransform(mesh_T_vtkPhysical));
   vtkAlgorithmOutput* output = transformFilter.GetOutputPort();
 
-  if (flipsOrientation(grid.grid_T_voxelIndex)) {
+  if (flipsOrientation(mesh_T_vtkPhysical)) {
     reverseSense.SetInputConnection(output);
     reverseSense.ReverseCellsOn();
     reverseSense.ReverseNormalsOn();
@@ -169,7 +184,7 @@ vtkAlgorithmOutput* transformToGridOutput(
 
 vtkSmartPointer<vtkPolyData> finalizeSurface(
   vtkAlgorithmOutput* sourceOutput,
-  const ScalarGrid3D& grid,
+  const glm::mat4& mesh_T_vtkPhysical,
   const MeshGenerationOptions* const smoothingOptions)
 {
   if (!sourceOutput) {
@@ -204,7 +219,7 @@ vtkSmartPointer<vtkPolyData> finalizeSurface(
     pipelineTail = windowedSincSmoother->GetOutputPort();
   }
 
-  pipelineTail = transformToGridOutput(pipelineTail, grid, *transformFilter, *reverseSense);
+  pipelineTail = transformToGridOutput(pipelineTail, mesh_T_vtkPhysical, *transformFilter, *reverseSense);
   if (!pipelineTail) {
     return nullptr;
   }
@@ -215,177 +230,14 @@ vtkSmartPointer<vtkPolyData> finalizeSurface(
   normalsGenerator->SetFeatureAngle(120.0);
   normalsGenerator->FlipNormalsOff();
   normalsGenerator->SplittingOn();
-  normalsGenerator->ConsistencyOff();
+  // Back-face culling relies on a consistent triangle winding across every closed component.
+  normalsGenerator->ConsistencyOn();
   normalsGenerator->AutoOrientNormalsOn();
   normalsGenerator->Update();
 
   vtkSmartPointer<vtkPolyData> output = vtkSmartPointer<vtkPolyData>::New();
   output->DeepCopy(normalsGenerator->GetOutput());
   return output;
-}
-
-vtkSmartPointer<vtkPolyData> finalizeSharedLabelSurface(
-  vtkAlgorithmOutput* sourceOutput,
-  const ScalarGrid3D& grid,
-  const MeshGenerationOptions& smoothingOptions)
-{
-  if (!sourceOutput) {
-    return nullptr;
-  }
-
-  vtkNew<vtkTriangleFilter> triangleFilter;
-  vtkNew<vtkCleanPolyData> cleanFilter;
-  vtkNew<vtkWindowedSincPolyDataFilter> windowedSincSmoother;
-  vtkNew<vtkTransformPolyDataFilter> transformFilter;
-  vtkNew<vtkReverseSense> reverseSense;
-
-  vtkAlgorithmOutput* pipelineTail = sourceOutput;
-  triangleFilter->SetInputConnection(pipelineTail);
-  pipelineTail = triangleFilter->GetOutputPort();
-  cleanFilter->SetInputConnection(pipelineTail);
-  pipelineTail = cleanFilter->GetOutputPort();
-
-  if (smoothingOptions.smoothSurface && smoothingOptions.smoothingIterations > 0u) {
-    // Smooth the complete multi-label surface before splitting it. This is the key invariant that keeps a boundary
-    // shared by adjacent regions bit-identical in both resulting label meshes.
-    windowedSincSmoother->SetInputConnection(pipelineTail);
-    windowedSincSmoother->SetNumberOfIterations(static_cast<int>(smoothingOptions.smoothingIterations));
-    windowedSincSmoother->SetFeatureEdgeSmoothing(1);
-    windowedSincSmoother->SetFeatureAngle(120.0);
-    windowedSincSmoother->SetPassBand(smoothingOptions.smoothingPassBand);
-    windowedSincSmoother->BoundarySmoothingOff();
-    windowedSincSmoother->NonManifoldSmoothingOn();
-    windowedSincSmoother->NormalizeCoordinatesOn();
-    pipelineTail = windowedSincSmoother->GetOutputPort();
-  }
-
-  pipelineTail = transformToGridOutput(pipelineTail, grid, *transformFilter, *reverseSense);
-  if (!pipelineTail) {
-    return nullptr;
-  }
-
-  vtkAlgorithm* producer = pipelineTail->GetProducer();
-  if (!producer) {
-    return nullptr;
-  }
-  producer->Update();
-  vtkPolyData* result = vtkPolyData::SafeDownCast(producer->GetOutputDataObject(pipelineTail->GetIndex()));
-  if (!result) {
-    return nullptr;
-  }
-
-  vtkSmartPointer<vtkPolyData> output = vtkSmartPointer<vtkPolyData>::New();
-  output->DeepCopy(result);
-  return output;
-}
-
-struct LabelMeshBuilder
-{
-  MeshData mesh;
-  std::unordered_map<vtkIdType, uint32_t> localPointBySourcePoint;
-};
-
-uint32_t appendPoint(vtkPolyData& polyData, const vtkIdType sourcePoint, LabelMeshBuilder& builder)
-{
-  if (const auto existing = builder.localPointBySourcePoint.find(sourcePoint);
-      existing != builder.localPointBySourcePoint.end())
-  {
-    return existing->second;
-  }
-
-  double point[3] = {};
-  polyData.GetPoint(sourcePoint, point);
-  const uint32_t localPoint = static_cast<uint32_t>(builder.mesh.positions.size());
-  builder.mesh.positions.emplace_back(
-    static_cast<float>(point[0]),
-    static_cast<float>(point[1]),
-    static_cast<float>(point[2]));
-  builder.mesh.normals.emplace_back(0.0f);
-  builder.localPointBySourcePoint.emplace(sourcePoint, localPoint);
-  return localPoint;
-}
-
-void appendOrientedTriangle(
-  vtkPolyData& polyData,
-  const vtkIdType* sourcePoints,
-  const bool reverseWinding,
-  LabelMeshBuilder& builder)
-{
-  const uint32_t i0 = appendPoint(polyData, sourcePoints[0], builder);
-  const uint32_t i1 = appendPoint(polyData, sourcePoints[reverseWinding ? 2 : 1], builder);
-  const uint32_t i2 = appendPoint(polyData, sourcePoints[reverseWinding ? 1 : 2], builder);
-  const glm::vec3 faceNormal = glm::cross(
-    builder.mesh.positions[i1] - builder.mesh.positions[i0],
-    builder.mesh.positions[i2] - builder.mesh.positions[i0]);
-  if (glm::dot(faceNormal, faceNormal) <= std::numeric_limits<float>::epsilon()) {
-    return;
-  }
-
-  builder.mesh.indices.insert(builder.mesh.indices.end(), {i0, i1, i2});
-  builder.mesh.normals[i0] += faceNormal;
-  builder.mesh.normals[i1] += faceNormal;
-  builder.mesh.normals[i2] += faceNormal;
-}
-
-std::optional<SegmentationLabelMeshes> splitSharedLabelSurface(
-  const vtkSmartPointer<vtkPolyData>& polyData,
-  const std::vector<int64_t>& labelValues,
-  const MeshCoordinateSpace coordinateSpace)
-{
-  if (!polyData || !polyData->GetPoints() || !polyData->GetPolys() || !polyData->GetCellData()) {
-    return std::nullopt;
-  }
-  if (
-    polyData->GetNumberOfPoints() <= 0 ||
-    polyData->GetNumberOfPoints() > static_cast<vtkIdType>(std::numeric_limits<uint32_t>::max()))
-  {
-    return std::nullopt;
-  }
-  vtkDataArray* boundaryLabels = polyData->GetCellData()->GetArray("BoundaryLabels");
-  if (!boundaryLabels || boundaryLabels->GetNumberOfComponents() != 2) {
-    return std::nullopt;
-  }
-
-  std::vector<LabelMeshBuilder> builders(labelValues.size());
-  vtkCellArray* polygons = polyData->GetPolys();
-  polygons->InitTraversal();
-  vtkIdType numCellPoints = 0;
-  const vtkIdType* cellPoints = nullptr;
-  vtkIdType cellIndex = 0;
-  while (polygons->GetNextCell(numCellPoints, cellPoints)) {
-    if (numCellPoints != 3 || cellIndex >= boundaryLabels->GetNumberOfTuples()) {
-      return std::nullopt;
-    }
-
-    double sides[2] = {};
-    boundaryLabels->GetTuple(cellIndex, sides);
-    for (int side = 0; side < 2; ++side) {
-      const auto packedLabel = static_cast<std::size_t>(std::llround(sides[side]));
-      if (packedLabel == 0u || packedLabel > labelValues.size()) {
-        continue;
-      }
-      // Surface Nets orients the polygon from BoundaryLabels[0] toward BoundaryLabels[1]. The first label therefore
-      // uses the emitted winding; the second receives the opposite side of the same shared polygon.
-      appendOrientedTriangle(*polyData, cellPoints, side == 1, builders[packedLabel - 1u]);
-    }
-    ++cellIndex;
-  }
-
-  SegmentationLabelMeshes meshes;
-  meshes.reserve(labelValues.size());
-  for (std::size_t labelIndex = 0; labelIndex < labelValues.size(); ++labelIndex) {
-    MeshData& mesh = builders[labelIndex].mesh;
-    if (mesh.indices.empty()) {
-      continue;
-    }
-    for (glm::vec3& normal : mesh.normals) {
-      const float length = glm::length(normal);
-      normal = length > 0.0f ? normal / length : glm::vec3{0.0f, 0.0f, 1.0f};
-    }
-    mesh.coordinateSpace = coordinateSpace;
-    meshes.emplace(labelValues[labelIndex], std::move(mesh));
-  }
-  return meshes;
 }
 
 std::optional<MeshData> meshDataFromPolyData(vtkPolyData* polyData, const MeshCoordinateSpace coordinateSpace)
@@ -490,13 +342,13 @@ generateIsoSurfaceMesh(const ScalarGrid3D& grid, const double isoValue, const Me
   }
   std::scoped_lock lock(vtkMeshGenerationMutex());
   return withVtkThreading(options, [&]() -> std::optional<MeshData> {
-    vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(grid);
-    if (!imageData) {
+    std::optional<VtkGridInput> input = makeVtkImageData(grid);
+    if (!input) {
       return std::nullopt;
     }
 
     vtkNew<vtkFlyingEdges3D> flyingEdges;
-    flyingEdges->SetInputData(imageData);
+    flyingEdges->SetInputData(input->imageData);
     flyingEdges->ComputeNormalsOff();
     flyingEdges->ComputeScalarsOff();
     flyingEdges->ComputeGradientsOff();
@@ -509,7 +361,8 @@ generateIsoSurfaceMesh(const ScalarGrid3D& grid, const double isoValue, const Me
 
     vtkNew<vtkTrivialProducer> source;
     source->SetOutput(flyingEdges->GetOutput());
-    vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, &options);
+    vtkSmartPointer<vtkPolyData> polyData =
+      finalizeSurface(source->GetOutputPort(), input->mesh_T_vtkPhysical, &options);
     return meshDataFromPolyData(polyData, grid.coordinateSpace);
   });
 }
@@ -527,13 +380,13 @@ generateDiscreteLabelSurface(const ScalarGrid3D& grid, const int64_t labelValue,
 
   std::scoped_lock lock(vtkMeshGenerationMutex());
   return withVtkThreading(options, [&]() -> std::optional<MeshData> {
-    vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(grid);
-    if (!imageData) {
+    std::optional<VtkGridInput> input = makeVtkImageData(grid);
+    if (!input) {
       return std::nullopt;
     }
 
     vtkNew<vtkDiscreteFlyingEdges3D> flyingEdges;
-    flyingEdges->SetInputData(imageData);
+    flyingEdges->SetInputData(input->imageData);
     flyingEdges->ComputeNormalsOff();
     flyingEdges->ComputeScalarsOff();
     flyingEdges->ComputeGradientsOff();
@@ -546,7 +399,8 @@ generateDiscreteLabelSurface(const ScalarGrid3D& grid, const int64_t labelValue,
 
     vtkNew<vtkTrivialProducer> source;
     source->SetOutput(flyingEdges->GetOutput());
-    vtkSmartPointer<vtkPolyData> polyData = finalizeSurface(source->GetOutputPort(), grid, &options);
+    vtkSmartPointer<vtkPolyData> polyData =
+      finalizeSurface(source->GetOutputPort(), input->mesh_T_vtkPhysical, &options);
     return meshDataFromPolyData(polyData, grid.coordinateSpace);
   });
 }
@@ -554,51 +408,6 @@ generateDiscreteLabelSurface(const ScalarGrid3D& grid, const int64_t labelValue,
 std::optional<MeshData> generateBinaryMaskSurface(const ScalarGrid3D& grid, const MeshGenerationOptions& options)
 {
   return generateDiscreteLabelSurface(grid, 1, options);
-}
-
-std::optional<SegmentationLabelMeshes> generatePackedSegmentationLabelSurfaces(
-  const ScalarGrid3D& packedGrid,
-  const std::vector<int64_t>& labelValues,
-  const MeshGenerationOptions& options)
-{
-  const std::unordered_set<int64_t> uniqueLabels(labelValues.begin(), labelValues.end());
-  if (
-    labelValues.empty() || labelValues.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
-    uniqueLabels.size() != labelValues.size() || uniqueLabels.contains(0) || options.smoothingIterations > 1000u ||
-    !std::isfinite(options.smoothingPassBand) || options.smoothingPassBand <= 0.0 || options.smoothingPassBand > 2.0)
-  {
-    return std::nullopt;
-  }
-
-  std::scoped_lock lock(vtkMeshGenerationMutex());
-  return withVtkThreading(options, [&]() -> std::optional<SegmentationLabelMeshes> {
-    vtkSmartPointer<vtkImageData> imageData = makeVtkImageData(packedGrid);
-    if (!imageData) {
-      return std::nullopt;
-    }
-
-    vtkNew<vtkSurfaceNets3D> surfaceNets;
-    surfaceNets->SetInputData(imageData);
-    surfaceNets->SetBackgroundLabel(0.0);
-    surfaceNets->SetNumberOfLabels(static_cast<int>(labelValues.size()));
-    for (std::size_t index = 0; index < labelValues.size(); ++index) {
-      surfaceNets->SetLabel(static_cast<int>(index), static_cast<double>(index + 1u));
-    }
-    surfaceNets->SmoothingOff();
-    surfaceNets->SetOutputMeshTypeToTriangles();
-    surfaceNets->SetOutputStyleToDefault();
-    surfaceNets->Update();
-    if (!surfaceNets->GetOutput() || surfaceNets->GetOutput()->GetNumberOfPolys() <= 0) {
-      return std::nullopt;
-    }
-
-    vtkNew<vtkTrivialProducer> source;
-    source->SetOutput(surfaceNets->GetOutput());
-    return splitSharedLabelSurface(
-      finalizeSharedLabelSurface(source->GetOutputPort(), packedGrid, options),
-      labelValues,
-      packedGrid.coordinateSpace);
-  });
 }
 
 } // namespace rendering::mesh

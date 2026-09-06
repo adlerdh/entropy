@@ -80,13 +80,15 @@ pickNearestTriangle(const MeshData& mesh, const MeshPickRay& ray, std::span<cons
  * @param ray World-space ray with unit-length direction
  * @param world_T_mesh Transform from mesh coordinates to world coordinates
  * @param clipPlanes World-space clip planes to honor
+ * @param backfaceCulling Ignore the same back-facing triangles omitted by rasterization
  * @return Nearest hit in world coordinates, or empty for no hit
  */
 std::optional<MeshTriangleHit> pickNearestTriangle(
   const MeshData& mesh,
   const MeshPickRay& ray,
   const glm::mat4& world_T_mesh,
-  std::span<const MeshClipPlane> clipPlanes = {});
+  std::span<const MeshClipPlane> clipPlanes = {},
+  bool backfaceCulling = false);
 
 /**
  * @brief Request used to pick the nearest mesh renderable in a view

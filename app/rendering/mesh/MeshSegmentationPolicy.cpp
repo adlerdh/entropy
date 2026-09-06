@@ -2,8 +2,6 @@
 
 #include <glm/common.hpp>
 
-#include <bit>
-
 namespace rendering::mesh
 {
 
@@ -38,9 +36,9 @@ SegmentationLabelMeshStyle segmentationLabelMeshStyle(
     .labelValue = labelValue,
     .material = meshMaterialForSurface(glm::vec4{color.r, color.g, color.b, alpha}, materialSettings),
     .compositingMode = compositingModeForLabelAlpha(alpha, translucentMode),
-    // Joint extraction produces one oriented side per label at shared interfaces. Cull the opposite side so exactly
-    // one label owns every visible boundary sample instead of depth-testing two coincident polygons.
-    .backfaceCulling = true,
+    // Only labels that actually touch another nonzero label need one-sided rasterization to avoid depth-testing two
+    // coincident, oppositely wound boundaries. Isolated labels retain two-sided rendering and clipping behavior.
+    .backfaceCulling = state.hasSharedBoundary,
     .visible = shouldRenderSegmentationLabelMesh(state)};
 }
 
@@ -53,19 +51,15 @@ SegmentationMeshRequest makeScalarGridSegmentationRequest(
   const MeshGenerationOptions& generationOptions)
 {
   // Thread count affects execution only. Smoothing values change geometry and therefore must invalidate the cache.
-  uint64_t algorithmVersion = kScalarGridSegmentationAlgorithmVersion;
-  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothSurface) + 0x9e3779b97f4a7c15ULL +
-                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
-  algorithmVersion ^= static_cast<uint64_t>(generationOptions.smoothingIterations) + 0x9e3779b97f4a7c15ULL +
-                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
-  algorithmVersion ^= std::bit_cast<uint64_t>(generationOptions.smoothingPassBand) + 0x9e3779b97f4a7c15ULL +
-                      (algorithmVersion << 6U) + (algorithmVersion >> 2U);
+  const uint64_t algorithmVersion =
+    meshGenerationAlgorithmVersion(kScalarGridSegmentationAlgorithmVersion, generationOptions);
   return SegmentationMeshRequest{
     .segmentationUid = segmentationUid,
     .segmentationDataVersion = segmentationDataVersion,
     .segmentationGeometryVersion = segmentationGeometryVersion,
     .labelValue = labelValue,
     .timePoint = timePoint,
+    .generationOptions = generationOptions,
     .algorithm = kScalarGridSegmentationAlgorithm,
     .algorithmVersion = algorithmVersion};
 }

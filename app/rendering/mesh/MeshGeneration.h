@@ -1,40 +1,21 @@
 #pragma once
 
 #include "rendering/mesh/MeshData.h"
+#include "rendering/mesh/MeshGenerationOptions.h"
 #include "rendering/mesh/MeshScalarGrid.h"
 
-#include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <unordered_map>
-#include <vector>
 
 namespace rendering::mesh
 {
 
 /**
- * @brief Runtime options for CPU mesh generation backends
- */
-struct MeshGenerationOptions
-{
-  /**
-   * @brief Maximum number of CPU threads the backend may use
-   *
-   * A value of zero chooses a conservative automatic count that leaves CPU capacity for the UI, texture uploads, and
-   * other background work.
-   */
-  std::size_t threadCount = 0;
-
-  bool smoothSurface = true;         //!< Apply boundary-preserving smoothing to the extracted surface
-  uint32_t smoothingIterations = 25; //!< Windowed-sinc iterations when smoothing is enabled
-  double smoothingPassBand = 0.1;    //!< Windowed-sinc pass band in the open interval (0, 2]
-};
-
-/**
  * @brief Generate an isosurface mesh from a scalar volume using VTK Flying Edges 3D
  *
  * The public API stays VTK-free. The implementation converts the scalar grid to `vtkImageData`, runs Flying Edges,
- * applies the grid transform, cleans/triangulates the output, and computes point normals for rendering.
+ * applies the grid transform, cleans/triangulates the output, and computes point normals for rendering. Surface
+ * smoothing, when enabled, operates with the grid's physical axis spacing rather than unit voxel spacing.
  *
  * @param grid Scalar volume in i-fastest order
  * @param isoValue Scalar value to extract
@@ -60,19 +41,6 @@ generateDiscreteLabelSurface(const ScalarGrid3D& grid, int64_t labelValue, const
 
 /** Generate the surface of a binary zero/one mask without exposing an ambiguous label-value parameter. */
 std::optional<MeshData> generateBinaryMaskSurface(const ScalarGrid3D& grid, const MeshGenerationOptions& options = {});
-
-using SegmentationLabelMeshes = std::unordered_map<int64_t, MeshData>;
-
-/**
- * @brief Jointly extract all packed segmentation labels and split the shared surface into oriented label meshes
- *
- * Packed scalar value `i + 1` represents `labelValues[i]`; zero is background. Adjacent labels are extracted and
- * smoothed together, so their oppositely oriented renderable sides share bit-identical geometry and cannot z-fight.
- */
-std::optional<SegmentationLabelMeshes> generatePackedSegmentationLabelSurfaces(
-  const ScalarGrid3D& packedGrid,
-  const std::vector<int64_t>& labelValues,
-  const MeshGenerationOptions& options = {});
 
 /** Generate the canonical two-ended cylinder-and-cone mesh used for one 3D crosshair axis. */
 std::optional<MeshData> generateCrosshairsAxisMesh(double coneLengthRatio = 0.15);

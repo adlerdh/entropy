@@ -41,7 +41,9 @@ using MeshExtractionJob = std::function<MeshExtractionJobResult()>;
  * @brief Bounded single-worker CPU extraction scheduler with duplicate-key suppression
  *
  * The queue owns asynchronous CPU jobs only. It does not own OpenGL objects and does not mutate the mesh cache from
- * worker threads.
+ * worker threads. Extraction jobs are intentionally serialized because VTK's per-call thread configuration is not
+ * safe to enter concurrently. Each VTK extraction still parallelizes its own filters internally. This also avoids
+ * oversubscribing the machine when several labels are waiting for extraction.
  */
 class MeshExtractionQueue
 {

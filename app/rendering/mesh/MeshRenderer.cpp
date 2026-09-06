@@ -39,12 +39,13 @@ GLenum polygonModeForFillMode(const MeshFillMode fillMode) noexcept
 }
 
 // Visible mesh passes run after 2D image and NanoVG work, so they must not inherit stencil/depth state
-void applyRasterState(const MeshDrawOptions& drawOptions)
+void applyRasterState(const MeshDrawOptions& drawOptions, const glm::mat4& world_T_mesh)
 {
   glPolygonMode(GL_FRONT_AND_BACK, polygonModeForFillMode(drawOptions.fillMode));
   if (drawOptions.backfaceCulling) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    glFrontFace(meshTransformReversesOrientation(world_T_mesh) ? GL_CW : GL_CCW);
   }
   else {
     glDisable(GL_CULL_FACE);
@@ -242,7 +243,8 @@ void MeshRenderer::drawBucket(
     program.setUniform("u_hasVertexColors", gpuData->hasColors());
     uploadClipPlanes(renderable.drawOptions, program);
 
-    context.shadowDepthPass ? applyShadowDepthRasterState() : applyRasterState(renderable.drawOptions);
+    context.shadowDepthPass ? applyShadowDepthRasterState()
+                            : applyRasterState(renderable.drawOptions, renderable.world_T_mesh);
     drawUploadedMesh(*gpuData);
 
     if (!context.shadowDepthPass && renderable.drawOptions.fillMode == MeshFillMode::SurfaceWithWireframe) {

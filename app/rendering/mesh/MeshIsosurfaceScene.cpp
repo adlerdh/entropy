@@ -147,10 +147,8 @@ bool Rendering::renderIsosurfaceMeshesForView(
           }
 
           const std::string description = isosurfaceMeshDescription(*image, *surface, surfaceIndex);
-          if (m_meshExtractionQueue.submit(
-                key,
-                description,
-                rendering::mesh::makeIsosurfaceExtractionJob(request, generationOptions, imageSnapshot)))
+          if (m_meshExtractionQueue
+                .submit(key, description, rendering::mesh::makeIsosurfaceExtractionJob(request, imageSnapshot)))
           {
             m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
           }
