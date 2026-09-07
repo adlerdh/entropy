@@ -632,6 +632,15 @@ void setDeformationUniforms(
   const glm::mat4& sampleTex_T_world) const;
 
 /**
+ * @brief Upload either a direct world-to-texture transform or the mutually exclusive deformation-sampling inputs.
+ */
+void setImageSamplingTransformUniforms(
+  GLShaderProgram& program,
+  const uuids::uuid& imageUid,
+  const std::optional<uuids::uuid>& deformationUid,
+  const glm::mat4& sampleTex_T_world) const;
+
+/**
  * @brief Set deformation uniforms for one input slot of a metric/comparison shader.
  */
 void setMetricDeformationUniforms(

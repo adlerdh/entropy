@@ -1,6 +1,7 @@
 #include "rendering/Rendering.h"
 
 #include "logic/app/Data.h"
+#include "rendering/ImageShaderCapabilities.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/gl/GLTexture.h"
@@ -81,8 +82,12 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
     boundMetricDefTextures.splice(boundMetricDefTextures.end(), boundDefTextures);
   }
 
-  auto setMetricWarpUniforms = [&](GLShaderProgram& program) {
+  auto setMetricSamplingUniforms = [&](GLShaderProgram& program) {
+    const auto samplingTransform =
+      renderWarpedMetric ? rendering::ImageSamplingTransform::Deformation : rendering::ImageSamplingTransform::Direct;
+    rendering::validateMetricSamplingTransform(program.getRegisteredUniforms(), samplingTransform);
     if (!renderWarpedMetric) {
+      program.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
       return;
     }
 
@@ -119,7 +124,6 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setSamplerUniform("u_metricCmapTex", s_metricCmapTexSampler.index);
       setTexture2DAxesUniforms(program, metricTextureLayouts[0], metricTextureLayouts[1]);
 
-      program.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
       program.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
       program.setUniform(
         "u_imgSlopeIntercept",
@@ -127,7 +131,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
       program.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
       program.setUniform("u_useSquare", settings.m_useSquare);
-      setMetricWarpUniforms(program);
+      setMetricSamplingUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
@@ -149,7 +153,6 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setSamplerUniform("u_metricCmapTex", s_metricCmapTexSampler.index);
       setTexture2DAxesUniforms(program, metricTextureLayouts[0], metricTextureLayouts[1]);
 
-      program.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
       program.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
       program.setUniform(
         "u_imgSlopeIntercept",
@@ -163,7 +166,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_ignoreNegativeCorrelation", settings.m_localNccIgnoreNegativeCorrelation);
       program.setUniform("u_presentation", static_cast<int>(settings.m_localNccPresentation));
       program.setUniform("u_invalidStyle", static_cast<int>(settings.m_localNccInvalidStyle));
-      setMetricWarpUniforms(program);
+      setMetricSamplingUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
@@ -187,7 +190,6 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setSamplerUniform("u_metricCmapTex", s_metricCmapTexSampler.index);
       setTexture2DAxesUniforms(program, metricTextureLayouts[0], metricTextureLayouts[1]);
 
-      program.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
       program.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
       program.setUniform(
         "u_imgSlopeIntercept",
@@ -199,7 +201,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_minValidFraction", settings.m_localLinearResidualMinValidFraction);
       program.setUniform("u_varianceEpsilon", settings.m_localLinearResidualVarianceEpsilon);
       program.setUniform("u_invalidStyle", static_cast<int>(settings.m_localLinearResidualInvalidStyle));
-      setMetricWarpUniforms(program);
+      setMetricSamplingUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
@@ -218,7 +220,6 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setSamplerUniform("u_imgTex", s_metricImgTexSamplers);
       setTexture2DAxesUniforms(program, metricTextureLayouts[0], metricTextureLayouts[1]);
 
-      program.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
       program.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
       program.setUniform(
         "u_imgSlopeIntercept",
@@ -227,7 +228,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
       program.setUniform("u_imgThresholds", std::vector<glm::vec2>{U[0].thresholds, U[1].thresholds});
       program.setUniform("u_imgOpacity", std::vector<float>{U[0].imgOpacity, U[1].imgOpacity});
       program.setUniform("u_magentaCyan", settings.m_overlayMagentaCyan);
-      setMetricWarpUniforms(program);
+      setMetricSamplingUniforms(program);
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }

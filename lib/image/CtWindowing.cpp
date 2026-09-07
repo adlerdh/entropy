@@ -120,7 +120,10 @@ const MetaDataMap::mapped_type* findMetadata(const MetaDataMap& metadata, std::i
 {
   for (const auto& [key, value] : metadata) {
     const std::string canonical = canonicalKey(key);
-    if (std::any_of(keys.begin(), keys.end(), [&](std::string_view candidate) { return canonical == candidate; })) {
+    if (std::any_of(keys.begin(), keys.end(), [&](std::string_view candidate) -> bool {
+          return std::string_view{canonical} == candidate;
+        }))
+    {
       return &value;
     }
   }
@@ -139,6 +142,7 @@ std::string uppercaseWords(std::string value)
 bool containsWord(const std::string& text, std::initializer_list<std::string_view> words)
 {
   const std::string normalized = uppercaseWords(text);
+  const std::string_view normalizedView{normalized};
   std::size_t start = 0;
   while (start < normalized.size()) {
     start = normalized.find_first_not_of(' ', start);
@@ -146,9 +150,8 @@ bool containsWord(const std::string& text, std::initializer_list<std::string_vie
       break;
     }
     const std::size_t end = normalized.find(' ', start);
-    const std::string_view token{
-      normalized.data() + start,
-      (end == std::string::npos ? normalized.size() : end) - start};
+    const std::string_view token =
+      normalizedView.substr(start, (end == std::string::npos ? normalized.size() : end) - start);
     if (std::find(words.begin(), words.end(), token) != words.end()) {
       return true;
     }

@@ -142,7 +142,11 @@ void Rendering::renderIsoContoursForImage(
     setTexture2DAxesUniforms(*program, imageTextureLayout);
 
     program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
-    program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
+    setImageSamplingTransformUniforms(
+      *program,
+      imageUid,
+      renderWarped ? deformationUid : std::nullopt,
+      uniforms.imgTexture_T_world);
     program->setUniform("u_isoValue", static_cast<float>(imageSettings.mapNativeIntensityToTexture(surface->value)));
     program->setUniform("u_fillOpacity", static_cast<float>(isosurfaceOpacity * surface->fillOpacity));
     program->setUniform("u_fillAboveIsovalue", surface->fillAboveIsovalue);
@@ -154,10 +158,6 @@ void Rendering::renderIsoContoursForImage(
     program->setUniform("u_quadrants", renderSettings.m_quadrants);
     program->setUniform("u_showFix", isFixedImage);
     program->setUniform("u_renderMode", displayModeUniform);
-    if (renderWarped) {
-      setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
-    }
-
     renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, false);
   }
   program->stopUse();

@@ -980,15 +980,16 @@ void renderCtWindowPresetSelector(
   const double width = settings.windowWidth(component);
   const double level = settings.windowCenter(component);
   std::string preview = "Custom";
-  const auto findMatch = [&](std::span<const ct_windowing::WindowPreset> presets) {
-    return std::find_if(presets.begin(), presets.end(), [&](const auto& preset) {
+  const auto findMatch = [&](std::span<const ct_windowing::WindowPreset> presets) -> const ct_windowing::WindowPreset* {
+    const auto match = std::find_if(presets.begin(), presets.end(), [&](const auto& preset) {
       return windowPresetMatches(preset, width, level);
     });
+    return match != presets.end() ? &*match : nullptr;
   };
-  if (const auto dicomMatch = findMatch(dicomPresets); dicomMatch != dicomPresets.end()) {
+  if (const auto* dicomMatch = findMatch(dicomPresets)) {
     preview = dicomMatch->name;
   }
-  else if (const auto builtInMatch = findMatch(builtInPresets); builtInMatch != builtInPresets.end()) {
+  else if (const auto* builtInMatch = findMatch(builtInPresets)) {
     preview = builtInMatch->name;
   }
 

@@ -101,7 +101,11 @@ void Rendering::renderColorImageForImage(
       program->setUniform("u_tex2DAxes[3]", textureAxesForProgramSlot(imageTextureLayout));
 
       program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
-      program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
+      setImageSamplingTransformUniforms(
+        *program,
+        imageUid,
+        renderWarped ? deformationUid : std::nullopt,
+        uniforms.imgTexture_T_world);
       program->setUniform("u_imgSlopeIntercept", uniforms.slopeInterceptRgba_normalized_T_texture);
       program->setUniform("u_imgThresholds", uniforms.thresholdsRgba);
       program->setUniform("u_imgMinMax", uniforms.minMaxRgba);
@@ -112,10 +116,6 @@ void Rendering::renderColorImageForImage(
       program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
       program->setUniform("u_renderMode", displayModeUniform);
-      if (renderWarped) {
-        setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
-      }
-
       renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, disableIntensityProjectionForEdges);
     }
     program->stopUse();
@@ -189,7 +189,11 @@ void Rendering::renderColorImageForImage(
       setTexture2DAxesUniforms(*program, imageTextureLayout);
 
       program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
-      program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
+      setImageSamplingTransformUniforms(
+        *program,
+        imageUid,
+        renderWarped ? deformationUid : std::nullopt,
+        uniforms.imgTexture_T_world);
       program->setUniform("u_imgSlopeIntercept", uniforms.largestSlopeIntercept);
       program->setUniform("u_imgThresholds", uniforms.thresholds);
       program->setUniform("u_imgMinMax", uniforms.minMax);
@@ -203,10 +207,6 @@ void Rendering::renderColorImageForImage(
       program->setUniform("u_edgeThreshold", uniforms.voxelEdgeThreshold);
       program->setUniform("u_colormapEdges", uniforms.colormapEdges);
       program->setUniform("u_edgeColor", uniforms.edgeColor);
-      if (renderWarped) {
-        setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
-      }
-
       renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, true);
     }
     program->stopUse();

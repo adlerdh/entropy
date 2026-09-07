@@ -271,6 +271,40 @@ TEST_CASE("every declared main-shader uniform is represented in the C++ registri
   }
 }
 
+TEST_CASE("every registered main-shader uniform is declared by its shader", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  for (const ShaderProgramType shaderType : setup.shaderTypes) {
+    const auto& info = setup.shaderInfo.at(shaderType);
+    for (const auto dimension : {rendering::TextureDimension::Texture3D, rendering::TextureDimension::Texture2D}) {
+      const auto replacements = rendering::shaderReplacementsForTextureDimension(
+        info.fsReplacements,
+        dimension,
+        setup.lookupReplacementSources);
+      auto declared = declaredUniforms(shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.vsFileName));
+      const auto fragmentUniforms = declaredUniforms(rendering::preprocessShaderSource(
+        shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName),
+        replacements));
+      declared.insert(declared.end(), fragmentUniforms.begin(), fragmentUniforms.end());
+
+      std::unordered_set<std::string> declaredNames;
+      for (const auto& uniform : declared) {
+        declaredNames.insert(canonicalUniformName(uniform.name));
+      }
+      for (const Uniforms* uniforms : {&info.vsUniforms, &info.fsUniforms}) {
+        for (const auto& [name, declaration] : (*uniforms)()) {
+          if (!declaration.m_isRequired) {
+            continue;
+          }
+          INFO("shader type: " << to_string(shaderType));
+          INFO("uniform: " << name);
+          CHECK(declaredNames.contains(canonicalUniformName(name)));
+        }
+      }
+    }
+  }
+}
+
 TEST_CASE("main-shader uniform registry types match GLSL declarations", "[rendering][shaders][uniforms]")
 {
   const auto setup = shader_setup::buildProgramSetup();

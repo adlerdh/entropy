@@ -288,11 +288,7 @@ void renderDiagnosticsSettings()
   const std::string currentLogLevelLabelText(currentLogLevelLabel);
 
   if (ImGui::BeginCombo("Log verbosity", currentLogLevelLabelText.c_str())) {
-    for (const logging::LogLevelChoice& choice : logging::allLogLevelChoices()) {
-      if (!logging::isLogLevelChoiceAvailable(choice)) {
-        continue;
-      }
-
+    for (const logging::LogLevelChoice& choice : logging::availableLogLevelChoices()) {
       const bool selected = choice.level == currentLogLevel;
       const std::string choiceLabel(choice.label);
       if (ImGui::Selectable(choiceLabel.c_str(), selected)) {

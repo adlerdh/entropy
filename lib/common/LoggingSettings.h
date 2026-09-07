@@ -82,6 +82,19 @@ constexpr bool isLogLevelChoiceAvailable(const LogLevelChoice& choice)
 }
 
 /**
+ * @brief Return the log levels that can be selected in this build.
+ * @return All choices when trace logging is compiled in, otherwise critical through debug.
+ */
+constexpr std::span<const LogLevelChoice> availableLogLevelChoices()
+{
+  const auto choices = allLogLevelChoices();
+  if constexpr (traceLoggingAvailable()) {
+    return choices;
+  }
+  return choices.first(choices.size() - 1u);
+}
+
+/**
  * @brief Return the selectable replacement for an unavailable log level.
  * @param[in] level Requested or current spdlog runtime level.
  * @return @p level when available, otherwise debug for unavailable trace.

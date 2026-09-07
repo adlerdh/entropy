@@ -403,8 +403,6 @@ void drawSegPreviewQuad(
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", world_T_viewClip);
   program.setUniform("u_clipDepth", view.clipPlaneDepth());
-  program.setUniform("u_tex_T_world", texture_T_world);
-
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_flashlightRadius", flashlightRadius);
   program.setUniform("u_flashlightMovingOnFixed", flashlightOverlays);

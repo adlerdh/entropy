@@ -78,9 +78,11 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
     program.setUniform("u_showFix", false);
     program.setUniform("u_renderMode", static_cast<int>(ViewRenderMode::Image));
 
-    if (renderWarped) {
-      setDeformationUniforms(program, *imageUid, *deformationUid, preview.texture_T_world);
-    }
+    setImageSamplingTransformUniforms(
+      program,
+      *imageUid,
+      renderWarped ? deformationUid : std::nullopt,
+      preview.texture_T_world);
 
     const float fillOpacity =
       (preview.allowFill && BrushPreviewStyle::OutlineAndFill == m_appData.settings().brushPreviewStyle())

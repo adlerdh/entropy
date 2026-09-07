@@ -6,6 +6,7 @@
 #include "image/ImageSettings.h"
 #include "image/ImageTransformations.h"
 #include "logic/app/Data.h"
+#include "rendering/ImageShaderCapabilities.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
 #include "rendering/TextureSetup.h"
@@ -157,6 +158,24 @@ void Rendering::setDeformationUniforms(
   const bool packedDeformationTexture =
     textureIt != std::end(m_appData.renderResources().m_imageTextures) && textureIt->second.size() == 1u;
   program.setUniform("u_defInterleaved", packedDeformationTexture);
+}
+
+void Rendering::setImageSamplingTransformUniforms(
+  GLShaderProgram& program,
+  const uuid& imageUid,
+  const std::optional<uuid>& deformationUid,
+  const glm::mat4& sampleTex_T_world) const
+{
+  const auto samplingTransform =
+    deformationUid ? rendering::ImageSamplingTransform::Deformation : rendering::ImageSamplingTransform::Direct;
+  rendering::validateImageSamplingTransform(program.getRegisteredUniforms(), samplingTransform);
+
+  if (deformationUid) {
+    setDeformationUniforms(program, imageUid, *deformationUid, sampleTex_T_world);
+  }
+  else {
+    program.setUniform("u_tex_T_world", sampleTex_T_world);
+  }
 }
 
 void Rendering::setMetricDeformationUniforms(

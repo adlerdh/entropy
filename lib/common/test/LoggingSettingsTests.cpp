@@ -31,6 +31,13 @@ TEST_CASE("trace log level availability matches compile-time trace support", "[c
   CHECK(logging::isLogLevelChoiceAvailable(*traceChoice) == logging::traceLoggingAvailable());
 }
 
+TEST_CASE("available log level choices omit trace when trace calls are compiled out", "[common][logging]")
+{
+  const auto choices = logging::availableLogLevelChoices();
+  REQUIRE_FALSE(choices.empty());
+  CHECK((choices.back().level == spdlog::level::trace) == logging::traceLoggingAvailable());
+}
+
 TEST_CASE("unavailable trace level is represented as debug in selectable UI state", "[common][logging]")
 {
   const auto selectableTrace = logging::selectableLogLevel(spdlog::level::trace);

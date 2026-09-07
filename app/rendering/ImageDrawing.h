@@ -102,7 +102,8 @@ void drawSegQuad(
  *
  * @param program Shader program selected for segmentation preview rendering.
  * @param quad Shared quad geometry used for image-plane rendering.
- * @param texture_T_world Transform from world/LPS coordinates to preview texture coordinates.
+ * @param texture_T_world Transform used to compute preview outline sampling. The caller uploads the shader's direct
+ * or deformation sampling transform before calling this function.
  * @param voxel_T_world Transform from world/LPS coordinates to preview voxel coordinates.
  * @param textureSize Preview texture size in texels.
  * @param view View whose camera, clip depth, and view transform define the rendered plane.

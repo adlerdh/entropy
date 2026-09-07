@@ -77,7 +77,11 @@ void Rendering::renderSegmentationForImage(
     setTexture2DAxesUniforms(program, segTextureLayout);
 
     program.setUniform("u_numCheckers", static_cast<float>(settings.m_numCheckerboardSquares));
-    program.setUniform("u_tex_T_world", uniforms.segTexture_T_world);
+    setImageSamplingTransformUniforms(
+      program,
+      imageUid,
+      renderWarped ? deformationUid : std::nullopt,
+      uniforms.segTexture_T_world);
     program.setUniform(
       "u_segOpacity",
       uniforms.segOpacity * (settings.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f));
@@ -86,10 +90,6 @@ void Rendering::renderSegmentationForImage(
     program.setUniform("u_quadrants", settings.m_quadrants);
     program.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
     program.setUniform("u_renderMode", displayModeUniform);
-    if (renderWarped) {
-      setDeformationUniforms(program, imageUid, *deformationUid, uniforms.segTexture_T_world);
-    }
-
     drawSegQuad(
       program,
       resources.m_quad,
