@@ -290,8 +290,8 @@ bool threeDRenderingSettingsEqual(
          a.m_lightingAmbient == b.m_lightingAmbient && a.m_lightingDiffuse == b.m_lightingDiffuse &&
          a.m_lightingSpecular == b.m_lightingSpecular && a.m_lightingSpecularPower == b.m_lightingSpecularPower &&
          a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
-         a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
-         a.m_crosshairs3DGlyphLengthVoxelDiagonals == b.m_crosshairs3DGlyphLengthVoxelDiagonals &&
+         a.m_crosshairs3DGlyphDiameterScenePercent == b.m_crosshairs3DGlyphDiameterScenePercent &&
+         a.m_crosshairs3DGlyphLengthScenePercent == b.m_crosshairs3DGlyphLengthScenePercent &&
          a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
          a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&
          a.m_threeDCameraFrustumColor == b.m_threeDCameraFrustumColor;

@@ -468,6 +468,15 @@ TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rend
   }
 }
 
+TEST_CASE("mesh DDP resolve applies image-space antialiasing", "[rendering][shaders][mesh][ddp]")
+{
+  const std::string resolve = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpResolve.fs");
+  CHECK(resolve.find("vec4 antialiasedComposite") != std::string::npos);
+  CHECK(resolve.find("vec4 bilinearCompositeAt") != std::string::npos);
+  CHECK(resolve.find("lumaRange < max(k_lumaThreshold") != std::string::npos);
+  CHECK(resolve.find("outColor = antialiasedComposite(pixelCoord, textureSizePx)") != std::string::npos);
+}
+
 TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
 {
   const std::string resolve =

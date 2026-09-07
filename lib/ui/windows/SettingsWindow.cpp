@@ -2319,25 +2319,28 @@ void renderSceneAndCameraTab(AppData& appData, rendering::RenderSettings& render
   if (renderData.m_showCrosshairsIn3D) {
     ImGui::DragFloat(
       "Glyph diameter",
-      &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+      &renderData.m_crosshairs3DGlyphDiameterScenePercent,
+      0.01f,
       0.05f,
-      0.1f,
-      10.0f,
-      "%0.2f vox diag",
+      5.0f,
+      "%0.2f%% of scene",
       ImGuiSliderFlags_AlwaysClamp);
     ImGui::SameLine();
-    helpMarker("Cylinder diameter as a multiple of the current image voxel diagonal");
+    helpMarker(
+      "Cylinder diameter as a percentage of the enclosing bounding-box diagonal of images visible in the 3D view");
 
     ImGui::DragFloat(
       "Glyph axis length",
-      &renderData.m_crosshairs3DGlyphLengthVoxelDiagonals,
+      &renderData.m_crosshairs3DGlyphLengthScenePercent,
       0.1f,
-      1.0f,
+      0.5f,
       50.0f,
-      "%0.1f vox diag",
+      "%0.1f%% of scene",
       ImGuiSliderFlags_AlwaysClamp);
     ImGui::SameLine();
-    helpMarker("Length of each red, green, and blue axis as a multiple of the current image voxel diagonal");
+    helpMarker(
+      "Length of each red, green, and blue axis as a percentage of the enclosing bounding-box diagonal of images "
+      "visible in the 3D view");
   }
 
   ImGui::PopID(); /*** PopID 3d_rendering ***/

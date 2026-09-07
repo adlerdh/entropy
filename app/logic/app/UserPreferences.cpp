@@ -539,8 +539,8 @@ json toJson(
           {"specular", renderPreferences.lightingSpecular},
           {"specularPower", renderPreferences.lightingSpecularPower}}},
         {"showCrosshairs", renderPreferences.showCrosshairsIn3D},
-        {"crosshairsDiameterVox", renderPreferences.crosshairs3DGlyphDiameterVoxelDiagonals},
-        {"crosshairsLengthVox", renderPreferences.crosshairs3DGlyphLengthVoxelDiagonals},
+        {"crosshairsDiameterScenePercent", renderPreferences.crosshairs3DGlyphDiameterScenePercent},
+        {"crosshairsLengthScenePercent", renderPreferences.crosshairs3DGlyphLengthScenePercent},
         {"imagePlaneLighting",
          {{"ambient", renderPreferences.imagePlaneLightingAmbient},
           {"diffuse", renderPreferences.imagePlaneLightingDiffuse},
@@ -854,17 +854,17 @@ void applyJson(
       }
       setFromJson(renderPreferences.showCrosshairsIn3D, *threeD, "showCrosshairs");
       setFloatFromJson(
-        renderPreferences.crosshairs3DGlyphDiameterVoxelDiagonals,
+        renderPreferences.crosshairs3DGlyphDiameterScenePercent,
         *threeD,
-        "crosshairsDiameterVox",
-        0.01f,
-        100.0f);
+        "crosshairsDiameterScenePercent",
+        0.05f,
+        5.0f);
       setFloatFromJson(
-        renderPreferences.crosshairs3DGlyphLengthVoxelDiagonals,
+        renderPreferences.crosshairs3DGlyphLengthScenePercent,
         *threeD,
-        "crosshairsLengthVox",
-        0.01f,
-        1000.0f);
+        "crosshairsLengthScenePercent",
+        0.5f,
+        50.0f);
       if (const auto lighting = threeD->find("imagePlaneLighting"); lighting != threeD->end() && lighting->is_object())
       {
         setFloatFromJson(renderPreferences.imagePlaneLightingAmbient, *lighting, "ambient", 0.0f, 2.0f);

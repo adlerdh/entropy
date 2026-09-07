@@ -185,8 +185,8 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.reversePovRotation = renderSettings.m_reverseThreeDRotateAboutEye;
   preferences.synchronizeThreeDCameras = renderSettings.m_synchronizeThreeDCameras;
   preferences.showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D;
-  preferences.crosshairs3DGlyphDiameterVoxelDiagonals = renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
-  preferences.crosshairs3DGlyphLengthVoxelDiagonals = renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals;
+  preferences.crosshairs3DGlyphDiameterScenePercent = renderSettings.m_crosshairs3DGlyphDiameterScenePercent;
+  preferences.crosshairs3DGlyphLengthScenePercent = renderSettings.m_crosshairs3DGlyphLengthScenePercent;
   preferences.showThreeDCameraFrustumIn2DViews = renderSettings.m_showThreeDCameraFrustumIn2DViews;
   preferences.threeDCameraFrustumColor = renderSettings.m_threeDCameraFrustumColor;
   preferences.smoothSegmentationMeshes = renderSettings.m_smoothSegmentationMeshes;
@@ -351,8 +351,8 @@ void applyRenderPreferences(
   renderSettings.m_reverseThreeDRotateAboutEye = preferences.reversePovRotation;
   renderSettings.m_synchronizeThreeDCameras = preferences.synchronizeThreeDCameras;
   renderSettings.m_showCrosshairsIn3D = preferences.showCrosshairsIn3D;
-  renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals = preferences.crosshairs3DGlyphDiameterVoxelDiagonals;
-  renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals = preferences.crosshairs3DGlyphLengthVoxelDiagonals;
+  renderSettings.m_crosshairs3DGlyphDiameterScenePercent = preferences.crosshairs3DGlyphDiameterScenePercent;
+  renderSettings.m_crosshairs3DGlyphLengthScenePercent = preferences.crosshairs3DGlyphLengthScenePercent;
   renderSettings.m_showThreeDCameraFrustumIn2DViews = preferences.showThreeDCameraFrustumIn2DViews;
   renderSettings.m_threeDCameraFrustumColor = preferences.threeDCameraFrustumColor;
   renderSettings.m_smoothSegmentationMeshes = preferences.smoothSegmentationMeshes;

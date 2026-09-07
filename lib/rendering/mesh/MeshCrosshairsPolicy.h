@@ -14,9 +14,9 @@ struct MeshCrosshairsGlyphInputs
 {
   bool showCrosshairsIn3D = true;       //!< User-facing 3D crosshairs glyph visibility setting
   bool cameraFollowsCrosshairs = false; //!< Whether the 3D camera eye follows the crosshairs position
-  float diameterVoxelDiagonals = 2.0f;  //!< Glyph diameter in voxel-diagonal units
-  float lengthVoxelDiagonals = 16.0f;   //!< Per-axis glyph length in voxel-diagonal units
-  float voxelDiagonalWorld = 1.0f;      //!< Voxel diagonal length in world units
+  float diameterScenePercent = 0.25f;   //!< Glyph diameter as a percentage of the visible scene diagonal
+  float lengthScenePercent = 4.0f;      //!< Per-axis glyph length as a percentage of the visible scene diagonal
+  float sceneDiagonalWorld = 1.0f;      //!< Visible scene bounding-box diagonal in world units
 };
 
 struct MeshCrosshairsGlyphStyle
@@ -36,7 +36,7 @@ bool shouldRenderMeshCrosshairsGlyph(const MeshCrosshairsGlyphInputs& inputs) no
 /**
  * @brief Build the physical style used for mesh-rendered crosshair axes
  * @param inputs Crosshairs glyph policy inputs
- * @return Sphere glyph style with radius in world units
+ * @return Crosshairs glyph style with radius and half-length in world units
  */
 MeshCrosshairsGlyphStyle meshCrosshairsGlyphStyle(const MeshCrosshairsGlyphInputs& inputs) noexcept;
 

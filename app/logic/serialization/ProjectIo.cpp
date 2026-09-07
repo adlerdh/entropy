@@ -74,8 +74,8 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "imageBoxVisible",
       "reverseRotateAboutEye",
       "crosshairsGlyphVisible",
-      "crosshairsGlyphDiameterVox",
-      "crosshairsGlyphLengthVox",
+      "crosshairsGlyphDiameterScenePercent",
+      "crosshairsGlyphLengthScenePercent",
       "lighting",
       "imagePlanes"};
   }

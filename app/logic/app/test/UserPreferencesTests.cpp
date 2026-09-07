@@ -181,8 +181,8 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.reversePovRotation = true;
   preferences.synchronizeThreeDCameras = true;
   preferences.showCrosshairsIn3D = false;
-  preferences.crosshairs3DGlyphDiameterVoxelDiagonals = 2.5f;
-  preferences.crosshairs3DGlyphLengthVoxelDiagonals = 24.0f;
+  preferences.crosshairs3DGlyphDiameterScenePercent = 2.5f;
+  preferences.crosshairs3DGlyphLengthScenePercent = 24.0f;
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.smoothSegmentationMeshes = false;
@@ -407,9 +407,8 @@ void requireRenderPreferencesEqual(
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
   CHECK(actual.synchronizeThreeDCameras == expected.synchronizeThreeDCameras);
   CHECK(actual.showCrosshairsIn3D == expected.showCrosshairsIn3D);
-  CHECK(
-    actual.crosshairs3DGlyphDiameterVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphDiameterVoxelDiagonals));
-  CHECK(actual.crosshairs3DGlyphLengthVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphLengthVoxelDiagonals));
+  CHECK(actual.crosshairs3DGlyphDiameterScenePercent == Catch::Approx(expected.crosshairs3DGlyphDiameterScenePercent));
+  CHECK(actual.crosshairs3DGlyphLengthScenePercent == Catch::Approx(expected.crosshairs3DGlyphLengthScenePercent));
   CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
   CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
   CHECK(actual.smoothSegmentationMeshes == expected.smoothSegmentationMeshes);
@@ -734,6 +733,10 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
       }
     },
     "rendering": {
+      "threeD": {
+        "crosshairsDiameterVox": 3,
+        "crosshairsLengthVox": 30
+      },
       "raycasting": {
         "samplingFactor": 0
       }
@@ -765,6 +768,12 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
   CHECK(precisionPreferences.timeValuePrecision == 9);
   CHECK(renderPreferences.crosshairsColor == user_preferences::RenderPreferences{}.crosshairsColor);
   CHECK(renderPreferences.crosshairsSnapping == user_preferences::RenderPreferences{}.crosshairsSnapping);
+  CHECK(
+    renderPreferences.crosshairs3DGlyphDiameterScenePercent ==
+    Catch::Approx(user_preferences::RenderPreferences{}.crosshairs3DGlyphDiameterScenePercent));
+  CHECK(
+    renderPreferences.crosshairs3DGlyphLengthScenePercent ==
+    Catch::Approx(user_preferences::RenderPreferences{}.crosshairs3DGlyphLengthScenePercent));
   CHECK(renderPreferences.anatomicalLabelScale == Catch::Approx(2.0f));
   CHECK(renderPreferences.scaleBarTargetFraction == Catch::Approx(1.0f));
   CHECK(renderPreferences.scaleBarMarginPx == Catch::Approx(12.0f));
@@ -851,6 +860,10 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("rendering").contains("asciiShading"));
   CHECK_FALSE(root.at("rendering").contains("frameRate"));
   CHECK(root.at("rendering").at("camera").at("synchronizeThreeDCameras") == false);
+  CHECK(root.at("rendering").at("threeD").at("crosshairsDiameterScenePercent").get<float>() == Catch::Approx(0.25f));
+  CHECK(root.at("rendering").at("threeD").at("crosshairsLengthScenePercent").get<float>() == Catch::Approx(4.0f));
+  CHECK_FALSE(root.at("rendering").at("threeD").contains("crosshairsDiameterVox"));
+  CHECK_FALSE(root.at("rendering").at("threeD").contains("crosshairsLengthVox"));
   CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
   CHECK(
     root.at("rendering").at("mesh").at("triangleEdgeColor") == json::array(

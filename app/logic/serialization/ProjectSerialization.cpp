@@ -525,14 +525,14 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
   addIfChanged(j, "crosshairsGlyphVisible", settings.m_showCrosshairsIn3D, defaults.m_showCrosshairsIn3D);
   addIfChanged(
     j,
-    "crosshairsGlyphDiameterVox",
-    settings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    defaults.m_crosshairs3DGlyphDiameterVoxelDiagonals);
+    "crosshairsGlyphDiameterScenePercent",
+    settings.m_crosshairs3DGlyphDiameterScenePercent,
+    defaults.m_crosshairs3DGlyphDiameterScenePercent);
   addIfChanged(
     j,
-    "crosshairsGlyphLengthVox",
-    settings.m_crosshairs3DGlyphLengthVoxelDiagonals,
-    defaults.m_crosshairs3DGlyphLengthVoxelDiagonals);
+    "crosshairsGlyphLengthScenePercent",
+    settings.m_crosshairs3DGlyphLengthScenePercent,
+    defaults.m_crosshairs3DGlyphLengthScenePercent);
   addIfChanged(
     j,
     "cameraFrustumVisibleIn2DViews",
@@ -612,11 +612,11 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
   if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();
   }
-  if (const auto value = j.find("crosshairsGlyphDiameterVox"); value != j.end() && value->is_number()) {
-    settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
+  if (const auto value = j.find("crosshairsGlyphDiameterScenePercent"); value != j.end() && value->is_number()) {
+    settings.m_crosshairs3DGlyphDiameterScenePercent = std::clamp(value->get<float>(), 0.05f, 5.0f);
   }
-  if (const auto value = j.find("crosshairsGlyphLengthVox"); value != j.end() && value->is_number()) {
-    settings.m_crosshairs3DGlyphLengthVoxelDiagonals = std::clamp(value->get<float>(), 1.0f, 50.0f);
+  if (const auto value = j.find("crosshairsGlyphLengthScenePercent"); value != j.end() && value->is_number()) {
+    settings.m_crosshairs3DGlyphLengthScenePercent = std::clamp(value->get<float>(), 0.5f, 50.0f);
   }
   if (const auto value = j.find("cameraFrustumVisibleIn2DViews"); value != j.end() && value->is_boolean()) {
     settings.m_showThreeDCameraFrustumIn2DViews = value->get<bool>();

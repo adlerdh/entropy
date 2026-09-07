@@ -1,8 +1,8 @@
 #include "rendering/Rendering.h"
 
 #include "common/UuidUtility.h"
-#include "image/Image.h"
 #include "logic/app/Data.h"
+#include "logic/app/DataHelper.h"
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
@@ -39,17 +39,17 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
     return false;
   }
 
-  const Image* image = m_appData.image(*maybeImgSegPair->first);
-  if (!image) {
-    return false;
-  }
+  const ImageSelection selection =
+    view.visibleImages().empty() ? ImageSelection::AllLoadedImages : ImageSelection::VisibleImagesInView;
+  const AABB<float> sceneBounds = data::computeWorldAABBoxEnclosingImages(m_appData, selection, &view);
+  const float sceneDiagonalWorld = glm::length(sceneBounds.second - sceneBounds.first);
 
   const rendering::mesh::MeshCrosshairsGlyphInputs inputs{
     .showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D,
     .cameraFollowsCrosshairs = view.threeDState().m_viewPositionFollowsCrosshairs,
-    .diameterVoxelDiagonals = renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    .lengthVoxelDiagonals = renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals,
-    .voxelDiagonalWorld = glm::length(image->header().spacing())};
+    .diameterScenePercent = renderSettings.m_crosshairs3DGlyphDiameterScenePercent,
+    .lengthScenePercent = renderSettings.m_crosshairs3DGlyphLengthScenePercent,
+    .sceneDiagonalWorld = sceneDiagonalWorld};
   if (!rendering::mesh::shouldRenderMeshCrosshairsGlyph(inputs)) {
     return false;
   }

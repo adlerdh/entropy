@@ -389,8 +389,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_lightingSpecular = 0.51f;
   project.m_threeDRendering.m_lightingSpecularPower = 48.0f;
   project.m_threeDRendering.m_showCrosshairsIn3D = true;
-  project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
-  project.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals = 9.5f;
+  project.m_threeDRendering.m_crosshairs3DGlyphDiameterScenePercent = 1.75f;
+  project.m_threeDRendering.m_crosshairs3DGlyphLengthScenePercent = 9.5f;
   project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
@@ -476,8 +476,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(threeD.at("lighting").at("specular") == 0.51f);
   CHECK(threeD.at("lighting").at("specularPower") == 48.0f);
   CHECK_FALSE(threeD.contains("crosshairsGlyphVisible"));
-  CHECK(threeD.at("crosshairsGlyphDiameterVox") == 1.75f);
-  CHECK(threeD.at("crosshairsGlyphLengthVox") == 9.5f);
+  CHECK(threeD.at("crosshairsGlyphDiameterScenePercent") == 1.75f);
+  CHECK(threeD.at("crosshairsGlyphLengthScenePercent") == 9.5f);
+  CHECK_FALSE(threeD.contains("crosshairsGlyphDiameterVox"));
+  CHECK_FALSE(threeD.contains("crosshairsGlyphLengthVox"));
   CHECK(threeD.at("cameraFrustumVisibleIn2DViews") == true);
   CHECK(threeD.at("reverseRotateAboutEye") == true);
   CHECK(threeD.at("cameraFrustumColor").at(0) == 1.0f);
@@ -535,7 +537,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("meshClipPlane"));
   CHECK_FALSE(raycasting.contains("backgroundEdgeBrighteningEnabled"));
   CHECK_FALSE(raycasting.contains("showCrosshairsIn3D"));
-  CHECK_FALSE(raycasting.contains("crosshairs3DGlyphDiameterVoxelDiagonals"));
+  CHECK_FALSE(raycasting.contains("crosshairsGlyphDiameterScenePercent"));
   CHECK_FALSE(raycasting.contains("showThreeDCameraFrustumIn2DViews"));
   CHECK_FALSE(raycasting.contains("reverseThreeDRotateAboutEye"));
   CHECK_FALSE(raycasting.contains("threeDCameraFrustumColor"));
@@ -569,8 +571,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_lightingSpecular == 0.51f);
   CHECK(parsed.m_threeDRendering.m_lightingSpecularPower == 48.0f);
   CHECK(parsed.m_threeDRendering.m_showCrosshairsIn3D == true);
-  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
-  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals == 9.5f);
+  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphDiameterScenePercent == 1.75f);
+  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphLengthScenePercent == 9.5f);
   CHECK(parsed.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews == true);
   CHECK(parsed.m_threeDRendering.m_reverseThreeDRotateAboutEye == true);
   CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.x == 1.0f);
@@ -655,6 +657,15 @@ TEST_CASE("Independent image-plane defaults are not serialized", "[project][seri
   CHECK(parsed.m_imagePlaneLightingSpecularPower == 16.0f);
 }
 
+TEST_CASE("Legacy voxel-relative crosshairs glyph settings are ignored", "[project][serialization]")
+{
+  const json legacyThreeD{{"crosshairsGlyphDiameterVox", 3.0f}, {"crosshairsGlyphLengthVox", 30.0f}};
+
+  const auto parsed = legacyThreeD.get<serialize::ProjectThreeDRenderingSettings>();
+  CHECK(parsed.m_crosshairs3DGlyphDiameterScenePercent == 0.25f);
+  CHECK(parsed.m_crosshairs3DGlyphLengthScenePercent == 4.0f);
+}
+
 TEST_CASE("Saved project rendering settings follow the application settings order", "[project][serialization]")
 {
   const fs::path root = uniqueTempProjectDirectory();
@@ -673,8 +684,8 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.4f;
   project.m_threeDRendering.m_lightingAmbient = 0.6f;
   project.m_threeDRendering.m_showCrosshairsIn3D = false;
-  project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.5f;
-  project.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals = 12.0f;
+  project.m_threeDRendering.m_crosshairs3DGlyphDiameterScenePercent = 1.5f;
+  project.m_threeDRendering.m_crosshairs3DGlyphLengthScenePercent = 12.0f;
   project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.0f, 0.0f, 1.0f};
@@ -746,8 +757,8 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                    "imageBoxVisible",
                                                    "reverseRotateAboutEye",
                                                    "crosshairsGlyphVisible",
-                                                   "crosshairsGlyphDiameterVox",
-                                                   "crosshairsGlyphLengthVox",
+                                                   "crosshairsGlyphDiameterScenePercent",
+                                                   "crosshairsGlyphLengthScenePercent",
                                                    "lighting",
                                                    "imagePlanes"});
   CHECK(

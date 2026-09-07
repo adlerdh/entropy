@@ -158,8 +158,8 @@ struct RenderPreferences
   bool reversePovRotation = false;
   bool synchronizeThreeDCameras = false;
   bool showCrosshairsIn3D = true;
-  float crosshairs3DGlyphDiameterVoxelDiagonals = 1.0f;
-  float crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;
+  float crosshairs3DGlyphDiameterScenePercent = 0.25f;
+  float crosshairs3DGlyphLengthScenePercent = 4.0f;
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
   bool smoothSegmentationMeshes = true;

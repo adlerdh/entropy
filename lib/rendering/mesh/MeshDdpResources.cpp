@@ -197,12 +197,19 @@ void MeshDdpResources::allocateTextures(const glm::uvec2& viewportSize)
     m_frontColorTextures[i].emplace(makeAttachmentTexture());
     m_backTempTextures[i].emplace(makeAttachmentTexture());
 
+    // Peel passes use texelFetch, so filtering does not affect depth-layer classification. Linear filtering lets the
+    // final image-space antialiasing resolve sample the accumulated front color efficiently at subpixel positions.
+    m_frontColorTextures[i]->setMinificationFilter(tex::MinificationFilter::Linear);
+    m_frontColorTextures[i]->setMagnificationFilter(tex::MagnificationFilter::Linear);
+
     allocateDepthTexture(*m_depthTextures[i], viewportSize);
     allocateColorTexture(*m_frontColorTextures[i], viewportSize);
     allocateColorTexture(*m_backTempTextures[i], viewportSize);
   }
 
   m_backColorTexture.emplace(makeAttachmentTexture());
+  m_backColorTexture->setMinificationFilter(tex::MinificationFilter::Linear);
+  m_backColorTexture->setMagnificationFilter(tex::MagnificationFilter::Linear);
   allocateColorTexture(*m_backColorTexture, viewportSize);
 
   for (std::size_t i = 0; i < k_imagePlaneCompositeCount; ++i) {

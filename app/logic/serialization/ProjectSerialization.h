@@ -196,27 +196,27 @@ struct ProjectComparisonSettings
  */
 struct ProjectThreeDRenderingSettings
 {
-  bool m_transparentBackground = true;                    //!< Make the 3D view background transparent
-  bool m_imageBoxVisible = false;                         //!< Show the image-domain outline in 3D views
-  bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
-  bool m_imagePlaneSegmentationsVisible = true;           //!< Show segmentation overlays on 3D image planes
-  bool m_imagePlaneIsocontoursVisible = true;             //!< Show isocontour overlays on 3D image planes
-  float m_imagePlaneOpacity = 1.0f;                       //!< Overall opacity multiplier for 3D image planes
-  bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
-  bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
-  float m_imagePlaneLightingAmbient = 0.30f;              //!< Image-plane ADS ambient term
-  float m_imagePlaneLightingDiffuse = 0.50f;              //!< Image-plane ADS diffuse term
-  float m_imagePlaneLightingSpecular = 0.20f;             //!< Image-plane ADS specular term
-  float m_imagePlaneLightingSpecularPower = 16.0f;        //!< Image-plane ADS specular exponent
-  float m_lightingAmbient = 0.30f;                        //!< 3D ADS ambient term
-  float m_lightingDiffuse = 0.50f;                        //!< 3D ADS diffuse term
-  float m_lightingSpecular = 0.20f;                       //!< 3D ADS specular term
-  float m_lightingSpecularPower = 16.0f;                  //!< 3D ADS specular exponent
-  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D views
-  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
-  float m_crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;  //!< Per-axis glyph length in voxel diagonals
-  bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views
-  bool m_reverseThreeDRotateAboutEye = false;             //!< Reverse POV 3D camera rotation direction
+  bool m_transparentBackground = true;                   //!< Make the 3D view background transparent
+  bool m_imageBoxVisible = false;                        //!< Show the image-domain outline in 3D views
+  bool m_imagePlanesVisible = true;                      //!< Show orthogonal image planes in 3D views
+  bool m_imagePlaneSegmentationsVisible = true;          //!< Show segmentation overlays on 3D image planes
+  bool m_imagePlaneIsocontoursVisible = true;            //!< Show isocontour overlays on 3D image planes
+  float m_imagePlaneOpacity = 1.0f;                      //!< Overall opacity multiplier for 3D image planes
+  bool m_imagePlaneViewAngleOpacity = true;              //!< Fade image planes based on view angle
+  bool m_imagePlaneShading = true;                       //!< Apply headlight shading to image planes
+  float m_imagePlaneLightingAmbient = 0.30f;             //!< Image-plane ADS ambient term
+  float m_imagePlaneLightingDiffuse = 0.50f;             //!< Image-plane ADS diffuse term
+  float m_imagePlaneLightingSpecular = 0.20f;            //!< Image-plane ADS specular term
+  float m_imagePlaneLightingSpecularPower = 16.0f;       //!< Image-plane ADS specular exponent
+  float m_lightingAmbient = 0.30f;                       //!< 3D ADS ambient term
+  float m_lightingDiffuse = 0.50f;                       //!< 3D ADS diffuse term
+  float m_lightingSpecular = 0.20f;                      //!< 3D ADS specular term
+  float m_lightingSpecularPower = 16.0f;                 //!< 3D ADS specular exponent
+  bool m_showCrosshairsIn3D = true;                      //!< Render crosshairs glyph in 3D views
+  float m_crosshairs3DGlyphDiameterScenePercent = 0.25f; //!< Glyph diameter as a percentage of scene diagonal
+  float m_crosshairs3DGlyphLengthScenePercent = 4.0f;    //!< Per-axis glyph length as a percentage of scene diagonal
+  bool m_showThreeDCameraFrustumIn2DViews = false;       //!< Show the active 3D camera frustum in 2D views
+  bool m_reverseThreeDRotateAboutEye = false;            //!< Reverse POV 3D camera rotation direction
   glm::vec4 m_threeDCameraFrustumColor{
     0x7c / 255.0f,
     0x5e / 255.0f,

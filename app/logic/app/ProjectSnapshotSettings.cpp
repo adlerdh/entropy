@@ -404,8 +404,8 @@ serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData&
     .m_lightingSpecular = renderSettings.m_lightingSpecular,
     .m_lightingSpecularPower = renderSettings.m_lightingSpecularPower,
     .m_showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D,
-    .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    .m_crosshairs3DGlyphLengthVoxelDiagonals = renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals,
+    .m_crosshairs3DGlyphDiameterScenePercent = renderSettings.m_crosshairs3DGlyphDiameterScenePercent,
+    .m_crosshairs3DGlyphLengthScenePercent = renderSettings.m_crosshairs3DGlyphLengthScenePercent,
     .m_showThreeDCameraFrustumIn2DViews = renderSettings.m_showThreeDCameraFrustumIn2DViews,
     .m_reverseThreeDRotateAboutEye = renderSettings.m_reverseThreeDRotateAboutEye,
     .m_threeDCameraFrustumColor = renderSettings.m_threeDCameraFrustumColor};
@@ -431,8 +431,8 @@ void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThre
   renderSettings.m_lightingSpecular = settings.m_lightingSpecular;
   renderSettings.m_lightingSpecularPower = settings.m_lightingSpecularPower;
   renderSettings.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
-  renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
-  renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals = settings.m_crosshairs3DGlyphLengthVoxelDiagonals;
+  renderSettings.m_crosshairs3DGlyphDiameterScenePercent = settings.m_crosshairs3DGlyphDiameterScenePercent;
+  renderSettings.m_crosshairs3DGlyphLengthScenePercent = settings.m_crosshairs3DGlyphLengthScenePercent;
   renderSettings.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
   renderSettings.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
   renderSettings.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;

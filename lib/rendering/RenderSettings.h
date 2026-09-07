@@ -152,8 +152,8 @@ struct RenderSettings
   bool m_meshClipPlaneEnabled;
   glm::vec4 m_meshClipPlaneWorld;
   bool m_showCrosshairsIn3D;
-  float m_crosshairs3DGlyphDiameterVoxelDiagonals;
-  float m_crosshairs3DGlyphLengthVoxelDiagonals;
+  float m_crosshairs3DGlyphDiameterScenePercent;
+  float m_crosshairs3DGlyphLengthScenePercent;
   bool m_showThreeDCameraFrustumIn2DViews;
   bool m_reverseThreeDRotateAboutEye;
   bool m_synchronizeThreeDCameras = false;

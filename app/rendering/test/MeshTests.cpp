@@ -999,56 +999,62 @@ TEST_CASE("mesh crosshairs glyph policy disables invalid or redundant glyphs", "
   CHECK(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
 
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = false,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = true,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 0.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 0.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 0.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 0.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 0.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 0.0f,
+     .sceneDiagonalWorld = 300.0f}));
 }
 
-TEST_CASE("mesh crosshairs glyph style converts voxel units to physical dimensions", "[rendering][mesh]")
+TEST_CASE("mesh crosshairs glyph style converts scene percentages to physical dimensions", "[rendering][mesh]")
 {
   const mesh::MeshCrosshairsGlyphInputs inputs{
     .showCrosshairsIn3D = true,
     .cameraFollowsCrosshairs = false,
-    .diameterVoxelDiagonals = 2.0f,
-    .lengthVoxelDiagonals = 8.0f,
-    .voxelDiagonalWorld = 3.0f};
+    .diameterScenePercent = 2.0f,
+    .lengthScenePercent = 8.0f,
+    .sceneDiagonalWorld = 300.0f};
 
   const mesh::MeshCrosshairsGlyphStyle style = mesh::meshCrosshairsGlyphStyle(inputs);
 
   CHECK(style.radiusWorld == Catch::Approx(3.0f));
   CHECK(style.halfLengthWorld == Catch::Approx(12.0f));
   CHECK(style.visible);
+
+  mesh::MeshCrosshairsGlyphInputs largerScene = inputs;
+  largerScene.sceneDiagonalWorld = 600.0f;
+  const mesh::MeshCrosshairsGlyphStyle largerStyle = mesh::meshCrosshairsGlyphStyle(largerScene);
+  CHECK(largerStyle.radiusWorld == Catch::Approx(2.0f * style.radiusWorld));
+  CHECK(largerStyle.halfLengthWorld == Catch::Approx(2.0f * style.halfLengthWorld));
 }
 
 TEST_CASE("mesh landmark glyph policy disables hidden or degenerate glyphs", "[rendering][mesh]")
