@@ -484,6 +484,7 @@ private:
 
   std::future<ui::updates::CheckResult> m_updateCheckFuture;
   ui::updates::CheckWindowState m_updateCheckWindowState;
+  std::optional<ui::updates::CheckResult> m_cachedUpdateCheckResult;
   std::string m_updateCheckEtag;
   bool m_automaticUpdateCheckRequested = false;
 

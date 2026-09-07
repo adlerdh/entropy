@@ -2714,8 +2714,13 @@ void ImGuiWrapper::processUpdateCheckFuture()
     result.error = e.what();
   }
 
-  if (!result.etag.empty()) {
-    m_updateCheckEtag = result.etag;
+  result = ui::updates::resolveCachedCheckResult(std::move(result), m_cachedUpdateCheckResult);
+  if (result.status == ui::updates::CheckStatus::UpdateAvailable || result.status == ui::updates::CheckStatus::UpToDate)
+  {
+    m_cachedUpdateCheckResult = result;
+    if (!result.etag.empty()) {
+      m_updateCheckEtag = result.etag;
+    }
   }
 
   const bool showAutomaticResult =
@@ -4954,6 +4959,8 @@ void ImGuiWrapper::render()
             m_appData.guiData().m_requestedIsosurfacesImageUid = currentLayout.visibleImages().front();
           }
         },
+      .getThreeDCutawayEnabled = [this]() { return m_appData.renderSettings().m_meshCutawayEnabled; },
+      .setThreeDCutawayEnabled = [this](bool enabled) { m_appData.renderSettings().m_meshCutawayEnabled = enabled; },
       .isThreeDRenderingSettingsVisible = [this]() { return m_appData.guiData().m_showSettingsWindow; },
       .openThreeDRenderingSettings =
         [this]() {
@@ -5192,6 +5199,8 @@ void ImGuiWrapper::render()
           [this]() { return m_appData.renderSettings().m_raycastBackgroundEdgeBrighteningEnabled; },
         .setThreeDImageVolumeBoundsVisible =
           [this](bool visible) { m_appData.renderSettings().m_raycastBackgroundEdgeBrighteningEnabled = visible; },
+        .getThreeDCutawayEnabled = [this]() { return m_appData.renderSettings().m_meshCutawayEnabled; },
+        .setThreeDCutawayEnabled = [this](bool enabled) { m_appData.renderSettings().m_meshCutawayEnabled = enabled; },
         .isThreeDRenderingSettingsVisible = [this]() { return m_appData.guiData().m_showSettingsWindow; },
         .openThreeDRenderingSettings =
           [this]() {

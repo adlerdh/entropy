@@ -53,12 +53,14 @@ struct CheckWindowState
 /**
  * @brief Compare two release version strings.
  *
- * Leading "v" prefixes and non-numeric suffixes are ignored. Missing numeric
- * components are treated as zero, so "v1.2" compares equal to "1.2.0".
+ * Leading "v" prefixes and prerelease or build suffixes are ignored. Missing
+ * numeric components are treated as zero, so "v1.2" compares equal to
+ * "1.2.0". Malformed versions cannot be compared.
  *
- * @return Negative if lhs < rhs, zero if equal, positive if lhs > rhs.
+ * @return A negative value if lhs < rhs, zero if equal, or a positive value
+ * if lhs > rhs. std::nullopt is returned when either version is malformed.
  */
-int compareReleaseVersions(std::string lhs, std::string rhs);
+std::optional<int> compareReleaseVersions(std::string lhs, std::string rhs);
 
 /**
  * @brief Parse the JSON returned by GitHub's latest-release endpoint.
@@ -69,6 +71,14 @@ std::optional<ReleaseInfo> parseLatestReleaseJson(const std::string& text, std::
  * @brief Parse a curl "-i" HTTP response and extract final response metadata.
  */
 CheckResult parseGitHubReleaseHttpResponse(const std::string& responseText, const std::string& currentVersion);
+
+/**
+ * @brief Resolve an HTTP 304 result using the preceding successful check.
+ *
+ * A 304 response means that GitHub's release has not changed. It does not mean
+ * that the installed application is up to date.
+ */
+CheckResult resolveCachedCheckResult(CheckResult response, const std::optional<CheckResult>& cachedResult);
 
 /**
  * @brief Query GitHub's latest-release endpoint using libcurl.

@@ -18,12 +18,14 @@
 #include <cctype>
 #include <charconv>
 #include <cfloat>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <memory>
 #include <sstream>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -72,42 +74,64 @@ std::string toLower(std::string value)
   return value;
 }
 
-std::vector<int> versionParts(std::string value)
+std::optional<std::vector<std::uint64_t>> versionParts(std::string value)
 {
   value = trim(std::move(value));
   if (!value.empty() && (value.front() == 'v' || value.front() == 'V')) {
     value.erase(value.begin());
   }
 
-  std::vector<int> parts;
-  std::size_t pos = 0;
-  while (pos < value.size()) {
-    while (pos < value.size() && !std::isdigit(static_cast<unsigned char>(value[pos]))) {
-      if (value[pos] != '.') {
-        return parts;
-      }
-      ++pos;
+  const std::size_t suffix = value.find_first_of("-+");
+  const std::size_t numericLength = suffix == std::string::npos ? value.size() : suffix;
+  const std::string_view numericPart{value.data(), numericLength};
+  if (numericPart.empty() || (suffix != std::string::npos && suffix + 1 == value.size())) {
+    return std::nullopt;
+  }
+
+  std::vector<std::uint64_t> parts;
+  std::size_t begin = 0;
+  while (begin < numericPart.size()) {
+    const std::size_t end = numericPart.find('.', begin);
+    const std::string_view component = numericPart.substr(begin, end - begin);
+    if (component.empty()) {
+      return std::nullopt;
     }
-    if (pos >= value.size()) {
+
+    std::uint64_t part = 0;
+    const auto parseResult = std::from_chars(component.data(), component.data() + component.size(), part);
+    if (parseResult.ec != std::errc{} || parseResult.ptr != component.data() + component.size()) {
+      return std::nullopt;
+    }
+    parts.push_back(part);
+
+    if (end == std::string_view::npos) {
       break;
     }
+    begin = end + 1;
+  }
 
-    std::size_t end = pos;
-    while (end < value.size() && std::isdigit(static_cast<unsigned char>(value[end]))) {
-      ++end;
-    }
-
-    int part = 0;
-    const auto* beginPtr = value.data() + pos;
-    const auto* endPtr = value.data() + end;
-    static_cast<void>(std::from_chars(beginPtr, endPtr, part));
-    parts.push_back(part);
-    pos = end;
-    if (pos < value.size() && value[pos] == '.') {
-      ++pos;
-    }
+  if (numericPart.back() == '.') {
+    return std::nullopt;
   }
   return parts;
+}
+
+CheckResult resultForRelease(std::string currentVersion, ReleaseInfo release, std::string etag)
+{
+  CheckResult result;
+  result.etag = std::move(etag);
+  result.latestRelease = std::move(release);
+
+  const std::optional<int> comparison = compareReleaseVersions(currentVersion, result.latestRelease.tagName);
+  if (!comparison) {
+    result.status = CheckStatus::Failed;
+    result.error = "Could not compare installed version '" + currentVersion + "' with GitHub release tag '" +
+                   result.latestRelease.tagName + "'";
+    return result;
+  }
+
+  result.status = *comparison < 0 ? CheckStatus::UpdateAvailable : CheckStatus::UpToDate;
+  return result;
 }
 
 int parseHttpStatus(std::string_view line)
@@ -251,6 +275,13 @@ std::size_t writeCurlHeader(char* ptr, std::size_t size, std::size_t nmemb, void
     line.remove_suffix(1);
   }
 
+  // libcurl invokes this callback for every response in a redirect or proxy
+  // chain. Only retain metadata from the final response.
+  if (line.starts_with("HTTP/")) {
+    response->etag.clear();
+    return byteCount;
+  }
+
   constexpr std::string_view etagPrefix = "etag:";
   if (line.size() >= etagPrefix.size()) {
     std::string name{line.substr(0, etagPrefix.size())};
@@ -322,19 +353,23 @@ float updateCheckWindowWidth(const CheckWindowState& state)
 }
 } // namespace
 
-int compareReleaseVersions(std::string lhs, std::string rhs)
+std::optional<int> compareReleaseVersions(std::string lhs, std::string rhs)
 {
-  std::vector<int> lhsParts = versionParts(std::move(lhs));
-  std::vector<int> rhsParts = versionParts(std::move(rhs));
-  const std::size_t count = std::max(lhsParts.size(), rhsParts.size());
-  lhsParts.resize(count, 0);
-  rhsParts.resize(count, 0);
+  std::optional<std::vector<std::uint64_t>> lhsParts = versionParts(std::move(lhs));
+  std::optional<std::vector<std::uint64_t>> rhsParts = versionParts(std::move(rhs));
+  if (!lhsParts || !rhsParts) {
+    return std::nullopt;
+  }
+
+  const std::size_t count = std::max(lhsParts->size(), rhsParts->size());
+  lhsParts->resize(count, 0);
+  rhsParts->resize(count, 0);
 
   for (std::size_t i = 0; i < count; ++i) {
-    if (lhsParts[i] < rhsParts[i]) {
+    if ((*lhsParts)[i] < (*rhsParts)[i]) {
       return -1;
     }
-    if (lhsParts[i] > rhsParts[i]) {
+    if ((*lhsParts)[i] > (*rhsParts)[i]) {
       return 1;
     }
   }
@@ -345,6 +380,20 @@ std::optional<ReleaseInfo> parseLatestReleaseJson(const std::string& text, std::
 {
   try {
     const nlohmann::json root = nlohmann::json::parse(text);
+    if (!root.is_object()) {
+      if (error) {
+        *error = "GitHub release response was not a JSON object";
+      }
+      return std::nullopt;
+    }
+
+    if (root.value("draft", false) || root.value("prerelease", false)) {
+      if (error) {
+        *error = "GitHub's latest-release endpoint returned a draft or prerelease";
+      }
+      return std::nullopt;
+    }
+
     ReleaseInfo info;
     info.tagName = root.value("tag_name", "");
     info.name = root.value("name", "");
@@ -355,6 +404,12 @@ std::optional<ReleaseInfo> parseLatestReleaseJson(const std::string& text, std::
     if (info.tagName.empty()) {
       if (error) {
         *error = "GitHub release response did not include a tag name";
+      }
+      return std::nullopt;
+    }
+    if (!versionParts(info.tagName)) {
+      if (error) {
+        *error = "GitHub release response contained an invalid version tag: " + info.tagName;
       }
       return std::nullopt;
     }
@@ -389,6 +444,7 @@ CheckResult parseGitHubReleaseHttpResponse(const std::string& responseText, cons
       status = parseHttpStatus(line);
       inHeaders = true;
       body.clear();
+      result.etag.clear();
       continue;
     }
 
@@ -438,10 +494,27 @@ CheckResult parseGitHubReleaseHttpResponse(const std::string& responseText, cons
     return result;
   }
 
-  result.latestRelease = *latest;
-  result.status =
-    compareReleaseVersions(currentVersion, latest->tagName) < 0 ? CheckStatus::UpdateAvailable : CheckStatus::UpToDate;
-  return result;
+  return resultForRelease(currentVersion, *latest, std::move(result.etag));
+}
+
+CheckResult resolveCachedCheckResult(CheckResult response, const std::optional<CheckResult>& cachedResult)
+{
+  if (response.status != CheckStatus::NotModified) {
+    return response;
+  }
+
+  if (
+    !cachedResult ||
+    (cachedResult->status != CheckStatus::UpdateAvailable && cachedResult->status != CheckStatus::UpToDate))
+  {
+    return failedResult("GitHub returned an unchanged release without a preceding successful update check");
+  }
+
+  CheckResult resolved = *cachedResult;
+  if (!response.etag.empty()) {
+    resolved.etag = std::move(response.etag);
+  }
+  return resolved;
 }
 
 CheckResult fetchLatestRelease(const CheckRequest& request)
@@ -475,6 +548,14 @@ CheckResult fetchLatestRelease(const CheckRequest& request)
   curl_easy_setopt(curl.get(), CURLOPT_URL, k_latestReleaseApiUrl);
   curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
   curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl.get(), CURLOPT_MAXREDIRS, 5L);
+#if LIBCURL_VERSION_NUM >= 0x075500
+  curl_easy_setopt(curl.get(), CURLOPT_PROTOCOLS_STR, "https");
+  curl_easy_setopt(curl.get(), CURLOPT_REDIR_PROTOCOLS_STR, "https");
+#else
+  curl_easy_setopt(curl.get(), CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+  curl_easy_setopt(curl.get(), CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+#endif
   curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, 5L);
   curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, 15L);
   curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
@@ -522,10 +603,7 @@ CheckResult fetchLatestRelease(const CheckRequest& request)
     return result;
   }
 
-  result.latestRelease = *latest;
-  result.status = compareReleaseVersions(request.currentVersion, latest->tagName) < 0 ? CheckStatus::UpdateAvailable
-                                                                                      : CheckStatus::UpToDate;
-  return result;
+  return resultForRelease(request.currentVersion, *latest, std::move(result.etag));
 }
 
 bool openUrlInDefaultBrowser(const std::string& url, std::string* error)

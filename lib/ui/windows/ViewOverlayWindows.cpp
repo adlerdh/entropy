@@ -230,6 +230,15 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
       }
       helpTooltip("Draw an outline around the full spatial extent of each visible image in 3D views");
     }
+    if (modes.getThreeDCutawayEnabled && modes.setThreeDCutawayEnabled) {
+      bool cutawayEnabled = modes.getThreeDCutawayEnabled();
+      if (ImGui::Checkbox("Cutaway", &cutawayEnabled)) {
+        modes.setThreeDCutawayEnabled(cutawayEnabled);
+      }
+      helpTooltip(
+        "Cut away the viewer-facing octant of opted-in segmentation and isosurface meshes, using the crosshairs as "
+        "the origin");
+    }
 
     ImGui::Separator();
     const ImVec4 activeButtonColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);

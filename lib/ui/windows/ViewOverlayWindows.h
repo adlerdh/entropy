@@ -104,9 +104,11 @@ struct ViewOverlayModeCallbacks
   std::function<void(bool)> setThreeDCrosshairsVisible{};                    //!< Set 3D crosshairs visibility
   std::function<bool()> getThreeDImageVolumeBoundsVisible{};                 //!< Whether image volume bounds are shown
   std::function<void(bool)> setThreeDImageVolumeBoundsVisible{};             //!< Set image volume bounds visibility
-  std::function<bool()> isThreeDRenderingSettingsVisible{};                  //!< Whether Application Settings is open
-  std::function<void()> openThreeDRenderingSettings{};                       //!< Open full 3D rendering settings
-  std::function<void()> hideThreeDRenderingSettings{};                       //!< Close Application Settings
+  std::function<bool()> getThreeDCutawayEnabled{};          //!< Whether global surface cutaway is enabled
+  std::function<void(bool)> setThreeDCutawayEnabled{};      //!< Set global surface cutaway state
+  std::function<bool()> isThreeDRenderingSettingsVisible{}; //!< Whether Application Settings is open
+  std::function<void()> openThreeDRenderingSettings{};      //!< Open full 3D rendering settings
+  std::function<void()> hideThreeDRenderingSettings{};      //!< Close Application Settings
   std::function<std::optional<ClipboardPayload>()>
     exportAsciiClipboardPayload{};             //!< Export this view's ASCII clipboard payload
   std::vector<ViewType> selectableViewTypes{}; //!< Empty means all supported view types are selectable
