@@ -52,8 +52,16 @@ struct GuiData
   /// Global setting to turn on/off rendering of the UI overlays (crosshairs, anatomical labels).
   bool m_renderUiOverlays = false;
 
-  bool m_showImagePropertiesWindow = true;                                  //!< Show the image properties window
-  bool m_showSegmentationsWindow = false;                                   //!< Show the segmentations window
+  bool m_showImagePropertiesWindow = true;   //!< Show the image properties window
+  bool m_showSegmentationsWindow = false;    //!< Show the segmentations window
+  bool m_showRegionStatisticsWindow = false; //!< Show segmentation region statistics
+
+  /// Image requested by a context-specific Region Statistics button.
+  std::optional<uuids::uuid> m_requestedRegionStatisticsImageUid = std::nullopt;
+
+  /// Segmentation requested by a context-specific Region Statistics button.
+  std::optional<uuids::uuid> m_requestedRegionStatisticsSegmentationUid = std::nullopt;
+
   bool m_showLandmarksWindow = false;                                       //!< Show the landmarks window
   bool m_showAnnotationsWindow = false;                                     //!< Show the annotations window
   bool m_showIsosurfacesWindow = false;                                     //!< Show the isosurfaces window

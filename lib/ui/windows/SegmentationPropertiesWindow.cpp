@@ -72,8 +72,6 @@ void renderSegmentationPropertiesWindow(
     }
 
     ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
     ImGui::TextDisabled("Global display:");
 
     rendering::RenderSettings& renderSettings = appData.renderSettings();

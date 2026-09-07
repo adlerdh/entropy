@@ -12,6 +12,7 @@
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
 #include "ui/updates/UpdateCheck.h"
+#include "ui/windows/RegionStatisticsController.h"
 
 #include <glm/fwd.hpp>
 #include <uuid.h>
@@ -395,6 +396,7 @@ private:
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
   UiScaleManager m_uiScaleManager;
+  RegionStatisticsController m_regionStatisticsController;
   std::optional<std::optional<float>> m_pendingUserScaleOverride;
   bool m_pendingFontReload = false;
   bool m_applyDefaultPanelLayout = false;

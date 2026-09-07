@@ -98,11 +98,9 @@ void renderSegLabelsChildWindow(
 
   const ImGuiStyle& style = ImGui::GetStyle();
   const float compactColumnWidth = ImGui::GetFrameHeight() + 2.0f * style.CellPadding.x;
-  const float indexColumnWidth = 2.0f * ImGui::GetFrameHeight() + 2.0f * style.ItemInnerSpacing.x +
-                                 ImGui::CalcTextSize("000").x + 2.0f * style.CellPadding.x;
   constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_BordersInnerV |
                                          ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
-                                         ImGuiTableFlags_SizingFixedFit;
+                                         ImGuiTableFlags_SizingStretchProp;
 
   if (!ImGui::BeginTable("##segmentationLabels", 4, tableFlags, ImVec2{0.0f, 0.0f})) {
     ImGui::EndChild();
@@ -112,8 +110,8 @@ void renderSegLabelsChildWindow(
   ImGui::TableSetupScrollFreeze(0, 1);
   ImGui::TableSetupColumn("2D", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, compactColumnWidth);
   ImGui::TableSetupColumn("3D", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, compactColumnWidth);
-  ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, indexColumnWidth);
-  ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+  ImGui::TableSetupColumn("Index");
+  ImGui::TableSetupColumn("Label");
   ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
   for (int column = 0; column < 4; ++column) {
     ImGui::TableSetColumnIndex(column);

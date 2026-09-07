@@ -437,7 +437,7 @@ TEST_CASE("3D camera state cannot follow crosshairs in orthographic projection",
   state.m_viewPositionFollowsCrosshairs = true;
 
   camera3d::Controller controller{camera, state};
-  static_cast<void>(controller);
+  controller.setProjection(ProjectionType::Orthographic);
 
   CHECK(state.m_projectionType == ProjectionType::Orthographic);
   CHECK_FALSE(state.m_viewPositionFollowsCrosshairs);

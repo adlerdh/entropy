@@ -117,6 +117,9 @@ public:
   /// @brief Get image dimensions in Entropy's 3D pixel model.
   const glm::uvec3& pixelDimensions() const;
 
+  /// @brief Get the number of spatial dimensions represented by the normalized image grid.
+  std::uint32_t numSpatialDimensions() const;
+
   /// @brief Get origin in physical subject space after overrides.
   const glm::vec3& origin() const;
 

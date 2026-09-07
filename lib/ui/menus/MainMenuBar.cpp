@@ -519,6 +519,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
 {
   actionMenuItem(callbacks, "Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow);
+  actionMenuItem(callbacks, "Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow);
   ImGui::Separator();
   if (ImGui::MenuItem("Add Segmentation...", nullptr, false, callbacks.canAddSegmentation)) {
     addSegmentation(callbacks);
@@ -739,6 +740,7 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow, "I");
+      main_menu::actionMenuItem(callbacks, "Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       main_menu::actionMenuItem(callbacks, "Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
       main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow, "Ctrl+,");

@@ -12,6 +12,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+
 namespace fs = std::filesystem;
 
 ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents)
@@ -410,6 +412,12 @@ const glm::uvec3& ImageHeader::pixelDimensions() const
 {
   return m_pixelDimensions;
 }
+
+std::uint32_t ImageHeader::numSpatialDimensions() const
+{
+  return std::min<std::uint32_t>(3u, m_ioInfoInMemory.m_spaceInfo.m_numDimensions);
+}
+
 const glm::vec3& ImageHeader::origin() const
 {
   return m_origin;

@@ -704,6 +704,7 @@ void addSegmentationMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Segmentations" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Segmentations"];
   addSymbolActionMenuItem(menu, @"Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow, @"star");
+  addSymbolActionMenuItem(menu, @"Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow, @"chart.bar");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Segmentation...", @selector(addSegmentation:), @"", @"folder.badge.plus");
   addSymbolActionMenuItem(menu, @"Create Blank Segmentation", MainMenuAction::CreateSegmentation, @"doc");
@@ -881,6 +882,7 @@ void addWindowsMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Voxel Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle", @"i");
+  addSymbolActionMenuItem(menu, @"Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow, @"chart.bar");
   addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
   addSymbolActionMenuItem(
     menu,

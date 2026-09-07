@@ -305,6 +305,15 @@ void renderSegmentationHeader(
     }
   }
 
+  if (ImGui::Button(ICON_FK_BAR_CHART " Statistics...")) {
+    appData.guiData().m_requestedRegionStatisticsImageUid = imageUid;
+    appData.guiData().m_requestedRegionStatisticsSegmentationUid = *activeSegUid;
+    appData.guiData().m_showRegionStatisticsWindow = true;
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Open intensity statistics and histograms for this segmentation's regions");
+  }
+
   ImGui::Spacing();
   ImGui::Separator();
   ImGui::Spacing();

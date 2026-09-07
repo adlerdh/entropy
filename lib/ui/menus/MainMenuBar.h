@@ -104,6 +104,7 @@ enum class MainMenuAction
   ToggleLayoutTabs,
   ToggleImagesWindow,
   ToggleSegmentationsWindow,
+  ToggleRegionStatisticsWindow,
   ToggleLandmarksWindow,
   ToggleAnnotationsWindow,
   ToggleIsosurfacesWindow,

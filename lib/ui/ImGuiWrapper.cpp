@@ -489,6 +489,7 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
 
   ImGui::DockBuilderDockWindow("Images##Images", leftNode);
   ImGui::DockBuilderDockWindow("Segmentations##Segmentations", leftNode);
+  ImGui::DockBuilderDockWindow("Segmentation Region Statistics##RegionStatistics", bottomNode);
 
   ImGui::DockBuilderDockWindow("Annotations", rightNode);
   ImGui::DockBuilderDockWindow("Landmarks", rightMiddleNode);
@@ -1744,6 +1745,7 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
   m_iniFileName = m_iniFilePath.string();
   m_logFileName = m_logFilePath.string();
   m_applyDefaultPanelLayout = !savedDockspaceLayoutExists(m_iniFilePath);
+  if (m_applyDefaultPanelLayout) appData.guiData().m_showSegmentationsWindow = true;
   io.IniFilename = m_iniFileName.c_str();
   io.LogFilename = m_logFileName.c_str();
 
@@ -3841,6 +3843,9 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleSegmentationsWindow:
         m_appData.guiData().m_showSegmentationsWindow = !m_appData.guiData().m_showSegmentationsWindow;
         break;
+      case MainMenuAction::ToggleRegionStatisticsWindow:
+        m_appData.guiData().m_showRegionStatisticsWindow = !m_appData.guiData().m_showRegionStatisticsWindow;
+        break;
       case MainMenuAction::ToggleLandmarksWindow:
         m_appData.guiData().m_showLandmarksWindow = !m_appData.guiData().m_showLandmarksWindow;
         break;
@@ -3973,6 +3978,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleSynchronizeThreeDCameras:
         case MainMenuAction::ToggleImagesWindow:
         case MainMenuAction::ToggleSegmentationsWindow:
+        case MainMenuAction::ToggleRegionStatisticsWindow:
         case MainMenuAction::ToggleLandmarksWindow:
         case MainMenuAction::ToggleAnnotationsWindow:
         case MainMenuAction::ToggleIsosurfacesWindow:
@@ -4152,6 +4158,8 @@ void ImGuiWrapper::render()
         return m_appData.guiData().m_showImagePropertiesWindow;
       case MainMenuAction::ToggleSegmentationsWindow:
         return m_appData.guiData().m_showSegmentationsWindow;
+      case MainMenuAction::ToggleRegionStatisticsWindow:
+        return m_appData.guiData().m_showRegionStatisticsWindow;
       case MainMenuAction::ToggleLandmarksWindow:
         return m_appData.guiData().m_showLandmarksWindow;
       case MainMenuAction::ToggleAnnotationsWindow:
@@ -4740,6 +4748,10 @@ void ImGuiWrapper::render()
         m_clearSeg,
         m_removeSeg,
         m_recenterAllViews);
+    }
+
+    if (m_appData.guiData().m_showRegionStatisticsWindow) {
+      renderRegionStatisticsWindow(m_appData, m_regionStatisticsController);
     }
 
     if (m_appData.guiData().m_showLandmarksWindow) {

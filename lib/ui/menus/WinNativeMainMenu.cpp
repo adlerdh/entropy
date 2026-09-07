@@ -851,6 +851,11 @@ bool populateSegmentationMenu(HMENU menu)
 {
   UINT position = 0;
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"Se&gmentations Panel") &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::ToggleRegionStatisticsWindow,
+           L"Segmentation &Statistics") &&
          insertSeparator(menu, position++) &&
          insertMenuItem(menu, position++, k_addSegmentationCommand, L"&Add Segmentation...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::CreateSegmentation, L"&Create Blank Segmentation") &&
@@ -1012,6 +1017,7 @@ bool populateWindowsMenu(HMENU menu)
     insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector\tI") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegionStatisticsWindow, L"Segmentation &Statistics") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Registration &Jobs") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings\tCtrl+,") &&

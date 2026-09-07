@@ -3,10 +3,6 @@
 #include "image/ImageSettings.h"
 
 #include <implot/implot.h>
-
-#include <string>
-
-#include <implot/implot.h>
 #include <string>
 
 /// @todo Icon for histogram: https://forkaweso.me/Fork-Awesome/icon/area-chart/
@@ -55,13 +51,13 @@ void drawImageHistogram(const T* data, int dataSize, ImageSettings& settings, co
 
   if (ImPlot::BeginPlot(plotTitle.c_str())) {
     if (histoSettings.m_isHorizontal) {
-      ImPlot::SetupAxes(countAxisLabel.c_str(), "Intensity", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+      ImPlot::SetupAxes(countAxisLabel.c_str(), "Image value", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
       if (histoSettings.m_isLogScale) {
         ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Log10);
       }
     }
     else {
-      ImPlot::SetupAxes("Intensity", countAxisLabel.c_str(), ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+      ImPlot::SetupAxes("Image value", countAxisLabel.c_str(), ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
       if (histoSettings.m_isLogScale) {
         ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
       }

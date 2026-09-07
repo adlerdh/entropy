@@ -7,6 +7,7 @@
 #include "ui/windows/KeyboardShortcuts.h"
 #include "ui/windows/LandmarkPropertiesWindow.h"
 #include "ui/windows/RegistrationWindow.h"
+#include "ui/windows/RegionStatisticsWindow.h"
 #include "ui/windows/SegmentationPropertiesWindow.h"
 #include "ui/windows/SettingsWindow.h"
 #include "ui/windows/ViewOverlayWindows.h"

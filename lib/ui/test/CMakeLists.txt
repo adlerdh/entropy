@@ -8,6 +8,8 @@ add_executable(TestUi
   LinuxUiScaleTests.cpp
   NativeMessageDialogModelTests.cpp
   OpacityMixerModelTests.cpp
+  RegionStatisticsExportTests.cpp
+  RegionStatisticsControllerTests.cpp
   SettingsModelTests.cpp
   StyleTests.cpp
   UpdateCheckTests.cpp
@@ -38,6 +40,8 @@ target_sources(TestUi PRIVATE
   "${entropy_UI_DIR}/UiScaleManager.cpp"
   "${entropy_UI_DIR}/widgets/ActiveImageSelectionModel.cpp"
   "${entropy_UI_DIR}/windows/OpacityMixerModel.cpp"
+  "${entropy_UI_DIR}/RegionStatisticsExport.cpp"
+  "${entropy_UI_DIR}/windows/RegionStatisticsController.cpp"
   "${entropy_UI_DIR}/windows/LoadingStatusModel.cpp"
   "${entropy_UI_DIR}/windows/ViewOverlayModel.cpp"
 )
@@ -45,6 +49,7 @@ target_sources(TestUi PRIVATE
 target_link_libraries(TestUi PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
+  Entropy::Image
   Entropy::Registration
   CURL::libcurl
   imgui

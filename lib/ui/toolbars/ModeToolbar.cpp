@@ -355,14 +355,14 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showSettingsWindow ? activeColor : inactiveColor));
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showInspectionWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::IconButton(ICON_FK_COGS, buttonSize)) {
-            guiData.m_showSettingsWindow = !guiData.m_showSettingsWindow;
+          if (ImGui::IconButton(ICON_FK_INFO_CIRCLE, buttonSize)) {
+            guiData.m_showInspectionWindow = !guiData.m_showInspectionWindow;
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Application Settings");
+            ImGui::SetTooltip("%s", "Show Voxel Inspector Panel (I)");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -377,14 +377,35 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showInspectionWindow ? activeColor : inactiveColor));
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showRegionStatisticsWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::IconButton(ICON_FK_INFO_CIRCLE, buttonSize)) {
-            guiData.m_showInspectionWindow = !guiData.m_showInspectionWindow;
+          if (ImGui::IconButton(ICON_FK_BAR_CHART, buttonSize)) {
+            guiData.m_showRegionStatisticsWindow = !guiData.m_showRegionStatisticsWindow;
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Voxel Inspector Panel (I)");
+            ImGui::SetTooltip("Show Segmentation Region Statistics Panel");
+          }
+        }
+        ImGui::PopStyleColor(1);
+        ++id;
+      }
+      ImGui::PopID();
+
+      if (isHoriz) {
+        ImGui::SameLine();
+      }
+
+      ImGui::PushID(id);
+      {
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showSettingsWindow ? activeColor : inactiveColor));
+        {
+          if (ImGui::IconButton(ICON_FK_COGS, buttonSize)) {
+            guiData.m_showSettingsWindow = !guiData.m_showSettingsWindow;
+          }
+
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", "Show Application Settings");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
