@@ -189,6 +189,9 @@ void Rendering::createShaderPrograms()
   if (!createMeshImagePlaneCompositeTexture2DProgram(m_meshImagePlaneCompositeTexture2DProgram)) {
     throwDebug("Failed to create mesh image-plane composite Texture2D program");
   }
+  if (!createMeshImagePlaneBorderProgram(m_meshImagePlaneBorderProgram)) {
+    throwDebug("Failed to create mesh image-plane border program");
+  }
   if (!createMeshImagePlaneCompositeDdpInitProgram(m_meshImagePlaneCompositeDdpInitProgram)) {
     throwDebug("Failed to create mesh image-plane composite DDP init program");
   }

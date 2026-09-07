@@ -189,3 +189,30 @@ float imagePlaneBorderDistancePixels()
   }
   return borderDistancePixels;
 }
+
+float imagePlaneEdgeAntialiasRadiusPixels(float borderDistancePixels)
+{
+  // The DDP targets are single-sample textures, so default-framebuffer MSAA cannot smooth the plane silhouette.
+  // Distance is already measured in device pixels. Its derivatives widen the transition slightly for diagonal and
+  // minified edges, where a fixed-width transition otherwise retains a visible staircase.
+  return 0.5 * clamp(fwidth(borderDistancePixels), 1.0, 1.5);
+}
+
+float imagePlaneOuterEdgeCoverage(float borderDistancePixels)
+{
+  float aaRadius = imagePlaneEdgeAntialiasRadiusPixels(borderDistancePixels);
+  return smoothstep(-aaRadius, aaRadius, borderDistancePixels);
+}
+
+float imagePlaneBorderCoverage(float borderDistancePixels)
+{
+  if (u_imagePlaneBorderWidthPixels <= 0.0) {
+    return 0.0;
+  }
+
+  float aaRadius = imagePlaneEdgeAntialiasRadiusPixels(borderDistancePixels);
+  return 1.0 - smoothstep(
+                 max(u_imagePlaneBorderWidthPixels - aaRadius, 0.0),
+                 u_imagePlaneBorderWidthPixels + aaRadius,
+                 borderDistancePixels);
+}

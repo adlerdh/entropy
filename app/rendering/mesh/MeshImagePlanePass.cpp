@@ -28,6 +28,7 @@
 #include <glm/vec3.hpp>
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <list>
 #include <optional>
@@ -492,6 +493,37 @@ void drawUploadedImagePlane(const rendering::mesh::MeshGpuData& gpuData)
   GLVertexArrayObject::unbind();
 }
 
+void drawAnalyticImagePlaneBorder(
+  const rendering::mesh::MeshImagePlaneRenderable& imagePlane,
+  const rendering::mesh::MeshDrawContext& context,
+  GLShaderProgram& program,
+  GLVertexArrayObject& fullScreenVao)
+{
+  if (imagePlane.borderColor.a <= 0.0f || imagePlane.borderWidthPixels <= 0.0f || imagePlane.boundaryVertexCount < 2u) {
+    return;
+  }
+
+  std::array<GLint, 4> viewport{};
+  glGetIntegerv(GL_VIEWPORT, viewport.data());
+
+  program.use();
+  program.setUniform("u_imagePlaneBorderColor", imagePlane.borderColor);
+  program.setUniform("u_imagePlaneBorderWidthPixels", imagePlane.borderWidthPixels);
+  program.setUniform("u_boundaryVertexCount", static_cast<int>(imagePlane.boundaryVertexCount));
+  program.setUniform(
+    "u_boundaryWorldPositions",
+    std::vector<glm::vec3>{
+      imagePlane.boundaryWorld.begin(),
+      imagePlane.boundaryWorld.begin() + imagePlane.boundaryVertexCount});
+  program.setUniform("u_viewportOrigin", glm::vec2{viewport[0], viewport[1]});
+  program.setUniform("u_viewportSize", glm::vec2{viewport[2], viewport[3]});
+  program.setUniform("u_clip_T_world", context.clip_T_world);
+  fullScreenVao.bind();
+  GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+  GLVertexArrayObject::unbind();
+  GLShaderProgram::stopUse();
+}
+
 void drawImagePlaneIsocontours(
   AppData& appData,
   const View& view,
@@ -557,6 +589,8 @@ void drawImagePlaneRenderablesWithProgram(
   GLShaderProgram& texture2dProgram,
   GLShaderProgram& isocontourTexture3dProgram,
   GLShaderProgram& isocontourTexture2dProgram,
+  GLShaderProgram& borderProgram,
+  GLVertexArrayObject& fullScreenVao,
   const bool usePreviousTextures = false,
   GLTexture* const previousDepthBounds = nullptr,
   GLTexture* const previousFrontColor = nullptr)
@@ -628,12 +662,17 @@ void drawImagePlaneRenderablesWithProgram(
       imagePlane,
       uniformsIt->second,
       boundSegTexture.hasSegmentation && !boundSegBufferTextures.empty());
+    // The border is drawn by a full-screen analytic stroke below. Suppressing the plane-local stroke lets that pass
+    // generate coverage on both sides of the boundary, including when the plane itself becomes subpixel-thin.
+    program.setUniform("u_imagePlaneBorderColor", glm::vec4{0.0f});
     if (usePreviousTextures) {
       program.setSamplerUniform("u_previousDepthBoundsTex", sk_previousDepthBoundsSampler.index);
       program.setSamplerUniform("u_previousFrontColorTex", sk_previousFrontColorSampler.index);
     }
     drawUploadedImagePlane(*gpuData);
     GLShaderProgram::stopUse();
+
+    drawAnalyticImagePlaneBorder(imagePlane, context, borderProgram, fullScreenVao);
 
     drawImagePlaneIsocontours(
       appData,
@@ -893,6 +932,8 @@ void Rendering::prepareMeshImagePlaneDdpCompositesForView(
       m_meshImagePlaneCompositeTexture2DProgram,
       m_meshImagePlaneIsoContourProgram,
       m_meshImagePlaneIsoContourTexture2DProgram,
+      m_meshImagePlaneBorderProgram,
+      m_meshDdpResources.fullScreenVao(),
       false,
       nullptr,
       nullptr);

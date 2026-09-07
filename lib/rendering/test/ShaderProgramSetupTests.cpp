@@ -579,6 +579,7 @@ TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering
 {
   const std::string display =
     shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::string border = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneBorder.fs");
   const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
   const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
 
@@ -590,6 +591,18 @@ TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering
   CHECK(peel.find("imagePlaneBorderDistancePixels()") != std::string::npos);
   CHECK(display.find("clipImagePlaneBoundarySegment") != std::string::npos);
   CHECK(display.find("gl_FragCoord.xy - u_viewportOrigin") != std::string::npos);
+  CHECK(display.find("imagePlaneEdgeAntialiasRadiusPixels") != std::string::npos);
+  CHECK(display.find("fwidth(borderDistancePixels)") != std::string::npos);
+  CHECK(display.find("imagePlaneOuterEdgeCoverage") != std::string::npos);
+  CHECK(init.find("imagePlaneBorderCoverage(borderDistancePixels)") != std::string::npos);
+  CHECK(peel.find("imagePlaneBorderCoverage(borderDistancePixels)") != std::string::npos);
+  CHECK(init.find("imagePlaneOuterEdgeCoverage(borderDistancePixels) * combinedAlpha") != std::string::npos);
+  CHECK(peel.find("imagePlaneOuterEdgeCoverage(borderDistancePixels) * combinedColor") != std::string::npos);
+  CHECK(border.find("clipBoundarySegment") != std::string::npos);
+  CHECK(border.find("gl_FragCoord.xy - u_viewportOrigin") != std::string::npos);
+  CHECK(border.find("0.5 * u_imagePlaneBorderWidthPixels") != std::string::npos);
+  CHECK(border.find("fwidth(nearestDistancePixels)") != std::string::npos);
+  CHECK(border.find("gl_FragDepth = clamp(nearestWindowDepth") != std::string::npos);
   CHECK(init.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
   CHECK(peel.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
 }

@@ -389,6 +389,8 @@ private:
 
   GLShaderProgram m_meshImagePlaneCompositeTexture2DProgram; //!< Alpha-composes planar 2D-texture image layers
 
+  GLShaderProgram m_meshImagePlaneBorderProgram; //!< Full-screen analytic image-plane boundary stroke
+
   GLShaderProgram m_meshImagePlaneCompositeDdpInitProgram; //!< Adds composite plane depth to DDP initialization
 
   GLShaderProgram m_meshImagePlaneCompositeDdpPeelProgram; //!< Adds composite plane color to a DDP peel pass

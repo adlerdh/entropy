@@ -204,6 +204,9 @@ TEST_CASE("all assembled GLSL programs compile and link offline", "[rendering][s
       {{".vert", shader("mesh/FullScreenTriangle.vs")},
        {".frag", preprocess("mesh/" + std::string(fragment), ddpReplacements)}});
   }
+  validate(
+    "analytic image-plane border",
+    {{".vert", shader("mesh/FullScreenTriangle.vs")}, {".frag", shader("mesh/MeshImagePlaneBorder.fs")}});
 
   const rendering::ShaderReplacements raycastCommon{
     {"SAMPLE_TEX_COORD_FUNCTION", shader("functions/SampleTexCoord_Identity.glsl")},

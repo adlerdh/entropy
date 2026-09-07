@@ -270,13 +270,11 @@ vec4 imagePlaneColor()
   vec4 contentColor = segmentationColor + imageColor * (1.0 - segmentationColor.a);
 
   float borderDistancePixels = imagePlaneBorderDistancePixels();
-  float borderCoverage = 1.0 - smoothstep(
-                                 max(u_imagePlaneBorderWidthPixels - 0.5, 0.0),
-                                 u_imagePlaneBorderWidthPixels + 0.5,
-                                 borderDistancePixels);
+  float borderCoverage = imagePlaneBorderCoverage(borderDistancePixels);
   float borderAlpha = u_imagePlaneBorderColor.a * borderCoverage;
   vec4 borderColor = vec4(u_imagePlaneBorderColor.rgb * borderAlpha, borderAlpha);
-  return borderColor + contentColor * (1.0 - borderAlpha);
+  vec4 combinedColor = borderColor + contentColor * (1.0 - borderAlpha);
+  return imagePlaneOuterEdgeCoverage(borderDistancePixels) * combinedColor;
 }
 
 void main()

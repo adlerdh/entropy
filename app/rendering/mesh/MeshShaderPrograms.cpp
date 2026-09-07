@@ -477,6 +477,19 @@ bool Rendering::createMeshImagePlaneCompositeTexture2DProgram(GLShaderProgram& p
     true);
 }
 
+bool Rendering::createMeshImagePlaneBorderProgram(GLShaderProgram& program)
+{
+  Uniforms uniforms;
+  uniforms.insertUniform("u_imagePlaneBorderColor", UniformType::Vec4, glm::vec4{0.0f});
+  uniforms.insertUniform("u_imagePlaneBorderWidthPixels", UniformType::Float, 0.0f);
+  uniforms.insertUniform("u_boundaryVertexCount", UniformType::Int, 0);
+  uniforms.insertUniform("u_boundaryWorldPositions", UniformType::Vec3Vector, Vec3Vector{glm::vec3{0.0f}});
+  uniforms.insertUniform("u_viewportOrigin", UniformType::Vec2, glm::vec2{0.0f});
+  uniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
+  uniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
+  return createFullscreenMeshProgram(program, "rendering/shaders/mesh/MeshImagePlaneBorder.fs", std::move(uniforms));
+}
+
 bool Rendering::createMeshImagePlaneCompositeDdpInitProgram(GLShaderProgram& program)
 {
   Uniforms uniforms;

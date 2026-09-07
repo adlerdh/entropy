@@ -25,6 +25,7 @@ set(entropy_SHADERS
   mesh/AmbientOcclusionResolve.fs
   mesh/MeshImagePlaneDdpInit.fs
   mesh/MeshImagePlaneDdpPeel.fs
+  mesh/MeshImagePlaneBorder.fs
   mesh/MeshImagePlaneCompositeDdpInit.fs
   mesh/MeshImagePlaneCompositeDdpPeel.fs
   mesh/MeshImagePlaneDisplay.glsl

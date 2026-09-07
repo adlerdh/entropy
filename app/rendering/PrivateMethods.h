@@ -128,6 +128,9 @@ static bool createMeshImagePlaneCompositeProgram(GLShaderProgram& program);
 /** Compile the shader that alpha-composes one orientation's planar-texture image stack. */
 static bool createMeshImagePlaneCompositeTexture2DProgram(GLShaderProgram& program);
 
+/** Create the full-screen analytic image-plane border program. */
+static bool createMeshImagePlaneBorderProgram(GLShaderProgram& program);
+
 /** Compile the full-screen shader that contributes pre-composed image planes to DDP initialization. */
 static bool createMeshImagePlaneCompositeDdpInitProgram(GLShaderProgram& program);
 

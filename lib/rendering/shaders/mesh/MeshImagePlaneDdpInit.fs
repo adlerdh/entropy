@@ -226,12 +226,10 @@ float imagePlaneAlpha()
   float imageAlpha = displayedImagePlaneColor(sampleTc, fs_in.v_worldPos).a;
   float segmentationAlpha = segmentationPlaneAlpha(sampleTc);
   float borderDistancePixels = imagePlaneBorderDistancePixels();
-  float borderAlpha = u_imagePlaneBorderColor.a * (1.0 - smoothstep(
-                                                           max(u_imagePlaneBorderWidthPixels - 0.5, 0.0),
-                                                           u_imagePlaneBorderWidthPixels + 0.5,
-                                                           borderDistancePixels));
+  float borderAlpha = u_imagePlaneBorderColor.a * imagePlaneBorderCoverage(borderDistancePixels);
   float contentAlpha = segmentationAlpha + imageAlpha * (1.0 - segmentationAlpha);
-  return borderAlpha + contentAlpha * (1.0 - borderAlpha);
+  float combinedAlpha = borderAlpha + contentAlpha * (1.0 - borderAlpha);
+  return imagePlaneOuterEdgeCoverage(borderDistancePixels) * combinedAlpha;
 }
 
 void main()
