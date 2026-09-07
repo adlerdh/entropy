@@ -8,6 +8,7 @@
 #include "ui/GradientBackgroundRenderer.h"
 #include "ui/ImageExport.h"
 #include "ui/ImGuiCustomControls.h"
+#include "ui/dialogs/InputLoadErrorDialog.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/menus/MainMenuBar.h"
 #ifdef __APPLE__
@@ -3200,6 +3201,10 @@ void ImGuiWrapper::render()
       std::vector<Annotation> annotations;
       if (!serialize::openAnnotationsFromJsonFile(annotations, *selectedFile)) {
         spdlog::error("Error importing annotations from JSON file {}", *selectedFile);
+        native_dialog::showInputLoadErrorDialog(
+          {.inputType = "annotations",
+           .path = *selectedFile,
+           .cause = "The annotation JSON file could not be read or parsed."});
         return;
       }
 
@@ -3306,6 +3311,10 @@ void ImGuiWrapper::render()
     std::map<size_t, PointRecord<glm::vec3>> landmarks;
     if (!serialize::openLandmarkGroupCsvFile(landmarks, *selectedFile)) {
       spdlog::error("Error importing landmarks from CSV file {}", *selectedFile);
+      native_dialog::showInputLoadErrorDialog(
+        {.inputType = "landmarks",
+         .path = *selectedFile,
+         .cause = "The landmark CSV file could not be read or parsed."});
       return;
     }
 
@@ -3608,6 +3617,10 @@ void ImGuiWrapper::render()
             }
             else {
               spdlog::error("Error loading initial affine transformation matrix from file {}", *selectedFile);
+              native_dialog::showInputLoadErrorDialog(
+                {.inputType = "affine transformation",
+                 .path = *selectedFile,
+                 .cause = "The transformation matrix file could not be read or parsed."});
             }
           }
         }
@@ -4395,6 +4408,14 @@ void ImGuiWrapper::render()
       (!refImageUidForMenu || *activeImageUidForMenu != *refImageUidForMenu || activeImageCanSelfWarp) &&
       m_loadAndAssignDeformationField;
 
+    // Native menus retain this callback after render() returns, so every frame-local callable it uses must be owned.
+    const auto clearRecents = [this, saveUserSettingsToDefault]() {
+      m_appData.settings().setRecentProjectFiles({});
+      m_appData.settings().setRecentImageGroups({});
+      m_appData.settings().setRecentDicomGroups({});
+      saveUserSettingsToDefault();
+    };
+
     const MainMenuBarCallbacks mainMenuCallbacks{
       .openImageFiles = m_openImageFiles,
       .addImageFiles = m_addImageFiles,
@@ -4425,13 +4446,7 @@ void ImGuiWrapper::render()
             [](const RecentPathGroup& group) { return group.paths; });
           return groups;
         },
-      .clearRecents =
-        [this, &saveUserSettingsToDefault]() {
-          m_appData.settings().setRecentProjectFiles({});
-          m_appData.settings().setRecentImageGroups({});
-          m_appData.settings().setRecentDicomGroups({});
-          saveUserSettingsToDefault();
-        },
+      .clearRecents = clearRecents,
       .addSegmentationFile = m_addSegmentationFile,
       .loadInverseWarpForActiveImage =
         [this](const fs::path& fileName) {
@@ -4544,12 +4559,7 @@ void ImGuiWrapper::render()
       m_openDicomFolders,
       [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
       m_openProjectFile,
-      [this, &saveUserSettingsToDefault]() {
-        m_appData.settings().setRecentProjectFiles({});
-        m_appData.settings().setRecentImageGroups({});
-        m_appData.settings().setRecentDicomGroups({});
-        saveUserSettingsToDefault();
-      });
+      clearRecents);
 
     if (ProjectLoadState::Loading == projectLoadState) {
       ui::renderGradientBackground();

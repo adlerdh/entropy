@@ -6,6 +6,7 @@
 #include "ui/ImageExport.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
+#include "ui/dialogs/InputLoadErrorDialog.h"
 #include "ui/widgets/Widgets.h"
 #include "ui/widgets/ImageHistogram.h"
 
@@ -180,6 +181,10 @@ void renderAnnotationsHeader(
     std::vector<Annotation> importedAnnotations;
     if (!serialize::openAnnotationsFromJsonFile(importedAnnotations, *selectedFile)) {
       spdlog::error("Error importing annotations from JSON file {}", *selectedFile);
+      native_dialog::showInputLoadErrorDialog(
+        {.inputType = "annotations",
+         .path = *selectedFile,
+         .cause = "The annotation JSON file could not be read or parsed."});
       return;
     }
 

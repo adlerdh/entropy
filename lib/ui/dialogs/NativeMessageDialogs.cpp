@@ -55,19 +55,17 @@ std::optional<native_dialog::MessageDialogResult> showZenityDialog(
   const native_dialog::MessageDialog& dialog,
   const std::string& text)
 {
-  std::vector<std::string> args{
-    "zenity",
-    "--question",
-    "--modal",
-    "--width=440",
-    "--title",
-    dialog.title,
-    "--text",
-    text,
-    "--ok-label",
-    dialog.firstButton,
-    "--cancel-label",
-    dialog.secondButton};
+  std::vector<std::string> args{"zenity"};
+  const bool acknowledgementOnly = dialog.secondButton.empty();
+  args.push_back(
+    acknowledgementOnly ? (dialog.severity == native_dialog::MessageDialogSeverity::Error ? "--error" : "--warning")
+                        : "--question");
+  args.insert(
+    args.end(),
+    {"--modal", "--width=440", "--title", dialog.title, "--text", text, "--ok-label", dialog.firstButton});
+  if (!acknowledgementOnly) {
+    args.insert(args.end(), {"--cancel-label", dialog.secondButton});
+  }
   std::vector<char*> argv = argvFor(args);
   const auto exitCode = runDialogCommand(argv);
   if (!exitCode) {
@@ -86,16 +84,14 @@ std::optional<native_dialog::MessageDialogResult> showKdialogDialog(
   const native_dialog::MessageDialog& dialog,
   const std::string& text)
 {
-  std::vector<std::string> args{
-    "kdialog",
-    "--warningyesno",
-    text,
-    "--title",
-    dialog.title,
-    "--yes-label",
-    dialog.firstButton,
-    "--no-label",
-    dialog.secondButton};
+  const bool acknowledgementOnly = dialog.secondButton.empty();
+  const std::string dialogType =
+    acknowledgementOnly ? (dialog.severity == native_dialog::MessageDialogSeverity::Error ? "--error" : "--sorry")
+                        : "--warningyesno";
+  std::vector<std::string> args{"kdialog", dialogType, text, "--title", dialog.title};
+  if (!acknowledgementOnly) {
+    args.insert(args.end(), {"--yes-label", dialog.firstButton, "--no-label", dialog.secondButton});
+  }
   std::vector<char*> argv = argvFor(args);
   const auto exitCode = runDialogCommand(argv);
   if (!exitCode) {
@@ -130,5 +126,17 @@ std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog
   (void)dialog;
   return std::nullopt;
 #endif
+}
+
+void showErrorMessageDialog(const std::string& title, const std::string& message, const std::string& informativeText)
+{
+  static_cast<void>(showMessageDialog(
+    {.title = title,
+     .message = message,
+     .informativeText = informativeText,
+     .firstButton = "OK",
+     .secondButton = "",
+     .thirdButton = "",
+     .severity = MessageDialogSeverity::Error}));
 }
 } // namespace native_dialog

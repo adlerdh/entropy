@@ -8,6 +8,7 @@ add_executable(TestAppSettings
   ProjectLayoutDeltaTests.cpp
   ProjectSnapshotComparisonTests.cpp
   ProjectSnapshotSettingsTests.cpp
+  RecentDataLoadTests.cpp
   StackTraceTests.cpp
   UserPreferencesTests.cpp
   WindowTitleStatusTests.cpp
@@ -22,6 +23,7 @@ target_sources(TestAppSettings PRIVATE
   "${entropy_APP_DIR}/logic/app/ProjectLayoutDelta.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectImageSequence.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
+  "${entropy_APP_DIR}/logic/app/RecentDataLoad.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/StackTrace.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"

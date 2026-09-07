@@ -13,6 +13,7 @@ target_sources(entropy PRIVATE
   app/ProjectImageSequence.cpp
   app/ProjectSnapshotComparison.cpp
   app/ProjectSnapshotSettings.cpp
+  app/RecentDataLoad.cpp
   app/Settings.cpp
   app/StackTrace.cpp
   app/State.cpp

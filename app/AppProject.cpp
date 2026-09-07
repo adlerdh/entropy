@@ -544,6 +544,36 @@ void EntropyApp::recordRecentProjectFile(const fs::path& fileName)
   saveAppSettingsQuietly();
 }
 
+void EntropyApp::beginPendingRecentDataLoad(recent_data::Kind kind, std::vector<fs::path> paths)
+{
+  m_pendingRecentDataLoad.begin(kind, std::move(paths));
+}
+
+void EntropyApp::commitPendingRecentDataLoad()
+{
+  const std::optional<recent_data::Entry> entry = m_pendingRecentDataLoad.takeCompleted();
+  if (!entry) {
+    return;
+  }
+
+  switch (entry->kind) {
+    case recent_data::Kind::Images:
+      recordRecentImageGroup(entry->paths);
+      break;
+    case recent_data::Kind::Dicom:
+      recordRecentDicomGroup(entry->paths);
+      break;
+    case recent_data::Kind::Project:
+      recordRecentProjectFile(entry->paths.front());
+      break;
+  }
+}
+
+void EntropyApp::clearPendingRecentDataLoad()
+{
+  m_pendingRecentDataLoad.cancel();
+}
+
 bool EntropyApp::saveProject()
 {
   if (!m_data.projectFileName()) {
@@ -595,6 +625,7 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
 
   layout::LayoutFile layoutFile;
   if (!layout::open(layoutFile, fileName)) {
+    reportInputLoadFailure("layout", fileName, "The layout file could not be read or parsed.");
     return;
   }
 
@@ -606,6 +637,10 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
          .applyProjectLayoutSnapshots(layoutFile.m_layouts, m_data.imageUidsOrdered(), layoutFile.m_currentLayoutIndex))
   {
     spdlog::error("Could not apply layout file {}", fileName);
+    reportInputLoadFailure(
+      "layout",
+      fileName,
+      "The layout definitions are invalid or incompatible with the currently loaded images.");
     return;
   }
 
@@ -655,14 +690,13 @@ void EntropyApp::performLoadProjectFile(const fs::path& fileName)
 
   if (!serialize::open(project, fileName)) {
     spdlog::error("Could not open project file {}", fileName);
+    reportInputLoadFailure("project", fileName, "The project file could not be read or parsed.");
     if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
     }
     m_glfw.postEmptyEvent();
     return;
   }
-
-  recordRecentProjectFile(fileName);
 
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
     closeProject();
@@ -694,6 +728,9 @@ void EntropyApp::clearPendingProjectReplacement()
 
 void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
 {
+  if (projectFileName) {
+    beginPendingRecentDataLoad(recent_data::Kind::Project, {*projectFileName});
+  }
   closeProject();
   if (projectFileName) {
     spdlog::info("Beginning project load from {}", *projectFileName);
@@ -717,6 +754,7 @@ void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::option
     "Loading project...",
     [this]() { return loadProject(m_data.project()); },
     [this]() {
+      clearPendingRecentDataLoad();
       m_data.clearProjectData();
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
       m_data.state().setAnimating(false);
@@ -748,10 +786,12 @@ void EntropyApp::continueLargeImageProjectPreflight()
     if (!header) {
       if (0 == m_pendingLargeProjectImageIndex) {
         spdlog::error("Could not read reference image header from {}; cancelling project load", image->m_imageFileName);
+        reportInputLoadFailure("image", image->m_imageFileName, "The reference image header could not be read.");
         m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
         m_pendingLargeProject = std::nullopt;
         m_pendingLargeProjectFileName = std::nullopt;
         m_pendingLargeProjectImageIndex = 0;
+        clearPendingRecentDataLoad();
         if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
           m_data.state().setProjectLoadState(ProjectLoadState::Failed);
         }
@@ -760,6 +800,7 @@ void EntropyApp::continueLargeImageProjectPreflight()
       }
 
       spdlog::error("Could not read image header from {}; skipping it", image->m_imageFileName);
+      reportInputLoadFailure("image", image->m_imageFileName, "The image header could not be read.");
       project_image_sequence::erase(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
       continue;
     }
@@ -816,6 +857,7 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
         m_pendingLargeProject = std::nullopt;
         m_pendingLargeProjectFileName = std::nullopt;
         m_pendingLargeProjectImageIndex = 0;
+        clearPendingRecentDataLoad();
         m_glfw.postEmptyEvent();
         break;
       }
@@ -827,6 +869,7 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
           m_pendingLargeProject = std::nullopt;
           m_pendingLargeProjectFileName = std::nullopt;
           m_pendingLargeProjectImageIndex = 0;
+          clearPendingRecentDataLoad();
           m_glfw.postEmptyEvent();
           break;
         }

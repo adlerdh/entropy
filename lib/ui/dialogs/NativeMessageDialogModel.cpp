@@ -7,8 +7,12 @@ std::vector<std::string> buttonLabels(const MessageDialog& dialog)
   std::vector<std::string> labels;
   labels.reserve(3);
 
-  labels.push_back(dialog.firstButton);
-  labels.push_back(dialog.secondButton);
+  if (!dialog.firstButton.empty()) {
+    labels.push_back(dialog.firstButton);
+  }
+  if (!dialog.secondButton.empty()) {
+    labels.push_back(dialog.secondButton);
+  }
   if (!dialog.thirdButton.empty()) {
     labels.push_back(dialog.thirdButton);
   }

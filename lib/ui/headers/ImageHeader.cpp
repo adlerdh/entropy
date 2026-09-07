@@ -7,6 +7,7 @@
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
+#include "ui/dialogs/InputLoadErrorDialog.h"
 #include "ui/dialogs/WarpFieldAssignment.h"
 #include "ui/widgets/Widgets.h"
 #include "ui/widgets/ImageHistogram.h"
@@ -3097,6 +3098,10 @@ void renderImageHeader(
           }
           else {
             spdlog::error("Error loading initial affine transformation matrix from file {}", *selectedFile);
+            native_dialog::showInputLoadErrorDialog(
+              {.inputType = "affine transformation",
+               .path = *selectedFile,
+               .cause = "The transformation matrix file could not be read or parsed."});
           }
         }
       }
@@ -3239,6 +3244,10 @@ void renderImageHeader(
           }
           else {
             spdlog::error("Error loading manual affine transformation matrix from file {}", *selectedFile);
+            native_dialog::showInputLoadErrorDialog(
+              {.inputType = "affine transformation",
+               .path = *selectedFile,
+               .cause = "The transformation matrix file could not be read or parsed."});
           }
         }
       }

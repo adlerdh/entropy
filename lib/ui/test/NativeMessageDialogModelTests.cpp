@@ -21,6 +21,12 @@ TEST_CASE("native message dialog model omits absent third button", "[ui][dialogs
   CHECK(dialog_model::buttonLabels(dialog) == std::vector<std::string>{"Remove", "Cancel"});
 }
 
+TEST_CASE("native message dialog model supports acknowledgement-only dialogs", "[ui][dialogs]")
+{
+  const native_dialog::MessageDialog dialog{"Error", "Failed", "Cause", "OK", "", ""};
+  CHECK(dialog_model::buttonLabels(dialog) == std::vector<std::string>{"OK"});
+}
+
 TEST_CASE("native message dialog model combines detail text with platform spacing", "[ui][dialogs]")
 {
   CHECK(dialog_model::combinedInformativeText("Message", "Details") == "Message\n\nDetails");

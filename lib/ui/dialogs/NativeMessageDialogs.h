@@ -16,17 +16,25 @@ enum class MessageDialogResult : std::uint8_t
   ThirdButton   //!< The optional third button was selected
 };
 
+/** @brief Visual severity used by the native platform dialog. */
+enum class MessageDialogSeverity : std::uint8_t
+{
+  Warning,
+  Error
+};
+
 /**
  * @brief Definition of a native message dialog.
  */
 struct MessageDialog
 {
-  std::string title;           //!< Dialog title or primary message
-  std::string message;         //!< Main explanatory text
-  std::string informativeText; //!< Optional additional details
-  std::string firstButton;     //!< First/action button label
-  std::string secondButton;    //!< Second button label
-  std::string thirdButton;     //!< Optional third button label
+  std::string title;                                               //!< Dialog title or primary message
+  std::string message;                                             //!< Main explanatory text
+  std::string informativeText;                                     //!< Optional additional details
+  std::string firstButton;                                         //!< First/action button label
+  std::string secondButton;                                        //!< Second button label
+  std::string thirdButton;                                         //!< Optional third button label
+  MessageDialogSeverity severity = MessageDialogSeverity::Warning; //!< Native warning or error presentation
 };
 
 /**
@@ -36,4 +44,10 @@ struct MessageDialog
  * @return Selected button, or std::nullopt when native message dialogs are unavailable.
  */
 std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog);
+
+/** @brief Show a native, one-button error dialog. */
+void showErrorMessageDialog(
+  const std::string& title,
+  const std::string& message,
+  const std::string& informativeText = {});
 } // namespace native_dialog

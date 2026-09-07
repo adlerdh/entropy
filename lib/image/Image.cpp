@@ -229,7 +229,8 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
 
   if (!imageIo || imageIo.IsNull()) {
     spdlog::error("Error creating itk::ImageIOBase for image from file {}", fileName);
-    throwDebug("Error creating itk::ImageIOBase");
+    throwDebug(
+      "No supported image reader could open the file. The format may be unsupported or the file may be invalid.");
   }
 
   if (!setImageIoInfoFromItk(m_ioInfoOnDisk, imageIo)) {

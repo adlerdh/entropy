@@ -39,8 +39,9 @@ std::wstring toWideString(const std::string& text)
     return {};
   }
 
-  std::wstring wideText(static_cast<std::size_t>(size - 1), L'\0');
+  std::wstring wideText(static_cast<std::size_t>(size), L'\0');
   MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wideText.data(), size);
+  wideText.pop_back();
   return wideText;
 }
 
@@ -72,7 +73,8 @@ std::optional<native_dialog::MessageDialogResult> resultFromButtonId(int buttonI
  */
 UINT messageBoxButtons(std::size_t numButtons)
 {
-  return numButtons >= 3 ? MB_YESNOCANCEL : MB_OKCANCEL;
+  if (numButtons >= 3) return MB_YESNOCANCEL;
+  return numButtons == 2 ? MB_OKCANCEL : MB_OK;
 }
 
 /**
@@ -83,10 +85,14 @@ UINT messageBoxButtons(std::size_t numButtons)
  * @param numButtons Number of requested buttons.
  * @return Selected button, or std::nullopt if the API returns an unexpected result.
  */
-std::optional<native_dialog::MessageDialogResult>
-showFallbackMessageBox(const std::wstring& title, const std::wstring& text, std::size_t numButtons)
+std::optional<native_dialog::MessageDialogResult> showFallbackMessageBox(
+  const std::wstring& title,
+  const std::wstring& text,
+  std::size_t numButtons,
+  native_dialog::MessageDialogSeverity severity)
 {
-  const int result = MessageBoxW(nullptr, text.c_str(), title.c_str(), MB_ICONWARNING | messageBoxButtons(numButtons));
+  const UINT icon = severity == native_dialog::MessageDialogSeverity::Error ? MB_ICONERROR : MB_ICONWARNING;
+  const int result = MessageBoxW(nullptr, text.c_str(), title.c_str(), icon | messageBoxButtons(numButtons));
   if (numButtons >= 3) {
     if (IDYES == result) return native_dialog::MessageDialogResult::FirstButton;
     if (IDNO == result) return native_dialog::MessageDialogResult::SecondButton;
@@ -127,10 +133,10 @@ std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog
   config.pszWindowTitle = title.c_str();
   config.pszMainInstruction = mainInstruction.c_str();
   config.pszContent = content.empty() ? nullptr : content.c_str();
-  config.pszMainIcon = TD_WARNING_ICON;
+  config.pszMainIcon = dialog.severity == MessageDialogSeverity::Error ? TD_ERROR_ICON : TD_WARNING_ICON;
   config.cButtons = static_cast<UINT>(buttons.size());
   config.pButtons = buttons.data();
-  config.nDefaultButton = sk_secondButtonId;
+  config.nDefaultButton = buttonLabels.size() > 1 ? sk_secondButtonId : sk_firstButtonId;
 
   int selectedButton = 0;
   const HRESULT result = TaskDialogIndirect(&config, &selectedButton, nullptr, nullptr);
@@ -138,6 +144,15 @@ std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog
     return resultFromButtonId(selectedButton);
   }
 
-  return showFallbackMessageBox(title, toWideString(model::fallbackMessageText(dialog)), buttonLabels.size());
+  return showFallbackMessageBox(
+    title,
+    toWideString(model::fallbackMessageText(dialog)),
+    buttonLabels.size(),
+    dialog.severity);
+}
+
+void showErrorMessageDialog(const std::string& title, const std::string& message, const std::string& informativeText)
+{
+  static_cast<void>(showMessageDialog({title, message, informativeText, "OK", "", "", MessageDialogSeverity::Error}));
 }
 } // namespace native_dialog

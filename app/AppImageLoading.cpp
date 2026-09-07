@@ -272,12 +272,17 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDicomSeriesImage(con
 {
   if (series.files.empty()) {
     spdlog::error("Could not load DICOM series {} because it has no files", series.seriesInstanceUid);
+    reportInputLoadFailure("DICOM series", std::nullopt, "The selected DICOM series contains no image files.");
     return {std::nullopt, false};
   }
 
   std::optional<Image> image = dicom::loadSeriesImage(series);
   if (!image) {
     spdlog::error("Could not load DICOM series {}", series.seriesInstanceUid);
+    reportInputLoadFailure(
+      "DICOM series",
+      series.files.front(),
+      "The DICOM series could not be decoded as an image volume.");
     return {std::nullopt, false};
   }
 
@@ -363,6 +368,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
       return {*segUid, true};
     }
     else {
+      reportInputLoadFailure("segmentation", fileName, "The segmentation could not be added to the project.");
       return noSegLoaded;
     }
   }
@@ -458,6 +464,10 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
       "The segmentation from file {} does not have unsigned integer pixel "
       "component type and so will not be loaded.",
       fileName);
+    reportInputLoadFailure(
+      "segmentation",
+      fileName,
+      "Segmentation pixels must use an unsigned integer component type.");
     return noSegLoaded;
   }
 
@@ -470,6 +480,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
     return {*segUid, true};
   }
 
+  reportInputLoadFailure("segmentation", fileName, "The segmentation could not be added to the project.");
   return noSegLoaded;
 }
 
@@ -508,11 +519,19 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
       "The warp field from file {} has fewer than three components per pixel "
       "and so will not be loaded.",
       fileName);
+    reportInputLoadFailure(
+      "deformation field",
+      fileName,
+      "A deformation field must have at least three components per pixel.");
     return noDefLoaded;
   }
 
   if (!def.bufferAsVoid(0, def.timeAxis().clamp(def.settings().activeTimePoint()))) {
     spdlog::error("The warp field from file {} does not expose loaded pixel data and so will not be loaded.", fileName);
+    reportInputLoadFailure(
+      "deformation field",
+      fileName,
+      "The deformation field does not contain accessible pixel data.");
     return noDefLoaded;
   }
 
@@ -537,6 +556,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
     return {*defUid, true};
   }
 
+  reportInputLoadFailure("deformation field", fileName, "The deformation field could not be added to the project.");
   return noDefLoaded;
 }
 
@@ -564,7 +584,16 @@ void EntropyApp::loadAndAssignDeformationField(
         return false;
       }
 
-      const auto [warpUid, loaded] = loadDeformationField(fileName);
+      std::optional<uuids::uuid> warpUid;
+      bool loaded = false;
+      try {
+        std::tie(warpUid, loaded) = loadDeformationField(fileName);
+      }
+      catch (const std::exception& e) {
+        spdlog::error("Exception loading warp field from {}: {}", fileName, e.what());
+        reportInputLoadFailure("deformation field", fileName, e.what());
+        return false;
+      }
       if (!warpUid) {
         spdlog::error("Unable to load warp field from {}", fileName);
         return false;
@@ -604,6 +633,7 @@ bool EntropyApp::loadSerializedImage(
       spdlog::error(
         "Could not resolve DICOM source for series {} because it has no files",
         resolvedDicomSeries->seriesInstanceUid);
+      reportInputLoadFailure("DICOM series", std::nullopt, "The selected DICOM series contains no image files.");
       return false;
     }
     imageToLoad.m_imageFileName = resolvedDicomSeries->files.front();
@@ -613,12 +643,17 @@ bool EntropyApp::loadSerializedImage(
     ownedResolvedDicomSeries = resolveDicomSource(*serializedImage.m_dicomSource);
     if (!ownedResolvedDicomSeries) {
       spdlog::error("Could not resolve DICOM source for series {}", serializedImage.m_dicomSource->m_seriesInstanceUid);
+      reportInputLoadFailure(
+        "DICOM series",
+        std::nullopt,
+        "The DICOM source recorded by the project could not be found or resolved.");
       return false;
     }
     if (ownedResolvedDicomSeries->files.empty()) {
       spdlog::error(
         "Could not resolve DICOM source for series {} because it has no files",
         serializedImage.m_dicomSource->m_seriesInstanceUid);
+      reportInputLoadFailure("DICOM series", std::nullopt, "The resolved DICOM series contains no image files.");
       return false;
     }
     imageToLoad.m_imageFileName = ownedResolvedDicomSeries->files.front();
@@ -641,11 +676,13 @@ bool EntropyApp::loadSerializedImage(
   }
   catch (const std::exception& e) {
     spdlog::error("Exception loading image from {}: {}", imageToLoad.m_imageFileName, e.what());
+    reportInputLoadFailure("image", imageToLoad.m_imageFileName, e.what());
     return false;
   }
 
   if (!imageUid) {
     spdlog::error("Unable to load image from {}", imageToLoad.m_imageFileName);
+    reportInputLoadFailure("image", imageToLoad.m_imageFileName, "The image could not be added to the project.");
     return false;
   }
 
@@ -724,6 +761,10 @@ bool EntropyApp::loadSerializedImage(
             "Unable to read affine transformation from {} for image {}",
             *serializedImage.m_initialAffineFileName,
             *imageUid);
+          reportInputLoadFailure(
+            "affine transformation",
+            *serializedImage.m_initialAffineFileName,
+            "The transformation file could not be read or parsed.");
 
           image->transformations().set_affine_T_subject_fileName(std::nullopt);
         }
@@ -760,6 +801,10 @@ bool EntropyApp::loadSerializedImage(
           "Unable to read manual affine transformation from {} for image {}",
           *serializedImage.m_manualAffineFileName,
           *imageUid);
+        reportInputLoadFailure(
+          "affine transformation",
+          *serializedImage.m_manualAffineFileName,
+          "The transformation file could not be read or parsed.");
         manualAffineAvailable = false;
       }
 
@@ -782,6 +827,7 @@ bool EntropyApp::loadSerializedImage(
     }
     catch (const std::exception& e) {
       spdlog::error("Exception loading inverse warp from {}: {}", *serializedImage.m_inverseWarpFieldPath, e.what());
+      reportInputLoadFailure("inverse deformation field", *serializedImage.m_inverseWarpFieldPath, e.what());
     }
 
     do {
@@ -849,6 +895,7 @@ bool EntropyApp::loadSerializedImage(
     }
     catch (const std::exception& e) {
       spdlog::error("Exception loading forward warp from {}: {}", *serializedImage.m_forwardWarpFieldPath, e.what());
+      reportInputLoadFailure("forward deformation field", *serializedImage.m_forwardWarpFieldPath, e.what());
     }
 
     do {
@@ -937,6 +984,10 @@ bool EntropyApp::loadSerializedImage(
         "Unable to open annotations from JSON file {} for image {}",
         *serializedImage.m_annotationsFileName,
         *imageUid);
+      reportInputLoadFailure(
+        "annotations",
+        *serializedImage.m_annotationsFileName,
+        "The annotation JSON file could not be read or parsed.");
     }
   }
 
@@ -959,6 +1010,9 @@ bool EntropyApp::loadSerializedImage(
     else if (lm.m_csvFileName && serialize::openLandmarkGroupCsvFile(landmarks, *lm.m_csvFileName)) {
       loadedLandmarks = true;
       spdlog::info("Loaded landmarks from CSV file {} for image {}", *lm.m_csvFileName, *imageUid);
+    }
+    else if (lm.m_csvFileName) {
+      reportInputLoadFailure("landmarks", *lm.m_csvFileName, "The landmark CSV file could not be read or parsed.");
     }
 
     if (loadedLandmarks) {
@@ -1078,6 +1132,7 @@ bool EntropyApp::loadSerializedImage(
     }
     catch (const std::exception& e) {
       spdlog::error("Exception loading segmentation from {}: {}", serializedSeg.m_segFileName, e.what());
+      reportInputLoadFailure("segmentation", serializedSeg.m_segFileName, e.what());
       continue; // Skip this segmentation
     }
 
@@ -1247,7 +1302,7 @@ void EntropyApp::performLoadImageFiles(const std::vector<fs::path>& fileNames)
     return;
   }
 
-  recordRecentImageGroup(imageFiles);
+  beginPendingRecentDataLoad(recent_data::Kind::Images, {});
 
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
     closeProject();
@@ -1278,6 +1333,7 @@ void EntropyApp::continueRasterImageHeaderPreflight()
       Image::MultiComponentBufferType::SeparateImages);
     if (!header) {
       spdlog::error("Could not read image header from {}", image.m_imageFileName);
+      reportInputLoadFailure("image", image.m_imageFileName, "The image header could not be read.");
       return false;
     }
 
@@ -1362,6 +1418,7 @@ void EntropyApp::continueRasterImageHeaderPreflight()
     m_pendingAddedImageUids.clear();
 
     if (imagesToAdd.empty()) {
+      clearPendingRecentDataLoad();
       m_preserveLayoutsOnImagesReady = false;
       m_glfw.postEmptyEvent();
       return;
@@ -1372,7 +1429,9 @@ void EntropyApp::continueRasterImageHeaderPreflight()
       [this, imagesToAdd = std::move(imagesToAdd)]() {
         const std::size_t previousNumImages = m_data.numImages();
         std::vector<uuids::uuid> addedImageUids;
+        std::vector<fs::path> loadedImageFiles;
         addedImageUids.reserve(imagesToAdd.size());
+        loadedImageFiles.reserve(imagesToAdd.size());
 
         for (const auto& serializedImage : imagesToAdd) {
           if (m_imageLoadCancelled) {
@@ -1389,6 +1448,7 @@ void EntropyApp::continueRasterImageHeaderPreflight()
 
           if (const auto addedImageUid = m_data.imageUid(m_data.numImages() - 1)) {
             addedImageUids.push_back(*addedImageUid);
+            loadedImageFiles.push_back(serializedImage.m_imageFileName);
           }
         }
 
@@ -1401,9 +1461,11 @@ void EntropyApp::continueRasterImageHeaderPreflight()
         m_data.setRainbowColorsForAllLandmarkGroups();
         m_data.setProject(createProjectSnapshot());
         m_pendingAddedImageUids = std::move(addedImageUids);
+        m_pendingRecentDataLoad.replacePaths(std::move(loadedImageFiles));
         return true;
       },
       [this]() {
+        clearPendingRecentDataLoad();
         m_preserveLayoutsOnImagesReady = false;
         m_pendingAddedImageUids.clear();
         m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
@@ -1437,6 +1499,7 @@ void EntropyApp::handleRasterImageHeaderDecision(
         m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
         m_pendingRasterProject = std::nullopt;
         m_pendingRasterImageIndex = 0;
+        clearPendingRecentDataLoad();
         m_glfw.postEmptyEvent();
         return;
       }
@@ -1513,9 +1576,8 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
     return;
   }
 
-  recordRecentImageGroup(imageFiles);
-
   if (std::any_of(imageFiles.begin(), imageFiles.end(), isStandardRasterImageFile)) {
+    beginPendingRecentDataLoad(recent_data::Kind::Images, {});
     m_pendingRasterImageHeaderContext = RasterImageHeaderContext::AddImage;
     m_pendingRasterProject = std::nullopt;
     m_pendingRasterAddImages.clear();
@@ -1541,6 +1603,8 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
 
     if (!header) {
       spdlog::error("Could not read image header from {}", imageFiles.front());
+      reportInputLoadFailure("image", imageFiles.front(), "The image header could not be read.");
+      clearPendingRecentDataLoad();
       return;
     }
 
@@ -1562,13 +1626,16 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
 
   m_preserveLayoutsOnImagesReady = true;
   m_pendingAddedImageUids.clear();
+  beginPendingRecentDataLoad(recent_data::Kind::Images, {});
 
   startAsyncImageLoad(
     imageFiles.size() == 1 ? "Adding image..." : "Adding images...",
     [this, imageFiles]() {
       const std::size_t previousNumImages = m_data.numImages();
       std::vector<uuids::uuid> addedImageUids;
+      std::vector<fs::path> loadedImageFiles;
       addedImageUids.reserve(imageFiles.size());
+      loadedImageFiles.reserve(imageFiles.size());
 
       for (const auto& fileName : imageFiles) {
         if (m_imageLoadCancelled) {
@@ -1588,6 +1655,7 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
 
         if (const auto addedImageUid = m_data.imageUid(m_data.numImages() - 1)) {
           addedImageUids.push_back(*addedImageUid);
+          loadedImageFiles.push_back(fileName);
         }
       }
 
@@ -1600,9 +1668,11 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
       m_data.setRainbowColorsForAllLandmarkGroups();
       m_data.setProject(createProjectSnapshot());
       m_pendingAddedImageUids = std::move(addedImageUids);
+      m_pendingRecentDataLoad.replacePaths(std::move(loadedImageFiles));
       return true;
     },
     [this]() {
+      clearPendingRecentDataLoad();
       m_preserveLayoutsOnImagesReady = false;
       m_pendingAddedImageUids.clear();
       m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
@@ -1688,8 +1758,6 @@ void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, b
     return;
   }
 
-  recordRecentDicomGroup(scanInputs);
-
   spdlog::info("Scanning {} DICOM input path(s)", scanInputs.size());
   for (const auto& inputPath : scanInputs) {
     spdlog::info("Scanning DICOM input {}", inputPath);
@@ -1701,6 +1769,7 @@ void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, b
   }
 
   m_pendingDicomScanAddToExistingProject = addToExistingProject;
+  m_pendingDicomRecentPaths = scanInputs;
   auto& guiDataLocal = m_data.guiData();
   guiDataLocal.m_dicomSeriesScanInProgress = true;
   guiDataLocal.m_pendingDicomScanRoot = scanInputs.front();
@@ -1743,14 +1812,21 @@ void EntropyApp::pollDicomSeriesScan()
   m_futureDiscoverDicom = {};
 
   auto& guiDataLocal = m_data.guiData();
+  const fs::path dicomScanRoot = guiDataLocal.m_pendingDicomScanRoot;
   guiDataLocal.m_dicomSeriesScanInProgress = false;
   guiDataLocal.m_pendingDicomScanRoot = fs::path{};
 
   if (result.series.empty()) {
+    m_pendingDicomRecentPaths.clear();
     for (const auto& warning : result.warnings) {
       spdlog::warn("DICOM scan warning: {}", warning);
     }
     spdlog::error("No DICOM image series found");
+    reportInputLoadFailure(
+      "DICOM input",
+      dicomScanRoot.empty() ? std::nullopt : std::optional<fs::path>{dicomScanRoot},
+      result.warnings.empty() ? "No loadable DICOM image series was found."
+                              : "No loadable DICOM image series was found. " + result.warnings.front());
     m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     m_glfw.postEmptyEvent();
     return;
@@ -1786,8 +1862,12 @@ void EntropyApp::loadDicomSeries(
   bool addToExistingProject)
 {
   if (series.empty()) {
+    m_pendingDicomRecentPaths.clear();
     return;
   }
+
+  beginPendingRecentDataLoad(recent_data::Kind::Dicom, std::move(m_pendingDicomRecentPaths));
+  m_pendingDicomRecentPaths.clear();
 
   spdlog::info("{} {} selected DICOM series", addToExistingProject ? "Adding" : "Opening", series.size());
   for (const auto& seriesInfo : series) {
@@ -1877,6 +1957,7 @@ void EntropyApp::loadDicomSeries(
       return true;
     },
     [this, addToExistingProject]() {
+      clearPendingRecentDataLoad();
       if (!addToExistingProject) {
         m_data.clearProjectData();
         m_data.state().setProjectLoadState(ProjectLoadState::Failed);
@@ -1897,6 +1978,7 @@ void EntropyApp::addSegmentationFile(const fs::path& fileName)
   const auto activeImageUid = m_data.activeImageUid();
   if (!activeImageUid) {
     spdlog::error("Cannot add segmentation {} because there is no active image", fileName);
+    reportInputLoadFailure("segmentation", fileName, "No active image is available to receive the segmentation.");
     return;
   }
 
@@ -1907,11 +1989,13 @@ void EntropyApp::addSegmentationFileToImage(const fs::path& fileName, const uuid
 {
   if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
     spdlog::error("Cannot add segmentation {} to image {} because no project is loaded", fileName, imageUid);
+    reportInputLoadFailure("segmentation", fileName, "No project is currently loaded.");
     return;
   }
 
   if (!m_data.image(imageUid)) {
     spdlog::error("Cannot add segmentation {} to invalid image {}", fileName, imageUid);
+    reportInputLoadFailure("segmentation", fileName, "The selected target image is no longer available.");
     return;
   }
 
@@ -1924,6 +2008,7 @@ void EntropyApp::addSegmentationFileToImage(const fs::path& fileName, const uuid
   }
   catch (const std::exception& e) {
     spdlog::error("Exception adding segmentation from {} to image {}: {}", fileName, imageUid, e.what());
+    reportInputLoadFailure("segmentation", fileName, e.what());
     return;
   }
 
@@ -1934,6 +2019,10 @@ void EntropyApp::addSegmentationFileToImage(const fs::path& fileName, const uuid
 
   if (!m_callbackHandler.assignSegToImageWithColorTableAndTextures(imageUid, *segUid, isNewSeg, isNewSeg)) {
     spdlog::error("Could not assign segmentation {} from {} to image {}", *segUid, fileName, imageUid);
+    reportInputLoadFailure(
+      "segmentation",
+      fileName,
+      "The segmentation loaded, but could not be assigned to the selected image.");
     return;
   }
 
@@ -2086,6 +2175,9 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
     spdlog::critical("Could not load reference image from {}", projectToLoad.m_referenceImage.m_imageFileName);
     return false;
   }
+  if (m_pendingRecentDataLoad.kind() == recent_data::Kind::Images) {
+    m_pendingRecentDataLoad.appendPath(projectToLoad.m_referenceImage.m_imageFileName);
+  }
 
   if (m_imageLoadCancelled) {
     return false;
@@ -2094,6 +2186,9 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
   for (const auto& additionalImage : projectToLoad.m_additionalImages) {
     if (!loadSerializedImage(additionalImage, false)) {
       spdlog::error("Could not load additional image from {}; skipping it", additionalImage.m_imageFileName);
+    }
+    else if (m_pendingRecentDataLoad.kind() == recent_data::Kind::Images) {
+      m_pendingRecentDataLoad.appendPath(additionalImage.m_imageFileName);
     }
 
     if (m_imageLoadCancelled) {

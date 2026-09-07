@@ -6,6 +6,7 @@
 #include "ui/ImageExport.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
+#include "ui/dialogs/InputLoadErrorDialog.h"
 #include "ui/widgets/Widgets.h"
 #include "ui/widgets/ImageHistogram.h"
 
@@ -109,6 +110,10 @@ void renderLandmarkGroupHeader(
         }
         else {
           spdlog::error("Error importing landmarks from CSV file {}", *selectedFile);
+          native_dialog::showInputLoadErrorDialog(
+            {.inputType = "landmarks",
+             .path = *selectedFile,
+             .cause = "The landmark CSV file could not be read or parsed."});
         }
       }
     }

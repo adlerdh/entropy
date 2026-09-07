@@ -10,7 +10,7 @@ namespace native_dialog::model
 /**
  * @brief Return the ordered button labels that should be shown for a message dialog.
  *
- * @param dialog Dialog definition with two required buttons and one optional third button.
+ * @param dialog Dialog definition with one or more buttons.
  * @return Non-empty button labels in display order.
  */
 std::vector<std::string> buttonLabels(const MessageDialog& dialog);

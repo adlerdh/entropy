@@ -2,6 +2,7 @@
 
 #include "logic/app/LoadingStatusItems.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "ui/dialogs/InputLoadErrorDialog.h"
 
 #include <spdlog/spdlog.h>
 
@@ -13,6 +14,39 @@
 #include <utility>
 
 namespace fs = std::filesystem;
+
+void EntropyApp::reportInputLoadFailure(std::string inputType, std::optional<fs::path> path, std::string cause)
+{
+  {
+    std::scoped_lock lock(m_pendingInputLoadFailuresMutex);
+    m_pendingInputLoadFailures.push_back(
+      {.inputType = std::move(inputType), .path = std::move(path), .cause = std::move(cause)});
+  }
+  m_glfw.postEmptyEvent();
+}
+
+void EntropyApp::showNextInputLoadFailure()
+{
+  std::optional<PendingInputLoadFailure> failure;
+  bool moreFailuresPending = false;
+  {
+    std::scoped_lock lock(m_pendingInputLoadFailuresMutex);
+    if (!m_pendingInputLoadFailures.empty()) {
+      failure = std::move(m_pendingInputLoadFailures.front());
+      m_pendingInputLoadFailures.pop_front();
+      moreFailuresPending = !m_pendingInputLoadFailures.empty();
+    }
+  }
+  if (failure) {
+    native_dialog::showInputLoadErrorDialog(
+      {.inputType = std::move(failure->inputType),
+       .path = std::move(failure->path),
+       .cause = std::move(failure->cause)});
+  }
+  if (moreFailuresPending) {
+    m_glfw.postEmptyEvent();
+  }
+}
 
 void EntropyApp::loadImagesFromParams(const InputParams& params)
 {
@@ -132,7 +166,7 @@ void EntropyApp::startAsyncImageLoad(
 
   m_futureLoadProject = std::async(
     std::launch::async,
-    [loadTask = std::move(loadTask), onProjectLoadingDone = std::move(onProjectLoadingDone)]() mutable {
+    [this, loadTask = std::move(loadTask), onProjectLoadingDone = std::move(onProjectLoadingDone)]() mutable {
       bool loaded = false;
       try {
         if (loadTask) {
@@ -141,9 +175,11 @@ void EntropyApp::startAsyncImageLoad(
       }
       catch (const std::exception& e) {
         spdlog::error("Exception while loading images: {}", e.what());
+        reportInputLoadFailure("input data", std::nullopt, e.what());
       }
       catch (...) {
         spdlog::error("Unknown exception while loading images");
+        reportInputLoadFailure("input data", std::nullopt, "An unknown error occurred while loading the input.");
       }
 
       onProjectLoadingDone(loaded);

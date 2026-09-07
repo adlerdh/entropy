@@ -19,13 +19,15 @@ namespace native_dialog {
 std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog) {
   @autoreleasepool {
     NSAlert* alert = [[NSAlert alloc] init];
-    [alert setAlertStyle:NSAlertStyleWarning];
+    [alert setAlertStyle:dialog.severity == MessageDialogSeverity::Error ? NSAlertStyleCritical : NSAlertStyleWarning];
     [alert setMessageText:toNSString(dialog.title)];
     const std::string informativeText = model::combinedInformativeText(dialog.message, dialog.informativeText);
     [alert setInformativeText:toNSString(informativeText)];
 
     [alert addButtonWithTitle:toNSString(dialog.firstButton)];
-    [alert addButtonWithTitle:toNSString(dialog.secondButton)];
+    if (!dialog.secondButton.empty()) {
+      [alert addButtonWithTitle:toNSString(dialog.secondButton)];
+    }
     if (!dialog.thirdButton.empty()) {
       [alert addButtonWithTitle:toNSString(dialog.thirdButton)];
     }
@@ -43,5 +45,9 @@ std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog
   }
 
   return std::nullopt;
+}
+
+void showErrorMessageDialog(const std::string& title, const std::string& message, const std::string& informativeText) {
+  static_cast<void>(showMessageDialog({title, message, informativeText, "OK", "", "", MessageDialogSeverity::Error}));
 }
 }  // namespace native_dialog

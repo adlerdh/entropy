@@ -20,6 +20,7 @@ void EntropyApp::setCallbacks()
     [this]() { m_rendering.render(); },
     [this]() { m_imgui.render(); },
     [this]() {
+      showNextInputLoadFailure();
       pollDicomSeriesScan();
       m_itkSnapSync.update();
       m_entropyInstanceSync.update();
@@ -58,11 +59,17 @@ void EntropyApp::setCallbacks()
     addSegmentationFileToImage(fileName, imageUid);
   };
   imguiCallbacks.project.loadDeformationField = [this](const fs::path& fileName) -> std::optional<uuids::uuid> {
-    const auto [defUid, loaded] = loadDeformationField(fileName);
-    if (defUid && loaded) {
-      createImageTextures(m_data, std::vector<uuids::uuid>{*defUid});
+    try {
+      const auto [defUid, loaded] = loadDeformationField(fileName);
+      if (defUid && loaded) {
+        createImageTextures(m_data, std::vector<uuids::uuid>{*defUid});
+      }
+      return defUid;
     }
-    return defUid;
+    catch (const std::exception& e) {
+      reportInputLoadFailure("deformation field", fileName, e.what());
+      return std::nullopt;
+    }
   };
   imguiCallbacks.project.loadAndAssignDeformationField = [this](
                                                            const uuids::uuid& imageUid,

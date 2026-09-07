@@ -5,6 +5,7 @@
 
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
+#include "logic/app/RecentDataLoad.h"
 #include "logic/app/Settings.h"
 #include "logic/app/State.h"
 #include "logic/sync/EntropyInstanceSync.h"
@@ -21,9 +22,11 @@
 
 #include <atomic>
 #include <cstdint>
+#include <deque>
 #include <filesystem>
 #include <functional>
 #include <future>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -259,6 +262,16 @@ private:
   /** @brief Hide and clear the loading-status popup. */
   void hideLoadingStatus();
 
+  /** @brief Queue a user-visible native error dialog for a failed input load. Thread-safe. */
+  void reportInputLoadFailure(std::string inputType, std::optional<std::filesystem::path> path, std::string cause);
+
+  /** @brief Show the next queued input-load failure on the main thread. */
+  void showNextInputLoadFailure();
+
+  void beginPendingRecentDataLoad(recent_data::Kind kind, std::vector<std::filesystem::path> paths);
+  void commitPendingRecentDataLoad();
+  void clearPendingRecentDataLoad();
+
   /** @brief Begin loading a serialized project, including any large-image preflight prompts. */
   void beginLoadProject(serialize::EntropyProject project, std::optional<std::filesystem::path> projectFileName);
 
@@ -379,8 +392,27 @@ private:
   /// Background DICOM discovery task, when a scan is active.
   std::future<dicom::DiscoverResult> m_futureDiscoverDicom;
 
+  struct PendingInputLoadFailure
+  {
+    std::string inputType;
+    std::optional<std::filesystem::path> path;
+    std::string cause;
+  };
+
+  /// Input-load failures waiting to be shown as native dialogs on the main thread.
+  std::deque<PendingInputLoadFailure> m_pendingInputLoadFailures;
+
+  /// Protects pending input-load failures reported by asynchronous loaders.
+  std::mutex m_pendingInputLoadFailuresMutex;
+
   /// Whether selections from the active DICOM scan should be added to the current project.
   bool m_pendingDicomScanAddToExistingProject = false;
+
+  /// DICOM paths retained between discovery and the user's series selection.
+  std::vector<std::filesystem::path> m_pendingDicomRecentPaths;
+
+  /// User-initiated input load awaiting successful completion before entering Recent data.
+  recent_data::PendingLoad m_pendingRecentDataLoad;
 
   /// DICOM source metadata keyed by loaded image UID for project serialization.
   std::unordered_map<uuids::uuid, serialize::DicomSource> m_dicomSourcesByImageUid;

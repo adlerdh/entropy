@@ -227,6 +227,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
             appendAsyncEvent(
               registration::ProgressEventKind::Warning,
               "Registration output does not exist and was not imported: " + step.path.string());
+            reportInputLoadFailure("registration output", step.path, "The expected output file does not exist.");
             continue;
           }
 
@@ -245,6 +246,10 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to parse or apply affine transform: " + step.path.string());
+                reportInputLoadFailure(
+                  "affine transformation",
+                  step.path,
+                  "The registration transform could not be parsed or applied.");
               }
               break;
             }
@@ -269,6 +274,12 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to import inverse warp: " + step.path.string());
+                if (warpUid) {
+                  reportInputLoadFailure(
+                    "inverse deformation field",
+                    step.path,
+                    "The deformation field loaded, but could not be assigned to the target image.");
+                }
               }
               break;
             }
@@ -293,6 +304,12 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to import forward warp: " + step.path.string());
+                if (warpUid) {
+                  reportInputLoadFailure(
+                    "forward deformation field",
+                    step.path,
+                    "The deformation field loaded, but could not be assigned to the target image.");
+                }
               }
               break;
             }
@@ -332,6 +349,10 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to import warped segmentation: " + step.path.string());
+                reportInputLoadFailure(
+                  "segmentation",
+                  step.path,
+                  "The warped segmentation could not be loaded or assigned to its target image.");
               }
               break;
             }
@@ -361,6 +382,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
           hadError = true;
           appendAsyncEvent(registration::ProgressEventKind::Warning, e.what());
           spdlog::error("Exception while importing registration output for job {}: {}", jobId, e.what());
+          reportInputLoadFailure("registration output", step.path, e.what());
           break;
         }
       }
