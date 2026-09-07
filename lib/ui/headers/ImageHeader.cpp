@@ -7,6 +7,7 @@
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
+#include "ui/dialogs/WarpFieldAssignment.h"
 #include "ui/widgets/Widgets.h"
 #include "ui/widgets/ImageHistogram.h"
 
@@ -70,12 +71,6 @@ using namespace ui::headers;
 
 namespace
 {
-struct WorldAabb
-{
-  glm::vec3 min{std::numeric_limits<float>::max()};
-  glm::vec3 max{std::numeric_limits<float>::lowest()};
-};
-
 bool imageIsOnlyNonWarpImage(const AppData& appData, const uuids::uuid& imageUid)
 {
   const uuid_range_t warpCandidateUids = appData.warpFieldCandidateUidsOrdered();
@@ -148,29 +143,6 @@ bool warpStrengthSlider(float* strength, bool allowExaggerated)
   return false;
 }
 
-WorldAabb imageWorldAabb(const Image& image)
-{
-  WorldAabb box;
-  const glm::mat4 world_T_subject = image.transformations().worldDef_T_subject();
-  for (const glm::vec3& corner : image.header().subjectBBoxCorners()) {
-    const glm::vec3 worldCorner{world_T_subject * glm::vec4{corner, 1.0f}};
-    box.min = glm::min(box.min, worldCorner);
-    box.max = glm::max(box.max, worldCorner);
-  }
-  return box;
-}
-
-bool worldAabbContains(const WorldAabb& domain, const WorldAabb& target, float tolerance)
-{
-  return glm::all(glm::lessThanEqual(domain.min, target.min + glm::vec3{tolerance})) &&
-         glm::all(glm::greaterThanEqual(domain.max, target.max - glm::vec3{tolerance}));
-}
-
-bool vec3NearlyEqual(const glm::vec3& a, const glm::vec3& b, float epsilon)
-{
-  return glm::all(glm::epsilonEqual(a, b, epsilon));
-}
-
 std::optional<glm::quat> rotationFromAngleAxis(float angleDegrees, glm::vec3 axis)
 {
   if (!std::isfinite(angleDegrees) || !std::isfinite(axis.x) || !std::isfinite(axis.y) || !std::isfinite(axis.z)) {
@@ -196,117 +168,6 @@ glm::vec3 editableRotationAxis(glm::quat rotation)
     return glm::vec3{0.0f, 0.0f, 1.0f};
   }
   return glm::normalize(axis);
-}
-
-std::vector<std::string> warpFieldWarnings(const Image& field, const Image& target)
-{
-  constexpr float k_geometryEpsilon = 1.0e-4f;
-  constexpr float k_domainToleranceMm = 1.0e-3f;
-
-  std::vector<std::string> warnings;
-  if (field.header().numComponentsPerPixel() < 3) {
-    warnings.emplace_back("The selected warp field has fewer than three components per voxel.");
-    return warnings;
-  }
-
-  if (field.header().pixelDimensions() != target.header().pixelDimensions()) {
-    warnings.emplace_back("The warp field grid dimensions differ from the expected image.");
-  }
-  if (!vec3NearlyEqual(field.header().spacing(), target.header().spacing(), k_geometryEpsilon)) {
-    warnings.emplace_back("The warp field voxel spacing differs from the expected image.");
-  }
-  if (!vec3NearlyEqual(field.header().origin(), target.header().origin(), k_geometryEpsilon)) {
-    warnings.emplace_back("The warp field origin differs from the expected image.");
-  }
-  if (
-    !vec3NearlyEqual(field.header().directions()[0], target.header().directions()[0], k_geometryEpsilon) ||
-    !vec3NearlyEqual(field.header().directions()[1], target.header().directions()[1], k_geometryEpsilon) ||
-    !vec3NearlyEqual(field.header().directions()[2], target.header().directions()[2], k_geometryEpsilon))
-  {
-    warnings.emplace_back("The warp field direction matrix differs from the expected image.");
-  }
-  if (!worldAabbContains(imageWorldAabb(field), imageWorldAabb(target), k_domainToleranceMm)) {
-    warnings.emplace_back("The warp field physical domain does not fully cover the expected image.");
-  }
-
-  return warnings;
-}
-
-std::string inverseWarpWarningDetail(std::string_view warning)
-{
-  const std::vector<std::pair<std::string, std::string>> replacements{
-    {"The selected warp field has fewer than three components per voxel.", "Fewer than three components per voxel"},
-    {"The warp field grid dimensions differ from the expected image.", "Grid dimensions differ"},
-    {"The warp field voxel spacing differs from the expected image.", "Voxel spacing differs"},
-    {"The warp field origin differs from the expected image.", "Origin differs"},
-    {"The warp field direction matrix differs from the expected image.", "Direction matrix differs"},
-    {"The warp field physical domain does not fully cover the expected image.",
-     "Physical domain does not fully cover the reference"}};
-  for (const auto& [from, to] : replacements) {
-    if (warning == from) {
-      return to;
-    }
-  }
-  return std::string{warning};
-}
-
-std::vector<std::string> inverseWarpFieldWarnings(const Image& field, const Image& referenceImage)
-{
-  const std::vector<std::string> details = warpFieldWarnings(field, referenceImage);
-  if (details.empty()) {
-    return {};
-  }
-
-  std::vector<std::string> warnings;
-  warnings.reserve(details.size() + 1u);
-  warnings.emplace_back("Warning! The inverse warp field differs from the reference:");
-  std::transform(details.begin(), details.end(), std::back_inserter(warnings), inverseWarpWarningDetail);
-  return warnings;
-}
-
-std::vector<std::string>
-forwardWarpFieldWarnings(const Image& field, const Image& movingImage, const Image* referenceImage)
-{
-  std::vector<std::string> movingWarnings = warpFieldWarnings(field, movingImage);
-  if (movingWarnings.empty()) {
-    return {};
-  }
-  if (referenceImage && warpFieldWarnings(field, *referenceImage).empty()) {
-    return {};
-  }
-
-  movingWarnings.insert(
-    movingWarnings.begin(),
-    "The forward warp field does not match either the moving-image space or the reference-image space.");
-  return movingWarnings;
-}
-
-std::string joinedWarnings(const std::vector<std::string>& warnings)
-{
-  std::string text;
-  for (const std::string& warning : warnings) {
-    if (!text.empty()) {
-      text += '\n';
-    }
-    text += "- " + warning;
-  }
-  return text;
-}
-
-bool confirmWarpFieldWarnings(const char* title, const std::vector<std::string>& warnings)
-{
-  if (warnings.empty()) {
-    return true;
-  }
-
-  const auto result = native_dialog::showMessageDialog(
-    {title,
-     "The selected warp field may not match the expected image space.",
-     joinedWarnings(warnings),
-     "Use warp field",
-     "Cancel",
-     ""});
-  return !result || native_dialog::MessageDialogResult::FirstButton == *result;
 }
 
 bool confirmResetAffineTransformation(
@@ -2889,8 +2750,8 @@ void renderImageHeader(
         return false;
       }
 
-      const std::vector<std::string> warnings = inverseWarpFieldWarnings(*def, *assignmentReferenceImage);
-      if (!confirmWarpFieldWarnings("Inverse warp warning", warnings)) {
+      const std::vector<std::string> warnings = warp_field_assignment::inverseWarnings(*def, *assignmentReferenceImage);
+      if (!warp_field_assignment::confirm("Inverse warp warning", warnings)) {
         return false;
       }
       if (!appData.assignInverseWarpUidToImage(imageUid, defUid, referenceUid)) {
@@ -2907,8 +2768,8 @@ void renderImageHeader(
         return false;
       }
 
-      const std::vector<std::string> warnings = forwardWarpFieldWarnings(*def, *image, appReferenceImage);
-      if (!confirmWarpFieldWarnings("Forward warp warning", warnings)) {
+      const std::vector<std::string> warnings = warp_field_assignment::forwardWarnings(*def, *image, appReferenceImage);
+      if (!warp_field_assignment::confirm("Forward warp warning", warnings)) {
         return false;
       }
       if (!appData.assignForwardWarpUidToImage(imageUid, defUid)) {
@@ -3020,7 +2881,7 @@ void renderImageHeader(
 
     if (activeInverseWarpUid && referenceImage) {
       if (const Image* def = appData.warpField(*activeInverseWarpUid)) {
-        renderInlineWarpFieldWarnings(inverseWarpFieldWarnings(*def, *referenceImage));
+        renderInlineWarpFieldWarnings(warp_field_assignment::inverseWarnings(*def, *referenceImage));
       }
     }
 
@@ -3053,7 +2914,7 @@ void renderImageHeader(
 
     if (activeForwardWarpUid) {
       if (const Image* forwardWarp = appData.warpField(*activeForwardWarpUid)) {
-        renderInlineWarpFieldWarnings(forwardWarpFieldWarnings(*forwardWarp, *image, referenceImage));
+        renderInlineWarpFieldWarnings(warp_field_assignment::forwardWarnings(*forwardWarp, *image, referenceImage));
         if (
           referenceImage && !deformation_warp::warpFieldMatchesImageDomain(*forwardWarp, *image) &&
           deformation_warp::warpFieldMatchesImageDomain(*forwardWarp, *referenceImage))

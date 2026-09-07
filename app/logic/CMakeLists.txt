@@ -5,10 +5,12 @@ target_sources(entropy PRIVATE
   app/DataHelper.cpp
   app/ImageScaleInteraction.cpp
   app/ImageSelectionPolicy.cpp
+  app/LargeImagePolicy.cpp
   app/Logging.cpp
   app/LoadingStatusItems.cpp
   app/ParcellationLabelTable.cpp
   app/ProjectLayoutDelta.cpp
+  app/ProjectImageSequence.cpp
   app/ProjectSnapshotComparison.cpp
   app/ProjectSnapshotSettings.cpp
   app/Settings.cpp

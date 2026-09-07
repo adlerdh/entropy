@@ -7,16 +7,13 @@
 #include "logic/app/ProjectSnapshotSettings.h"
 #include "logic/app/UserPreferences.h"
 #include "logic/states/FsmList.hpp"
-#include "ui/dialogs/NativeMessageDialogs.h"
+#include "ui/dialogs/WarpFieldAssignment.h"
 
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
-#include <glm/gtc/epsilon.hpp>
-
 #include <algorithm>
 #include <functional>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -24,66 +21,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-struct WarpWarningAabb
-{
-  glm::vec3 min{std::numeric_limits<float>::max()};
-  glm::vec3 max{std::numeric_limits<float>::lowest()};
-};
-
-constexpr float k_warpGeometryEpsilon = 1.0e-4f;
-constexpr float k_warpDomainToleranceMm = 0.5f;
-
-WarpWarningAabb warpWarningImageWorldAabb(const Image& image)
-{
-  WarpWarningAabb box;
-  const glm::mat4 world_T_subject = image.transformations().worldDef_T_subject();
-  for (const glm::vec3& corner : image.header().subjectBBoxCorners()) {
-    const glm::vec3 worldCorner{world_T_subject * glm::vec4{corner, 1.0f}};
-    box.min = glm::min(box.min, worldCorner);
-    box.max = glm::max(box.max, worldCorner);
-  }
-  return box;
-}
-
-bool warpWarningAabbContains(const WarpWarningAabb& domain, const WarpWarningAabb& target)
-{
-  return glm::all(glm::lessThanEqual(domain.min, target.min + glm::vec3{k_warpDomainToleranceMm})) &&
-         glm::all(glm::greaterThanEqual(domain.max, target.max - glm::vec3{k_warpDomainToleranceMm}));
-}
-
-bool warpWarningVec3NearlyEqual(const glm::vec3& a, const glm::vec3& b)
-{
-  return glm::all(glm::epsilonEqual(a, b, k_warpGeometryEpsilon));
-}
-
-std::vector<std::string> rawWarpAssignmentWarnings(const Image& field, const Image& target)
-{
-  std::vector<std::string> warnings;
-  if (field.header().numComponentsPerPixel() < 3) {
-    warnings.emplace_back("Fewer than three components per voxel");
-  }
-  if (field.header().pixelDimensions() != target.header().pixelDimensions()) {
-    warnings.emplace_back("Grid dimensions differ");
-  }
-  if (!warpWarningVec3NearlyEqual(field.header().spacing(), target.header().spacing())) {
-    warnings.emplace_back("Voxel spacing differs");
-  }
-  if (!warpWarningVec3NearlyEqual(field.header().origin(), target.header().origin())) {
-    warnings.emplace_back("Origin differs");
-  }
-  if (
-    !warpWarningVec3NearlyEqual(field.header().directions()[0], target.header().directions()[0]) ||
-    !warpWarningVec3NearlyEqual(field.header().directions()[1], target.header().directions()[1]) ||
-    !warpWarningVec3NearlyEqual(field.header().directions()[2], target.header().directions()[2]))
-  {
-    warnings.emplace_back("Direction matrix differs");
-  }
-  if (!warpWarningAabbContains(warpWarningImageWorldAabb(field), warpWarningImageWorldAabb(target))) {
-    warnings.emplace_back("Physical domain does not fully cover the reference");
-  }
-  return warnings;
-}
-
 void removeDefaultLayouts(WindowData& windowData, std::vector<std::size_t> removedLayoutIndices)
 {
   std::ranges::sort(removedLayoutIndices, std::greater<>{});
@@ -106,88 +43,7 @@ void applyModifiedDefaultLayouts(
   }
 }
 
-std::vector<std::string> inverseWarpAssignmentWarnings(const Image& field, const Image& referenceImage)
-{
-  std::vector<std::string> warnings = rawWarpAssignmentWarnings(field, referenceImage);
-  if (!warnings.empty()) {
-    warnings.insert(warnings.begin(), "Warning! The inverse warp field differs from the reference:");
-  }
-  return warnings;
-}
-
-std::vector<std::string>
-forwardWarpAssignmentWarnings(const Image& field, const Image& movingImage, const Image* referenceImage)
-{
-  std::vector<std::string> movingWarnings = rawWarpAssignmentWarnings(field, movingImage);
-  if (movingWarnings.empty()) {
-    return {};
-  }
-  if (referenceImage && rawWarpAssignmentWarnings(field, *referenceImage).empty()) {
-    return {};
-  }
-  movingWarnings.insert(
-    movingWarnings.begin(),
-    "The forward warp field does not match either the moving-image space or the reference-image space.");
-  return movingWarnings;
-}
-
-std::string joinWarpAssignmentWarnings(const std::vector<std::string>& warnings)
-{
-  std::string text;
-  for (std::size_t i = 0; i < warnings.size(); ++i) {
-    if (!text.empty()) {
-      text += "\n";
-    }
-    text += i == 0 ? warnings.at(i) : "- " + warnings.at(i);
-  }
-  return text;
-}
-
-bool confirmWarpAssignmentWarnings(const char* title, const std::vector<std::string>& warnings)
-{
-  if (warnings.empty()) {
-    return true;
-  }
-  const auto result = native_dialog::showMessageDialog(
-    {title,
-     "The selected warp field may not match the expected image space.",
-     joinWarpAssignmentWarnings(warnings),
-     "Use warp field",
-     "Cancel",
-     ""});
-  return !result || native_dialog::MessageDialogResult::FirstButton == *result;
-}
 } // namespace
-
-EntropyApp::EntropyApp()
-  : m_imageLoadCancelled(false)
-  , m_imagesReady(false)
-  , m_imageLoadFailed(false)
-  , m_glfw(this, GL_VERSION_MAJOR, GL_VERSION_MINOR) // GLFW creates the OpenGL context
-  , m_rendering(m_data)                              // Requires OpenGL context
-  , m_callbackHandler(m_data, m_glfw, m_rendering)   // Requires OpenGL context
-  , m_itkSnapSync(m_data)
-  , m_entropyInstanceSync(m_data)
-  , m_imgui(m_glfw.window(), m_data, m_callbackHandler) // Requires OpenGL context
-{
-  spdlog::debug("Begin constructing application");
-
-  setCallbacks();
-
-  spdlog::debug("Done constructing application");
-}
-
-EntropyApp::~EntropyApp()
-{
-  if (m_futureLoadProject.valid()) {
-    m_futureLoadProject.wait();
-  }
-  if (m_futureDiscoverDicom.valid()) {
-    m_futureDiscoverDicom.wait();
-  }
-
-  m_rendering.prepareForShutdown();
-}
 
 void EntropyApp::init()
 {
@@ -291,9 +147,9 @@ void EntropyApp::onImagesReady()
       if (pendingWarpAssignment->forwardWarp) {
         const auto referenceUid = m_data.refImageUid();
         const Image* referenceImage = referenceUid ? m_data.image(*referenceUid) : nullptr;
-        if (confirmWarpAssignmentWarnings(
+        if (warp_field_assignment::confirm(
               "Forward warp warning",
-              forwardWarpAssignmentWarnings(*warp, *image, referenceImage)))
+              warp_field_assignment::forwardWarnings(*warp, *image, referenceImage)))
         {
           assigned =
             m_data.assignForwardWarpUidToImage(pendingWarpAssignment->imageUid, pendingWarpAssignment->warpUid);
@@ -305,8 +161,9 @@ void EntropyApp::onImagesReady()
                                                           : std::optional<uuids::uuid>{pendingWarpAssignment->imageUid};
         const Image* referenceImage = referenceUid ? m_data.image(*referenceUid) : nullptr;
         if (
-          referenceImage &&
-          confirmWarpAssignmentWarnings("Inverse warp warning", inverseWarpAssignmentWarnings(*warp, *referenceImage)))
+          referenceImage && warp_field_assignment::confirm(
+                              "Inverse warp warning",
+                              warp_field_assignment::inverseWarnings(*warp, *referenceImage)))
         {
           assigned = m_data.assignInverseWarpUidToImage(
             pendingWarpAssignment->imageUid,
@@ -457,14 +314,14 @@ void EntropyApp::onImagesReady()
 
 void EntropyApp::resize(int windowWidth, int windowHeight)
 {
-  const GuiData::Margins margins = guiData().computeMargins();
+  const GuiData::Margins margins = m_data.guiData().computeMargins();
 
   // This call sets the window size and viewport
   // app->resize( windowWidth, windowHeight );
   windowData().setWindowSize(windowWidth, windowHeight);
 
-  if (const std::optional<glm::vec4>& renderViewport = guiData().m_renderViewport) {
-    const GuiData::Margins toolbarMargins = guiData().computeToolbarMargins();
+  if (const std::optional<glm::vec4>& renderViewport = m_data.guiData().m_renderViewport) {
+    const GuiData::Margins toolbarMargins = m_data.guiData().computeToolbarMargins();
     const float minLeft = margins.left;
     const float minBottom = margins.bottom;
     const float maxRight = std::max(minLeft + 1.0f, static_cast<float>(windowWidth) - margins.right);
@@ -491,81 +348,6 @@ void EntropyApp::render()
 {
   pollDicomSeriesScan();
   m_glfw.renderOnce();
-}
-
-CallbackHandler& EntropyApp::callbackHandler()
-{
-  return m_callbackHandler;
-}
-
-const AppData& EntropyApp::appData() const
-{
-  return m_data;
-}
-
-AppData& EntropyApp::appData()
-{
-  return m_data;
-}
-
-const AppSettings& EntropyApp::appSettings() const
-{
-  return m_data.settings();
-}
-
-AppSettings& EntropyApp::appSettings()
-{
-  return m_data.settings();
-}
-
-const AppState& EntropyApp::appState() const
-{
-  return m_data.state();
-}
-
-AppState& EntropyApp::appState()
-{
-  return m_data.state();
-}
-
-const GuiData& EntropyApp::guiData() const
-{
-  return m_data.guiData();
-}
-
-GuiData& EntropyApp::guiData()
-{
-  return m_data.guiData();
-}
-
-const GlfwWrapper& EntropyApp::glfw() const
-{
-  return m_glfw;
-}
-
-GlfwWrapper& EntropyApp::glfw()
-{
-  return m_glfw;
-}
-
-const ImGuiWrapper& EntropyApp::imgui() const
-{
-  return m_imgui;
-}
-
-ImGuiWrapper& EntropyApp::imgui()
-{
-  return m_imgui;
-}
-
-const WindowData& EntropyApp::windowData() const
-{
-  return m_data.windowData();
-}
-
-WindowData& EntropyApp::windowData()
-{
-  return m_data.windowData();
 }
 
 void EntropyApp::logPreamble()

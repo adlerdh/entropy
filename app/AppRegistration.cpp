@@ -1,6 +1,7 @@
 #include "EntropyApp.h"
 
 #include "logic/app/DataHelper.h"
+#include "logic/app/LoadingStatusItems.h"
 
 #include "registration/AffineTransformIO.h"
 #include "registration/Artifacts.h"
@@ -82,35 +83,6 @@ bool applyRegistrationAffineToImage(
   }
 
   return true;
-}
-
-std::vector<GuiData::LoadingStatusItem> registrationLoadingItems(const registration::ImportPlan& plan)
-{
-  std::vector<GuiData::LoadingStatusItem> items;
-  for (const registration::ImportStep& step : plan.steps) {
-    GuiData::LoadingStatusItem::Kind kind = GuiData::LoadingStatusItem::Kind::Image;
-    switch (step.action) {
-      case registration::ImportAction::LoadWarpedImage:
-      case registration::ImportAction::LoadInverseWarp:
-      case registration::ImportAction::LoadForwardWarp:
-        kind = GuiData::LoadingStatusItem::Kind::Image;
-        break;
-      case registration::ImportAction::LoadWarpedSegmentation:
-        kind = GuiData::LoadingStatusItem::Kind::Segmentation;
-        break;
-      case registration::ImportAction::ApplyAffineTransform:
-      case registration::ImportAction::AssignWarpsToMovingImage:
-      case registration::ImportAction::TransformLandmarksAndAnnotations:
-      case registration::ImportAction::LoadTransformedSurface:
-      case registration::ImportAction::MakeWarpedImageActive:
-        continue;
-    }
-
-    std::error_code error;
-    const std::uintmax_t bytes = fs::file_size(step.path, error);
-    items.push_back(GuiData::LoadingStatusItem{kind, step.path, error ? std::nullopt : std::optional{bytes}, false});
-  }
-  return items;
 }
 
 registration::ProgressEvent makeRegistrationProgressEvent(registration::ProgressEventKind kind, std::string message)
@@ -417,6 +389,6 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     },
     false,
-    registrationLoadingItems(plan),
+    loading_status::registrationItems(plan),
     "Importing registration outputs");
 }

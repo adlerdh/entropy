@@ -7,7 +7,9 @@ endif()
 target_sources(entropy PRIVATE
   main.cpp
   AppCallbacks.cpp
+  AppImageLoading.cpp
   AppLifecycle.cpp
+  AppLoading.cpp
   AppProject.cpp
   AppRegistration.cpp
   EntropyApp.cpp

@@ -1,6 +1,7 @@
 #include "logic/app/LoadingStatusItems.h"
 
 #include "logic/serialization/ProjectSerialization.h"
+#include "registration/ImportPlan.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -95,4 +96,22 @@ TEST_CASE("Loading status paths can match by exact path or filename", "[LoadingS
   CHECK(loading_status::equivalentPath("/tmp/image.nii.gz", "/tmp/image.nii.gz"));
   CHECK(loading_status::equivalentPath("/first/image.nii.gz", "/second/image.nii.gz"));
   CHECK_FALSE(loading_status::equivalentPath("/first/image.nii.gz", "/first/other.nii.gz"));
+}
+
+TEST_CASE("Loading status registration items include only file-loading steps", "[LoadingStatusItems]")
+{
+  registration::ImportPlan plan;
+  plan.steps = {
+    {registration::ImportAction::ApplyAffineTransform, "affine.mat", {}, {}},
+    {registration::ImportAction::LoadWarpedImage, "warped.nii.gz", {}, {}},
+    {registration::ImportAction::LoadWarpedSegmentation, "warped-seg.nii.gz", {}, {}},
+    {registration::ImportAction::AssignWarpsToMovingImage, {}, {}, {}}};
+
+  const auto items = loading_status::registrationItems(plan);
+
+  REQUIRE(items.size() == 2u);
+  CHECK(items[0].kind == GuiData::LoadingStatusItem::Kind::Image);
+  CHECK(items[0].fileName == "warped.nii.gz");
+  CHECK(items[1].kind == GuiData::LoadingStatusItem::Kind::Segmentation);
+  CHECK(items[1].fileName == "warped-seg.nii.gz");
 }

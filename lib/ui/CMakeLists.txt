@@ -2,6 +2,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/AboutIcon.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/DicomMetadataTable.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogModel.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/WarpFieldAssignment.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/GradientBackgroundRenderer.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/GuiData.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/headers/AnnotationHeader.cpp"

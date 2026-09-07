@@ -3,6 +3,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <optional>
 #include <string>
 
 namespace
@@ -13,7 +14,8 @@ ct_windowing::DetectionInput scalarInput(const MetaDataMap& metadata)
     .metadata = &metadata,
     .pixelType = PixelType::Scalar,
     .componentType = ComponentType::Int16,
-    .numComponents = 1u};
+    .numComponents = 1u,
+    .valueRange = std::nullopt};
 }
 } // namespace
 

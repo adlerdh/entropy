@@ -3,7 +3,9 @@
 #include "image/ImageUtility.h"
 #include "logic/app/AppPaths.h"
 #include "layout/LayoutFileSerialization.h"
+#include "logic/app/LargeImagePolicy.h"
 #include "logic/app/LoadingStatusItems.h"
+#include "logic/app/ProjectImageSequence.h"
 #include "logic/app/ProjectLayoutDelta.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "logic/app/ProjectSnapshotSettings.h"
@@ -46,44 +48,6 @@ bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileN
     .m_currentLayoutIndex = appData.windowData().currentLayoutIndex(),
     .m_layouts = appData.windowData().createProjectLayoutSnapshots(appData.imageUidsOrdered())};
   return layout::save(layoutFile, layoutsFileName);
-}
-
-constexpr uint64_t LargeImageWarningBytes = 2ull * 1024ull * 1024ull * 1024ull;
-
-bool shouldPromptForLargeImage(const ImageHeader& header)
-{
-  return header.memoryImageSizeInBytes() >= LargeImageWarningBytes;
-}
-
-std::size_t numSerializedImages(const serialize::EntropyProject& project)
-{
-  return 1 + project.m_additionalImages.size();
-}
-
-serialize::Image* serializedImageAt(serialize::EntropyProject& project, std::size_t index)
-{
-  if (0 == index) {
-    return &project.m_referenceImage;
-  }
-
-  const std::size_t additionalIndex = index - 1;
-  if (additionalIndex < project.m_additionalImages.size()) {
-    return &project.m_additionalImages[additionalIndex];
-  }
-
-  return nullptr;
-}
-
-void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t index)
-{
-  if (0 == index) {
-    return;
-  }
-
-  const std::size_t additionalIndex = index - 1;
-  if (additionalIndex < project.m_additionalImages.size()) {
-    project.m_additionalImages.erase(project.m_additionalImages.begin() + static_cast<std::ptrdiff_t>(additionalIndex));
-  }
 }
 
 bool isApproximatelyIdentity(const glm::mat4& matrix)
@@ -769,8 +733,8 @@ void EntropyApp::continueLargeImageProjectPreflight()
     return;
   }
 
-  while (m_pendingLargeProjectImageIndex < numSerializedImages(*m_pendingLargeProject)) {
-    serialize::Image* image = serializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+  while (m_pendingLargeProjectImageIndex < project_image_sequence::size(*m_pendingLargeProject)) {
+    serialize::Image* image = project_image_sequence::at(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
     if (!image) {
       m_pendingLargeProjectImageIndex++;
       continue;
@@ -796,11 +760,11 @@ void EntropyApp::continueLargeImageProjectPreflight()
       }
 
       spdlog::error("Could not read image header from {}; skipping it", image->m_imageFileName);
-      eraseSerializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+      project_image_sequence::erase(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
       continue;
     }
 
-    if (shouldPromptForLargeImage(*header)) {
+    if (large_image_policy::requiresConfirmation(header->memoryImageSizeInBytes())) {
       spdlog::warn(
         "Image {} is large: estimated in-memory size is {:.2f} GiB",
         image->m_imageFileName,
@@ -867,11 +831,11 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
           break;
         }
 
-        serialize::Image* image = serializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+        serialize::Image* image = project_image_sequence::at(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
         if (image) {
           spdlog::info("Skipping large image {} during project load", image->m_imageFileName);
         }
-        eraseSerializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+        project_image_sequence::erase(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
       }
       else {
         m_pendingLargeProjectImageIndex++;
