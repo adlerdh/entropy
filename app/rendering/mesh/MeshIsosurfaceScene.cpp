@@ -50,7 +50,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
     return false;
   }
 
-  const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
+  const rendering::mesh::MeshOctantCutaway cutaway = meshCutawayForView(view);
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
@@ -154,7 +154,9 @@ bool Rendering::renderIsosurfaceMeshesForView(
         .visible = surface->visibleIn3d};
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);
-      renderable.drawOptions.clipPlanes = clipPlanes;
+      if (surface->includeInCutaway) {
+        renderable.drawOptions.cutaway = cutaway;
+      }
       renderables.push_back(std::move(renderable));
     }
   }

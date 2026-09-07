@@ -69,10 +69,14 @@ intersectRayTriangle(const MeshPickRay& ray, const glm::vec3& a, const glm::vec3
  * @param mesh Mesh whose positions and indices are tested
  * @param ray Ray with unit-length direction
  * @param clipPlanes World-space clip planes to honor
+ * @param cutaway Optional world-space octant cutaway to honor
  * @return Nearest hit, or empty for no hit
  */
-std::optional<MeshTriangleHit>
-pickNearestTriangle(const MeshData& mesh, const MeshPickRay& ray, std::span<const MeshClipPlane> clipPlanes = {});
+std::optional<MeshTriangleHit> pickNearestTriangle(
+  const MeshData& mesh,
+  const MeshPickRay& ray,
+  std::span<const MeshClipPlane> clipPlanes = {},
+  const MeshOctantCutaway& cutaway = {});
 
 /**
  * @brief Find the nearest picked triangle after transforming mesh vertices into world coordinates
@@ -80,6 +84,7 @@ pickNearestTriangle(const MeshData& mesh, const MeshPickRay& ray, std::span<cons
  * @param ray World-space ray with unit-length direction
  * @param world_T_mesh Transform from mesh coordinates to world coordinates
  * @param clipPlanes World-space clip planes to honor
+ * @param cutaway Optional world-space octant cutaway to honor
  * @param backfaceCulling Ignore the same back-facing triangles omitted by rasterization
  * @return Nearest hit in world coordinates, or empty for no hit
  */
@@ -88,6 +93,7 @@ std::optional<MeshTriangleHit> pickNearestTriangle(
   const MeshPickRay& ray,
   const glm::mat4& world_T_mesh,
   std::span<const MeshClipPlane> clipPlanes = {},
+  const MeshOctantCutaway& cutaway = {},
   bool backfaceCulling = false);
 
 /**

@@ -157,6 +157,13 @@ Uniforms meshFragmentUniforms()
       UniformType::Vec4,
       glm::vec4{0.0f, 0.0f, 1.0f, 0.0f});
   }
+  uniforms.insertUniform("u_cutawayEnabled", UniformType::Bool, false);
+  for (int i = 0; i < 3; ++i) {
+    uniforms.insertUniform(
+      "u_cutawayPlanes[" + std::to_string(i) + "]",
+      UniformType::Vec4,
+      glm::vec4{0.0f, 0.0f, 1.0f, 0.0f});
+  }
   return uniforms;
 }
 
@@ -167,6 +174,13 @@ Uniforms meshClipFragmentUniforms()
   for (int i = 0; i < rendering::mesh::MaxMeshClipPlanes; ++i) {
     uniforms.insertUniform(
       "u_clipPlanes[" + std::to_string(i) + "]",
+      UniformType::Vec4,
+      glm::vec4{0.0f, 0.0f, 1.0f, 0.0f});
+  }
+  uniforms.insertUniform("u_cutawayEnabled", UniformType::Bool, false);
+  for (int i = 0; i < 3; ++i) {
+    uniforms.insertUniform(
+      "u_cutawayPlanes[" + std::to_string(i) + "]",
       UniformType::Vec4,
       glm::vec4{0.0f, 0.0f, 1.0f, 0.0f});
   }

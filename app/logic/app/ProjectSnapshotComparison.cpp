@@ -157,7 +157,8 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 {
   return a.name == b.name && a.value == b.value && a.color == b.color &&
          surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
-         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visibleIn2d == b.visibleIn2d && a.visibleIn3d == b.visibleIn3d;
+         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visibleIn2d == b.visibleIn2d &&
+         a.visibleIn3d == b.visibleIn3d && a.includeInCutaway == b.includeInCutaway;
 }
 
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)
@@ -320,10 +321,10 @@ bool meshRenderingSettingsEqual(
          a.m_smoothIsosurfaceMeshes == b.m_smoothIsosurfaceMeshes &&
          a.m_meshSmoothingIterations == b.m_meshSmoothingIterations &&
          a.m_meshSmoothingPassBand == b.m_meshSmoothingPassBand && a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses &&
-         a.m_pickingEnabled == b.m_pickingEnabled && a.m_clipPlaneEnabled == b.m_clipPlaneEnabled &&
-         a.m_clipPlaneWorld == b.m_clipPlaneWorld && a.m_shadowsEnabled == b.m_shadowsEnabled &&
-         a.m_shadowMapSizePixels == b.m_shadowMapSizePixels && a.m_shadowStrength == b.m_shadowStrength &&
-         a.m_shadowDepthBias == b.m_shadowDepthBias && a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
+         a.m_pickingEnabled == b.m_pickingEnabled && a.m_cutawayEnabled == b.m_cutawayEnabled &&
+         a.m_shadowsEnabled == b.m_shadowsEnabled && a.m_shadowMapSizePixels == b.m_shadowMapSizePixels &&
+         a.m_shadowStrength == b.m_shadowStrength && a.m_shadowDepthBias == b.m_shadowDepthBias &&
+         a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
          a.m_ambientOcclusionRadiusMm == b.m_ambientOcclusionRadiusMm &&
          a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength &&
          a.m_ambientOcclusionPower == b.m_ambientOcclusionPower &&

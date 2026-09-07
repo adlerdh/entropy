@@ -1,6 +1,7 @@
 #include "rendering/mesh/MeshRenderer.h"
 
 #include "rendering/mesh/MeshClipPlanes.h"
+#include "rendering/mesh/MeshCutaway.h"
 #include "rendering/mesh/MeshMaterial.h"
 #include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/GLTexture.h"
@@ -11,6 +12,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -60,12 +62,21 @@ void applyShadowDepthRasterState()
   glDisable(GL_CULL_FACE);
 }
 
-void uploadClipPlanes(const MeshDrawOptions& drawOptions, GLShaderProgram& program)
+void uploadClipping(const MeshDrawOptions& drawOptions, GLShaderProgram& program)
 {
   const std::vector<glm::vec4> clipPlanes = enabledNormalizedClipPlanes(drawOptions.clipPlanes);
   program.setUniform("u_clipPlaneCount", static_cast<GLint>(clipPlanes.size()));
   for (std::size_t i = 0; i < clipPlanes.size(); ++i) {
     program.setUniform("u_clipPlanes[" + std::to_string(i) + "]", clipPlanes[i]);
+  }
+
+  const std::optional<MeshOctantCutaway> cutaway = normalizedOctantCutaway(drawOptions.cutaway);
+  const bool cutawayEnabled = cutaway && cutaway->enabled;
+  program.setUniform("u_cutawayEnabled", cutawayEnabled);
+  if (cutawayEnabled) {
+    for (std::size_t index = 0; index < cutaway->worldPlanes.size(); ++index) {
+      program.setUniform("u_cutawayPlanes[" + std::to_string(index) + "]", cutaway->worldPlanes[index]);
+    }
   }
 }
 
@@ -250,7 +261,7 @@ void MeshRenderer::drawBucket(
       const MeshMaterial material = sanitizedMaterial(renderable.material, context.fallbackColor);
       program.setUniform("u_flatShadingEnabled", material.flatShadingEnabled);
     }
-    uploadClipPlanes(renderable.drawOptions, program);
+    uploadClipping(renderable.drawOptions, program);
 
     pass == MeshDrawPass::ShadowDepth ? applyShadowDepthRasterState()
                                       : applyRasterState(renderable.drawOptions, renderable.world_T_mesh);

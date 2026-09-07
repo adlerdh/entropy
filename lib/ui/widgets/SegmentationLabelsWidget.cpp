@@ -98,11 +98,12 @@ void renderSegLabelsChildWindow(
 
   const ImGuiStyle& style = ImGui::GetStyle();
   const float compactColumnWidth = ImGui::GetFrameHeight() + 2.0f * style.CellPadding.x;
+  const float cutawayColumnWidth = ImGui::CalcTextSize("Cutaway").x + 2.0f * style.CellPadding.x;
   constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_BordersInnerV |
                                          ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
                                          ImGuiTableFlags_SizingStretchProp;
 
-  if (!ImGui::BeginTable("##segmentationLabels", 4, tableFlags, ImVec2{0.0f, 0.0f})) {
+  if (!ImGui::BeginTable("##segmentationLabels", 5, tableFlags, ImVec2{0.0f, 0.0f})) {
     ImGui::EndChild();
     return;
   }
@@ -112,8 +113,14 @@ void renderSegLabelsChildWindow(
   ImGui::TableSetupColumn("3D", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, compactColumnWidth);
   ImGui::TableSetupColumn("Index");
   ImGui::TableSetupColumn("Label");
+  ImGui::TableSetupColumn(
+    "Cutaway",
+    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize,
+    cutawayColumnWidth);
+
   ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-  for (int column = 0; column < 4; ++column) {
+
+  for (int column = 0; column < 5; ++column) {
     ImGui::TableSetColumnIndex(column);
     ImGui::TableHeader(ImGui::TableGetColumnName(column));
     if (ImGui::IsItemHovered()) {
@@ -122,6 +129,10 @@ void renderSegLabelsChildWindow(
       }
       else if (column == 1) {
         ImGui::SetTooltip("Show this segmentation in 3D views");
+      }
+      else if (column == 2) {
+        ImGui::SetTooltip(
+          "Include this label's mesh in Cutaway. Cutaway removes the viewer-facing octant at the crosshairs.");
       }
     }
   }
@@ -132,6 +143,7 @@ void renderSegLabelsChildWindow(
 
     bool labelVisible = labelTable->getVisible(i);
     bool labelShowMesh = labelTable->getShowMesh(i);
+    bool labelIncludeInCutaway = labelTable->getIncludeInCutaway(i);
     std::string labelName = labelTable->getName(i);
 
     // ImGui::ColorEdit represents color as non-premultiplied colors
@@ -152,6 +164,11 @@ void renderSegLabelsChildWindow(
     }
 
     ImGui::TableSetColumnIndex(2);
+    if (ImGui::Checkbox("##labelIncludeInCutaway", &labelIncludeInCutaway)) {
+      labelTable->setIncludeInCutaway(i, labelIncludeInCutaway);
+    }
+
+    ImGui::TableSetColumnIndex(3);
     if (ImGui::ColorEdit4("##labelColor", glm::value_ptr(labelColor), sk_colorEditFlags)) {
       labelTable->setColor(i, glm::u8vec3{255.0f * labelColor});
       labelTable->setAlpha(i, static_cast<uint8_t>(255.0f * labelColor.a));
@@ -175,7 +192,7 @@ void renderSegLabelsChildWindow(
       ImGui::SetTooltip("Move crosshairs to segmentation centroid");
     }
 
-    ImGui::TableSetColumnIndex(3);
+    ImGui::TableSetColumnIndex(4);
     ImGui::SetNextItemWidth(-1.0f);
     if (ImGui::InputText("##labelName", &labelName)) {
       labelTable->setName(i, labelName);

@@ -13,6 +13,7 @@
 #include "rendering/mesh/MeshClipPlanes.h"
 #include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshCrosshairsPolicy.h"
+#include "rendering/mesh/MeshCutaway.h"
 #include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
 #include "rendering/mesh/MeshDrawOptions.h"
@@ -569,10 +570,65 @@ TEST_CASE("mesh culling and picking preserve front faces under reflections", "[r
 
   CHECK_FALSE(mesh::meshTransformReversesOrientation(glm::mat4{1.0f}));
   CHECK(mesh::meshTransformReversesOrientation(reflected));
-  CHECK(mesh::pickNearestTriangle(data, frontRay, glm::mat4{1.0f}, {}, true));
-  CHECK_FALSE(mesh::pickNearestTriangle(data, backRay, glm::mat4{1.0f}, {}, true));
-  CHECK(mesh::pickNearestTriangle(data, frontRay, reflected, {}, true));
-  CHECK_FALSE(mesh::pickNearestTriangle(data, backRay, reflected, {}, true));
+  CHECK(mesh::pickNearestTriangle(data, frontRay, glm::mat4{1.0f}, {}, {}, true));
+  CHECK_FALSE(mesh::pickNearestTriangle(data, backRay, glm::mat4{1.0f}, {}, {}, true));
+  CHECK(mesh::pickNearestTriangle(data, frontRay, reflected, {}, {}, true));
+  CHECK_FALSE(mesh::pickNearestTriangle(data, backRay, reflected, {}, {}, true));
+}
+
+TEST_CASE("viewer-facing cutaway removes exactly one crosshairs octant", "[rendering][mesh][cutaway]")
+{
+  const auto cutaway =
+    mesh::viewerFacingOctantCutaway(glm::vec3{1.0f, 2.0f, 3.0f}, glm::mat3{1.0f}, glm::vec3{10.0f, 20.0f, 30.0f});
+
+  REQUIRE(cutaway);
+  CHECK(cutaway->enabled);
+  CHECK(mesh::pointInsideRemovedOctant(glm::vec3{2.0f, 3.0f, 4.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{0.0f, 3.0f, 4.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{2.0f, 1.0f, 4.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{2.0f, 3.0f, 2.0f}, *cutaway));
+}
+
+TEST_CASE("viewer-facing cutaway follows rotated crosshairs and camera octant", "[rendering][mesh][cutaway]")
+{
+  const glm::mat3 rotatedAxes{glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}};
+  const auto cutaway = mesh::viewerFacingOctantCutaway(glm::vec3{0.0f}, rotatedAxes, glm::vec3{4.0f, 5.0f, -6.0f});
+
+  REQUIRE(cutaway);
+  CHECK(mesh::pointInsideRemovedOctant(glm::vec3{1.0f, 1.0f, -1.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{-1.0f, 1.0f, -1.0f}, *cutaway));
+  CHECK_FALSE(mesh::viewerFacingOctantCutaway(
+    glm::vec3{0.0f},
+    glm::mat3{glm::vec3{0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}},
+    glm::vec3{1.0f}));
+}
+
+TEST_CASE("mesh picking honors per-renderable cutaway", "[rendering][mesh][cutaway][picking]")
+{
+  const mesh::MeshData triangle = makeTriangleMesh();
+  mesh::MeshRenderable cut;
+  cut.mesh.geometryVersion = 1;
+  cut.drawOptions.pickingMode = mesh::MeshPickingMode::Triangle;
+  const auto cutaway =
+    mesh::viewerFacingOctantCutaway(glm::vec3{-2.0f, -2.0f, -1.0f}, glm::mat3{1.0f}, glm::vec3{4.0f});
+  REQUIRE(cutaway);
+  cut.drawOptions.cutaway = *cutaway;
+
+  mesh::MeshRenderable uncut = cut;
+  uncut.mesh.geometryVersion = 2;
+  uncut.world_T_mesh = glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, -1.0f});
+  uncut.drawOptions.cutaway = {};
+
+  const std::vector renderables{cut, uncut};
+  const auto hit = mesh::pickNearestRenderable(
+    {.worldRay = {.origin = glm::vec3{0.0f, 0.0f, 4.0f}, .direction = glm::vec3{0.0f, 0.0f, -1.0f}},
+     .renderables = renderables,
+     .meshLookup = [&triangle](const mesh::MeshHandle&) {
+       return &triangle;
+     }});
+
+  REQUIRE(hit);
+  CHECK(hit->mesh.geometryVersion == 2);
 }
 
 TEST_CASE("scene picking chooses nearest visible transformed renderable", "[rendering][mesh]")

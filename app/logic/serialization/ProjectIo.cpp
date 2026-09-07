@@ -103,14 +103,11 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "rimLighting",
       "smoothing",
       "pointPicking",
-      "clipPlane",
+      "cutaway",
       "enabled"};
   }
   else if (path == "settings/rendering/mesh/smoothing") {
     preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};
-  }
-  else if (path == "settings/rendering/mesh/clipPlane") {
-    preferredKeys = {"enabled", "worldPlane"};
   }
   else if (path == "settings/rendering/mesh/shadows") {
     preferredKeys = {"enabled", "mapSizePixels", "strength", "depthBias"};
@@ -142,11 +139,15 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "value",
       "visibleIn2D",
       "visibleIn3D",
+      "includeInCutaway",
       "color",
       "opacity",
       "contourFillOpacity",
       "fillAboveIsovalue",
       "material"};
+  }
+  else if (path.ends_with("/settings/labels/values")) {
+    preferredKeys = {"visible", "showMesh", "includeInCutaway", "index", "name", "color"};
   }
 
   const auto append = [&](const std::string& key) {

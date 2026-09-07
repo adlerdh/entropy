@@ -88,6 +88,7 @@ void to_json(json& j, const Isosurface& surface)
   addIfChanged(j, "fillAboveIsovalue", surface.fillAboveIsovalue, defaults.fillAboveIsovalue);
   addIfChanged(j, "visibleIn2D", surface.visibleIn2d, defaults.visibleIn2d);
   addIfChanged(j, "visibleIn3D", surface.visibleIn3d, defaults.visibleIn3d);
+  addIfChanged(j, "includeInCutaway", surface.includeInCutaway, defaults.includeInCutaway);
 }
 
 void from_json(const json& j, Isosurface& surface)
@@ -120,5 +121,8 @@ void from_json(const json& j, Isosurface& surface)
   }
   if (const auto value = j.find("visibleIn3D"); value != j.end() && value->is_boolean()) {
     surface.visibleIn3d = value->get<bool>();
+  }
+  if (const auto value = j.find("includeInCutaway"); value != j.end() && value->is_boolean()) {
+    surface.includeInCutaway = value->get<bool>();
   }
 }

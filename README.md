@@ -18,10 +18,10 @@ It is designed for projects containing multiple images in a common reference spa
 and 3D views, and several comparison modes make it easier to inspect images and evaluate their spatial alignment.
 
 Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor
-[James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656).
+[James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656), Director of the Penn Image
+Computing and Science Lab (PICSL).
 
-Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of
-Pennsylvania. All rights reserved.
+Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Trustees of The University of Pennsylvania. All rights reserved.
 
 ## Get Entropy
 

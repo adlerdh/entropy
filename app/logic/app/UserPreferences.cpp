@@ -90,7 +90,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "rimLighting",
       "smoothing",
       "pointPicking",
-      "clipPlane"};
+      "cutaway"};
   }
   else if (path == "rendering/mesh/smoothing") {
     preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};
@@ -578,9 +578,7 @@ json toJson(
           {"iterations", renderPreferences.meshSmoothingIterations},
           {"passBand", renderPreferences.meshSmoothingPassBand}}},
         {"pointPicking", renderPreferences.meshPickingEnabled},
-        {"clipPlane",
-         {{"enabled", renderPreferences.meshClipPlaneEnabled},
-          {"worldPlane", vec4ToJson(renderPreferences.meshClipPlaneWorld)}}}}},
+        {"cutaway", renderPreferences.meshCutawayEnabled}}},
       {"raycasting",
        {{"samplingFactor", renderPreferences.raycastSamplingFactor},
         {"distanceMap",
@@ -897,10 +895,7 @@ void applyJson(
         setFloatFromJson(renderPreferences.meshSmoothingPassBand, *smoothing, "passBand", 0.001f, 2.0f);
       }
       setFromJson(renderPreferences.meshPickingEnabled, *mesh, "pointPicking");
-      if (const auto clipPlane = mesh->find("clipPlane"); clipPlane != mesh->end() && clipPlane->is_object()) {
-        setFromJson(renderPreferences.meshClipPlaneEnabled, *clipPlane, "enabled");
-        setVec4FromJson(renderPreferences.meshClipPlaneWorld, *clipPlane, "worldPlane");
-      }
+      setFromJson(renderPreferences.meshCutawayEnabled, *mesh, "cutaway");
       if (const auto shadows = mesh->find("shadows"); shadows != mesh->end() && shadows->is_object()) {
         setFromJson(renderPreferences.meshShadowsEnabled, *shadows, "enabled");
         if (const auto size = shadows->find("mapSizePixels"); size != shadows->end() && size->is_number_unsigned()) {

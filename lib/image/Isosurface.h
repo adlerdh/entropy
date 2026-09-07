@@ -38,6 +38,7 @@ public:
   bool fillAboveIsovalue = false;    //!< Fill values above rather than below the isovalue
   bool visibleIn2d = true;           //!< Show contours on 2D views and 3D image planes
   bool visibleIn3d = true;           //!< Show raycasted and mesh surfaces in 3D views
+  bool includeInCutaway = true;      //!< Apply the global 3D cutaway to this surface mesh
   bool valueEditInProgress = false;  //!< Transient UI state used to defer mesh extraction during isovalue edits
 
   /// @brief Get the ambient RGB contribution derived from material and surface color.

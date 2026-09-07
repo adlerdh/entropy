@@ -974,6 +974,12 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill values above the isovalue instead of values below it");
 
+      ImGui::Checkbox("Include in 3D cutaway", &surface->includeInCutaway);
+      ImGui::SameLine();
+      helpMarker(
+        "Apply Cutaway to this isosurface mesh when the global Cutaway setting is enabled. Cutaway removes the "
+        "viewer-facing octant at the crosshairs.");
+
       ImGui::TreePop();
     }
 

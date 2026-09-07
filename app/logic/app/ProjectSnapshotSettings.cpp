@@ -104,7 +104,8 @@ bool labelEntryMatches(const ParcellationLabelTable& table, const ParcellationLa
 {
   return table.getName(index) == baseline.getName(index) && table.getColor(index) == baseline.getColor(index) &&
          table.getAlpha(index) == baseline.getAlpha(index) && table.getVisible(index) == baseline.getVisible(index) &&
-         table.getShowMesh(index) == baseline.getShowMesh(index);
+         table.getShowMesh(index) == baseline.getShowMesh(index) &&
+         table.getIncludeInCutaway(index) == baseline.getIncludeInCutaway(index);
 }
 
 std::optional<serialize::SegmentationLabels> segmentationLabels(const Image& seg, const ParcellationLabelTable* table)
@@ -129,7 +130,8 @@ std::optional<serialize::SegmentationLabels> segmentationLabels(const Image& seg
       .m_name = table->getName(index),
       .m_color = normalizedLabelColor(*table, index),
       .m_visible = table->getVisible(index),
-      .m_showMesh = table->getShowMesh(index)});
+      .m_showMesh = table->getShowMesh(index),
+      .m_includeInCutaway = table->getIncludeInCutaway(index)});
   }
 
   if (labels.m_count == defaultCount && labels.m_values.empty()) {
@@ -164,6 +166,7 @@ void applySegmentationLabels(AppData& appData, Image& seg, const serialize::Segm
     table->setAlpha(label.m_index, labelAlphaFromNormalized(label.m_color));
     table->setVisible(label.m_index, label.m_visible);
     table->setShowMesh(label.m_index, label.m_showMesh);
+    table->setIncludeInCutaway(label.m_index, label.m_includeInCutaway);
   }
 }
 
@@ -486,8 +489,7 @@ serialize::ProjectMeshRenderingSettings meshRenderingSettings(const AppData& app
     .m_meshSmoothingPassBand = renderSettings.m_meshSmoothingPassBand,
     .m_ddpMaxPeelPasses = renderSettings.m_meshDdpSettings.maxPeelPasses,
     .m_pickingEnabled = renderSettings.m_meshPickingEnabled,
-    .m_clipPlaneEnabled = renderSettings.m_meshClipPlaneEnabled,
-    .m_clipPlaneWorld = renderSettings.m_meshClipPlaneWorld,
+    .m_cutawayEnabled = renderSettings.m_meshCutawayEnabled,
     .m_shadowsEnabled = renderSettings.m_meshAdvancedLightingSettings.shadows.enabled,
     .m_shadowMapSizePixels = renderSettings.m_meshAdvancedLightingSettings.shadows.mapSizePixels,
     .m_shadowStrength = renderSettings.m_meshAdvancedLightingSettings.shadows.strength,
@@ -522,8 +524,7 @@ void applyMeshRenderingSettings(AppData& appData, const serialize::ProjectMeshRe
   renderSettings.m_meshSmoothingPassBand = std::clamp(settings.m_meshSmoothingPassBand, 0.001f, 2.0f);
   renderSettings.m_meshDdpSettings.maxPeelPasses = std::clamp(settings.m_ddpMaxPeelPasses, 1u, 32u);
   renderSettings.m_meshPickingEnabled = settings.m_pickingEnabled;
-  renderSettings.m_meshClipPlaneEnabled = settings.m_clipPlaneEnabled;
-  renderSettings.m_meshClipPlaneWorld = settings.m_clipPlaneWorld;
+  renderSettings.m_meshCutawayEnabled = settings.m_cutawayEnabled;
   renderSettings.m_meshAdvancedLightingSettings.shadows.enabled = settings.m_shadowsEnabled;
   renderSettings.m_meshAdvancedLightingSettings.shadows.mapSizePixels = settings.m_shadowMapSizePixels;
   renderSettings.m_meshAdvancedLightingSettings.shadows.strength = settings.m_shadowStrength;

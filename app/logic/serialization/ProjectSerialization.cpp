@@ -715,10 +715,7 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   addIfChanged(smoothing, "passBand", settings.m_meshSmoothingPassBand, defaults.m_meshSmoothingPassBand);
   addIfNotEmpty(j, "smoothing", std::move(smoothing));
   addIfChanged(j, "pointPicking", settings.m_pickingEnabled, defaults.m_pickingEnabled);
-  json clipPlane = json::object();
-  addIfChanged(clipPlane, "enabled", settings.m_clipPlaneEnabled, defaults.m_clipPlaneEnabled);
-  addIfChanged(clipPlane, "worldPlane", vec4ToJson(settings.m_clipPlaneWorld), vec4ToJson(defaults.m_clipPlaneWorld));
-  addIfNotEmpty(j, "clipPlane", std::move(clipPlane));
+  addIfChanged(j, "cutaway", settings.m_cutawayEnabled, defaults.m_cutawayEnabled);
 
   json shadows = json::object();
   addIfChanged(shadows, "enabled", settings.m_shadowsEnabled, defaults.m_shadowsEnabled);
@@ -794,15 +791,8 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
   if (const auto value = j.find("pointPicking"); value != j.end() && value->is_boolean()) {
     settings.m_pickingEnabled = value->get<bool>();
   }
-  if (const auto clipPlane = j.find("clipPlane"); clipPlane != j.end() && clipPlane->is_object()) {
-    if (const auto value = clipPlane->find("enabled"); value != clipPlane->end() && value->is_boolean()) {
-      settings.m_clipPlaneEnabled = value->get<bool>();
-    }
-    if (const auto value = clipPlane->find("worldPlane");
-        value != clipPlane->end() && value->is_array() && value->size() == 4)
-    {
-      settings.m_clipPlaneWorld = vec4FromJson(*value);
-    }
+  if (const auto value = j.find("cutaway"); value != j.end() && value->is_boolean()) {
+    settings.m_cutawayEnabled = value->get<bool>();
   }
   if (const auto shadows = j.find("shadows"); shadows != j.end() && shadows->is_object()) {
     if (const auto value = shadows->find("enabled"); value != shadows->end() && value->is_boolean()) {

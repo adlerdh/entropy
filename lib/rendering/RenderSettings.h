@@ -149,8 +149,7 @@ struct RenderSettings
   float m_meshSmoothingPassBand;
   mesh::MeshDdpSettings m_meshDdpSettings;
   bool m_meshPickingEnabled;
-  bool m_meshClipPlaneEnabled;
-  glm::vec4 m_meshClipPlaneWorld;
+  bool m_meshCutawayEnabled;
   bool m_showCrosshairsIn3D;
   float m_crosshairs3DGlyphDiameterScenePercent;
   float m_crosshairs3DGlyphLengthScenePercent;

@@ -400,6 +400,25 @@ TEST_CASE("shader loops defend fixed-size inputs and unsupported projection mode
   CHECK(meshPeel.find("clamp(u_shadowStrength, 0.0, 1.0)") != std::string::npos);
 }
 
+TEST_CASE("all surface passes implement per-renderable octant cutaway", "[rendering][shaders][mesh][cutaway]")
+{
+  const std::array shaderPaths{
+    "rendering/shaders/mesh/Mesh.fs",
+    "rendering/shaders/mesh/MeshDdpInit.fs",
+    "rendering/shaders/mesh/MeshDdpPeel.fs",
+    "rendering/shaders/mesh/MeshShadowDepth.fs",
+    "rendering/shaders/mesh/AmbientOcclusionGeometry.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("uniform bool u_cutawayEnabled") != std::string::npos);
+    CHECK(shader.find("uniform vec4 u_cutawayPlanes[3]") != std::string::npos);
+    CHECK(shader.find("u_cutawayEnabled && dot(u_cutawayPlanes[0].xyz, v_worldPosition)") != std::string::npos);
+    CHECK(shader.find("dot(u_cutawayPlanes[1].xyz, v_worldPosition)") != std::string::npos);
+    CHECK(shader.find("dot(u_cutawayPlanes[2].xyz, v_worldPosition)") != std::string::npos);
+  }
+}
+
 TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP paths", "[rendering][shaders][pbr]")
 {
   const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};

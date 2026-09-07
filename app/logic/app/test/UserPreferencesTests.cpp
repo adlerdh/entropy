@@ -190,8 +190,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.meshSmoothingIterations = 40;
   preferences.meshSmoothingPassBand = 0.2f;
   preferences.meshPickingEnabled = false;
-  preferences.meshClipPlaneEnabled = true;
-  preferences.meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.0f};
+  preferences.meshCutawayEnabled = true;
   preferences.meshShadowsEnabled = true;
   preferences.meshShadowMapSizePixels = 2048;
   preferences.meshShadowStrength = 0.7f;
@@ -416,8 +415,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.meshSmoothingIterations == expected.meshSmoothingIterations);
   CHECK(actual.meshSmoothingPassBand == Catch::Approx(expected.meshSmoothingPassBand));
   CHECK(actual.meshPickingEnabled == expected.meshPickingEnabled);
-  CHECK(actual.meshClipPlaneEnabled == expected.meshClipPlaneEnabled);
-  CHECK(actual.meshClipPlaneWorld == expected.meshClipPlaneWorld);
+  CHECK(actual.meshCutawayEnabled == expected.meshCutawayEnabled);
   CHECK(actual.meshShadowsEnabled == expected.meshShadowsEnabled);
   CHECK(actual.meshShadowMapSizePixels == expected.meshShadowMapSizePixels);
   CHECK(actual.meshShadowStrength == Catch::Approx(expected.meshShadowStrength));
@@ -870,6 +868,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
                                                                  {renderPreferences.meshTriangleEdgeColor.x,
                                                                   renderPreferences.meshTriangleEdgeColor.y,
                                                                   renderPreferences.meshTriangleEdgeColor.z}));
+  CHECK(root.at("rendering").at("mesh").at("cutaway") == false);
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
   CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));

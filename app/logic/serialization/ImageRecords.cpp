@@ -58,12 +58,14 @@ void from_json(const json& j, serialize::SegSettings& settings)
 
 json segmentationLabelToJson(const serialize::SegmentationLabel& label)
 {
-  return json{
+  json result{
     {"index", label.m_index},
     {"name", label.m_name},
     {"color", vec4ToJson(label.m_color)},
     {"visible", label.m_visible},
     {"showMesh", label.m_showMesh}};
+  addIfChanged(result, "includeInCutaway", label.m_includeInCutaway, true);
+  return result;
 }
 
 serialize::SegmentationLabel segmentationLabelFromJson(const json& j)
@@ -83,6 +85,9 @@ serialize::SegmentationLabel segmentationLabelFromJson(const json& j)
   }
   if (const auto showMesh = j.find("showMesh"); showMesh != j.end() && showMesh->is_boolean()) {
     label.m_showMesh = showMesh->get<bool>();
+  }
+  if (const auto include = j.find("includeInCutaway"); include != j.end() && include->is_boolean()) {
+    label.m_includeInCutaway = include->get<bool>();
   }
   return label;
 }

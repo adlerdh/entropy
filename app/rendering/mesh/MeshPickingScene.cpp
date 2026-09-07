@@ -46,7 +46,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
     return std::nullopt;
   }
 
-  const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
+  const rendering::mesh::MeshOctantCutaway cutaway = meshCutawayForView(view);
   std::vector<rendering::mesh::MeshRenderable> renderables;
   if (view.threeDSceneContents().contains(ThreeDSceneContent::Isosurfaces)) {
     for (const ImgSegPair& imageSegPair : imageSegPairs) {
@@ -114,7 +114,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
               globalMaterial.rimLightingEnabled,
               globalMaterial.rimOpacityStrength),
             .visible = surface->visibleIn3d});
-        renderable.drawOptions.clipPlanes = clipPlanes;
+        if (surface->includeInCutaway) {
+          renderable.drawOptions.cutaway = cutaway;
+        }
         renderables.push_back(std::move(renderable));
       }
     }
@@ -193,7 +195,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
             normalizedLabelColor(*labelTable, labelIndex),
             labelState,
             m_appData.renderSettings().m_meshSurfaceMaterialSettings));
-        renderable.drawOptions.clipPlanes = clipPlanes;
+        if (labelTable->getIncludeInCutaway(labelIndex)) {
+          renderable.drawOptions.cutaway = cutaway;
+        }
         renderables.push_back(std::move(renderable));
       }
     }

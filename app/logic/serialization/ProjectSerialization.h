@@ -244,36 +244,35 @@ struct ProjectRaycastingSettings
  */
 struct ProjectMeshRenderingSettings
 {
-  bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
-  bool m_flatShadingEnabled = false;                  //!< Use one geometric normal per rendered mesh triangle
-  bool m_triangleEdgesEnabled = false;                //!< Overlay anti-aliased triangle topology edges
-  glm::vec3 m_triangleEdgeColor{0.0f};                //!< Triangle topology edge color
-  bool m_pbrShadingEnabled = false;                   //!< Use PBR shading for all rendered surface meshes
-  float m_pbrMetallic = 0.2f;                         //!< Global PBR metallic factor
-  float m_pbrRoughness = 0.3f;                        //!< Global PBR roughness factor
-  float m_pbrAmbientOcclusion = 1.0f;                 //!< Global PBR indirect-light occlusion factor
-  bool m_smoothSegmentationMeshes = true;             //!< Smooth extracted segmentation-label surfaces
-  bool m_smoothIsosurfaceMeshes = true;               //!< Smooth extracted scalar isosurfaces
-  uint32_t m_meshSmoothingIterations = 25;            //!< Shared windowed-sinc smoothing iterations
-  float m_meshSmoothingPassBand = 0.1f;               //!< Shared windowed-sinc smoothing pass band
-  uint32_t m_ddpMaxPeelPasses = 5;                    //!< DDP safety/fixed front-back peel iteration count
-  bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
-  bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
-  glm::vec4 m_clipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane
-  bool m_shadowsEnabled = false;                      //!< Render mesh shadows when mesh rendering is active
-  uint32_t m_shadowMapSizePixels = 1024;              //!< Mesh shadow-map size in pixels
-  float m_shadowStrength = 0.35f;                     //!< Mesh shadow contribution in [0, 1]
-  float m_shadowDepthBias = 0.001f;                   //!< Mesh shadow depth bias
-  bool m_ambientOcclusionEnabled = false;             //!< Render screen-space ambient occlusion for meshes
-  float m_ambientOcclusionRadiusMm = 5.0f;            //!< Mesh AO view-space radius in physical millimetres
-  float m_ambientOcclusionStrength = 1.0f;            //!< Mesh AO contribution in [0, 1]
-  float m_ambientOcclusionPower = 1.5f;               //!< Mesh AO nonlinear response exponent
-  float m_ambientOcclusionContrast = 1.0f;            //!< Mesh AO shaped occlusion scale
-  uint32_t m_ambientOcclusionSampleCount = 24;        //!< Mesh AO hemisphere samples per pixel
-  bool m_rimLightingEnabled = false;                  //!< Apply rim lighting to all rendered surfaces
-  float m_rimOpacityStrength = 1.0f;                  //!< Global rim opacity modulation strength
-  float m_rimEmissionStrength = 1.0f;                 //!< Global rim glow strength
-  float m_rimPower = 2.0f;                            //!< Global rim falloff exponent
+  bool m_renderingEnabled = true;              //!< Render committed opaque isosurfaces as meshes when ready
+  bool m_flatShadingEnabled = false;           //!< Use one geometric normal per rendered mesh triangle
+  bool m_triangleEdgesEnabled = false;         //!< Overlay anti-aliased triangle topology edges
+  glm::vec3 m_triangleEdgeColor{0.0f};         //!< Triangle topology edge color
+  bool m_pbrShadingEnabled = false;            //!< Use PBR shading for all rendered surface meshes
+  float m_pbrMetallic = 0.2f;                  //!< Global PBR metallic factor
+  float m_pbrRoughness = 0.3f;                 //!< Global PBR roughness factor
+  float m_pbrAmbientOcclusion = 1.0f;          //!< Global PBR indirect-light occlusion factor
+  bool m_smoothSegmentationMeshes = true;      //!< Smooth extracted segmentation-label surfaces
+  bool m_smoothIsosurfaceMeshes = true;        //!< Smooth extracted scalar isosurfaces
+  uint32_t m_meshSmoothingIterations = 25;     //!< Shared windowed-sinc smoothing iterations
+  float m_meshSmoothingPassBand = 0.1f;        //!< Shared windowed-sinc smoothing pass band
+  uint32_t m_ddpMaxPeelPasses = 5;             //!< DDP safety/fixed front-back peel iteration count
+  bool m_pickingEnabled = true;                //!< Allow mesh point picking in 3D views
+  bool m_cutawayEnabled = false;               //!< Cut away the viewer-facing octant of opted-in surface meshes
+  bool m_shadowsEnabled = false;               //!< Render mesh shadows when mesh rendering is active
+  uint32_t m_shadowMapSizePixels = 1024;       //!< Mesh shadow-map size in pixels
+  float m_shadowStrength = 0.35f;              //!< Mesh shadow contribution in [0, 1]
+  float m_shadowDepthBias = 0.001f;            //!< Mesh shadow depth bias
+  bool m_ambientOcclusionEnabled = false;      //!< Render screen-space ambient occlusion for meshes
+  float m_ambientOcclusionRadiusMm = 5.0f;     //!< Mesh AO view-space radius in physical millimetres
+  float m_ambientOcclusionStrength = 1.0f;     //!< Mesh AO contribution in [0, 1]
+  float m_ambientOcclusionPower = 1.5f;        //!< Mesh AO nonlinear response exponent
+  float m_ambientOcclusionContrast = 1.0f;     //!< Mesh AO shaped occlusion scale
+  uint32_t m_ambientOcclusionSampleCount = 24; //!< Mesh AO hemisphere samples per pixel
+  bool m_rimLightingEnabled = false;           //!< Apply rim lighting to all rendered surfaces
+  float m_rimOpacityStrength = 1.0f;           //!< Global rim opacity modulation strength
+  float m_rimEmissionStrength = 1.0f;          //!< Global rim glow strength
+  float m_rimPower = 2.0f;                     //!< Global rim falloff exponent
 };
 
 /**
@@ -449,11 +448,12 @@ struct SegmentationLabel
 {
   bool operator==(const SegmentationLabel&) const = default;
 
-  std::size_t m_index = 0; //!< Label table index
-  std::string m_name;      //!< Label name
-  glm::vec4 m_color{0.0f}; //!< Normalized non-premultiplied RGBA color
-  bool m_visible = true;   //!< Show label in segmentation rendering
-  bool m_showMesh = false; //!< Show label mesh in 3D views
+  std::size_t m_index = 0;        //!< Label table index
+  std::string m_name;             //!< Label name
+  glm::vec4 m_color{0.0f};        //!< Normalized non-premultiplied RGBA color
+  bool m_visible = true;          //!< Show label in segmentation rendering
+  bool m_showMesh = false;        //!< Show label mesh in 3D views
+  bool m_includeInCutaway = true; //!< Apply the global cutaway to this label's mesh
 };
 
 struct SegmentationLabels

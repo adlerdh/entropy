@@ -288,11 +288,7 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
-  changedMeshRendering.m_meshRendering.m_clipPlaneEnabled = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
-
-  changedMeshRendering = project;
-  changedMeshRendering.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
+  changedMeshRendering.m_meshRendering.m_cutawayEnabled = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   auto changedImageIsosurfaces = project;

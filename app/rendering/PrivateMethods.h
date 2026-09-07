@@ -390,11 +390,12 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> collectMeshImagePlaneRend
 bool renderMeshImagePlanesAndCrosshairsForView(const View& view);
 
 /**
- * @brief Return project-wide world-space mesh clipping planes enabled for the current renderer state.
+ * @brief Build the viewer-facing octant cutaway for one 3D view.
  *
- * @return Enabled mesh clipping planes, or an empty vector when clipping is disabled.
+ * @return Enabled cutaway based on the view camera and crosshairs, or a disabled cutaway when the global setting is
+ * off.
  */
-std::vector<rendering::mesh::MeshClipPlane> meshClipPlanes() const;
+rendering::mesh::MeshOctantCutaway meshCutawayForView(const View& view) const;
 
 /**
  * @brief Render committed isosurfaces through the mesh path when they no longer require raycasting.

@@ -1,6 +1,7 @@
 #include "rendering/mesh/MeshPicking.h"
 
 #include "rendering/mesh/MeshClipPlanes.h"
+#include "rendering/mesh/MeshCutaway.h"
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
@@ -10,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <ranges>
 
 namespace rendering::mesh
 {
@@ -99,10 +101,20 @@ std::optional<MeshTriangleHit> pickNearestTriangle(
   const MeshPickRay& ray,
   const glm::mat4& world_T_mesh,
   std::span<const MeshClipPlane> clipPlanes,
+  const MeshOctantCutaway& cutaway,
   const bool backfaceCulling)
 {
   std::optional<MeshTriangleHit> nearestHit;
   const bool reversedOrientation = meshTransformReversesOrientation(world_T_mesh);
+  const std::optional<MeshOctantCutaway> normalizedCutaway = normalizedOctantCutaway(cutaway);
+  const auto isInsideRemovedOctant = [&normalizedCutaway](const glm::vec3& worldPosition) {
+    if (!normalizedCutaway || !normalizedCutaway->enabled) {
+      return false;
+    }
+    return std::ranges::all_of(normalizedCutaway->worldPlanes, [&worldPosition](const glm::vec4& plane) {
+      return signedDistanceToPlane(plane, worldPosition) >= 0.0f;
+    });
+  };
 
   for (size_t index = 0; index + 2 < mesh.indices.size(); index += 3) {
     const uint32_t ia = mesh.indices[index];
@@ -125,7 +137,10 @@ std::optional<MeshTriangleHit> pickNearestTriangle(
     }
 
     std::optional<MeshTriangleHit> hit = intersectRayTriangle(ray, a, b, c);
-    if (!hit || !pointInsideEnabledClipPlanes(hit->worldPosition, clipPlanes)) {
+    if (
+      !hit || !pointInsideEnabledClipPlanes(hit->worldPosition, clipPlanes) ||
+      isInsideRemovedOctant(hit->worldPosition))
+    {
       continue;
     }
 
@@ -138,10 +153,13 @@ std::optional<MeshTriangleHit> pickNearestTriangle(
   return nearestHit;
 }
 
-std::optional<MeshTriangleHit>
-pickNearestTriangle(const MeshData& mesh, const MeshPickRay& ray, std::span<const MeshClipPlane> clipPlanes)
+std::optional<MeshTriangleHit> pickNearestTriangle(
+  const MeshData& mesh,
+  const MeshPickRay& ray,
+  std::span<const MeshClipPlane> clipPlanes,
+  const MeshOctantCutaway& cutaway)
 {
-  return pickNearestTriangle(mesh, ray, glm::mat4{1.0f}, clipPlanes);
+  return pickNearestTriangle(mesh, ray, glm::mat4{1.0f}, clipPlanes, cutaway);
 }
 
 std::optional<MeshScenePickHit> pickNearestRenderable(const MeshScenePickRequest& request)
@@ -171,6 +189,7 @@ std::optional<MeshScenePickHit> pickNearestRenderable(const MeshScenePickRequest
       *ray,
       renderable.world_T_mesh,
       renderable.drawOptions.clipPlanes,
+      renderable.drawOptions.cutaway,
       renderable.drawOptions.backfaceCulling);
     if (!hit) {
       continue;

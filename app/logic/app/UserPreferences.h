@@ -167,8 +167,7 @@ struct RenderPreferences
   uint32_t meshSmoothingIterations = 25;
   float meshSmoothingPassBand = 0.1f;
   bool meshPickingEnabled = true;
-  bool meshClipPlaneEnabled = false;
-  glm::vec4 meshClipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f};
+  bool meshCutawayEnabled = false;
   bool meshShadowsEnabled = false;
   uint32_t meshShadowMapSizePixels = 1024;
   float meshShadowStrength = 0.35f;

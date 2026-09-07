@@ -2673,14 +2673,10 @@ void renderMeshRenderingTab(rendering::RenderSettings& renderData)
   helpMarker(
     "Double-click a visible surface in a 3D view to move the crosshairs to the selected point on that surface");
 
-  ImGui::Checkbox("Clipping plane", &renderData.m_meshClipPlaneEnabled);
+  ImGui::Checkbox("Viewer-facing cutaway", &renderData.m_meshCutawayEnabled);
   ImGui::SameLine();
-  helpMarker("Clip mesh surfaces against one world-space plane");
-  if (renderData.m_meshClipPlaneEnabled) {
-    ImGui::DragFloat4("Clip plane", glm::value_ptr(renderData.m_meshClipPlaneWorld), 0.1f, -10000.0f, 10000.0f);
-    ImGui::SameLine();
-    helpMarker("World-space plane as nx, ny, nz, d; visible points satisfy dot(n, position) + d >= 0");
-  }
+  helpMarker(
+    "Cut away the viewer-facing octant of segmentation and isosurface meshes, with the crosshairs as its origin");
 
   ImGui::PopID(); /*** PopID mesh_rendering ***/
 }

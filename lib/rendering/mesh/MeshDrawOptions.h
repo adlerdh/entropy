@@ -5,6 +5,7 @@
 #include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
 
+#include <array>
 #include <vector>
 
 namespace rendering::mesh
@@ -52,6 +53,18 @@ struct MeshClipPlane
 };
 
 /**
+ * @brief Three world-space planes whose common positive octant is removed from a mesh
+ *
+ * Each plane passes through the cutaway origin. Its normal points into the octant that is discarded. This differs
+ * from ordinary clipping planes, whose positive half-spaces are retained.
+ */
+struct MeshOctantCutaway
+{
+  std::array<glm::vec4, 3> worldPlanes{}; //!< Normalized planes bounding the octant to remove
+  bool enabled = false;                   //!< Whether the common positive octant is discarded
+};
+
+/**
  * @brief Draw behavior that does not change mesh geometry
  */
 struct MeshDrawOptions
@@ -59,6 +72,7 @@ struct MeshDrawOptions
   MeshFillMode fillMode = MeshFillMode::Surface;           //!< Surface, wireframe, overlay, or points
   MeshPickingMode pickingMode = MeshPickingMode::Disabled; //!< Picking detail for this renderable
   std::vector<MeshClipPlane> clipPlanes;                   //!< Enabled and disabled clipping planes
+  MeshOctantCutaway cutaway;                               //!< Optional octant removed from this renderable
   bool backfaceCulling = false;                            //!< Whether back-facing triangles may be culled
 };
 

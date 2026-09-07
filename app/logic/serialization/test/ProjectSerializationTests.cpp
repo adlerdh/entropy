@@ -429,8 +429,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_rimPower = 3.5f;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_meshRendering.m_pickingEnabled = false;
-  project.m_meshRendering.m_clipPlaneEnabled = true;
-  project.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
+  project.m_meshRendering.m_cutawayEnabled = true;
   project.m_intensityProjection.m_useMaximumImageExtent = false;
   project.m_intensityProjection.m_slabThicknessMm = 12.5f;
   project.m_intensityProjection.m_xrayEnergyKeV = 120.0f;
@@ -524,9 +523,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
   CHECK_FALSE(mesh.contains("dualDepthPeeling"));
   CHECK(mesh.at("pointPicking") == false);
-  CHECK(mesh.at("clipPlane").at("enabled") == true);
-  CHECK(mesh.at("clipPlane").at("worldPlane").at(1) == 1.0f);
-  CHECK(mesh.at("clipPlane").at("worldPlane").at(3) == -12.5f);
+  CHECK(mesh.at("cutaway") == true);
   CHECK_FALSE(raycasting.contains("transparentBackgroundWhenNoHit"));
   CHECK_FALSE(raycasting.contains("imageBoxVisible"));
   CHECK_FALSE(raycasting.contains("meshRenderingEnabled"));
@@ -614,8 +611,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 32);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
-  CHECK(parsed.m_meshRendering.m_clipPlaneEnabled == true);
-  CHECK(parsed.m_meshRendering.m_clipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
+  CHECK(parsed.m_meshRendering.m_cutawayEnabled == true);
   CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == false);
   CHECK(parsed.m_intensityProjection.m_slabThicknessMm == 12.5f);
   CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
@@ -702,7 +698,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_meshRendering.m_triangleEdgeColor = {0.2f, 0.3f, 0.4f};
   project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pickingEnabled = false;
-  project.m_meshRendering.m_clipPlaneEnabled = true;
+  project.m_meshRendering.m_cutawayEnabled = true;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
   project.m_meshRendering.m_rimLightingEnabled = true;
@@ -772,7 +768,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                  "rimLighting",
                                                  "smoothing",
                                                  "pointPicking",
-                                                 "clipPlane",
+                                                 "cutaway",
                                                  "enabled"});
   CHECK(
     objectKeys(orderedRendering.at("mesh").at("smoothing")) ==
@@ -813,6 +809,23 @@ TEST_CASE("Project serialization ignores obsolete DDP settings nested under mesh
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 5);
+}
+
+TEST_CASE("Project serialization ignores the obsolete global mesh clip plane", "[project][serialization][cutaway]")
+{
+  const json root = {
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings",
+     {{"rendering",
+       {{"mesh", {{"clipPlane", {{"enabled", true}, {"worldPlane", json::array({1.0, 0.0, 0.0, -2.0})}}}}}}}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK_FALSE(parsed.m_meshRendering.m_cutawayEnabled);
+  const json rewritten = parsed;
+  const json mesh =
+    rewritten.value("settings", json::object()).value("rendering", json::object()).value("mesh", json::object());
+  CHECK_FALSE(mesh.contains("clipPlane"));
+  CHECK_FALSE(mesh.contains("cutaway"));
 }
 
 TEST_CASE("Project serialization ignores the obsolete singular segmentation settings key", "[project][serialization]")
@@ -1597,6 +1610,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK_FALSE(defaultSurface.contains("fillAboveIsovalue"));
   CHECK_FALSE(defaultSurface.contains("visibleIn2D"));
   CHECK_FALSE(defaultSurface.contains("visibleIn3D"));
+  CHECK_FALSE(defaultSurface.contains("includeInCutaway"));
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
@@ -1610,6 +1624,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   imageSurface.m_surface.fillOpacity = 0.15f;
   imageSurface.m_surface.fillAboveIsovalue = true;
   imageSurface.m_surface.visibleIn2d = false;
+  imageSurface.m_surface.includeInCutaway = false;
   project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
 
   const json root = project;
@@ -1619,6 +1634,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
   CHECK(savedSurface.at("surface").at("fillAboveIsovalue") == true);
   CHECK(savedSurface.at("surface").at("visibleIn2D") == false);
+  CHECK(savedSurface.at("surface").at("includeInCutaway") == false);
   CHECK_FALSE(savedSurface.at("surface").contains("visibleIn3D"));
   CHECK_FALSE(savedSurface.at("surface").contains("visible"));
   CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
@@ -1636,6 +1652,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(parsedSurface.m_surface.fillAboveIsovalue);
   CHECK_FALSE(parsedSurface.m_surface.visibleIn2d);
   CHECK(parsedSurface.m_surface.visibleIn3d);
+  CHECK_FALSE(parsedSurface.m_surface.includeInCutaway);
 
   Isosurface hiddenIn3d;
   hiddenIn3d.visibleIn3d = false;
@@ -1811,7 +1828,8 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
           .m_name = "Hippocampus",
           .m_color = glm::vec4{0.1f, 0.2f, 0.3f, 0.4f},
           .m_visible = false,
-          .m_showMesh = true}}}}});
+          .m_showMesh = true,
+          .m_includeInCutaway = false}}}}});
 
   const json root = project;
   const json& settings = root.at("images").at(0).at("segmentations").at(0).at("settings");
@@ -1827,6 +1845,7 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(settings.at("labels").at("values").at(0).at("color") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
   CHECK(settings.at("labels").at("values").at(0).at("visible") == false);
   CHECK(settings.at("labels").at("values").at(0).at("showMesh") == true);
+  CHECK(settings.at("labels").at("values").at(0).at("includeInCutaway") == false);
   CHECK_FALSE(settings.contains("interpolationMode"));
   CHECK_FALSE(settings.contains("displayName"));
   CHECK_FALSE(settings.contains("visibility"));
@@ -1853,6 +1872,7 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(parsedSettings.m_labels->m_values.front().m_color == glm::vec4{0.1f, 0.2f, 0.3f, 0.4f});
   CHECK_FALSE(parsedSettings.m_labels->m_values.front().m_visible);
   CHECK(parsedSettings.m_labels->m_values.front().m_showMesh);
+  CHECK_FALSE(parsedSettings.m_labels->m_values.front().m_includeInCutaway);
 }
 
 TEST_CASE("Project serialization preserves standard raster spatial metadata", "[project][serialization]")

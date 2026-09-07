@@ -194,8 +194,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.meshSmoothingIterations = renderSettings.m_meshSmoothingIterations;
   preferences.meshSmoothingPassBand = renderSettings.m_meshSmoothingPassBand;
   preferences.meshPickingEnabled = renderSettings.m_meshPickingEnabled;
-  preferences.meshClipPlaneEnabled = renderSettings.m_meshClipPlaneEnabled;
-  preferences.meshClipPlaneWorld = renderSettings.m_meshClipPlaneWorld;
+  preferences.meshCutawayEnabled = renderSettings.m_meshCutawayEnabled;
   preferences.meshShadowsEnabled = renderSettings.m_meshAdvancedLightingSettings.shadows.enabled;
   preferences.meshShadowMapSizePixels = renderSettings.m_meshAdvancedLightingSettings.shadows.mapSizePixels;
   preferences.meshShadowStrength = renderSettings.m_meshAdvancedLightingSettings.shadows.strength;
@@ -360,8 +359,7 @@ void applyRenderPreferences(
   renderSettings.m_meshSmoothingIterations = std::clamp(preferences.meshSmoothingIterations, 1u, 1000u);
   renderSettings.m_meshSmoothingPassBand = std::clamp(preferences.meshSmoothingPassBand, 0.001f, 2.0f);
   renderSettings.m_meshPickingEnabled = preferences.meshPickingEnabled;
-  renderSettings.m_meshClipPlaneEnabled = preferences.meshClipPlaneEnabled;
-  renderSettings.m_meshClipPlaneWorld = preferences.meshClipPlaneWorld;
+  renderSettings.m_meshCutawayEnabled = preferences.meshCutawayEnabled;
   renderSettings.m_meshAdvancedLightingSettings.shadows.enabled = preferences.meshShadowsEnabled;
   renderSettings.m_meshAdvancedLightingSettings.shadows.mapSizePixels = preferences.meshShadowMapSizePixels;
   renderSettings.m_meshAdvancedLightingSettings.shadows.strength = preferences.meshShadowStrength;

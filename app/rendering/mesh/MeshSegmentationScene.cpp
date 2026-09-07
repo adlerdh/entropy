@@ -128,7 +128,7 @@ bool Rendering::renderSegmentationMeshesForView(
     return false;
   }
 
-  const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
+  const rendering::mesh::MeshOctantCutaway cutaway = meshCutawayForView(view);
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
@@ -256,7 +256,9 @@ bool Rendering::renderSegmentationMeshesForView(
         m_appData.renderSettings().m_meshSurfaceMaterialSettings);
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeSegmentationLabelRenderable(handle, seg->transformations().worldDef_T_subject(), style);
-      renderable.drawOptions.clipPlanes = clipPlanes;
+      if (labelTable->getIncludeInCutaway(labelIndex)) {
+        renderable.drawOptions.cutaway = cutaway;
+      }
       renderables.push_back(std::move(renderable));
     }
 

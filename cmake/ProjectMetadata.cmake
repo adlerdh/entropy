@@ -1,10 +1,9 @@
 set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Visualize, compare, segment, annotate, and co-register medical images")
 set(APP_FILE_DESCRIPTION "Entropy Medical Image Viewer")
-set(PICSL_NAME "Penn Image Computing and Science Lab (PICSL), University of Pennsylvania")
 set(PUBLISHER_NAME "Daniel H. Adler")
 set(AUTHOR_CREDIT_LINE "Primary author and maintainer: Daniel H. Adler, Ph.D.")
-set(COPYRIGHT_LINE "Copyright 2021-2026 Daniel H. Adler, Ph.D. and the ${PICSL_NAME}")
+set(COPYRIGHT_LINE "Copyright 2021-2026 Daniel H. Adler, Ph.D. and The Trustees of the University of Pennsylvania. All rights reserved.")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)

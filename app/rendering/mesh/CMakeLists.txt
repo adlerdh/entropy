@@ -1,5 +1,5 @@
 target_sources(entropy PRIVATE
-  MeshClipPlaneScene.cpp
+  MeshCutawayScene.cpp
   MeshCrosshairsScene.cpp
   MeshExtractionJobs.cpp
   MeshImageAdapter.cpp

@@ -5,6 +5,7 @@ target_sources(EntropyRendering PRIVATE
   MeshBounds.cpp
   MeshCache.cpp
   MeshClipPlanes.cpp
+  MeshCutaway.cpp
   MeshCrosshairsPolicy.cpp
   MeshDdpPass.cpp
   MeshDdpPolicy.cpp
