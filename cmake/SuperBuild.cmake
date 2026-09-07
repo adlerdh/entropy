@@ -30,16 +30,17 @@ if(NOT _isMultiConfig AND CMAKE_BUILD_TYPE)
 endif()
 
 foreach(_flag_var IN ITEMS
-    CMAKE_C_FLAGS
-    CMAKE_CXX_FLAGS
-    CMAKE_C_FLAGS_DEBUG
-    CMAKE_CXX_FLAGS_DEBUG
-    CMAKE_C_FLAGS_RELEASE
-    CMAKE_CXX_FLAGS_RELEASE
-    CMAKE_C_FLAGS_RELWITHDEBINFO
-    CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    CMAKE_C_FLAGS_MINSIZEREL
-    CMAKE_CXX_FLAGS_MINSIZEREL)
+  CMAKE_C_FLAGS
+  CMAKE_CXX_FLAGS
+  CMAKE_C_FLAGS_DEBUG
+  CMAKE_CXX_FLAGS_DEBUG
+  CMAKE_C_FLAGS_RELEASE
+  CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_C_FLAGS_RELWITHDEBINFO
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  CMAKE_C_FLAGS_MINSIZEREL
+  CMAKE_CXX_FLAGS_MINSIZEREL)
+
   if(DEFINED ${_flag_var} AND NOT "${${_flag_var}}" STREQUAL "")
     list(APPEND _ext_cmake_build_type_args "-D${_flag_var}:STRING=${${_flag_var}}")
   endif()
@@ -72,6 +73,7 @@ endif()
 
 set(_entropy_bundled_dependency_shared_libs ${BUILD_SHARED_LIBS})
 set(_entropy_bundled_dependency_static_libs ${BUILD_STATIC_LIBS})
+
 if(Entropy_STATIC_BUNDLED_DEPENDENCIES)
   set(_entropy_bundled_dependency_shared_libs OFF)
   set(_entropy_bundled_dependency_static_libs ON)

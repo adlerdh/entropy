@@ -1,9 +1,8 @@
 add_library(entropy_warnings INTERFACE)
 add_library(Entropy::Warnings ALIAS entropy_warnings)
 
-# Keep the first-party warning policy comparable across supported compilers.
-# /W4 is MSVC's practical counterpart to the GNU-family baseline. MSVC's
-# /Wall additionally enables many low-value compiler and system-header warnings.
+# Keep the warning policy comparable across supported compilers. /W4 is MSVC's equivalent to the GNU baseline.
+# MSVC's /Wall enables many low value compiler and system header warnings.
 target_compile_options(entropy_warnings INTERFACE
   $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
     -Wall
@@ -16,10 +15,10 @@ target_compile_options(entropy_warnings INTERFACE
     -Wno-error=array-bounds
     -ftrapv
   >
-  # IWYU parses the compiler command with its embedded Clang, which can emit
-  # version-specific diagnostics that the selected compiler does not. Keep
-  # normal builds strict without turning those analyzer-only warnings into
-  # fatal parse errors.
+
+  # IWYU parses the compiler command with its embedded Clang, which can emit version-specific diagnostics that the
+  # selected compiler does not. Keep normal builds strict without turning those analyzer warnings into fatal parse
+  # errors.
   $<$<AND:$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>,$<NOT:$<BOOL:${Entropy_ENABLE_IWYU}>>>:
     -Werror
   >
@@ -40,6 +39,7 @@ target_compile_options(entropy_warnings INTERFACE
 
 add_library(entropy_logging_level INTERFACE)
 add_library(Entropy::LoggingLevel ALIAS entropy_logging_level)
+
 target_compile_definitions(entropy_logging_level INTERFACE
   $<$<OR:$<CONFIG:Debug>,$<BOOL:${Entropy_ENABLE_TRACE_LOGGING}>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
   $<$<NOT:$<OR:$<CONFIG:Debug>,$<BOOL:${Entropy_ENABLE_TRACE_LOGGING}>>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>

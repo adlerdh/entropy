@@ -42,4 +42,6 @@ set_target_properties(TestRenderingLibrary PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
+entropy_copy_runtime_dlls(TestRenderingLibrary)
+
 catch_discover_tests(TestRenderingLibrary)

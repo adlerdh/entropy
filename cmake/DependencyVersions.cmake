@@ -21,24 +21,25 @@ set(vtk_VERSION "9.6.2")
 include(ItkComponents)
 
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
+
 foreach(dependency IN ITEMS
-    catch2
-    cli11
-    cmakerc
-    curl
-    glfw
-    glm
-    iconfont
-    imgui
-    implot
-    itk
-    nanovg
-    nativefiledialog
-    nlohmann_json
-    qtbase
-    spdlog
-    stduuid
-    tinyfsm
-    vtk)
+  catch2
+  cli11
+  cmakerc
+  curl
+  glfw
+  glm
+  iconfont
+  imgui
+  implot
+  itk
+  nanovg
+  nativefiledialog
+  nlohmann_json
+  qtbase
+  spdlog
+  stduuid
+  tinyfsm
+  vtk)
   set(${dependency}_PREFIX "${EXTERNAL_DIR}/${dependency}-${${dependency}_VERSION}")
 endforeach()

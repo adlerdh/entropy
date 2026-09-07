@@ -41,6 +41,7 @@ if(ENTROPY_COVERAGE_MODE STREQUAL "LLVM")
       ${_entropy_ctest_command}
     WORKING_DIRECTORY "${ENTROPY_BINARY_DIR}"
     RESULT_VARIABLE _entropy_test_result)
+
   if(NOT _entropy_test_result EQUAL 0)
     message(FATAL_ERROR "Coverage test run failed with exit code ${_entropy_test_result}")
   endif()
@@ -55,6 +56,7 @@ if(ENTROPY_COVERAGE_MODE STREQUAL "LLVM")
     COMMAND "${ENTROPY_LLVM_PROFDATA}" merge -sparse ${_entropy_raw_profiles}
       -o "${_entropy_indexed_profile}"
     RESULT_VARIABLE _entropy_merge_result)
+
   if(NOT _entropy_merge_result EQUAL 0)
     message(FATAL_ERROR "llvm-profdata merge failed with exit code ${_entropy_merge_result}")
   endif()
@@ -82,6 +84,7 @@ if(ENTROPY_COVERAGE_MODE STREQUAL "LLVM")
         "-output-dir=${_entropy_html_dir}"
       WORKING_DIRECTORY "${ENTROPY_SOURCE_DIR}"
       RESULT_VARIABLE _entropy_show_result)
+
     if(NOT _entropy_show_result EQUAL 0)
       message(FATAL_ERROR "llvm-cov show failed with exit code ${_entropy_show_result}")
     endif()
@@ -96,6 +99,7 @@ if(ENTROPY_COVERAGE_MODE STREQUAL "LLVM")
       "-ignore-filename-regex=${ENTROPY_COVERAGE_EXCLUDE_REGEX}"
     WORKING_DIRECTORY "${ENTROPY_SOURCE_DIR}"
     RESULT_VARIABLE _entropy_report_result)
+
   if(NOT _entropy_report_result EQUAL 0)
     message(FATAL_ERROR "llvm-cov report failed with exit code ${_entropy_report_result}")
   endif()
@@ -124,18 +128,22 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
       "--json-summary" "${ENTROPY_COVERAGE_DIR}/summary.json"
       "--json-summary-pretty"
       "--print-summary")
+
     if(ENTROPY_COVERAGE_HTML)
       file(MAKE_DIRECTORY "${ENTROPY_COVERAGE_DIR}/html")
       list(APPEND _entropy_gcovr_command
         "--html-details" "${ENTROPY_COVERAGE_DIR}/html/index.html")
     endif()
+
     execute_process(
       COMMAND ${_entropy_gcovr_command}
       WORKING_DIRECTORY "${ENTROPY_SOURCE_DIR}"
       RESULT_VARIABLE _entropy_gcovr_result)
+
     if(NOT _entropy_gcovr_result EQUAL 0)
       message(FATAL_ERROR "gcovr failed with exit code ${_entropy_gcovr_result}")
     endif()
+
     if(ENTROPY_COVERAGE_HTML)
       message(STATUS "Entropy HTML coverage report: ${ENTROPY_COVERAGE_DIR}/html/index.html")
     endif()
@@ -148,28 +156,35 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
         --gcov-tool "${ENTROPY_GCOV_EXECUTABLE}"
         --output-file "${_entropy_raw_info}"
       RESULT_VARIABLE _entropy_lcov_capture_result)
+
     if(NOT _entropy_lcov_capture_result EQUAL 0)
       message(FATAL_ERROR "lcov capture failed with exit code ${_entropy_lcov_capture_result}")
     endif()
+
     execute_process(
       COMMAND "${ENTROPY_LCOV}" --remove "${_entropy_raw_info}"
         "*/external/*" "*/test/*" "*Tests.cpp" "*/build-*/*" "/usr/*"
         --output-file "${_entropy_filtered_info}"
       RESULT_VARIABLE _entropy_lcov_filter_result)
+
     if(NOT _entropy_lcov_filter_result EQUAL 0)
       message(FATAL_ERROR "lcov filtering failed with exit code ${_entropy_lcov_filter_result}")
     endif()
+
     execute_process(
       COMMAND "${ENTROPY_LCOV}" --summary "${_entropy_filtered_info}"
       RESULT_VARIABLE _entropy_lcov_summary_result)
+
     if(NOT _entropy_lcov_summary_result EQUAL 0)
       message(FATAL_ERROR "lcov summary failed with exit code ${_entropy_lcov_summary_result}")
     endif()
+
     if(ENTROPY_COVERAGE_HTML)
       execute_process(
         COMMAND "${ENTROPY_GENHTML}" "${_entropy_filtered_info}"
           --output-directory "${ENTROPY_COVERAGE_DIR}/html"
         RESULT_VARIABLE _entropy_genhtml_result)
+
       if(NOT _entropy_genhtml_result EQUAL 0)
         message(FATAL_ERROR "genhtml failed with exit code ${_entropy_genhtml_result}")
       endif()
@@ -198,9 +213,11 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
     if(DEFINED ENV{GITHUB_WORKSPACE} AND NOT "$ENV{GITHUB_WORKSPACE}" STREQUAL "")
       file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" _entropy_github_workspace)
       file(TO_CMAKE_PATH "${ENTROPY_SOURCE_DIR}" _entropy_source_dir_cmake)
+
       foreach(_entropy_base IN ITEMS "${ENTROPY_SOURCE_DIR}" "${ENTROPY_BINARY_DIR}")
         file(TO_CMAKE_PATH "${_entropy_base}" _entropy_base_cmake)
         cmake_path(IS_PREFIX _entropy_base_cmake "${_entropy_coverage_path}" NORMALIZE _entropy_is_prefix)
+
         if(_entropy_is_prefix)
           file(RELATIVE_PATH _entropy_relative_path "${_entropy_base_cmake}" "${_entropy_coverage_path}")
           if(_entropy_base_cmake STREQUAL _entropy_source_dir_cmake)
@@ -209,8 +226,10 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
             get_filename_component(_entropy_binary_name "${ENTROPY_BINARY_DIR}" NAME)
             set(_entropy_workspace_path "${_entropy_github_workspace}/${_entropy_binary_name}/${_entropy_relative_path}")
           endif()
+
           file(TO_NATIVE_PATH "${_entropy_workspace_path}" _entropy_workspace_native_path)
           list(FIND ${out_var} "${_entropy_workspace_native_path}" _entropy_workspace_path_index)
+
           if(_entropy_workspace_path_index EQUAL -1)
             list(APPEND ${out_var} "${_entropy_workspace_native_path}")
           endif()
@@ -226,6 +245,7 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
   set(_entropy_opencppcoverage_lib_sources)
   _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_app_sources "${ENTROPY_SOURCE_DIR}/app")
   _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_lib_sources "${ENTROPY_SOURCE_DIR}/lib")
+
   foreach(_entropy_source IN LISTS _entropy_opencppcoverage_app_sources _entropy_opencppcoverage_lib_sources)
     list(APPEND _entropy_opencppcoverage_source_args "--sources" "${_entropy_source}")
   endforeach()
@@ -234,14 +254,17 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
   set(_entropy_opencppcoverage_external_sources)
   _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${ENTROPY_SOURCE_DIR}/external")
   _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${ENTROPY_BINARY_DIR}/external")
+
   file(GLOB_RECURSE _entropy_source_tree_paths LIST_DIRECTORIES true
     "${ENTROPY_SOURCE_DIR}/app/*"
     "${ENTROPY_SOURCE_DIR}/lib/*")
+
   foreach(_entropy_source_tree_path IN LISTS _entropy_source_tree_paths)
     if(IS_DIRECTORY "${_entropy_source_tree_path}" AND _entropy_source_tree_path MATCHES "[/\\\\]test$")
       _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${_entropy_source_tree_path}")
     endif()
   endforeach()
+
   foreach(_entropy_source IN LISTS _entropy_opencppcoverage_external_sources)
     list(APPEND _entropy_opencppcoverage_excluded_source_args "--excluded_sources" "${_entropy_source}")
   endforeach()
@@ -251,8 +274,10 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
   if(NOT DEFINED ENTROPY_COVERAGE_OBJECTS OR ENTROPY_COVERAGE_OBJECTS STREQUAL "")
     message(FATAL_ERROR "ENTROPY_COVERAGE_OBJECTS is required for OpenCppCoverage coverage")
   endif()
+
   string(REPLACE "|" ";" _entropy_coverage_objects "${ENTROPY_COVERAGE_OBJECTS}")
   set(_entropy_opencppcoverage_module_args)
+
   foreach(_entropy_object IN LISTS _entropy_coverage_objects)
     set(_entropy_opencppcoverage_modules)
     _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_modules "${_entropy_object}")
@@ -272,9 +297,11 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
       ${_entropy_ctest_command}
     WORKING_DIRECTORY "${ENTROPY_BINARY_DIR}"
     RESULT_VARIABLE _entropy_opencppcoverage_result)
+
   if(NOT _entropy_opencppcoverage_result EQUAL 0)
     message(FATAL_ERROR "OpenCppCoverage failed with exit code ${_entropy_opencppcoverage_result}")
   endif()
+
   if(ENTROPY_COVERAGE_HTML)
     message(STATUS "Entropy HTML coverage report: ${ENTROPY_COVERAGE_DIR}/html/index.html")
   else()

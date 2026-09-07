@@ -2,6 +2,10 @@ if(BUILD_TESTING)
   find_package(Catch2 ${catch2_VERSION} REQUIRED HINTS "${catch2_PREFIX}/install")
   message(STATUS "Using Catch2 in ${Catch2_DIR}")
   include(Catch)
+
+  # Defer test enumeration until CTest runs. On Windows, running tests from concurrent post-build steps can race with
+  # DLL deployment into the shared output directory.
+  set(CMAKE_CATCH_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
 endif()
 
 find_package(CLI11 ${cli11_VERSION} REQUIRED HINTS "${cli11_PREFIX}/install")
@@ -9,13 +13,14 @@ message(STATUS "Using CLI11 in ${CLI11_DIR}")
 
 include("${cmakerc_PREFIX}/src/CMakeRC.cmake")
 
-# macOS uses the SDK libcurl. Windows and Linux use the SuperBuild-pinned package.
+# macOS uses the SDK libcurl. Windows and Linux use the SuperBuild pinned package.
 if(APPLE)
   execute_process(
     COMMAND xcrun --sdk macosx --show-sdk-path
     OUTPUT_VARIABLE entropy_MACOS_SDK_PATH
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET)
+
   set(CURL_INCLUDE_DIR "${entropy_MACOS_SDK_PATH}/usr/include")
   find_library(CURL_LIBRARY curl PATHS "${entropy_MACOS_SDK_PATH}/usr/lib" NO_DEFAULT_PATH)
   set(CURL_INCLUDE_DIR "${CURL_INCLUDE_DIR}" CACHE PATH "macOS SDK curl include directory" FORCE)
@@ -24,9 +29,8 @@ if(APPLE)
   set(CURL_LIBRARY_DEBUG "CURL_LIBRARY_DEBUG-NOTFOUND" CACHE FILEPATH "macOS SDK curl debug library" FORCE)
   find_package(CURL REQUIRED MODULE COMPONENTS HTTPS)
 
-  # The SDK headers are already discovered through CMAKE_OSX_SYSROOT. Propagating
-  # the SDK's usr/include directory as an explicit include path can place C
-  # headers ahead of libc++ headers and break standard-library includes.
+  # The SDK headers are already discovered through CMAKE_OSX_SYSROOT. Propagating the SDK's usr/include directory as an
+  # explicit include path can place C headers ahead of libc++ headers and break standard library includes.
   set_property(TARGET CURL::libcurl PROPERTY INTERFACE_INCLUDE_DIRECTORIES "")
 else()
   find_package(CURL ${curl_VERSION} REQUIRED CONFIG COMPONENTS HTTPS
@@ -74,6 +78,7 @@ set(entropy_VTK_COMPONENTS
   FiltersGeneral
   FiltersSources
 )
+
 find_package(VTK ${vtk_VERSION} REQUIRED COMPONENTS ${entropy_VTK_COMPONENTS}
   HINTS "${vtk_PREFIX}/install" NO_DEFAULT_PATH)
 message(STATUS "Using VTK in ${VTK_DIR}")
@@ -96,9 +101,8 @@ else()
   message(FATAL_ERROR "std::expected is required. Use a C++23 standard library that provides <expected>.")
 endif()
 
-# ITK's legacy use file is still required for automatic IO-factory
-# registration. Reclassify the include paths it adds so warnings in ITK do not
-# become first-party build failures.
+# ITK's legacy use file is required for automatic IO factory registration. Reclassify the include paths it adds so that
+# warnings in ITK do not become our build failures.
 macro(entropy_configure_itk_directory)
   include("${ITK_USE_FILE}")
   get_property(entropy_directory_includes DIRECTORY PROPERTY INCLUDE_DIRECTORIES)

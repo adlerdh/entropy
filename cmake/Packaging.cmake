@@ -7,7 +7,7 @@ elseif(entropy_PACKAGE_ARCHITECTURE_LOWER MATCHES "^(arm64|aarch64)$")
 endif()
 
 set(Entropy_PACKAGE_ARCHITECTURE "${entropy_PACKAGE_ARCHITECTURE_DEFAULT}"
-    CACHE STRING "Architecture label used in generated package filenames")
+  CACHE STRING "Architecture label used in generated package filenames")
 
 if(UNIX AND NOT APPLE)
   include(LinuxPackaging)

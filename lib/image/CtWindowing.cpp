@@ -120,10 +120,7 @@ const MetaDataMap::mapped_type* findMetadata(const MetaDataMap& metadata, std::i
 {
   for (const auto& [key, value] : metadata) {
     const std::string canonical = canonicalKey(key);
-    if (std::any_of(keys.begin(), keys.end(), [&](std::string_view candidate) -> bool {
-          return std::string_view{canonical} == candidate;
-        }))
-    {
+    if (std::find(keys.begin(), keys.end(), std::string_view{canonical}) != keys.end()) {
       return &value;
     }
   }
