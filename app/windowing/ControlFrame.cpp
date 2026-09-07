@@ -205,9 +205,9 @@ ViewRenderMode ControlFrame::renderMode() const
   return m_renderMode;
 }
 
-void ControlFrame::setRenderMode(const ViewRenderMode& renderMode)
+void ControlFrame::setRenderMode(const ViewRenderMode& newRenderMode)
 {
-  m_renderMode = renderMode;
+  m_renderMode = newRenderMode;
 }
 
 const ThreeDSceneContents& ControlFrame::threeDSceneContents() const

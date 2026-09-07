@@ -128,6 +128,23 @@ float imagePlaneViewOpacityMultiplier(const glm::vec3& planeNormalWorld, const g
   return std::clamp(std::abs(glm::dot(*normal, *viewDirection)), 0.0f, 1.0f);
 }
 
+float imagePlaneOpacityMultiplier(const float globalOpacity, const float viewOpacity) noexcept
+{
+  if (!std::isfinite(globalOpacity) || !std::isfinite(viewOpacity)) {
+    return 0.0f;
+  }
+  return std::clamp(globalOpacity, 0.0f, 1.0f) * std::clamp(viewOpacity, 0.0f, 1.0f);
+}
+
+bool imagePlaneIsocontourDrawable(
+  const bool overlaysEnabled,
+  const bool visibleIn2d,
+  const float lineOpacity,
+  const float fillOpacity) noexcept
+{
+  return overlaysEnabled && visibleIn2d && (lineOpacity > 0.0f || fillOpacity > 0.0f);
+}
+
 std::uint64_t imagePlaneSceneGeometryVersion(
   const MeshImagePlaneSceneInputs& inputs,
   const MeshImagePlaneOrientation orientation) noexcept

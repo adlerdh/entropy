@@ -102,7 +102,7 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
       m_appData.settings().brushPreviewOutlineStyle(),
       fillOpacity);
   }
-  program.stopUse();
+  GLShaderProgram::stopUse();
 
   unbindTextures(boundDeformationTextures);
   unbindBufferTextures(boundBufferTextures);

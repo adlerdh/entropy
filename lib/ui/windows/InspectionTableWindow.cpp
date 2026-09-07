@@ -3,6 +3,7 @@
 #include "ui/Helpers.h"
 #include "ui/Scaling.h"
 #include "ui/headers/HeaderCommon.h"
+#include "ui/windows/InspectionWindowSizing.h"
 #include "logic/app/Data.h"
 
 #include "image/Image.h"
@@ -36,6 +37,40 @@ using uuid = uuids::uuid;
 
 const ImVec4 whiteText(1, 1, 1, 1);
 const ImVec4 blackText(0, 0, 0, 1);
+
+void setInspectionWindowHeight(float height)
+{
+  ImGuiDockNode* dockNode = ImGui::GetWindowDockNode();
+  if (!dockNode) {
+    ImGui::SetWindowSize(ImVec2{ImGui::GetWindowWidth(), height}, ImGuiCond_Always);
+    return;
+  }
+
+  // A leaf may sit inside one or more horizontal splits. Resize the nearest branch controlled by
+  // a vertical splitter so every window sharing this row retains the same height.
+  ImGuiDockNode* branch = dockNode;
+  while (branch->ParentNode && ImGuiAxis_Y != branch->ParentNode->SplitAxis) {
+    branch = branch->ParentNode;
+  }
+
+  if (branch->ParentNode) {
+    ImGuiDockNode* parent = branch->ParentNode;
+    ImGuiDockNode* sibling = parent->ChildNodes[0] == branch ? parent->ChildNodes[1] : parent->ChildNodes[0];
+    const float availableHeight = std::max(0.0f, parent->Size.y - ImGui::GetStyle().DockingSeparatorSize);
+    const float minimumBranchHeight = std::min(ImGui::GetStyle().WindowMinSize.y, 0.5f * availableHeight);
+    const float branchHeight = std::clamp(height, minimumBranchHeight, availableHeight - minimumBranchHeight);
+
+    ImGui::DockBuilderSetNodeSize(branch->ID, ImVec2{branch->Size.x, branchHeight});
+    if (sibling) {
+      ImGui::DockBuilderSetNodeSize(sibling->ID, ImVec2{sibling->Size.x, availableHeight - branchHeight});
+    }
+    ImGui::MarkIniSettingsDirty();
+  }
+  else if (!dockNode->IsDockSpace()) {
+    ImGui::DockBuilderSetNodeSize(dockNode->ID, ImVec2{dockNode->Size.x, height});
+    ImGui::MarkIniSettingsDirty();
+  }
+}
 
 std::size_t visibleImageCount(const AppData& appData)
 {
@@ -729,6 +764,7 @@ void renderInspectionWindowWithTable(
 
   static bool s_showTitleBar = false;
   static bool s_autoSizeColumnsRequested = false;
+  static bool s_fitHeightRequested = false;
   static std::array<bool, k_inspectorColumnCount> s_autoSizeColumnRequested{};
   static bool s_hadTimeSeriesColumnAvailable = false;
   static bool s_hadWarpedCoordinateColumnAvailable = false;
@@ -885,6 +921,14 @@ void renderInspectionWindowWithTable(
     }
 
     ImGui::Separator();
+    if (ImGui::MenuItem("Fit height to rows")) {
+      s_fitHeightRequested = true;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Resize the inspector to fit its current rows, up to 45%% of the workspace height");
+    }
+
+    ImGui::Separator();
     if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close")) {
       appData.guiData().m_showInspectionWindow = false;
     }
@@ -903,9 +947,10 @@ void renderInspectionWindowWithTable(
     renderWindowMenu();
   };
 
-  auto dockedMenu = [&renderImagesMenu, &renderColumnVisibilityMenu]() {
+  auto dockedMenu = [&renderImagesMenu, &renderColumnVisibilityMenu, &renderWindowMenu]() {
     renderImagesMenu();
     renderColumnVisibilityMenu();
+    renderWindowMenu();
   };
 
   auto columnWidths = [&]() {
@@ -1767,6 +1812,27 @@ void renderInspectionWindowWithTable(
             s_autoSizeColumnRequested.at(column) = true;
           }
         }
+      }
+
+      if (s_fitHeightRequested) {
+        const ImGuiTable* table = ImGui::GetCurrentTable();
+        const ImGuiWindow* window = ImGui::GetCurrentWindow();
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        if (table && window && viewport) {
+          const float tableContentHeight = std::max(0.0f, table->RowPosY2 - table->OuterRect.Min.y);
+          const float horizontalScrollbarHeight =
+            table->InnerWindow && table->InnerWindow->ScrollbarX ? ImGui::GetStyle().ScrollbarSize : 0.0f;
+          const float contentTop = table->OuterRect.Min.y - window->Pos.y;
+          const float desiredHeight =
+            contentTop + tableContentHeight + horizontalScrollbarHeight + ImGui::GetStyle().WindowPadding.y;
+          const float fittedHeight = ui::fittedInspectionWindowHeight(
+            desiredHeight,
+            viewport->WorkSize.y,
+            ui::scaledPixel(120.0f),
+            ui::scaledPixel(480.0f));
+          setInspectionWindowHeight(fittedHeight);
+        }
+        s_fitHeightRequested = false;
       }
 
       ImGui::EndTable();

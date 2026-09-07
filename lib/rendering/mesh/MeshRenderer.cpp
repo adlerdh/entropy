@@ -72,8 +72,8 @@ void uploadClipPlanes(const MeshDrawOptions& drawOptions, GLShaderProgram& progr
 void drawUploadedMesh(const MeshGpuData& gpuData)
 {
   gpuData.vao().bind();
-  gpuData.vao().drawElements(gpuData.drawParams());
-  gpuData.vao().unbind();
+  GLVertexArrayObject::drawElements(gpuData.drawParams());
+  GLVertexArrayObject::unbind();
 }
 
 int shaderValue(const MeshShadingModel shadingModel) noexcept
@@ -262,7 +262,7 @@ void MeshRenderer::drawBucket(
     }
   }
 
-  program.stopUse();
+  GLShaderProgram::stopUse();
   if (pass == MeshDrawPass::Surface) {
     releaseAmbientOcclusionTexture(context);
     releaseShadowTexture(context);

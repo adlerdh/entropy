@@ -45,6 +45,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/ImagePropertiesWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionTableWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionWindow.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionWindowSizing.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/IsosurfacesWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/KeyboardShortcuts.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/LandmarkPropertiesWindow.cpp"

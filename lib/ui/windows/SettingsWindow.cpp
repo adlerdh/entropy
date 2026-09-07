@@ -2274,7 +2274,7 @@ void renderIntensityProjectionDefaults(rendering::RenderSettings& renderData)
 /**
  * @brief Render 3D scene and camera settings.
  */
-void renderSceneAndCameraTab(rendering::RenderSettings& renderData)
+void renderSceneAndCameraTab(AppData& appData, rendering::RenderSettings& renderData)
 {
   ImGui::PushID("3d_rendering"); /*** PushID 3d_rendering ***/
 
@@ -2302,6 +2302,19 @@ void renderSceneAndCameraTab(rendering::RenderSettings& renderData)
   ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
   ImGui::SameLine();
   helpMarker("Reverse drag direction for POV 3D rotation about the current eye position");
+
+  bool synchronizeThreeDCameras = renderData.m_synchronizeThreeDCameras;
+  if (ImGui::Checkbox("Synchronize cameras of 3D views in the same layout", &synchronizeThreeDCameras)) {
+    renderData.m_synchronizeThreeDCameras = synchronizeThreeDCameras;
+    if (synchronizeThreeDCameras) {
+      appData.windowData().synchronizeCurrentLayoutThreeDCameras();
+    }
+  }
+  ImGui::SameLine();
+  helpMarker("Keep all 3D view cameras in the current layout synchronized");
+  disabledTextWrapped(
+    "Changes to camera position, orientation, projection, orbit target, and zoom in one 3D view are applied to every "
+    "other 3D view in the same layout.");
 
   ImGui::Checkbox("Show crosshairs glyphs in 3D", &renderData.m_showCrosshairsIn3D);
   ImGui::SameLine();
@@ -2429,6 +2442,16 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
   ImGui::Checkbox("Show segmentations on planes", &renderData.m_showSegmentationsOnImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
+
+  ImGui::Checkbox("Show isocontours on planes", &renderData.m_showIsocontoursOnImagePlanesIn3D);
+  ImGui::SameLine();
+  helpMarker("Show 2D isocontour lines and fills on 3D image planes, subject to each surface's 2D visibility");
+
+  if (mySliderF32("Opacity", &renderData.m_imagePlaneOpacity, 0.0f, 1.0f, "%0.2f")) {
+    renderData.m_imagePlaneOpacity = std::clamp(renderData.m_imagePlaneOpacity, 0.0f, 1.0f);
+  }
+  ImGui::SameLine();
+  helpMarker("Scale the opacity of images, segmentation overlays, isocontours, and borders on all 3D image planes");
 
   ImGui::Checkbox("Fade opacity with view angle", &renderData.m_modulateImagePlaneOpacityWithViewAngle);
   ImGui::SameLine();
@@ -2825,11 +2848,11 @@ void renderAsciiShadingSettings(rendering::RenderSettings& renderData)
   ImGui::PopID(); /*** PopID ascii ***/
 }
 
-void renderRenderingTab(rendering::RenderSettings& renderData)
+void renderRenderingTab(AppData& appData, rendering::RenderSettings& renderData)
 {
   const bool sceneAndCameraOpen = ImGui::CollapsingHeader("Scene & Camera", ImGuiTreeNodeFlags_DefaultOpen);
   if (sceneAndCameraOpen) {
-    renderSceneAndCameraTab(renderData);
+    renderSceneAndCameraTab(appData, renderData);
   }
   finishSettingsSection(sceneAndCameraOpen);
 
@@ -3285,7 +3308,7 @@ static void renderSettingsPage(
       renderMetricsTab(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
       break;
     case GuiData::SettingsTab::Rendering:
-      renderRenderingTab(renderData);
+      renderRenderingTab(appData, renderData);
       break;
     case GuiData::SettingsTab::Registration:
       renderRegistrationTab(appData);

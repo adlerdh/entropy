@@ -47,7 +47,7 @@ class View;
 void drawImageQuad(
   GLShaderProgram& program,
   const ViewRenderMode& renderMode,
-  rendering::RenderResources::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -143,7 +143,7 @@ void drawSegPreviewQuad(
  */
 void drawRaycastQuad(
   GLShaderProgram& program,
-  rendering::RenderResources::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& imagePairs,

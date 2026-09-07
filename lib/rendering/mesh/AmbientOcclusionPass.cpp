@@ -48,8 +48,8 @@ glm::uvec2 viewportSize(const GlViewport& viewport) noexcept
 void drawFullScreenTriangle(MeshAmbientOcclusionResources& resources)
 {
   resources.fullScreenVao().bind();
-  resources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
-  resources.fullScreenVao().unbind();
+  GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+  GLVertexArrayObject::unbind();
 }
 
 void renderGeometry(const MeshAmbientOcclusionRenderRequest& request, const glm::uvec2& size)
@@ -67,8 +67,11 @@ void renderGeometry(const MeshAmbientOcclusionRenderRequest& request, const glm:
   glClearColor(0.5f, 0.5f, 1.0f, 0.0f);
   glClearDepth(1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  request.meshRenderer
-    .drawBucket(request.renderables, request.context, request.geometryProgram, MeshDrawPass::AmbientOcclusionGeometry);
+  MeshRenderer::drawBucket(
+    request.renderables,
+    request.context,
+    request.geometryProgram,
+    MeshDrawPass::AmbientOcclusionGeometry);
 }
 
 void resolveOcclusion(const MeshAmbientOcclusionRenderRequest& request, const glm::uvec2& size)
@@ -97,7 +100,7 @@ void resolveOcclusion(const MeshAmbientOcclusionRenderRequest& request, const gl
   request.resolveProgram.setUniform("u_strength", request.plan.strength);
   request.resolveProgram.setUniform("u_sampleCount", static_cast<GLint>(request.plan.sampleCount));
   drawFullScreenTriangle(request.resources);
-  request.resolveProgram.stopUse();
+  GLShaderProgram::stopUse();
   request.resources.depthTexture().unbind(k_depthTextureUnit);
   request.resources.normalTexture().unbind(k_normalTextureUnit);
 }
@@ -125,7 +128,7 @@ void filterOcclusion(const MeshAmbientOcclusionRenderRequest& request, const glm
   request.filterProgram.setUniform("u_power", request.plan.power);
   request.filterProgram.setUniform("u_contrast", request.plan.contrast);
   drawFullScreenTriangle(request.resources);
-  request.filterProgram.stopUse();
+  GLShaderProgram::stopUse();
   request.resources.rawOcclusionTexture().unbind(k_rawOcclusionTextureUnit);
   request.resources.depthTexture().unbind(k_depthTextureUnit);
   request.resources.normalTexture().unbind(k_normalTextureUnit);

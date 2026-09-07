@@ -65,6 +65,16 @@ glm::vec3 imagePlaneWorldNormal(
  */
 float imagePlaneViewOpacityMultiplier(const glm::vec3& planeNormalWorld, const glm::vec3& viewDirectionWorld) noexcept;
 
+/** Return the bounded product of the global and view-angle image-plane opacity multipliers. */
+float imagePlaneOpacityMultiplier(float globalOpacity, float viewOpacity) noexcept;
+
+/** Return whether a 2D isocontour has a visible line or fill on a 3D image plane. */
+bool imagePlaneIsocontourDrawable(
+  bool overlaysEnabled,
+  bool visibleIn2d,
+  float lineOpacity,
+  float fillOpacity) noexcept;
+
 /**
  * @brief Version key for cached image-plane geometry.
  *

@@ -472,14 +472,20 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
   addIfChanged(imagePlanes, "visible", settings.m_imagePlanesVisible, defaults.m_imagePlanesVisible);
   addIfChanged(
     imagePlanes,
-    "viewAngleOpacity",
-    settings.m_imagePlaneViewAngleOpacity,
-    defaults.m_imagePlaneViewAngleOpacity);
-  addIfChanged(
-    imagePlanes,
     "segmentationsVisible",
     settings.m_imagePlaneSegmentationsVisible,
     defaults.m_imagePlaneSegmentationsVisible);
+  addIfChanged(
+    imagePlanes,
+    "isocontoursVisible",
+    settings.m_imagePlaneIsocontoursVisible,
+    defaults.m_imagePlaneIsocontoursVisible);
+  addIfChanged(imagePlanes, "opacity", settings.m_imagePlaneOpacity, defaults.m_imagePlaneOpacity);
+  addIfChanged(
+    imagePlanes,
+    "viewAngleOpacity",
+    settings.m_imagePlaneViewAngleOpacity,
+    defaults.m_imagePlaneViewAngleOpacity);
   addIfChanged(imagePlanes, "shading", settings.m_imagePlaneShading, defaults.m_imagePlaneShading);
   json imagePlaneLighting = json::object();
   addIfChanged(
@@ -556,13 +562,20 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     if (const auto value = imagePlanes->find("visible"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlanesVisible = value->get<bool>();
     }
-    if (const auto value = imagePlanes->find("viewAngleOpacity"); value != imagePlanes->end() && value->is_boolean()) {
-      settings.m_imagePlaneViewAngleOpacity = value->get<bool>();
-    }
     if (const auto value = imagePlanes->find("segmentationsVisible");
         value != imagePlanes->end() && value->is_boolean())
     {
       settings.m_imagePlaneSegmentationsVisible = value->get<bool>();
+    }
+    if (const auto value = imagePlanes->find("isocontoursVisible"); value != imagePlanes->end() && value->is_boolean())
+    {
+      settings.m_imagePlaneIsocontoursVisible = value->get<bool>();
+    }
+    if (const auto value = imagePlanes->find("opacity"); value != imagePlanes->end() && value->is_number()) {
+      settings.m_imagePlaneOpacity = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = imagePlanes->find("viewAngleOpacity"); value != imagePlanes->end() && value->is_boolean()) {
+      settings.m_imagePlaneViewAngleOpacity = value->get<bool>();
     }
     if (const auto value = imagePlanes->find("shading"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlaneShading = value->get<bool>();

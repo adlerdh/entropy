@@ -464,6 +464,12 @@ public:
   void setWindowCenter(uint32_t i, double center);
   /// @brief Set window center for the active component.
   void setWindowCenter(double center);
+  /// @brief Set an exact window center and width, expanding the editable ranges when necessary.
+  ///
+  /// This is useful for clinical presets whose window may extend beyond the observed image values.
+  void setWindowCenterAndWidth(uint32_t i, double center, double width);
+  /// @brief Set an exact window center and width for the active component.
+  void setWindowCenterAndWidth(double center, double width);
   /// @brief Set every component window to the supplied native intensity range.
   void setWindowRangeForAllComponents(std::pair<double, double> range);
 

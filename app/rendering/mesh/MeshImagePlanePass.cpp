@@ -7,6 +7,7 @@
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/mesh/MeshGpuData.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
+#include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshViewContext.h"
 #include "rendering/mesh/MeshViewViewport.h"
 #include "rendering/gl/GLShaderProgram.h"
@@ -63,7 +64,7 @@ GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
 struct BoundImagePlaneTexture
 {
   std::reference_wrapper<GLTexture> texture;
-  uint32_t unit;
+  uint32_t unit = 0u;
 };
 
 std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
@@ -114,7 +115,7 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
 struct BoundImagePlaneSegmentationTexture
 {
   std::reference_wrapper<GLTexture> texture;
-  uint32_t unit;
+  uint32_t unit = 0u;
   bool hasSegmentation = false;
 };
 
@@ -143,7 +144,7 @@ BoundImagePlaneSegmentationTexture bindImagePlaneSegmentationTexture(
 struct BoundImagePlaneBufferTexture
 {
   std::reference_wrapper<GLBufferTexture> texture;
-  uint32_t unit;
+  uint32_t unit = 0u;
 };
 
 std::list<BoundImagePlaneBufferTexture> bindImagePlaneSegmentationLabelTableTextures(
@@ -308,7 +309,8 @@ void setMeshImagePlaneSegmentationUniforms(
   program.setUniform(
     "u_segOpacity",
     drawSegmentation ? uniforms.segOpacity *
-                         (renderSettings.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f)
+                         (renderSettings.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f) *
+                         renderable.opacityMultiplier
                      : 0.0f);
   program.setUniform(
     "u_segFillOpacity",
@@ -486,8 +488,64 @@ void setMeshImagePlaneIsoContourUniforms(
 void drawUploadedImagePlane(const rendering::mesh::MeshGpuData& gpuData)
 {
   gpuData.vao().bind();
-  gpuData.vao().drawElements(gpuData.drawParams());
-  gpuData.vao().unbind();
+  GLVertexArrayObject::drawElements(gpuData.drawParams());
+  GLVertexArrayObject::unbind();
+}
+
+void drawImagePlaneIsocontours(
+  AppData& appData,
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderable& imagePlane,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& textureLayout,
+  const rendering::mesh::MeshDrawContext& context,
+  const rendering::mesh::MeshGpuData& gpuData,
+  GLShaderProgram& texture3dProgram,
+  GLShaderProgram& texture2dProgram)
+{
+  const Image* image = appData.image(imagePlane.texture.imageUid);
+  if (!image) {
+    return;
+  }
+
+  const ImageSettings& imageSettings = image->settings();
+  GLShaderProgram& program =
+    shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
+  program.use();
+  for (const auto& surfaceUid : appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component)) {
+    const Isosurface* surface =
+      appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
+    if (!surface) {
+      spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
+      continue;
+    }
+    if (!rendering::mesh::imagePlaneIsocontourDrawable(
+          appData.renderSettings().m_showIsocontoursOnImagePlanesIn3D,
+          surface->visibleIn2d,
+          surface->opacity,
+          surface->fillOpacity))
+    {
+      continue;
+    }
+
+    static constexpr bool premultipliedAlpha = false;
+    const glm::vec3 color =
+      glm::vec3{getIsosurfaceColor(appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
+    setMeshImagePlaneIsoContourUniforms(
+      program,
+      view,
+      imagePlane,
+      uniforms,
+      textureLayout,
+      context,
+      appData.renderSettings().m_numCheckerboardSquares,
+      imageSettings,
+      *surface,
+      color,
+      imagePlane.opacityMultiplier);
+    drawUploadedImagePlane(gpuData);
+  }
+  GLShaderProgram::stopUse();
 }
 
 void drawImagePlaneRenderablesWithProgram(
@@ -497,6 +555,8 @@ void drawImagePlaneRenderablesWithProgram(
   const rendering::mesh::MeshDrawContext& context,
   GLShaderProgram& texture3dProgram,
   GLShaderProgram& texture2dProgram,
+  GLShaderProgram& isocontourTexture3dProgram,
+  GLShaderProgram& isocontourTexture2dProgram,
   const bool usePreviousTextures = false,
   GLTexture* const previousDepthBounds = nullptr,
   GLTexture* const previousFrontColor = nullptr)
@@ -573,7 +633,18 @@ void drawImagePlaneRenderablesWithProgram(
       program.setSamplerUniform("u_previousFrontColorTex", sk_previousFrontColorSampler.index);
     }
     drawUploadedImagePlane(*gpuData);
-    program.stopUse();
+    GLShaderProgram::stopUse();
+
+    drawImagePlaneIsocontours(
+      appData,
+      view,
+      imagePlane,
+      uniformsIt->second,
+      textureLayout,
+      context,
+      *gpuData,
+      isocontourTexture3dProgram,
+      isocontourTexture2dProgram);
 
     for (const BoundImagePlaneTexture& binding : boundTextures) {
       binding.texture.get().unbind(binding.unit);
@@ -697,44 +768,22 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         m_appData.renderSettings().m_numCheckerboardSquares);
       drawUploadedImagePlane(*gpuData);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
 
-    const ImageSettings& imageSettings = image->settings();
-    GLShaderProgram& isoProgram = shaderProgramForImagePlaneTextureDimension(
+    // The contour geometry is coincident with its image plane. Accept equal depth so the overlay remains visible in
+    // the non-DDP fallback path as well as in the pre-composited DDP path.
+    glDepthFunc(GL_LEQUAL);
+    drawImagePlaneIsocontours(
+      m_appData,
+      view,
+      imagePlane,
+      uniformsIt->second,
+      textureLayout,
+      context,
+      *gpuData,
       m_meshImagePlaneIsoContourProgram,
-      m_meshImagePlaneIsoContourTexture2DProgram,
-      textureLayout.dimension);
-
-    isoProgram.use();
-    for (const auto& surfaceUid : m_appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component)) {
-      const Isosurface* surface =
-        m_appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
-      if (!surface) {
-        spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
-        continue;
-      }
-      if (!surface->visibleIn2d) {
-        continue;
-      }
-
-      static constexpr bool premultipliedAlpha = false;
-      const glm::vec3 color = glm::vec3{
-        getIsosurfaceColor(m_appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
-      setMeshImagePlaneIsoContourUniforms(
-        isoProgram,
-        view,
-        imagePlane,
-        uniformsIt->second,
-        textureLayout,
-        context,
-        m_appData.renderSettings().m_numCheckerboardSquares,
-        imageSettings,
-        *surface,
-        color,
-        imagePlane.opacityMultiplier);
-      drawUploadedImagePlane(*gpuData);
-    }
-    isoProgram.stopUse();
+      m_meshImagePlaneIsoContourTexture2DProgram);
+    glDepthFunc(GL_LESS);
 
     for (const BoundImagePlaneTexture& binding : boundTextures) {
       binding.texture.get().unbind(binding.unit);
@@ -763,9 +812,9 @@ void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(
       "u_ddpDepthOrder",
       rendering::mesh::imagePlaneCompositeDdpDepthOrder(sk_imagePlaneOrientations[index]));
     m_meshDdpResources.fullScreenVao().bind();
-    m_meshDdpResources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
-    m_meshDdpResources.fullScreenVao().unbind();
-    m_meshImagePlaneCompositeDdpInitProgram.stopUse();
+    GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+    GLVertexArrayObject::unbind();
+    GLShaderProgram::stopUse();
     depth.unbind(sk_compositeDepthSampler.index);
     color.unbind(sk_compositeColorSampler.index);
   }
@@ -802,9 +851,9 @@ void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
       "u_ddpDepthOrder",
       rendering::mesh::imagePlaneCompositeDdpDepthOrder(sk_imagePlaneOrientations[index]));
     m_meshDdpResources.fullScreenVao().bind();
-    m_meshDdpResources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
-    m_meshDdpResources.fullScreenVao().unbind();
-    m_meshImagePlaneCompositeDdpPeelProgram.stopUse();
+    GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+    GLVertexArrayObject::unbind();
+    GLShaderProgram::stopUse();
     depth.unbind(sk_compositeDepthSampler.index);
     color.unbind(sk_compositeColorSampler.index);
   }
@@ -842,6 +891,8 @@ void Rendering::prepareMeshImagePlaneDdpCompositesForView(
       context,
       m_meshImagePlaneCompositeProgram,
       m_meshImagePlaneCompositeTexture2DProgram,
+      m_meshImagePlaneIsoContourProgram,
+      m_meshImagePlaneIsoContourTexture2DProgram,
       false,
       nullptr,
       nullptr);

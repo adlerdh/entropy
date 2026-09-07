@@ -757,6 +757,26 @@ void ImageSettings::setWindowCenter(double center)
   setWindowCenter(m_activeComponent, center);
 }
 
+void ImageSettings::setWindowCenterAndWidth(uint32_t i, double center, double width)
+{
+  if (!std::isfinite(center) || !std::isfinite(width) || width <= 0.0) {
+    return;
+  }
+
+  ComponentSettings& setting = m_componentSettings[i];
+  setting.m_minMaxWindowCenterRange.first = std::min(setting.m_minMaxWindowCenterRange.first, center);
+  setting.m_minMaxWindowCenterRange.second = std::max(setting.m_minMaxWindowCenterRange.second, center);
+  setting.m_minMaxWindowWidthRange.second = std::max(setting.m_minMaxWindowWidthRange.second, width);
+  setting.m_windowCenter = center;
+  setting.m_windowWidth = width;
+  updateInternals();
+}
+
+void ImageSettings::setWindowCenterAndWidth(double center, double width)
+{
+  setWindowCenterAndWidth(m_activeComponent, center, width);
+}
+
 void ImageSettings::setWindowRangeForAllComponents(std::pair<double, double> range)
 {
   const auto [low, high] = range;

@@ -709,6 +709,9 @@ void removeLayout(AppData& appData, std::size_t index)
 
   if (index == windowData.currentLayoutIndex()) {
     windowData.setCurrentLayoutIndex(index > 0 ? index - 1 : 1);
+    if (appData.renderSettings().m_synchronizeThreeDCameras) {
+      windowData.synchronizeCurrentLayoutThreeDCameras();
+    }
   }
   windowData.removeLayout(index);
 }
@@ -895,6 +898,9 @@ void renderLayoutTabs(AppData& appData)
 
     if (requestedLayoutIndex && *requestedLayoutIndex < windowData.numLayouts()) {
       windowData.setCurrentLayoutIndex(*requestedLayoutIndex);
+      if (appData.renderSettings().m_synchronizeThreeDCameras) {
+        windowData.synchronizeCurrentLayoutThreeDCameras();
+      }
     }
     lastSyncedSelectedLayoutUid = windowData.layouts().at(windowData.currentLayoutIndex()).uid();
   }
@@ -3459,6 +3465,12 @@ void ImGuiWrapper::render()
       case MainMenuAction::ResetView:
         if (m_recenterAllViews) m_recenterAllViews(true, true, true, true, true);
         break;
+      case MainMenuAction::ToggleSynchronizeThreeDCameras:
+        m_appData.renderSettings().m_synchronizeThreeDCameras = !m_appData.renderSettings().m_synchronizeThreeDCameras;
+        if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+          m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
+        }
+        break;
       case MainMenuAction::ToggleImageVisibility:
         m_callbackHandler.toggleImageVisibility();
         break;
@@ -3958,6 +3970,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::IncreaseBrushSize:
           return canUseProjectActions && hasActiveSeg;
         case MainMenuAction::ToggleFullScreen:
+        case MainMenuAction::ToggleSynchronizeThreeDCameras:
         case MainMenuAction::ToggleImagesWindow:
         case MainMenuAction::ToggleSegmentationsWindow:
         case MainMenuAction::ToggleLandmarksWindow:
@@ -4087,6 +4100,8 @@ void ImGuiWrapper::render()
       }
       case MainMenuAction::ToggleSegmentationOutline:
         return SegmentationOutlineStyle::Disabled != m_appData.renderSettings().m_segOutlineStyle;
+      case MainMenuAction::ToggleSynchronizeThreeDCameras:
+        return m_appData.renderSettings().m_synchronizeThreeDCameras;
       case MainMenuAction::ToggleActiveImageTransformationLock: {
         const auto imageUid = m_appData.activeImageUid();
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
@@ -4456,6 +4471,9 @@ void ImGuiWrapper::render()
       .setCurrentLayoutIndex =
         [this](std::size_t index) {
           m_appData.windowData().setCurrentLayoutIndex(index);
+          if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+            m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
+          }
           if (m_postEmptyGlfwEvent) {
             m_postEmptyGlfwEvent();
           }
@@ -4463,6 +4481,9 @@ void ImGuiWrapper::render()
       .cycleLayouts =
         [this](int step) {
           m_appData.windowData().cycleCurrentLayout(step);
+          if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+            m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
+          }
           if (m_postEmptyGlfwEvent) {
             m_postEmptyGlfwEvent();
           }
@@ -4959,8 +4980,37 @@ void ImGuiWrapper::render()
       View* view = m_appData.windowData().getCurrentView(viewUid);
       if (!view) return;
 
-      auto setViewType = [view](const ViewType& viewType) {
-        if (view) view->setViewType(viewType);
+      auto synchronizeThreeDCamerasFromView = [this](const View* sourceView) {
+        if (
+          sourceView && m_appData.renderSettings().m_synchronizeThreeDCameras &&
+          ViewType::ThreeD == sourceView->viewType())
+        {
+          m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(sourceView->uid());
+        }
+      };
+
+      auto setViewType = [this, view](const ViewType& viewType) {
+        if (!view) {
+          return;
+        }
+
+        std::optional<uuids::uuid> existingThreeDViewUid;
+        if (ViewType::ThreeD == viewType && m_appData.renderSettings().m_synchronizeThreeDCameras) {
+          for (const auto& candidateUid : m_appData.windowData().currentViewUids()) {
+            const View* candidate = m_appData.windowData().getCurrentView(candidateUid);
+            if (candidate && candidate != view && ViewType::ThreeD == candidate->viewType()) {
+              existingThreeDViewUid = candidateUid;
+              if (candidate->isThreeDCameraInitialized()) {
+                break;
+              }
+            }
+          }
+        }
+
+        view->setViewType(viewType);
+        if (ViewType::ThreeD == viewType && m_appData.renderSettings().m_synchronizeThreeDCameras) {
+          m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(existingThreeDViewUid.value_or(view->uid()));
+        }
       };
 
       auto setRenderMode = [view](const ViewRenderMode& renderMode) {
@@ -5053,11 +5103,12 @@ void ImGuiWrapper::render()
           },
         .getThreeDProjectionType = [view]() { return view->threeDState().m_projectionType; },
         .setThreeDProjectionType =
-          [view](ProjectionType projectionType) {
+          [view, synchronizeThreeDCamerasFromView](ProjectionType projectionType) {
             view->setThreeDProjectionType(projectionType);
             if (ProjectionType::Orthographic == projectionType) {
               view->threeDState().m_viewPositionFollowsCrosshairs = false;
             }
+            synchronizeThreeDCamerasFromView(view);
           },
         .getThreeDFovAngleDegrees =
           [view]() {
@@ -5065,7 +5116,7 @@ void ImGuiWrapper::render()
             return k_radiansToDegrees * view->threeDCamera().angle();
           },
         .setThreeDFovAngleDegrees =
-          [view](float fovDegrees) {
+          [view, synchronizeThreeDCamerasFromView](float fovDegrees) {
             constexpr float k_defaultPerspectiveFovDegrees = 60.0f;
             constexpr float k_minPerspectiveFovDegrees = 0.5f;
             constexpr float k_maxPerspectiveFovDegrees = 150.0f;
@@ -5074,11 +5125,12 @@ void ImGuiWrapper::render()
             view->threeDCamera().setZoom(k_defaultPerspectiveFovDegrees / clampedFovDegrees);
             view->threeDState().m_perspectiveZoom = view->threeDCamera().getZoom();
             view->threeDState().m_userMovedCamera = true;
+            synchronizeThreeDCamerasFromView(view);
           },
         .getThreeDViewPositionFollowsCrosshairs =
           [view]() { return view->threeDState().m_viewPositionFollowsCrosshairs; },
         .setThreeDViewPositionFollowsCrosshairs =
-          [this, view](bool followsCrosshairs) {
+          [this, view, synchronizeThreeDCamerasFromView](bool followsCrosshairs) {
             view->threeDState().m_viewPositionFollowsCrosshairs = followsCrosshairs;
             if (followsCrosshairs) {
               view->threeDState().m_crosshairsFollowOffset = glm::vec3{0.0f};
@@ -5087,12 +5139,14 @@ void ImGuiWrapper::render()
                 view->threeDState(),
                 glm::vec3{m_appData.state().worldCrosshairs().worldOrigin()});
             }
+            synchronizeThreeDCamerasFromView(view);
           },
         .getThreeDOrbitTargetMode = [view]() { return view->threeDState().m_orbitTargetMode; },
         .setThreeDOrbitTargetMode =
-          [view](camera3d::OrbitTargetMode mode) {
+          [view, synchronizeThreeDCamerasFromView](camera3d::OrbitTargetMode mode) {
             view->threeDState().m_orbitTargetMode = mode;
             view->threeDState().m_userMovedCamera = false;
+            synchronizeThreeDCamerasFromView(view);
           },
         .areThreeDImagePlanesGloballyEnabled = [this]() { return m_appData.renderSettings().m_showImagePlanesIn3D; },
         .getThreeDImagePlanesVisible = [view]() { return view->threeDState().m_showImagePlanes; },
@@ -5105,6 +5159,10 @@ void ImGuiWrapper::render()
           [this]() { return m_appData.renderSettings().m_showSegmentationsOnImagePlanesIn3D; },
         .setThreeDPlaneSegmentationsVisible =
           [this](bool visible) { m_appData.renderSettings().m_showSegmentationsOnImagePlanesIn3D = visible; },
+        .getThreeDPlaneIsocontoursVisible =
+          [this]() { return m_appData.renderSettings().m_showIsocontoursOnImagePlanesIn3D; },
+        .setThreeDPlaneIsocontoursVisible =
+          [this](bool visible) { m_appData.renderSettings().m_showIsocontoursOnImagePlanesIn3D = visible; },
         .getThreeDCrosshairsVisible = [this]() { return m_appData.renderSettings().m_showCrosshairsIn3D; },
         .setThreeDCrosshairsVisible =
           [this](bool visible) { m_appData.renderSettings().m_showCrosshairsIn3D = visible; },

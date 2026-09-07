@@ -12,6 +12,7 @@ target_sources(EntropyRendering PRIVATE
   helpers/LightboxOffsetLabelFormat.cpp
   helpers/PipelineHelpers.cpp
   helpers/TextureSetupHelpers.cpp
+  ImageShaderCapabilities.cpp
   metrics/LocalLinearResidualMetric.cpp
   metrics/LocalNccMetric.cpp
   RenderDerivedData.cpp

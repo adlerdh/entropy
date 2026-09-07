@@ -1851,6 +1851,53 @@ void WindowData::setActiveViewUid(const std::optional<uuid>& uid)
   m_activeViewUid = uid;
 }
 
+bool WindowData::synchronizeCurrentLayoutThreeDCameras(std::optional<uuid> preferredSourceUid)
+{
+  auto validSource = [this](const std::optional<uuid>& uid) -> View* {
+    View* view = uid ? getCurrentView(*uid) : nullptr;
+    return view && ViewType::ThreeD == view->viewType() ? view : nullptr;
+  };
+
+  View* source = validSource(preferredSourceUid);
+  if (!source) {
+    source = validSource(m_activeViewUid);
+  }
+  if (!source) {
+    for (const auto& viewUid : currentViewUids()) {
+      View* candidate = getCurrentView(viewUid);
+      if (candidate && ViewType::ThreeD == candidate->viewType() && candidate->isThreeDCameraInitialized()) {
+        source = candidate;
+        break;
+      }
+    }
+  }
+  if (!source) {
+    for (const auto& viewUid : currentViewUids()) {
+      View* candidate = getCurrentView(viewUid);
+      if (candidate && ViewType::ThreeD == candidate->viewType()) {
+        source = candidate;
+        break;
+      }
+    }
+  }
+  if (!source) {
+    return false;
+  }
+
+  for (const auto& viewUid : currentViewUids()) {
+    View* target = getCurrentView(viewUid);
+    if (!target || target == source || ViewType::ThreeD != target->viewType()) {
+      continue;
+    }
+
+    Camera synchronizedCamera = target->threeDCamera();
+    camera3d::State synchronizedState = target->threeDState();
+    camera3d::synchronizeCamera(synchronizedCamera, synchronizedState, source->threeDCamera(), source->threeDState());
+    target->restoreThreeDCamera(synchronizedCamera, synchronizedState, source->isThreeDCameraInitialized());
+  }
+  return true;
+}
+
 std::size_t WindowData::numLayouts() const
 {
   return m_layouts.size();

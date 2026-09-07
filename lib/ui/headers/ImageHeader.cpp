@@ -15,6 +15,7 @@
 #include "logic/app/DataHelper.h"
 #include "rendering/TextureSetup.h"
 
+#include "image/CtWindowing.h"
 #include "image/DicomSeries.h"
 #include "image/Image.h"
 #include "image/ImageColorMap.h"
@@ -54,6 +55,7 @@
 #include <limits>
 #include <optional>
 #include <sstream>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -918,6 +920,111 @@ void renderTimeSeriesHeader(AppData& appData, const uuids::uuid& imageUid, Image
 
   if (newTimePoint != oldTimePoint) {
     setTimePointWithOptionalSynchronization(appData, imageUid, image, newTimePoint);
+  }
+}
+
+bool windowPresetMatches(const ct_windowing::WindowPreset& preset, double width, double level)
+{
+  constexpr double tolerance = 1.0e-6;
+  return std::abs(preset.width - width) <= tolerance && std::abs(preset.level - level) <= tolerance;
+}
+
+void renderWindowPresetGroup(
+  const char* groupLabel,
+  std::span<const ct_windowing::WindowPreset> presets,
+  ImageSettings& settings,
+  uint32_t component,
+  const std::function<void()>& updateImageUniforms)
+{
+  if (presets.empty()) {
+    return;
+  }
+
+  ImGui::TableNextRow();
+  ImGui::TableSetColumnIndex(0);
+  ImGui::TextDisabled("%s", groupLabel);
+
+  for (const auto& preset : presets) {
+    const bool selected =
+      windowPresetMatches(preset, settings.windowWidth(component), settings.windowCenter(component));
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    if (ImGui::Selectable(preset.name.c_str(), selected, ImGuiSelectableFlags_SpanAllColumns)) {
+      settings.setWindowCenterAndWidth(component, preset.level, preset.width);
+      updateImageUniforms();
+    }
+    if (selected) {
+      ImGui::SetItemDefaultFocus();
+    }
+    ImGui::TableSetColumnIndex(1);
+    ImGui::Text("%g", preset.width);
+    ImGui::TableSetColumnIndex(2);
+    ImGui::Text("%g", preset.level);
+  }
+}
+
+void renderCtWindowPresetSelector(
+  Image& image,
+  ImageSettings& settings,
+  uint32_t component,
+  const std::function<void()>& updateImageUniforms)
+{
+  const std::vector<ct_windowing::WindowPreset> dicomPresets = ct_windowing::dicomPresets(image.header().metaData());
+  const ct_windowing::Detection detection = ct_windowing::detect(image);
+  if (dicomPresets.empty() && !detection.isCt()) {
+    return;
+  }
+
+  const std::span<const ct_windowing::WindowPreset> builtInPresets =
+    detection.isCt() ? ct_windowing::builtInPresets() : std::span<const ct_windowing::WindowPreset>{};
+  const double width = settings.windowWidth(component);
+  const double level = settings.windowCenter(component);
+  std::string preview = "Custom";
+  const auto findMatch = [&](std::span<const ct_windowing::WindowPreset> presets) {
+    return std::find_if(presets.begin(), presets.end(), [&](const auto& preset) {
+      return windowPresetMatches(preset, width, level);
+    });
+  };
+  if (const auto dicomMatch = findMatch(dicomPresets); dicomMatch != dicomPresets.end()) {
+    preview = dicomMatch->name;
+  }
+  else if (const auto builtInMatch = findMatch(builtInPresets); builtInMatch != builtInPresets.end()) {
+    preview = builtInMatch->name;
+  }
+
+  ImGui::SetNextWindowSizeConstraints(
+    ImVec2{360.0f, 0.0f},
+    ImVec2{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()});
+  if (ImGui::BeginCombo("Preset", preview.c_str(), ImGuiComboFlags_HeightLargest)) {
+    if (ImGui::BeginTable(
+          "CtWindowPresetTable",
+          3,
+          ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_PadOuterX | ImGuiTableFlags_RowBg |
+            ImGuiTableFlags_SizingStretchProp))
+    {
+      ImGui::TableSetupColumn("Preset name", ImGuiTableColumnFlags_WidthStretch, 2.5f);
+      ImGui::TableSetupColumn("Width", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+      ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+      ImGui::TableHeadersRow();
+      renderWindowPresetGroup("DICOM-provided", dicomPresets, settings, component, updateImageUniforms);
+      renderWindowPresetGroup("Entropy built-in", builtInPresets, settings, component, updateImageUniforms);
+      ImGui::EndTable();
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::SameLine();
+  if (!dicomPresets.empty() && detection.isCt()) {
+    helpMarker(
+      "Select a window width and level supplied by the DICOM series or a built-in CT preset. Presets are starting "
+      "points and can be adjusted with the Width and Level controls");
+  }
+  else if (!dicomPresets.empty()) {
+    helpMarker("Select a window width and level supplied by the DICOM image");
+  }
+  else {
+    const std::string tooltip = "Select a built-in CT window width and level. CT detection: " + detection.evidence +
+                                ". Presets are starting points and can be adjusted with the Width and Level controls";
+    helpMarker(tooltip.c_str());
   }
 }
 
@@ -1964,6 +2071,23 @@ void renderImageHeader(
   // Open View Properties on first appearance
   ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
   if (ImGui::TreeNode("View Properties")) {
+    const auto renderGlobalSegmentationOutlineControl = [&appData, isActiveImage]() {
+      if (!isActiveImage) {
+        return;
+      }
+
+      rendering::RenderSettings& renderSettings = appData.renderSettings();
+      bool outlineSegmentations = SegmentationOutlineStyle::Disabled != renderSettings.m_segOutlineStyle;
+      if (ImGui::Checkbox("Outline segmentations", &outlineSegmentations)) {
+        renderSettings.m_segOutlineStyle =
+          outlineSegmentations ? SegmentationOutlineStyle::ViewPixel : SegmentationOutlineStyle::Disabled;
+      }
+      ImGui::SameLine();
+      helpMarker(
+        "Show segmentation region boundaries for all images in 2D views and on 3D image planes. Press Space to "
+        "toggle this setting");
+    };
+
     if (showComponentControls) {
       // Global image opacity slider:
       bool globalVisibility = imgSettings.globalVisibility();
@@ -2006,6 +2130,7 @@ void renderImageHeader(
         ImGui::PopItemWidth();
         ImGui::SameLine();
         helpMarker("Segmentation layer opacity");
+        renderGlobalSegmentationOutlineControl();
       }
 
       ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -2052,6 +2177,7 @@ void renderImageHeader(
         ImGui::PopItemWidth();
         ImGui::SameLine();
         helpMarker("Segmentation layer opacity");
+        renderGlobalSegmentationOutlineControl();
       }
 
       ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -2066,6 +2192,9 @@ void renderImageHeader(
     const bool imageHasFloatComponents =
       (ComponentType::Float32 == viewHeader.memoryComponentType() ||
        ComponentType::Float64 == viewHeader.memoryComponentType());
+
+    ImGui::TextUnformatted(windowingLabel);
+    renderCtWindowPresetSelector(viewImage, viewSettings, viewComp, updateImageUniforms);
 
     if (imageHasFloatComponents) {
       // Threshold range:
@@ -2090,8 +2219,6 @@ void renderImageHeader(
 
       double windowWidth = viewSettings.windowWidth(viewComp);
       double windowCenter = viewSettings.windowCenter(viewComp);
-
-      ImGui::TextUnformatted(windowingLabel);
 
       if (mySliderF64("Width", &windowWidth, windowWidthMin, windowWidthMax, valuesFormat)) {
         viewSettings.setWindowWidth(viewComp, windowWidth);
@@ -2223,8 +2350,6 @@ void renderImageHeader(
 
       int64_t windowWidth = static_cast<int64_t>(viewSettings.windowWidth(viewComp));
       int64_t windowCenter = static_cast<int64_t>(viewSettings.windowCenter(viewComp));
-
-      ImGui::TextUnformatted(windowingLabel);
 
       if (mySliderS64("Width", &windowWidth, windowWidthMin, windowWidthMax)) {
         viewSettings.setWindowWidth(viewComp, static_cast<double>(windowWidth));

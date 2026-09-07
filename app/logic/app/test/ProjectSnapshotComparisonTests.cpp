@@ -228,7 +228,15 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_imagePlaneOpacity = 0.5f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
+
+  changedThreeDRendering = project;
   changedThreeDRendering.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
+
+  changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_imagePlaneIsocontoursVisible = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   auto changedMeshRendering = project;
@@ -296,7 +304,7 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedIntensityProjection));
 
   auto changedSegmentationDisplay = project;
-  changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ViewPixel;
+  changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::Disabled;
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
 
   changedSegmentationDisplay = project;

@@ -36,8 +36,7 @@ bool renderMeshShadowMap(const MeshShadowMapRenderRequest& request)
   glClearDepth(1.0);
   glClear(GL_DEPTH_BUFFER_BIT);
 
-  request.meshRenderer
-    .drawBucket(request.renderables, request.context, request.depthProgram, MeshDrawPass::ShadowDepth);
+  MeshRenderer::drawBucket(request.renderables, request.context, request.depthProgram, MeshDrawPass::ShadowDepth);
   return true;
 }
 

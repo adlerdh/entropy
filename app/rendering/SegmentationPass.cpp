@@ -53,7 +53,7 @@ void Rendering::renderSegmentationForImage(
   }
 
   const auto& settings = m_appData.renderSettings();
-  auto& resources = m_appData.renderResources();
+  const auto& resources = m_appData.renderResources();
   const std::optional<uuids::uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
   const Image* geometryImage = referenceImageUid ? m_appData.image(*referenceImageUid) : seg;
@@ -104,7 +104,7 @@ void Rendering::renderSegmentationForImage(
       settings.m_segInteriorOpacity,
       settings.m_segInterpCutoff);
   }
-  program.stopUse();
+  GLShaderProgram::stopUse();
 
   unbindBufferTextures(boundBufferTextures);
   unbindTextures(boundDefTextures);

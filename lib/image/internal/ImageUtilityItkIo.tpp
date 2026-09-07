@@ -208,11 +208,15 @@ bool writeImage(typename itk::Image<T, NDim>::Pointer image, const std::filesyst
  * @tparam T Component type of image.
  * @param[in] itkImage ITK image.
  * @param[in] displayName Image display name.
+ * @param[in] sourceMetadata Optional source metadata to retain in the Entropy image header.
  *
  * @return Entropy image owning a copy of the ITK pixel buffer.
  */
 template<class T>
-Image createImageFromItkImage(const typename itk::Image<T, 3>::Pointer itkImage, const std::string& displayName)
+Image createImageFromItkImage(
+  const typename itk::Image<T, 3>::Pointer itkImage,
+  const std::string& displayName,
+  MetaDataMap sourceMetadata = {})
 {
   const auto itkRegion = itkImage->GetLargestPossibleRegion();
   const auto itkSize = itkRegion.GetSize();
@@ -266,6 +270,7 @@ Image createImageFromItkImage(const typename itk::Image<T, 3>::Pointer itkImage,
     {itkDir[0][0], itkDir[1][0], itkDir[2][0]},
     {itkDir[0][1], itkDir[1][1], itkDir[2][1]},
     {itkDir[0][2], itkDir[1][2], itkDir[2][2]}};
+  info.m_metaData = std::move(sourceMetadata);
 
   const glm::uvec3 dims{itkSize[0], itkSize[1], itkSize[2]};
   const glm::vec3 origin{itkOrigin[0], itkOrigin[1], itkOrigin[2]};

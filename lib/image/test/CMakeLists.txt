@@ -1,4 +1,5 @@
 add_executable(TestImage
+  CtWindowingTests.cpp
   DicomSeriesTests.cpp
   ImageColorMapTests.cpp
   ImageCoreTests.cpp

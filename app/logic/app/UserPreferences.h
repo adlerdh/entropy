@@ -88,7 +88,7 @@ struct RenderPreferences
 
   FloatingPointLinearInterpolationPolicy floatingPointLinearInterpolationPolicy =
     FloatingPointLinearInterpolationPolicy::FixedFunction;
-  bool useMaximumIntensityProjectionExtent = false;
+  bool useMaximumIntensityProjectionExtent = true;
   float intensityProjectionSlabThicknessMm = 10.0f;
   float xrayEnergyKeV = 80.0f;
   float xrayWindow = 1.0f;
@@ -98,7 +98,7 @@ struct RenderPreferences
     FloatingPointLinearInterpolationPolicy::Automatic;
   bool modulateSegmentationOpacityWithImageOpacity2d = true;
   bool modulateSegmentationOpacityWithImageOpacity3d = true;
-  SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::Disabled;
+  SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::ViewPixel;
   float segmentationInteriorOpacity = 0.2f;
   float segmentationErosionFactor = 0.5f;
 
@@ -133,8 +133,10 @@ struct RenderPreferences
   bool transparent3DBackground = true;
   bool imageBoxVisible = false;
   bool showImagePlanesIn3D = true;
-  bool modulateImagePlaneOpacityWithViewAngle = true;
   bool showSegmentationsOnImagePlanesIn3D = true;
+  bool showIsocontoursOnImagePlanesIn3D = true;
+  float imagePlaneOpacity = 1.0f;
+  bool modulateImagePlaneOpacityWithViewAngle = true;
   bool shadeImagePlanesIn3D = true;
   float imagePlaneLightingAmbient = 0.30f;
   float imagePlaneLightingDiffuse = 0.50f;
@@ -154,6 +156,7 @@ struct RenderPreferences
   bool renderFrontFaces = true;
   bool renderBackFaces = true;
   bool reversePovRotation = false;
+  bool synchronizeThreeDCameras = false;
   bool showCrosshairsIn3D = true;
   float crosshairs3DGlyphDiameterVoxelDiagonals = 1.0f;
   float crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;

@@ -47,7 +47,7 @@ void Rendering::renderOneImage(
     return (imageUid ? m_appData.image(*imageUid) : nullptr);
   };
 
-  auto& resources = m_appData.renderResources();
+  const auto& resources = m_appData.renderResources();
   const auto& settings = m_appData.renderSettings();
 
   drawImageQuad(

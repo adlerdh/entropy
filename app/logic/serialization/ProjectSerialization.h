@@ -199,8 +199,10 @@ struct ProjectThreeDRenderingSettings
   bool m_transparentBackground = true;                    //!< Make the 3D view background transparent
   bool m_imageBoxVisible = false;                         //!< Show the image-domain outline in 3D views
   bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
-  bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
   bool m_imagePlaneSegmentationsVisible = true;           //!< Show segmentation overlays on 3D image planes
+  bool m_imagePlaneIsocontoursVisible = true;             //!< Show isocontour overlays on 3D image planes
+  float m_imagePlaneOpacity = 1.0f;                       //!< Overall opacity multiplier for 3D image planes
+  bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
   bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
   float m_imagePlaneLightingAmbient = 0.30f;              //!< Image-plane ADS ambient term
   float m_imagePlaneLightingDiffuse = 0.50f;              //!< Image-plane ADS diffuse term
@@ -279,11 +281,11 @@ struct ProjectMeshRenderingSettings
  */
 struct ProjectIntensityProjectionSettings
 {
-  bool m_useMaximumImageExtent = false; //!< Project through the full image extent
-  float m_slabThicknessMm = 10.0f;      //!< Default projection slab thickness
-  float m_xrayEnergyKeV = 80.0f;        //!< X-ray projection photon energy
-  float m_xrayWindow = 1.0f;            //!< X-ray projection contrast window
-  float m_xrayLevel = 0.5f;             //!< X-ray projection contrast level
+  bool m_useMaximumImageExtent = true; //!< Project through the full image extent
+  float m_slabThicknessMm = 10.0f;     //!< Default projection slab thickness
+  float m_xrayEnergyKeV = 80.0f;       //!< X-ray projection photon energy
+  float m_xrayWindow = 1.0f;           //!< X-ray projection contrast window
+  float m_xrayLevel = 0.5f;            //!< X-ray projection contrast level
 };
 
 /**
@@ -293,9 +295,9 @@ struct ProjectSegmentationDisplaySettings
 {
   bool m_modulateOpacityWithImageOpacity2d = true; //!< Scale 2D segmentation opacity by image opacity
   bool m_modulateOpacityWithImageOpacity3d = true; //!< Scale 3D segmentation-mesh opacity by image opacity
-  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::Disabled; //!< Global segmentation outline
-  float m_interiorOpacity = 0.2f;                                               //!< Interior opacity when outlined
-  float m_erosionFactor = 0.5f;                                                 //!< Linear interpolation cutoff
+  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::ViewPixel; //!< Global segmentation outline
+  float m_interiorOpacity = 0.2f;                                                //!< Interior opacity when outlined
+  float m_erosionFactor = 0.5f;                                                  //!< Linear interpolation cutoff
 };
 
 /**

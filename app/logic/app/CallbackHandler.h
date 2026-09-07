@@ -358,6 +358,9 @@ private:
    */
   bool checkAndSetActiveView(const uuid& viewUid);
 
+  /// Copy one interacted 3D camera to every other 3D view in the current layout when synchronization is enabled.
+  void synchronizeThreeDCamerasFrom(const View& sourceView);
+
   /// Move any 3D view whose camera eye follows the global crosshairs.
   void updateThreeDViewsFollowingCrosshairs();
 };

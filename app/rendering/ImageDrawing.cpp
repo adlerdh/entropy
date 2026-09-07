@@ -1,4 +1,5 @@
 #include "rendering/ImageDrawing.h"
+#include "rendering/ImageShaderCapabilities.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/helpers/UnderlyingEnumType.h"
 #include "rendering/gl/GLShaderProgram.h"
@@ -63,7 +64,7 @@ computeMipSamplingParams(const Camera& camera, const Image& image, float mipSlab
 void drawImageQuad(
   GLShaderProgram& program,
   const ViewRenderMode& renderMode,
-  rendering::RenderResources::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -98,6 +99,7 @@ void drawImageQuad(
   }
 
   const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
+  const bool intensityProjectionSupported = rendering::supportsIntensityProjection(program.getRegisteredUniforms());
 
   // Direction to sample direction along the camera view's Z axis for image 0:
   glm::vec3 texSamplingDirZ(0.0f);
@@ -110,7 +112,7 @@ void drawImageQuad(
   float mipSamplingDistance_cm = 0.0f;
 
   // Only compute these if doing a MIP:
-  if (IntensityProjectionMode::None != view.intensityProjectionMode()) {
+  if (intensityProjectionSupported && IntensityProjectionMode::None != view.intensityProjectionMode()) {
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     texSamplingDirZ = image_drawing::computeTextureSamplingDirectionForViewAxis(
@@ -161,7 +163,7 @@ void drawImageQuad(
     if (showEdges) {
       program.setUniform("u_texelDirs", texSamplingDirsForEdges);
     }
-    else {
+    else if (intensityProjectionSupported) {
       // Only render with intensity projection when edges are not visible:
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
@@ -234,9 +236,9 @@ void drawImageQuad(
   }
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.unbind();
+  GLVertexArrayObject::unbind();
 }
 
 /// @todo We're going to have to put back std::vector<Image*>
@@ -330,9 +332,9 @@ void drawSegQuad(
 
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.unbind();
+  GLVertexArrayObject::unbind();
 }
 
 void drawSegPreviewQuad(
@@ -414,14 +416,14 @@ void drawSegPreviewQuad(
 
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.unbind();
+  GLVertexArrayObject::unbind();
 }
 
 void drawRaycastQuad(
   GLShaderProgram& program,
-  rendering::RenderResources::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
@@ -460,7 +462,7 @@ void drawRaycastQuad(
 
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.unbind();
+  GLVertexArrayObject::unbind();
 }

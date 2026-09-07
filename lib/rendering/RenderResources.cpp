@@ -142,7 +142,7 @@ RenderResources::Quad::Quad()
   m_vao.setAttributeBuffer(positionIndex, m_positionsInfo);
   m_vao.enableVertexAttribute(positionIndex);
   m_positionsObject.unbind();
-  m_vao.unbind();
+  GLVertexArrayObject::unbind();
   spdlog::debug("Created image quad vertex array object");
 }
 
@@ -172,7 +172,7 @@ RenderResources::Circle::Circle()
   m_vao.setAttributeBuffer(positionIndex, m_positionsInfo);
   m_vao.enableVertexAttribute(positionIndex);
   m_positionsObject.unbind();
-  m_vao.unbind();
+  GLVertexArrayObject::unbind();
   spdlog::debug("Created image circle vertex array object");
 }
 

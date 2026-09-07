@@ -115,9 +115,9 @@ public:
   ViewRenderMode renderMode() const;
   /**
    * @brief Set the frame's 2D image render mode
-   * @param renderMode New 2D render mode
+   * @param newRenderMode New 2D render mode
    */
-  virtual void setRenderMode(const ViewRenderMode& renderMode);
+  virtual void setRenderMode(const ViewRenderMode& newRenderMode);
 
   /** @brief Get the independently enabled 3D scene-content categories. */
   const ThreeDSceneContents& threeDSceneContents() const;

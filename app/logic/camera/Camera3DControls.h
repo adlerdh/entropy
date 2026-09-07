@@ -310,6 +310,19 @@ void followCrosshairs(Camera& camera, State& state, const glm::vec3& crosshairs)
 void markUserMoved(State& state);
 
 /**
+ * @brief Copy synchronized 3D camera properties while preserving target-view-local state
+ * @param targetCamera Camera receiving the source pose and projection
+ * @param targetState Interaction state receiving synchronized camera behavior
+ * @param sourceCamera Camera providing the synchronized pose and projection
+ * @param sourceState Interaction state providing synchronized camera behavior
+ *
+ * The target camera keeps its own viewport aspect ratio, and the target state keeps
+ * per-view scene visibility. In-progress pan anchors are cleared because they are
+ * meaningful only in the source view's pointer interaction.
+ */
+void synchronizeCamera(Camera& targetCamera, State& targetState, const Camera& sourceCamera, const State& sourceState);
+
+/**
  * @brief Stateful controller for applying 3D camera operations to a Camera and State pair
  */
 class Controller

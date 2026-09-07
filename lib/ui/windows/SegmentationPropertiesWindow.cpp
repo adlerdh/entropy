@@ -70,6 +70,27 @@ void renderSegmentationPropertiesWindow(
           recenterAllViews);
       }
     }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextDisabled("Global display:");
+
+    rendering::RenderSettings& renderSettings = appData.renderSettings();
+    bool outlineSegmentations = SegmentationOutlineStyle::Disabled != renderSettings.m_segOutlineStyle;
+    if (ImGui::Checkbox("Outline segmentations", &outlineSegmentations)) {
+      renderSettings.m_segOutlineStyle =
+        outlineSegmentations ? SegmentationOutlineStyle::ViewPixel : SegmentationOutlineStyle::Disabled;
+    }
+    ImGui::SameLine();
+    helpMarker(
+      "Show segmentation region boundaries in 2D views and on 3D image planes. Press Space to toggle this setting");
+
+    ImGui::BeginDisabled(!outlineSegmentations);
+    mySliderF32("Interior opacity", &renderSettings.m_segInteriorOpacity, 0.0f, 1.0f);
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Opacity of segmentation region interiors when outlining is enabled. Set to zero for outlines only");
   }
 
   ImGui::End();

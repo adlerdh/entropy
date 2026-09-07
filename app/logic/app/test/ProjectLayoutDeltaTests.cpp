@@ -74,3 +74,23 @@ TEST_CASE("project layout delta records project layouts appended after generated
   CHECK(delta->m_removedDefaultLayoutIndices.empty());
   CHECK(delta->m_modifiedDefaultLayouts.empty());
 }
+
+TEST_CASE("new image projects discard layout state captured before layout generation", "[project][layouts]")
+{
+  serialize::EntropyProject project;
+  project.m_layoutsFileName = "layouts.json";
+  project.m_layouts = {layoutWithKind(1)};
+  project.m_removedDefaultLayoutIndices = {1, 2};
+  project.m_modifiedDefaultLayouts = {serialize::DefaultLayoutOverride{.m_index = 0, .m_layout = layoutWithKind(3)}};
+  project.m_currentLayoutIndex = 0;
+  project.m_referenceImage.m_imageFileName = "reference.nii.gz";
+
+  project_layout_delta::clearSerializedLayoutState(project);
+
+  CHECK_FALSE(project.m_layoutsFileName);
+  CHECK(project.m_layouts.empty());
+  CHECK(project.m_removedDefaultLayoutIndices.empty());
+  CHECK(project.m_modifiedDefaultLayouts.empty());
+  CHECK_FALSE(project.m_currentLayoutIndex);
+  CHECK(project.m_referenceImage.m_imageFileName == "reference.nii.gz");
+}

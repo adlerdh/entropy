@@ -2826,6 +2826,24 @@ TEST_CASE("image plane orientation opacity follows legacy auto-hiding behavior",
   CHECK(mesh::imagePlaneViewOpacityMultiplier(glm::vec3{0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}) == Catch::Approx(0.0f));
 }
 
+TEST_CASE("global image plane opacity combines safely with view-angle fading", "[rendering][mesh]")
+{
+  CHECK(mesh::imagePlaneOpacityMultiplier(1.0f, 1.0f) == Catch::Approx(1.0f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(0.6f, 0.5f) == Catch::Approx(0.3f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(-1.0f, 1.0f) == Catch::Approx(0.0f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(2.0f, 2.0f) == Catch::Approx(1.0f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(std::numeric_limits<float>::quiet_NaN(), 1.0f) == Catch::Approx(0.0f));
+}
+
+TEST_CASE("3D image-plane isocontours accept visible lines or fills", "[rendering][mesh][isocontour]")
+{
+  CHECK(mesh::imagePlaneIsocontourDrawable(true, true, 1.0f, 0.0f));
+  CHECK(mesh::imagePlaneIsocontourDrawable(true, true, 0.0f, 0.5f));
+  CHECK_FALSE(mesh::imagePlaneIsocontourDrawable(true, true, 0.0f, 0.0f));
+  CHECK_FALSE(mesh::imagePlaneIsocontourDrawable(false, true, 1.0f, 1.0f));
+  CHECK_FALSE(mesh::imagePlaneIsocontourDrawable(true, false, 1.0f, 1.0f));
+}
+
 TEST_CASE("orthogonal image plane scene omits planes outside the image box", "[rendering][mesh]")
 {
   const std::array<glm::vec3, 8> boxCorners{

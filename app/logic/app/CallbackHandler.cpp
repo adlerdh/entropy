@@ -690,6 +690,9 @@ void CallbackHandler::recenterViews(
     resetZoom,
     resetObliqueOrientation,
     excludedViews);
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
+  }
 }
 
 void CallbackHandler::recenterView(const ImageSelection& imageSelection, const uuid& viewUid)
@@ -714,6 +717,9 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
 
   m_appData.windowData()
     .recenterView(viewUid, worldPosSnapped, viewAABBoxScaleFactor * worldBoxSize, resetZoom, resetObliqueOrientation);
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(viewUid);
+  }
 }
 
 void CallbackHandler::doCrosshairsMove(const ViewHit& hit)
@@ -1417,6 +1423,10 @@ void CallbackHandler::doCameraRotate3d(
       helper::rotateAboutWorldPoint(syncedView->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos);
     }
   }
+
+  if (ViewType::ThreeD == viewToRotate->viewType()) {
+    synchronizeThreeDCamerasFrom(*viewToRotate);
+  }
 }
 
 namespace
@@ -1495,6 +1505,7 @@ void CallbackHandler::doThreeDCameraOrbit(const ViewHit& startHit, const ViewHit
   const camera3d::SceneFrame scene = threeDSceneFrameForView(m_appData, *view);
   state.m_orbitTarget = threeDTargetForView(m_appData, *view, scene);
   camera3d::orbit(view->threeDCamera(), state, prevHit.viewClipPos, currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraRotateAboutEye(
@@ -1512,6 +1523,7 @@ void CallbackHandler::doThreeDCameraRotateAboutEye(
     view->threeDState(),
     reverseRotation ? currHit.viewClipPos : prevHit.viewClipPos,
     reverseRotation ? prevHit.viewClipPos : currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraRoll(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
@@ -1521,6 +1533,7 @@ void CallbackHandler::doThreeDCameraRoll(const ViewHit& startHit, const ViewHit&
     return;
   }
   camera3d::roll(view->threeDCamera(), view->threeDState(), prevHit.viewClipPos, currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraPan(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
@@ -1537,6 +1550,7 @@ void CallbackHandler::doThreeDCameraPan(const ViewHit& startHit, const ViewHit& 
     startHit.viewClipPos,
     prevHit.viewClipPos,
     currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraScroll(
@@ -1555,6 +1569,7 @@ void CallbackHandler::doThreeDCameraScroll(
     static_cast<float>(scrollOffset.y),
     faster,
     adjustPerspectiveFov);
+  synchronizeThreeDCamerasFrom(*hit.view);
 }
 
 void CallbackHandler::doThreeDCameraKeyboardPanOrRotate(
@@ -1575,6 +1590,7 @@ void CallbackHandler::doThreeDCameraKeyboardPanOrRotate(
   else {
     camera3d::pan(hit.view->threeDCamera(), hit.view->threeDState(), glm::vec2{0.0f}, -delta);
   }
+  synchronizeThreeDCamerasFrom(*hit.view);
 }
 
 void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& camera_T_world_rotationDelta)
@@ -2646,6 +2662,13 @@ bool CallbackHandler::checkAndSetActiveView(const uuid& viewUid)
   return true;
 }
 
+void CallbackHandler::synchronizeThreeDCamerasFrom(const View& sourceView)
+{
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras && ViewType::ThreeD == sourceView.viewType()) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(sourceView.uid());
+  }
+}
+
 void CallbackHandler::updateThreeDViewsFollowingCrosshairs()
 {
   const glm::vec3 crosshairs = m_appData.state().worldCrosshairs().worldOrigin();
@@ -2656,5 +2679,8 @@ void CallbackHandler::updateThreeDViewsFollowingCrosshairs()
     }
     view->threeDState().m_crosshairsFollowOffset = glm::vec3{0.0f};
     camera3d::followCrosshairs(view->threeDCamera(), view->threeDState(), crosshairs);
+  }
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
   }
 }

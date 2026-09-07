@@ -161,6 +161,22 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   CHECK(settings.vectorWarpedGridBackgroundColor() == glm::vec4{0.2f, 0.0f, 0.4f, 1.0f});
 }
 
+TEST_CASE("ImageSettings applies exact clinical window presets beyond observed values", "[image][settings][ct]")
+{
+  ImageSettings settings = makeSettings();
+
+  settings.setWindowCenterAndWidth(0, -600.0, 1500.0);
+
+  CHECK(settings.windowCenter(0) == Catch::Approx(-600.0));
+  CHECK(settings.windowWidth(0) == Catch::Approx(1500.0));
+  CHECK(settings.minMaxWindowCenterRange(0).first <= -600.0);
+  CHECK(settings.minMaxWindowWidthRange(0).second >= 1500.0);
+
+  settings.setWindowCenterAndWidth(0, 10.0, 0.0);
+  CHECK(settings.windowCenter(0) == Catch::Approx(-600.0));
+  CHECK(settings.windowWidth(0) == Catch::Approx(1500.0));
+}
+
 TEST_CASE("ImageSettings routes component-specific setters through the active component", "[image][settings]")
 {
   ImageSettings settings = makeSettings();

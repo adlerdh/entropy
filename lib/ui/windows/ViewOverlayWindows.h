@@ -98,6 +98,8 @@ struct ViewOverlayModeCallbacks
   std::function<void(bool)> setThreeDImagePlaneOpacityFadeEnabled{};         //!< Set view-angle plane fading
   std::function<bool()> getThreeDPlaneSegmentationsVisible{};                //!< Whether planes show segmentations
   std::function<void(bool)> setThreeDPlaneSegmentationsVisible{};            //!< Set segmentation visibility on planes
+  std::function<bool()> getThreeDPlaneIsocontoursVisible{};                  //!< Whether planes show isocontours
+  std::function<void(bool)> setThreeDPlaneIsocontoursVisible{};              //!< Set isocontour visibility on planes
   std::function<bool()> getThreeDCrosshairsVisible{};                        //!< Whether 3D crosshairs are shown
   std::function<void(bool)> setThreeDCrosshairsVisible{};                    //!< Set 3D crosshairs visibility
   std::function<bool()> getThreeDImageVolumeBoundsVisible{};                 //!< Whether image volume bounds are shown

@@ -163,9 +163,9 @@ void PixelEdgeRenderer::render(
   program.setUniform("u_overlayEdges", uniforms.overlayEdges);
 
   m_postVao.bind();
-  m_postVao.drawArrays(PrimitiveMode::Triangles, 0, 3);
-  m_postVao.unbind();
-  program.stopUse();
+  GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+  GLVertexArrayObject::unbind();
+  GLShaderProgram::stopUse();
 }
 
 void PixelEdgeRenderer::ensureSceneFboSize(glm::ivec2 deviceSize)

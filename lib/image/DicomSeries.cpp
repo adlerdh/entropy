@@ -45,7 +45,7 @@ constexpr std::array<const char*, 9> sk_phiTags{
   "0008|1050"  // PerformingPhysicianName
 };
 
-constexpr std::array<const char*, 18> sk_summaryTags{
+constexpr std::array<const char*, 21> sk_summaryTags{
   "0008|0020", // StudyDate
   "0008|0030", // StudyTime
   "0008|0060", // Modality
@@ -63,7 +63,10 @@ constexpr std::array<const char*, 18> sk_summaryTags{
   "0028|0008", // NumberOfFrames
   "0018|0040", // CineRate
   "0018|1063", // FrameTime
-  "0018|1065"  // FrameTimeVector
+  "0018|1065", // FrameTimeVector
+  "0028|1050", // WindowCenter
+  "0028|1051", // WindowWidth
+  "0028|1055"  // WindowCenterWidthExplanation
 };
 
 const std::unordered_map<std::string, std::string>& metadataTagNames()
@@ -142,7 +145,8 @@ const std::unordered_map<std::string, std::string>& metadataTagNames()
     {"0028|1051", "Window Width"},
     {"0028|1052", "Rescale Intercept"},
     {"0028|1053", "Rescale Slope"},
-    {"0028|1054", "Rescale Type"}};
+    {"0028|1054", "Rescale Type"},
+    {"0028|1055", "Window Center & Width Explanation"}};
   return names;
 }
 
@@ -218,6 +222,16 @@ std::vector<dicom::RawMetadataEntry> rawMetadataEntries(const MetadataDictionary
   }
 
   return entries;
+}
+
+MetaDataMap sourceMetadata(const dicom::SeriesInfo& series)
+{
+  MetaDataMap metadata;
+  metadata.reserve(series.metadataSummary.size());
+  for (const auto& entry : series.metadataSummary) {
+    metadata[entry.tag] = entry.value;
+  }
+  return metadata;
 }
 
 dicom::SeriesMetadata readSeriesMetadata(const MetadataDictionary& dict)
@@ -567,6 +581,7 @@ std::optional<Image> loadScalarMultiframeCineImage(const dicom::SeriesInfo& seri
     const auto size = itkImage->GetLargestPossibleRegion().GetSize();
     const uint32_t numFrames = std::max<uint32_t>(1u, static_cast<uint32_t>(size[2]));
     ImageIoInfo info = dicomCineIoInfo<T>(itkImage, series.files.front());
+    info.m_metaData = sourceMetadata(series);
     info.m_timeInfo.m_numTimePoints = numFrames;
     info.m_timeInfo.m_origin = 0.0;
     info.m_timeInfo.m_spacing = series.temporal.spacing;
@@ -614,7 +629,7 @@ std::optional<Image> loadScalarSeriesImage(const dicom::SeriesInfo& series)
     reader->SetFileNames(fileNames);
     reader->Update();
 
-    Image image = createImageFromItkImage<T>(reader->GetOutput(), series.displayName);
+    Image image = createImageFromItkImage<T>(reader->GetOutput(), series.displayName, sourceMetadata(series));
     if (!series.files.empty()) {
       image.header().setFileName(series.files.front());
       image.header().setExistsOnDisk(true);

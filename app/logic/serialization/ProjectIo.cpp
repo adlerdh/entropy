@@ -83,7 +83,8 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"ambient", "diffuse", "specular", "specularPower"};
   }
   else if (path == "settings/rendering/threeD/imagePlanes") {
-    preferredKeys = {"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"};
+    preferredKeys =
+      {"visible", "segmentationsVisible", "isocontoursVisible", "opacity", "viewAngleOpacity", "shading", "lighting"};
   }
   else if (path == "settings/rendering/raycasting") {
     preferredKeys = {"samplingFactor", "distanceMap", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};

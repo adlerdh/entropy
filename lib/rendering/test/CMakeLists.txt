@@ -2,6 +2,7 @@ add_executable(TestRenderingLibrary
   AsciiClipboardTests.cpp
   FramePacerTests.cpp
   ImageDrawingHelpersTests.cpp
+  ImageShaderCapabilitiesTests.cpp
   LightboxOffsetLabelFormatTests.cpp
   LocalLinearResidualMetricTests.cpp
   LocalNccMetricTests.cpp
@@ -9,6 +10,7 @@ add_executable(TestRenderingLibrary
   PixelEdgeGeometryTests.cpp
   PipelineHelpersTests.cpp
   RenderDerivedDataTests.cpp
+  RenderSettingsTests.cpp
   ScaleBarGeometryTests.cpp
   ShaderCompilationTests.cpp
   ShaderPreprocessorTests.cpp

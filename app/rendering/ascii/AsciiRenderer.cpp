@@ -819,9 +819,9 @@ void AsciiRenderer::render(
   asciiCellMeanProg.setUniform("u_viewSizePx", sceneSizePx);
   asciiCellMeanProg.setUniform("u_cellSizePx", cellPxDev);
   m_asciiPostVao.bind();
-  m_asciiPostVao.drawArrays(PrimitiveMode::Triangles, 0, 3);
-  m_asciiPostVao.unbind();
-  asciiCellMeanProg.stopUse();
+  GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+  GLVertexArrayObject::unbind();
+  GLShaderProgram::stopUse();
 
   if (R.m_asciiSpatialMode && m_asciiCellRegionsTex && m_asciiCellRegionsTexB) {
     m_asciiCellMeanFbo->attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_asciiCellRegionsTex, 0);
@@ -837,9 +837,9 @@ void AsciiRenderer::render(
     asciiCellRegionsProg.setUniform("u_cellSizePx", cellPxDev);
     asciiCellRegionsProg.setUniform("u_cellSizePxInt", glm::ivec2(glm::round(cellPxDev)));
     m_asciiPostVao.bind();
-    m_asciiPostVao.drawArrays(PrimitiveMode::Triangles, 0, 3);
-    m_asciiPostVao.unbind();
-    asciiCellRegionsProg.stopUse();
+    GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+    GLVertexArrayObject::unbind();
+    GLShaderProgram::stopUse();
 
     const GLenum singleBuf = GL_COLOR_ATTACHMENT0;
     glDrawBuffers(1, &singleBuf);
@@ -920,12 +920,12 @@ void AsciiRenderer::render(
       glEnable(GL_SCISSOR_TEST);
       glScissor(vd.windowX, vd.windowY, vd.width, vd.height);
       m_asciiPostVao.bind();
-      m_asciiPostVao.drawArrays(PrimitiveMode::Triangles, 0, 3);
-      m_asciiPostVao.unbind();
+      GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+      GLVertexArrayObject::unbind();
       glDisable(GL_SCISSOR_TEST);
     }
 
-    asciiPostSpatialProg.stopUse();
+    GLShaderProgram::stopUse();
 
     m_asciiCellRegionsTexB->unbind(7u);
     m_asciiLumLutTex->unbind(6u);
@@ -968,12 +968,12 @@ void AsciiRenderer::render(
       glEnable(GL_SCISSOR_TEST);
       glScissor(vd.windowX, vd.windowY, vd.width, vd.height);
       m_asciiPostVao.bind();
-      m_asciiPostVao.drawArrays(PrimitiveMode::Triangles, 0, 3);
-      m_asciiPostVao.unbind();
+      GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+      GLVertexArrayObject::unbind();
       glDisable(GL_SCISSOR_TEST);
     }
 
-    asciiPostProg.stopUse();
+    GLShaderProgram::stopUse();
 
     if (m_asciiLumLutTex) {
       m_asciiLumLutTex->unbind(5u);

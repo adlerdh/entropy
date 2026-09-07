@@ -852,6 +852,11 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(syncMenu, @"Settings...", MainMenuAction::ShowSynchronizeSettingsWindow);
   [syncItem setSubmenu:syncMenu];
   [menu addItem:syncItem];
+  addSymbolActionMenuItem(
+    menu,
+    @"Synchronize 3D Cameras",
+    MainMenuAction::ToggleSynchronizeThreeDCameras,
+    @"camera.on.rectangle");
   [menu addItem:[NSMenuItem separatorItem]];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];

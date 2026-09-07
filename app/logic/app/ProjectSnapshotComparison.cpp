@@ -278,9 +278,10 @@ bool threeDRenderingSettingsEqual(
   const serialize::ProjectThreeDRenderingSettings& b)
 {
   return a.m_transparentBackground == b.m_transparentBackground && a.m_imageBoxVisible == b.m_imageBoxVisible &&
-         a.m_imagePlanesVisible == b.m_imagePlanesVisible &&
+         a.m_imagePlanesVisible == b.m_imagePlanesVisible && a.m_imagePlaneOpacity == b.m_imagePlaneOpacity &&
          a.m_imagePlaneViewAngleOpacity == b.m_imagePlaneViewAngleOpacity &&
          a.m_imagePlaneSegmentationsVisible == b.m_imagePlaneSegmentationsVisible &&
+         a.m_imagePlaneIsocontoursVisible == b.m_imagePlaneIsocontoursVisible &&
          a.m_imagePlaneShading == b.m_imagePlaneShading &&
          a.m_imagePlaneLightingAmbient == b.m_imagePlaneLightingAmbient &&
          a.m_imagePlaneLightingDiffuse == b.m_imagePlaneLightingDiffuse &&

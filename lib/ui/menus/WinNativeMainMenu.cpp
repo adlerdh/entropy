@@ -991,7 +991,12 @@ bool populateViewsMenu(HMENU menu)
            position++,
            MainMenuAction::ToggleEntropyInstanceSync,
            L"Synchronize Entropy Instances") &&
-         insertSubmenu(menu, position++, syncMenu, L"Synchronize with &ITK-SNAP");
+         insertSubmenu(menu, position++, syncMenu, L"Synchronize with &ITK-SNAP") &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::ToggleSynchronizeThreeDCameras,
+           L"Synchronize 3D &Cameras");
 }
 
 bool populateWindowsMenu(HMENU menu)

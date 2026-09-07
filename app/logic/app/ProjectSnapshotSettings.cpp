@@ -390,8 +390,10 @@ serialize::ProjectThreeDRenderingSettings threeDRenderingSettings(const AppData&
     .m_transparentBackground = renderSettings.m_3dTransparentIfNoHit,
     .m_imageBoxVisible = renderSettings.m_raycastBackgroundEdgeBrighteningEnabled,
     .m_imagePlanesVisible = renderSettings.m_showImagePlanesIn3D,
-    .m_imagePlaneViewAngleOpacity = renderSettings.m_modulateImagePlaneOpacityWithViewAngle,
     .m_imagePlaneSegmentationsVisible = renderSettings.m_showSegmentationsOnImagePlanesIn3D,
+    .m_imagePlaneIsocontoursVisible = renderSettings.m_showIsocontoursOnImagePlanesIn3D,
+    .m_imagePlaneOpacity = renderSettings.m_imagePlaneOpacity,
+    .m_imagePlaneViewAngleOpacity = renderSettings.m_modulateImagePlaneOpacityWithViewAngle,
     .m_imagePlaneShading = renderSettings.m_shadeImagePlanesIn3D,
     .m_imagePlaneLightingAmbient = renderSettings.m_imagePlaneLightingAmbient,
     .m_imagePlaneLightingDiffuse = renderSettings.m_imagePlaneLightingDiffuse,
@@ -415,8 +417,10 @@ void applyThreeDRenderingSettings(AppData& appData, const serialize::ProjectThre
   renderSettings.m_3dTransparentIfNoHit = settings.m_transparentBackground;
   renderSettings.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_imageBoxVisible;
   renderSettings.m_showImagePlanesIn3D = settings.m_imagePlanesVisible;
+  renderSettings.m_imagePlaneOpacity = settings.m_imagePlaneOpacity;
   renderSettings.m_modulateImagePlaneOpacityWithViewAngle = settings.m_imagePlaneViewAngleOpacity;
   renderSettings.m_showSegmentationsOnImagePlanesIn3D = settings.m_imagePlaneSegmentationsVisible;
+  renderSettings.m_showIsocontoursOnImagePlanesIn3D = settings.m_imagePlaneIsocontoursVisible;
   renderSettings.m_shadeImagePlanesIn3D = settings.m_imagePlaneShading;
   renderSettings.m_imagePlaneLightingAmbient = settings.m_imagePlaneLightingAmbient;
   renderSettings.m_imagePlaneLightingDiffuse = settings.m_imagePlaneLightingDiffuse;
@@ -722,20 +726,16 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
   for (uint32_t component = 0; component < imageSettings.numComponents(); ++component) {
     const auto componentThresholds = imageSettings.thresholds(component);
     const auto defaultComponentThresholds = defaultSettings.thresholds(component);
-    addDiffValue(
-      settings.m_componentLevels,
-      settings.m_componentLevelIndices,
-      component,
-      imageSettings.windowCenter(component),
-      defaultSettings.windowCenter(component),
-      0.0);
-    addDiffValue(
-      settings.m_componentWindows,
-      settings.m_componentWindowIndices,
-      component,
-      imageSettings.windowWidth(component),
-      defaultSettings.windowWidth(component),
-      1.0);
+    const double windowCenter = imageSettings.windowCenter(component);
+    const double windowWidth = imageSettings.windowWidth(component);
+    if (
+      windowCenter != defaultSettings.windowCenter(component) || windowWidth != defaultSettings.windowWidth(component))
+    {
+      // Center and width form one display window. Persist both whenever either differs so that
+      // applying an out-of-range clinical preset can restore them atomically.
+      setDiffValue(settings.m_componentLevels, settings.m_componentLevelIndices, component, windowCenter, 0.0);
+      setDiffValue(settings.m_componentWindows, settings.m_componentWindowIndices, component, windowWidth, 1.0);
+    }
     addDiffValue(
       settings.m_componentThresholdLows,
       settings.m_componentThresholdLowIndices,
@@ -915,23 +915,27 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettingsLocal.setVectorLogJacobianDeterminant(settings.m_vectorLogJacobianDeterminant);
   imageSettingsLocal.setIgnoreAlpha(settings.m_ignoreAlpha);
   imageSettingsLocal.setColorInterpolationMode(settings.m_colorInterpolationMode);
-  const std::size_t numLevelComponents =
-    std::min<std::size_t>(settings.m_componentLevels.size(), imageSettingsLocal.numComponents());
-  for (std::size_t component = 0; component < numLevelComponents; ++component) {
-    if (!shouldApplySparseComponentValue(settings.m_componentLevelIndices, component)) {
-      continue;
+  const std::size_t numWindowingComponents = std::min<std::size_t>(
+    std::max(settings.m_componentLevels.size(), settings.m_componentWindows.size()),
+    imageSettingsLocal.numComponents());
+  for (std::size_t component = 0; component < numWindowingComponents; ++component) {
+    const bool applyLevel = component < settings.m_componentLevels.size() &&
+                            shouldApplySparseComponentValue(settings.m_componentLevelIndices, component);
+    const bool applyWidth = component < settings.m_componentWindows.size() &&
+                            shouldApplySparseComponentValue(settings.m_componentWindowIndices, component) &&
+                            settings.m_componentWindows.at(component) > 0.0;
+    const auto componentIndex = static_cast<uint32_t>(component);
+    if (applyLevel && applyWidth) {
+      imageSettingsLocal.setWindowCenterAndWidth(
+        componentIndex,
+        settings.m_componentLevels.at(component),
+        settings.m_componentWindows.at(component));
     }
-    imageSettingsLocal.setWindowCenter(static_cast<uint32_t>(component), settings.m_componentLevels.at(component));
-  }
-  const std::size_t numWindowComponents =
-    std::min<std::size_t>(settings.m_componentWindows.size(), imageSettingsLocal.numComponents());
-  for (std::size_t component = 0; component < numWindowComponents; ++component) {
-    if (!shouldApplySparseComponentValue(settings.m_componentWindowIndices, component)) {
-      continue;
+    else if (applyLevel) {
+      imageSettingsLocal.setWindowCenter(componentIndex, settings.m_componentLevels.at(component));
     }
-    const double windowWidth = settings.m_componentWindows.at(component);
-    if (windowWidth > 0.0) {
-      imageSettingsLocal.setWindowWidth(static_cast<uint32_t>(component), windowWidth);
+    else if (applyWidth) {
+      imageSettingsLocal.setWindowWidth(componentIndex, settings.m_componentWindows.at(component));
     }
   }
   const std::size_t numThresholdLowComponents =

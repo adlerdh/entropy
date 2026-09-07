@@ -96,7 +96,6 @@ void Rendering::renderColorImageForImage(
     program->use();
     {
       program->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
-      program->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
       setTexture2DAxesUniforms(*program, imageTextureLayout);
       program->setUniform("u_tex2DAxes[2]", textureAxesForProgramSlot(imageTextureLayout));
       program->setUniform("u_tex2DAxes[3]", textureAxesForProgramSlot(imageTextureLayout));

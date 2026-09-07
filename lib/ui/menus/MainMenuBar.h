@@ -23,6 +23,7 @@ enum class MainMenuAction
   SetModeScaleImage,
   Recenter,
   ResetView,
+  ToggleSynchronizeThreeDCameras,
   ToggleImageVisibility,
   ToggleSegmentationVisibility,
   ToggleImageEdges,

@@ -105,6 +105,45 @@ TEST_CASE("3D camera scene metrics are finite for degenerate scenes", "[camera][
   CHECK(metrics.m_defaultFov.y >= 1.0e-4f);
 }
 
+TEST_CASE("3D camera synchronization copies camera behavior but preserves view-local state", "[camera][3d][sync]")
+{
+  Camera sourceCamera(ProjectionType::Perspective);
+  camera3d::State sourceState;
+  camera3d::setDefaultCoronalPose(sourceCamera, sourceState, testScene());
+  camera3d::rotateAboutEye(sourceCamera, sourceState, {-0.2f, 0.1f}, {0.3f, -0.25f});
+  sourceState.m_orbitTargetMode = camera3d::OrbitTargetMode::Crosshairs;
+  sourceState.m_viewPositionFollowsCrosshairs = true;
+  sourceState.m_crosshairsFollowOffset = {1.0f, 2.0f, 3.0f};
+  sourceState.m_showImagePlanes = true;
+
+  Camera targetCamera(ProjectionType::Orthographic);
+  targetCamera.setAspectRatio(0.75f);
+  camera3d::State targetState;
+  targetState.m_showImagePlanes = false;
+  targetState.m_minPanDistance = 4.0f;
+  targetState.m_scrollDistance = 5.0f;
+  targetState.m_panDragStartNdc = glm::vec2{0.1f, 0.2f};
+  targetState.m_panPlanePoint = glm::vec3{1.0f};
+  targetState.m_panPlaneNormal = glm::vec3{0.0f, 0.0f, 1.0f};
+
+  camera3d::synchronizeCamera(targetCamera, targetState, sourceCamera, sourceState);
+
+  CHECK(targetCamera.projection()->type() == sourceCamera.projection()->type());
+  CHECK(targetCamera.aspectRatio() == Catch::Approx(0.75f));
+  CHECK(targetCamera.getZoom() == Catch::Approx(sourceCamera.getZoom()));
+  CHECK(targetCamera.camera_T_world() == sourceCamera.camera_T_world());
+  CHECK(targetState.m_projectionType == sourceState.m_projectionType);
+  CHECK(targetState.m_orbitTargetMode == sourceState.m_orbitTargetMode);
+  CHECK(targetState.m_viewPositionFollowsCrosshairs == sourceState.m_viewPositionFollowsCrosshairs);
+  CHECK(targetState.m_crosshairsFollowOffset == sourceState.m_crosshairsFollowOffset);
+  CHECK_FALSE(targetState.m_showImagePlanes);
+  CHECK(targetState.m_minPanDistance == Catch::Approx(4.0f));
+  CHECK(targetState.m_scrollDistance == Catch::Approx(5.0f));
+  CHECK_FALSE(targetState.m_panDragStartNdc);
+  CHECK_FALSE(targetState.m_panPlanePoint);
+  CHECK_FALSE(targetState.m_panPlaneNormal);
+}
+
 TEST_CASE("3D camera scene metrics preserve sub-millimeter scene sizes", "[camera][3d]")
 {
   const glm::vec3 sceneSize{0.01f, 0.02f, 0.03f};

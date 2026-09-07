@@ -424,6 +424,7 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Settings...", MainMenuAction::ShowSynchronizeSettingsWindow);
     ImGui::EndMenu();
   }
+  actionMenuItem(callbacks, "Synchronize 3D Cameras", MainMenuAction::ToggleSynchronizeThreeDCameras);
 }
 
 void renderImageMenu(const MainMenuBarCallbacks& callbacks)

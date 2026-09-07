@@ -207,6 +207,13 @@ void renderThreeDViewOptions(const ViewOverlayModeCallbacks& modes, ImFont* head
       }
       helpTooltip("Show segmentation overlays on 3D image planes, regardless of per-label 3D mesh visibility");
     }
+    if (modes.getThreeDPlaneIsocontoursVisible && modes.setThreeDPlaneIsocontoursVisible) {
+      bool showIsocontours = modes.getThreeDPlaneIsocontoursVisible();
+      if (ImGui::Checkbox("Isocontours on planes", &showIsocontours)) {
+        modes.setThreeDPlaneIsocontoursVisible(showIsocontours);
+      }
+      helpTooltip("Show 2D isocontour lines and fills on 3D image planes, subject to each surface's 2D visibility");
+    }
     ImGui::EndDisabled();
 
     if (modes.getThreeDCrosshairsVisible && modes.setThreeDCrosshairsVisible) {

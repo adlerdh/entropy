@@ -70,4 +70,13 @@ std::optional<CompactLayoutDelta> compactLayoutDelta(
   return delta;
 }
 
+void clearSerializedLayoutState(serialize::EntropyProject& project)
+{
+  project.m_layoutsFileName.reset();
+  project.m_layouts.clear();
+  project.m_removedDefaultLayoutIndices.clear();
+  project.m_modifiedDefaultLayouts.clear();
+  project.m_currentLayoutIndex.reset();
+}
+
 } // namespace project_layout_delta

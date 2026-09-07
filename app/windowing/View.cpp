@@ -309,11 +309,6 @@ void View::setViewType(const ViewType& newViewType)
   }
 }
 
-void View::setRenderMode(const ViewRenderMode& renderMode)
-{
-  ControlFrame::setRenderMode(renderMode);
-}
-
 void View::reconcileRenderModeForImageCount(const std::size_t imageCount)
 {
   ControlFrame::setRenderMode(reconcileRenderMode(m_renderMode, imageCount));

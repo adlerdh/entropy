@@ -30,4 +30,13 @@ std::optional<CompactLayoutDelta> compactLayoutDelta(
   const std::vector<layout::LayoutSpec>& currentLayouts,
   const std::vector<layout::LayoutSpec>& defaultLayouts);
 
+/**
+ * @brief Remove serialized layout state from a newly created project snapshot.
+ *
+ * New image projects generate their layouts only after GPU resources have been
+ * initialized. A snapshot taken before that point must not preserve the stale
+ * layouts from the previous or empty workspace.
+ */
+void clearSerializedLayoutState(serialize::EntropyProject& project);
+
 } // namespace project_layout_delta

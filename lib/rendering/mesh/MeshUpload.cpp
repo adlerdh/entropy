@@ -63,7 +63,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
     vao.enableVertexAttribute(sk_positionAttribute);
     positionsObject.unbind();
   }
-  vao.unbind();
+  GLVertexArrayObject::unbind();
 
   MeshGpuData
     gpuData(handle, std::move(vao), std::move(positionsObject), std::move(indicesObject), positionsInfo, indicesInfo);
@@ -75,7 +75,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
     normalsObject.generate();
     normalsObject.allocate(mesh.normals.size() * sizeof(glm::vec3), mesh.normals.data());
 
-    GLVertexArrayObject& gpuVao = gpuData.vao();
+    const GLVertexArrayObject& gpuVao = gpuData.vao();
     gpuVao.bind();
     {
       normalsObject.bind();
@@ -83,7 +83,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
       gpuVao.enableVertexAttribute(sk_normalAttribute);
       normalsObject.unbind();
     }
-    gpuVao.unbind();
+    GLVertexArrayObject::unbind();
 
     gpuData.setNormals(std::move(normalsObject), normalsInfo);
   }
@@ -95,7 +95,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
     colorsObject.generate();
     colorsObject.allocate(mesh.colors->size() * sizeof(glm::vec4), mesh.colors->data());
 
-    GLVertexArrayObject& gpuVao = gpuData.vao();
+    const GLVertexArrayObject& gpuVao = gpuData.vao();
     gpuVao.bind();
     {
       colorsObject.bind();
@@ -103,7 +103,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
       gpuVao.enableVertexAttribute(sk_colorAttribute);
       colorsObject.unbind();
     }
-    gpuVao.unbind();
+    GLVertexArrayObject::unbind();
 
     gpuData.setColors(std::move(colorsObject), colorsInfo);
   }
@@ -115,7 +115,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
     textureCoordsObject.generate();
     textureCoordsObject.allocate(mesh.textureCoords->size() * sizeof(glm::vec3), mesh.textureCoords->data());
 
-    GLVertexArrayObject& gpuVao = gpuData.vao();
+    const GLVertexArrayObject& gpuVao = gpuData.vao();
     gpuVao.bind();
     {
       textureCoordsObject.bind();
@@ -123,7 +123,7 @@ uploadMeshData(const MeshData& mesh, const MeshHandle& handle, BufferUsagePatter
       gpuVao.enableVertexAttribute(sk_textureCoordAttribute);
       textureCoordsObject.unbind();
     }
-    gpuVao.unbind();
+    GLVertexArrayObject::unbind();
 
     gpuData.setTextureCoords(std::move(textureCoordsObject), textureCoordsInfo);
   }

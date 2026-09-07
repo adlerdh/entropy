@@ -103,7 +103,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showLightboxOffsetLabels = true;
   preferences.lightboxOffsetLabelColor = {0.4f, 0.5f, 0.6f, 0.7f};
   preferences.floatingPointLinearInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
-  preferences.useMaximumIntensityProjectionExtent = true;
+  preferences.useMaximumIntensityProjectionExtent = false;
   preferences.intensityProjectionSlabThicknessMm = 12.5f;
   preferences.xrayEnergyKeV = 120.0f;
   preferences.xrayWindow = 0.35f;
@@ -156,8 +156,10 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.transparent3DBackground = false;
   preferences.imageBoxVisible = true;
   preferences.showImagePlanesIn3D = false;
+  preferences.imagePlaneOpacity = 0.63f;
   preferences.modulateImagePlaneOpacityWithViewAngle = false;
   preferences.showSegmentationsOnImagePlanesIn3D = false;
+  preferences.showIsocontoursOnImagePlanesIn3D = false;
   preferences.shadeImagePlanesIn3D = false;
   preferences.imagePlaneLightingAmbient = 0.11f;
   preferences.imagePlaneLightingDiffuse = 0.22f;
@@ -177,6 +179,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.renderFrontFaces = false;
   preferences.renderBackFaces = true;
   preferences.reversePovRotation = true;
+  preferences.synchronizeThreeDCameras = true;
   preferences.showCrosshairsIn3D = false;
   preferences.crosshairs3DGlyphDiameterVoxelDiagonals = 2.5f;
   preferences.crosshairs3DGlyphLengthVoxelDiagonals = 24.0f;
@@ -379,8 +382,10 @@ void requireRenderPreferencesEqual(
   CHECK(actual.transparent3DBackground == expected.transparent3DBackground);
   CHECK(actual.imageBoxVisible == expected.imageBoxVisible);
   CHECK(actual.showImagePlanesIn3D == expected.showImagePlanesIn3D);
+  CHECK(actual.imagePlaneOpacity == Catch::Approx(expected.imagePlaneOpacity));
   CHECK(actual.modulateImagePlaneOpacityWithViewAngle == expected.modulateImagePlaneOpacityWithViewAngle);
   CHECK(actual.showSegmentationsOnImagePlanesIn3D == expected.showSegmentationsOnImagePlanesIn3D);
+  CHECK(actual.showIsocontoursOnImagePlanesIn3D == expected.showIsocontoursOnImagePlanesIn3D);
   CHECK(actual.shadeImagePlanesIn3D == expected.shadeImagePlanesIn3D);
   CHECK(actual.imagePlaneLightingAmbient == Catch::Approx(expected.imagePlaneLightingAmbient));
   CHECK(actual.imagePlaneLightingDiffuse == Catch::Approx(expected.imagePlaneLightingDiffuse));
@@ -400,6 +405,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.renderFrontFaces == expected.renderFrontFaces);
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
+  CHECK(actual.synchronizeThreeDCameras == expected.synchronizeThreeDCameras);
   CHECK(actual.showCrosshairsIn3D == expected.showCrosshairsIn3D);
   CHECK(
     actual.crosshairs3DGlyphDiameterVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphDiameterVoxelDiagonals));
@@ -613,6 +619,7 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   preferences.showImageBorders = false;
   preferences.asciiEnabled = true;
   preferences.reversePovRotation = true;
+  preferences.synchronizeThreeDCameras = true;
   preferences.ddpMaxPeelPasses = 12;
 
   const user_preferences::RenderPreferences appPreferences =
@@ -626,6 +633,7 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
   CHECK(appPreferences.asciiEnabled == true);
   CHECK(appPreferences.reversePovRotation == true);
+  CHECK(appPreferences.synchronizeThreeDCameras == true);
   CHECK(appPreferences.ddpMaxPeelPasses == 12u);
 }
 
@@ -804,6 +812,8 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   const AppSettings settings;
   const user_preferences::RenderPreferences renderPreferences = user_preferences::defaultRenderPreferences();
 
+  CHECK(renderPreferences.segmentationOutlineStyle == SegmentationOutlineStyle::ViewPixel);
+
   const json root = json::parse(user_preferences::toJsonString(settings, renderPreferences));
 
   CHECK(root.at("interface").at("uiScale") == "auto");
@@ -840,6 +850,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
   CHECK_FALSE(root.at("rendering").contains("asciiShading"));
   CHECK_FALSE(root.at("rendering").contains("frameRate"));
+  CHECK(root.at("rendering").at("camera").at("synchronizeThreeDCameras") == false);
   CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
   CHECK(
     root.at("rendering").at("mesh").at("triangleEdgeColor") == json::array(
@@ -871,6 +882,8 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   const auto ddp = text.find("\"dualDepthPeeling\"");
   const auto raycasting = text.find("\"raycasting\"");
   const auto ascii = text.find("\"asciiShading\"");
+  const auto reversePovRotation = text.find("\"reversePovRotation\"");
+  const auto synchronizeThreeDCameras = text.find("\"synchronizeThreeDCameras\"");
 
   REQUIRE(views != std::string::npos);
   REQUIRE(rendering != std::string::npos);
@@ -879,10 +892,13 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   REQUIRE(ddp != std::string::npos);
   REQUIRE(raycasting != std::string::npos);
   REQUIRE(ascii != std::string::npos);
+  REQUIRE(reversePovRotation != std::string::npos);
+  REQUIRE(synchronizeThreeDCameras != std::string::npos);
   CHECK(views < rendering);
   CHECK(rendering < interface);
   CHECK(surfaces < ddp);
   CHECK(ddp < raycasting);
   CHECK(views < ascii);
   CHECK(ascii < rendering);
+  CHECK(reversePovRotation < synchronizeThreeDCameras);
 }

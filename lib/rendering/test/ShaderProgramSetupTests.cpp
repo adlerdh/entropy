@@ -170,6 +170,23 @@ TEST_CASE("shader program setup exposes complete texture lookup replacement sour
   REQUIRE_FALSE(setup.lookupReplacementSources.uintLinear2D.empty());
 }
 
+TEST_CASE("color image shader interfaces use component textures without a color map", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  const std::array colorImagePrograms{
+    ShaderProgramType::ImageColorLinear,
+    ShaderProgramType::ImageColorCubic,
+    ShaderProgramType::ImageColorLinearWarped,
+    ShaderProgramType::ImageColorCubicWarped};
+
+  for (const ShaderProgramType type : colorImagePrograms) {
+    const Uniforms& uniforms = setup.shaderInfo.at(type).fsUniforms;
+    INFO("shader type: " << to_string(type));
+    CHECK(uniforms.containsKey("u_imgTex"));
+    CHECK_FALSE(uniforms.containsKey("u_cmapTex"));
+  }
+}
+
 TEST_CASE("every main shader variant preprocesses without unresolved directives", "[rendering][shaders]")
 {
   const auto setup = shader_setup::buildProgramSetup();

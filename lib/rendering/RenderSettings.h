@@ -127,8 +127,10 @@ struct RenderSettings
   float m_adaptiveRaycastMeasuredFrameRate;
   bool m_raycastBackgroundEdgeBrighteningEnabled;
   bool m_showImagePlanesIn3D;
-  bool m_modulateImagePlaneOpacityWithViewAngle;
   bool m_showSegmentationsOnImagePlanesIn3D;
+  bool m_showIsocontoursOnImagePlanesIn3D;
+  float m_imagePlaneOpacity;
+  bool m_modulateImagePlaneOpacityWithViewAngle;
   bool m_shadeImagePlanesIn3D;
   float m_imagePlaneLightingAmbient;
   float m_imagePlaneLightingDiffuse;
@@ -154,10 +156,11 @@ struct RenderSettings
   float m_crosshairs3DGlyphLengthVoxelDiagonals;
   bool m_showThreeDCameraFrustumIn2DViews;
   bool m_reverseThreeDRotateAboutEye;
+  bool m_synchronizeThreeDCameras = false;
   glm::vec4 m_threeDCameraFrustumColor;
   std::optional<uuids::uuid> m_lastInteractedThreeDViewUid;
   SegMaskingForRaycasting m_segMasking;
-  SegmentationOutlineStyle m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+  SegmentationOutlineStyle m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
   float m_segInteriorOpacity = 0.2f;
   float m_segInterpCutoff = 0.5f;
   MetricParams m_squaredDifferenceParams;

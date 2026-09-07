@@ -645,6 +645,10 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
     return;
   }
 
+  if (m_data.renderSettings().m_synchronizeThreeDCameras) {
+    m_data.windowData().synchronizeCurrentLayoutThreeDCameras();
+  }
+
   m_data.setProject(createProjectSnapshot());
   m_glfw.postEmptyEvent();
   spdlog::info("Imported layouts from {}", fileName);

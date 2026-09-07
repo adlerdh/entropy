@@ -1,6 +1,7 @@
 add_executable(TestUi
   GuiDataTests.cpp
   HeaderCommonTests.cpp
+  InspectionWindowSizingTests.cpp
   IsosurfaceRangeModelTests.cpp
   KeyboardShortcutsTests.cpp
   LoadingStatusModelTests.cpp
@@ -28,6 +29,7 @@ target_sources(TestUi PRIVATE
   "${entropy_UI_DIR}/GuiData.cpp"
   "${entropy_UI_DIR}/IsosurfaceRangeModel.cpp"
   "${entropy_UI_DIR}/windows/KeyboardShortcuts.cpp"
+  "${entropy_UI_DIR}/windows/InspectionWindowSizing.cpp"
   "${entropy_UI_DIR}/dialogs/NativeMessageDialogModel.cpp"
   "${entropy_UI_DIR}/LinuxUiScale.cpp"
   "${entropy_UI_DIR}/Style.cpp"

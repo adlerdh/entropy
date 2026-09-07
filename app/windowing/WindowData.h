@@ -177,6 +177,13 @@ public:
   void setActiveViewUid(const std::optional<uuid>& uid);
 
   /**
+   * @brief Synchronize all 3D cameras in the current layout from one source view
+   * @param preferredSourceUid Preferred source view. The active or first initialized 3D view is used as fallback.
+   * @return True when a 3D source view was available
+   */
+  bool synchronizeCurrentLayoutThreeDCameras(std::optional<uuid> preferredSourceUid = std::nullopt);
+
+  /**
    * @brief Get the number of layouts
    * @return Layout count
    */

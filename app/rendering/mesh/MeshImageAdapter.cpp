@@ -84,7 +84,11 @@ scanSparseLabels(const T* const values, const ComponentBufferView& view, const g
     for (uint32_t y = 0; y < dims.y; ++y) {
       for (uint32_t x = 0; x < dims.x; ++x) {
         const std::size_t index = static_cast<std::size_t>(z) * sliceSize + static_cast<std::size_t>(y) * width + x;
+        // Int8 label images intentionally preserve negative numeric values. Casting through unsigned char, as the
+        // string-oriented signed-char check recommends, would reinterpret those labels as 128 through 255.
+        // NOLINTBEGIN(bugprone-signed-char-misuse,cert-str34-c)
         const int64_t label = static_cast<int64_t>(values[index * view.pixelStride + view.componentOffset]);
+        // NOLINTEND(bugprone-signed-char-misuse,cert-str34-c)
         const glm::uvec3 voxel{x, y, z};
         auto [labelIt, inserted] =
           labels.try_emplace(label, SegmentationLabelBounds{.minVoxel = voxel, .maxVoxel = voxel});
@@ -187,7 +191,10 @@ void fillBinaryLabelMask(
         const glm::uvec3 sourceVoxel = sourceMin + glm::uvec3{x, y, z};
         const std::size_t sourceIndex = static_cast<std::size_t>(sourceVoxel.z) * sourceSliceSize +
                                         static_cast<std::size_t>(sourceVoxel.y) * sourceWidth + sourceVoxel.x;
+        // Preserve the numeric value of signed 8-bit labels rather than reinterpreting their representation.
+        // NOLINTBEGIN(bugprone-signed-char-misuse,cert-str34-c)
         const int64_t value = static_cast<int64_t>(values[sourceIndex * view.pixelStride + view.componentOffset]);
+        // NOLINTEND(bugprone-signed-char-misuse,cert-str34-c)
         const glm::uvec3 croppedVoxel = glm::uvec3{x, y, z} + glm::uvec3{1u};
         grid.values[scalarGridValueIndex(grid.dimensions, croppedVoxel.x, croppedVoxel.y, croppedVoxel.z)] =
           value == labelValue ? 1.0f : 0.0f;

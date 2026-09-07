@@ -76,6 +76,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
   else if (path == "rendering") {
     preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
   }
+  else if (path == "rendering/camera") {
+    preferredKeys = {"showFrustumIn2DViews", "frustumColor", "reversePovRotation", "synchronizeThreeDCameras"};
+  }
   else if (path == "rendering/mesh") {
     preferredKeys = {
       "flatShading",
@@ -518,14 +521,17 @@ json toJson(
     {"rendering",
      {{"camera",
        {{"reversePovRotation", renderPreferences.reversePovRotation},
+        {"synchronizeThreeDCameras", renderPreferences.synchronizeThreeDCameras},
         {"showFrustumIn2DViews", renderPreferences.showThreeDCameraFrustumIn2DViews},
         {"frustumColor", vec4ToJson(renderPreferences.threeDCameraFrustumColor)}}},
       {"threeD",
        {{"transparentBackground", renderPreferences.transparent3DBackground},
         {"imageBoxVisible", renderPreferences.imageBoxVisible},
         {"imagePlanesVisible", renderPreferences.showImagePlanesIn3D},
-        {"imagePlaneViewAngleOpacity", renderPreferences.modulateImagePlaneOpacityWithViewAngle},
         {"imagePlaneSegmentationsVisible", renderPreferences.showSegmentationsOnImagePlanesIn3D},
+        {"imagePlaneIsocontoursVisible", renderPreferences.showIsocontoursOnImagePlanesIn3D},
+        {"imagePlaneOpacity", renderPreferences.imagePlaneOpacity},
+        {"imagePlaneViewAngleOpacity", renderPreferences.modulateImagePlaneOpacityWithViewAngle},
         {"imagePlaneShading", renderPreferences.shadeImagePlanesIn3D},
         {"lighting",
          {{"ambient", renderPreferences.lightingAmbient},
@@ -827,6 +833,7 @@ void applyJson(
     }
     if (const auto camera = rendering->find("camera"); camera != rendering->end() && camera->is_object()) {
       setFromJson(renderPreferences.reversePovRotation, *camera, "reversePovRotation");
+      setFromJson(renderPreferences.synchronizeThreeDCameras, *camera, "synchronizeThreeDCameras");
       setFromJson(renderPreferences.showThreeDCameraFrustumIn2DViews, *camera, "showFrustumIn2DViews");
       setVec4FromJson(renderPreferences.threeDCameraFrustumColor, *camera, "frustumColor");
     }
@@ -834,8 +841,10 @@ void applyJson(
       setFromJson(renderPreferences.transparent3DBackground, *threeD, "transparentBackground");
       setFromJson(renderPreferences.imageBoxVisible, *threeD, "imageBoxVisible");
       setFromJson(renderPreferences.showImagePlanesIn3D, *threeD, "imagePlanesVisible");
-      setFromJson(renderPreferences.modulateImagePlaneOpacityWithViewAngle, *threeD, "imagePlaneViewAngleOpacity");
       setFromJson(renderPreferences.showSegmentationsOnImagePlanesIn3D, *threeD, "imagePlaneSegmentationsVisible");
+      setFromJson(renderPreferences.showIsocontoursOnImagePlanesIn3D, *threeD, "imagePlaneIsocontoursVisible");
+      setFloatFromJson(renderPreferences.imagePlaneOpacity, *threeD, "imagePlaneOpacity", 0.0f, 1.0f);
+      setFromJson(renderPreferences.modulateImagePlaneOpacityWithViewAngle, *threeD, "imagePlaneViewAngleOpacity");
       setFromJson(renderPreferences.shadeImagePlanesIn3D, *threeD, "imagePlaneShading");
       if (const auto lighting = threeD->find("lighting"); lighting != threeD->end() && lighting->is_object()) {
         setFloatFromJson(renderPreferences.lightingAmbient, *lighting, "ambient", 0.0f, 2.0f);

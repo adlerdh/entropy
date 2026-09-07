@@ -117,7 +117,9 @@ TEST_CASE("Project serialization omits default settings", "[project][serializati
   CHECK(defaultThreeD.empty());
   CHECK(defaultRaycasting.empty());
   CHECK(defaultMesh.empty());
+  CHECK(serialize::ProjectIntensityProjectionSettings{}.m_useMaximumImageExtent);
   CHECK(defaultIntensityProjection.empty());
+  CHECK(serialize::ProjectSegmentationDisplaySettings{}.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
   CHECK(defaultSegmentation.empty());
   CHECK(defaultIsocontours.empty());
 
@@ -373,8 +375,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_transparentBackground = false;
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
+  project.m_threeDRendering.m_imagePlaneOpacity = 0.73f;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
   project.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
+  project.m_threeDRendering.m_imagePlaneIsocontoursVisible = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.31f;
   project.m_threeDRendering.m_imagePlaneLightingDiffuse = 0.62f;
@@ -427,7 +431,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_pickingEnabled = false;
   project.m_meshRendering.m_clipPlaneEnabled = true;
   project.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
-  project.m_intensityProjection.m_useMaximumImageExtent = true;
+  project.m_intensityProjection.m_useMaximumImageExtent = false;
   project.m_intensityProjection.m_slabThicknessMm = 12.5f;
   project.m_intensityProjection.m_xrayEnergyKeV = 120.0f;
   project.m_intensityProjection.m_xrayWindow = 0.35f;
@@ -458,8 +462,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(threeD.at("transparentBackground") == false);
   CHECK(threeD.at("imageBoxVisible") == true);
   CHECK(threeD.at("imagePlanes").at("visible") == false);
+  CHECK(threeD.at("imagePlanes").at("opacity") == 0.73f);
   CHECK(threeD.at("imagePlanes").at("viewAngleOpacity") == false);
   CHECK(threeD.at("imagePlanes").at("segmentationsVisible") == false);
+  CHECK(threeD.at("imagePlanes").at("isocontoursVisible") == false);
   CHECK(threeD.at("imagePlanes").at("shading") == false);
   CHECK(threeD.at("imagePlanes").at("lighting").at("ambient") == 0.31f);
   CHECK(threeD.at("imagePlanes").at("lighting").at("diffuse") == 0.62f);
@@ -533,7 +539,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("showThreeDCameraFrustumIn2DViews"));
   CHECK_FALSE(raycasting.contains("reverseThreeDRotateAboutEye"));
   CHECK_FALSE(raycasting.contains("threeDCameraFrustumColor"));
-  CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == true);
+  CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == false);
   CHECK(rendering.at("intensityProjection").at("slabThicknessMm") == 12.5f);
   CHECK(rendering.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
   CHECK(rendering.at("segmentations").at("outlineStyle") == "voxel");
@@ -549,8 +555,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_transparentBackground == false);
   CHECK(parsed.m_threeDRendering.m_imageBoxVisible == true);
   CHECK(parsed.m_threeDRendering.m_imagePlanesVisible == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneOpacity == 0.73f);
   CHECK(parsed.m_threeDRendering.m_imagePlaneViewAngleOpacity == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneSegmentationsVisible == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneIsocontoursVisible == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneShading == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneLightingAmbient == 0.31f);
   CHECK(parsed.m_threeDRendering.m_imagePlaneLightingDiffuse == 0.62f);
@@ -606,7 +614,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
   CHECK(parsed.m_meshRendering.m_clipPlaneEnabled == true);
   CHECK(parsed.m_meshRendering.m_clipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
-  CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == true);
+  CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == false);
   CHECK(parsed.m_intensityProjection.m_slabThicknessMm == 12.5f);
   CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
   CHECK(parsed.m_intensityProjection.m_xrayWindow == 0.35f);
@@ -657,8 +665,10 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_threeDRendering.m_transparentBackground = false;
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
+  project.m_threeDRendering.m_imagePlaneOpacity = 0.65f;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
   project.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
+  project.m_threeDRendering.m_imagePlaneIsocontoursVisible = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.4f;
   project.m_threeDRendering.m_lightingAmbient = 0.6f;
@@ -757,8 +767,14 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
     objectKeys(orderedRendering.at("mesh").at("smoothing")) ==
     std::vector<std::string>{"segmentations", "isosurfaces", "iterations"});
   CHECK(
-    objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
-    std::vector<std::string>{"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"});
+    objectKeys(orderedRendering.at("threeD").at("imagePlanes")) == std::vector<std::string>{
+                                                                     "visible",
+                                                                     "segmentationsVisible",
+                                                                     "isocontoursVisible",
+                                                                     "opacity",
+                                                                     "viewAngleOpacity",
+                                                                     "shading",
+                                                                     "lighting"});
   CHECK(
     objectKeys(orderedRendering.at("raycasting")) == std::vector<std::string>{
                                                        "samplingFactor",
@@ -797,7 +813,7 @@ TEST_CASE("Project serialization ignores the obsolete singular segmentation sett
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
   CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
-  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
   const json saved = parsed;
   const json rendering = saved.value("settings", json::object()).value("rendering", json::object());
   CHECK_FALSE(rendering.contains("segmentation"));
@@ -884,7 +900,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
   CHECK(parsed.m_intensityProjection.m_xrayLevel == 1.0f);
   CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
   CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
-  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 1.0f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
   CHECK(

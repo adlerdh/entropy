@@ -143,7 +143,7 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
       domainU.imgTexture_T_world,
       CurrentImages{ImgSegPair{referenceImageUid.value_or(*imgSegPair.first), std::nullopt}});
   }
-  program.stopUse();
+  GLShaderProgram::stopUse();
 
   unbindTextures(boundDefTextures);
   unbindTextures(boundImageTextures);

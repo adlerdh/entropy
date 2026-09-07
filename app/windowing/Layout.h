@@ -125,9 +125,9 @@ public:
 
   /**
    * @brief Set the layout render mode and propagate it to all child views
-   * @param renderMode New render mode
+   * @param newRenderMode New render mode
    */
-  void setRenderMode(const ViewRenderMode& renderMode) override;
+  void setRenderMode(const ViewRenderMode& newRenderMode) override;
 
   /** @brief Set the layout's enabled 3D scene contents and propagate them to all child views. */
   void setThreeDSceneContents(ThreeDSceneContents contents) override;

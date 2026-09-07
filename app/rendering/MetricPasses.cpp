@@ -131,7 +131,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
   }
   else if (ViewRenderMode::LocalNcc == view.renderMode()) {
     GLShaderProgram& program = shaderProgramForTextureDimension(
@@ -167,7 +167,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
   }
   else if (ViewRenderMode::LocalLinearResidual == view.renderMode()) {
     GLShaderProgram& program = shaderProgramForTextureDimension(
@@ -203,7 +203,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
   }
   else if (ViewRenderMode::Overlay == view.renderMode()) {
     GLShaderProgram& program = shaderProgramForTextureDimension(
@@ -231,7 +231,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
 
       renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
   }
 
   unbindTextures(boundMetricDefTextures);
@@ -284,7 +284,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
         settings.m_segInteriorOpacity,
         settings.m_segInterpCutoff);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
 
     unbindBufferTextures(boundBufferTextures);
     unbindTextures(boundTextures);

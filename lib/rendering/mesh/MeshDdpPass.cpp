@@ -176,8 +176,8 @@ void clearAccumulatedBackColor(MeshDdpResources& resources)
 void drawFullScreenTriangle(MeshDdpResources& resources)
 {
   resources.fullScreenVao().bind();
-  resources.fullScreenVao().drawArrays(PrimitiveMode::Triangles, 0, 3);
-  resources.fullScreenVao().unbind();
+  GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+  GLVertexArrayObject::unbind();
 }
 
 void initializeDepthBounds(const MeshDdpRenderRequest& request)
@@ -190,7 +190,7 @@ void initializeDepthBounds(const MeshDdpRenderRequest& request)
 
   // The initialization shader writes only depth bounds. Opaque and translucent surface meshes are both included when
   // DDP is active so opaque alpha-1 fragments correctly occlude transparent fragments behind them.
-  request.meshRenderer.drawBucket(request.renderables, request.context, request.initProgram, MeshDrawPass::DepthBounds);
+  MeshRenderer::drawBucket(request.renderables, request.context, request.initProgram, MeshDrawPass::DepthBounds);
   if (request.drawExtraDepthBounds) {
     request.drawExtraDepthBounds();
   }
@@ -218,7 +218,7 @@ void peelFrontAndBackLayers(const MeshDdpRenderRequest& request, const uint32_t 
   request.peelProgram.use();
   request.peelProgram.setSamplerUniform("u_previousDepthBoundsTex", static_cast<GLint>(k_depthTextureUnit));
   request.peelProgram.setSamplerUniform("u_previousFrontColorTex", static_cast<GLint>(k_frontColorTextureUnit));
-  request.meshRenderer.drawBucket(request.renderables, request.context, request.peelProgram);
+  MeshRenderer::drawBucket(request.renderables, request.context, request.peelProgram);
   request.resources.frontColorTexture(previousId).unbind(k_frontColorTextureUnit);
   request.resources.depthTexture(previousId).unbind(k_depthTextureUnit);
   if (request.drawExtraPeelLayers) {
@@ -241,7 +241,7 @@ void blendBackLayer(const MeshDdpRenderRequest& request, const uint32_t currentI
   request.backBlendProgram.use();
   request.backBlendProgram.setSamplerUniform("u_backTempTex", static_cast<GLint>(k_backTempTextureUnit));
   drawFullScreenTriangle(request.resources);
-  request.backBlendProgram.stopUse();
+  GLShaderProgram::stopUse();
   request.resources.backTempTexture(currentId).unbind(k_backTempTextureUnit);
 }
 
@@ -262,7 +262,7 @@ void queryRemainingLayers(const MeshDdpRenderRequest& request, const uint32_t cu
     drawFullScreenTriangle(request.resources);
     query.finish();
   }
-  request.completionProgram.stopUse();
+  GLShaderProgram::stopUse();
   request.resources.depthTexture(currentId).unbind(k_depthTextureUnit);
 }
 
@@ -298,7 +298,7 @@ void resolveDdp(const MeshDdpRenderRequest& request, const OpenGLStateGuard& sco
   const GlViewport viewport = currentViewport();
   request.resolveProgram.setUniform("u_viewportOrigin", glm::ivec2{viewport.x, viewport.y});
   drawFullScreenTriangle(request.resources);
-  request.resolveProgram.stopUse();
+  GLShaderProgram::stopUse();
   request.resources.backColorTexture().unbind(k_resolveBackTextureUnit);
   request.resources.frontColorTexture(currentId).unbind(k_resolveFrontTextureUnit);
 }

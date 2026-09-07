@@ -75,12 +75,6 @@ public:
   void setViewType(const ViewType& newViewType) override;
 
   /**
-   * @brief Set the 2D image render mode retained independently of the view type
-   * @param renderMode Requested 2D render mode
-   */
-  void setRenderMode(const ViewRenderMode& renderMode) override;
-
-  /**
    * @brief Reconcile the 2D render mode with the loaded image count
    * @param imageCount Number of loaded images
    */

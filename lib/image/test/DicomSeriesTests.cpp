@@ -74,6 +74,7 @@ TEST_CASE("DICOM metadata tag names use readable labels", "[image][dicom]")
   CHECK(dicom::metadataTagName("0010|0010") == "Patient Name");
   CHECK(dicom::metadataTagName("0020|000d") == "Study Instance UID");
   CHECK(dicom::metadataTagName("0020|000E") == "Series Instance UID");
+  CHECK(dicom::metadataTagName("0028|1055") == "Window Center & Width Explanation");
   CHECK(dicom::metadataTagName("7777|7777") == "Unknown");
 }
 

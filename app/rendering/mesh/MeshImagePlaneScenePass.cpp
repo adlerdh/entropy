@@ -205,12 +205,13 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
     if (showImagePlanes) {
       for (const rendering::mesh::MeshImagePlaneSceneMesh& mesh : meshes) {
         const std::uint64_t geometryVersion = rendering::mesh::imagePlaneSceneGeometryVersion(inputs, mesh.orientation);
+        const float viewOpacity = m_appData.renderSettings().m_modulateImagePlaneOpacityWithViewAngle
+                                    ? rendering::mesh::imagePlaneViewOpacityMultiplier(
+                                        rendering::mesh::imagePlaneWorldNormal(mesh.orientation, world_T_crosshairs),
+                                        viewDirectionWorld)
+                                    : 1.0f;
         const float opacityMultiplier =
-          m_appData.renderSettings().m_modulateImagePlaneOpacityWithViewAngle
-            ? rendering::mesh::imagePlaneViewOpacityMultiplier(
-                rendering::mesh::imagePlaneWorldNormal(mesh.orientation, world_T_crosshairs),
-                viewDirectionWorld)
-            : 1.0f;
+          rendering::mesh::imagePlaneOpacityMultiplier(m_appData.renderSettings().m_imagePlaneOpacity, viewOpacity);
 
         const std::optional<rendering::mesh::MeshHandle> handle = uploadImagePlaneMesh(
           mesh.mesh,

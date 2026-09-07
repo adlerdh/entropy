@@ -9,6 +9,7 @@ add_library(EntropyImage STATIC)
 add_library(Entropy::Image ALIAS EntropyImage)
 
 target_sources(EntropyImage PRIVATE
+  CtWindowing.cpp
   DicomSeries.cpp
   ImageComponentBuffers.cpp
   Image.cpp

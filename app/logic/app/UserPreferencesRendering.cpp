@@ -160,8 +160,10 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.transparent3DBackground = renderSettings.m_3dTransparentIfNoHit;
   preferences.imageBoxVisible = renderSettings.m_raycastBackgroundEdgeBrighteningEnabled;
   preferences.showImagePlanesIn3D = renderSettings.m_showImagePlanesIn3D;
+  preferences.imagePlaneOpacity = renderSettings.m_imagePlaneOpacity;
   preferences.modulateImagePlaneOpacityWithViewAngle = renderSettings.m_modulateImagePlaneOpacityWithViewAngle;
   preferences.showSegmentationsOnImagePlanesIn3D = renderSettings.m_showSegmentationsOnImagePlanesIn3D;
+  preferences.showIsocontoursOnImagePlanesIn3D = renderSettings.m_showIsocontoursOnImagePlanesIn3D;
   preferences.shadeImagePlanesIn3D = renderSettings.m_shadeImagePlanesIn3D;
   preferences.imagePlaneLightingAmbient = renderSettings.m_imagePlaneLightingAmbient;
   preferences.imagePlaneLightingDiffuse = renderSettings.m_imagePlaneLightingDiffuse;
@@ -181,6 +183,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.renderFrontFaces = renderSettings.m_renderFrontFaces;
   preferences.renderBackFaces = renderSettings.m_renderBackFaces;
   preferences.reversePovRotation = renderSettings.m_reverseThreeDRotateAboutEye;
+  preferences.synchronizeThreeDCameras = renderSettings.m_synchronizeThreeDCameras;
   preferences.showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D;
   preferences.crosshairs3DGlyphDiameterVoxelDiagonals = renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
   preferences.crosshairs3DGlyphLengthVoxelDiagonals = renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals;
@@ -321,8 +324,10 @@ void applyRenderPreferences(
   renderSettings.m_3dTransparentIfNoHit = preferences.transparent3DBackground;
   renderSettings.m_raycastBackgroundEdgeBrighteningEnabled = preferences.imageBoxVisible;
   renderSettings.m_showImagePlanesIn3D = preferences.showImagePlanesIn3D;
+  renderSettings.m_imagePlaneOpacity = std::clamp(preferences.imagePlaneOpacity, 0.0f, 1.0f);
   renderSettings.m_modulateImagePlaneOpacityWithViewAngle = preferences.modulateImagePlaneOpacityWithViewAngle;
   renderSettings.m_showSegmentationsOnImagePlanesIn3D = preferences.showSegmentationsOnImagePlanesIn3D;
+  renderSettings.m_showIsocontoursOnImagePlanesIn3D = preferences.showIsocontoursOnImagePlanesIn3D;
   renderSettings.m_shadeImagePlanesIn3D = preferences.shadeImagePlanesIn3D;
   renderSettings.m_imagePlaneLightingAmbient = preferences.imagePlaneLightingAmbient;
   renderSettings.m_imagePlaneLightingDiffuse = preferences.imagePlaneLightingDiffuse;
@@ -344,6 +349,7 @@ void applyRenderPreferences(
   renderSettings.m_renderFrontFaces = preferences.renderFrontFaces;
   renderSettings.m_renderBackFaces = preferences.renderBackFaces;
   renderSettings.m_reverseThreeDRotateAboutEye = preferences.reversePovRotation;
+  renderSettings.m_synchronizeThreeDCameras = preferences.synchronizeThreeDCameras;
   renderSettings.m_showCrosshairsIn3D = preferences.showCrosshairsIn3D;
   renderSettings.m_crosshairs3DGlyphDiameterVoxelDiagonals = preferences.crosshairs3DGlyphDiameterVoxelDiagonals;
   renderSettings.m_crosshairs3DGlyphLengthVoxelDiagonals = preferences.crosshairs3DGlyphLengthVoxelDiagonals;

@@ -12,6 +12,7 @@
 #include "logic/app/DataHelper.h"
 #include "logic/app/ImageSelectionPolicy.h"
 #include "logic/app/LoadingStatusItems.h"
+#include "logic/app/ProjectLayoutDelta.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "logic/app/ProjectSnapshotSettings.h"
 
@@ -1898,7 +1899,14 @@ void EntropyApp::loadDicomSeries(
 
       m_data.setRainbowColorsForAllImages();
       m_data.setRainbowColorsForAllLandmarkGroups();
-      m_data.setProject(createProjectSnapshot());
+      serialize::EntropyProject project = createProjectSnapshot();
+      if (!addToExistingProject) {
+        // Image-dependent layouts are generated on the main thread in
+        // onImagesReady(). Do not let the pre-initialization workspace layout
+        // override those generated defaults for a new DICOM project.
+        project_layout_delta::clearSerializedLayoutState(project);
+      }
+      m_data.setProject(std::move(project));
       return true;
     },
     [this, addToExistingProject]() {
