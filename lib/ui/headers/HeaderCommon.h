@@ -72,16 +72,16 @@ inline std::string imageRoleSuffix(bool isReferenceImage, bool isActiveImage, st
 inline std::string imageRoleSuffixShortReference(bool isReferenceImage, bool isActiveImage, std::size_t numImages)
 {
   if (numImages <= 1) {
-    return isActiveImage ? "(act.)" : std::string{};
+    return isActiveImage ? "(active)" : std::string{};
   }
   if (isReferenceImage && isActiveImage) {
-    return "(ref. + act.)";
+    return "(ref + active)";
   }
   if (isReferenceImage) {
-    return "(ref.)";
+    return "(ref)";
   }
   if (isActiveImage) {
-    return "(act.)";
+    return "(active)";
   }
   return {};
 }

@@ -1934,23 +1934,6 @@ void renderImageHeader(
   // Open View Properties on first appearance
   ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
   if (ImGui::TreeNode("View Properties")) {
-    const auto renderGlobalSegmentationOutlineControl = [&appData, isActiveImage]() {
-      if (!isActiveImage) {
-        return;
-      }
-
-      rendering::RenderSettings& renderSettings = appData.renderSettings();
-      bool outlineSegmentations = SegmentationOutlineStyle::Disabled != renderSettings.m_segOutlineStyle;
-      if (ImGui::Checkbox("Outline segmentations", &outlineSegmentations)) {
-        renderSettings.m_segOutlineStyle =
-          outlineSegmentations ? SegmentationOutlineStyle::ViewPixel : SegmentationOutlineStyle::Disabled;
-      }
-      ImGui::SameLine();
-      helpMarker(
-        "Show segmentation region boundaries for all images in 2D views and on 3D image planes. Press Space to "
-        "toggle this setting");
-    };
-
     if (showComponentControls) {
       // Global image opacity slider:
       bool globalVisibility = imgSettings.globalVisibility();
@@ -1993,7 +1976,6 @@ void renderImageHeader(
         ImGui::PopItemWidth();
         ImGui::SameLine();
         helpMarker("Segmentation layer opacity");
-        renderGlobalSegmentationOutlineControl();
       }
 
       ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -2040,7 +2022,6 @@ void renderImageHeader(
         ImGui::PopItemWidth();
         ImGui::SameLine();
         helpMarker("Segmentation layer opacity");
-        renderGlobalSegmentationOutlineControl();
       }
 
       ImGui::Dummy(ImVec2(0.0f, 1.0f));

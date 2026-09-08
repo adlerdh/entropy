@@ -1,4 +1,5 @@
 #include "rendering/helpers/VectorDrawingHelpers.h"
+#include "rendering/vector/ImageLabelOverlayDrawing.h"
 
 #include "common/Viewport.h"
 
@@ -8,6 +9,31 @@
 #include <limits>
 
 namespace vector_drawing = rendering::vector_drawing;
+
+TEST_CASE("image label role badges are compact and consistently ordered", "[rendering][vector_overlay]")
+{
+  using rendering::vector_overlay::ImageLabelEntry;
+  using rendering::vector_overlay::imageRoleBadgeLabels;
+
+  CHECK((imageRoleBadgeLabels(ImageLabelEntry{}) == std::array<std::string_view, 2>{"", ""}));
+  CHECK((imageRoleBadgeLabels(ImageLabelEntry{.isReference = true}) == std::array<std::string_view, 2>{"REF", ""}));
+  CHECK((imageRoleBadgeLabels(ImageLabelEntry{.isActive = true}) == std::array<std::string_view, 2>{"", "ACTIVE"}));
+  CHECK(
+    (imageRoleBadgeLabels(ImageLabelEntry{.isReference = true, .isActive = true}) ==
+     std::array<std::string_view, 2>{"REF", "ACTIVE"}));
+}
+
+TEST_CASE("image label swatches communicate opacity and visibility", "[rendering][vector_overlay]")
+{
+  using rendering::vector_overlay::ImageLabelEntry;
+  using rendering::vector_overlay::ImageSwatchMode;
+  using rendering::vector_overlay::imageSwatchMode;
+
+  CHECK(imageSwatchMode(ImageLabelEntry{}) == ImageSwatchMode::Opaque);
+  CHECK(imageSwatchMode(ImageLabelEntry{.effectiveOpacity = 0.5f}) == ImageSwatchMode::Translucent);
+  CHECK(imageSwatchMode(ImageLabelEntry{.effectiveOpacity = 0.0f}) == ImageSwatchMode::Hidden);
+  CHECK(imageSwatchMode(ImageLabelEntry{.isVisible = false}) == ImageSwatchMode::Hidden);
+}
 
 TEST_CASE("vector drawing helpers classify finite positions and rectangles", "[rendering][vector-drawing]")
 {

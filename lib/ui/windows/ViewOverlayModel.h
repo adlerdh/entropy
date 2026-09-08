@@ -4,7 +4,6 @@
 
 #include <cstddef>
 #include <string>
-#include <vector>
 
 namespace ui::view_overlay
 {
@@ -18,7 +17,6 @@ struct ImageChoice
   bool visible = true;     //!< Whether the image is globally visible
   bool active = false;     //!< Whether the image is the active image
   bool reference = false;  //!< Whether the image is the reference image
-  bool selected = false;   //!< Whether the image is selected for the current view operation
 };
 
 /**
@@ -48,12 +46,5 @@ bool usesDisabledVisibilityIcon(ViewRenderMode renderMode);
  * @return Display label with hidden/active qualifiers appended.
  */
 std::string imageChoiceLabel(const ImageChoice& choice);
-
-/**
- * @brief Join the names of selected and visible images for the view overlay label.
- * @param choices Image choices in display order.
- * @return Comma-separated selected image labels, or an empty string when none are selected.
- */
-std::string selectedVisibleImageNames(const std::vector<ImageChoice>& choices);
 
 } // namespace ui::view_overlay

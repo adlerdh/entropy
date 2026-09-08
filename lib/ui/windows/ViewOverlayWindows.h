@@ -11,7 +11,6 @@
 #include "viewer/ViewTypes.h"
 
 #include <glm/gtc/quaternion.hpp>
-#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <uuid.h>
 
@@ -28,14 +27,16 @@ struct ImFont;
  */
 struct ViewOverlayWindowContext
 {
-  uuids::uuid viewOrLayoutUid;        //!< View or layout identifier used for ImGui IDs and bulk actions
-  FrameBounds viewFrameBounds;        //!< Pixel bounds of the rendered view frame
-  UiControls uiControls;              //!< Flags describing which overlay controls the view supports
-  bool showApplyToAllButton = false;  //!< Whether to show the apply-to-all-views button
-  bool allowImageSelection = true;    //!< Whether the image-selection popup is editable
-  CoordinateFrame worldCrosshairs;    //!< Current world crosshairs frame
-  glm::vec2 contentScales{1.0f};      //!< Platform content scale ratios
-  ImFont* popupHeadingFont = nullptr; //!< Bold font used for popup titles
+  uuids::uuid viewOrLayoutUid;         //!< View or layout identifier used for ImGui IDs and bulk actions
+  FrameBounds viewFrameBounds;         //!< Pixel bounds of the rendered view frame
+  UiControls uiControls;               //!< Flags describing which overlay controls the view supports
+  bool showApplyToAllButton = false;   //!< Whether to show the apply-to-all-views button
+  bool allowImageSelection = true;     //!< Whether the image-selection popup is editable
+  float layoutVerticalPosition = 0.5f; //!< Normalized row position from the layout top (0) to bottom (1)
+  CoordinateFrame worldCrosshairs;     //!< Current world crosshairs frame
+  float uiScale = 1.0f;                //!< Effective logical application UI scale
+  std::function<void(float)> reportControlBottomOffset; //!< Report controls' bottom edge relative to frame top
+  ImFont* popupHeadingFont = nullptr;                   //!< Bold font used for popup titles
 };
 
 /**

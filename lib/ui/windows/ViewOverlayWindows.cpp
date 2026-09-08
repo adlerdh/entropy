@@ -26,11 +26,10 @@ namespace
 {
 using uuid = uuids::uuid;
 
-ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
+ImVec2 scaledToolbarButtonSize(float uiScale)
 {
   static const ImVec2 sk_toolbarButtonSize(32, 32);
-  (void)contentScale;
-  const float scale = ImGui::GetFontSize() / 16.0f;
+  const float scale = std::clamp(uiScale, 0.5f, 4.0f);
   return ImVec2{scale * sk_toolbarButtonSize.x, scale * sk_toolbarButtonSize.y};
 }
 
@@ -302,8 +301,9 @@ void renderViewSettingsComboWindow(
   const UiControls& uiControls = context.uiControls;
   const bool showApplyToAllButton = context.showApplyToAllButton;
   const bool allowImageSelection = context.allowImageSelection;
+  const float layoutVerticalPosition = std::clamp(context.layoutVerticalPosition, 0.0f, 1.0f);
   const CoordinateFrame& worldCrosshairs = context.worldCrosshairs;
-  const glm::vec2& contentScales = context.contentScales;
+  const float uiScale = context.uiScale;
   ImFont* const popupHeadingFont = context.popupHeadingFont;
 
   const std::size_t numImages = images.numImages;
@@ -346,8 +346,7 @@ void renderViewSettingsComboWindow(
 
   const bool usesThreeDImageSelection = ViewType::ThreeD == viewType;
 
-  static const glm::vec2 sk_framePad{4.0f, 4.0f};
-  static const ImVec2 sk_windowPadding(0.0f, 0.0f);
+  static constexpr float sk_baseFramePad = 4.0f;
   static const ImVec2 sk_popupWindowPadding(8.0f, 8.0f);
   static const ImVec2 sk_projectionPopupWindowPadding(8.0f, 6.0f);
   static constexpr float sk_projectionPopupExtraTopPadding = 2.0f;
@@ -358,13 +357,17 @@ void renderViewSettingsComboWindow(
 
   const std::string uidString = std::string("##") + uuids::to_string(viewOrLayoutUid);
 
-  const auto buttonSize = scaledToolbarButtonSize(contentScales);
+  const auto buttonSize = scaledToolbarButtonSize(uiScale);
+  const float clampedUiScale = std::clamp(uiScale, 1.0f, 4.0f);
+  const float scaledInset = clampedUiScale - 1.0f;
+  const float centeredRowCorrection = 8.0f * (1.0f - 2.0f * layoutVerticalPosition) * scaledInset;
+  const ImVec2 windowPadding{4.0f * scaledInset, 12.0f * scaledInset + centeredRowCorrection};
 
   // This needs to be saved somewhere
   bool windowOpen = false;
 
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, sk_itemSpacing);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_windowPadding);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, sk_windowRounding);
   {
     const char* label = nullptr;
@@ -373,8 +376,8 @@ void renderViewSettingsComboWindow(
                                                                                                  : ICON_FK_EYE;
 
     const ImVec2 viewTopLeftPos(
-      viewFrameBounds.bounds.xoffset + sk_framePad.x,
-      viewFrameBounds.bounds.yoffset + sk_framePad.y);
+      viewFrameBounds.bounds.xoffset + sk_baseFramePad,
+      viewFrameBounds.bounds.yoffset + sk_baseFramePad);
 
     ImGui::SetNextWindowPos(viewTopLeftPos, ImGuiCond_Always);
 
@@ -398,6 +401,11 @@ void renderViewSettingsComboWindow(
     // stack
     setNextWindowSizeConstraintsToMainViewport();
     if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
+      // All top-level controls in this overlay occupy one standard-height ImGui row. Capture its
+      // edge before rendering any popups, whose items would otherwise replace ImGui's last-item
+      // rectangle and make the reported edge jump while a popup is open.
+      const float controlBottomEdge = ImGui::GetCursorScreenPos().y + ImGui::GetFrameHeight();
+
       // Popup window with images to be rendered and their visibility:
       if (uiControls.m_hasImageComboBox && allowImageSelection) {
         if (usesThreeDImageSelection || view_overlay::usesVisibleImageSelection(renderMode)) {
@@ -420,11 +428,7 @@ void renderViewSettingsComboWindow(
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
               auto displayAndFileName = getImageDisplayAndFileName(i);
               const std::string displayName = view_overlay::imageChoiceLabel(
-                {displayAndFileName.first,
-                 getImageVisibilitySetting(i),
-                 getImageIsActive(i),
-                 getImageIsReference(i),
-                 isImageRendered(i)});
+                {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), getImageIsReference(i)});
 
               bool rendered = isImageRendered(i);
               const bool oldRendered = rendered;
@@ -515,11 +519,7 @@ void renderViewSettingsComboWindow(
 
               const auto displayAndFileName = getImageDisplayAndFileName(i);
               const std::string displayName = view_overlay::imageChoiceLabel(
-                {displayAndFileName.first,
-                 getImageVisibilitySetting(i),
-                 getImageIsActive(i),
-                 getImageIsReference(i),
-                 isImageUsedForMetric(i)});
+                {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), getImageIsReference(i)});
 
               bool rendered = isImageUsedForMetric(i);
               const bool oldRendered = rendered;
@@ -819,48 +819,8 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      // Text label of visible images:
-      /// @todo Replace this with NanoVG text
-      {
-        std::string imageNamesText;
-
-        std::vector<view_overlay::ImageChoice> choices;
-        choices.reserve(numImages);
-
-        if (usesThreeDImageSelection || view_overlay::usesVisibleImageSelection(renderMode)) {
-          for (std::size_t i = 0; i < numImages; ++i) {
-            const auto displayAndFileName = getImageDisplayAndFileName(i);
-            choices.push_back(
-              {displayAndFileName.first,
-               getImageVisibilitySetting(i),
-               getImageIsActive(i),
-               getImageIsReference(i),
-               isImageRendered(i)});
-          }
-          imageNamesText = view_overlay::selectedVisibleImageNames(choices);
-        }
-        else if (ViewType::ThreeD != viewType && ViewRenderMode::Disabled == renderMode) {
-          // render no text
-          imageNamesText = "";
-        }
-        else {
-          for (std::size_t i = 0; i < numImages; ++i) {
-            const auto displayAndFileName = getImageDisplayAndFileName(i);
-            choices.push_back(
-              {displayAndFileName.first,
-               getImageVisibilitySetting(i),
-               false,
-               getImageIsReference(i),
-               isImageUsedForMetric(i)});
-          }
-          imageNamesText = view_overlay::selectedVisibleImageNames(choices);
-        }
-
-        static const ImVec4 s_textColor(0.75f, 0.75f, 0.75f, 1.0f);
-        const float wrapWidth = std::max(0.0f, viewFrameBounds.bounds.width - 2.0f * sk_framePad.x);
-        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + wrapWidth);
-        ImGui::TextColored(s_textColor, "%s", imageNamesText.c_str());
-        ImGui::PopTextWrapPos();
+      if (context.reportControlBottomOffset) {
+        context.reportControlBottomOffset(std::max(0.0f, controlBottomEdge - viewFrameBounds.bounds.yoffset));
       }
     }
 

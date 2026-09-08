@@ -2865,6 +2865,7 @@ e.g. instead of seeing a hardcoded height of 500 for a given item/window, you ma
 void ImGuiWrapper::setContentScale(float scale)
 {
   m_uiScaleManager.applyContentScale(scale);
+  m_appData.guiData().m_effectiveUiScale = m_uiScaleManager.effectiveScale();
 }
 
 void ImGuiWrapper::setUserScaleOverride(std::optional<float> scale)
@@ -3011,6 +3012,7 @@ void ImGuiWrapper::render()
 
   if (m_pendingUserScaleOverride) {
     m_uiScaleManager.setUserScaleOverride(*m_pendingUserScaleOverride);
+    m_appData.guiData().m_effectiveUiScale = m_uiScaleManager.effectiveScale();
     m_pendingUserScaleOverride.reset();
   }
   if (m_pendingFontReload) {
@@ -4920,8 +4922,12 @@ void ImGuiWrapper::render()
       currentLayout.uiControls(),
       false,
       LayoutKind::Lightbox != currentLayout.kind(),
+      0.5f,
       m_appData.state().worldCrosshairs(),
-      m_appData.windowData().getContentScaleRatios(),
+      m_uiScaleManager.effectiveScale(),
+      [this, layoutUid = currentLayout.uid()](float offset) {
+        m_appData.guiData().m_viewOverlayControlBottomOffsets[layoutUid] = offset;
+      },
       popupHeadingFont};
 
     const bool useThreeDImageSelection = ViewType::ThreeD == currentLayout.viewType();
@@ -5043,6 +5049,11 @@ void ImGuiWrapper::render()
   else if (m_appData.guiData().m_renderUiOverlays && !currentLayout.isLightbox()) {
     // Per-view UI controls:
 
+    const auto layoutFrameBounds = helper::computeMindowFrameBounds(
+      currentLayout.windowClipViewport(),
+      m_appData.windowData().viewport().getAsVec4(),
+      wholeWindowHeight);
+
     for (const auto& viewUid : m_appData.windowData().currentViewUids()) {
       View* view = m_appData.windowData().getCurrentView(viewUid);
       if (!view) return;
@@ -5092,6 +5103,11 @@ void ImGuiWrapper::render()
         view->windowClipViewport(),
         m_appData.windowData().viewport().getAsVec4(),
         wholeWindowHeight);
+      const float verticalTravel = layoutFrameBounds.bounds.height - viewFrameBounds.bounds.height;
+      const float layoutVerticalPosition =
+        verticalTravel > 0.5f
+          ? std::clamp((viewFrameBounds.bounds.yoffset - layoutFrameBounds.bounds.yoffset) / verticalTravel, 0.0f, 1.0f)
+          : 0.5f;
 
       const ViewOverlayWindowContext overlayContext{
         viewUid,
@@ -5099,8 +5115,10 @@ void ImGuiWrapper::render()
         view->uiControls(),
         true,
         true,
+        layoutVerticalPosition,
         m_appData.state().worldCrosshairs(),
-        m_appData.windowData().getContentScaleRatios(),
+        m_uiScaleManager.effectiveScale(),
+        [this, viewUid](float offset) { m_appData.guiData().m_viewOverlayControlBottomOffsets[viewUid] = offset; },
         popupHeadingFont};
 
       const bool useThreeDImageSelection = ViewType::ThreeD == view->viewType();

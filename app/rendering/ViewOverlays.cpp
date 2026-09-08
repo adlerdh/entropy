@@ -10,11 +10,13 @@
 #include "logic/states/FsmList.hpp"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/vector/FrustumOverlayDrawing.h"
+#include "rendering/vector/ImageLabelOverlayDrawing.h"
 #include "rendering/vector/LightboxOverlayDrawing.h"
 #include "rendering/vector/ScaleBarDrawing.h"
 #include "rendering/vector/ViewOverlayDrawing.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "windowing/View.h"
+#include "windowing/ControlFrame.h"
 
 #include <glm/glm.hpp>
 #include <nanovg.h>
@@ -23,6 +25,7 @@
 #include <limits>
 #include <list>
 #include <optional>
+#include <vector>
 
 namespace
 {
@@ -112,6 +115,46 @@ float lightboxOffsetUnitReferenceMm(const AppData& appData, const WindowData& wi
     }
   }
   return minNonzeroOffsetMm == std::numeric_limits<float>::max() ? 0.0f : minNonzeroOffsetMm;
+}
+
+std::vector<rendering::vector_overlay::ImageLabelEntry> imageLabelEntries(
+  const AppData& appData,
+  const ControlFrame& frame)
+{
+  std::vector<rendering::vector_overlay::ImageLabelEntry> entries;
+  entries.reserve(frame.visibleImages().size());
+
+  const std::optional<uuid> referenceUid = appData.refImageUid();
+  const std::optional<uuid> activeUid = appData.activeImageUid();
+  const bool showActiveRole = ViewType::ThreeD == frame.viewType() || ViewRenderMode::Image == frame.renderMode();
+
+  for (const uuid& imageUid : frame.visibleImages()) {
+    const Image* image = appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    const ImageSettings& settings = image->settings();
+    const bool visible = settings.globalVisibility() && settings.visibility();
+    const float effectiveOpacity =
+      static_cast<float>(std::clamp(settings.globalOpacity() * settings.opacity(), 0.0, 1.0));
+
+    entries.push_back(
+      {.displayName = settings.displayName(),
+       .identificationColor = settings.borderColor(),
+       .isReference = referenceUid && *referenceUid == imageUid,
+       .isActive = showActiveRole && activeUid && *activeUid == imageUid,
+       .isVisible = visible,
+       .effectiveOpacity = visible ? effectiveOpacity : 0.0f});
+  }
+  return entries;
+}
+
+float viewControlBottomOffset(const GuiData& guiData, const uuid& frameUid)
+{
+  constexpr float k_defaultOffset = 26.0f;
+  const auto it = guiData.m_viewOverlayControlBottomOffsets.find(frameUid);
+  return it != guiData.m_viewOverlayControlBottomOffsets.end() ? it->second : k_defaultOffset;
 }
 } // namespace
 
@@ -293,6 +336,16 @@ void Rendering::renderVectorOverlays()
           lightboxOffsetUnitReference,
           R.m_lightboxOffsetLabelColor);
       }
+
+      if (!windowData.currentLayout().isLightbox()) {
+        const auto entries = imageLabelEntries(m_appData, *view);
+        rendering::vector_overlay::drawImageLabelOverlay(
+          m_nvg,
+          miewportViewBounds,
+          entries,
+          m_appData.guiData().m_effectiveUiScale,
+          viewControlBottomOffset(m_appData.guiData(), viewUid));
+      }
     }
 
     ViewOutlineMode outlineMode = ViewOutlineMode::None;
@@ -310,6 +363,18 @@ void Rendering::renderVectorOverlays()
     }
 
     drawViewOutline(m_nvg, miewportViewBounds, outlineMode);
+  }
+
+  if (m_showOverlays && windowData.currentLayout().isLightbox()) {
+    const auto layoutBounds =
+      helper::computeMiewportFrameBounds(windowData.currentLayout().windowClipViewport(), windowVP.getAsVec4());
+    const auto entries = imageLabelEntries(m_appData, windowData.currentLayout());
+    rendering::vector_overlay::drawImageLabelOverlay(
+      m_nvg,
+      layoutBounds,
+      entries,
+      m_appData.guiData().m_effectiveUiScale,
+      viewControlBottomOffset(m_appData.guiData(), windowData.currentLayout().uid()));
   }
 
   drawWindowOutline(m_nvg, windowVP);

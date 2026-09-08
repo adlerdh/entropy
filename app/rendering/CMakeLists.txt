@@ -33,6 +33,7 @@ target_sources(entropy PRIVATE
   VectorFieldOverlays.cpp
   ViewOverlays.cpp
   vector/FrustumOverlayDrawing.cpp
+  vector/ImageLabelOverlayDrawing.cpp
   vector/LightboxOverlayDrawing.cpp
   vector/ScaleBarDrawing.cpp
   vector/VectorFieldOverlayDrawing.cpp
