@@ -25,7 +25,7 @@ std::ostream& operator<<(std::ostream& os, const InputParams& p)
     os << "\nLayouts file: " << *p.layoutsFile;
   }
 
-  os << "\nConsole log level: " << p.consoleLogLevel;
+  os << "\nApplication log level: " << p.logLevel;
 
   return os;
 }

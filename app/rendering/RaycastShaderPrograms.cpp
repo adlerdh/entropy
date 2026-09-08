@@ -58,7 +58,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
     fsSource = std::string(fsData.begin(), fsData.end());
   }
   catch (const std::exception& e) {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
+    spdlog::critical("Could not load a raycasting shader: {}. Entropy cannot start", e.what());
     throwDebug("Unable to load shader");
   }
 
@@ -144,7 +144,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
   }
 
   if (!program.link()) {
-    spdlog::critical("Failed to link shader program {}", program.name());
+    spdlog::critical("Failed to link raycasting shader program {}; Entropy cannot start", program.name());
     return false;
   }
 

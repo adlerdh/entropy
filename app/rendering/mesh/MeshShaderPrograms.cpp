@@ -54,7 +54,7 @@ bool attachShaderFile(GLShaderProgram& program, const ShaderType shaderType, con
     source = loadShaderFile(path);
   }
   catch (const std::exception& e) {
-    spdlog::critical("Exception when loading mesh shader file '{}': {}", path, e.what());
+    spdlog::critical("Could not load mesh shader file '{}': {}. Entropy cannot start", path, e.what());
     throwDebug("Unable to load mesh shader");
   }
 
@@ -86,7 +86,7 @@ bool attachShaderSource(
 bool linkMeshProgram(GLShaderProgram& program)
 {
   if (!program.link()) {
-    spdlog::critical("Failed to link shader program {}", program.name());
+    spdlog::critical("Failed to link mesh shader program {}; Entropy cannot start", program.name());
     return false;
   }
 

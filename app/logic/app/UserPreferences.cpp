@@ -117,6 +117,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
   else if (path == "system") {
     preferredKeys = {"performance", "updates", "diagnostics"};
   }
+  else if (path == "system/diagnostics") {
+    preferredKeys = {"enabled", "logVerbosity"};
+  }
 
   const auto append = [&](const std::string& key) {
     const std::string childPath = path.empty() ? key : std::string{path} + "/" + key;
@@ -607,7 +610,9 @@ json toJson(
        {{"frameRate",
          {{"limit", renderPreferences.limitFrameRate},
           {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}}}},
-      {"diagnostics", {{"logVerbosity", std::string{logging::logLevelLabel(logging::defaultLoggerSinkLevel())}}}},
+      {"diagnostics",
+       {{"enabled", logging::loggingEnabled()},
+        {"logVerbosity", std::string{logging::logLevelLabel(logging::applicationLogLevel())}}}},
       {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
 }
 
@@ -1018,13 +1023,16 @@ void applyJson(
           }
 #if SPDLOG_ACTIVE_LEVEL > SPDLOG_LEVEL_TRACE
           if (!choice.requiresCompiledTrace) {
-            logging::setDefaultLoggerSinkLevel(choice.level);
+            logging::setApplicationLogLevel(choice.level);
           }
 #else
-          logging::setDefaultLoggerSinkLevel(choice.level);
+          logging::setApplicationLogLevel(choice.level);
 #endif
           break;
         }
+      }
+      if (const auto enabled = diagnostics->find("enabled"); enabled != diagnostics->end() && enabled->is_boolean()) {
+        logging::setLoggingEnabled(enabled->get<bool>());
       }
     }
     if (const auto updates = system->find("updates"); updates != system->end() && updates->is_object()) {

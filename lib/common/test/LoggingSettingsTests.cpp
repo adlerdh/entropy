@@ -61,18 +61,39 @@ TEST_CASE("log level labels cover known levels and default unknown levels to inf
   CHECK(logging::logLevelLabel(spdlog::level::off) == "Info");
 }
 
-TEST_CASE("default logger sink level helpers read and update sink levels", "[common][logging]")
+TEST_CASE("logging settings preserve verbosity while globally disabled", "[common][logging]")
 {
   const auto previousLogger = spdlog::default_logger();
-  const auto sink = std::make_shared<spdlog::sinks::null_sink_mt>();
-  const auto logger = std::make_shared<spdlog::logger>("common-test-logger", sink);
+  const bool previousEnabled = logging::loggingEnabled();
+  const auto previousLevel = logging::applicationLogLevel();
+  const auto firstSink = std::make_shared<spdlog::sinks::null_sink_mt>();
+  const auto secondSink = std::make_shared<spdlog::sinks::null_sink_mt>();
+  const auto logger =
+    std::make_shared<spdlog::logger>("common-test-logger", spdlog::sinks_init_list{firstSink, secondSink});
   spdlog::set_default_logger(logger);
 
-  logging::setDefaultLoggerSinkLevel(spdlog::level::warn);
-  CHECK(logging::defaultLoggerSinkLevel() == spdlog::level::warn);
+  logging::setLoggingEnabled(true);
+  logging::setApplicationLogLevel(spdlog::level::warn);
+  CHECK(logging::applicationLogLevel() == spdlog::level::warn);
+  CHECK(firstSink->level() == spdlog::level::warn);
+  CHECK(secondSink->level() == spdlog::level::warn);
 
-  logging::setDefaultLoggerSinkLevel(spdlog::level::trace);
-  CHECK(logging::defaultLoggerSinkLevel() == logging::selectableLogLevel(spdlog::level::trace));
+  logging::setApplicationLogLevel(spdlog::level::off);
+  CHECK_FALSE(logging::loggingEnabled());
+  CHECK(logging::applicationLogLevel() == spdlog::level::warn);
+  CHECK(firstSink->level() == spdlog::level::off);
+  CHECK(secondSink->level() == spdlog::level::off);
 
+  logging::setApplicationLogLevel(spdlog::level::debug);
+  CHECK(logging::applicationLogLevel() == spdlog::level::debug);
+  CHECK(firstSink->level() == spdlog::level::off);
+  CHECK(secondSink->level() == spdlog::level::off);
+
+  logging::setLoggingEnabled(true);
+  CHECK(firstSink->level() == spdlog::level::debug);
+  CHECK(secondSink->level() == spdlog::level::debug);
+
+  logging::setApplicationLogLevel(previousLevel);
+  logging::setLoggingEnabled(previousEnabled);
   spdlog::set_default_logger(previousLogger);
 }

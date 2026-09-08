@@ -412,14 +412,15 @@ bool Image::loadImageBuffer(
       numElements * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
 
     spdlog::info(
-      "Casted image pixel component from type {} to {}",
+      "Converted image {} pixel component in memory from {} to {}",
+      m_ioInfoOnDisk.m_fileInfo.m_fileName,
       m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
       newTypeString);
 
     if (warnSizeConversion) {
       spdlog::warn(
-        "Size conversion: Possible loss of information when casting image pixel "
-        "component from type {} to {}",
+        "Converting image {} pixel components from {} to {} may lose information",
+        m_ioInfoOnDisk.m_fileInfo.m_fileName,
         m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
         newTypeString);
     }
@@ -512,31 +513,32 @@ bool Image::loadSegBuffer(
       numElements * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
 
     spdlog::info(
-      "Casted segmentation {} pixel component from type {} to {}",
+      "Converted segmentation {} pixel component in memory from {} to {}",
       m_ioInfoOnDisk.m_fileInfo.m_fileName,
       m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
       newTypeString);
 
     if (warnFloatConversion) {
       spdlog::warn(
-        "Floating point to integer conversion: Possible loss of precision and information when "
-        "casting segmentation pixel component from type {} to {}",
+        "Converting segmentation {} pixel components from floating-point {} to integer {} may lose labels or "
+        "precision",
+        m_ioInfoOnDisk.m_fileInfo.m_fileName,
         m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
         newTypeString);
     }
 
     if (warnSizeConversion) {
       spdlog::warn(
-        "Size conversion: Possible loss of information when casting segmentation pixel component "
-        "from type {} to {}",
+        "Converting segmentation {} pixel components from {} to {} may lose label values",
+        m_ioInfoOnDisk.m_fileInfo.m_fileName,
         m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
         newTypeString);
     }
 
     if (warnSignConversion) {
       spdlog::warn(
-        "Signed to unsigned integer conversion: Possible loss of information when casting "
-        "segmentation pixel component from type {} to {}",
+        "Converting segmentation {} pixel components from signed {} to unsigned {} may change negative label values",
+        m_ioInfoOnDisk.m_fileInfo.m_fileName,
         m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
         newTypeString);
     }

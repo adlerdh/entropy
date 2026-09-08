@@ -3,6 +3,8 @@
 #include "logic/app/DataHelper.h"
 #include "rendering/TextureSetup.h"
 
+#include <spdlog/spdlog.h>
+
 #include <utility>
 
 namespace fs = std::filesystem;
@@ -339,6 +341,12 @@ void EntropyApp::setCallbacks()
     bool success = false;
     success |= m_data.removeSeg(segUid);
     success |= m_rendering.removeSegTexture(segUid);
+    if (success) {
+      spdlog::info("Removed segmentation {} and its rendering resources", segUid);
+    }
+    else {
+      spdlog::warn("Could not remove segmentation {} because neither data nor rendering resources were found", segUid);
+    }
     return success;
   };
 

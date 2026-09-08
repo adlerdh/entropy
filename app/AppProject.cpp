@@ -672,7 +672,7 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
     return;
   }
 
-  spdlog::info("Opening project file {}", fileName);
+  spdlog::info("Requested project file {}", fileName);
 
   m_pendingProjectReplacementPaths = {fileName};
   if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenProject)) {
@@ -686,7 +686,7 @@ void EntropyApp::performLoadProjectFile(const fs::path& fileName)
 {
   serialize::EntropyProject project;
 
-  spdlog::info("Loading project file {}", fileName);
+  spdlog::info("Reading project file {}", fileName);
 
   if (!serialize::open(project, fileName)) {
     spdlog::error("Could not open project file {}", fileName);
@@ -973,6 +973,14 @@ void EntropyApp::continueAfterUnsavedProjectPrompt()
 
 void EntropyApp::closeProject()
 {
+  const std::size_t imageCount = m_data.numImages();
+  if (const auto& projectFileName = m_data.projectFileName()) {
+    spdlog::info("Closing project {} containing {} image(s)", *projectFileName, imageCount);
+  }
+  else if (imageCount > 0) {
+    spdlog::info("Closing unsaved project containing {} image(s)", imageCount);
+  }
+
   m_imageLoadCancelled = true;
 
   if (m_futureLoadProject.valid()) {

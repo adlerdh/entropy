@@ -99,7 +99,12 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
 {
   registration::JobStore& jobs = m_data.registrationJobs();
   const registration::JobRecord* job = jobs.find(jobId);
-  if (!job || !job->manifest) {
+  if (!job) {
+    spdlog::warn("Cannot import registration outputs because job '{}' was not found", jobId);
+    return;
+  }
+  if (!job->manifest) {
+    spdlog::warn("Cannot import registration outputs for job '{}' because it has no result manifest", jobId);
     return;
   }
 
@@ -136,6 +141,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
   }
 
   const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest);
+  spdlog::info("Beginning import of {} output step(s) for registration job '{}'", plan.steps.size(), jobId);
   m_preserveLayoutsOnImagesReady = true;
   m_pendingAddedImageUids.clear();
   appendEvent(registration::ProgressEventKind::Progress, "Importing registration outputs.");
@@ -397,6 +403,11 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
       m_data.setRainbowColorsForAllLandmarkGroups();
       m_data.setProject(createProjectSnapshot());
       appendAsyncEvent(registration::ProgressEventKind::Completed, "Registration outputs imported.");
+      spdlog::info(
+        "Imported registration outputs for job '{}': {} step(s), {} image resource(s) added",
+        jobId,
+        plan.steps.size(),
+        m_pendingAddedImageUids.size());
       asyncJobs.setStatus(jobId, statusBeforeImport);
       return true;
     },

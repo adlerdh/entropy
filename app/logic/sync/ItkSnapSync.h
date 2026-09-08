@@ -82,7 +82,7 @@ private:
   /** @brief Read the shared-memory message header and payload when it is valid and new. */
   bool readMessage(ItkSnapIpcMessage& message, std::int64_t& senderPid, std::int64_t& messageId, bool onlyIfNew);
 
-  /** @brief Emit trace logging when synchronization settings change. */
+  /** @brief Log synchronization state changes and detailed option values. */
   void logOptionChanges();
 
   /** @brief Fill outgoing zoom and pan fields from the captured Entropy view state. */

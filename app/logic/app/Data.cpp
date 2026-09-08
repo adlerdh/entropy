@@ -411,7 +411,10 @@ void AppData::loadImageColorMapsFromDisk()
     loadMapsFromDir("res/colormaps/peter_kovesi/");
   }
   catch (const std::exception& e) {
-    spdlog::critical("Exception when loading image colormap file: {}", e.what());
+    spdlog::error(
+      "Could not load one or more bundled image color maps: {}. Entropy will continue with the color maps that "
+      "loaded successfully",
+      e.what());
   }
 }
 

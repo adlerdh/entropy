@@ -157,7 +157,7 @@ serialize::DicomSource makeDicomSourceSnapshot(const dicom::SeriesInfo& series)
 
 void logLoadedImageDetails(const Image& image, const fs::path& sourceFileName)
 {
-  spdlog::info("Read image from file {}", sourceFileName);
+  spdlog::info("Read image pixel data from {}", sourceFileName);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
@@ -165,9 +165,9 @@ void logLoadedImageDetails(const Image& image, const fs::path& sourceFileName)
 
   SPDLOG_TRACE("Meta data:\n{}", ss.str());
 #endif
-  spdlog::info("Header:\n{}", image.header());
-  spdlog::info("Transformation:\n{}", image.transformations());
-  spdlog::info("Settings:\n{}", image.settings());
+  spdlog::info("Image header for {}:\n{}", sourceFileName, image.header());
+  spdlog::info("Image transformations for {}:\n{}", sourceFileName, image.transformations());
+  spdlog::info("Image settings for {}:\n{}", sourceFileName, image.settings());
 }
 
 std::optional<dicom::SeriesInfo> resolveDicomSource(const serialize::DicomSource& source)
@@ -346,7 +346,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
   // Segmentation labels and their 3D meshes are fully opaque by default.
   seg.settings().setOpacity(1.0);
 
-  spdlog::info("Read segmentation image from file {}", fileName);
+  spdlog::info("Read segmentation pixel data from {}", fileName);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
@@ -354,8 +354,8 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   SPDLOG_TRACE("Meta data:\n{}", ss.str());
 #endif
-  spdlog::info("Header:\n{}", seg.header());
-  spdlog::info("Transformation:\n{}", seg.transformations());
+  spdlog::info("Segmentation header for {}:\n{}", fileName, seg.header());
+  spdlog::info("Segmentation transformations for {}:\n{}", fileName, seg.transformations());
 
   const Image* matchImg = (matchingImageUid) ? m_data.image(*matchingImageUid) : nullptr;
 
@@ -388,8 +388,14 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
       *matchingImageUid,
       fileName);
 
-    spdlog::info("subject_T_texture matrix for image:\n{}", glm::to_string(imgTx.subject_T_texture()));
-    spdlog::info("subject_T_texture matrix for segmentation:\n{}", glm::to_string(segTx.subject_T_texture()));
+    spdlog::info(
+      "subject_T_texture matrix for image {}:\n{}",
+      *matchingImageUid,
+      glm::to_string(imgTx.subject_T_texture()));
+    spdlog::info(
+      "subject_T_texture matrix for segmentation {}:\n{}",
+      fileName,
+      glm::to_string(segTx.subject_T_texture()));
 
     const auto& imgHdr = matchImg->header();
     const auto& segHdr = seg.header();
@@ -535,7 +541,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
     return noDefLoaded;
   }
 
-  spdlog::info("Read warp field image from file {}", fileName);
+  spdlog::info("Read deformation-field pixel data from {}", fileName);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
@@ -543,9 +549,9 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
 
   SPDLOG_TRACE("Meta data:\n{}", ss.str());
 #endif
-  spdlog::info("Header:\n{}", def.header());
-  spdlog::info("Transformation:\n{}", def.transformations());
-  spdlog::info("Settings:\n{}", def.settings());
+  spdlog::info("Deformation-field header for {}:\n{}", fileName, def.header());
+  spdlog::info("Deformation-field transformations for {}:\n{}", fileName, def.transformations());
+  spdlog::info("Deformation-field settings for {}:\n{}", fileName, def.settings());
 
   // TODO: Do check of warp field header against the reference image header?
   def.settings().setComponentRenderMode(ComponentRenderMode::Magnitude);
@@ -666,7 +672,7 @@ bool EntropyApp::loadSerializedImage(
   bool isNewImage = false;
 
   try {
-    spdlog::debug("Attempting to load image from {}", imageToLoad.m_imageFileName);
+    spdlog::info("Attempting to load image from {}", imageToLoad.m_imageFileName);
     if (resolvedDicomSeries) {
       std::tie(imageUid, isNewImage) = loadDicomSeriesImage(*resolvedDicomSeries);
     }
@@ -822,7 +828,7 @@ bool EntropyApp::loadSerializedImage(
     bool isInverseWarpNewImage = false;
 
     try {
-      spdlog::debug("Attempting to load inverse warp image from {}", *serializedImage.m_inverseWarpFieldPath);
+      spdlog::info("Attempting to load inverse warp image from {}", *serializedImage.m_inverseWarpFieldPath);
       std::tie(inverseWarpUid, isInverseWarpNewImage) = loadDeformationField(*serializedImage.m_inverseWarpFieldPath);
     }
     catch (const std::exception& e) {
@@ -890,7 +896,7 @@ bool EntropyApp::loadSerializedImage(
     bool isForwardWarpNewImage = false;
 
     try {
-      spdlog::debug("Attempting to load forward warp image from {}", *serializedImage.m_forwardWarpFieldPath);
+      spdlog::info("Attempting to load forward warp image from {}", *serializedImage.m_forwardWarpFieldPath);
       std::tie(forwardWarpUid, isForwardWarpNewImage) = loadDeformationField(*serializedImage.m_forwardWarpFieldPath);
     }
     catch (const std::exception& e) {
@@ -1047,11 +1053,11 @@ bool EntropyApp::loadSerializedImage(
 
       if (serialize::ProjectLandmarkCoordinateSpace::Voxel == lm.m_coordinateSpace) {
         lmGroup.setInVoxelSpace(true);
-        spdlog::info("Landmarks are defined in Voxel space");
+        spdlog::info("Landmarks for image {} are defined in voxel space", *imageUid);
       }
       else {
         lmGroup.setInVoxelSpace(false);
-        spdlog::info("Landmarks are defined in physical Subject space");
+        spdlog::info("Landmarks for image {} are defined in physical subject space", *imageUid);
       }
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
@@ -1064,7 +1070,10 @@ bool EntropyApp::loadSerializedImage(
       const bool linked = m_data.assignLandmarkGroupUidToImage(*imageUid, lmGroupUid);
 
       if (!linked) {
-        spdlog::error("Unable to assigned landmark group {} to image {}", lmGroupUid, *imageUid);
+        spdlog::error(
+          "Could not assign landmark group {} to image {}; the landmarks will not be available for that image",
+          lmGroupUid,
+          *imageUid);
       }
       else {
         spdlog::info("Added landmark group {} to image {}", lmGroupUid, *imageUid);
@@ -1127,7 +1136,7 @@ bool EntropyApp::loadSerializedImage(
     SegInfo segInfo;
 
     try {
-      spdlog::debug("Attempting to load segmentation image from {}", serializedSeg.m_segFileName);
+      spdlog::info("Attempting to load segmentation image from {}", serializedSeg.m_segFileName);
       std::tie(segInfo.uid, segInfo.isNewSeg) = loadSegmentation(serializedSeg.m_segFileName, imageUid);
     }
     catch (const std::exception& e) {
@@ -1184,8 +1193,10 @@ bool EntropyApp::loadSerializedImage(
       allSegInfos.push_back(segInfo);
     }
     catch (const std::exception& e) {
-      spdlog::error("Exception creating blank segmentation for image {}: {}", *imageUid, e.what());
-      spdlog::error("No segmentation will be assigned to the image.");
+      spdlog::error(
+        "Exception creating a blank segmentation for image {}: {}. No segmentation will be assigned to the image",
+        *imageUid,
+        e.what());
       return false;
     }
   }
@@ -2003,7 +2014,7 @@ void EntropyApp::addSegmentationFileToImage(const fs::path& fileName, const uuid
   bool isNewSeg = false;
 
   try {
-    spdlog::debug("Attempting to add segmentation image from {} to image {}", fileName, imageUid);
+    spdlog::info("Attempting to add segmentation image from {} to image {}", fileName, imageUid);
     std::tie(segUid, isNewSeg) = loadSegmentation(fileName, imageUid);
   }
   catch (const std::exception& e) {
@@ -2172,7 +2183,9 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
   }
 
   if (!loadSerializedImage(projectToLoad.m_referenceImage, true)) {
-    spdlog::critical("Could not load reference image from {}", projectToLoad.m_referenceImage.m_imageFileName);
+    spdlog::error(
+      "Could not load reference image from {}; cancelling project load",
+      projectToLoad.m_referenceImage.m_imageFileName);
     return false;
   }
   if (m_pendingRecentDataLoad.kind() == recent_data::Kind::Images) {
@@ -2235,7 +2248,7 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
     spdlog::info("Set {} as the reference image", *refImageUid);
   }
   else {
-    spdlog::critical("Unable to set reference image");
+    spdlog::error("Unable to set the loaded reference image; cancelling project load");
     return false;
   }
 

@@ -111,7 +111,7 @@ void Rendering::createShaderPrograms()
       m_shaderPrograms.emplace(shaderType, std::move(*prog));
     }
     else {
-      spdlog::error(prog.error());
+      spdlog::critical("{}; Entropy cannot start without its rendering shaders", prog.error());
       throwDebug(std::format("Failed to create shader program {}", to_string(shaderType)));
     }
 
@@ -130,7 +130,7 @@ void Rendering::createShaderPrograms()
       m_shaderPrograms2D.emplace(shaderType, std::move(*prog2D));
     }
     else {
-      spdlog::error(prog2D.error());
+      spdlog::critical("{}; Entropy cannot start without its rendering shaders", prog2D.error());
       throwDebug(std::format("Failed to create 2D shader program {}", to_string(shaderType)));
     }
   }

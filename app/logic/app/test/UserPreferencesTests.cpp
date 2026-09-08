@@ -1,5 +1,7 @@
 #include "logic/app/UserPreferences.h"
 
+#include "common/LoggingSettings.h"
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
@@ -878,6 +880,41 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
   CHECK(root.at("system").at("updates").at("automaticChecks") == false);
   CHECK(root.at("system").at("performance").at("frameRate").at("limit") == false);
+  CHECK(root.at("system").at("diagnostics").at("enabled") == true);
+  CHECK(root.at("system").at("diagnostics").at("logVerbosity") == logging::logLevelLabel(logging::defaultLogLevel()));
+}
+
+TEST_CASE("user preferences preserve logging verbosity while logging is disabled", "[app][settings][logging]")
+{
+  const bool previousEnabled = logging::loggingEnabled();
+  const auto previousLevel = logging::applicationLogLevel();
+
+  AppSettings settings;
+  user_preferences::RenderPreferences renderPreferences = user_preferences::defaultRenderPreferences();
+  user_preferences::PrecisionPreferences precisionPreferences;
+  const std::string text = R"({
+    "system": {
+      "diagnostics": {
+        "enabled": false,
+        "logVerbosity": "Warning"
+      }
+    }
+  })";
+
+  const bool parsed = user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, text);
+  const bool enabled = logging::loggingEnabled();
+  const auto level = logging::applicationLogLevel();
+  const json serialized =
+    json::parse(user_preferences::toJsonString(settings, renderPreferences, precisionPreferences));
+
+  logging::setApplicationLogLevel(previousLevel);
+  logging::setLoggingEnabled(previousEnabled);
+
+  REQUIRE(parsed);
+  CHECK_FALSE(enabled);
+  CHECK(level == spdlog::level::warn);
+  CHECK(serialized.at("system").at("diagnostics").at("enabled") == false);
+  CHECK(serialized.at("system").at("diagnostics").at("logVerbosity") == "Warning");
 }
 
 TEST_CASE("user preference JSON follows the settings-window order", "[app][settings]")
@@ -896,6 +933,11 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   const auto ascii = text.find("\"asciiShading\"");
   const auto reversePovRotation = text.find("\"reversePovRotation\"");
   const auto synchronizeThreeDCameras = text.find("\"synchronizeThreeDCameras\"");
+  const auto performance = text.find("\"performance\"");
+  const auto updates = text.find("\"updates\"");
+  const auto diagnostics = text.find("\"diagnostics\"");
+  const auto loggingEnabled = text.find("\"enabled\"", diagnostics);
+  const auto logVerbosity = text.find("\"logVerbosity\"", diagnostics);
 
   REQUIRE(views != std::string::npos);
   REQUIRE(rendering != std::string::npos);
@@ -906,6 +948,11 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   REQUIRE(ascii != std::string::npos);
   REQUIRE(reversePovRotation != std::string::npos);
   REQUIRE(synchronizeThreeDCameras != std::string::npos);
+  REQUIRE(performance != std::string::npos);
+  REQUIRE(updates != std::string::npos);
+  REQUIRE(diagnostics != std::string::npos);
+  REQUIRE(loggingEnabled != std::string::npos);
+  REQUIRE(logVerbosity != std::string::npos);
   CHECK(views < rendering);
   CHECK(rendering < interface);
   CHECK(surfaces < ddp);
@@ -913,4 +960,7 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   CHECK(views < ascii);
   CHECK(ascii < rendering);
   CHECK(reversePovRotation < synchronizeThreeDCameras);
+  CHECK(performance < updates);
+  CHECK(updates < diagnostics);
+  CHECK(loggingEnabled < logVerbosity);
 }

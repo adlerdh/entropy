@@ -1,5 +1,6 @@
 #include "EntropyApp.h"
 #include "common/InputParser.h"
+#include "common/LoggingSettings.h"
 #include "logic/app/AppPaths.h"
 #include "logic/app/Logging.h"
 #include "logic/app/StackTrace.h"
@@ -20,17 +21,18 @@ int main(int argc, char* argv[])
     spdlog::debug("------------------- End session (failure) -------------------");
   };
 
-  Logging logging;
+  Logging logger;
 
   try {
-    logging.setup();
+    logger.setup();
   }
   catch (const std::exception& e) {
-    std::cerr << "Exception when setting up logger: " << e.what() << '\n';
+    std::cerr << "[critical] Exception while setting up application logging: " << e.what()
+              << ". Entropy cannot start\n";
     return EXIT_FAILURE;
   }
   catch (...) {
-    std::cerr << "Unknown exception when setting up logger" << '\n';
+    std::cerr << "[critical] Unknown exception while setting up application logging. Entropy cannot start\n";
     return EXIT_FAILURE;
   }
 
@@ -49,8 +51,7 @@ int main(int argc, char* argv[])
       return EXIT_SUCCESS;
     }
 
-    logging.setConsoleSinkLevel(params.consoleLogLevel);
-    logging.setDailyFileSinkLevel(params.consoleLogLevel);
+    logging::setApplicationLogLevel(params.logLevel);
 
     spdlog::debug("Parsed command line parameters:\n{}", params);
 
@@ -61,19 +62,20 @@ int main(int argc, char* argv[])
       app.loadImagesFromParams(params);
     }
     app.run();
+    spdlog::info("Entropy is exiting normally");
   }
   catch (const std::runtime_error& e) {
-    spdlog::critical("Runtime error: {}", e.what());
+    spdlog::critical("Unhandled runtime error; Entropy is terminating: {}", e.what());
     logFailure();
     return EXIT_FAILURE;
   }
   catch (const std::exception& e) {
-    spdlog::critical("Exception: {}", e.what());
+    spdlog::critical("Unhandled exception; Entropy is terminating: {}", e.what());
     logFailure();
     return EXIT_FAILURE;
   }
   catch (...) {
-    spdlog::critical("Unknown exception");
+    spdlog::critical("Unknown unhandled exception; Entropy is terminating");
     logFailure();
     return EXIT_FAILURE;
   }

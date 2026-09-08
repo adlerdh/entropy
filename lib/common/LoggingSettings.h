@@ -2,9 +2,9 @@
 
 #include "common/LoggingDefaults.h"
 
-#include <spdlog/sinks/sink.h>
-#include <spdlog/spdlog.h>
+#include <spdlog/common.h>
 
+#include <algorithm>
 #include <array>
 #include <span>
 #include <string_view>
@@ -109,31 +109,25 @@ constexpr spdlog::level::level_enum selectableLogLevel(spdlog::level::level_enum
 }
 
 /**
- * @brief Apply a runtime log level to every sink owned by the default logger.
- * @param[in] level Desired runtime log level.
+ * @brief Return whether Entropy's spdlog output is enabled.
  */
-inline void setDefaultLoggerSinkLevel(spdlog::level::level_enum level)
-{
-  if (auto logger = spdlog::default_logger()) {
-    for (const auto& sink : logger->sinks()) {
-      if (sink) {
-        sink->set_level(level);
-      }
-    }
-  }
-}
+bool loggingEnabled();
 
 /**
- * @brief Return the current runtime sink log level for the default logger.
- * @return First sink level when available; otherwise the build default log level.
+ * @brief Enable or disable all Entropy spdlog sinks without forgetting the configured verbosity.
  */
-inline spdlog::level::level_enum defaultLoggerSinkLevel()
-{
-  if (auto logger = spdlog::default_logger(); logger && !logger->sinks().empty() && logger->sinks().front()) {
-    return selectableLogLevel(logger->sinks().front()->level());
-  }
+void setLoggingEnabled(bool enabled);
 
-  return defaultLogLevel();
-}
+/**
+ * @brief Set Entropy's configured runtime verbosity and apply it while logging is enabled.
+ * @param[in] level Desired application log level. Off disables logging without replacing the saved verbosity.
+ */
+void setApplicationLogLevel(spdlog::level::level_enum level);
+
+/**
+ * @brief Return Entropy's configured runtime verbosity.
+ * @return Configured log level, even while physical sinks are disabled.
+ */
+spdlog::level::level_enum applicationLogLevel();
 
 } // namespace logging

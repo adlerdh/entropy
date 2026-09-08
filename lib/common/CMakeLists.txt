@@ -8,6 +8,7 @@ target_sources(EntropyCommon PRIVATE
   "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
   InputParams.cpp
   InputParser.cpp
+  LoggingSettings.cpp
   MathFuncs.cpp
   Types.cpp
   UuidUtility.cpp

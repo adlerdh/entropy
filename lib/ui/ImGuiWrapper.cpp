@@ -2666,10 +2666,18 @@ void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
   if (m_updateCheckFuture.valid() && std::future_status::ready != m_updateCheckFuture.wait_for(std::chrono::seconds{0}))
   {
     if (manualCheck) {
+      spdlog::info("User requested an update check while a GitHub update check was already in progress");
       m_updateCheckWindowState.open = true;
       m_updateCheckWindowState.manualCheck = true;
     }
     return;
+  }
+
+  if (manualCheck) {
+    spdlog::info("User requested a GitHub update check for Entropy {}", ENTROPY_VERSION);
+  }
+  else {
+    spdlog::info("Starting automatic GitHub update check for Entropy {}", ENTROPY_VERSION);
   }
 
   m_updateCheckWindowState.open = manualCheck;
@@ -2715,6 +2723,7 @@ void ImGuiWrapper::processUpdateCheckFuture()
   }
 
   result = ui::updates::resolveCachedCheckResult(std::move(result), m_cachedUpdateCheckResult);
+  const bool manualCheck = m_updateCheckWindowState.manualCheck;
   if (result.status == ui::updates::CheckStatus::UpdateAvailable || result.status == ui::updates::CheckStatus::UpToDate)
   {
     m_cachedUpdateCheckResult = result;
@@ -2723,8 +2732,27 @@ void ImGuiWrapper::processUpdateCheckFuture()
     }
   }
 
-  const bool showAutomaticResult =
-    !m_updateCheckWindowState.manualCheck && result.status == ui::updates::CheckStatus::UpdateAvailable;
+  const bool showAutomaticResult = !manualCheck && result.status == ui::updates::CheckStatus::UpdateAvailable;
+
+  switch (result.status) {
+    case ui::updates::CheckStatus::UpdateAvailable:
+      spdlog::info(
+        "Entropy update available: installed version {}, latest release {} ({})",
+        ENTROPY_VERSION,
+        result.latestRelease.tagName,
+        result.latestRelease.htmlUrl);
+      break;
+    case ui::updates::CheckStatus::UpToDate:
+    case ui::updates::CheckStatus::NotModified:
+      spdlog::info("Entropy {} is up to date", ENTROPY_VERSION);
+      break;
+    case ui::updates::CheckStatus::NoPublishedReleases:
+      spdlog::warn("GitHub reported no published Entropy releases; update availability could not be determined");
+      break;
+    case ui::updates::CheckStatus::Failed:
+      spdlog::warn("GitHub update check failed: {}. Entropy will continue without update information", result.error);
+      break;
+  }
 
   m_updateCheckWindowState.result = std::move(result);
   m_updateCheckWindowState.checking = false;
@@ -2786,7 +2814,7 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
 
     auto it = m_futures.find(taskUid);
     if (std::end(m_futures) == it) {
-      spdlog::error("Invalid task {}", taskUid);
+      spdlog::error("Cannot generate an isosurface GPU mesh because task {} has no stored CPU result", taskUid);
       continue;
     }
 
@@ -2804,11 +2832,13 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
       AsyncTasks::IsosurfaceMeshGeneration != value.task || !value.success || !value.imageUid ||
       !value.imageComponent || !value.objectUid)
     {
-      spdlog::error("Failed task {}", taskUid);
+      spdlog::error(
+        "Isosurface mesh task {} returned an unsuccessful or incomplete CPU result; no GPU mesh will be created",
+        taskUid);
       continue;
     }
 
-    spdlog::info("Task {}: Start generating GPU mesh for isosurface {} ", taskUid, *value.objectUid);
+    spdlog::debug("Task {}: starting GPU mesh generation for isosurface {}", taskUid, *value.objectUid);
 
     // Get the isosurface associated with this task
     const Isosurface* surface = m_appData.isosurface(*value.imageUid, *value.imageComponent, *value.objectUid);
@@ -4415,10 +4445,18 @@ void ImGuiWrapper::render()
 
     // Native menus retain this callback after render() returns, so every frame-local callable it uses must be owned.
     const auto clearRecents = [this, saveUserSettingsToDefault]() {
+      const std::size_t projectCount = m_appData.settings().recentProjectFiles().size();
+      const std::size_t imageGroupCount = m_appData.settings().recentImageGroups().size();
+      const std::size_t dicomGroupCount = m_appData.settings().recentDicomGroups().size();
       m_appData.settings().setRecentProjectFiles({});
       m_appData.settings().setRecentImageGroups({});
       m_appData.settings().setRecentDicomGroups({});
       saveUserSettingsToDefault();
+      spdlog::info(
+        "Cleared recent data history: {} project(s), {} image group(s), and {} DICOM group(s)",
+        projectCount,
+        imageGroupCount,
+        dicomGroupCount);
     };
 
     const MainMenuBarCallbacks mainMenuCallbacks{

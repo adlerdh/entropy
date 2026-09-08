@@ -43,14 +43,14 @@ void Rendering::initTextures()
   m_appData.renderResources().m_labelBufferTextures = createLabelColorTableTextures(m_appData);
 
   if (m_appData.renderResources().m_labelBufferTextures.empty()) {
-    spdlog::critical("No label buffer textures loaded");
+    spdlog::critical("No label color-table textures were created; Entropy cannot render the loaded project");
     throwDebug("No label buffer textures loaded");
   }
 
   m_appData.renderResources().m_colormapTextures = createImageColorMapTextures(m_appData);
 
   if (m_appData.renderResources().m_colormapTextures.empty()) {
-    spdlog::critical("No image color map textures loaded");
+    spdlog::critical("No image color-map textures were created; Entropy cannot render the loaded project");
     throwDebug("No image color map textures loaded");
   }
 

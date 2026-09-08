@@ -49,7 +49,8 @@ bool iequals(const std::string& str1, const std::string& str2)
 bool validateParams(InputParams& params)
 {
   if (params.projectFile && (!params.imageFiles.empty() || !params.dicomPaths.empty())) {
-    spdlog::critical("--project/-p cannot be combined with image, segmentation, or DICOM inputs");
+    spdlog::critical(
+      "--project/-p cannot be combined with image, segmentation, or DICOM inputs; Entropy will not start");
     return false;
   }
 
@@ -63,12 +64,12 @@ bool validateParams(InputParams& params)
   return true;
 }
 
-void assignConsoleLogLevel(const std::string& logLevel, InputParams& params)
+void assignLogLevel(const std::string& logLevel, InputParams& params)
 {
   using enum spdlog::level::level_enum;
 
   if (iequals(logLevel, "trace")) {
-    params.consoleLogLevel = trace;
+    params.logLevel = trace;
 #if SPDLOG_ACTIVE_LEVEL > SPDLOG_LEVEL_TRACE
     spdlog::warn(
       "Trace logging was requested, but this Entropy binary was compiled with trace logging disabled. "
@@ -76,26 +77,26 @@ void assignConsoleLogLevel(const std::string& logLevel, InputParams& params)
 #endif
   }
   else if (iequals(logLevel, "debug")) {
-    params.consoleLogLevel = debug;
+    params.logLevel = debug;
   }
   else if (iequals(logLevel, "info")) {
-    params.consoleLogLevel = info;
+    params.logLevel = info;
   }
   else if (iequals(logLevel, "warn") || iequals(logLevel, "warning")) {
-    params.consoleLogLevel = warn;
+    params.logLevel = warn;
   }
   else if (iequals(logLevel, "err") || iequals(logLevel, "error")) {
-    params.consoleLogLevel = err;
+    params.logLevel = err;
   }
   else if (iequals(logLevel, "critical")) {
-    params.consoleLogLevel = critical;
+    params.logLevel = critical;
   }
   else if (iequals(logLevel, "off")) {
-    params.consoleLogLevel = off;
+    params.logLevel = off;
   }
   else {
-    spdlog::warn("Invalid console log level: {}. Defaulting to info level.", logLevel);
-    params.consoleLogLevel = info;
+    spdlog::warn("Invalid application log level '{}'; using Info verbosity", logLevel);
+    params.logLevel = info;
   }
 }
 
@@ -132,7 +133,7 @@ void logInputs(const InputParams& params)
     }
   }
   else {
-    spdlog::info("No image arguments, DICOM inputs, or project file was provided");
+    spdlog::info("No image arguments, DICOM inputs, or project file were provided");
   }
 
   if (params.layoutsFile) {
@@ -177,7 +178,11 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params, bool* e
   program.set_version_flag("--version", VERSION_FULL);
 
   std::string logLevel = logging::defaultLogLevelName();
-  program.add_option("-l,--log-level", logLevel, "console log level: {trace, debug, info, warn, err, critical, off}")
+  program
+    .add_option(
+      "-l,--log-level",
+      logLevel,
+      "console and file log level: {trace, debug, info, warn, err, critical, off}")
     ->default_val(logLevel);
 
   std::string projectFile;
@@ -250,7 +255,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params, bool* e
     return true;
   }
   catch (const CLI::ParseError& e) {
-    spdlog::critical("Exception parsing arguments: {}", e.what());
+    spdlog::critical("Could not parse command-line arguments; Entropy will not start: {}", e.what());
     std::cout << program.help();
     return false;
   }
@@ -265,7 +270,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params, bool* e
     params.imageFiles.push_back({imageFile, {}});
   }
 
-  assignConsoleLogLevel(logLevel, params);
+  assignLogLevel(logLevel, params);
   logInputs(params);
 
   // Final validation of parameters:

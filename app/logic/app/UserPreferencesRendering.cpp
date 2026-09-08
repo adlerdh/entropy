@@ -513,7 +513,8 @@ void applyDefaults(AppSettings& settings, rendering::RenderSettings& renderSetti
   settings.setLockAnatomicalCoordinateAxesWithReferenceImage(lockAnatomicalDirections);
   applyRenderPreferences(renderSettings, defaultPreferences);
   applyPrecisionPreferences(guiData, PrecisionPreferences{});
-  logging::setDefaultLoggerSinkLevel(logging::defaultLogLevel());
+  logging::setApplicationLogLevel(logging::defaultLogLevel());
+  logging::setLoggingEnabled(true);
 }
 
 } // namespace user_preferences

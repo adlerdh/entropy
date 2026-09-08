@@ -104,7 +104,7 @@ std::optional<uuids::uuid> addSurfaceAtValue(
   surface.opacity = 1.0f;
 
   if (const auto isosurfaceUid = appData.addIsosurface(imageUid, component, std::move(surface))) {
-    spdlog::debug(
+    spdlog::info(
       "Added new isosurface {} for image {} (component {}) at isovalue {}",
       *isosurfaceUid,
       imageUid,

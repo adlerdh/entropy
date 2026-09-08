@@ -145,6 +145,15 @@ void Rendering::consumeCompletedMeshExtractions()
     else if (rendering::mesh::MeshExtractionRunStatus::Empty == applied.status) {
       spdlog::debug("Mesh extraction produced no contour for {}", applied.key.sourceUid);
     }
+    else if (rendering::mesh::MeshExtractionRunStatus::Ready == applied.status) {
+      if (const rendering::mesh::MeshData* mesh = m_meshExtractions.readyMesh(applied.key)) {
+        spdlog::debug(
+          "Mesh extraction completed for {} with {} vertices and {} triangles",
+          applied.key.sourceUid,
+          mesh->positions.size(),
+          mesh->indices.size() / 3u);
+      }
+    }
   }
 }
 

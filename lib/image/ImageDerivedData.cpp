@@ -457,7 +457,7 @@ std::optional<DistanceMapImageResult> createDistanceMapImage(
   const std::pair<double, double> foregroundThresholds)
 {
   if (image.header().interleavedComponents()) {
-    spdlog::info(
+    spdlog::debug(
       "Image has multiple, interleaved components, "
       "so the distance map will not be computed");
     return std::nullopt;

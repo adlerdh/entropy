@@ -283,16 +283,26 @@ void renderUiSettingsFileSection(const SettingsPersistenceCallbacks& persistence
  */
 void renderDiagnosticsSettings()
 {
-  const auto currentLogLevel = logging::defaultLoggerSinkLevel();
+  bool enabled = logging::loggingEnabled();
+  if (ImGui::Checkbox("Enable logging", &enabled)) {
+    logging::setLoggingEnabled(enabled);
+  }
+  ImGui::SameLine();
+  helpMarker(
+    "Write Entropy diagnostic messages to the console and application log file. Disabling this setting suppresses "
+    "all Entropy spdlog output until logging is enabled again.");
+
+  const auto currentLogLevel = logging::applicationLogLevel();
   const auto currentLogLevelLabel = logging::logLevelLabel(currentLogLevel);
   const std::string currentLogLevelLabelText(currentLogLevelLabel);
 
+  ImGui::BeginDisabled(!enabled);
   if (ImGui::BeginCombo("Log verbosity", currentLogLevelLabelText.c_str())) {
     for (const logging::LogLevelChoice& choice : logging::availableLogLevelChoices()) {
       const bool selected = choice.level == currentLogLevel;
       const std::string choiceLabel(choice.label);
       if (ImGui::Selectable(choiceLabel.c_str(), selected)) {
-        logging::setDefaultLoggerSinkLevel(choice.level);
+        logging::setApplicationLogLevel(choice.level);
       }
       if (selected) {
         ImGui::SetItemDefaultFocus();
@@ -302,6 +312,7 @@ void renderDiagnosticsSettings()
   }
   ImGui::SameLine();
   helpMarker("Set console and application log file verbosity immediately");
+  ImGui::EndDisabled();
 
   const float logFieldWidth = ImGui::CalcItemWidth();
   renderReadOnlyPathField("Application log", app_paths::logDirectory() / "entropy.txt", logFieldWidth);

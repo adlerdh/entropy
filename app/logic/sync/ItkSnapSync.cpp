@@ -334,7 +334,13 @@ void ItkSnapSync::logOptionChanges()
     settings.receivePanSync()};
 
   if (!m_lastLoggedOptions || *m_lastLoggedOptions != options) {
-    SPDLOG_TRACE(
+    if (m_lastLoggedOptions || options[0]) {
+      spdlog::info("ITK-SNAP synchronization {}", options[0] ? "enabled" : "disabled");
+    }
+    else {
+      spdlog::debug("ITK-SNAP synchronization is disabled");
+    }
+    SPDLOG_DEBUG(
       "ITK-SNAP sync options: enabled={} sendCursor={} receiveCursor={} sendZoom={} receiveZoom={} sendPan={} "
       "receivePan={}",
       options[0],

@@ -34,8 +34,8 @@ struct InputParams
   /// Optional standalone layout JSON file that overrides generated/project layouts
   std::optional<std::filesystem::path> layoutsFile;
 
-  /// Console logging level
-  spdlog::level::level_enum consoleLogLevel = logging::defaultLogLevel();
+  /// Console and application-file logging level
+  spdlog::level::level_enum logLevel = logging::defaultLogLevel();
 
   /// Flag indicating that the parameters have been successfully set
   bool set = false;

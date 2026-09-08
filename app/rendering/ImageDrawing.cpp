@@ -5,6 +5,7 @@
 #include "rendering/gl/GLShaderProgram.h"
 
 #include "image/Image.h"
+#include "common/UuidUtility.h"
 #include "logic/app/DataHelper.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
@@ -44,7 +45,7 @@ void warnLocalPatchMetricMissingImage(std::string_view message)
     spdlog::warn("{}", message);
   }
   else if (k_maxNumWarnings == previousCount) {
-    spdlog::warn("Halting warnings about local patch metric views without enough images.");
+    spdlog::debug("Suppressing further warnings about local patch metric views without enough images");
   }
 }
 
@@ -94,7 +95,12 @@ void drawImageQuad(
       warnLocalPatchMetricMissingImage("Null reference image when rendering local patch metric");
       return;
     }
-    spdlog::error("Null image when rendering textured quad");
+    if (imagePairs[0].first) {
+      spdlog::error("Cannot render textured plane because image {} is missing", *imagePairs[0].first);
+    }
+    else {
+      spdlog::error("Cannot render textured plane because its image selection has no UID");
+    }
     return;
   }
 
@@ -434,7 +440,12 @@ void drawRaycastQuad(
 
   const Image* image0 = getImage(imagePairs[0].first);
   if (!image0) {
-    spdlog::error("Null image when raycasting");
+    if (imagePairs[0].first) {
+      spdlog::error("Cannot raycast image {} because it is missing", *imagePairs[0].first);
+    }
+    else {
+      spdlog::error("Cannot raycast because the image selection has no UID");
+    }
     return;
   }
 

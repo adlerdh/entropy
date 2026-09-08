@@ -198,7 +198,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
         glm::to_string(worldViewPlane));
     }
     else if (k_maxNumWarnings == g_parallelCameraWarningCount) {
-      spdlog::warn("Halting warning about camera front direction.");
+      spdlog::debug("Suppressing further warnings about camera front direction");
     }
 
     return worldCrosshairs;

@@ -16,6 +16,9 @@
 
 #include <imgui/imgui.h>
 #include <implot/implot.h>
+#include <spdlog/fmt/std.h>
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -114,7 +117,14 @@ void writeFile(const std::filesystem::path& path, const std::string& contents, s
 {
   std::ofstream stream(path, std::ios::binary);
   stream << contents;
-  status = stream ? "Saved " + path.filename().string() : "Could not save " + path.filename().string();
+  if (stream) {
+    status = "Saved " + path.filename().string();
+    spdlog::info("Saved segmentation region statistics to {} ({} bytes)", path, contents.size());
+  }
+  else {
+    status = "Could not save " + path.filename().string();
+    spdlog::error("Could not save segmentation region statistics to {}", path);
+  }
 }
 
 void renderSelectionCombo(const char* label, const std::string& preview, const std::function<void()>& contents)

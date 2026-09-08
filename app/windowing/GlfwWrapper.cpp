@@ -183,14 +183,14 @@ glm::vec2 resolvePolledContentScale(
 GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion) : m_app(app)
 {
   if (!app) {
-    spdlog::critical("The application is null on GLFW creation");
+    spdlog::critical("Cannot create the GLFW window without application state; Entropy cannot start");
     throwDebug("The application is null");
   }
 
   spdlog::debug("OpenGL Core profile version {}.{}", glMajorVersion, glMinorVersion);
 
   if (!glfwInit()) {
-    spdlog::critical("Failed to initialize the GLFW windowing library");
+    spdlog::critical("Failed to initialize the GLFW windowing library; Entropy cannot start");
     throwDebug("Failed to initialize the GLFW windowing library");
   }
 
@@ -200,7 +200,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
   m_platform = glfwGetPlatform();
   if (m_platform == GLFW_PLATFORM_NULL) {
-    spdlog::critical("GLFW was not initialized");
+    spdlog::critical("GLFW reported that it is not initialized; Entropy cannot start");
     throwDebug("GLFW was not initialized");
   }
 
@@ -308,6 +308,10 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
   if (!m_window) {
     glfwTerminate();
+    spdlog::critical(
+      "Could not create an OpenGL {}.{} window or context after all compatibility attempts; Entropy cannot start",
+      glMajorVersion,
+      glMinorVersion);
     throwDebug("Failed to create GLFW window and context");
   }
 
@@ -404,7 +408,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
     glfwDestroyWindow(m_window);
     m_window = nullptr;
     glfwTerminate();
-    spdlog::critical("Failed to load OpenGL function pointers with GLAD");
+    spdlog::critical("Failed to load OpenGL function pointers with GLAD; Entropy cannot start");
     throwDebug("Failed to load OpenGL function pointers with GLAD");
   }
 
@@ -497,7 +501,7 @@ void GlfwWrapper::renderLoop(
   constexpr bool logFramerate = false;
 
   if (!m_renderScene || !m_renderGui) {
-    spdlog::critical("Rendering callbacks not initialized");
+    spdlog::critical("Rendering callbacks were not initialized; Entropy cannot continue");
     throwDebug("Rendering callbacks not initialized");
   }
 

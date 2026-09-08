@@ -154,6 +154,7 @@ bool CallbackHandler::clearSegVoxels(const uuid& segUid)
 
   m_rendering.updateSegTexture(segUid, seg->header().memoryComponentType(), dataOffset, dataSize, seg->bufferAsVoid(0));
 
+  spdlog::info("Cleared all voxel labels from segmentation {}", segUid);
   return true;
 }
 
@@ -336,7 +337,7 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
     return std::nullopt;
   }
 
-  spdlog::debug("Created blank segmentation {} ('{}') for image {}", *segUid, displayName, matchImageUid);
+  spdlog::info("Created blank segmentation {} ('{}') for image {}", *segUid, displayName, matchImageUid);
 
   return assignSegToImageWithColorTableAndTextures(matchImageUid, *segUid, true, true);
 }
@@ -657,7 +658,7 @@ void CallbackHandler::recenterViews(
   constexpr CrosshairsSnapping forceSnapping = CrosshairsSnapping::ReferenceImage;
 
   if (0 == m_appData.numImages()) {
-    spdlog::warn("No images loaded: preparing views using default bounds");
+    spdlog::debug("Preparing views with default bounds because no images are loaded");
   }
 
   // Compute the AABB that we are recentering views on:
@@ -705,7 +706,7 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   constexpr bool resetObliqueOrientation = true;
 
   if (0 == m_appData.numImages()) {
-    spdlog::warn("No images loaded, so recentering view {} using default bounds", viewUid);
+    spdlog::debug("Recentering view {} with default bounds because no images are loaded", viewUid);
   }
 
   // Size and position the views based on the enclosing AABB of the image selection:
@@ -2588,11 +2589,13 @@ void CallbackHandler::toggleFullScreenMode(bool forceWindowMode)
 bool CallbackHandler::setLockManualImageTransformation(const uuid& imageUid, bool locked)
 {
   if (!locked && m_appData.refImageUid() == imageUid) {
+    spdlog::warn("Cannot unlock manual transformation for reference image {} because it defines world space", imageUid);
     return false;
   }
 
   Image* image = m_appData.image(imageUid);
   if (!image) {
+    spdlog::error("Cannot {} manual transformation for missing image {}", locked ? "lock" : "unlock", imageUid);
     return false;
   }
 
@@ -2605,6 +2608,11 @@ bool CallbackHandler::setLockManualImageTransformation(const uuid& imageUid, boo
     }
   }
 
+  spdlog::info(
+    "{} manual transformation for image {} and its {} segmentation(s)",
+    locked ? "Locked" : "Unlocked",
+    imageUid,
+    m_appData.imageToSegUids(imageUid).size());
   return true;
 }
 

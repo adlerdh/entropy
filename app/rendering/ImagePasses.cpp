@@ -2,6 +2,7 @@
 #include "rendering/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
+#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "image/ImageSettings.h"
 #include "logic/app/Data.h"
@@ -181,7 +182,7 @@ void Rendering::renderAllImagesForView(
         const uuid& imgUid = *imgSegPair.first;
         const Image* img = m_appData.image(imgUid);
         if (!img) {
-          spdlog::error("Null image during render");
+          spdlog::error("Cannot render image {} because it is missing from application data", imgUid);
           return;
         }
 

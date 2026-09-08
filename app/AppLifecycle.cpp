@@ -57,7 +57,7 @@ void EntropyApp::init()
     state::annot::AnnotationStateMachine::setCallbacks([this]() { m_imgui.render(); });
   }
   else {
-    spdlog::error("Null annotation state machine");
+    spdlog::critical("Annotation state-machine initialization failed; Entropy cannot start");
     throwDebug("Null annotation state machine");
   }
 
@@ -135,7 +135,7 @@ void EntropyApp::onImagesReady()
   if (!refImg) {
     // At a minimum, we need a reference image to do anything.
     // If the reference image is null, then image loading has failed.
-    spdlog::critical("The reference image is null");
+    spdlog::critical("Image loading completed without a valid reference image; Entropy cannot render the project");
     throwDebug("The reference image is null");
   }
 

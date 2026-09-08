@@ -152,7 +152,12 @@ void EntropyApp::startAsyncImageLoad(
       spdlog::debug("Done loading images");
     }
     else {
-      spdlog::critical("Failed to load images");
+      if (m_imageLoadCancelled) {
+        spdlog::info("Image loading was cancelled; the requested load will not be completed");
+      }
+      else {
+        spdlog::error("Image loading failed; the requested load will not be completed");
+      }
       if (onLoadFailed) {
         onLoadFailed();
       }

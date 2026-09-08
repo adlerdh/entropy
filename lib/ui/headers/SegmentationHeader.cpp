@@ -93,7 +93,7 @@ void renderSegmentationHeader(
   static const std::string removeSegString = std::string(ICON_FK_TRASH_O) + " Remove";
 
   if (!image) {
-    spdlog::error("Null image");
+    spdlog::error("Cannot render segmentation controls because image {} is missing", imageUid);
     return;
   }
 
