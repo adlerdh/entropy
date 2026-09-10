@@ -77,6 +77,9 @@ set(entropy_VTK_COMPONENTS
   FiltersCore
   FiltersGeneral
   FiltersSources
+  IOGeometry
+  IOPLY
+  IOXML
 )
 
 find_package(VTK ${vtk_VERSION} REQUIRED COMPONENTS ${entropy_VTK_COMPONENTS}

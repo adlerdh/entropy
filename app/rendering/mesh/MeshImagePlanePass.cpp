@@ -497,7 +497,7 @@ void drawAnalyticImagePlaneBorder(
   const rendering::mesh::MeshImagePlaneRenderable& imagePlane,
   const rendering::mesh::MeshDrawContext& context,
   GLShaderProgram& program,
-  GLVertexArrayObject& fullScreenVao)
+  const GLVertexArrayObject& fullScreenVao)
 {
   if (imagePlane.borderColor.a <= 0.0f || imagePlane.borderWidthPixels <= 0.0f || imagePlane.boundaryVertexCount < 2u) {
     return;
@@ -590,7 +590,7 @@ void drawImagePlaneRenderablesWithProgram(
   GLShaderProgram& isocontourTexture3dProgram,
   GLShaderProgram& isocontourTexture2dProgram,
   GLShaderProgram& borderProgram,
-  GLVertexArrayObject& fullScreenVao,
+  const GLVertexArrayObject& fullScreenVao,
   const bool usePreviousTextures = false,
   GLTexture* const previousDepthBounds = nullptr,
   GLTexture* const previousFrontColor = nullptr)

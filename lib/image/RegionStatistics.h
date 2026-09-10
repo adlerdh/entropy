@@ -50,7 +50,7 @@ struct RegionStatistic
 
 struct RegionStatisticsOptions
 {
-  /** Compute exact quartiles. This temporarily retains the finite values for every region. */
+  /// Compute exact quartiles. This temporarily retains the finite values for every region.
   bool computeQuartiles = false;
 };
 
@@ -91,10 +91,10 @@ enum class RegionStatisticsError : std::uint8_t
   InvalidValueRange
 };
 
-/** Human-readable description of a region-statistics calculation error. */
+/// Human-readable description of a region-statistics calculation error.
 std::string regionStatisticsErrorMessage(RegionStatisticsError error);
 
-/** Compute per-label statistics from an intensity image and matching segmentation. */
+/// Compute per-label statistics from an intensity image and matching segmentation.
 std::expected<RegionStatisticsResult, RegionStatisticsError> computeRegionStatistics(
   const Image& image,
   const Image& segmentation,
@@ -102,7 +102,7 @@ std::expected<RegionStatisticsResult, RegionStatisticsError> computeRegionStatis
   std::uint32_t timePoint = 0,
   const RegionStatisticsOptions& options = {});
 
-/** Compute a raw-value histogram for either a label region or the whole image. */
+/// Compute a raw-value histogram for either a label region or the whole image.
 std::expected<RegionHistogram, RegionStatisticsError> computeRegionHistogram(
   const Image& image,
   const Image& segmentation,
@@ -111,5 +111,5 @@ std::expected<RegionHistogram, RegionStatisticsError> computeRegionHistogram(
   std::optional<std::int64_t> label,
   const RegionHistogramOptions& options);
 
-/** Human-readable label for an image value selection. */
+/// Human-readable label for an image value selection.
 std::string regionValueSelectionName(const RegionValueSelection& selection);

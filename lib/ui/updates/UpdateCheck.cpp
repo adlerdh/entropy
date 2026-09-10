@@ -116,7 +116,7 @@ std::optional<std::vector<std::uint64_t>> versionParts(std::string value)
   return parts;
 }
 
-CheckResult resultForRelease(std::string currentVersion, ReleaseInfo release, std::string etag)
+CheckResult resultForRelease(const std::string& currentVersion, ReleaseInfo release, std::string etag)
 {
   CheckResult result;
   result.etag = std::move(etag);

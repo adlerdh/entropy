@@ -21,10 +21,8 @@ int main(int argc, char* argv[])
     spdlog::debug("------------------- End session (failure) -------------------");
   };
 
-  Logging logger;
-
   try {
-    logger.setup();
+    Logging{}.setup();
   }
   catch (const std::exception& e) {
     std::cerr << "[critical] Exception while setting up application logging: " << e.what()

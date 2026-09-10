@@ -49,6 +49,7 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Without undefining min and max, there are some errors compiling in Visual Studio
@@ -1877,8 +1878,7 @@ void EntropyApp::loadDicomSeries(
     return;
   }
 
-  beginPendingRecentDataLoad(recent_data::Kind::Dicom, std::move(m_pendingDicomRecentPaths));
-  m_pendingDicomRecentPaths.clear();
+  beginPendingRecentDataLoad(recent_data::Kind::Dicom, std::exchange(m_pendingDicomRecentPaths, {}));
 
   spdlog::info("{} {} selected DICOM series", addToExistingProject ? "Adding" : "Opening", series.size());
   for (const auto& seriesInfo : series) {

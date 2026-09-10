@@ -37,7 +37,7 @@ enum class ImageSwatchMode
   Hidden       //!< Checkerboard crossed out in the identification color
 };
 
-/** @brief Classify how an image's identification swatch communicates visibility and opacity. */
+/// Classify how an image's identification swatch communicates visibility and opacity.
 constexpr ImageSwatchMode imageSwatchMode(const ImageLabelEntry& entry)
 {
   if (!entry.isVisible || entry.effectiveOpacity <= 0.0f) {

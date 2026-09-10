@@ -4,6 +4,7 @@
 
 #include <glm/geometric.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cmath>
 
@@ -44,7 +45,7 @@ std::optional<MeshOctantCutaway> viewerFacingOctantCutaway(
   const glm::vec3 originToViewer = viewerWorldPosition - originWorld;
   MeshOctantCutaway cutaway;
   cutaway.enabled = true;
-  for (std::size_t index = 0; index < cutaway.worldPlanes.size(); ++index) {
+  for (glm::length_t index = 0; index < glm::mat3::length(); ++index) {
     const glm::vec3 axis = worldAxes[index];
     const float axisLength = glm::length(axis);
     if (!std::isfinite(axisLength) || axisLength <= 0.0f) {
@@ -66,12 +67,9 @@ bool pointInsideRemovedOctant(const glm::vec3& worldPosition, const MeshOctantCu
     return false;
   }
 
-  for (const glm::vec4& plane : normalized->worldPlanes) {
-    if (signedDistanceToPlane(plane, worldPosition) < 0.0f) {
-      return false;
-    }
-  }
-  return true;
+  return std::ranges::all_of(normalized->worldPlanes, [&worldPosition](const glm::vec4& plane) {
+    return signedDistanceToPlane(plane, worldPosition) >= 0.0f;
+  });
 }
 
 } // namespace rendering::mesh

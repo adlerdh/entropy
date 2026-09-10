@@ -5,8 +5,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -48,8 +50,8 @@ template<typename T>
 Image makeImage(ImageHeader header, const std::vector<std::vector<T>>& values, ImageRepresentation representation)
 {
   std::vector<const void*> buffers;
-  for (const auto& value : values)
-    buffers.push_back(value.data());
+  buffers.reserve(values.size());
+  std::ranges::transform(values, std::back_inserter(buffers), [](const auto& value) { return value.data(); });
   return Image::fromCopiedData(
     std::move(header),
     "test",

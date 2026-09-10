@@ -33,6 +33,8 @@
 
 namespace
 {
+constexpr std::array<std::string_view, 4> sk_colorComponentNames{"Red", "Green", "Blue", "Alpha"};
+
 using uuid = uuids::uuid;
 
 std::vector<RegionValueSelection> valueSelections(const Image& image)
@@ -74,8 +76,8 @@ std::string valueSelectionName(const Image& image, const RegionValueSelection& s
 {
   if (RegionValueKind::Component != selection.kind) return regionValueSelectionName(selection);
   if (PixelType::RGB == image.header().pixelType() || PixelType::RGBA == image.header().pixelType()) {
-    static constexpr const char* names[] = {"Red", "Green", "Blue", "Alpha"};
-    if (selection.component < 4u) return names[selection.component];
+    if (selection.component < sk_colorComponentNames.size())
+      return std::string{sk_colorComponentNames[selection.component]};
   }
   return image.header().numComponentsPerPixel() == 1u ? "Intensity" : regionValueSelectionName(selection);
 }
@@ -188,8 +190,7 @@ std::vector<double> displayedHistogramValues(const RegionHistogram& histogram, b
   const double denominator = cumulative ? static_cast<double>(histogram.finiteValueCount)
                                         : static_cast<double>(histogram.finiteValueCount) * binWidth;
   if (denominator > 0.0) {
-    for (double& value : values)
-      value /= denominator;
+    std::ranges::transform(values, values.begin(), [denominator](double value) { return value / denominator; });
   }
   return values;
 }

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <numeric>
 #include <string>
 #include <string_view>
 
@@ -75,13 +76,11 @@ float badgeWidth(NVGcontext* nvg, std::string_view text, const Metrics& m)
 float entryWidth(NVGcontext* nvg, const ImageLabelEntry& entry, const Metrics& m)
 {
   nvgFontSize(nvg, m.fontSize);
-  float width = m.swatchSize + m.gap + textWidth(nvg, entry.displayName);
-  for (const std::string_view badge : imageRoleBadgeLabels(entry)) {
-    if (!badge.empty()) {
-      width += m.gap + badgeWidth(nvg, badge, m);
-    }
-  }
-  return width;
+  const float initialWidth = m.swatchSize + m.gap + textWidth(nvg, entry.displayName);
+  const auto badges = imageRoleBadgeLabels(entry);
+  return std::accumulate(badges.begin(), badges.end(), initialWidth, [nvg, &m](float width, std::string_view badge) {
+    return badge.empty() ? width : width + m.gap + badgeWidth(nvg, badge, m);
+  });
 }
 
 void drawShadowedText(NVGcontext* nvg, float x, float y, std::string_view text, const Metrics& m)

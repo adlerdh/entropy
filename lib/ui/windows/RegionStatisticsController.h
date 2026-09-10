@@ -26,14 +26,16 @@ struct RegionStatisticsCalculationKey
   friend bool operator==(const RegionStatisticsCalculationKey&, const RegionStatisticsCalculationKey&) = default;
 };
 
-/** Owns selection and derived-data state for the segmentation region statistics window. */
+/// Owns selection and derived-data state for the segmentation region statistics window.
 class RegionStatisticsController
 {
 public:
-  void requestSelection(std::optional<uuids::uuid> imageUid, std::optional<uuids::uuid> segmentationUid);
-  void setImage(std::optional<uuids::uuid> imageUid, std::optional<uuids::uuid> defaultSegmentationUid);
-  void setSegmentation(std::optional<uuids::uuid> segmentationUid);
-  void setValueSelection(RegionValueSelection value);
+  void requestSelection(
+    std::optional<uuids::uuid> requestedImageUid,
+    std::optional<uuids::uuid> requestedSegmentationUid);
+  void setImage(std::optional<uuids::uuid> selectedImageUid, std::optional<uuids::uuid> defaultSegmentationUid);
+  void setSegmentation(std::optional<uuids::uuid> selectedSegmentationUid);
+  void setValueSelection(RegionValueSelection selection);
   void setComputeQuartiles(bool enabled);
   bool synchronizeEmptyLabelRows(std::size_t knownLabelCount);
   void invalidate();

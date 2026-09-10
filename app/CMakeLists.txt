@@ -41,6 +41,7 @@ target_link_libraries(entropy PRIVATE
   Entropy::Common
   Entropy::Image
   Entropy::Layout
+  Entropy::Mesh
   Entropy::Rendering
   Entropy::RenderingMeshProcessing
   Entropy::UI

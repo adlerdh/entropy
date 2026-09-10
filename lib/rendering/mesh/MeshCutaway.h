@@ -22,10 +22,10 @@ std::optional<MeshOctantCutaway> viewerFacingOctantCutaway(
   const glm::mat3& worldAxes,
   const glm::vec3& viewerWorldPosition) noexcept;
 
-/** Return a normalized cutaway, or empty when an enabled cutaway contains an invalid plane. */
+/// Return a normalized cutaway, or empty when an enabled cutaway contains an invalid plane.
 std::optional<MeshOctantCutaway> normalizedOctantCutaway(const MeshOctantCutaway& cutaway) noexcept;
 
-/** Return whether a world position lies in the octant removed by an enabled cutaway. */
+/// Return whether a world position lies in the octant removed by an enabled cutaway.
 bool pointInsideRemovedOctant(const glm::vec3& worldPosition, const MeshOctantCutaway& cutaway) noexcept;
 
 } // namespace rendering::mesh

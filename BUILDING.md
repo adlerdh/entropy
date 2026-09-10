@@ -345,8 +345,8 @@ clang-tidy analyzes C++ using Clang's compiler model. Entropy uses it for compil
 checks, and targeted bug-prone, security, Core Guidelines, modernization, performance, portability, and readability
 checks.
 
-Install clang-tidy on macOS with either MacPorts or Homebrew: `sudo port install clang-19` or `brew install llvm`.
-On Ubuntu: `sudo apt-get install clang-tidy`.
+Install clang-tidy 19 or newer on macOS with either MacPorts or Homebrew: `sudo port install clang-19` or
+`brew install llvm`. On Ubuntu 24.04: `sudo apt-get install clang-tidy-19`.
 
 Homebrew installs LLVM keg-only, so ensure `$(brew --prefix llvm)/bin` is on `PATH`. Confirm the intended executable is
 selected with `clang-tidy --version` before configuring.
@@ -547,7 +547,7 @@ The main CI build matrix is:
 | Windows x86_64 | `windows-2022` | Visual Studio 2022 / MSVC v143 | Debug build and tests, release packages, optional coverage |
 | Windows x86_64 compatibility | `windows-2025` | Visual Studio 2026 / MSVC | Scheduled/manual Debug build and tests on a newer Windows runner |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | `gcc-13` / `g++-13` | Debug build and tests, release packages, and primary coverage |
-| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | GCC 13 and Clang 17 | Debug build and tests with clang-tidy and cppcheck analysis, plus manually triggered IWYU analysis |
+| Ubuntu 24.04 x86_64 | `ubuntu-24.04` | GCC 13 and Clang 19 | Debug build and tests with clang-tidy and cppcheck analysis, plus manually triggered IWYU analysis |
 | Fedora 43 x86_64 | `fedora:43` container on `ubuntu-24.04` | GCC 15 | Manual Debug build and tests, manual release packages, and tag-driven Fedora release packages |
 
 The Ubuntu 22.04 workflow installs `gcc-13` and `g++-13` from the Ubuntu toolchain PPA. Ubuntu 24.04 uses GCC 13 for

@@ -4,9 +4,9 @@
 
 namespace recent_data
 {
-void PendingLoad::begin(Kind kind, std::vector<std::filesystem::path> paths)
+void PendingLoad::begin(Kind entryKind, std::vector<std::filesystem::path> paths)
 {
-  m_entry = Entry{kind, std::move(paths)};
+  m_entry = Entry{entryKind, std::move(paths)};
 }
 
 void PendingLoad::appendPath(std::filesystem::path path)

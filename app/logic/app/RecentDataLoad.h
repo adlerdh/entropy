@@ -15,15 +15,15 @@ enum class Kind
 
 struct Entry
 {
-  Kind kind;
+  Kind kind = Kind::Images;
   std::vector<std::filesystem::path> paths;
 };
 
-/** @brief Hold a Recent-data candidate until its load completes successfully. */
+/// Hold a Recent-data candidate until its load completes successfully.
 class PendingLoad
 {
 public:
-  void begin(Kind kind, std::vector<std::filesystem::path> paths);
+  void begin(Kind entryKind, std::vector<std::filesystem::path> paths);
   void appendPath(std::filesystem::path path);
   void replacePaths(std::vector<std::filesystem::path> paths);
   void cancel();

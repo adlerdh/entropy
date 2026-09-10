@@ -41,7 +41,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             ccache \
-            clang-tidy \
+            clang-tidy-19 \
             gcc-13 \
             g++-13 \
             libdbus-1-dev \
@@ -60,7 +60,7 @@ jobs:
           lsb_release -a
           cmake --version
           ccache --version
-          clang-tidy --version
+          clang-tidy-19 --version
           "${CC}" --version
           "${CXX}" --version
 
@@ -114,7 +114,11 @@ jobs:
         run: cmake --build build-clang-tidy --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app with clang-tidy
-        run: cmake --preset app-debug -B build-clang-tidy -D Entropy_USE_CCACHE=ON -D Entropy_ENABLE_CLANG_TIDY=ON
+        run: >-
+          cmake --preset app-debug -B build-clang-tidy
+          -D Entropy_USE_CCACHE=ON
+          -D Entropy_ENABLE_CLANG_TIDY=ON
+          -D Entropy_CLANG_TIDY_EXECUTABLE=/usr/bin/clang-tidy-19
 
       - name: Run clang-tidy during Debug app build
         run: |

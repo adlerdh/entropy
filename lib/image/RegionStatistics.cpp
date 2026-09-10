@@ -77,7 +77,7 @@ public:
     }
   }
 
-  std::optional<double> value(std::uint32_t component, std::size_t index) const
+  [[nodiscard]] std::optional<double> value(std::uint32_t component, std::size_t index) const
   {
     if (component >= m_componentCount) return std::nullopt;
     const void* values = m_interleaved ? m_buffers.front() : m_buffers[component];
@@ -86,7 +86,7 @@ public:
     return rawValue(values, m_type, offset);
   }
 
-  std::uint32_t componentCount() const
+  [[nodiscard]] std::uint32_t componentCount() const
   {
     return m_componentCount;
   }
@@ -271,15 +271,17 @@ std::expected<RegionStatisticsResult, RegionStatisticsError> computeRegionStatis
   }
 
   const auto [isVolume, elementSize] = physicalElementSize(segmentation);
-  RegionStatisticsResult result{.isVolume = isVolume, .elementPhysicalSize = elementSize};
+  RegionStatisticsResult result;
+  result.isVolume = isVolume;
+  result.elementPhysicalSize = elementSize;
   result.regions.reserve(running.size());
   for (const auto& [label, accumulator] : running) {
-    RegionStatistic statistic{
-      .label = label,
-      .elementCount = accumulator.elementCount,
-      .finiteValueCount = accumulator.finiteCount,
-      .nonFiniteValueCount = accumulator.nonFiniteCount,
-      .physicalSize = static_cast<double>(accumulator.elementCount) * elementSize};
+    RegionStatistic statistic;
+    statistic.label = label;
+    statistic.elementCount = accumulator.elementCount;
+    statistic.finiteValueCount = accumulator.finiteCount;
+    statistic.nonFiniteValueCount = accumulator.nonFiniteCount;
+    statistic.physicalSize = static_cast<double>(accumulator.elementCount) * elementSize;
     if (accumulator.finiteCount > 0) {
       statistic.minimum = accumulator.minimum;
       statistic.mean = accumulator.mean;
