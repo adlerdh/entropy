@@ -84,6 +84,8 @@ void renderSegmentationHeader(
   const std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)>& addSegmentationFile,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
+  const std::function<void(const uuids::uuid&, const uuids::uuid&, std::size_t)>& exportLabelMesh,
+  const std::function<void(const uuids::uuid&, const uuids::uuid&)>& exportAllLabelMeshes,
   const AllViewsRecenterType& recenterAllViews)
 {
   static const std::string addSegFromFileString = std::string(ICON_FK_FOLDER_OPEN_O) + " Add...";
@@ -377,11 +379,39 @@ void renderSegmentationHeader(
   }
 
   if (ImGui::TreeNodeEx("Segmentation Labels", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ParcellationLabelTable* activeLabelTable = getLabelTable(segSettings.labelTableIndex());
     renderSegLabelsChildWindow(
       segSettings.labelTableIndex(),
-      getLabelTable(segSettings.labelTableIndex()),
+      activeLabelTable,
+      appData.settings().foregroundLabel(),
+      [&appData, activeLabelTable](const std::size_t labelIndex) {
+        if (activeLabelTable) {
+          appData.settings().setForegroundLabel(labelIndex, *activeLabelTable);
+        }
+      },
       updateLabelColorTableTexture,
       moveCrosshairsToSegLabelCentroid);
+
+    static const std::string exportLabelText = std::string(ICON_FK_FLOPPY_O) + " Export selected label...";
+    static const std::string exportAllLabelsText = std::string(ICON_FK_FLOPPY_O) + " Export all labels...";
+    const std::size_t currentLabel = appData.settings().foregroundLabel();
+    ImGui::BeginDisabled(currentLabel == 0 || !exportLabelMesh);
+    if (ImGui::Button(exportLabelText.c_str())) {
+      exportLabelMesh(imageUid, *activeSegUid, currentLabel);
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Export the selected foreground label (%zu) as a surface mesh", currentLabel);
+    }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!exportAllLabelMeshes);
+    if (ImGui::Button(exportAllLabelsText.c_str())) {
+      exportAllLabelMeshes(imageUid, *activeSegUid);
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Export every non-empty segmentation label as a separate surface mesh file");
+    }
 
     ImGui::Spacing();
     ImGui::Separator();

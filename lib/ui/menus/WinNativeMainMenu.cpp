@@ -816,6 +816,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images Panel") &&
     insertSeparator(menu, position++) && insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
     insertMenuItem(menu, position++, k_addDicomSeriesCommand, L"Add &DICOM Series...") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ImportSurfaceMesh, L"Add Surface &Mesh...") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ExportActiveImage, L"&Export DICOM Series as Image...") &&
     insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Select Active Image") &&
     insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&

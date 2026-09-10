@@ -67,6 +67,18 @@ struct ImGuiProjectCallbacks
   /** @brief Add a segmentation file to a specific image. */
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage;
 
+  /** @brief Prompt for and import surface meshes associated with an image. */
+  std::function<void(const uuids::uuid& imageUid)> importSurfaceMeshes;
+
+  /// Export a generated isosurface mesh.
+  std::function<void(const uuids::uuid&, uint32_t, const uuids::uuid&)> exportIsosurfaceMesh;
+
+  /// Export one segmentation label mesh.
+  std::function<void(const uuids::uuid&, const uuids::uuid&, std::size_t)> exportSegmentationLabelMesh;
+
+  /// Export every non-empty label of a segmentation as a separate mesh.
+  std::function<void(const uuids::uuid&, const uuids::uuid&)> exportAllSegmentationLabelMeshes;
+
   /** @brief Load a warp field and return its UID if successful. */
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> loadDeformationField;
 
@@ -336,6 +348,10 @@ private:
   std::function<void(const std::filesystem::path& fileName)> m_addSegmentationFile = nullptr;
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> m_addSegmentationFileToImage =
     nullptr;
+  std::function<void(const uuids::uuid& imageUid)> m_importSurfaceMeshes = nullptr;
+  std::function<void(const uuids::uuid&, uint32_t, const uuids::uuid&)> m_exportIsosurfaceMesh = nullptr;
+  std::function<void(const uuids::uuid&, const uuids::uuid&, std::size_t)> m_exportSegmentationLabelMesh = nullptr;
+  std::function<void(const uuids::uuid&, const uuids::uuid&)> m_exportAllSegmentationLabelMeshes = nullptr;
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> m_loadDeformationField = nullptr;
   std::function<void(
     const uuids::uuid& imageUid,

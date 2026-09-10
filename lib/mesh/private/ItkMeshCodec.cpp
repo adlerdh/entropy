@@ -168,7 +168,7 @@ std::expected<DecodedMesh, MeshIoError> readItkMesh(const std::filesystem::path&
     }
     else if (format == MeshFormat::FreeSurferBinary || format == MeshFormat::FreeSurferAscii) {
       result.coordinates.storedSpace = MeshCoordinateSpace::FreeSurferSurfaceRas;
-      result.coordinates.anatomicalSystem = AnatomicalCoordinateSystem::Ras;
+      result.coordinates.anatomicalSystem = AnatomicalCoordinateSystem::RAS;
       result.coordinates.description = "FreeSurfer surface RAS (tkRegRAS)";
 
       auto volumeGeometry = readFreeSurferVolumeGeometry(path);

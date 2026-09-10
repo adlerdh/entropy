@@ -66,7 +66,6 @@ struct MeshDisplaySettings
   glm::vec3 baseColor{0.8f};
   float opacity = 1.0f;
   bool visible = true;
-  bool includeInCutaway = true;
 
   bool operator==(const MeshDisplaySettings&) const = default;
 };
@@ -96,6 +95,7 @@ struct MeshRecord
 {
   std::string uid;
   std::string associatedImageUid;
+  std::string name; //!< User-visible name, initially derived from the source file name
   std::filesystem::path sourcePath;
   MeshFormat sourceFormat = MeshFormat::Vtp;
   MeshGeometry geometry;

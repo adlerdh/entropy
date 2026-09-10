@@ -1799,6 +1799,10 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_openDicomFolders = std::move(callbacks.project.openDicomFolders);
   m_addSegmentationFile = std::move(callbacks.project.addSegmentationFile);
   m_addSegmentationFileToImage = std::move(callbacks.project.addSegmentationFileToImage);
+  m_importSurfaceMeshes = std::move(callbacks.project.importSurfaceMeshes);
+  m_exportIsosurfaceMesh = std::move(callbacks.project.exportIsosurfaceMesh);
+  m_exportSegmentationLabelMesh = std::move(callbacks.project.exportSegmentationLabelMesh);
+  m_exportAllSegmentationLabelMeshes = std::move(callbacks.project.exportAllSegmentationLabelMeshes);
   m_loadDeformationField = std::move(callbacks.project.loadDeformationField);
   m_loadAndAssignDeformationField = std::move(callbacks.project.loadAndAssignDeformationField);
   m_importRegistrationJobOutputs = std::move(callbacks.project.importRegistrationJobOutputs);
@@ -3790,6 +3794,11 @@ void ImGuiWrapper::render()
         m_appData.guiData().m_showIsosurfacesWindow = true;
         m_appData.guiData().m_requestAddIsosurfaceRange = true;
         break;
+      case MainMenuAction::ImportSurfaceMesh:
+        if (const auto imageUid = activeImageUid(); imageUid && m_importSurfaceMeshes) {
+          m_importSurfaceMeshes(*imageUid);
+        }
+        break;
       case MainMenuAction::CreateSegmentation:
         createActiveSegmentation();
         break;
@@ -3997,6 +4006,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::LastTimePoint:
         case MainMenuAction::AddIsosurface:
         case MainMenuAction::AddIsosurfaceRange:
+        case MainMenuAction::ImportSurfaceMesh:
         case MainMenuAction::CreateSegmentation:
         case MainMenuAction::CreateLandmarkGroup:
         case MainMenuAction::AddLayout:
@@ -4727,7 +4737,8 @@ void ImGuiWrapper::render()
       renderIsosurfacesWindow(
         m_appData,
         std::bind(&ImGuiWrapper::storeFuture, this, _1, _2),
-        std::bind(&ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue, this, _1));
+        std::bind(&ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue, this, _1),
+        m_exportIsosurfaceMesh);
     }
 
     using namespace std::placeholders;
@@ -4780,6 +4791,7 @@ void ImGuiWrapper::render()
         [this](const uuids::uuid& imageUid, ComponentProjectionMode mode) {
           requestComponentProjectionImage(imageUid, mode);
         },
+        m_importSurfaceMeshes,
         [this](const uuids::uuid& imageUid) {
           m_appData.guiData().m_pendingReferenceImageUid = imageUid;
           m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
@@ -4802,6 +4814,8 @@ void ImGuiWrapper::render()
         m_addSegmentationFileToImage,
         m_clearSeg,
         m_removeSeg,
+        m_exportSegmentationLabelMesh,
+        m_exportAllSegmentationLabelMeshes,
         m_recenterAllViews);
     }
 

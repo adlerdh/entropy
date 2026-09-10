@@ -527,6 +527,20 @@ struct ImageIsosurface
   Isosurface m_surface;     //!< User-editable isosurface settings
 };
 
+/// Project record for a user-imported surface mesh associated with an image.
+struct ImportedMesh
+{
+  std::string m_uid;            //!< Stable mesh identifier
+  std::filesystem::path m_path; //!< Source mesh file
+  std::string m_name;           //!< User-visible name
+  glm::vec3 m_color{0.8f};      //!< Base surface color
+  float m_opacity = 1.0f;       //!< Surface opacity
+  bool m_visible = true;        //!< Visibility in 3D views
+};
+
+void to_json(nlohmann::json& j, const ImportedMesh& mesh);
+void from_json(const nlohmann::json& j, ImportedMesh& mesh);
+
 /**
  * @brief Serialized DICOM-series source metadata for an image.
  *
@@ -622,6 +636,9 @@ struct Image
    * Isosurface definitions associated with image components.
    */
   std::vector<serialize::ImageIsosurface> m_isosurfaces;
+
+  /// User-imported meshes associated with this image.
+  std::vector<serialize::ImportedMesh> m_importedMeshes;
 
   /**
    * Optional image settings

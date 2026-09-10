@@ -15,6 +15,7 @@
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "mesh/MeshTypes.h"
 #include "registration/Artifacts.h"
 #include "ui/NativeFileDialogs.h"
 
@@ -362,6 +363,21 @@ serialize::Image EntropyApp::createImageSnapshot(
       serializedSurface.m_surface = *surface;
       serializedImage.m_isosurfaces.emplace_back(std::move(serializedSurface));
     }
+  }
+
+  for (const auto& meshUid : m_data.imageToImportedMeshUids(imageUid)) {
+    const mesh::MeshRecord* imported = m_data.importedMesh(meshUid);
+    if (!imported || imported->sourcePath.empty()) {
+      spdlog::warn("Cannot serialize missing or pathless imported mesh {} for image {}", meshUid, imageUid);
+      continue;
+    }
+    serializedImage.m_importedMeshes.push_back(serialize::ImportedMesh{
+      .m_uid = uuids::to_string(meshUid),
+      .m_path = imported->sourcePath,
+      .m_name = imported->name,
+      .m_color = imported->display.baseColor,
+      .m_opacity = imported->display.opacity,
+      .m_visible = imported->display.visible});
   }
 
   return serializedImage;

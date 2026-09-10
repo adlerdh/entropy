@@ -13,9 +13,24 @@
 #include <cstdio>
 #include <string>
 
+namespace
+{
+enum SegmentationLabelColumn : int
+{
+  Visibility2D,
+  Visibility3D,
+  Index,
+  Label,
+  Cutaway,
+  Count
+};
+} // namespace
+
 void renderSegLabelsChildWindow(
   std::size_t tableIndex,
   ParcellationLabelTable* labelTable,
+  std::size_t selectedLabel,
+  const std::function<void(std::size_t labelIndex)>& selectLabel,
   const std::function<void(std::size_t tableIndex)>& updateLabelColorTableTexture,
   const std::function<void(std::size_t labelIndex)>& moveCrosshairsToSegLabelCentroid)
 {
@@ -103,7 +118,7 @@ void renderSegLabelsChildWindow(
                                          ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
                                          ImGuiTableFlags_SizingStretchProp;
 
-  if (!ImGui::BeginTable("##segmentationLabels", 5, tableFlags, ImVec2{0.0f, 0.0f})) {
+  if (!ImGui::BeginTable("##segmentationLabels", SegmentationLabelColumn::Count, tableFlags, ImVec2{0.0f, 0.0f})) {
     ImGui::EndChild();
     return;
   }
@@ -120,17 +135,23 @@ void renderSegLabelsChildWindow(
 
   ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
 
-  for (int column = 0; column < 5; ++column) {
+  for (int column = 0; column < SegmentationLabelColumn::Count; ++column) {
     ImGui::TableSetColumnIndex(column);
     ImGui::TableHeader(ImGui::TableGetColumnName(column));
     if (ImGui::IsItemHovered()) {
-      if (column == 0) {
+      if (column == SegmentationLabelColumn::Visibility2D) {
         ImGui::SetTooltip("Show this segmentation in 2D views");
       }
-      else if (column == 1) {
+      else if (column == SegmentationLabelColumn::Visibility3D) {
         ImGui::SetTooltip("Show this segmentation in 3D views");
       }
-      else if (column == 2) {
+      else if (column == SegmentationLabelColumn::Index) {
+        ImGui::SetTooltip("Label index");
+      }
+      else if (column == SegmentationLabelColumn::Label) {
+        ImGui::SetTooltip("Label region");
+      }
+      else if (column == SegmentationLabelColumn::Cutaway) {
         ImGui::SetTooltip(
           "Include this label's mesh in Cutaway. Cutaway removes the viewer-facing octant at the crosshairs.");
       }
@@ -152,27 +173,42 @@ void renderSegLabelsChildWindow(
     ImGui::PushID(static_cast<int>(i)); /*** PushID i ***/
     ImGui::TableNextRow();
 
-    ImGui::TableSetColumnIndex(0);
+    ImGui::TableSetColumnIndex(SegmentationLabelColumn::Visibility2D);
+    const ImVec2 rowStart = ImGui::GetCursorScreenPos();
+    if (ImGui::Selectable(
+          "##selectLabel",
+          selectedLabel == i,
+          ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap,
+          ImVec2{0.0f, ImGui::GetFrameHeight()}))
+    {
+      selectLabel(i);
+    }
+    ImGui::SetCursorScreenPos(rowStart);
+
     if (ImGui::Checkbox("##labelVisible", &labelVisible)) {
       labelTable->setVisible(i, labelVisible);
       updateLabelColorTableTexture(tableIndex);
     }
+    if (ImGui::IsItemClicked()) {
+      selectLabel(i);
+    }
 
-    ImGui::TableSetColumnIndex(1);
+    ImGui::TableSetColumnIndex(SegmentationLabelColumn::Visibility3D);
     if (ImGui::Checkbox("##labelShowMesh", &labelShowMesh)) {
       labelTable->setShowMesh(i, labelShowMesh);
     }
-
-    ImGui::TableSetColumnIndex(2);
-    if (ImGui::Checkbox("##labelIncludeInCutaway", &labelIncludeInCutaway)) {
-      labelTable->setIncludeInCutaway(i, labelIncludeInCutaway);
+    if (ImGui::IsItemClicked()) {
+      selectLabel(i);
     }
 
-    ImGui::TableSetColumnIndex(3);
+    ImGui::TableSetColumnIndex(SegmentationLabelColumn::Index);
     if (ImGui::ColorEdit4("##labelColor", glm::value_ptr(labelColor), sk_colorEditFlags)) {
       labelTable->setColor(i, glm::u8vec3{255.0f * labelColor});
       labelTable->setAlpha(i, static_cast<uint8_t>(255.0f * labelColor.a));
       updateLabelColorTableTexture(tableIndex);
+    }
+    if (ImGui::IsItemClicked()) {
+      selectLabel(i);
     }
     ImGui::SameLine();
     ImGui::AlignTextToFramePadding();
@@ -180,6 +216,7 @@ void renderSegLabelsChildWindow(
 
     ImGui::SameLine();
     if (ImGui::Button(ICON_FK_HAND_O_UP)) {
+      selectLabel(i);
       moveCrosshairsToSegLabelCentroid(i);
 
       /// @todo Should the views recenter? This done when moving crosshairs to a landmark.
@@ -192,10 +229,21 @@ void renderSegLabelsChildWindow(
       ImGui::SetTooltip("Move crosshairs to segmentation centroid");
     }
 
-    ImGui::TableSetColumnIndex(4);
+    ImGui::TableSetColumnIndex(SegmentationLabelColumn::Label);
     ImGui::SetNextItemWidth(-1.0f);
     if (ImGui::InputText("##labelName", &labelName)) {
       labelTable->setName(i, labelName);
+    }
+    if (ImGui::IsItemClicked()) {
+      selectLabel(i);
+    }
+
+    ImGui::TableSetColumnIndex(SegmentationLabelColumn::Cutaway);
+    if (ImGui::Checkbox("##labelIncludeInCutaway", &labelIncludeInCutaway)) {
+      labelTable->setIncludeInCutaway(i, labelIncludeInCutaway);
+    }
+    if (ImGui::IsItemClicked()) {
+      selectLabel(i);
     }
 
     if (scrollToBottomOfLmList) {

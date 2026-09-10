@@ -7,6 +7,7 @@
 #include "image/ImageColorMap.h"
 #include "image/ImageDerivedData.h"
 #include "image/Isosurface.h"
+#include "mesh/MeshTypes.h"
 
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
@@ -196,6 +197,12 @@ public:
    */
   std::optional<uuid> addIsosurface(const uuid& imageUidArg, ComponentIndexType comp, Isosurface isosurfaceArg);
 
+  /// Add an imported surface mesh associated with an image.
+  std::optional<uuid> addImportedMesh(const uuid& imageUidArg, mesh::MeshRecord meshArg);
+
+  /// Remove an imported surface mesh.
+  bool removeImportedMesh(const uuid& meshUidArg);
+
   bool removeImage(const uuid& imageUidArg);
   bool removeSeg(const uuid& segUidArg);
   bool removeDef(const uuid& defUidArg);
@@ -293,6 +300,10 @@ public:
   const Isosurface* isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid) const;
 
   Isosurface* isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid);
+
+  /// Return an imported surface mesh, or null when the UID is unknown.
+  const mesh::MeshRecord* importedMesh(const uuid& meshUidArg) const;
+  mesh::MeshRecord* importedMesh(const uuid& meshUidArg);
 
   const ImageColorMap* imageColorMap(const uuid& colorMapUid) const;
   ImageColorMap* imageColorMap(const uuid& colorMapUid);
@@ -461,6 +472,9 @@ public:
   /// Get all segmentations for an image
   std::vector<uuid> imageToSegUids(const uuid& imageUidArg) const;
 
+  /// Return imported meshes associated with an image in display order.
+  std::vector<uuid> imageToImportedMeshUids(const uuid& imageUidArg) const;
+
   /// Get all warp fields for an image
   std::vector<uuid> imageToDefUids(const uuid& imageUidArg) const;
 
@@ -578,6 +592,9 @@ private:
 
   std::unordered_map<uuid, Image> m_images; //!< Images
   std::vector<uuid> m_imageUidsOrdered;     //!< Image UIDs in order
+
+  std::unordered_map<uuid, mesh::MeshRecord> m_importedMeshes;          //!< User-loaded surface meshes
+  std::unordered_map<uuid, std::vector<uuid> > m_imageToImportedMeshes; //!< Image-to-mesh associations
 
   std::unordered_map<uuid, Image> m_componentProjectionImages; //!< Hidden scalar component projections
   /// @todo This cache is time-point-aware but not memory-bounded. Replace it with an LRU cache when

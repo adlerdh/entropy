@@ -552,6 +552,7 @@ void addImageMenu(NSMenu* mainMenu) {
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"", @"plus.rectangle.on.rectangle");
   addSymbolMenuItem(menu, @"Add DICOM Series...", @selector(addDicomSeries:), @"", @"externaldrive.badge.plus");
+  addSymbolActionMenuItem(menu, @"Add Surface Mesh...", MainMenuAction::ImportSurfaceMesh, @"square.3.layers.3d");
   addSymbolActionMenuItem(
     menu,
     @"Export DICOM Series as Image...",

@@ -106,6 +106,9 @@ std::vector<Filter> imageFilters();
  */
 std::vector<Filter> medicalImageExportFilters();
 
+/// Filters for supported surface mesh files.
+std::vector<Filter> meshFilters();
+
 /**
  * @brief Filters for Entropy project files.
  */

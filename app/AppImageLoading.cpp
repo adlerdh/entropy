@@ -3,6 +3,7 @@
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
+#include "common/UuidUtility.h"
 
 #include "image/ImageUtility.h"
 #include "image/DicomSeries.h"
@@ -23,6 +24,7 @@
 #include "logic/camera/MathUtility.h"
 #include "logic/serialization/ProjectSerialization.h"
 #include "logic/DistanceMap.h"
+#include "mesh/MeshIO.h"
 
 #include "ui/NativeFileDialogs.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
@@ -1120,6 +1122,29 @@ bool EntropyApp::loadSerializedImage(
     }
   }
 
+  const mesh::MeshIO meshIo;
+  for (const serialize::ImportedMesh& serializedMesh : serializedImage.m_importedMeshes) {
+    const auto loaded = meshIo.load(mesh::MeshLoadRequest{
+      .path = serializedMesh.m_path,
+      .meshUid = serializedMesh.m_uid,
+      .associatedImageUid = uuids::to_string(*imageUid)});
+    if (!loaded) {
+      reportInputLoadFailure("surface mesh", serializedMesh.m_path, loaded.error().message);
+      continue;
+    }
+    mesh::MeshRecord record = loaded->mesh;
+    record.name = serializedMesh.m_name;
+    record.display.baseColor = serializedMesh.m_color;
+    record.display.opacity = serializedMesh.m_opacity;
+    record.display.visible = serializedMesh.m_visible;
+    if (const auto meshUid = m_data.addImportedMesh(*imageUid, std::move(record))) {
+      spdlog::info("Loaded imported mesh {} from {} for image {}", *meshUid, serializedMesh.m_path, *imageUid);
+    }
+    else {
+      reportInputLoadFailure("surface mesh", serializedMesh.m_path, "The mesh could not be associated with its image.");
+    }
+  }
+
   // Load segmentation images:
 
   // Structure for holding information about a segmentation being loaded
@@ -2039,6 +2064,47 @@ void EntropyApp::addSegmentationFileToImage(const fs::path& fileName, const uuid
 
   m_data.setProject(createProjectSnapshot());
   spdlog::info("Added segmentation {} from {} to image {}", *segUid, fileName, imageUid);
+}
+
+void EntropyApp::importSurfaceMeshesForImage(const uuids::uuid& imageUid)
+{
+  if (!m_data.image(imageUid)) {
+    spdlog::error("Cannot import surface meshes for missing image {}", imageUid);
+    return;
+  }
+
+  const auto confirmation = native_dialog::showMessageDialog(
+    {.title = "Import Surface Mesh",
+     .message = "Attach one or more surface meshes to this image?",
+     .informativeText =
+       "Mesh vertices are interpreted in the image's physical subject-space coordinates. The meshes will follow "
+       "the image's affine and deformation transformations.",
+     .firstButton = "Choose Files",
+     .secondButton = "Cancel"});
+  if (confirmation && *confirmation != native_dialog::MessageDialogResult::FirstButton) {
+    return;
+  }
+
+  const mesh::MeshIO meshIo;
+  for (const fs::path& path : native_dialog::openFiles(native_dialog::meshFilters())) {
+    const auto loaded = meshIo.load(mesh::MeshLoadRequest{
+      .path = path,
+      .meshUid = uuids::to_string(generateRandomUuid()),
+      .associatedImageUid = uuids::to_string(imageUid)});
+    if (!loaded) {
+      reportInputLoadFailure("surface mesh", path, loaded.error().message);
+      continue;
+    }
+
+    mesh::MeshRecord record = loaded->mesh;
+    record.name = path.stem().string();
+    if (const auto meshUid = m_data.addImportedMesh(imageUid, std::move(record))) {
+      spdlog::info("Imported surface mesh {} from {} for image {}", *meshUid, path, imageUid);
+    }
+    else {
+      reportInputLoadFailure("surface mesh", path, "The mesh could not be associated with its image.");
+    }
+  }
 }
 
 bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)

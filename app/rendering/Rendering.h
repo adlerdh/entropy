@@ -421,6 +421,10 @@ private:
 
   rendering::mesh::MeshResourceStore m_meshResources; //!< Context-owned mesh handles and GPU uploads
 
+  /// CPU geometry for imported meshes, retained for bounds, shadows, ambient occlusion, and picking.
+  std::unordered_map<uuids::uuid, rendering::mesh::MeshData> m_importedMeshData;
+  std::unordered_map<uuids::uuid, uint64_t> m_importedMeshVersions; //!< Cached transformed-geometry versions
+
   std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
   std::unordered_map<uuids::uuid, PendingSegmentationLabelInventory> m_pendingSegmentationLabelInventories;
 

@@ -120,10 +120,9 @@ std::expected<std::optional<FreeSurferVolumeGeometry>, MeshIoError> readFreeSurf
 {
   std::ifstream input(path, std::ios::binary);
 
-  if (!input) return
-    {
-      std::unexpected(MeshIoError{MeshIoErrorCode::ReadFailed, path, "Cannot open FreeSurfer surface"});
-    }
+  if (!input) {
+    return std::unexpected(MeshIoError{MeshIoErrorCode::ReadFailed, path, "Cannot open FreeSurfer surface"});
+  }
 
   std::array<unsigned char, 3> magic{};
   input.read(reinterpret_cast<char*>(magic.data()), static_cast<std::streamsize>(magic.size()));

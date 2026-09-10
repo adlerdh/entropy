@@ -297,6 +297,12 @@ void renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXha
  */
 bool renderVolumeImagesForView(const View& view, bool interactiveOverlay = false);
 
+/** Append visible user-imported meshes for the images rendered by a 3D view. */
+void appendImportedMeshesForView(
+  const View& view,
+  const CurrentImages& imageSegPairs,
+  std::vector<rendering::mesh::MeshRenderable>& renderables);
+
 /**
  * @brief Apply completed background mesh extraction jobs to the CPU mesh cache.
  */

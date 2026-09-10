@@ -149,6 +149,9 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   else if (path.ends_with("/settings/labels/values")) {
     preferredKeys = {"visible", "showMesh", "includeInCutaway", "index", "name", "color"};
   }
+  else if (path.find("/meshes/") != std::string::npos) {
+    preferredKeys = {"uid", "path", "name", "visible", "opacity", "color"};
+  }
 
   const auto append = [&](const std::string& key) {
     const std::string childPath = path.empty() ? key : std::string{path} + "/" + key;
@@ -409,6 +412,10 @@ bool open(EntropyProject& project, const fs::path& fileName)
       }
     }
 
+    for (serialize::ImportedMesh& mesh : image.m_importedMeshes) {
+      mesh.m_path = fs::absolute(mesh.m_path).lexically_normal();
+    }
+
     fs::current_path(saveCurrentPath); // restore current path
   };
 
@@ -524,6 +531,10 @@ bool save(const EntropyProject& project, const fs::path& fileName)
       if (lm.m_csvFileName && !lm.m_csvFileName->empty()) {
         lm.m_csvFileName = fs::relative(*lm.m_csvFileName, projectBasePath);
       }
+    }
+
+    for (serialize::ImportedMesh& mesh : image.m_importedMeshes) {
+      mesh.m_path = fs::relative(mesh.m_path, projectBasePath);
     }
   };
 

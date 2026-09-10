@@ -201,8 +201,16 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
   // changing isosurface's transient raycast over it with a transparent no-hit background.
   std::vector<rendering::mesh::MeshRenderable> renderables;
   const CurrentImages imageSegPairs = meshSceneImagesForView(view);
-  const bool isosurfaceMeshesReady = renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
-  renderSegmentationMeshesForView(view, &renderables);
+  const ThreeDSceneContents& contents = view.threeDSceneContents();
+  const bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
+  const bool isosurfaceMeshesReady =
+    !renderIsosurfaces || renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
+  if (contents.contains(ThreeDSceneContent::Segmentations)) {
+    renderSegmentationMeshesForView(view, &renderables);
+  }
+  if (contents.contains(ThreeDSceneContent::ImportedMeshes)) {
+    appendImportedMeshesForView(view, imageSegPairs, renderables);
+  }
 
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
@@ -225,7 +233,7 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
     const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
     drawMeshRenderListForView(view, list, &imagePlaneList);
   }
-  if (!isosurfaceMeshesReady) {
+  if (renderIsosurfaces && !isosurfaceMeshesReady) {
     renderVolumeImagesForView(view, true);
   }
   else {

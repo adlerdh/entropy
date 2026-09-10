@@ -8,6 +8,7 @@ target_sources(entropy PRIVATE
   app/LargeImagePolicy.cpp
   app/Logging.cpp
   app/LoadingStatusItems.cpp
+  app/MeshExport.cpp
   app/ParcellationLabelTable.cpp
   app/ProjectLayoutDelta.cpp
   app/ProjectImageSequence.cpp

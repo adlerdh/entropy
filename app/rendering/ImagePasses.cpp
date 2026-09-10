@@ -117,9 +117,10 @@ void Rendering::renderAllImagesForView(
     const ThreeDSceneContents& contents = view.threeDSceneContents();
     const bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
     const bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
+    const bool renderImportedMeshes = contents.contains(ThreeDSceneContent::ImportedMeshes);
     bool renderedSurface = false;
 
-    if (renderSegmentations && renderIsosurfaces) {
+    if (renderImportedMeshes || (renderSegmentations && renderIsosurfaces)) {
       renderedSurface = renderCombinedSurfaceMeshesForView(view);
     }
     else if (renderIsosurfaces) {

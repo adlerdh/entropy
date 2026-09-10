@@ -71,6 +71,15 @@ void Rendering::reconcileExtractedMeshResources()
     if (!image) {
       continue;
     }
+    for (const uuids::uuid& meshUid : m_appData.imageToImportedMeshUids(imageUid)) {
+      const auto versionIt = m_importedMeshVersions.find(meshUid);
+      liveKeys.insert(rendering::mesh::MeshGeometryKey{
+        .sourceUid = meshUid,
+        .sourceDataVersion = 1,
+        .sourceGeometryVersion = versionIt == m_importedMeshVersions.end() ? 1 : versionIt->second,
+        .extractionAlgorithm = "imported-surface",
+        .extractionAlgorithmVersion = 1});
+    }
     const uint32_t component = image->settings().activeComponent();
     const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
     for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, component)) {
@@ -134,6 +143,8 @@ void Rendering::reconcileExtractedMeshResources()
 
   m_meshExtractions.retainOnly(liveKeys);
   m_meshResources.retainOnly(liveKeys);
+  std::erase_if(m_importedMeshData, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
+  std::erase_if(m_importedMeshVersions, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
 }
 
 void Rendering::consumeCompletedMeshExtractions()
@@ -215,7 +226,14 @@ void Rendering::drawMeshRenderListForView(
 
   const auto cpuMeshLookup = [this](const rendering::mesh::MeshHandle& handle) -> const rendering::mesh::MeshData* {
     const rendering::mesh::MeshGeometryKey* key = m_meshResources.findKey(handle);
-    return key ? m_meshExtractions.readyMesh(*key) : nullptr;
+    if (!key) {
+      return nullptr;
+    }
+    if (const rendering::mesh::MeshData* extracted = m_meshExtractions.readyMesh(*key)) {
+      return extracted;
+    }
+    const auto imported = m_importedMeshData.find(key->sourceUid);
+    return imported == m_importedMeshData.end() ? nullptr : &imported->second;
   };
 
   const std::optional<rendering::mesh::MeshBounds> sceneBounds =

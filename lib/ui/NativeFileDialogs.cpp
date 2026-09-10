@@ -264,6 +264,12 @@ std::vector<Filter> medicalImageExportFilters()
   return {{"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr"}};
 }
 
+std::vector<Filter> meshFilters()
+{
+  return {
+    {"Surface meshes", "vtp,vtk,stl,ply,obj,off,gii,fsa,fsb,fcv,surf,asc,pial,white,inflated,sphere,orig,smoothwm"}};
+}
+
 std::vector<Filter> projectFilters()
 {
   return {{"Entropy projects", "json"}};

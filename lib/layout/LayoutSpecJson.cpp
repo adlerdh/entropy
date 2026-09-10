@@ -103,7 +103,8 @@ const std::vector<std::pair<ThreeDSceneContent, const char*>>& threeDSceneConten
 {
   static const std::vector<std::pair<ThreeDSceneContent, const char*>> names{
     {ThreeDSceneContent::Segmentations, "segmentations"},
-    {ThreeDSceneContent::Isosurfaces, "isosurfaces"}};
+    {ThreeDSceneContent::Isosurfaces, "isosurfaces"},
+    {ThreeDSceneContent::ImportedMeshes, "importedMeshes"}};
   return names;
 }
 

@@ -5,6 +5,7 @@ target_sources(entropy PRIVATE
   MeshImageAdapter.cpp
   MeshImagePlanePass.cpp
   MeshImagePlaneScenePass.cpp
+  MeshImportedScene.cpp
   MeshIsosurfaceScene.cpp
   MeshLandmarkScene.cpp
   MeshPickingScene.cpp

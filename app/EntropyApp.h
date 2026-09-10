@@ -142,6 +142,9 @@ private:
   /** @brief Add a segmentation file to a specific image. */
   void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
 
+  /** @brief Prompt for surface mesh files and import them for a specific image. */
+  void importSurfaceMeshesForImage(const uuids::uuid& imageUid);
+
   /** @brief Import outputs from a completed registration job through the async loading pipeline. */
   void importRegistrationJobOutputs(const std::string& jobId);
 

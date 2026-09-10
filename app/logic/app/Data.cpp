@@ -84,6 +84,8 @@ void AppData::clearProjectData()
 
   m_images.clear();
   m_imageUidsOrdered.clear();
+  m_importedMeshes.clear();
+  m_imageToImportedMeshes.clear();
   m_componentProjectionImages.clear();
   m_imageToComponentProjectionImages.clear();
   m_componentProjectionToSourceImage.clear();
@@ -494,6 +496,40 @@ std::optional<uuid> AppData::addSeg(Image segArg)
   return uid;
 }
 
+std::optional<uuid> AppData::addImportedMesh(const uuid& imageUidArg, mesh::MeshRecord meshArg)
+{
+  if (!image(imageUidArg) || meshArg.geometry.positions.empty() || meshArg.geometry.triangleIndices.empty()) {
+    return std::nullopt;
+  }
+
+  uuid meshUid = generateRandomUuid();
+  if (!meshArg.uid.empty()) {
+    if (const auto parsed = uuid::from_string(meshArg.uid); parsed && !m_importedMeshes.contains(*parsed)) {
+      meshUid = *parsed;
+    }
+  }
+  meshArg.uid = uuids::to_string(meshUid);
+  meshArg.associatedImageUid = uuids::to_string(imageUidArg);
+  if (meshArg.name.empty()) {
+    meshArg.name = meshArg.sourcePath.stem().string();
+  }
+  m_importedMeshes.emplace(meshUid, std::move(meshArg));
+  m_imageToImportedMeshes[imageUidArg].push_back(meshUid);
+  return meshUid;
+}
+
+bool AppData::removeImportedMesh(const uuid& meshUidArg)
+{
+  if (0 == m_importedMeshes.erase(meshUidArg)) {
+    return false;
+  }
+  for (auto& [associatedImageUid, meshUids] : m_imageToImportedMeshes) {
+    (void)associatedImageUid;
+    std::erase(meshUids, meshUidArg);
+  }
+  return true;
+}
+
 std::optional<uuid> AppData::addDef(Image defArg)
 {
   if (defArg.header().numComponentsPerPixel() < 3) {
@@ -747,6 +783,7 @@ bool AppData::removeImage(const uuid& imageUidArg)
   const auto imageDefs = imageToDefUids(imageUidArg);
   const auto imageLandmarkGroups = imageToLandmarkGroupUids(imageUidArg);
   const auto imageAnnotations = annotationsForImage(imageUidArg);
+  const auto imageMeshes = imageToImportedMeshUids(imageUidArg);
 
   m_images.erase(imageUidArg);
   m_imageUidsOrdered.erase(imageOrderIt);
@@ -790,6 +827,10 @@ bool AppData::removeImage(const uuid& imageUidArg)
   m_imageToAnnotations.erase(imageUidArg);
   m_imageToActiveAnnotation.erase(imageUidArg);
   m_imageToComponentData.erase(imageUidArg);
+  m_imageToImportedMeshes.erase(imageUidArg);
+  for (const auto& meshUid : imageMeshes) {
+    m_importedMeshes.erase(meshUid);
+  }
   m_imagesBeingSegmented.erase(imageUidArg);
 
   if (m_activeImageUid && *m_activeImageUid == imageUidArg) {
@@ -1300,6 +1341,18 @@ Isosurface* AppData::isosurface(const uuid& imageUidArg, ComponentIndexType comp
   return const_cast<Isosurface*>(const_cast<const AppData*>(this)->isosurface(imageUidArg, comp, isosurfaceUid));
 }
 
+const mesh::MeshRecord* AppData::importedMesh(const uuid& meshUidArg) const
+{
+  const auto it = m_importedMeshes.find(meshUidArg);
+  return it == m_importedMeshes.end() ? nullptr : &it->second;
+}
+
+mesh::MeshRecord* AppData::importedMesh(const uuid& meshUidArg)
+{
+  const auto it = m_importedMeshes.find(meshUidArg);
+  return it == m_importedMeshes.end() ? nullptr : &it->second;
+}
+
 const ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid) const
 {
   auto it = m_imageColorMaps.find(colorMapUid);
@@ -1807,6 +1860,12 @@ std::vector<uuid> AppData::imageToSegUids(const uuid& imageUidArg) const
     return it->second;
   }
   return std::vector<uuid>{};
+}
+
+std::vector<uuid> AppData::imageToImportedMeshUids(const uuid& imageUidArg) const
+{
+  const auto it = m_imageToImportedMeshes.find(imageUidArg);
+  return it == m_imageToImportedMeshes.end() ? std::vector<uuid>{} : it->second;
 }
 
 std::vector<uuid> AppData::imageToDefUids(const uuid& imageUidArg) const

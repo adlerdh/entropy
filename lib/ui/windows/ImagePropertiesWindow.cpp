@@ -51,6 +51,7 @@ void renderImagePropertiesWindow(
     const WarpInversionOptions& options)>& requestWarpInversion,
   const std::function<bool(const uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
+  const std::function<void(const uuid& imageUid)>& importSurfaceMeshes,
   const std::function<void(const uuid& imageUid)>& requestSetReferenceImage,
   const std::function<void(const uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews)
@@ -117,6 +118,7 @@ void renderImagePropertiesWindow(
             moveImageToFront,
             setLockManualImageTransformation,
             requestComponentProjectionImage,
+            importSurfaceMeshes,
             requestSetReferenceImage,
             requestRemoveImage,
             recenterAllViews);

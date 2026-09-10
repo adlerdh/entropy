@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <glm/glm.hpp>
 #include <system_error>
 
 namespace mesh
@@ -169,6 +170,7 @@ std::expected<MeshLoadResult, MeshIoError> MeshIO::load(const MeshLoadRequest& r
   MeshRecord mesh;
   mesh.uid = request.meshUid;
   mesh.associatedImageUid = request.associatedImageUid;
+  mesh.name = request.path.stem().string();
   mesh.sourcePath = request.path;
   mesh.sourceFormat = format;
   mesh.geometry = std::move(decoded->geometry);

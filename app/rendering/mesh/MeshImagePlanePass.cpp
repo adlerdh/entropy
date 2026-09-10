@@ -831,9 +831,9 @@ void Rendering::drawMeshImagePlaneRenderListForView(
 }
 
 void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(
-  const View&,
-  const rendering::mesh::MeshImagePlaneRenderList&,
-  const rendering::mesh::MeshDrawContext&)
+  [[maybe_unused]] const View& view,
+  [[maybe_unused]] const rendering::mesh::MeshImagePlaneRenderList& list,
+  [[maybe_unused]] const rendering::mesh::MeshDrawContext& context)
 {
   for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
     GLTexture& color = m_meshDdpResources.imagePlaneCompositeColorTexture(index);
@@ -860,9 +860,9 @@ void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(
 }
 
 void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
-  const View&,
-  const rendering::mesh::MeshImagePlaneRenderList&,
-  const rendering::mesh::MeshDrawContext&,
+  [[maybe_unused]] const View& view,
+  [[maybe_unused]] const rendering::mesh::MeshImagePlaneRenderList& list,
+  [[maybe_unused]] const rendering::mesh::MeshDrawContext& context,
   GLTexture& previousDepthBounds,
   GLTexture& previousFrontColor)
 {

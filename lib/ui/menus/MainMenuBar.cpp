@@ -437,6 +437,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   if (ImGui::MenuItem("Add DICOM Series...", nullptr, false, callbacks.canAddImage)) {
     addDicomSeries(callbacks);
   }
+  actionMenuItem(callbacks, "Add Surface Mesh...", MainMenuAction::ImportSurfaceMesh);
   actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   ImGui::Separator();
   if (ImGui::BeginMenu("Select Active Image", callbacks.canAddImage)) {

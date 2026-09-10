@@ -205,8 +205,9 @@ const char* histogramCountAxisLabel(bool cumulative, bool density, bool logarith
 }
 } // namespace
 
-void renderRegionStatisticsWindow(AppData& appData, RegionStatisticsController& state)
+void renderRegionStatisticsWindow(AppData& appData, RegionStatisticsController& controller)
 {
+  RegionStatisticsController& state = controller;
   if (appData.guiData().m_requestedRegionStatisticsImageUid) {
     state.requestSelection(
       std::exchange(appData.guiData().m_requestedRegionStatisticsImageUid, std::nullopt),

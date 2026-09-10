@@ -36,6 +36,7 @@ class ImageColorMap;
  * @param requestWarpInversion Callback that computes the matching inverse or forward warp.
  * @param setLockManualImageTransformation Callback that toggles manual transform locking for one image.
  * @param requestComponentProjectionImage Callback that starts creation of a scalar component projection.
+ * @param importSurfaceMeshes Callback that imports surface meshes for an image.
  * @param requestSetReferenceImage Callback that requests a new reference image.
  * @param requestRemoveImage Callback that requests image removal.
  * @param recenterAllViews Callback used by image controls that reposition views.
@@ -68,6 +69,7 @@ void renderImagePropertiesWindow(
     const WarpInversionOptions& options)>& requestWarpInversion,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuids::uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
+  const std::function<void(const uuids::uuid& imageUid)>& importSurfaceMeshes,
   const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
   const std::function<void(const uuids::uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews);

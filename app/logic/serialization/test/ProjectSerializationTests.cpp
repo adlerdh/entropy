@@ -1038,6 +1038,36 @@ TEST_CASE("Project serialization preserves removed default layout indices", "[pr
   CHECK(*loaded.m_currentLayoutIndex == 3);
 }
 
+TEST_CASE(
+  "Imported image meshes serialize sparsely and independently from generated surfaces",
+  "[project][serialization][mesh]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_referenceImage.m_importedMeshes.push_back(
+    {.m_uid = "11111111-2222-3333-4444-555555555555", .m_path = "surface.vtp", .m_name = "surface"});
+
+  const json serialized = project;
+  const json& meshes = serialized.at("images").at(0).at("meshes");
+  REQUIRE(meshes.size() == 1);
+  CHECK(meshes.at(0).at("uid") == "11111111-2222-3333-4444-555555555555");
+  CHECK(meshes.at(0).at("path") == "surface.vtp");
+  CHECK_FALSE(meshes.at(0).contains("name"));
+  CHECK_FALSE(meshes.at(0).contains("visible"));
+  CHECK_FALSE(meshes.at(0).contains("opacity"));
+  CHECK_FALSE(meshes.at(0).contains("color"));
+
+  serialize::EntropyProject restored = serialized.get<serialize::EntropyProject>();
+  REQUIRE(restored.m_referenceImage.m_importedMeshes.size() == 1);
+  const auto& restoredMesh = restored.m_referenceImage.m_importedMeshes.front();
+  CHECK(restoredMesh.m_uid == "11111111-2222-3333-4444-555555555555");
+  CHECK(restoredMesh.m_path == "surface.vtp");
+  CHECK(restoredMesh.m_name == "surface");
+  CHECK(restoredMesh.m_visible);
+  CHECK(restoredMesh.m_opacity == 1.0f);
+  CHECK(restoredMesh.m_color == glm::vec3{0.8f});
+}
+
 TEST_CASE("Project serialization preserves modified default layout overrides", "[project][serialization]")
 {
   serialize::EntropyProject project;

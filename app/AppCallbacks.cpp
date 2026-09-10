@@ -1,6 +1,7 @@
 #include "EntropyApp.h"
 
 #include "logic/app/DataHelper.h"
+#include "logic/app/MeshExport.h"
 #include "rendering/TextureSetup.h"
 
 #include <spdlog/spdlog.h>
@@ -60,6 +61,21 @@ void EntropyApp::setCallbacks()
   imguiCallbacks.project.addSegmentationFileToImage = [this](const uuids::uuid& imageUid, const fs::path& fileName) {
     addSegmentationFileToImage(fileName, imageUid);
   };
+  imguiCallbacks.project.importSurfaceMeshes = [this](const uuids::uuid& imageUid) {
+    importSurfaceMeshesForImage(imageUid);
+  };
+  imguiCallbacks.project.exportIsosurfaceMesh =
+    [this](const uuids::uuid& imageUid, const uint32_t component, const uuids::uuid& surfaceUid) {
+      mesh_export::exportIsosurface(m_data, imageUid, component, surfaceUid);
+    };
+  imguiCallbacks.project.exportSegmentationLabelMesh =
+    [this](const uuids::uuid& imageUid, const uuids::uuid& segmentationUid, const std::size_t labelIndex) {
+      mesh_export::exportSegmentationLabel(m_data, imageUid, segmentationUid, labelIndex);
+    };
+  imguiCallbacks.project.exportAllSegmentationLabelMeshes =
+    [this](const uuids::uuid& imageUid, const uuids::uuid& segmentationUid) {
+      mesh_export::exportAllSegmentationLabels(m_data, imageUid, segmentationUid);
+    };
   imguiCallbacks.project.loadDeformationField = [this](const fs::path& fileName) -> std::optional<uuids::uuid> {
     try {
       const auto [defUid, loaded] = loadDeformationField(fileName);

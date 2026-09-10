@@ -441,7 +441,8 @@ void renderIsosurfacesHeader(
   bool isActiveImage,
   bool hasFollowingHeader,
   const std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)>& storeFuture,
-  const std::function<void(const uuids::uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue)
+  const std::function<void(const uuids::uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue,
+  const std::function<void(const uuids::uuid&, uint32_t, const uuids::uuid&)>& exportSurfaceMesh)
 {
   static const ImGuiColorEditFlags sk_colorNoAlphaEditFlags =
     ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHex |
@@ -455,7 +456,7 @@ void renderIsosurfacesHeader(
   static const std::string sk_addSurfaceButtonText = std::string(ICON_FK_FILE_O) + std::string(" Add");
   static const std::string sk_addSurfacesButtonText = std::string(ICON_FK_FILE_TEXT_O) + std::string(" Add range...");
   static const std::string sk_removeSurfaceButtonText = std::string(ICON_FK_TRASH_O) + std::string(" Remove");
-  static const std::string sk_saveSurfacesButtonText = std::string(ICON_FK_FLOPPY_O) + std::string(" Save...");
+  static const std::string sk_exportSurfaceButtonText = std::string(ICON_FK_FLOPPY_O) + std::string(" Export...");
 
   //    static const char* sk_saveSurfaceDialogTitle( "Save Isosurface Mesh" );
   //    static const std::vector< const char* > sk_saveSurfaceDialogFilters{};
@@ -896,13 +897,15 @@ void renderIsosurfacesHeader(
     }
 
     ImGui::SameLine();
-    const bool saveSurface = ImGui::Button(sk_saveSurfacesButtonText.c_str());
+    const bool saveSurface = ImGui::Button(sk_exportSurfaceButtonText.c_str());
     if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Save isosurface...");
+      ImGui::SetTooltip("Export the selected isosurface as a surface mesh");
     }
 
     if (saveSurface) {
-      /// @todo Save
+      if (exportSurfaceMesh) {
+        exportSurfaceMesh(imageUid, componentToAdjust, *selectedSurfaceUid);
+      }
     }
 
     ImGui::Spacing();

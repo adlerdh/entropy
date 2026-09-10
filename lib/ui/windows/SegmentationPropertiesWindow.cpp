@@ -33,6 +33,8 @@ void renderSegmentationPropertiesWindow(
   const std::function<void(const uuid& imageUid, const fs::path& fileName)>& addSegmentationFile,
   const std::function<bool(const uuid& segUid)>& clearSeg,
   const std::function<bool(const uuid& segUid)>& removeSeg,
+  const std::function<void(const uuid&, const uuid&, std::size_t)>& exportLabelMesh,
+  const std::function<void(const uuid&, const uuid&)>& exportAllLabelMeshes,
   const AllViewsRecenterType& recenterAllViews)
 {
   setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(320.0f), ui::scaledPixel(260.0f));
@@ -67,6 +69,8 @@ void renderSegmentationPropertiesWindow(
           addSegmentationFile,
           clearSeg,
           removeSeg,
+          exportLabelMesh,
+          exportAllLabelMeshes,
           recenterAllViews);
       }
     }

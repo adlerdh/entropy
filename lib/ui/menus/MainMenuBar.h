@@ -76,6 +76,7 @@ enum class MainMenuAction
   LastTimePoint,
   AddIsosurface,
   AddIsosurfaceRange,
+  ImportSurfaceMesh,
   CreateSegmentation,
   SaveSegmentation,
   ClearSegmentation,

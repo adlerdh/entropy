@@ -68,6 +68,7 @@ void renderThreeDSceneContentCheckboxes(
 {
   bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
   bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
+  bool renderImportedMeshes = contents.contains(ThreeDSceneContent::ImportedMeshes);
 
   if (ImGui::Checkbox("Segmentations", &renderSegmentations) && setContents) {
     if (renderSegmentations) {
@@ -93,6 +94,18 @@ void renderThreeDSceneContentCheckboxes(
   }
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Render visible image isosurfaces in 3D");
+  }
+  if (ImGui::Checkbox("Imported meshes", &renderImportedMeshes) && setContents) {
+    if (renderImportedMeshes) {
+      contents.insert(ThreeDSceneContent::ImportedMeshes);
+    }
+    else {
+      contents.erase(ThreeDSceneContent::ImportedMeshes);
+    }
+    setContents(contents);
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Render visible surface meshes loaded for images in this 3D view");
   }
   ImGui::Spacing();
 }

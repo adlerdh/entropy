@@ -287,6 +287,28 @@ void from_json(const json& j, serialize::ImageIsosurface& isosurface)
   }
 }
 
+void to_json(json& j, const serialize::ImportedMesh& mesh)
+{
+  const serialize::ImportedMesh defaults;
+  j = json{{"uid", mesh.m_uid}, {"path", pathToString(mesh.m_path)}};
+  addIfChanged(j, "name", mesh.m_name, mesh.m_path.stem().string());
+  addIfChanged(j, "color", vec3ToJson(mesh.m_color), vec3ToJson(defaults.m_color));
+  addIfChanged(j, "opacity", mesh.m_opacity, defaults.m_opacity);
+  addIfChanged(j, "visible", mesh.m_visible, defaults.m_visible);
+}
+
+void from_json(const json& j, serialize::ImportedMesh& mesh)
+{
+  j.at("uid").get_to(mesh.m_uid);
+  mesh.m_path = j.at("path").get<std::string>();
+  mesh.m_name = j.value("name", mesh.m_path.stem().string());
+  if (const auto color = j.find("color"); color != j.end()) {
+    mesh.m_color = glm::clamp(vec3FromJson(*color), glm::vec3{0.0f}, glm::vec3{1.0f});
+  }
+  mesh.m_opacity = std::clamp(j.value("opacity", mesh.m_opacity), 0.0f, 1.0f);
+  mesh.m_visible = j.value("visible", mesh.m_visible);
+}
+
 void to_json(json& j, const serialize::DicomSource& source)
 {
   j = json::object();
@@ -391,6 +413,10 @@ void to_json(json& j, const serialize::Image& image)
     j["isosurfaces"] = image.m_isosurfaces;
   }
 
+  if (!image.m_importedMeshes.empty()) {
+    j["meshes"] = image.m_importedMeshes;
+  }
+
   if (image.m_settings) {
     json settings = *image.m_settings;
     addIfNotEmpty(j, "settings", std::move(settings));
@@ -458,6 +484,10 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("isosurfaces")) {
     j.at("isosurfaces").get_to(image.m_isosurfaces);
+  }
+
+  if (j.count("meshes")) {
+    j.at("meshes").get_to(image.m_importedMeshes);
   }
 
   if (j.count("settings")) {

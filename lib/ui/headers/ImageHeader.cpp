@@ -15,6 +15,7 @@
 // data::roundPointToNearestImageVoxelCenter
 // data::getAnnotationSubjectPlaneName
 #include "logic/app/DataHelper.h"
+#include "common/UuidUtility.h"
 #include "rendering/TextureSetup.h"
 
 #include "image/CtWindowing.h"
@@ -923,6 +924,7 @@ void renderImageHeader(
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuids::uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
+  const std::function<void(const uuids::uuid& imageUid)>& importSurfaceMeshes,
   const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
   const std::function<void(const uuids::uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews)
@@ -3311,6 +3313,89 @@ void renderImageHeader(
   }
 
   renderDeformableTransformationsHeader();
+
+  if (ImGui::TreeNode("Imported meshes")) {
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
+    ImGui::TextDisabled("Surface meshes use this image's physical coordinate space and follow its transformations.");
+    ImGui::PopTextWrapPos();
+
+    const auto meshUids = appData.imageToImportedMeshUids(imageUid);
+    if (ImGui::BeginTable(
+          "##importedMeshes",
+          3,
+          ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+    {
+      ImGui::TableSetupColumn("3D", ImGuiTableColumnFlags_WidthFixed, ui::scaledPixel(36.0f));
+      ImGui::TableSetupColumn("Mesh", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+      ImGui::TableSetupColumn("Opacity", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+      ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+      for (int column = 0; column < 3; ++column) {
+        ImGui::TableSetColumnIndex(column);
+        ImGui::TableHeader(ImGui::TableGetColumnName(column));
+        if (ImGui::IsItemHovered()) {
+          static constexpr std::array<const char*, 3> tooltips{
+            "Visibility in 3D views",
+            "Imported mesh name and base color",
+            "Surface opacity"};
+          ImGui::SetTooltip("%s", tooltips.at(static_cast<std::size_t>(column)));
+        }
+      }
+      std::optional<uuids::uuid> removeMeshUid;
+      for (const auto& meshUid : meshUids) {
+        mesh::MeshRecord* imported = appData.importedMesh(meshUid);
+        if (!imported) {
+          continue;
+        }
+        ImGui::PushID(uuids::to_string(meshUid).c_str());
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Checkbox("##visible", &imported->display.visible);
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("Show this imported mesh in 3D views");
+        }
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(ui::scaledPixel(38.0f));
+        ImGui::ColorEdit3(
+          "##color",
+          glm::value_ptr(imported->display.baseColor),
+          ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(-ui::scaledPixel(34.0f));
+        ImGui::InputText("##name", &imported->name);
+        ImGui::SameLine();
+        if (ImGui::SmallButton(ICON_FK_TRASH_O "##remove")) {
+          removeMeshUid = meshUid;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("Remove this imported mesh from the project");
+        }
+
+        ImGui::TableSetColumnIndex(2);
+        ImGui::SetNextItemWidth(-1.0f);
+        ImGui::SliderFloat("##opacity", &imported->display.opacity, 0.0f, 1.0f, "%.2f");
+        ImGui::PopID();
+      }
+      ImGui::EndTable();
+      if (removeMeshUid) {
+        appData.removeImportedMesh(*removeMeshUid);
+      }
+    }
+
+    static const std::string addMeshLabel = std::string(ICON_FK_PLUS) + " Add...##importedMesh";
+    ImGui::BeginDisabled(!importSurfaceMeshes);
+    if (ImGui::Button(addMeshLabel.c_str())) {
+      importSurfaceMeshes(imageUid);
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Load VTP, VTK, STL, PLY, OBJ, OFF, GIFTI, or FreeSurfer surface meshes and attach them to this image");
+    ImGui::TreePop();
+  }
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");

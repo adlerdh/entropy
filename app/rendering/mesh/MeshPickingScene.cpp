@@ -202,6 +202,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
     }
   }
+  if (view.threeDSceneContents().contains(ThreeDSceneContent::ImportedMeshes)) {
+    appendImportedMeshesForView(view, imageSegPairs, renderables);
+  }
   if (view.threeDSceneContents().empty()) {
     return std::nullopt;
   }
@@ -216,9 +219,16 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
   const std::optional<rendering::mesh::MeshScenePickHit> hit = rendering::mesh::pickNearestRenderable(
     {.worldRay = {.origin = worldRayOrigin, .direction = worldRayDirection},
      .renderables = renderables,
-     .meshLookup = [this](const rendering::mesh::MeshHandle& handle) {
+     .meshLookup = [this](const rendering::mesh::MeshHandle& handle) -> const rendering::mesh::MeshData* {
        const rendering::mesh::MeshGeometryKey* key = m_meshResources.findKey(handle);
-       return key ? m_meshExtractions.readyMesh(*key) : nullptr;
+       if (!key) {
+         return static_cast<const rendering::mesh::MeshData*>(nullptr);
+       }
+       if (const rendering::mesh::MeshData* extracted = m_meshExtractions.readyMesh(*key)) {
+         return extracted;
+       }
+       const auto imported = m_importedMeshData.find(key->sourceUid);
+       return imported == m_importedMeshData.end() ? nullptr : &imported->second;
      }});
 
   return hit ? std::optional<glm::vec3>{hit->triangleHit.worldPosition} : std::nullopt;

@@ -37,4 +37,6 @@ void renderSegmentationPropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)>& addSegmentationFile,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
+  const std::function<void(const uuids::uuid&, const uuids::uuid&, std::size_t)>& exportLabelMesh,
+  const std::function<void(const uuids::uuid&, const uuids::uuid&)>& exportAllLabelMeshes,
   const AllViewsRecenterType& recenterAllViews);
