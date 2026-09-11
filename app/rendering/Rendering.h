@@ -7,6 +7,7 @@
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/RenderDerivedData.h"
 #include "rendering/RenderResources.h"
+#include "rendering/ViewOverlayVisibility.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
@@ -58,6 +59,8 @@ struct NVGcontext;
 class Rendering
 {
 public:
+  using VectorOverlayVisibility = rendering::view_overlay::Visibility;
+
   /**
    * @brief Construct the renderer and create process-local rendering helpers.
    *
@@ -268,6 +271,12 @@ public:
    */
   void setShowVectorOverlays(bool show);
 
+  /// Return the transient vector-overlay filter used by the overlay cycling action.
+  VectorOverlayVisibility vectorOverlayVisibility() const;
+
+  /// Set the transient vector-overlay filter without changing persistent overlay settings.
+  void setVectorOverlayVisibility(VectorOverlayVisibility visibility);
+
 private:
   /// Number of image slots rendered by metric and comparison shaders.
   static constexpr std::size_t NUM_METRIC_IMAGES = 2;
@@ -442,7 +451,7 @@ private:
 
   bool m_isAppDoneLoadingImages; //!< True once the application has finished the startup/image-loading phase
 
-  bool m_showOverlays; //!< Global runtime overlay switch used by the view overlay cycling actions
+  VectorOverlayVisibility m_vectorOverlayVisibility; //!< Transient filter used by view-overlay cycling actions
 
   /// Refresh the CPU-side isosurface arrays consumed by the 3D raycast shader for one image.
   void updateIsosurfaceDataFor3d(

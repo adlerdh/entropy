@@ -1,5 +1,6 @@
 #include "rendering/helpers/VectorDrawingHelpers.h"
 #include "rendering/vector/ImageLabelOverlayDrawing.h"
+#include "rendering/ViewOverlayVisibility.h"
 
 #include "common/Viewport.h"
 
@@ -9,6 +10,17 @@
 #include <limits>
 
 namespace vector_drawing = rendering::vector_drawing;
+
+TEST_CASE("view overlay cycling preserves configured feature settings", "[rendering][vector_overlay]")
+{
+  using rendering::view_overlay::nextVisibility;
+  using rendering::view_overlay::Visibility;
+
+  CHECK(nextVisibility(Visibility::Configured, true) == Visibility::CrosshairsOnly);
+  CHECK(nextVisibility(Visibility::CrosshairsOnly, true) == Visibility::Hidden);
+  CHECK(nextVisibility(Visibility::Hidden, true) == Visibility::Configured);
+  CHECK(nextVisibility(Visibility::Configured, false) == Visibility::Hidden);
+}
 
 TEST_CASE("image label role badges are compact and consistently ordered", "[rendering][vector_overlay]")
 {

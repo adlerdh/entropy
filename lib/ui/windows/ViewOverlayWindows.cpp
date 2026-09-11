@@ -832,8 +832,11 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      if (context.reportControlBottomOffset) {
-        context.reportControlBottomOffset(std::max(0.0f, controlBottomEdge - viewFrameBounds.bounds.yoffset));
+      if (context.reportControlExtent) {
+        const float controlRightEdge = ImGui::GetWindowPos().x + ImGui::GetWindowSize().x;
+        context.reportControlExtent(
+          {std::max(0.0f, controlRightEdge - viewFrameBounds.bounds.xoffset),
+           std::max(0.0f, controlBottomEdge - viewFrameBounds.bounds.yoffset)});
       }
     }
 

@@ -167,7 +167,7 @@ Rendering::Rendering(AppData& appData)
   , m_meshDdpResolveProgram("MeshDdpResolveProgram")
   , m_meshRenderer()
   , m_isAppDoneLoadingImages(false)
-  , m_showOverlays(true)
+  , m_vectorOverlayVisibility(VectorOverlayVisibility::Configured)
 {
   static const std::string ROBOTO_LIGHT("robotoLight");
 

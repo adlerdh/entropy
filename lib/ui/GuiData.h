@@ -55,8 +55,8 @@ struct GuiData
   /// Effective logical UI scale used by non-ImGui overlays. NanoVG handles framebuffer pixel density separately.
   float m_effectiveUiScale = 1.0f;
 
-  /// Actual bottom edge of each top-left view-control row relative to its rendered frame.
-  std::unordered_map<uuids::uuid, float> m_viewOverlayControlBottomOffsets;
+  /// Actual right and bottom edges of each top-left view-control row relative to its rendered frame.
+  std::unordered_map<uuids::uuid, glm::vec2> m_viewOverlayControlExtents;
 
   bool m_showImagePropertiesWindow = true;   //!< Show the image properties window
   bool m_showSegmentationsWindow = false;    //!< Show the segmentations window

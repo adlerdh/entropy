@@ -113,10 +113,10 @@ void EntropyApp::run()
 
 void EntropyApp::onImagesReady()
 {
-  // Recenter the crosshairs, but don't recenter views on the crosshairs:
+  // Apply the same complete reset used by Shift+C so the first displayed frame is already definitive.
   constexpr bool recenterCrosshairs = true;
   constexpr bool realignCrosshairs = true;
-  constexpr bool doNotRecenterOnCurrentCrosshairsPos = false;
+  constexpr bool recenterOnCurrentCrosshairsPos = true;
   constexpr bool resetObliqueOrientation = true;
   constexpr bool resetZoom = true;
 
@@ -294,7 +294,7 @@ void EntropyApp::onImagesReady()
       m_data.state().recenteringMode(),
       recenterCrosshairs,
       realignCrosshairs,
-      doNotRecenterOnCurrentCrosshairsPos,
+      recenterOnCurrentCrosshairsPos,
       resetObliqueOrientation,
       resetZoom);
   }
@@ -347,15 +347,17 @@ void EntropyApp::resize(int windowWidth, int windowHeight)
     const float top = std::clamp(renderViewport->y + renderViewport->w - toolbarMargins.top, bottom + 1.0f, maxTop);
 
     windowData().setViewport(left, bottom, std::max(1.0f, right - left), std::max(1.0f, top - bottom));
-    return;
+  }
+  else {
+    // Set viewport to account for margins.
+    windowData().setViewport(
+      margins.left,
+      margins.bottom,
+      std::max(1.0f, static_cast<float>(windowWidth) - (margins.left + margins.right)),
+      std::max(1.0f, static_cast<float>(windowHeight) - (margins.bottom + margins.top)));
   }
 
-  // Set viewport to account for margins.
-  windowData().setViewport(
-    margins.left,
-    margins.bottom,
-    std::max(1.0f, static_cast<float>(windowWidth) - (margins.left + margins.right)),
-    std::max(1.0f, static_cast<float>(windowHeight) - (margins.bottom + margins.top)));
+  m_callbackHandler.refreshTwoDViewOverlaySafeFraming();
 }
 
 void EntropyApp::render()

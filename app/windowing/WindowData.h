@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/AABB.h"
 #include "common/Types.h"
 #include "common/UuidRange.h"
 #include "common/Viewport.h"
@@ -90,6 +91,25 @@ public:
     const glm::vec3& worldFov,
     bool resetZoom,
     bool resetObliqueOrientation,
+    const std::set<uuid>& excludedViews = {});
+
+  /**
+   * @brief Enlarge default 2D camera fields of view enough to avoid top-left view controls
+   * @param worldBox Unpadded World-space content bounds
+   * @param controlExtents Right/bottom control edges in view-local device-independent pixels
+   * @param fallbackExtent Conservative control extent used before a view has reported its measured size
+   * @param clearance Additional screen-space clearance around the controls
+   * @param avoidControls True to reserve the control footprint, false to restore ordinary default framing
+   * @param rememberWorldBox True when this box replaces the content bounds previously framed by the views
+   * @param excludedViews Views whose cameras must remain unchanged
+   */
+  void applyTwoDViewOverlaySafeFraming(
+    const AABB<float>& worldBox,
+    const std::unordered_map<uuid, glm::vec2>& controlExtents,
+    const glm::vec2& fallbackExtent,
+    float clearance,
+    bool avoidControls,
+    bool rememberWorldBox,
     const std::set<uuid>& excludedViews = {});
 
   /**
@@ -593,4 +613,10 @@ private:
 
   /** @brief View alignment mode */
   ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs;
+
+  /** Unadjusted default field of view retained while screen-space control clearance is applied. */
+  std::unordered_map<uuid, glm::vec2> m_twoDViewBaseDefaultFovs;
+
+  /** Content bounds used for each 2D view's latest default framing. */
+  std::unordered_map<uuid, AABB<float>> m_twoDViewFramingWorldBoxes;
 };

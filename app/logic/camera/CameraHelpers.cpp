@@ -6,6 +6,7 @@
 
 #include "common/CoordinateFrame.h"
 #include "common/Exception.hpp"
+#include "common/Geometry.h"
 #include "common/Viewport.h"
 
 #include <glm/glm.hpp>
@@ -752,6 +753,71 @@ worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, c
   else {
     return std::nullopt;
   }
+}
+
+glm::vec3 defaultViewFramingSize(const glm::vec3& worldBoxSize)
+{
+  constexpr float marginPerSide = 0.05f;
+  return (1.0f + 2.0f * marginPerSide) * worldBoxSize;
+}
+
+float viewFramingScaleForOverlay(
+  const Camera& camera,
+  const AABB<float>& worldBox,
+  const glm::vec2& viewSize,
+  const glm::vec4& overlayBounds)
+{
+  if (
+    !camera.isOrthographic() || !isFinite(viewSize) || viewSize.x <= 0.0f || viewSize.y <= 0.0f ||
+    !std::isfinite(overlayBounds.x) || !std::isfinite(overlayBounds.y) || !std::isfinite(overlayBounds.z) ||
+    !std::isfinite(overlayBounds.w) || overlayBounds.z <= 0.0f || overlayBounds.w <= 0.0f)
+  {
+    return 1.0f;
+  }
+
+  glm::vec2 contentMin{std::numeric_limits<float>::max()};
+  glm::vec2 contentMax{std::numeric_limits<float>::lowest()};
+  for (const glm::vec3& corner : math::makeAABBoxCorners(worldBox)) {
+    const glm::vec3 ndc = ndc_T_world(camera, corner);
+    if (!isFinite(ndc)) {
+      return 1.0f;
+    }
+    const glm::vec2 pixel{0.5f * (ndc.x + 1.0f) * viewSize.x, 0.5f * (1.0f - ndc.y) * viewSize.y};
+    contentMin = glm::min(contentMin, pixel);
+    contentMax = glm::max(contentMax, pixel);
+  }
+
+  const glm::vec2 overlayMin{overlayBounds.x, overlayBounds.y};
+  const glm::vec2 overlayMax = overlayMin + glm::vec2{overlayBounds.z, overlayBounds.w};
+  const auto overlaps = [&](const float scale) {
+    const glm::vec2 center = 0.5f * viewSize;
+    const glm::vec2 scaledMin = center + (contentMin - center) / scale;
+    const glm::vec2 scaledMax = center + (contentMax - center) / scale;
+    return scaledMin.x < overlayMax.x && overlayMin.x < scaledMax.x && scaledMin.y < overlayMax.y &&
+           overlayMin.y < scaledMax.y;
+  };
+
+  if (!overlaps(1.0f)) {
+    return 1.0f;
+  }
+
+  constexpr float maximumScale = 4.0f;
+  if (overlaps(maximumScale)) {
+    return 1.0f;
+  }
+
+  float lower = 1.0f;
+  float upper = maximumScale;
+  for (int iteration = 0; iteration < 24; ++iteration) {
+    const float middle = 0.5f * (lower + upper);
+    if (overlaps(middle)) {
+      lower = middle;
+    }
+    else {
+      upper = middle;
+    }
+  }
+  return upper;
 }
 
 void positionCameraForWorldTargetAndFov(Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget)

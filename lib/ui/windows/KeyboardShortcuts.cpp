@@ -119,10 +119,7 @@ const std::vector<KeyboardShortcutRow>& keyboardShortcutRows()
     {"View", "F4", "Enter full screen", "Toggle full-screen display"},
     {"View", "Esc", "Exit full screen", "Leave full-screen display when active"},
     {"View", "X", "Show crosshairs", "Toggle 2D crosshairs in all views"},
-    {"View",
-     "O",
-     "Cycle view overlays",
-     "Cycle crosshairs, anatomical labels, scale bars, lightbox offset labels, and 3D camera frustum overlays"},
+    {"View", "O", "Cycle view overlays", "Cycle configured view overlays, crosshairs only, and no overlays"},
     {"View", "U", "Show user interface", "Toggle ImGui windows, panels, toolbar, menus, and view controls"},
 
     {"Windows", "I", "Voxel inspector", "Show or hide the Voxel Inspector panel"},

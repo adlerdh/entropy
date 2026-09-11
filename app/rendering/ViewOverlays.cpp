@@ -152,9 +152,13 @@ std::vector<rendering::vector_overlay::ImageLabelEntry> imageLabelEntries(
 
 float viewControlBottomOffset(const GuiData& guiData, const uuid& frameUid)
 {
+  if (!guiData.m_renderUiOverlays) {
+    return 0.0f;
+  }
+
   constexpr float k_defaultOffset = 26.0f;
-  const auto it = guiData.m_viewOverlayControlBottomOffsets.find(frameUid);
-  return it != guiData.m_viewOverlayControlBottomOffsets.end() ? it->second : k_defaultOffset;
+  const auto it = guiData.m_viewOverlayControlExtents.find(frameUid);
+  return it != guiData.m_viewOverlayControlExtents.end() ? it->second.y : k_defaultOffset;
 }
 } // namespace
 
@@ -189,6 +193,9 @@ void Rendering::renderVectorOverlays()
   if (ProjectLoadState::Loaded != m_appData.state().projectLoadState() || 0 == windowData.numLayouts()) {
     return;
   }
+
+  const bool showConfiguredOverlays = VectorOverlayVisibility::Configured == m_vectorOverlayVisibility;
+  const bool showCrosshairsOverlay = VectorOverlayVisibility::Hidden != m_vectorOverlayVisibility;
 
   startNvgFrame(m_nvg, windowVP);
 
@@ -235,7 +242,10 @@ void Rendering::renderVectorOverlays()
       data::computeViewOffsetDistance(m_appData, view->offsetSetting(), worldViewFront) * worldViewFront;
 
     // Do not render vector overlays when view is disabled
-    if (m_showOverlays && (ViewType::ThreeD == view->viewType() || ViewRenderMode::Disabled != view->renderMode())) {
+    if (
+      VectorOverlayVisibility::Hidden != m_vectorOverlayVisibility &&
+      (ViewType::ThreeD == view->viewType() || ViewRenderMode::Disabled != view->renderMode()))
+    {
       // Label positions are based on the reference image transform (world_T_refSubject)
       const auto labelPosInfo_forLabels = math::computeAnatomicalLabelPosInfo(
         miewportViewBounds,
@@ -246,7 +256,7 @@ void Rendering::renderVectorOverlays()
         m_appData.state().worldCrosshairs().worldOrigin());
 
       if (
-        ViewType::ThreeD != view->viewType() &&
+        showConfiguredOverlays && ViewType::ThreeD != view->viewType() &&
         (ViewRenderMode::Image == view->renderMode() || ViewRenderMode::Checkerboard == view->renderMode() ||
          ViewRenderMode::Quadrants == view->renderMode() || ViewRenderMode::Flashlight == view->renderMode()))
       {
@@ -255,11 +265,14 @@ void Rendering::renderVectorOverlays()
         drawVectorFieldArrows(m_nvg, miewportViewBounds, worldXhairsOffset, m_appData, *view, vectorOverlayImages);
       }
 
-      if (ViewType::ThreeD == view->viewType() && !hasVisibleIsosurfaceForView(m_appData, *view)) {
+      if (
+        showConfiguredOverlays && ViewType::ThreeD == view->viewType() &&
+        !hasVisibleIsosurfaceForView(m_appData, *view))
+      {
         drawEmptyThreeDViewHint(m_nvg, miewportViewBounds);
       }
 
-      if (threeDFrustumSource && ViewType::ThreeD != view->viewType()) {
+      if (showConfiguredOverlays && threeDFrustumSource && ViewType::ThreeD != view->viewType()) {
         const glm::vec3 planeNormal = helper::worldDirection(view->camera(), Directions::View::Front);
         const camera3d::FrustumSliceOverlay overlay =
           camera3d::frustumSliceOverlay(threeDFrustumSource->threeDCamera(), worldXhairsOffset, planeNormal);
@@ -275,7 +288,7 @@ void Rendering::renderVectorOverlays()
       const bool showCrosshairsInCurrentLayout =
         R.m_showCrosshairs && (!windowData.currentLayout().isLightbox() || R.m_showCrosshairsInLightboxViews);
 
-      if (showCrosshairsInCurrentLayout && !suppressTwoDVectorOverlays(*view)) {
+      if (showCrosshairsOverlay && showCrosshairsInCurrentLayout && !suppressTwoDVectorOverlays(*view)) {
         // If aligning views to crosshairs, then crosshairs are based on the crosshairs
         // transform (world_T_crosshairsFrame)
         const auto labelPosInfo_forXhairs =
@@ -295,7 +308,7 @@ void Rendering::renderVectorOverlays()
       const bool allowAnatomicalLabelsInCurrentLayout =
         !windowData.currentLayout().isLightbox() || R.m_showAnatomicalLabelsInLightboxViews;
       if (
-        R.m_showAnatomicalLabels && allowAnatomicalLabelsInCurrentLayout &&
+        showConfiguredOverlays && R.m_showAnatomicalLabels && allowAnatomicalLabelsInCurrentLayout &&
         AnatomicalLabelType::Disabled != R.m_anatomicalLabelType)
       {
         const bool isOblique = ViewType::Oblique == view->viewType();
@@ -311,7 +324,10 @@ void Rendering::renderVectorOverlays()
 
       const bool allowScaleBarsInCurrentLayout =
         !windowData.currentLayout().isLightbox() || R.m_showScaleBarsInLightboxViews;
-      if (R.m_showScaleBars && allowScaleBarsInCurrentLayout && !suppressTwoDVectorOverlays(*view)) {
+      if (
+        showConfiguredOverlays && R.m_showScaleBars && allowScaleBarsInCurrentLayout &&
+        !suppressTwoDVectorOverlays(*view))
+      {
         drawScaleBar(
           m_nvg,
           miewportViewBounds,
@@ -326,7 +342,9 @@ void Rendering::renderVectorOverlays()
           static_cast<int>(m_appData.guiData().m_coordsPrecision));
       }
 
-      if (R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox() && !suppressTwoDVectorOverlays(*view))
+      if (
+        showConfiguredOverlays && R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox() &&
+        !suppressTwoDVectorOverlays(*view))
       {
         drawLightboxOffsetLabel(
           m_nvg,
@@ -337,7 +355,7 @@ void Rendering::renderVectorOverlays()
           R.m_lightboxOffsetLabelColor);
       }
 
-      if (!windowData.currentLayout().isLightbox()) {
+      if (showConfiguredOverlays && !windowData.currentLayout().isLightbox()) {
         const auto entries = imageLabelEntries(m_appData, *view);
         rendering::vector_overlay::drawImageLabelOverlay(
           m_nvg,
@@ -365,7 +383,7 @@ void Rendering::renderVectorOverlays()
     drawViewOutline(m_nvg, miewportViewBounds, outlineMode);
   }
 
-  if (m_showOverlays && windowData.currentLayout().isLightbox()) {
+  if (showConfiguredOverlays && windowData.currentLayout().isLightbox()) {
     const auto layoutBounds =
       helper::computeMiewportFrameBounds(windowData.currentLayout().windowClipViewport(), windowVP.getAsVec4());
     const auto entries = imageLabelEntries(m_appData, windowData.currentLayout());
@@ -384,10 +402,20 @@ void Rendering::renderVectorOverlays()
 
 bool Rendering::showVectorOverlays() const
 {
-  return m_showOverlays;
+  return VectorOverlayVisibility::Hidden != m_vectorOverlayVisibility;
 }
 
 void Rendering::setShowVectorOverlays(bool show)
 {
-  m_showOverlays = show;
+  m_vectorOverlayVisibility = show ? VectorOverlayVisibility::Configured : VectorOverlayVisibility::Hidden;
+}
+
+Rendering::VectorOverlayVisibility Rendering::vectorOverlayVisibility() const
+{
+  return m_vectorOverlayVisibility;
+}
+
+void Rendering::setVectorOverlayVisibility(const VectorOverlayVisibility visibility)
+{
+  m_vectorOverlayVisibility = visibility;
 }

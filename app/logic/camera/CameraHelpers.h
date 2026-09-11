@@ -3,6 +3,7 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/Projection.h"
 
+#include "common/AABB.h"
 #include "common/DirectionMaps.h"
 #include "common/Types.h"
 
@@ -668,6 +669,27 @@ glm::mat4 miewport_T_viewport(float viewportHeight);
  */
 std::optional<glm::vec3>
 worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, const glm::vec3& worldPlanePos);
+
+/**
+ * @brief Expand scene extents by Entropy's default five-percent framing margin on every side
+ * @param worldBoxSize World-space size to frame
+ * @return Size enlarged by ten percent overall
+ */
+glm::vec3 defaultViewFramingSize(const glm::vec3& worldBoxSize);
+
+/**
+ * @brief Compute additional symmetric framing needed to keep projected content out of a screen overlay
+ * @param camera Orthographic camera after its ordinary default framing has been applied
+ * @param worldBox World-space content bounds
+ * @param viewSize View dimensions in device-independent pixels
+ * @param overlayBounds Overlay rectangle as `{left, top, width, height}` in top-left-origin view pixels
+ * @return Field-of-view multiplier greater than or equal to one
+ */
+float viewFramingScaleForOverlay(
+  const Camera& camera,
+  const AABB<float>& worldBox,
+  const glm::vec2& viewSize,
+  const glm::vec4& overlayBounds);
 
 /**
  * @brief Position the camera to look at a target in World space and adjust the camera such that

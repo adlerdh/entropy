@@ -4921,6 +4921,21 @@ void ImGuiWrapper::render()
         getImageColorMap,
         m_updateMetricUniforms);
     };
+  bool viewOverlayControlExtentsChanged = false;
+  const auto reportViewOverlayControlExtent =
+    [this, &viewOverlayControlExtentsChanged](const uuids::uuid& frameUid, const glm::vec2& extent) {
+      constexpr float measurementTolerance = 0.25f;
+      auto& extents = m_appData.guiData().m_viewOverlayControlExtents;
+      const auto previous = extents.find(frameUid);
+      if (
+        previous != extents.end() && std::abs(previous->second.x - extent.x) <= measurementTolerance &&
+        std::abs(previous->second.y - extent.y) <= measurementTolerance)
+      {
+        return;
+      }
+      extents.insert_or_assign(frameUid, extent);
+      viewOverlayControlExtentsChanged = true;
+    };
 
   if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
@@ -4939,8 +4954,8 @@ void ImGuiWrapper::render()
       0.5f,
       m_appData.state().worldCrosshairs(),
       m_uiScaleManager.effectiveScale(),
-      [this, layoutUid = currentLayout.uid()](float offset) {
-        m_appData.guiData().m_viewOverlayControlBottomOffsets[layoutUid] = offset;
+      [&reportViewOverlayControlExtent, layoutUid = currentLayout.uid()](const glm::vec2& extent) {
+        reportViewOverlayControlExtent(layoutUid, extent);
       },
       popupHeadingFont};
 
@@ -5132,7 +5147,9 @@ void ImGuiWrapper::render()
         layoutVerticalPosition,
         m_appData.state().worldCrosshairs(),
         m_uiScaleManager.effectiveScale(),
-        [this, viewUid](float offset) { m_appData.guiData().m_viewOverlayControlBottomOffsets[viewUid] = offset; },
+        [&reportViewOverlayControlExtent, viewUid](const glm::vec2& extent) {
+          reportViewOverlayControlExtent(viewUid, extent);
+        },
         popupHeadingFont};
 
       const bool useThreeDImageSelection = ViewType::ThreeD == view->viewType();
@@ -5309,6 +5326,13 @@ void ImGuiWrapper::render()
          [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },
          [&getViewNormal, &viewUid]() { return getViewNormal(viewUid); },
          getObliqueViewDirections});
+    }
+  }
+
+  if (viewOverlayControlExtentsChanged) {
+    m_callbackHandler.refreshTwoDViewOverlaySafeFraming();
+    if (m_postEmptyGlfwEvent) {
+      m_postEmptyGlfwEvent();
     }
   }
 

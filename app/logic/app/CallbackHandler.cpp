@@ -45,8 +45,6 @@ namespace
 {
 using uuid = uuids::uuid;
 
-constexpr float viewAABBoxScaleFactor = 1.10f;
-
 // Angle threshold (in degrees) for checking whether two vectors are parallel
 constexpr float parallelThreshold_degrees = 0.1f;
 
@@ -685,12 +683,26 @@ void CallbackHandler::recenterViews(
   // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter,
   // forceSnapping );
 
+  const glm::vec3 worldBoxSize = math::computeAABBoxSize(worldBox);
   m_appData.windowData().recenterAllViews(
     worldCenter,
-    viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
+    helper::defaultViewFramingSize(worldBoxSize),
     resetZoom,
     resetObliqueOrientation,
     excludedViews);
+  if (resetZoom) {
+    const float uiScale = std::max(1.0f, m_appData.guiData().m_effectiveUiScale);
+    constexpr glm::vec2 defaultControlExtent{240.0f, 26.0f};
+    constexpr float controlClearance = 4.0f;
+    m_appData.windowData().applyTwoDViewOverlaySafeFraming(
+      worldBox,
+      m_appData.guiData().m_viewOverlayControlExtents,
+      uiScale * defaultControlExtent,
+      uiScale * controlClearance,
+      m_appData.guiData().m_renderUiOverlays,
+      true,
+      excludedViews);
+  }
   if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
     m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
   }
@@ -716,8 +728,12 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   const glm::vec3 worldPos = m_appData.state().worldCrosshairs().worldOrigin();
   const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
 
-  m_appData.windowData()
-    .recenterView(viewUid, worldPosSnapped, viewAABBoxScaleFactor * worldBoxSize, resetZoom, resetObliqueOrientation);
+  m_appData.windowData().recenterView(
+    viewUid,
+    worldPosSnapped,
+    helper::defaultViewFramingSize(worldBoxSize),
+    resetZoom,
+    resetObliqueOrientation);
   if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
     m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(viewUid);
   }
@@ -2336,6 +2352,7 @@ void CallbackHandler::setShowOverlays(bool show)
   m_appData.settings().setOverlays(show); // this holds the data
   m_rendering.setShowVectorOverlays(show);
   m_appData.guiData().m_renderUiOverlays = show;
+  refreshTwoDViewOverlaySafeFraming();
 }
 
 bool CallbackHandler::showUserInterface() const
@@ -2347,6 +2364,23 @@ void CallbackHandler::setShowUserInterface(bool show)
 {
   m_appData.guiData().m_renderUiWindows = show;
   m_appData.guiData().m_renderUiOverlays = show;
+
+  refreshTwoDViewOverlaySafeFraming();
+}
+
+void CallbackHandler::refreshTwoDViewOverlaySafeFraming()
+{
+  const auto worldBox = data::computeWorldAABBoxEnclosingImages(m_appData, m_appData.state().recenteringMode());
+  const float uiScale = std::max(1.0f, m_appData.guiData().m_effectiveUiScale);
+  constexpr glm::vec2 defaultControlExtent{240.0f, 26.0f};
+  constexpr float controlClearance = 4.0f;
+  m_appData.windowData().applyTwoDViewOverlaySafeFraming(
+    worldBox,
+    m_appData.guiData().m_viewOverlayControlExtents,
+    uiScale * defaultControlExtent,
+    uiScale * controlClearance,
+    m_appData.guiData().m_renderUiOverlays,
+    false);
 }
 
 void CallbackHandler::toggleCrosshairs()
@@ -2358,58 +2392,11 @@ void CallbackHandler::toggleCrosshairs()
 
 void CallbackHandler::cycleViewOverlays()
 {
-  enum class OverlayState
-  {
-    All,
-    CrosshairsOnly,
-    None,
-    Mixed
-  };
-
-  auto& R = m_appData.renderSettings();
-
-  const bool anyOverlay = R.m_showCrosshairs || R.m_showAnatomicalLabels || R.m_showScaleBars ||
-                          R.m_showLightboxOffsetLabels || R.m_showThreeDCameraFrustumIn2DViews;
-  const bool crosshairsOnly = R.m_showCrosshairs && !R.m_showAnatomicalLabels && !R.m_showScaleBars &&
-                              !R.m_showLightboxOffsetLabels && !R.m_showThreeDCameraFrustumIn2DViews;
-  const bool allOverlays = R.m_showCrosshairs && R.m_showAnatomicalLabels && R.m_showScaleBars &&
-                           R.m_showLightboxOffsetLabels && R.m_showThreeDCameraFrustumIn2DViews;
-
-  const OverlayState state = !anyOverlay      ? OverlayState::None
-                             : crosshairsOnly ? OverlayState::CrosshairsOnly
-                             : allOverlays    ? OverlayState::All
-                                              : OverlayState::Mixed;
-
-  const auto setAll = [&R](bool show) {
-    R.m_showCrosshairs = show;
-    R.m_showCrosshairsInLightboxViews = show;
-    R.m_showAnatomicalLabels = show;
-    R.m_showAnatomicalLabelsInLightboxViews = show;
-    R.m_showScaleBars = show;
-    R.m_showScaleBarsInLightboxViews = show;
-    R.m_showLightboxOffsetLabels = show;
-    R.m_showThreeDCameraFrustumIn2DViews = show;
-  };
-
-  switch (state) {
-    case OverlayState::All:
-      R.m_showCrosshairs = true;
-      R.m_showCrosshairsInLightboxViews = true;
-      R.m_showAnatomicalLabels = false;
-      R.m_showAnatomicalLabelsInLightboxViews = false;
-      R.m_showScaleBars = false;
-      R.m_showScaleBarsInLightboxViews = false;
-      R.m_showLightboxOffsetLabels = false;
-      R.m_showThreeDCameraFrustumIn2DViews = false;
-      break;
-    case OverlayState::CrosshairsOnly:
-      setAll(false);
-      break;
-    case OverlayState::None:
-    case OverlayState::Mixed:
-      setAll(true);
-      break;
-  }
+  using Visibility = Rendering::VectorOverlayVisibility;
+  const Visibility next = rendering::view_overlay::nextVisibility(
+    m_rendering.vectorOverlayVisibility(),
+    m_appData.renderSettings().m_showCrosshairs);
+  m_rendering.setVectorOverlayVisibility(next);
 }
 
 void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, int stepY)

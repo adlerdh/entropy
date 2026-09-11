@@ -39,4 +39,9 @@ bool sliceCameraTracksCrosshairs(ViewType viewType) noexcept
   return false;
 }
 
+bool defaultFramingAvoidsControls(const bool isLightbox) noexcept
+{
+  return !isLightbox;
+}
+
 } // namespace windowing

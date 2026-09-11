@@ -1,4 +1,5 @@
 #include "windowing/WindowData.h"
+#include "windowing/ViewCameraDefaults.h"
 
 #include "common/CoordinateFrame.h"
 #include "common/DirectionMaps.h"
@@ -1336,7 +1337,6 @@ void WindowData::reconcileImageDependentLayouts(
   const CameraRestoreSummary restoreSummary =
     restoreManagedLayoutCameraSnapshots(generatedLayouts, cameraSnapshots, cameraSnapshotIndex);
   if (!cameraSnapshots.empty() && restoreSummary.m_unmatched > 0) {
-    constexpr float viewAABBoxScaleFactor = 1.10f;
     const auto worldBox = data::computeWorldAABBoxEnclosingImages(appData, ImageSelection::AllLoadedImages);
     initializeUnmatchedManagedLayoutCameras(
       *this,
@@ -1344,7 +1344,7 @@ void WindowData::reconcileImageDependentLayouts(
       cameraSnapshots,
       cameraSnapshotIndex,
       m_crosshairs.worldCrosshairs.worldOrigin(),
-      viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox));
+      helper::defaultViewFramingSize(math::computeAABBoxSize(worldBox)));
   }
 
   const std::size_t fixedPrefixLength = fixedManagedLayoutPrefixLength(m_layouts);
@@ -1534,6 +1534,8 @@ void WindowData::clearLayouts()
   m_layouts.clear();
   m_currentLayout = 0;
   m_activeViewUid = std::nullopt;
+  m_twoDViewBaseDefaultFovs.clear();
+  m_twoDViewFramingWorldBoxes.clear();
 }
 
 void WindowData::resetDefaultLayouts()
@@ -1696,7 +1698,105 @@ void WindowData::recenterAllViews(
       }
 
       if (view) {
+        if (resetZoom) {
+          m_twoDViewBaseDefaultFovs.erase(viewUid);
+          m_twoDViewFramingWorldBoxes.erase(viewUid);
+        }
         recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
+      }
+    }
+  }
+}
+
+void WindowData::applyTwoDViewOverlaySafeFraming(
+  const AABB<float>& worldBox,
+  const std::unordered_map<uuid, glm::vec2>& controlExtents,
+  const glm::vec2& fallbackExtent,
+  const float clearance,
+  const bool avoidControls,
+  const bool rememberWorldBox,
+  const std::set<uuid>& excludedViews)
+{
+  struct FramingCandidate
+  {
+    View* view = nullptr;
+    std::optional<uuid> zoomGroupUid;
+    float scale = 1.0f;
+  };
+
+  const auto hasControls = [](const UiControls& controls) {
+    return controls.m_hasImageComboBox || controls.m_hasViewTypeComboBox || controls.m_hasShaderTypeComboBox ||
+           controls.m_hasMipTypeComboBox;
+  };
+
+  for (Layout& layoutLocal : m_layouts) {
+    // Lightboxes have one shared control row over only a few cells. Shrinking every synchronized
+    // cell to clear that row makes large grids needlessly small.
+    if (!windowing::defaultFramingAvoidsControls(layoutLocal.isLightbox())) {
+      continue;
+    }
+
+    std::vector<FramingCandidate> candidates;
+    std::unordered_map<uuid, float> groupScales;
+
+    for (View* view : layoutLocal.orderedViews()) {
+      if (
+        !view || ViewType::ThreeD == view->viewType() || excludedViews.contains(view->uid()) ||
+        !hasControls(view->uiControls()))
+      {
+        continue;
+      }
+
+      constexpr float defaultZoomTolerance = 1.0e-5f;
+      if (std::abs(view->camera().getZoom() - 1.0f) > defaultZoomTolerance) {
+        continue;
+      }
+
+      if (rememberWorldBox || !m_twoDViewFramingWorldBoxes.contains(view->uid())) {
+        m_twoDViewFramingWorldBoxes.insert_or_assign(view->uid(), worldBox);
+      }
+
+      if (rememberWorldBox || !m_twoDViewBaseDefaultFovs.contains(view->uid())) {
+        m_twoDViewBaseDefaultFovs.insert_or_assign(view->uid(), view->camera().projection()->defaultFov());
+      }
+      view->camera().setDefaultFov(m_twoDViewBaseDefaultFovs.at(view->uid()));
+
+      if (!avoidControls) {
+        continue;
+      }
+
+      const glm::vec4& clipViewport = view->windowClipViewport();
+      const glm::vec2 viewSize{
+        0.5f * std::abs(clipViewport.z) * m_viewport.width(),
+        0.5f * std::abs(clipViewport.w) * m_viewport.height()};
+      const auto extentIt = controlExtents.find(view->uid());
+      const glm::vec2 extent = extentIt != controlExtents.end() ? extentIt->second : fallbackExtent;
+      constexpr float imageControlGapFraction = 0.01f;
+      const float imageControlGap = clearance + imageControlGapFraction * std::min(viewSize.x, viewSize.y);
+      const glm::vec4 overlayBounds{
+        0.0f,
+        0.0f,
+        std::min(viewSize.x, std::max(0.0f, extent.x + imageControlGap)),
+        std::min(viewSize.y, std::max(0.0f, extent.y + imageControlGap))};
+      const float scale = helper::viewFramingScaleForOverlay(
+        view->camera(),
+        m_twoDViewFramingWorldBoxes.at(view->uid()),
+        viewSize,
+        overlayBounds);
+      const auto groupUid = view->cameraZoomSyncGroupUid();
+      candidates.push_back({view, groupUid, scale});
+      if (groupUid) {
+        auto [it, inserted] = groupScales.try_emplace(*groupUid, scale);
+        if (!inserted) {
+          it->second = std::max(it->second, scale);
+        }
+      }
+    }
+
+    for (const FramingCandidate& candidate : candidates) {
+      const float scale = candidate.zoomGroupUid ? groupScales.at(*candidate.zoomGroupUid) : candidate.scale;
+      if (scale > 1.0f) {
+        candidate.view->camera().setDefaultFov(candidate.view->camera().projection()->defaultFov() * scale);
       }
     }
   }

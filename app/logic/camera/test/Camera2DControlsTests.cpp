@@ -87,6 +87,21 @@ TEST_CASE("2D zoom keeps its World-space pivot fixed on screen", "[camera][2d][i
   checkVec3(helper::worldOrigin(camera), initialOrigin);
 }
 
+TEST_CASE("2D synchronized zoom preserves exactly equal zoom factors", "[camera][2d][interaction][sync]")
+{
+  Camera source(ProjectionType::Orthographic);
+  Camera synchronized(ProjectionType::Orthographic);
+  source.setDefaultFov(glm::vec2{20.0f, 10.0f});
+  synchronized.setDefaultFov(glm::vec2{40.0f, 30.0f});
+
+  constexpr float factor = 1.375f;
+  REQUIRE(camera2d::Controller{source}.zoom(factor, glm::vec2{0.0f}));
+  REQUIRE(camera2d::Controller{synchronized}.zoom(factor, glm::vec2{0.0f}));
+
+  CHECK(source.getZoom() == synchronized.getZoom());
+  CHECK(source.getZoom() == factor);
+}
+
 TEST_CASE("2D synchronized rotation preserves each view's own pivot", "[camera][2d][interaction]")
 {
   Camera source(ProjectionType::Orthographic);

@@ -1036,6 +1036,10 @@ void EntropyApp::closeProject()
   m_data.renderDerivedData().clear();
 
   m_data.clearProjectData();
+  m_data.guiData().m_renderUiWindows = true;
+  m_data.guiData().m_renderUiOverlays = true;
+  m_data.guiData().m_viewOverlayControlExtents.clear();
+  m_rendering.setVectorOverlayVisibility(Rendering::VectorOverlayVisibility::Configured);
   m_glfw.setWindowTitleStatus("");
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
   m_glfw.postEmptyEvent();

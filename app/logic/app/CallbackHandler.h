@@ -322,6 +322,8 @@ public:
   void setShowOverlays(bool show);
   bool showUserInterface() const;
   void setShowUserInterface(bool show);
+  /// Recompute default 2D framing after UI visibility or viewport geometry changes.
+  void refreshTwoDViewOverlaySafeFraming();
   void toggleCrosshairs();
   void cycleViewOverlays();
 

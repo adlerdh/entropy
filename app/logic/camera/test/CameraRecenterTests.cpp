@@ -1,6 +1,8 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
 
+#include "common/Geometry.h"
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -37,6 +39,34 @@ std::array<glm::vec3, 8> boxCorners(const glm::vec3& center, const glm::vec3& si
 }
 
 } // namespace
+
+TEST_CASE("default camera framing adds five percent per side", "[camera][recenter]")
+{
+  checkVec3(helper::defaultViewFramingSize(glm::vec3{100.0f, 50.0f, 10.0f}), glm::vec3{110.0f, 55.0f, 11.0f});
+}
+
+TEST_CASE("camera framing clears a top-left control overlay only when content intersects it", "[camera][recenter]")
+{
+  Camera camera(ProjectionType::Orthographic);
+  const AABB<float> squareBox{glm::vec3{-50.0f, -50.0f, -1.0f}, glm::vec3{50.0f, 50.0f, 1.0f}};
+  helper::positionCameraForWorldTargetAndFov(
+    camera,
+    helper::defaultViewFramingSize(math::computeAABBoxSize(squareBox)),
+    math::computeAABBoxCenter(squareBox));
+
+  const float intersectingScale =
+    helper::viewFramingScaleForOverlay(camera, squareBox, glm::vec2{1000.0f}, glm::vec4{0.0f, 0.0f, 300.0f, 80.0f});
+  CHECK(intersectingScale > 1.0f);
+
+  const AABB<float> narrowBox{glm::vec3{-10.0f, -50.0f, -1.0f}, glm::vec3{10.0f, 50.0f, 1.0f}};
+  helper::positionCameraForWorldTargetAndFov(
+    camera,
+    helper::defaultViewFramingSize(math::computeAABBoxSize(narrowBox)),
+    math::computeAABBoxCenter(narrowBox));
+  CHECK(
+    helper::viewFramingScaleForOverlay(camera, narrowBox, glm::vec2{1000.0f}, glm::vec4{0.0f, 0.0f, 300.0f, 80.0f}) ==
+    Catch::Approx(1.0f));
+}
 
 TEST_CASE("camera reset helpers restore zoom and view transform", "[camera][recenter]")
 {
