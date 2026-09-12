@@ -48,6 +48,13 @@ target_include_directories(EntropyImage
     "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
 target_include_directories(EntropyImage SYSTEM PRIVATE ${ITK_INCLUDE_DIRS})
+target_include_directories(EntropyImage SYSTEM PRIVATE
+  "${itk_PREFIX}/build/Modules/ThirdParty/GDCM/src/gdcm/Source/Common"
+  "${itk_PREFIX}/src/Modules/ThirdParty/GDCM/src/gdcm/Source/Common"
+  "${itk_PREFIX}/src/Modules/ThirdParty/GDCM/src/gdcm/Source/DataDictionary"
+  "${itk_PREFIX}/src/Modules/ThirdParty/GDCM/src/gdcm/Source/DataStructureAndEncodingDefinition"
+  "${itk_PREFIX}/src/Modules/ThirdParty/GDCM/src/gdcm/Source/MediaStorageAndFileFormat"
+)
 
 target_link_libraries(EntropyImage
   PUBLIC

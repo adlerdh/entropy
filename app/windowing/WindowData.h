@@ -619,4 +619,7 @@ private:
 
   /** Content bounds used for each 2D view's latest default framing. */
   std::unordered_map<uuid, AABB<float>> m_twoDViewFramingWorldBoxes;
+
+  /** World-to-Camera transform at which each 2D view's latest default framing was established. */
+  std::unordered_map<uuid, glm::mat4> m_twoDViewFramingCameraTransforms;
 };

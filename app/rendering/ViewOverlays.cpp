@@ -307,9 +307,10 @@ void Rendering::renderVectorOverlays()
 
       const bool allowAnatomicalLabelsInCurrentLayout =
         !windowData.currentLayout().isLightbox() || R.m_showAnatomicalLabelsInLightboxViews;
+      const AnatomicalLabelResolution anatomicalLabels = m_appData.resolvedAnatomicalLabels();
       if (
         showConfiguredOverlays && R.m_showAnatomicalLabels && allowAnatomicalLabelsInCurrentLayout &&
-        AnatomicalLabelType::Disabled != R.m_anatomicalLabelType)
+        AnatomicalLabelType::Disabled != anatomicalLabels.type)
       {
         const bool isOblique = ViewType::Oblique == view->viewType();
         drawAnatomicalLabels(
@@ -317,7 +318,8 @@ void Rendering::renderVectorOverlays()
           miewportViewBounds,
           isOblique,
           R.m_anatomicalLabelColor,
-          R.m_anatomicalLabelType,
+          anatomicalLabels.type,
+          anatomicalLabels.quadrupedBodyRegion,
           R.m_anatomicalLabelScale,
           labelPosInfo_forLabels);
       }

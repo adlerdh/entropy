@@ -104,7 +104,8 @@ struct RenderSettings
   bool m_showAnatomicalLabels;
   bool m_showAnatomicalLabelsInLightboxViews;
   float m_anatomicalLabelScale = 1.0f;
-  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human;
+  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Automatic;
+  QuadrupedBodyRegion m_quadrupedBodyRegion = QuadrupedBodyRegion::Automatic;
   bool m_showScaleBars;
   bool m_showScaleBarsInLightboxViews;
   glm::vec4 m_scaleBarColor;

@@ -91,6 +91,7 @@ void drawImageViewIntersections(
  * @param isObliqueView Whether the view is oblique relative to the displayed coordinate system.
  * @param color Label color as non-premultiplied RGBA.
  * @param anatLabelType Anatomical label vocabulary.
+ * @param quadrupedBodyRegion DICOM body region used for quadruped labels.
  * @param labelScale Text scale multiplier.
  * @param labelPosInfo Label positions and label indices computed for the current view orientation.
  */
@@ -100,6 +101,7 @@ void drawAnatomicalLabels(
   bool isViewOblique,
   const glm::vec4& fontColor,
   const AnatomicalLabelType& anatLabelType,
+  const std::optional<QuadrupedBodyRegion>& quadrupedBodyRegion,
   float labelScale,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);
 

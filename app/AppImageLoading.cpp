@@ -154,6 +154,7 @@ serialize::DicomSource makeDicomSourceSnapshot(const dicom::SeriesInfo& series)
   source.m_rootPath = series.rootPath;
   source.m_studyInstanceUid = series.metadata.studyInstanceUid;
   source.m_seriesInstanceUid = series.seriesInstanceUid;
+  source.m_anatomy = series.anatomy;
   source.m_files = series.files;
   return source;
 }

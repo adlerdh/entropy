@@ -114,6 +114,16 @@ void to_json(json& j, const ProjectViewSettings& settings)
     enumToName(defaults.m_anatomicalLabelType, k_anatomicalLabelNames));
   addIfChanged(
     anatomicalLabels,
+    "quadrupedBodyRegion",
+    enumToName(settings.m_quadrupedBodyRegion, k_quadrupedBodyRegionNames),
+    enumToName(defaults.m_quadrupedBodyRegion, k_quadrupedBodyRegionNames));
+  addIfChanged(
+    anatomicalLabels,
+    "leftRightDisplayConvention",
+    enumToName(settings.m_viewConvention, k_viewConventionNames),
+    enumToName(defaults.m_viewConvention, k_viewConventionNames));
+  addIfChanged(
+    anatomicalLabels,
     "lockDirectionsToReferenceImage",
     settings.m_lockAnatomicalDirectionsToReferenceImage,
     defaults.m_lockAnatomicalDirectionsToReferenceImage);
@@ -184,6 +194,19 @@ void from_json(const json& j, ProjectViewSettings& settings)
         settings.m_showAnatomicalLabels = false;
         settings.m_anatomicalLabelType = AnatomicalLabelType::Human;
       }
+    }
+    if (
+      const auto parsed = enumFromName<QuadrupedBodyRegion>(
+        anatomicalLabels->value("quadrupedBodyRegion", ""),
+        k_quadrupedBodyRegionNames))
+    {
+      settings.m_quadrupedBodyRegion = *parsed;
+    }
+    if (
+      const auto parsed =
+        enumFromName<ViewConvention>(anatomicalLabels->value("leftRightDisplayConvention", ""), k_viewConventionNames))
+    {
+      settings.m_viewConvention = *parsed;
     }
     if (const auto value = anatomicalLabels->find("lockDirectionsToReferenceImage");
         value != anatomicalLabels->end() && value->is_boolean())

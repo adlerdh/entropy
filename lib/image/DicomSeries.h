@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/Types.h"
 #include "image/Image.h"
 
 #include <glm/mat3x3.hpp>
@@ -102,6 +103,7 @@ struct SeriesInfo
   std::vector<std::filesystem::path> files;
   SeriesGeometry geometry;
   SeriesMetadata metadata;
+  DicomAnatomyInfo anatomy; //!< Normalized patient-orientation and body-region metadata
   SeriesTemporalInfo temporal;
   std::vector<MetadataEntry> metadataSummary;
   std::vector<std::string> warnings;
@@ -112,6 +114,18 @@ struct SeriesInfo
    */
   bool loadable() const;
 };
+
+/**
+ * @brief Normalize DICOM anatomy strings into the coordinate information used by the viewer.
+ *
+ * Anatomic Region Sequence is preferred to Body Part Examined when both identify a region.
+ */
+DicomAnatomyInfo parseAnatomyInfo(
+  const std::string& anatomicalOrientationType,
+  const std::string& bodyPartExamined,
+  const std::string& anatomicRegionMeaning,
+  const std::string& patientSpeciesDescription,
+  const std::string& patientSpeciesCodeMeaning);
 
 /**
  * @brief Options controlling DICOM discovery and metadata exposure.

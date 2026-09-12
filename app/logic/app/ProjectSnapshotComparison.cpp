@@ -180,7 +180,7 @@ bool dicomSourcesEqual(const std::optional<serialize::DicomSource>& a, const std
     return true;
   }
   return a->m_rootPath == b->m_rootPath && a->m_studyInstanceUid == b->m_studyInstanceUid &&
-         a->m_seriesInstanceUid == b->m_seriesInstanceUid && a->m_files == b->m_files;
+         a->m_seriesInstanceUid == b->m_seriesInstanceUid && a->m_anatomy == b->m_anatomy && a->m_files == b->m_files;
 }
 
 bool spatialMetadataEqual(const std::optional<ImageSpatialMetadata>& a, const std::optional<ImageSpatialMetadata>& b)
@@ -236,7 +236,8 @@ bool projectViewSettingsEqual(const serialize::ProjectViewSettings& a, const ser
          a.m_showScaleBarsInLightboxViews == b.m_showScaleBarsInLightboxViews &&
          a.m_annotationsOnTop == b.m_annotationsOnTop && a.m_landmarksOnTop == b.m_landmarksOnTop &&
          a.m_hideAnnotationVertices == b.m_hideAnnotationVertices &&
-         a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
+         a.m_anatomicalLabelType == b.m_anatomicalLabelType && a.m_quadrupedBodyRegion == b.m_quadrupedBodyRegion &&
+         a.m_viewConvention == b.m_viewConvention &&
          a.m_lockAnatomicalDirectionsToReferenceImage == b.m_lockAnatomicalDirectionsToReferenceImage &&
          a.m_crosshairsSnapping == b.m_crosshairsSnapping;
 }

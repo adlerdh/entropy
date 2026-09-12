@@ -12,6 +12,12 @@
 #include <itkImageSeriesReader.h>
 #include <itkMetaDataObject.h>
 
+#include <gdcmByteValue.h>
+#include <gdcmDataSet.h>
+#include <gdcmReader.h>
+#include <gdcmSequenceOfItems.h>
+#include <gdcmTag.h>
+
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
@@ -19,13 +25,15 @@
 #include <array>
 #include <cmath>
 #include <cctype>
+#include <initializer_list>
 #include <limits>
 #include <set>
 #include <sstream>
 #include <type_traits>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -45,7 +53,7 @@ constexpr std::array<const char*, 9> sk_phiTags{
   "0008|1050"  // PerformingPhysicianName
 };
 
-constexpr std::array<const char*, 21> sk_summaryTags{
+constexpr std::array<const char*, 25> sk_summaryTags{
   "0008|0020", // StudyDate
   "0008|0030", // StudyTime
   "0008|0060", // Modality
@@ -53,6 +61,9 @@ constexpr std::array<const char*, 21> sk_summaryTags{
   "0008|1030", // StudyDescription
   "0008|103e", // SeriesDescription
   "0018|1030", // ProtocolName
+  "0018|0015", // BodyPartExamined
+  "0010|2201", // PatientSpeciesDescription
+  "0010|2210", // AnatomicalOrientationType
   "0018|0050", // SliceThickness
   "0018|0088", // SpacingBetweenSlices
   "0020|000d", // StudyInstanceUID
@@ -96,6 +107,10 @@ const std::unordered_map<std::string, std::string>& metadataTagNames()
     {"0010|0020", "Patient ID"},
     {"0010|0030", "Patient Birth Date"},
     {"0010|0040", "Patient Sex"},
+    {"0010|2201", "Patient Species Description"},
+    {"0010|2202", "Patient Species Code Sequence"},
+    {"0010|2210", "Anatomical Orientation Type"},
+    {"0008|2218", "Anatomic Region Sequence"},
     {"0018|0015", "Body Part Examined"},
     {"0018|0020", "Scanning Sequence"},
     {"0018|0021", "Sequence Variant"},
@@ -170,6 +185,74 @@ std::optional<std::string> exposeString(const MetadataDictionary& dict, const st
 std::string metadataValue(const MetadataDictionary& dict, const std::string& tag)
 {
   return exposeString(dict, tag).value_or(std::string{});
+}
+
+std::string trimDicomString(std::string value)
+{
+  while (!value.empty() && (value.back() == ' ' || value.back() == '\0')) {
+    value.pop_back();
+  }
+  const auto first =
+    std::find_if_not(value.begin(), value.end(), [](const unsigned char c) { return std::isspace(c); });
+  value.erase(value.begin(), first);
+  return value;
+}
+
+std::string upperDicomString(std::string value)
+{
+  value = trimDicomString(std::move(value));
+  std::transform(value.begin(), value.end(), value.begin(), [](const unsigned char c) {
+    return static_cast<char>(std::toupper(c));
+  });
+  return value;
+}
+
+std::string gdcmString(const gdcm::DataSet& dataSet, const gdcm::Tag& tag)
+{
+  if (!dataSet.FindDataElement(tag)) {
+    return {};
+  }
+  const gdcm::ByteValue* value = dataSet.GetDataElement(tag).GetByteValue();
+  if (!value || value->GetLength() == 0) {
+    return {};
+  }
+  return trimDicomString(std::string{value->GetPointer(), value->GetLength()});
+}
+
+std::string sequenceCodeMeaning(const gdcm::DataSet& dataSet, const gdcm::Tag& sequenceTag)
+{
+  if (!dataSet.FindDataElement(sequenceTag)) {
+    return {};
+  }
+  const auto sequence = dataSet.GetDataElement(sequenceTag).GetValueAsSQ();
+  if (!sequence || sequence->GetNumberOfItems() == 0) {
+    return {};
+  }
+  return gdcmString(sequence->GetItem(1).GetNestedDataSet(), gdcm::Tag{0x0008, 0x0104});
+}
+
+std::pair<std::string, std::string> nestedAnatomyMeanings(const fs::path& fileName)
+{
+  try {
+    gdcm::Reader reader;
+    reader.SetFileName(fileName.string().c_str());
+    const std::set<gdcm::Tag> tags{gdcm::Tag{0x0008, 0x2218}, gdcm::Tag{0x0010, 0x2202}};
+    if (!reader.ReadSelectedTags(tags)) {
+      return {};
+    }
+    const gdcm::DataSet& dataSet = reader.GetFile().GetDataSet();
+    return {
+      sequenceCodeMeaning(dataSet, gdcm::Tag{0x0008, 0x2218}),
+      sequenceCodeMeaning(dataSet, gdcm::Tag{0x0010, 0x2202})};
+  }
+  catch (const std::exception& error) {
+    SPDLOG_DEBUG("Could not read nested DICOM anatomy metadata from {}: {}", fileName, error.what());
+    return {};
+  }
+  catch (...) {
+    SPDLOG_DEBUG("Could not read nested DICOM anatomy metadata from {}", fileName);
+    return {};
+  }
 }
 
 std::optional<glm::vec3> parseDicomVec3(std::string value)
@@ -729,10 +812,77 @@ loadSlicePreviewImage(const fs::path& fileName, std::size_t sliceIndex, std::uin
   }
 }
 
+bool containsAny(const std::string& value, const std::initializer_list<const char*> terms)
+{
+  return std::any_of(terms.begin(), terms.end(), [&value](const char* term) {
+    return value.find(term) != std::string::npos;
+  });
+}
+
+std::optional<QuadrupedBodyRegion> quadrupedRegionFromText(const std::string& rawValue)
+{
+  const std::string value = upperDicomString(rawValue);
+  if (containsAny(value, {"HEAD", "BRAIN", "CRANI", "SKULL", "FACIAL", "SNOUT"})) {
+    return QuadrupedBodyRegion::Head;
+  }
+  if (containsAny(value, {"HAND", "WRIST", "CARP", "FOREARM", "FOREPAW", "FRONT PAW", "DISTAL FORELIMB"})) {
+    return QuadrupedBodyRegion::DistalForelimb;
+  }
+  if (containsAny(value, {"FOOT", "ANKLE", "TARS", "LOWER LEG", "HINDPAW", "HIND PAW", "DISTAL HINDLIMB"})) {
+    return QuadrupedBodyRegion::DistalHindlimb;
+  }
+  if (containsAny(value, {"SHOULDER", "HUMERUS", "UPPER ARM", "HIP", "FEMUR", "THIGH", "PROXIMAL LIMB"})) {
+    return QuadrupedBodyRegion::ProximalLimb;
+  }
+  if (containsAny(value, {"NECK", "CERVICAL", "CHEST", "THORAX", "ABDOM", "PELV", "TRUNK", "TAIL", "SPINE", "LUMBAR"}))
+  {
+    return QuadrupedBodyRegion::NeckTrunkTail;
+  }
+  return std::nullopt;
+}
+
+bool isNonHumanSpeciesText(const std::string& rawValue)
+{
+  const std::string value = upperDicomString(rawValue);
+  return !value.empty() && !containsAny(value, {"HOMO SAPIENS", "HUMAN"});
+}
+
 } // namespace
 
 namespace dicom
 {
+DicomAnatomyInfo parseAnatomyInfo(
+  const std::string& anatomicalOrientationType,
+  const std::string& bodyPartExamined,
+  const std::string& anatomicRegionMeaning,
+  const std::string& patientSpeciesDescription,
+  const std::string& patientSpeciesCodeMeaning)
+{
+  DicomAnatomyInfo result;
+  const std::string orientation = upperDicomString(anatomicalOrientationType);
+  if (orientation == "BIPED") {
+    result.orientation = DicomAnatomicalOrientation::Biped;
+  }
+  else if (orientation == "QUADRUPED") {
+    result.orientation = DicomAnatomicalOrientation::Quadruped;
+  }
+
+  result.bodyRegion = quadrupedRegionFromText(anatomicRegionMeaning);
+  if (result.bodyRegion) {
+    result.bodyRegionSource = DicomBodyRegionSource::AnatomicRegionSequence;
+  }
+  else {
+    result.bodyRegion = quadrupedRegionFromText(bodyPartExamined);
+    if (result.bodyRegion) {
+      result.bodyRegionSource = DicomBodyRegionSource::BodyPartExamined;
+    }
+  }
+
+  result.nonHumanSpecies =
+    isNonHumanSpeciesText(patientSpeciesDescription) || isNonHumanSpeciesText(patientSpeciesCodeMeaning);
+  return result;
+}
+
 bool SeriesTemporalInfo::isTimeSeries() const
 {
   return numTimePoints > 1u;
@@ -896,6 +1046,23 @@ DiscoverResult discoverSeries(const std::vector<fs::path>& inputPaths, const Dis
           info.metadata.seriesInstanceUid = seriesUid;
         }
         info.temporal = readTemporalInfo(dict);
+        const auto [anatomicRegionMeaning, speciesCodeMeaning] = nestedAnatomyMeanings(info.files.front());
+        info.anatomy = parseAnatomyInfo(
+          metadataValue(dict, "0010|2210"),
+          metadataValue(dict, "0018|0015"),
+          anatomicRegionMeaning,
+          metadataValue(dict, "0010|2201"),
+          speciesCodeMeaning);
+        if (DicomAnatomicalOrientation::Unspecified == info.anatomy.orientation && info.anatomy.nonHumanSpecies) {
+          info.warnings.emplace_back(
+            "Anatomical Orientation Type is absent for a non-human species. DICOM defaults to BIPED/Human; "
+            "verify the anatomical direction setting.");
+        }
+        if (DicomAnatomicalOrientation::Quadruped == info.anatomy.orientation && !info.anatomy.bodyRegion) {
+          info.warnings.emplace_back(
+            "QUADRUPED orientation is present, but the body region is unknown. Select the body region in "
+            "Anatomical Labels settings.");
+        }
         info.metadataSummary = filteredMetadataEntries(rawMetadataEntries(dict), options.includePrivateMetadata);
         info.displayName = displayNameForSeries(info.metadata, seriesUid);
 

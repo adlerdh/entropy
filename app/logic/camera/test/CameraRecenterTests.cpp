@@ -1,7 +1,9 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
 
+#include "common/CoordinateFrame.h"
 #include "common/Geometry.h"
+#include "common/Viewport.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -66,6 +68,37 @@ TEST_CASE("camera framing clears a top-left control overlay only when content in
   CHECK(
     helper::viewFramingScaleForOverlay(camera, narrowBox, glm::vec2{1000.0f}, glm::vec4{0.0f, 0.0f, 300.0f, 80.0f}) ==
     Catch::Approx(1.0f));
+}
+
+TEST_CASE("overlay-safe framing can retain its established crosshairs orientation", "[camera][recenter][crosshairs]")
+{
+  CoordinateFrame crosshairs;
+  Camera camera{ProjectionType::Orthographic, [&crosshairs]() {
+                  return crosshairs;
+                }};
+  camera.setAspectRatio(1.0f);
+  camera.setDefaultFov(glm::vec2{120.0f, 80.0f});
+
+  const AABB<float> worldBox{glm::vec3{-50.0f, -30.0f, -5.0f}, glm::vec3{50.0f, 30.0f, 5.0f}};
+  const glm::vec2 viewSize{1000.0f, 1000.0f};
+  const glm::vec4 overlayBounds{0.0f, 0.0f, 350.0f, 140.0f};
+  const glm::mat4 establishedCamera_T_world = camera.camera_T_world();
+  const float establishedScale = helper::viewFramingScaleForOverlay(
+    camera.clip_T_camera() * establishedCamera_T_world,
+    worldBox,
+    viewSize,
+    overlayBounds);
+
+  crosshairs.setFrameToWorldRotation(47.0f, glm::vec3{0.0f, 0.0f, 1.0f});
+
+  CHECK(
+    helper::viewFramingScaleForOverlay(
+      camera.clip_T_camera() * establishedCamera_T_world,
+      worldBox,
+      viewSize,
+      overlayBounds) == Catch::Approx(establishedScale));
+  CHECK(
+    helper::viewFramingScaleForOverlay(camera, worldBox, viewSize, overlayBounds) != Catch::Approx(establishedScale));
 }
 
 TEST_CASE("camera reset helpers restore zoom and view transform", "[camera][recenter]")
@@ -145,6 +178,33 @@ TEST_CASE("camera positioning preserves view direction while moving the origin",
 
   checkVec3(helper::worldDirection(camera, Directions::View::Front), initialFront);
   CHECK(glm::distance(helper::worldOrigin(camera), worldTarget) > 0.0f);
+}
+
+TEST_CASE("orthographic pixel scale stays fixed while the linked frame rotates", "[camera][scale-bar][crosshairs]")
+{
+  CoordinateFrame linkedFrame{glm::vec3{1'000'000.0f, -2'000'000.0f, 3'000'000.0f}, glm::quat{1.0f, 0.0f, 0.0f, 0.0f}};
+  Camera camera{ProjectionType::Orthographic, [&linkedFrame]() {
+                  return linkedFrame;
+                }};
+  camera.setAspectRatio(16.0f / 9.0f);
+  camera.setDefaultFov(glm::vec2{240.0f, 120.0f});
+  camera.setZoom(1.5f);
+
+  const Viewport windowViewport{0.0f, 0.0f, 1600.0f, 900.0f};
+  const glm::mat4 viewClip_T_windowClip = glm::scale(glm::mat4{1.0f}, glm::vec3{2.0f, 1.0f, 1.0f});
+  const glm::vec2 expected{0.2f, 0.1f};
+
+  const auto checkScale = [&]() {
+    const glm::vec2 scale = helper::worldPixelSize(windowViewport, camera, viewClip_T_windowClip);
+    CHECK(scale.x == Catch::Approx(expected.x).margin(1.0e-6f));
+    CHECK(scale.y == Catch::Approx(expected.y).margin(1.0e-6f));
+  };
+
+  checkScale();
+  for (const float angleDegrees : {17.0f, 43.0f, 89.0f, 137.0f, 221.0f, 319.0f}) {
+    linkedFrame.setFrameToWorldRotation(angleDegrees, glm::normalize(glm::vec3{1.0f, 2.0f, 3.0f}));
+    checkScale();
+  }
 }
 
 TEST_CASE("orthographic camera positioning supports submillimeter scenes", "[camera][2d][recenter]")

@@ -325,10 +325,50 @@ struct ViewOffsetSetting
  */
 enum class AnatomicalLabelType
 {
+  Automatic,
   Cartesian,
   Human,
   Rodent,
+  Quadruped,
   Disabled
+};
+
+/// Body region used to interpret DICOM QUADRUPED patient coordinates.
+enum class QuadrupedBodyRegion
+{
+  Automatic,
+  Head,
+  NeckTrunkTail,
+  ProximalLimb,
+  DistalForelimb,
+  DistalHindlimb
+};
+
+/// DICOM Anatomical Orientation Type (0010,2210).
+enum class DicomAnatomicalOrientation
+{
+  Unspecified,
+  Biped,
+  Quadruped
+};
+
+/// DICOM attribute from which a quadruped body region was inferred.
+enum class DicomBodyRegionSource
+{
+  None,
+  AnatomicRegionSequence,
+  BodyPartExamined
+};
+
+/// Normalized DICOM evidence used to resolve anatomical direction labels.
+struct DicomAnatomyInfo
+{
+  DicomAnatomicalOrientation orientation = DicomAnatomicalOrientation::Unspecified;
+  std::optional<QuadrupedBodyRegion> bodyRegion = std::nullopt;
+  DicomBodyRegionSource bodyRegionSource = DicomBodyRegionSource::None;
+  bool nonHumanSpecies = false;
+
+  bool operator==(const DicomAnatomyInfo&) const = default;
 };
 
 /**

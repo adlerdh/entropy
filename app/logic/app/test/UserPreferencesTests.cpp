@@ -93,6 +93,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showAnatomicalLabels = false;
   preferences.showAnatomicalLabelsInLightboxViews = false;
   preferences.anatomicalLabelType = AnatomicalLabelType::Rodent;
+  preferences.quadrupedBodyRegion = QuadrupedBodyRegion::DistalHindlimb;
   preferences.anatomicalLabelScale = 1.6f;
   preferences.showScaleBars = false;
   preferences.showScaleBarsInLightboxViews = true;
@@ -318,6 +319,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.showAnatomicalLabels == expected.showAnatomicalLabels);
   CHECK(actual.showAnatomicalLabelsInLightboxViews == expected.showAnatomicalLabelsInLightboxViews);
   CHECK(actual.anatomicalLabelType == expected.anatomicalLabelType);
+  CHECK(actual.quadrupedBodyRegion == expected.quadrupedBodyRegion);
   CHECK(actual.anatomicalLabelScale == Catch::Approx(expected.anatomicalLabelScale));
   CHECK(actual.showScaleBars == expected.showScaleBars);
   CHECK(actual.showScaleBarsInLightboxViews == expected.showScaleBarsInLightboxViews);
@@ -466,7 +468,8 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.crosshairsSnapping = CrosshairsSnapping::Disabled;
   renderPreferences.showAnatomicalLabels = true;
   renderPreferences.showAnatomicalLabelsInLightboxViews = true;
-  renderPreferences.anatomicalLabelType = AnatomicalLabelType::Human;
+  renderPreferences.anatomicalLabelType = AnatomicalLabelType::Automatic;
+  renderPreferences.quadrupedBodyRegion = QuadrupedBodyRegion::Automatic;
 
   const user_preferences::RenderPreferences defaults;
   renderPreferences.squaredDifference = defaults.squaredDifference;

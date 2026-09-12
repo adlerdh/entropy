@@ -154,6 +154,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedView.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
+  auto changedQuadrupedRegion = project;
+  changedQuadrupedRegion.m_view.m_quadrupedBodyRegion = QuadrupedBodyRegion::Head;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedQuadrupedRegion));
+
   changedView = project;
   changedView.m_view.m_showAnatomicalLabels = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));

@@ -210,6 +210,8 @@ serialize::ProjectViewSettings viewSettings(const AppData& appData)
     .m_landmarksOnTop = appData.renderSettings().m_globalLandmarkParams.renderOnTopOfAllImagePlanes,
     .m_hideAnnotationVertices = appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices,
     .m_anatomicalLabelType = appData.renderSettings().m_anatomicalLabelType,
+    .m_quadrupedBodyRegion = appData.renderSettings().m_quadrupedBodyRegion,
+    .m_viewConvention = appData.windowData().getViewOrientationConvention(),
     .m_lockAnatomicalDirectionsToReferenceImage = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage(),
     .m_crosshairsSnapping = appData.renderSettings().m_snapCrosshairs};
 }
@@ -233,6 +235,8 @@ void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& s
   appData.renderSettings().m_globalLandmarkParams.renderOnTopOfAllImagePlanes = settings.m_landmarksOnTop;
   appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices = settings.m_hideAnnotationVertices;
   appData.renderSettings().m_anatomicalLabelType = settings.m_anatomicalLabelType;
+  appData.renderSettings().m_quadrupedBodyRegion = settings.m_quadrupedBodyRegion;
+  appData.windowData().setViewOrientationConvention(settings.m_viewConvention);
   appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
     settings.m_lockAnatomicalDirectionsToReferenceImage);
   appData.renderSettings().m_snapCrosshairs = settings.m_crosshairsSnapping;

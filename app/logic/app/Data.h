@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/AnatomicalLabels.h"
 #include "common/UuidRange.h"
 #include "logic/app/ParcellationLabelTable.h"
 
@@ -112,6 +113,9 @@ public:
   const serialize::EntropyProject& project() const;
   serialize::EntropyProject& project();
   const std::optional<std::filesystem::path>& projectFileName() const;
+
+  /// Resolve the anatomical-label convention against the current reference image.
+  AnatomicalLabelResolution resolvedAnatomicalLabels() const;
 
   /**
    * @brief Add an image

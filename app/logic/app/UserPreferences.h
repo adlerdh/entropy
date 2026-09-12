@@ -71,7 +71,8 @@ struct RenderPreferences
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
   bool showAnatomicalLabels = true;
   bool showAnatomicalLabelsInLightboxViews = true;
-  AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Human;
+  AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Automatic;
+  QuadrupedBodyRegion quadrupedBodyRegion = QuadrupedBodyRegion::Automatic;
   float anatomicalLabelScale = 1.0f;
 
   bool showScaleBars = true;

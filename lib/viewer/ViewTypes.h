@@ -3,6 +3,8 @@
 #include <array>
 #include <string>
 
+enum class AnatomicalLabelType;
+
 /** @brief View orientation/type. */
 enum class ViewType
 {
@@ -23,11 +25,11 @@ inline std::array<ViewType, 5> const AllViewTypes{
   ViewType::ThreeD};
 
 /**
- * @brief Return the display string for a view type.
+ * @brief Return the display string for a view type under a direction-label convention.
  *
  * @param viewType View type to describe.
- * @param crosshairsRotated Whether the crosshairs are currently rotated,
- * which affects the user-facing label for oblique-capable views.
+ * @param anatomicalLabelType Direction convention used for canonical planes.
+ * @param crosshairsRotated Whether the crosshairs frame is rotated from the world axes.
  * @return User-facing view type label, or `"Unknown"` for invalid sentinel values.
  */
-std::string to_string(const ViewType& type, bool crosshairsRotated);
+std::string viewTypeDisplayName(ViewType viewType, AnatomicalLabelType anatomicalLabelType, bool crosshairsRotated);

@@ -179,6 +179,12 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
     .m_rootPath = dicomRoot,
     .m_studyInstanceUid = "1.2.3.study",
     .m_seriesInstanceUid = "1.2.3.series",
+    .m_anatomy =
+      DicomAnatomyInfo{
+        .orientation = DicomAnatomicalOrientation::Quadruped,
+        .bodyRegion = QuadrupedBodyRegion::Head,
+        .bodyRegionSource = DicomBodyRegionSource::AnatomicRegionSequence,
+        .nonHumanSpecies = true},
     .m_files = {slice1, slice2}};
 
   REQUIRE(serialize::save(project, projectFile));
@@ -191,6 +197,8 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
     savedJson.at("images").at(0).at("dicomSource").at("paths") ==
     json::array({"dicom/slice-001.dcm", "dicom/slice-002.dcm"}));
   CHECK_FALSE(savedJson.at("images").at(0).at("dicomSource").contains("files"));
+  CHECK(savedJson.at("images").at(0).at("dicomSource").at("anatomy").at("orientation") == "quadruped");
+  CHECK(savedJson.at("images").at(0).at("dicomSource").at("anatomy").at("bodyRegion") == "head");
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -201,6 +209,10 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
   CHECK(source.m_rootPath == fs::canonical(dicomRoot));
   CHECK(source.m_studyInstanceUid == "1.2.3.study");
   CHECK(source.m_seriesInstanceUid == "1.2.3.series");
+  CHECK(source.m_anatomy.orientation == DicomAnatomicalOrientation::Quadruped);
+  CHECK(source.m_anatomy.bodyRegion == QuadrupedBodyRegion::Head);
+  CHECK(source.m_anatomy.bodyRegionSource == DicomBodyRegionSource::AnatomicRegionSequence);
+  CHECK(source.m_anatomy.nonHumanSpecies);
   REQUIRE(source.m_files.size() == 2);
   CHECK(source.m_files.at(0) == fs::canonical(slice1));
   CHECK(source.m_files.at(1) == fs::canonical(slice2));
@@ -242,6 +254,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   project.m_view.m_landmarksOnTop = true;
   project.m_view.m_hideAnnotationVertices = true;
   project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
+  project.m_view.m_quadrupedBodyRegion = QuadrupedBodyRegion::DistalForelimb;
+  project.m_view.m_viewConvention = ViewConvention::Neurological;
   project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
 
@@ -259,6 +273,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(view.at("anatomicalLabels").at("visible") == false);
   CHECK(view.at("anatomicalLabels").at("visibleInLightboxes") == false);
   CHECK(view.at("anatomicalLabels").at("type") == "rodent");
+  CHECK(view.at("anatomicalLabels").at("quadrupedBodyRegion") == "distalForelimb");
+  CHECK(view.at("anatomicalLabels").at("leftRightDisplayConvention") == "neurological");
   CHECK(view.at("anatomicalLabels").at("lockDirectionsToReferenceImage") == true);
   CHECK_FALSE(view.at("scaleBars").contains("visible"));
   CHECK(view.at("scaleBars").at("visibleInLightboxes") == true);
@@ -291,6 +307,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(parsed.m_view.m_landmarksOnTop == true);
   CHECK(parsed.m_view.m_hideAnnotationVertices == true);
   CHECK(parsed.m_view.m_anatomicalLabelType == AnatomicalLabelType::Rodent);
+  CHECK(parsed.m_view.m_quadrupedBodyRegion == QuadrupedBodyRegion::DistalForelimb);
+  CHECK(parsed.m_view.m_viewConvention == ViewConvention::Neurological);
   CHECK(parsed.m_view.m_lockAnatomicalDirectionsToReferenceImage == true);
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
 }
@@ -669,6 +687,12 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_view.m_showAnatomicalLabels = false;
+  project.m_view.m_showAnatomicalLabelsInLightboxViews = false;
+  project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Quadruped;
+  project.m_view.m_quadrupedBodyRegion = QuadrupedBodyRegion::Head;
+  project.m_view.m_viewConvention = ViewConvention::Neurological;
+  project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_threeDRendering.m_transparentBackground = false;
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
@@ -741,6 +765,14 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
     return keys;
   };
   const auto& orderedRendering = ordered.at("settings").at("rendering");
+  CHECK(
+    objectKeys(ordered.at("settings").at("view").at("anatomicalLabels")) == std::vector<std::string>{
+                                                                              "visible",
+                                                                              "visibleInLightboxes",
+                                                                              "type",
+                                                                              "quadrupedBodyRegion",
+                                                                              "leftRightDisplayConvention",
+                                                                              "lockDirectionsToReferenceImage"});
   CHECK(
     objectKeys(orderedRendering) ==
     std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours", "segmentations"});

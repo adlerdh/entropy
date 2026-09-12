@@ -140,6 +140,18 @@ const std::optional<fs::path>& AppData::projectFileName() const
   return m_projectFileName;
 }
 
+AnatomicalLabelResolution AppData::resolvedAnatomicalLabels() const
+{
+  std::optional<DicomAnatomyInfo> dicomAnatomy;
+  if (m_project.m_referenceImage.m_dicomSource) {
+    dicomAnatomy = m_project.m_referenceImage.m_dicomSource->m_anatomy;
+  }
+  return resolveAnatomicalLabels(
+    m_renderSettings.m_anatomicalLabelType,
+    m_renderSettings.m_quadrupedBodyRegion,
+    dicomAnatomy);
+}
+
 void AppData::loadLinearRampImageColorMaps()
 {
   // Create and load the default linear color maps. These are linear ramps with 1024 steps,

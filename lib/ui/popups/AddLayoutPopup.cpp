@@ -8,6 +8,7 @@
 
 #include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
+#include "viewer/ViewTypes.h"
 
 #include "BuildStamp.h"
 
@@ -34,20 +35,6 @@ namespace
 constexpr const char* sk_addLayoutPopupId = "Add Layout###AddLayoutModal";
 
 constexpr std::array<ViewType, 3> sk_lightboxViewTypes{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal};
-
-const char* lightboxViewTypeName(ViewType viewType)
-{
-  switch (viewType) {
-    case ViewType::Axial:
-      return "Axial";
-    case ViewType::Coronal:
-      return "Coronal";
-    case ViewType::Sagittal:
-      return "Sagittal";
-    default:
-      return "Axial";
-  }
-}
 
 } // namespace
 
@@ -102,10 +89,13 @@ void renderAddLayoutModalPopup(
     helpMarker("Should all views in the layout share a common view type?");
 
     if (isLightbox) {
-      if (ImGui::BeginCombo("View type", lightboxViewTypeName(lightboxViewType))) {
+      const AnatomicalLabelType labelType = appData.resolvedAnatomicalLabels().type;
+      const std::string selectedViewTypeName = viewTypeDisplayName(lightboxViewType, labelType, false);
+      if (ImGui::BeginCombo("View type", selectedViewTypeName.c_str())) {
         for (const ViewType candidate : sk_lightboxViewTypes) {
           const bool selected = candidate == lightboxViewType;
-          if (ImGui::Selectable(lightboxViewTypeName(candidate), selected)) {
+          const std::string candidateName = viewTypeDisplayName(candidate, labelType, false);
+          if (ImGui::Selectable(candidateName.c_str(), selected)) {
             lightboxViewType = candidate;
           }
           if (selected) {

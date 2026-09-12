@@ -874,7 +874,7 @@ std::optional<Layout> createLightboxLayoutForImage(
   if (0 == numSlices) {
     spdlog::warn(
       "Skipping {} lightbox layout for image {} because it has no slices",
-      to_string(viewType, false),
+      viewTypeDisplayName(viewType, AnatomicalLabelType::Human, false),
       imageUid);
     return std::nullopt;
   }
@@ -1251,7 +1251,7 @@ void WindowData::addLightboxLayoutForImage(
   if (0 == numSlices) {
     spdlog::warn(
       "Skipping {} lightbox layout for image {} because it has no slices",
-      to_string(viewType, false),
+      viewTypeDisplayName(viewType, AnatomicalLabelType::Human, false),
       imageUid);
     return;
   }
@@ -1298,7 +1298,9 @@ void WindowData::setCurrentLayoutViewType(const AppData& appData, const ViewType
   auto rebuiltLayout =
     createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, *imageUid);
   if (!rebuiltLayout) {
-    spdlog::warn("Cannot rebuild managed lightbox layout for unsupported view type {}", to_string(viewType, false));
+    spdlog::warn(
+      "Cannot rebuild managed lightbox layout for unsupported view type {}",
+      viewTypeDisplayName(viewType, AnatomicalLabelType::Human, false));
     return;
   }
 
@@ -1536,6 +1538,7 @@ void WindowData::clearLayouts()
   m_activeViewUid = std::nullopt;
   m_twoDViewBaseDefaultFovs.clear();
   m_twoDViewFramingWorldBoxes.clear();
+  m_twoDViewFramingCameraTransforms.clear();
 }
 
 void WindowData::resetDefaultLayouts()
@@ -1701,6 +1704,7 @@ void WindowData::recenterAllViews(
         if (resetZoom) {
           m_twoDViewBaseDefaultFovs.erase(viewUid);
           m_twoDViewFramingWorldBoxes.erase(viewUid);
+          m_twoDViewFramingCameraTransforms.erase(viewUid);
         }
         recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
       }
@@ -1761,6 +1765,10 @@ void WindowData::applyTwoDViewOverlaySafeFraming(
       }
       view->camera().setDefaultFov(m_twoDViewBaseDefaultFovs.at(view->uid()));
 
+      if (rememberWorldBox || !m_twoDViewFramingCameraTransforms.contains(view->uid())) {
+        m_twoDViewFramingCameraTransforms.insert_or_assign(view->uid(), view->camera().camera_T_world());
+      }
+
       if (!avoidControls) {
         continue;
       }
@@ -1779,7 +1787,7 @@ void WindowData::applyTwoDViewOverlaySafeFraming(
         std::min(viewSize.x, std::max(0.0f, extent.x + imageControlGap)),
         std::min(viewSize.y, std::max(0.0f, extent.y + imageControlGap))};
       const float scale = helper::viewFramingScaleForOverlay(
-        view->camera(),
+        view->camera().clip_T_camera() * m_twoDViewFramingCameraTransforms.at(view->uid()),
         m_twoDViewFramingWorldBoxes.at(view->uid()),
         viewSize,
         overlayBounds);

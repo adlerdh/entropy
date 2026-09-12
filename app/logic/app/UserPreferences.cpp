@@ -1064,6 +1064,7 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.showAnatomicalLabels = currentPreferences.showAnatomicalLabels;
   preferences.showAnatomicalLabelsInLightboxViews = currentPreferences.showAnatomicalLabelsInLightboxViews;
   preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
+  preferences.quadrupedBodyRegion = currentPreferences.quadrupedBodyRegion;
   preferences.showScaleBars = currentPreferences.showScaleBars;
   preferences.showScaleBarsInLightboxViews = currentPreferences.showScaleBarsInLightboxViews;
   preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;

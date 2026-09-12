@@ -1,5 +1,7 @@
 #include "ui/windows/ViewOverlayWindows.h"
 
+#include "common/AnatomicalLabels.h"
+
 #include "common/DirectionMaps.h"
 #include "ui/Clipboard.h"
 #include "ui/Helpers.h"
@@ -60,6 +62,56 @@ void renderPopupHeading(ImFont* font, const char* text)
   if (font) {
     ImGui::PopFont();
   }
+}
+
+std::string orthogonalDirectionButtonLabel(
+  const Directions::Cartesian direction,
+  const AnatomicalLabelType anatomicalLabelType,
+  const std::optional<QuadrupedBodyRegion>& quadrupedBodyRegion)
+{
+  const char* axisLabel = "";
+  std::size_t labelIndex = 0;
+  switch (direction) {
+    case Directions::Cartesian::PosX:
+      axisLabel = "+X";
+      labelIndex = 0;
+      break;
+    case Directions::Cartesian::NegX:
+      axisLabel = "-X";
+      labelIndex = 3;
+      break;
+    case Directions::Cartesian::PosY:
+      axisLabel = "+Y";
+      labelIndex = 1;
+      break;
+    case Directions::Cartesian::NegY:
+      axisLabel = "-Y";
+      labelIndex = 4;
+      break;
+    case Directions::Cartesian::PosZ:
+      axisLabel = "+Z";
+      labelIndex = 2;
+      break;
+    case Directions::Cartesian::NegZ:
+      axisLabel = "-Z";
+      labelIndex = 5;
+      break;
+    case Directions::Cartesian::XY:
+    case Directions::Cartesian::YZ:
+    case Directions::Cartesian::ZX:
+    case Directions::Cartesian::XYZ:
+      return {};
+  }
+
+  if (AnatomicalLabelType::Cartesian == anatomicalLabelType) {
+    return axisLabel;
+  }
+  const auto labels = anatomicalDirectionAbbreviations(anatomicalLabelType, quadrupedBodyRegion);
+  const char* anatomicalLabel = labels[labelIndex];
+  if ('\0' == anatomicalLabel[0]) {
+    return axisLabel;
+  }
+  return std::string{axisLabel} + " (" + anatomicalLabel + ")";
 }
 
 void renderThreeDSceneContentCheckboxes(
@@ -759,9 +811,8 @@ void renderViewSettingsComboWindow(
       // View type combo box (with preview text):
       if (uiControls.m_hasViewTypeComboBox) {
         ImGui::SameLine();
-        // ImGui::PushItemWidth( 100.0f + 2.0f * ImGui::GetStyle().FramePadding.x );
         ImGui::PushItemWidth(
-          ImGui::CalcTextSize("Sagittal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
+          ImGui::CalcTextSize("Horizontal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
           ImGui::GetTextLineHeightWithSpacing());
 
         const bool isOblique = (ViewType::Oblique == viewType);
@@ -773,11 +824,12 @@ void renderViewSettingsComboWindow(
 
         // Disable opening the view type combo box if the ASM is in a state where it should not
         // change.
-        const bool xhairsRotated = math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
+        const bool crosshairsRotated = !math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
+        const std::string selectedViewTypeName =
+          viewTypeDisplayName(viewType, modes.anatomicalLabelType, crosshairsRotated);
         static const ImVec2 sk_viewTypePopupPadding(8.0f, 8.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_viewTypePopupPadding);
-        const bool clickedViewTypeCombo =
-          ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
+        const bool clickedViewTypeCombo = ImGui::BeginCombo("##viewTypeCombo", selectedViewTypeName.c_str());
         ImGui::PopStyleVar();
 
         if (isOblique) {
@@ -788,7 +840,8 @@ void renderViewSettingsComboWindow(
           if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
             auto renderViewTypeChoice = [&](const ViewType& vt) {
               const bool isSelected = (vt == viewType);
-              if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected)) {
+              const std::string candidateName = viewTypeDisplayName(vt, modes.anatomicalLabelType, crosshairsRotated);
+              if (ImGui::Selectable(candidateName.c_str(), isSelected)) {
                 setViewType(vt);
               }
 
@@ -861,6 +914,7 @@ void renderViewOrientationToolWindow(
   const auto& setViewCameraDirection = callbacks.setViewCameraDirection;
   const auto& getViewNormal = callbacks.getViewNormal;
   const auto& getObliqueViewDirections = callbacks.getObliqueViewDirections;
+  const AnatomicalLabelType anatomicalLabelType = callbacks.anatomicalLabelType;
 
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -992,47 +1046,59 @@ void renderViewOrientationToolWindow(
       ImGui::Text("Orthogonal direction:");
       ImGui::Spacing();
 
-      if (ImGui::Button("+X (L)")) {
+      const std::string positiveXLabel =
+        orthogonalDirectionButtonLabel(Directions::Cartesian::PosX, anatomicalLabelType, callbacks.quadrupedBodyRegion);
+      if (ImGui::Button(positiveXLabel.c_str())) {
         worldNewFwdDir = Directions::get(Directions::Cartesian::PosX);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      if (ImGui::Button("-X (R)")) {
+      const std::string negativeXLabel =
+        orthogonalDirectionButtonLabel(Directions::Cartesian::NegX, anatomicalLabelType, callbacks.quadrupedBodyRegion);
+      if (ImGui::Button(negativeXLabel.c_str())) {
         worldNewFwdDir = -Directions::get(Directions::Cartesian::PosX);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      ImGui::Text("Sagittal");
+      ImGui::TextUnformatted(viewTypeDisplayName(ViewType::Sagittal, anatomicalLabelType, false).c_str());
 
-      if (ImGui::Button("+Y (P)")) {
+      const std::string positiveYLabel =
+        orthogonalDirectionButtonLabel(Directions::Cartesian::PosY, anatomicalLabelType, callbacks.quadrupedBodyRegion);
+      if (ImGui::Button(positiveYLabel.c_str())) {
         worldNewFwdDir = Directions::get(Directions::Cartesian::PosY);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      if (ImGui::Button("-Y (A)")) {
+      const std::string negativeYLabel =
+        orthogonalDirectionButtonLabel(Directions::Cartesian::NegY, anatomicalLabelType, callbacks.quadrupedBodyRegion);
+      if (ImGui::Button(negativeYLabel.c_str())) {
         worldNewFwdDir = -Directions::get(Directions::Cartesian::PosY);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      ImGui::Text("Coronal");
+      ImGui::TextUnformatted(viewTypeDisplayName(ViewType::Coronal, anatomicalLabelType, false).c_str());
 
-      if (ImGui::Button("+Z (S)")) {
+      const std::string positiveZLabel =
+        orthogonalDirectionButtonLabel(Directions::Cartesian::PosZ, anatomicalLabelType, callbacks.quadrupedBodyRegion);
+      if (ImGui::Button(positiveZLabel.c_str())) {
         worldNewFwdDir = Directions::get(Directions::Cartesian::PosZ);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      if (ImGui::Button("-Z (I)")) {
+      const std::string negativeZLabel =
+        orthogonalDirectionButtonLabel(Directions::Cartesian::NegZ, anatomicalLabelType, callbacks.quadrupedBodyRegion);
+      if (ImGui::Button(negativeZLabel.c_str())) {
         worldNewFwdDir = -Directions::get(Directions::Cartesian::PosZ);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      ImGui::Text("Axial");
+      ImGui::TextUnformatted(viewTypeDisplayName(ViewType::Axial, anatomicalLabelType, false).c_str());
 
       const std::vector<glm::vec3> obliqueDirs = getObliqueViewDirections(viewOrLayoutUid);
 

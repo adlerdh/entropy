@@ -89,6 +89,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.showAnatomicalLabels = renderSettings.m_showAnatomicalLabels;
   preferences.showAnatomicalLabelsInLightboxViews = renderSettings.m_showAnatomicalLabelsInLightboxViews;
   preferences.anatomicalLabelType = renderSettings.m_anatomicalLabelType;
+  preferences.quadrupedBodyRegion = renderSettings.m_quadrupedBodyRegion;
   preferences.anatomicalLabelScale = renderSettings.m_anatomicalLabelScale;
   preferences.showScaleBars = renderSettings.m_showScaleBars;
   preferences.showScaleBarsInLightboxViews = renderSettings.m_showScaleBarsInLightboxViews;
@@ -247,6 +248,7 @@ void applyRenderPreferences(
   renderSettings.m_showAnatomicalLabelsInLightboxViews =
     preferences.showAnatomicalLabels && preferences.showAnatomicalLabelsInLightboxViews;
   renderSettings.m_anatomicalLabelType = preferences.anatomicalLabelType;
+  renderSettings.m_quadrupedBodyRegion = preferences.quadrupedBodyRegion;
   renderSettings.m_anatomicalLabelScale = std::clamp(preferences.anatomicalLabelScale, 0.5f, 2.0f);
   renderSettings.m_showScaleBars = preferences.showScaleBars;
   renderSettings.m_showScaleBarsInLightboxViews = preferences.showScaleBarsInLightboxViews;

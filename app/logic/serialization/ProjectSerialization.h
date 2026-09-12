@@ -553,6 +553,7 @@ struct DicomSource
   std::filesystem::path m_rootPath;           //!< Root folder used to discover the series
   std::string m_studyInstanceUid;             //!< Study Instance UID used to disambiguate the series
   std::string m_seriesInstanceUid;            //!< Series Instance UID to reload
+  DicomAnatomyInfo m_anatomy;                 //!< Normalized patient orientation and body region
   std::vector<std::filesystem::path> m_files; //!< Slice paths in series order
 };
 
@@ -670,7 +671,9 @@ struct ProjectViewSettings
   bool m_annotationsOnTop = false;                   //!< Render annotations over all image planes
   bool m_landmarksOnTop = false;                     //!< Render landmarks over all image planes
   bool m_hideAnnotationVertices = false;             //!< Hide annotation polygon vertices
-  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention
+  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Automatic; //!< Anatomical label convention
+  QuadrupedBodyRegion m_quadrupedBodyRegion = QuadrupedBodyRegion::Automatic; //!< Quadruped region selection
+  ViewConvention m_viewConvention = ViewConvention::Radiological;             //!< Left/right display convention
   bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image
   CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior
 };

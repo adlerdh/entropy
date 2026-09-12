@@ -968,6 +968,76 @@ void renderViewsTab(
     ImGui::PopItemWidth();
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
+    ImGui::Text("Anatomical directions:");
+
+    if (ImGui::RadioButton("Automatic", AnatomicalLabelType::Automatic == renderData.m_anatomicalLabelType)) {
+      renderData.m_anatomicalLabelType = AnatomicalLabelType::Automatic;
+    }
+    ImGui::SameLine();
+    helpMarker("Use the reference DICOM series when available; otherwise use the DICOM default human convention");
+
+    if (ImGui::RadioButton("Human", AnatomicalLabelType::Human == renderData.m_anatomicalLabelType)) {
+      renderData.m_anatomicalLabelType = AnatomicalLabelType::Human;
+    }
+    ImGui::SameLine();
+    helpMarker("Left, Right, Posterior, Anterior, Superior, Inferior");
+
+    if (ImGui::RadioButton("Rodent", AnatomicalLabelType::Rodent == renderData.m_anatomicalLabelType)) {
+      renderData.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
+    }
+    ImGui::SameLine();
+    helpMarker("Left, Right, Dorsal, Ventral, Caudal, Rostral");
+
+    if (ImGui::RadioButton("Cartesian", AnatomicalLabelType::Cartesian == renderData.m_anatomicalLabelType)) {
+      renderData.m_anatomicalLabelType = AnatomicalLabelType::Cartesian;
+    }
+    ImGui::SameLine();
+    helpMarker("+x, -x, +y, -y, +z, -z");
+
+    if (ImGui::RadioButton("Quadruped", AnatomicalLabelType::Quadruped == renderData.m_anatomicalLabelType)) {
+      renderData.m_anatomicalLabelType = AnatomicalLabelType::Quadruped;
+    }
+    ImGui::SameLine();
+    helpMarker("Use the DICOM QUADRUPED coordinate convention for the selected body region");
+
+    const AnatomicalLabelResolution updatedResolution = appData.resolvedAnatomicalLabels();
+    if (AnatomicalLabelType::Quadruped == updatedResolution.type) {
+      const char* bodyRegionPreview = QuadrupedBodyRegion::Automatic == renderData.m_quadrupedBodyRegion &&
+                                          updatedResolution.quadrupedBodyRegionRequired
+                                        ? "Automatic (unresolved)"
+                                        : quadrupedBodyRegionName(renderData.m_quadrupedBodyRegion);
+      ImGui::SetNextItemWidth(k_viewOptionControlWidth);
+      if (ImGui::BeginCombo("Body region", bodyRegionPreview)) {
+        for (const QuadrupedBodyRegion region :
+             {QuadrupedBodyRegion::Automatic,
+              QuadrupedBodyRegion::Head,
+              QuadrupedBodyRegion::NeckTrunkTail,
+              QuadrupedBodyRegion::ProximalLimb,
+              QuadrupedBodyRegion::DistalForelimb,
+              QuadrupedBodyRegion::DistalHindlimb})
+        {
+          const bool selected = region == renderData.m_quadrupedBodyRegion;
+          if (ImGui::Selectable(quadrupedBodyRegionName(region), selected)) {
+            renderData.m_quadrupedBodyRegion = region;
+          }
+          if (selected) {
+            ImGui::SetItemDefaultFocus();
+          }
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::SameLine();
+      helpMarker("Quadruped direction terms depend on whether the anatomy is head, trunk, or a limb segment");
+    }
+
+    if (!updatedResolution.sourceText.empty()) {
+      ImGui::PushTextWrapPos(0.0f);
+      ImGui::TextDisabled("%s%s", updatedResolution.warning ? "Attention: " : "", updatedResolution.sourceText.c_str());
+      ImGui::PopTextWrapPos();
+    }
+
+    ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
     static constexpr bool kOrientChangeRecenterCrosshairs = false;
     static constexpr bool kOrientChangeRealignCrosshairs = false;
     static constexpr bool kOrientChangeRecenterOnXhairs = true;
@@ -984,7 +1054,11 @@ void renderViewsTab(
         kOrientChangeResetZoom);
     };
 
-    ImGui::Text("Left/right orientation convention:");
+    ImGui::Text("Left/right display convention:");
+    ImGui::SameLine();
+    helpMarker(
+      "Controls which side of the view displays anatomical left for Human, Rodent, and Quadruped directions. "
+      "For Cartesian directions, it controls which side displays +x.");
     if (ImGui::RadioButton(
           "Radiological",
           ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
@@ -993,7 +1067,6 @@ void renderViewsTab(
     }
     ImGui::SameLine();
     helpMarker("Anatomical left is on view right; anatomical right is on view left");
-    ImGui::SameLine();
 
     if (ImGui::RadioButton(
           "Neurological",
@@ -1003,30 +1076,11 @@ void renderViewsTab(
     }
     ImGui::SameLine();
     helpMarker("Anatomical left is on view left; anatomical right is on view right");
-
-    ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-    ImGui::Text("Anatomical directions:");
-
-    if (ImGui::RadioButton("Human", AnatomicalLabelType::Human == renderData.m_anatomicalLabelType)) {
-      renderData.m_anatomicalLabelType = AnatomicalLabelType::Human;
-    }
-    ImGui::SameLine();
-    helpMarker("Left, Right, Posterior, Anterior, Superior, Inferior");
-
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Rodent", AnatomicalLabelType::Rodent == renderData.m_anatomicalLabelType)) {
-      renderData.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
-    }
-    ImGui::SameLine();
-    helpMarker("Left, Right, Dorsal, Ventral, Caudal, Rostral");
-
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Cartesian", AnatomicalLabelType::Cartesian == renderData.m_anatomicalLabelType)) {
-      renderData.m_anatomicalLabelType = AnatomicalLabelType::Cartesian;
-    }
-    ImGui::SameLine();
-    helpMarker("+x, -x, +y, -y, +z, -z");
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextDisabled(
+      "Radiological places anatomical left (+x in Cartesian mode) on the right side of the view. Neurological "
+      "places anatomical left (+x in Cartesian mode) on the left side of the view.");
+    ImGui::PopTextWrapPos();
   }
   finishSettingsSection(anatomicalLabelsOpen);
 

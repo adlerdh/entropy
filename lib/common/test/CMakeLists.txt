@@ -1,4 +1,5 @@
 add_executable(TestCommon
+  AnatomicalLabelsTests.cpp
   ClipboardFormatsTests.cpp
   CommonHeaderIncludeTests.cpp
   CoordinateFrameTests.cpp

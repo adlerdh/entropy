@@ -5004,8 +5004,11 @@ void ImGuiWrapper::render()
       getImageIsReference,
       canImageBeVolumeRendered};
 
+    const AnatomicalLabelResolution anatomicalLabels = m_appData.resolvedAnatomicalLabels();
     const ViewOverlayModeCallbacks modeCallbacks{
       .viewType = currentLayout.viewType(),
+      .anatomicalLabelType = anatomicalLabels.type,
+      .quadrupedBodyRegion = anatomicalLabels.quadrupedBodyRegion,
       .renderMode = currentLayout.renderMode(),
       .threeDSceneContents = currentLayout.threeDSceneContents(),
       .intensityProjectionMode = currentLayout.intensityProjectionMode(),
@@ -5065,6 +5068,8 @@ void ImGuiWrapper::render()
     renderViewOrientationToolWindow(
       overlayContext,
       {currentLayout.viewType(),
+       anatomicalLabels.type,
+       anatomicalLabels.quadrupedBodyRegion,
        [&getViewCameraRotation, &currentLayout]() { return getViewCameraRotation(currentLayout.uid()); },
        [&setViewCameraRotation, &currentLayout](const glm::quat& q) {
          return setViewCameraRotation(currentLayout.uid(), q);
@@ -5194,8 +5199,11 @@ void ImGuiWrapper::render()
         getImageIsReference,
         canImageBeVolumeRendered};
 
+      const AnatomicalLabelResolution anatomicalLabels = m_appData.resolvedAnatomicalLabels();
       const ViewOverlayModeCallbacks modeCallbacks{
         .viewType = view->viewType(),
+        .anatomicalLabelType = anatomicalLabels.type,
+        .quadrupedBodyRegion = anatomicalLabels.quadrupedBodyRegion,
         .renderMode = view->renderMode(),
         .threeDSceneContents = view->threeDSceneContents(),
         .intensityProjectionMode = view->intensityProjectionMode(),
@@ -5321,6 +5329,8 @@ void ImGuiWrapper::render()
       renderViewOrientationToolWindow(
         overlayContext,
         {view->viewType(),
+         anatomicalLabels.type,
+         anatomicalLabels.quadrupedBodyRegion,
          [&getViewCameraRotation, &viewUid]() { return getViewCameraRotation(viewUid); },
          [&setViewCameraRotation, &viewUid](const glm::quat& q) { return setViewCameraRotation(viewUid, q); },
          [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },

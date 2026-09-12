@@ -2,6 +2,7 @@ add_library(EntropyCommon STATIC)
 add_library(Entropy::Common ALIAS EntropyCommon)
 
 target_sources(EntropyCommon PRIVATE
+  AnatomicalLabels.cpp
   ClipboardFormats.cpp
   CoordinateFrame.cpp
   DirectionMaps.cpp

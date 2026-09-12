@@ -24,6 +24,30 @@ TEST_CASE("DICOM metadata filtering excludes private tags by default", "[image][
   CHECK(dicom::includeMetadataTag("0020|000e"));
 }
 
+TEST_CASE("DICOM anatomy parsing follows orientation and region precedence", "[image][dicom][anatomy]")
+{
+  const DicomAnatomyInfo anatomy =
+    dicom::parseAnatomyInfo(" quadruped ", "CHEST", "Head", "Canis lupus familiaris", {});
+
+  CHECK(anatomy.orientation == DicomAnatomicalOrientation::Quadruped);
+  CHECK(anatomy.bodyRegion == QuadrupedBodyRegion::Head);
+  CHECK(anatomy.bodyRegionSource == DicomBodyRegionSource::AnatomicRegionSequence);
+  CHECK(anatomy.nonHumanSpecies);
+}
+
+TEST_CASE("DICOM anatomy parsing recognizes distal limb distinctions", "[image][dicom][anatomy]")
+{
+  const auto forelimb = dicom::parseAnatomyInfo("QUADRUPED", "WRIST", {}, {}, {});
+  CHECK(forelimb.bodyRegion == QuadrupedBodyRegion::DistalForelimb);
+
+  const auto hindlimb = dicom::parseAnatomyInfo("QUADRUPED", "FOOT", {}, {}, {});
+  CHECK(hindlimb.bodyRegion == QuadrupedBodyRegion::DistalHindlimb);
+
+  const auto human = dicom::parseAnatomyInfo({}, {}, {}, "Homo sapiens", {});
+  CHECK(human.orientation == DicomAnatomicalOrientation::Unspecified);
+  CHECK_FALSE(human.nonHumanSpecies);
+}
+
 TEST_CASE("DICOM series display names use stable fallbacks", "[image][dicom]")
 {
   dicom::SeriesMetadata metadata;

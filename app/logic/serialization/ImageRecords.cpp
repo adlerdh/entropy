@@ -325,6 +325,21 @@ void to_json(json& j, const serialize::DicomSource& source)
     j["studyInstanceUid"] = source.m_studyInstanceUid;
   }
 
+  json anatomy = json::object();
+  if (DicomAnatomicalOrientation::Unspecified != source.m_anatomy.orientation) {
+    anatomy["orientation"] = enumToName(source.m_anatomy.orientation, k_dicomAnatomicalOrientationNames);
+  }
+  if (source.m_anatomy.bodyRegion) {
+    anatomy["bodyRegion"] = enumToName(*source.m_anatomy.bodyRegion, k_quadrupedBodyRegionNames);
+  }
+  if (DicomBodyRegionSource::None != source.m_anatomy.bodyRegionSource) {
+    anatomy["bodyRegionSource"] = enumToName(source.m_anatomy.bodyRegionSource, k_dicomBodyRegionSourceNames);
+  }
+  if (source.m_anatomy.nonHumanSpecies) {
+    anatomy["nonHumanSpecies"] = true;
+  }
+  addIfNotEmpty(j, "anatomy", std::move(anatomy));
+
   if (!source.m_files.empty()) {
     std::vector<std::string> paths;
     paths.reserve(source.m_files.size());
@@ -343,6 +358,27 @@ void from_json(const json& j, serialize::DicomSource& source)
   }
   if (j.count("seriesInstanceUid")) {
     source.m_seriesInstanceUid = j.at("seriesInstanceUid").get<std::string>();
+  }
+  if (const auto anatomy = j.find("anatomy"); anatomy != j.end() && anatomy->is_object()) {
+    if (
+      const auto parsed =
+        enumFromName<DicomAnatomicalOrientation>(anatomy->value("orientation", ""), k_dicomAnatomicalOrientationNames))
+    {
+      source.m_anatomy.orientation = *parsed;
+    }
+    if (
+      const auto parsed =
+        enumFromName<QuadrupedBodyRegion>(anatomy->value("bodyRegion", ""), k_quadrupedBodyRegionNames))
+    {
+      source.m_anatomy.bodyRegion = *parsed;
+    }
+    if (
+      const auto parsed =
+        enumFromName<DicomBodyRegionSource>(anatomy->value("bodyRegionSource", ""), k_dicomBodyRegionSourceNames))
+    {
+      source.m_anatomy.bodyRegionSource = *parsed;
+    }
+    source.m_anatomy.nonHumanSpecies = anatomy->value("nonHumanSpecies", false);
   }
   if (j.count("paths")) {
     const auto paths = j.at("paths").get<std::vector<std::string>>();

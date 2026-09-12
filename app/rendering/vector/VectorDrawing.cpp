@@ -1,5 +1,7 @@
 #include "rendering/vector/VectorDrawing.h"
 
+#include "common/AnatomicalLabels.h"
+
 #include "rendering/helpers/VectorDrawingHelpers.h"
 
 #include "common/DirectionMaps.h"
@@ -399,6 +401,7 @@ void drawAnatomicalLabels(
   bool isViewOblique,
   const glm::vec4& fontColor,
   const AnatomicalLabelType& anatLabelType,
+  const std::optional<QuadrupedBodyRegion>& quadrupedBodyRegion,
   float labelScale,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo)
 {
@@ -408,70 +411,9 @@ void drawAnatomicalLabels(
     return;
   }
 
-  auto getLabelAbbrev = [&anatLabelType](int labelIndex) -> const char* {
-    switch (anatLabelType) {
-      case AnatomicalLabelType::Cartesian: {
-        switch (labelIndex) {
-          case 0:
-            return Directions::abbrev(Directions::Cartesian::PosX).c_str();
-          case 1:
-            return Directions::abbrev(Directions::Cartesian::PosY).c_str();
-          case 2:
-            return Directions::abbrev(Directions::Cartesian::PosZ).c_str();
-          case 3:
-            return Directions::abbrev(Directions::Cartesian::NegX).c_str();
-          case 4:
-            return Directions::abbrev(Directions::Cartesian::NegY).c_str();
-          case 5:
-            return Directions::abbrev(Directions::Cartesian::NegZ).c_str();
-          default:
-            return "";
-        }
-        break;
-      }
-      case AnatomicalLabelType::Human: {
-        switch (labelIndex) {
-          case 0:
-            return Directions::abbrev(Directions::Anatomy::Left).c_str();
-          case 1:
-            return Directions::abbrev(Directions::Anatomy::Posterior).c_str();
-          case 2:
-            return Directions::abbrev(Directions::Anatomy::Superior).c_str();
-          case 3:
-            return Directions::abbrev(Directions::Anatomy::Right).c_str();
-          case 4:
-            return Directions::abbrev(Directions::Anatomy::Anterior).c_str();
-          case 5:
-            return Directions::abbrev(Directions::Anatomy::Inferior).c_str();
-          default:
-            return "";
-        }
-        break;
-      }
-      case AnatomicalLabelType::Rodent: {
-        switch (labelIndex) {
-          case 0:
-            return Directions::abbrev(Directions::Animal::Left).c_str();
-          case 1:
-            return Directions::abbrev(Directions::Animal::Dorsal).c_str();
-          case 2:
-            return Directions::abbrev(Directions::Animal::Rostral).c_str();
-          case 3:
-            return Directions::abbrev(Directions::Animal::Right).c_str();
-          case 4:
-            return Directions::abbrev(Directions::Animal::Ventral).c_str();
-          case 5:
-            return Directions::abbrev(Directions::Animal::Caudal).c_str();
-          default:
-            return "";
-        }
-        break;
-      }
-      case AnatomicalLabelType::Disabled: {
-        return "";
-      }
-    }
-    return "";
+  const auto labels = anatomicalDirectionAbbreviations(anatLabelType, quadrupedBodyRegion);
+  auto getLabelAbbrev = [&labels](const int labelIndex) -> const char* {
+    return labelIndex >= 0 && static_cast<std::size_t>(labelIndex) < labels.size() ? labels[labelIndex] : "";
   };
 
   const float inwardShiftMultiplier =

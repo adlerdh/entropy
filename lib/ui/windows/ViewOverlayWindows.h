@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -70,6 +71,8 @@ struct ViewOverlayImageCallbacks
 struct ViewOverlayModeCallbacks
 {
   ViewType viewType = ViewType::Axial;                                             //!< Current view type
+  AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Human;            //!< Direction naming convention
+  std::optional<QuadrupedBodyRegion> quadrupedBodyRegion = std::nullopt;           //!< Resolved quadruped region
   ViewRenderMode renderMode = ViewRenderMode::Image;                               //!< Current 2D render mode
   ThreeDSceneContents threeDSceneContents = DefaultThreeDSceneContents;            //!< Enabled 3D scene contents
   IntensityProjectionMode intensityProjectionMode = IntensityProjectionMode::None; //!< Current projection mode
@@ -143,6 +146,8 @@ struct ViewOverlayProjectionCallbacks
 struct ViewOrientationOverlayCallbacks
 {
   ViewType viewType = ViewType::Axial;                                                      //!< Current view type
+  AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Human;                     //!< Direction convention
+  std::optional<QuadrupedBodyRegion> quadrupedBodyRegion = std::nullopt;                    //!< Quadruped region
   std::function<glm::quat()> getViewCameraRotation;                                         //!< Current camera rotation
   std::function<void(const glm::quat& camera_T_world_rotationDelta)> setViewCameraRotation; //!< Apply rotation delta
   std::function<void(const glm::vec3& worldDirection)> setViewCameraDirection; //!< Set camera forward direction

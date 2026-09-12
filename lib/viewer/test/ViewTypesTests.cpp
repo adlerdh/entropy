@@ -1,5 +1,7 @@
 #include "viewer/ViewTypes.h"
 
+#include "common/Types.h"
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
@@ -26,23 +28,43 @@ TEST_CASE("view type enum ordinals remain stable for serialized layout specs", "
   CHECK(static_cast<int>(ViewType::NumElements) == 5);
 }
 
-TEST_CASE("view type display strings reflect crosshairs rotation state", "[viewer][view]")
+TEST_CASE("view type display strings reflect anatomical direction convention", "[viewer][view]")
 {
-  CHECK(to_string(ViewType::Axial, false) == "Axial");
-  CHECK(to_string(ViewType::Coronal, false) == "Coronal");
-  CHECK(to_string(ViewType::Sagittal, false) == "Sagittal");
-  CHECK(to_string(ViewType::Oblique, false) == "Oblique");
-  CHECK(to_string(ViewType::ThreeD, false) == "3D");
+  CHECK(viewTypeDisplayName(ViewType::Axial, AnatomicalLabelType::Human, false) == "Axial");
+  CHECK(viewTypeDisplayName(ViewType::Coronal, AnatomicalLabelType::Human, false) == "Coronal");
+  CHECK(viewTypeDisplayName(ViewType::Sagittal, AnatomicalLabelType::Human, false) == "Sagittal");
 
-  CHECK(to_string(ViewType::Axial, true) == "Z");
-  CHECK(to_string(ViewType::Coronal, true) == "Y");
-  CHECK(to_string(ViewType::Sagittal, true) == "X");
-  CHECK(to_string(ViewType::Oblique, true) == "Oblique");
-  CHECK(to_string(ViewType::ThreeD, true) == "3D");
+  CHECK(viewTypeDisplayName(ViewType::Axial, AnatomicalLabelType::Rodent, false) == "Coronal");
+  CHECK(viewTypeDisplayName(ViewType::Coronal, AnatomicalLabelType::Rodent, false) == "Horizontal");
+  CHECK(viewTypeDisplayName(ViewType::Sagittal, AnatomicalLabelType::Rodent, false) == "Sagittal");
+
+  CHECK(viewTypeDisplayName(ViewType::Axial, AnatomicalLabelType::Cartesian, false) == "Z");
+  CHECK(viewTypeDisplayName(ViewType::Coronal, AnatomicalLabelType::Cartesian, false) == "Y");
+  CHECK(viewTypeDisplayName(ViewType::Sagittal, AnatomicalLabelType::Cartesian, false) == "X");
+
+  CHECK(viewTypeDisplayName(ViewType::Axial, AnatomicalLabelType::Quadruped, false) == "Transverse");
+  CHECK(viewTypeDisplayName(ViewType::Coronal, AnatomicalLabelType::Quadruped, false) == "Dorsal");
+  CHECK(viewTypeDisplayName(ViewType::Sagittal, AnatomicalLabelType::Quadruped, false) == "Sagittal");
+
+  CHECK(viewTypeDisplayName(ViewType::Oblique, AnatomicalLabelType::Rodent, false) == "Oblique");
+  CHECK(viewTypeDisplayName(ViewType::ThreeD, AnatomicalLabelType::Cartesian, false) == "3D");
+}
+
+TEST_CASE("rotated crosshairs use primed local-axis view names", "[viewer][view]")
+{
+  for (const AnatomicalLabelType convention :
+       {AnatomicalLabelType::Human, AnatomicalLabelType::Rodent, AnatomicalLabelType::Cartesian})
+  {
+    CHECK(viewTypeDisplayName(ViewType::Axial, convention, true) == "Z\xE2\x80\xB2");
+    CHECK(viewTypeDisplayName(ViewType::Coronal, convention, true) == "Y\xE2\x80\xB2");
+    CHECK(viewTypeDisplayName(ViewType::Sagittal, convention, true) == "X\xE2\x80\xB2");
+    CHECK(viewTypeDisplayName(ViewType::Oblique, convention, true) == "Oblique");
+    CHECK(viewTypeDisplayName(ViewType::ThreeD, convention, true) == "3D");
+  }
 }
 
 TEST_CASE("view type display strings tolerate sentinel values", "[viewer][view]")
 {
-  CHECK(to_string(ViewType::NumElements, false) == "Unknown");
-  CHECK(to_string(static_cast<ViewType>(100), true) == "Unknown");
+  CHECK(viewTypeDisplayName(ViewType::NumElements, AnatomicalLabelType::Human, false) == "Unknown");
+  CHECK(viewTypeDisplayName(static_cast<ViewType>(100), AnatomicalLabelType::Cartesian, true) == "Unknown");
 }

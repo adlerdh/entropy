@@ -130,6 +130,15 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   else if (path == "settings/rendering/segmentations/imageOpacityModulation") {
     preferredKeys = {"twoD", "threeD"};
   }
+  else if (path == "settings/view/anatomicalLabels") {
+    preferredKeys = {
+      "visible",
+      "visibleInLightboxes",
+      "type",
+      "quadrupedBodyRegion",
+      "leftRightDisplayConvention",
+      "lockDirectionsToReferenceImage"};
+  }
   else if (path.ends_with("/settings/isosurfaces")) {
     preferredKeys = {"applyImageColormap", "modulateOpacityWithImageOpacity", "contourLineWidth2D", "opacityModulator"};
   }
