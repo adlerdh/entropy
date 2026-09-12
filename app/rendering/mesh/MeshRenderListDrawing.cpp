@@ -145,6 +145,12 @@ void Rendering::reconcileExtractedMeshResources()
   m_meshResources.retainOnly(liveKeys);
   std::erase_if(m_importedMeshData, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
   std::erase_if(m_importedMeshVersions, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
+  std::erase_if(m_importedMeshPlaneIntersectors, [this](const auto& entry) {
+    return !m_appData.importedMesh(entry.first);
+  });
+  for (auto& viewIntersections : m_importedMeshSliceIntersections) {
+    std::erase_if(viewIntersections.second, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
+  }
 }
 
 void Rendering::consumeCompletedMeshExtractions()

@@ -15,6 +15,7 @@ add_executable(TestUi
   StyleTests.cpp
   UpdateCheckTests.cpp
   ActiveImageSelectionModelTests.cpp
+  ExportJobServiceTests.cpp
   UiControlsTests.cpp
   UiHeaderIncludeTests.cpp
   UiScaleManagerTests.cpp
@@ -30,6 +31,7 @@ endif()
 
 target_sources(TestUi PRIVATE
   "${entropy_UI_DIR}/GuiData.cpp"
+  "${entropy_UI_DIR}/ExportJobService.cpp"
   "${entropy_UI_DIR}/IsosurfaceRangeModel.cpp"
   "${entropy_UI_DIR}/windows/KeyboardShortcuts.cpp"
   "${entropy_UI_DIR}/windows/InspectionWindowSizing.cpp"

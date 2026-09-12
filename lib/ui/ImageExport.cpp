@@ -1,8 +1,10 @@
 #include "ui/ImageExport.h"
 
+#include "ui/ExportJobService.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 
+#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "image/ImageWriter.h"
 #include "logic/app/Data.h"
@@ -14,12 +16,33 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#include <format>
+#include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace fs = std::filesystem;
 
 namespace
 {
+bool exportCanStart(AppData& appData)
+{
+  const auto service = appData.guiData().m_exportJobs;
+  if (!service) {
+    native_dialog::showErrorMessageDialog("Export Failed", "The background export service is unavailable.");
+    return false;
+  }
+  const auto status = service->snapshot();
+  if (status.hasJob && ui::export_jobs::Outcome::Running == status.outcome) {
+    native_dialog::showErrorMessageDialog(
+      "Export Already in Progress",
+      "Wait for the current export to finish or cancel it before starting another export.");
+    return false;
+  }
+  return true;
+}
+
 std::string sanitizedFileStem(std::string fileName)
 {
   std::replace_if(
@@ -113,6 +136,7 @@ void showSegmentationExportFormatGuide(AppSettings& settings)
 }
 
 bool exportImageData(
+  AppData& appData,
   const Image& image,
   const uuids::uuid& imageUid,
   const std::string& objectName,
@@ -128,18 +152,51 @@ bool exportImageData(
     return false;
   }
 
-  const image_io::WriteResult result = image_io::writeImage(image, *selectedFile, options);
-  if (!result) {
-    spdlog::error("Failed to export {} {} to '{}': {}", objectName, imageUid, *selectedFile, result.message);
-    native_dialog::showErrorMessageDialog(
-      "Export Failed",
-      "Entropy could not export '" + image.settings().displayName() + "'.",
-      result.message + "\n\nDestination: " + selectedFile->string());
+  const auto service = appData.guiData().m_exportJobs;
+  if (!service) {
+    native_dialog::showErrorMessageDialog("Export Failed", "The background export service is unavailable.");
     return false;
   }
 
-  spdlog::info("Exported {} {} to '{}'", objectName, imageUid, *selectedFile);
-  return true;
+  const auto imageSnapshot = std::make_shared<Image>(image);
+  const std::string imageName = image.settings().displayName();
+  const std::string uid = uuids::to_string(imageUid);
+  const fs::path destination = *selectedFile;
+  const bool submitted = service->submit(
+    {.description = std::format("Exporting {} '{}'", objectName, imageName),
+     .destination = destination,
+     .task = [imageSnapshot, options, destination, objectName, uid](ui::export_jobs::JobContext& context) mutable {
+       ui::export_jobs::StagedOutput staged{destination};
+       image_io::WriteOptions writeOptions = options;
+       writeOptions.progressCallback = [&context](const std::string_view phase, const std::optional<float> progress) {
+         context.update(std::string{phase}, progress);
+         return !context.cancellationRequested();
+       };
+
+       const image_io::WriteResult result = image_io::writeImage(*imageSnapshot, staged.temporaryPath(), writeOptions);
+       if (image_io::WriteError::Cancelled == result.error || context.cancellationRequested()) {
+         spdlog::info("Cancelled export of {} {} to '{}'", objectName, uid, destination);
+         return ui::export_jobs::Result::cancelled();
+       }
+       if (!result) {
+         spdlog::error("Failed to export {} {} to '{}': {}", objectName, uid, destination, result.message);
+         return ui::export_jobs::Result::failure(result.message);
+       }
+
+       context.update("Committing image file", 0.98f);
+       if (const auto error = staged.commit()) {
+         spdlog::error("Failed to commit {} export {} to '{}': {}", objectName, uid, destination, *error);
+         return ui::export_jobs::Result::failure("The completed export could not replace the destination: " + *error);
+       }
+       spdlog::info("Exported {} {} to '{}'", objectName, uid, destination);
+       return ui::export_jobs::Result::success({destination});
+     }});
+  if (!submitted) {
+    native_dialog::showErrorMessageDialog(
+      "Export Already in Progress",
+      "Wait for the current export to finish or cancel it before starting another export.");
+  }
+  return submitted;
 }
 } // namespace
 
@@ -168,6 +225,9 @@ const serialize::DicomSource* dicomSourceForImage(const AppData& appData, const 
 
 bool exportImage(AppData& appData, const uuids::uuid& imageUid)
 {
+  if (!exportCanStart(appData)) {
+    return false;
+  }
   Image* image = appData.image(imageUid);
   if (!image || !image->hasPixelData()) {
     spdlog::warn("Cannot export image {}; pixel data is not loaded", imageUid);
@@ -178,6 +238,7 @@ bool exportImage(AppData& appData, const uuids::uuid& imageUid)
   showImageExportFormatGuide(appData.settings(), allowStandardRasterFormats);
 
   return exportImageData(
+    appData,
     *image,
     imageUid,
     "image",
@@ -188,6 +249,9 @@ bool exportImage(AppData& appData, const uuids::uuid& imageUid)
 
 bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid)
 {
+  if (!exportCanStart(appData)) {
+    return false;
+  }
   Image* segmentation = appData.seg(segmentationUid);
   if (!segmentation || !segmentation->hasPixelData()) {
     spdlog::warn("Cannot export segmentation {}; pixel data is not loaded", segmentationUid);
@@ -197,6 +261,7 @@ bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid)
   showSegmentationExportFormatGuide(appData.settings());
 
   return exportImageData(
+    appData,
     *segmentation,
     segmentationUid,
     "segmentation",

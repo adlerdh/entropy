@@ -11,6 +11,7 @@
 #include <itkImageIORegion.h>
 #include <itkMetaDataObject.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cmath>
 #include <cstring>
@@ -24,6 +25,14 @@ namespace
 image_io::WriteResult failure(image_io::WriteError error, std::string message)
 {
   return {.error = error, .message = std::move(message)};
+}
+
+bool reportProgress(
+  const image_io::WriteOptions& options,
+  const std::string_view phase,
+  const std::optional<float> progress)
+{
+  return !options.progressCallback || options.progressCallback(phase, progress);
 }
 
 itk::IOPixelEnum itkPixelType(PixelType pixelType, std::uint32_t numComponents)
@@ -90,6 +99,10 @@ image_io::WriteResult copySelectedPixels(
   const std::uint32_t outputTimePoints = options.timePoint ? 1u : image.timeAxis().numTimePoints();
   const std::size_t spatialPixels = image.header().numPixels();
 
+  if (!reportProgress(options, "Preparing image data", 0.05f)) {
+    return failure(image_io::WriteError::Cancelled, "Image export was cancelled.");
+  }
+
   std::size_t outputElements = 0u;
   std::size_t outputBytes = 0u;
   if (
@@ -106,12 +119,26 @@ image_io::WriteResult copySelectedPixels(
     if (!output) {
       return failure(image_io::WriteError::InvalidImageData, "An image pixel buffer is missing.");
     }
+    if (!reportProgress(options, "Preparing image data", 0.35f)) {
+      return failure(image_io::WriteError::Cancelled, "Image export was cancelled.");
+    }
     return {};
   }
 
   scratch.resize(outputBytes);
 
   std::byte* destination = scratch.data();
+  const std::size_t totalPixels = spatialPixels * outputTimePoints;
+  const std::size_t reportInterval = std::max<std::size_t>(1u, totalPixels / 100u);
+  std::size_t processedPixels = 0u;
+  const auto reportCopyProgress = [&]() {
+    processedPixels += 1u;
+    if (processedPixels != totalPixels && processedPixels % reportInterval != 0u) {
+      return true;
+    }
+    const float fraction = static_cast<float>(processedPixels) / static_cast<float>(totalPixels);
+    return reportProgress(options, "Preparing image data", 0.05f + 0.30f * fraction);
+  };
   for (std::uint32_t outputTime = 0u; outputTime < outputTimePoints; ++outputTime) {
     const std::uint32_t sourceTime = firstTimePoint + outputTime;
     if (Image::MultiComponentBufferType::InterleavedImage == image.bufferType()) {
@@ -124,6 +151,14 @@ image_io::WriteResult copySelectedPixels(
         const std::size_t frameBytes = spatialPixels * outputComponents * componentBytes;
         std::memcpy(destination, source, frameBytes);
         destination += frameBytes;
+        processedPixels += spatialPixels;
+        if (!reportProgress(
+              options,
+              "Preparing image data",
+              0.05f + 0.30f * static_cast<float>(processedPixels) / static_cast<float>(totalPixels)))
+        {
+          return failure(image_io::WriteError::Cancelled, "Image export was cancelled.");
+        }
         continue;
       }
 
@@ -132,6 +167,9 @@ image_io::WriteResult copySelectedPixels(
         const std::byte* value = source + pixel * sourcePixelBytes + firstComponent * componentBytes;
         std::memcpy(destination, value, componentBytes);
         destination += componentBytes;
+        if (!reportCopyProgress()) {
+          return failure(image_io::WriteError::Cancelled, "Image export was cancelled.");
+        }
       }
       continue;
     }
@@ -151,6 +189,9 @@ image_io::WriteResult copySelectedPixels(
       for (const std::byte* componentBuffer : componentBuffers) {
         std::memcpy(destination, componentBuffer + pixel * componentBytes, componentBytes);
         destination += componentBytes;
+      }
+      if (!reportCopyProgress()) {
+        return failure(image_io::WriteError::Cancelled, "Image export was cancelled.");
       }
     }
   }
@@ -188,6 +229,9 @@ namespace image_io
 {
 WriteResult writeImage(const Image& image, const std::filesystem::path& destination, const WriteOptions& options)
 {
+  if (!reportProgress(options, "Validating image export", 0.0f)) {
+    return failure(WriteError::Cancelled, "Image export was cancelled.");
+  }
   if (destination.empty()) {
     return failure(WriteError::EmptyPath, "No export destination was provided.");
   }
@@ -284,8 +328,14 @@ WriteResult writeImage(const Image& image, const std::filesystem::path& destinat
     }
     imageIo->SetIORegion(ioRegion);
 
+    if (!reportProgress(options, "Writing image file", std::nullopt)) {
+      return failure(WriteError::Cancelled, "Image export was cancelled.");
+    }
     imageIo->WriteImageInformation();
     imageIo->Write(output);
+    if (!reportProgress(options, "Finalizing image export", 0.95f)) {
+      return failure(WriteError::Cancelled, "Image export was cancelled.");
+    }
     return {};
   }
   catch (const itk::ExceptionObject& error) {

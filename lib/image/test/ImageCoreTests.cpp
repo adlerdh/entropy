@@ -1682,3 +1682,25 @@ TEST_CASE("Image writer reports invalid requests without throwing", "[image][exp
     image_io::writeImage(irregularTimeImage, testDirectory() / "irregular-time.nrrd").error ==
     image_io::WriteError::IrregularTimeAxis);
 }
+
+TEST_CASE("Image writer reports progress and cooperatively cancels before codec output", "[image][export][progress]")
+{
+  const Image image = makeThreeComponentImage();
+  const fs::path fileName = testDirectory() / "cancelled-export.nrrd";
+  std::filesystem::remove(fileName);
+  std::vector<std::string> phases;
+
+  const image_io::WriteResult result = image_io::writeImage(
+    image,
+    fileName,
+    {.progressCallback = [&phases](const std::string_view phase, const std::optional<float>) {
+      phases.emplace_back(phase);
+      return phase != "Writing image file";
+    }});
+
+  CHECK(result.error == image_io::WriteError::Cancelled);
+  CHECK_FALSE(phases.empty());
+  CHECK(phases.front() == "Validating image export");
+  CHECK(phases.back() == "Writing image file");
+  CHECK_FALSE(std::filesystem::exists(fileName));
+}

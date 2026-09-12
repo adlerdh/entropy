@@ -65,7 +65,8 @@ struct MeshDisplaySettings
 {
   glm::vec3 baseColor{0.8f};
   float opacity = 1.0f;
-  bool visible = true;
+  bool visibleIn2d = false;
+  bool visibleIn3d = true;
 
   bool operator==(const MeshDisplaySettings&) const = default;
 };

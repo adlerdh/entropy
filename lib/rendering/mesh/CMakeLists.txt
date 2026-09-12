@@ -45,6 +45,7 @@ target_sources(EntropyRendering PRIVATE
 # upload prepared meshes can use Entropy::Rendering without a mesh-processing toolkit.
 add_library(EntropyRenderingMeshProcessing STATIC
   MeshGeneration.cpp
+  MeshPlaneIntersection.cpp
   PolyDataGenerator.cpp
 )
 add_library(Entropy::RenderingMeshProcessing ALIAS EntropyRenderingMeshProcessing)

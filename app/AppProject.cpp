@@ -377,7 +377,8 @@ serialize::Image EntropyApp::createImageSnapshot(
       .m_name = imported->name,
       .m_color = imported->display.baseColor,
       .m_opacity = imported->display.opacity,
-      .m_visible = imported->display.visible});
+      .m_visibleIn2d = imported->display.visibleIn2d,
+      .m_visibleIn3d = imported->display.visibleIn3d});
   }
 
   return serializedImage;

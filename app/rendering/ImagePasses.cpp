@@ -277,12 +277,18 @@ void Rendering::renderAllImagesForView(
         isFixedImage = false;
       }
 
+      renderImportedMeshIntersectionsForView(view, miewportViewBounds, worldOffsetXhairs, imageSegPairs);
       renderVectorWarpedGridOverlaysForView(view, worldOffsetXhairs, displayModeUniform, sourceImages);
       break;
     }
 
     case ShaderGroup::Metric: {
       renderMetricImagesForView(view, worldOffsetXhairs);
+      renderImportedMeshIntersectionsForView(
+        view,
+        miewportViewBounds,
+        worldOffsetXhairs,
+        getImageAndSegUidsForMetricShaders(view.metricImages()));
       break;
     }
 

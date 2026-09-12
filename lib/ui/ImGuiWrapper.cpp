@@ -22,6 +22,7 @@
 #include "ui/windows/Windows.h"
 #include "ui/windows/LoadingStatusModel.h"
 #include "ui/windows/OpacityMixerWindow.h"
+#include "ui/windows/ExportStatusWindow.h"
 #ifdef _WIN32
 #include "ui/menus/WinNativeMainMenu.h"
 #endif
@@ -4613,6 +4614,9 @@ void ImGuiWrapper::render()
       renderLoadingStatusWindow(m_appData.guiData());
     }
     renderMeshExtractionStatusWindow(m_appData.guiData());
+    if (m_appData.guiData().m_exportJobs) {
+      ui::export_jobs::renderStatusWindow(*m_appData.guiData().m_exportJobs);
+    }
     renderWarpInversionProgressPopup();
     ui::updates::renderUpdateCheckWindow(
       m_updateCheckWindowState,

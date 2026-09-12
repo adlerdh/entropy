@@ -11,6 +11,7 @@ target_sources(entropy PRIVATE
   MeshPickingScene.cpp
   MeshRenderListDrawing.cpp
   MeshSegmentationScene.cpp
+  MeshSliceIntersections.cpp
   MeshShaderPrograms.cpp
   MeshTestScene.cpp
   MeshViewContext.cpp

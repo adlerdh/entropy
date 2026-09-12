@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
+#include <string_view>
 
 class Image;
 
@@ -21,8 +23,12 @@ enum class WriteError : std::uint8_t
   UnsupportedComponentType,
   UnsupportedFormat,
   InvalidImageData,
+  Cancelled,
   IoFailure
 };
+
+/// Callback for export stage changes. Return false to request cooperative cancellation.
+using WriteProgressCallback = std::function<bool(std::string_view, std::optional<float>)>;
 
 /// @brief Result of an image export operation, including a user-readable failure reason.
 struct WriteResult
@@ -48,6 +54,7 @@ struct WriteOptions
   bool useCompression = true;             //!< Ask the selected writer to use compression
   std::optional<std::uint32_t> component; //!< Optional single component to write
   std::optional<std::uint32_t> timePoint; //!< Optional single time point to write
+  WriteProgressCallback progressCallback; //!< Optional stage/progress and cancellation callback
 };
 
 /**

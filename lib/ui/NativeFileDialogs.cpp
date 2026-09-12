@@ -261,14 +261,17 @@ std::vector<Filter> imageFilters()
 
 std::vector<Filter> medicalImageExportFilters()
 {
-  return {{"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr"}};
+  // macOS validates the final suffix of compound filenames. Include "gz" so that the native save
+  // panel recognizes the standard NIfTI filename "image.nii.gz" instead of incorrectly warning
+  // that its final suffix differs from ".nii". The image writer still validates the complete path.
+  return {{"Medical images", "nii,nii.gz,gz,nrrd,nhdr,mha,mhd,img,hdr"}};
 }
 
 std::vector<Filter> imageExportFilters()
 {
   return {
-    {"Images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr,jpg,jpeg,jpe,png,tif,tiff,bmp,dib"},
-    {"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr"},
+    {"Images", "nii,nii.gz,gz,nrrd,nhdr,mha,mhd,img,hdr,jpg,jpeg,jpe,png,tif,tiff,bmp,dib"},
+    {"Medical images", "nii,nii.gz,gz,nrrd,nhdr,mha,mhd,img,hdr"},
     {"Standard 2D images", "jpg,jpeg,jpe,png,tif,tiff,bmp,dib"}};
 }
 

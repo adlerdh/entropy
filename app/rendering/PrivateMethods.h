@@ -303,6 +303,18 @@ void appendImportedMeshesForView(
   const CurrentImages& imageSegPairs,
   std::vector<rendering::mesh::MeshRenderable>& renderables);
 
+/** Prepare immutable imported-mesh geometry and its current world placement. */
+std::optional<PreparedImportedMeshGeometry> prepareImportedMeshGeometry(
+  const uuids::uuid& imageUid,
+  const uuids::uuid& meshUid);
+
+/** Draw cached imported-mesh intersections with the current 2D slice plane. */
+void renderImportedMeshIntersectionsForView(
+  const View& view,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldOffsetXhairs,
+  const CurrentImages& imageSegPairs);
+
 /**
  * @brief Apply completed background mesh extraction jobs to the CPU mesh cache.
  */

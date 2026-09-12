@@ -294,7 +294,8 @@ void to_json(json& j, const serialize::ImportedMesh& mesh)
   addIfChanged(j, "name", mesh.m_name, mesh.m_path.stem().string());
   addIfChanged(j, "color", vec3ToJson(mesh.m_color), vec3ToJson(defaults.m_color));
   addIfChanged(j, "opacity", mesh.m_opacity, defaults.m_opacity);
-  addIfChanged(j, "visible", mesh.m_visible, defaults.m_visible);
+  addIfChanged(j, "visible2d", mesh.m_visibleIn2d, defaults.m_visibleIn2d);
+  addIfChanged(j, "visible3d", mesh.m_visibleIn3d, defaults.m_visibleIn3d);
 }
 
 void from_json(const json& j, serialize::ImportedMesh& mesh)
@@ -306,7 +307,8 @@ void from_json(const json& j, serialize::ImportedMesh& mesh)
     mesh.m_color = glm::clamp(vec3FromJson(*color), glm::vec3{0.0f}, glm::vec3{1.0f});
   }
   mesh.m_opacity = std::clamp(j.value("opacity", mesh.m_opacity), 0.0f, 1.0f);
-  mesh.m_visible = j.value("visible", mesh.m_visible);
+  mesh.m_visibleIn2d = j.value("visible2d", mesh.m_visibleIn2d);
+  mesh.m_visibleIn3d = j.value("visible3d", j.value("visible", mesh.m_visibleIn3d));
 }
 
 void to_json(json& j, const serialize::DicomSource& source)

@@ -263,6 +263,13 @@ TEST_CASE("Current-world export bakes affine and nonlinear transformations")
   }));
 }
 
+TEST_CASE("Imported meshes default to three-dimensional visibility")
+{
+  const MeshDisplaySettings display;
+  CHECK_FALSE(display.visibleIn2d);
+  CHECK(display.visibleIn3d);
+}
+
 TEST_CASE("FreeSurfer coordinates without volume geometry require an explicit policy")
 {
   const MeshIO meshIo;

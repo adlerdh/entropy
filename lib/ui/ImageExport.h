@@ -26,7 +26,7 @@ const serialize::DicomSource* dicomSourceForImage(const AppData& appData, const 
  * @param[in,out] appData Application data containing the image.
  * @param[in] imageUid Image UID to export.
  *
- * @return True when a file was selected and written successfully.
+ * @return True when a file was selected and the background export was started.
  */
 bool exportImage(AppData& appData, const uuids::uuid& imageUid);
 
@@ -34,7 +34,7 @@ bool exportImage(AppData& appData, const uuids::uuid& imageUid);
  * @brief Export a loaded segmentation without changing its project source identity.
  * @param[in,out] appData Application data containing the segmentation.
  * @param[in] segmentationUid Segmentation UID to export.
- * @return True when a destination was selected and written successfully.
+ * @return True when a destination was selected and the background export was started.
  */
 bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid);
 } // namespace image_export

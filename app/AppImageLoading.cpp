@@ -1137,7 +1137,8 @@ bool EntropyApp::loadSerializedImage(
     record.name = serializedMesh.m_name;
     record.display.baseColor = serializedMesh.m_color;
     record.display.opacity = serializedMesh.m_opacity;
-    record.display.visible = serializedMesh.m_visible;
+    record.display.visibleIn2d = serializedMesh.m_visibleIn2d;
+    record.display.visibleIn3d = serializedMesh.m_visibleIn3d;
     if (const auto meshUid = m_data.addImportedMesh(*imageUid, std::move(record))) {
       spdlog::info("Loaded imported mesh {} from {} for image {}", *meshUid, serializedMesh.m_path, *imageUid);
     }

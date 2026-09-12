@@ -535,7 +535,8 @@ struct ImportedMesh
   std::string m_name;           //!< User-visible name
   glm::vec3 m_color{0.8f};      //!< Base surface color
   float m_opacity = 1.0f;       //!< Surface opacity
-  bool m_visible = true;        //!< Visibility in 3D views
+  bool m_visibleIn2d = false;   //!< Intersection-contour visibility in 2D views
+  bool m_visibleIn3d = true;    //!< Surface visibility in 3D views
 };
 
 void to_json(nlohmann::json& j, const ImportedMesh& mesh);

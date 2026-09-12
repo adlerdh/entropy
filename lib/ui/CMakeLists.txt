@@ -1,6 +1,7 @@
 set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/AboutIcon.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/DicomMetadataTable.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ExportJobService.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/InputLoadErrorDialog.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/InputLoadErrorDialogNative.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogModel.cpp"
@@ -46,6 +47,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/PaletteWidget.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/SegmentationLabelsWidget.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/AnnotationWindow.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/windows/ExportStatusWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/ImagePropertiesWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionTableWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionWindow.cpp"

@@ -3,6 +3,7 @@
 #include "image/DicomSeries.h"
 #include "image/ImageHeader.h"
 #include "image/ImageSpatialMetadata.h"
+#include "ui/ExportJobService.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -209,6 +210,9 @@ struct GuiData
 
   std::shared_ptr<MeshExtractionStatus> m_meshExtractionStatus =
     std::make_shared<MeshExtractionStatus>(); //!< Active CPU mesh extraction status
+
+  /// Background image and mesh export worker shared by all export entry points.
+  std::shared_ptr<ui::export_jobs::Service> m_exportJobs = std::make_shared<ui::export_jobs::Service>();
 
   /// Number of already-finalized images that image-dependent panels may render while a background load is active.
   std::optional<std::size_t> m_visibleImageCountDuringLoad = std::nullopt;

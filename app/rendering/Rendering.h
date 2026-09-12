@@ -18,12 +18,14 @@
 #include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshPlaneIntersection.h"
 #include "rendering/mesh/MeshRenderer.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/Uniforms.h"
 
 #include <glm/fwd.hpp>
+#include <glm/mat4x4.hpp>
 #include <uuid.h>
 
 #include <chrono>
@@ -341,6 +343,29 @@ private:
     std::future<std::optional<DistanceMapImageResult>> future;
   };
 
+  /// CPU geometry and placement prepared for rendering an imported mesh.
+  struct PreparedImportedMeshGeometry
+  {
+    const rendering::mesh::MeshData* geometry = nullptr;
+    glm::mat4 world_T_mesh{1.0f};
+    uint64_t geometryVersion = 0;
+  };
+
+  struct ImportedMeshPlaneIntersectorCache
+  {
+    uint64_t geometryVersion = 0;
+    std::unique_ptr<rendering::mesh::MeshPlaneIntersector> intersector;
+  };
+
+  struct ImportedMeshSliceIntersectionCache
+  {
+    uint64_t geometryVersion = 0;
+    glm::vec3 meshPlaneOrigin{0.0f};
+    glm::vec3 meshPlaneNormal{0.0f};
+    glm::mat4 world_T_mesh{1.0f};
+    std::vector<rendering::mesh::MeshPlaneIntersectionSegment> worldSegments;
+  };
+
 #include "rendering/PrivateMethods.h"
 
   /// Shared application state. Not owned; Rendering reads and updates render-facing state through this reference.
@@ -433,6 +458,9 @@ private:
   /// CPU geometry for imported meshes, retained for bounds, shadows, ambient occlusion, and picking.
   std::unordered_map<uuids::uuid, rendering::mesh::MeshData> m_importedMeshData;
   std::unordered_map<uuids::uuid, uint64_t> m_importedMeshVersions; //!< Cached transformed-geometry versions
+  std::unordered_map<uuids::uuid, ImportedMeshPlaneIntersectorCache> m_importedMeshPlaneIntersectors;
+  std::unordered_map<uuids::uuid, std::unordered_map<uuids::uuid, ImportedMeshSliceIntersectionCache>>
+    m_importedMeshSliceIntersections;
 
   std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
   std::unordered_map<uuids::uuid, PendingSegmentationLabelInventory> m_pendingSegmentationLabelInventories;

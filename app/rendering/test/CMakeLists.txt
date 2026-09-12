@@ -1,5 +1,6 @@
 add_executable(TestRendering
   EmbeddedResourceTests.cpp
+  MeshPlaneIntersectionTests.cpp
   MeshTests.cpp
   MeshOpenGlResourceTests.cpp
   VectorDrawingHelpersTests.cpp

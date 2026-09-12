@@ -3316,18 +3316,20 @@ void renderImageHeader(
     const auto meshUids = appData.imageToImportedMeshUids(imageUid);
     if (ImGui::BeginTable(
           "##importedMeshes",
-          3,
+          4,
           ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
     {
+      ImGui::TableSetupColumn("2D", ImGuiTableColumnFlags_WidthFixed, ui::scaledPixel(36.0f));
       ImGui::TableSetupColumn("3D", ImGuiTableColumnFlags_WidthFixed, ui::scaledPixel(36.0f));
       ImGui::TableSetupColumn("Mesh", ImGuiTableColumnFlags_WidthStretch, 2.0f);
       ImGui::TableSetupColumn("Opacity", ImGuiTableColumnFlags_WidthStretch, 1.0f);
       ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-      for (int column = 0; column < 3; ++column) {
+      for (int column = 0; column < 4; ++column) {
         ImGui::TableSetColumnIndex(column);
         ImGui::TableHeader(ImGui::TableGetColumnName(column));
         if (ImGui::IsItemHovered()) {
-          static constexpr std::array<const char*, 3> tooltips{
+          static constexpr std::array<const char*, 4> tooltips{
+            "Show mesh intersections in 2D views",
             "Visibility in 3D views",
             "Imported mesh name and base color",
             "Surface opacity"};
@@ -3343,12 +3345,18 @@ void renderImageHeader(
         ImGui::PushID(uuids::to_string(meshUid).c_str());
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::Checkbox("##visible", &imported->display.visible);
+        ImGui::Checkbox("##visible2d", &imported->display.visibleIn2d);
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("Show this imported mesh's intersection with the current slice in 2D views");
+        }
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Checkbox("##visible3d", &imported->display.visibleIn3d);
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("Show this imported mesh in 3D views");
         }
 
-        ImGui::TableSetColumnIndex(1);
+        ImGui::TableSetColumnIndex(2);
         ImGui::SetNextItemWidth(ui::scaledPixel(38.0f));
         ImGui::ColorEdit3(
           "##color",
@@ -3365,7 +3373,7 @@ void renderImageHeader(
           ImGui::SetTooltip("Remove this imported mesh from the project");
         }
 
-        ImGui::TableSetColumnIndex(2);
+        ImGui::TableSetColumnIndex(3);
         ImGui::SetNextItemWidth(-1.0f);
         ImGui::SliderFloat("##opacity", &imported->display.opacity, 0.0f, 1.0f, "%.2f");
         ImGui::PopID();

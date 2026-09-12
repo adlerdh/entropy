@@ -1085,7 +1085,8 @@ TEST_CASE(
   CHECK(meshes.at(0).at("uid") == "11111111-2222-3333-4444-555555555555");
   CHECK(meshes.at(0).at("path") == "surface.vtp");
   CHECK_FALSE(meshes.at(0).contains("name"));
-  CHECK_FALSE(meshes.at(0).contains("visible"));
+  CHECK_FALSE(meshes.at(0).contains("visible2d"));
+  CHECK_FALSE(meshes.at(0).contains("visible3d"));
   CHECK_FALSE(meshes.at(0).contains("opacity"));
   CHECK_FALSE(meshes.at(0).contains("color"));
 
@@ -1095,9 +1096,28 @@ TEST_CASE(
   CHECK(restoredMesh.m_uid == "11111111-2222-3333-4444-555555555555");
   CHECK(restoredMesh.m_path == "surface.vtp");
   CHECK(restoredMesh.m_name == "surface");
-  CHECK(restoredMesh.m_visible);
+  CHECK_FALSE(restoredMesh.m_visibleIn2d);
+  CHECK(restoredMesh.m_visibleIn3d);
   CHECK(restoredMesh.m_opacity == 1.0f);
   CHECK(restoredMesh.m_color == glm::vec3{0.8f});
+}
+
+TEST_CASE("Imported mesh 2D and 3D visibility serialize independently", "[project][serialization][mesh]")
+{
+  serialize::ImportedMesh mesh{
+    .m_uid = "11111111-2222-3333-4444-555555555555",
+    .m_path = "surface.vtp",
+    .m_visibleIn2d = true,
+    .m_visibleIn3d = false};
+
+  const json serialized = mesh;
+  CHECK(serialized.at("visible2d") == true);
+  CHECK(serialized.at("visible3d") == false);
+  CHECK_FALSE(serialized.contains("visible"));
+
+  const serialize::ImportedMesh restored = serialized.get<serialize::ImportedMesh>();
+  CHECK(restored.m_visibleIn2d);
+  CHECK_FALSE(restored.m_visibleIn3d);
 }
 
 TEST_CASE("Project serialization preserves modified default layout overrides", "[project][serialization]")
