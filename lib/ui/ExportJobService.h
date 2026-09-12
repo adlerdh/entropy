@@ -6,7 +6,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stop_token>
 #include <string>
 #include <vector>
 
@@ -82,10 +81,9 @@ public:
 
 private:
   friend class Service;
-  JobContext(std::shared_ptr<detail::SharedState> state, std::stop_token stopToken);
+  explicit JobContext(std::shared_ptr<detail::SharedState> state);
 
   std::shared_ptr<detail::SharedState> m_state;
-  std::stop_token m_stopToken;
 };
 
 /// Owns one background export worker and its observable status.

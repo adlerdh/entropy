@@ -94,10 +94,7 @@ Result Result::cancelled(std::string message)
   return {.outcome = Outcome::Cancelled, .message = std::move(message), .outputFileNames = {}};
 }
 
-JobContext::JobContext(std::shared_ptr<detail::SharedState> state, std::stop_token stopToken)
-  : m_state{std::move(state)}, m_stopToken{std::move(stopToken)}
-{
-}
+JobContext::JobContext(std::shared_ptr<detail::SharedState> state) : m_state{std::move(state)} {}
 
 void JobContext::update(std::string phase, const std::optional<float> progress)
 {
@@ -111,9 +108,6 @@ void JobContext::update(std::string phase, const std::optional<float> progress)
 
 bool JobContext::cancellationRequested() const
 {
-  if (m_stopToken.stop_requested()) {
-    return true;
-  }
   std::scoped_lock lock(m_state->mutex);
   return m_state->snapshot.cancellationRequested;
 }
@@ -122,7 +116,7 @@ class Service::Worker
 {
 public:
   std::mutex mutex;
-  std::jthread thread;
+  std::thread thread;
 };
 
 Service::Service() : m_state{std::make_shared<detail::SharedState>()}, m_worker{std::make_unique<Worker>()} {}
@@ -137,7 +131,6 @@ Service::~Service()
     }
   }
   if (m_worker->thread.joinable()) {
-    m_worker->thread.request_stop();
     m_worker->thread.join();
   }
 }
@@ -177,8 +170,8 @@ bool Service::submit(Request request)
 
   Task task = std::move(request.task);
   const auto state = m_state;
-  m_worker->thread = std::jthread([state, task = std::move(task)](std::stop_token stopToken) mutable {
-    JobContext context{state, std::move(stopToken)};
+  m_worker->thread = std::thread([state, task = std::move(task)]() mutable {
+    JobContext context{state};
     Result result;
     try {
       result = task(context);
@@ -219,9 +212,6 @@ void Service::requestCancel()
       return;
     }
     m_state->snapshot.cancellationRequested = true;
-  }
-  if (m_worker->thread.joinable()) {
-    m_worker->thread.request_stop();
   }
 }
 
