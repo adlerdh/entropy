@@ -231,7 +231,7 @@ void renderRegionStatisticsWindow(AppData& appData, RegionStatisticsController& 
   ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(900.0f, 650.0f), ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
   if (!ImGui::Begin(
-        "Segmentation Region Statistics##RegionStatistics",
+        "Segmentation Label Region Statistics##RegionStatistics",
         &appData.guiData().m_showRegionStatisticsWindow))
   {
     ImGui::End();

@@ -264,6 +264,14 @@ std::vector<Filter> medicalImageExportFilters()
   return {{"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr"}};
 }
 
+std::vector<Filter> imageExportFilters()
+{
+  return {
+    {"Images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr,jpg,jpeg,jpe,png,tif,tiff,bmp,dib"},
+    {"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr"},
+    {"Standard 2D images", "jpg,jpeg,jpe,png,tif,tiff,bmp,dib"}};
+}
+
 std::vector<Filter> meshFilters()
 {
   return {

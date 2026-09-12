@@ -65,6 +65,32 @@ std::optional<native_dialog::MessageDialogResult> resultFromButtonId(int buttonI
   }
 }
 
+PCWSTR taskDialogIcon(native_dialog::MessageDialogSeverity severity)
+{
+  switch (severity) {
+    case native_dialog::MessageDialogSeverity::Information:
+      return TD_INFORMATION_ICON;
+    case native_dialog::MessageDialogSeverity::Warning:
+      return TD_WARNING_ICON;
+    case native_dialog::MessageDialogSeverity::Error:
+      return TD_ERROR_ICON;
+  }
+  return TD_WARNING_ICON;
+}
+
+UINT messageBoxIcon(native_dialog::MessageDialogSeverity severity)
+{
+  switch (severity) {
+    case native_dialog::MessageDialogSeverity::Information:
+      return MB_ICONINFORMATION;
+    case native_dialog::MessageDialogSeverity::Warning:
+      return MB_ICONWARNING;
+    case native_dialog::MessageDialogSeverity::Error:
+      return MB_ICONERROR;
+  }
+  return MB_ICONWARNING;
+}
+
 /**
  * @brief Select MessageBoxW button flags for the fallback dialog.
  *
@@ -91,7 +117,7 @@ std::optional<native_dialog::MessageDialogResult> showFallbackMessageBox(
   std::size_t numButtons,
   native_dialog::MessageDialogSeverity severity)
 {
-  const UINT icon = severity == native_dialog::MessageDialogSeverity::Error ? MB_ICONERROR : MB_ICONWARNING;
+  const UINT icon = messageBoxIcon(severity);
   const int result = MessageBoxW(nullptr, text.c_str(), title.c_str(), icon | messageBoxButtons(numButtons));
   if (numButtons >= 3) {
     if (IDYES == result) return native_dialog::MessageDialogResult::FirstButton;
@@ -133,7 +159,7 @@ std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog
   config.pszWindowTitle = title.c_str();
   config.pszMainInstruction = mainInstruction.c_str();
   config.pszContent = content.empty() ? nullptr : content.c_str();
-  config.pszMainIcon = dialog.severity == MessageDialogSeverity::Error ? TD_ERROR_ICON : TD_WARNING_ICON;
+  config.pszMainIcon = taskDialogIcon(dialog.severity);
   config.cButtons = static_cast<UINT>(buttons.size());
   config.pButtons = buttons.data();
   config.nDefaultButton = buttonLabels.size() > 1 ? sk_secondButtonId : sk_firstButtonId;

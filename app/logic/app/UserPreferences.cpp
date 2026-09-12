@@ -106,6 +106,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "density",
       "toolbarScale",
       "windowBackgroundOpacity",
+      "showImageExportFormatGuide",
+      "showSegmentationExportFormatGuide",
+      "showMeshExportFormatGuide",
       "precision"};
   }
   else if (path == "rendering/raycasting") {
@@ -454,6 +457,9 @@ json toJson(
       {"showLayoutTabs", settings.showLayoutTabs()},
       {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)},
       {"showGlobalTimeControls", settings.showGlobalTimeControls()},
+      {"showImageExportFormatGuide", settings.showImageExportFormatGuide()},
+      {"showSegmentationExportFormatGuide", settings.showSegmentationExportFormatGuide()},
+      {"showMeshExportFormatGuide", settings.showMeshExportFormatGuide()},
       {"precision",
        {{"imageValues", precisionPreferences.imageValuePrecision},
         {"coordinates", precisionPreferences.coordsPrecision},
@@ -664,6 +670,21 @@ void applyJson(
         showTimeControls != interface->end() && showTimeControls->is_boolean())
     {
       settings.setShowGlobalTimeControls(showTimeControls->get<bool>());
+    }
+    if (const auto showExportGuide = interface->find("showImageExportFormatGuide");
+        showExportGuide != interface->end() && showExportGuide->is_boolean())
+    {
+      settings.setShowImageExportFormatGuide(showExportGuide->get<bool>());
+    }
+    if (const auto showExportGuide = interface->find("showSegmentationExportFormatGuide");
+        showExportGuide != interface->end() && showExportGuide->is_boolean())
+    {
+      settings.setShowSegmentationExportFormatGuide(showExportGuide->get<bool>());
+    }
+    if (const auto showExportGuide = interface->find("showMeshExportFormatGuide");
+        showExportGuide != interface->end() && showExportGuide->is_boolean())
+    {
+      settings.setShowMeshExportFormatGuide(showExportGuide->get<bool>());
     }
     if (const auto precision = interface->find("precision"); precision != interface->end() && precision->is_object()) {
       precisionPreferences.imageValuePrecision =

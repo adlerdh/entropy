@@ -43,6 +43,9 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setShowGlobalTimeControls(false);
   settings.setSynchronizeTimeSeries(false);
   settings.setAutomaticUpdateChecksEnabled(true);
+  settings.setShowImageExportFormatGuide(false);
+  settings.setShowSegmentationExportFormatGuide(false);
+  settings.setShowMeshExportFormatGuide(false);
   settings.setReplaceBackgroundWithForeground(true);
   settings.setUse3dBrush(true);
   settings.setUseIsotropicBrush(false);
@@ -258,6 +261,9 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.showGlobalTimeControls() == expected.showGlobalTimeControls());
   CHECK(actual.synchronizeTimeSeries() == expected.synchronizeTimeSeries());
   CHECK(actual.automaticUpdateChecksEnabled() == expected.automaticUpdateChecksEnabled());
+  CHECK(actual.showImageExportFormatGuide() == expected.showImageExportFormatGuide());
+  CHECK(actual.showSegmentationExportFormatGuide() == expected.showSegmentationExportFormatGuide());
+  CHECK(actual.showMeshExportFormatGuide() == expected.showMeshExportFormatGuide());
   CHECK(actual.recentImageGroups().size() == expected.recentImageGroups().size());
   if (!expected.recentImageGroups().empty()) {
     CHECK(actual.recentImageGroups().front().paths == expected.recentImageGroups().front().paths);
@@ -835,6 +841,9 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("interface").at("showLayoutTabs") == true);
   CHECK(root.at("interface").at("layoutTabsPosition") == "top");
   CHECK(root.at("interface").at("showGlobalTimeControls") == true);
+  CHECK(root.at("interface").at("showImageExportFormatGuide") == true);
+  CHECK(root.at("interface").at("showSegmentationExportFormatGuide") == true);
+  CHECK(root.at("interface").at("showMeshExportFormatGuide") == true);
   CHECK(root.at("interface").at("precision").at("imageValues") == 3);
   CHECK(root.at("interface").at("precision").at("coordinates") == 3);
   CHECK(root.at("interface").at("precision").at("transformations") == 3);

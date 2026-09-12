@@ -2,6 +2,7 @@
 #include "image/ImageDerivedData.h"
 #include "image/Isosurface.h"
 #include "image/ImageUtility.h"
+#include "image/ImageWriter.h"
 #include "image/internal/ImageCastHelper.tpp"
 #include "image/internal/ImageUtilityItk.h"
 
@@ -522,7 +523,7 @@ TEST_CASE("ITK enum mapping covers all supported pixel and component types", "[i
   CHECK(toItkComponentType(ComponentType::Long) == itk::IOComponentEnum::LONG);
   CHECK(toItkComponentType(ComponentType::ULong) == itk::IOComponentEnum::ULONG);
   CHECK(toItkComponentType(ComponentType::LongLong) == itk::IOComponentEnum::LONGLONG);
-  CHECK(toItkComponentType(ComponentType::ULongLong) == itk::IOComponentEnum::ULONG);
+  CHECK(toItkComponentType(ComponentType::ULongLong) == itk::IOComponentEnum::ULONGLONG);
   CHECK(toItkComponentType(ComponentType::LongDouble) == itk::IOComponentEnum::LDOUBLE);
   CHECK(toItkComponentType(ComponentType::Undefined) == itk::IOComponentEnum::UNKNOWNCOMPONENTTYPE);
 }
@@ -581,10 +582,33 @@ TEST_CASE("Raw component buffers convert and clamp every supported source type",
   CHECK(clampedToInt8[1] == 0);
   CHECK(clampedToInt8[2] == std::numeric_limits<int8_t>::max());
 
-  const auto nullConverted = createBuffer<uint16_t>(nullptr, 3, ComponentType::UInt16);
-  CHECK(nullConverted == std::vector<uint16_t>{0, 0, 0});
+  const std::vector<int8_t> narrowSignedSource{-5, 100};
+  CHECK(
+    createBuffer<int32_t>(narrowSignedSource.data(), narrowSignedSource.size(), ComponentType::Int8) ==
+    std::vector<int32_t>{-5, 100});
+
+  const auto clampedToUInt16 = createBuffer<uint16_t>(signedSource.data(), signedSource.size(), ComponentType::Int16);
+  CHECK(clampedToUInt16 == std::vector<uint16_t>{0u, 0u, 200u});
+
+  CHECK_THROWS_AS(createBuffer<uint16_t>(nullptr, 3, ComponentType::UInt16), std::exception);
   CHECK_THROWS_AS(
     createBuffer<uint8_t>(signedSource.data(), signedSource.size(), ComponentType::Undefined),
+    std::exception);
+}
+
+TEST_CASE("Raw image construction rejects null pixel buffers", "[image][raw][errors]")
+{
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::UInt16, 1u, glm::uvec3{2u, 2u, 1u});
+  ImageHeader header(ioInfo, ioInfo, false);
+  const std::vector<const void*> buffers{nullptr};
+
+  CHECK_THROWS_AS(
+    Image(
+      header,
+      "null-buffer",
+      Image::ImageRepresentation::Image,
+      Image::MultiComponentBufferType::SeparateImages,
+      buffers),
     std::exception);
 }
 
@@ -1019,6 +1043,13 @@ TEST_CASE(
     CHECK(floatImage.settings().interpolationMode(component) == InterpolationMode::Linear);
   }
   CHECK(floatImage.settings().colorInterpolationMode() == InterpolationMode::Linear);
+
+  const Image headerOnlyImage(
+    labelHeader,
+    "header-only-integer-image",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages);
+  CHECK(headerOnlyImage.settings().interpolationMode() == InterpolationMode::Linear);
 }
 
 TEST_CASE("Constant components get an editable nonzero window", "[image][settings]")
@@ -1503,4 +1534,151 @@ TEST_CASE("Image components save to disk and read back with geometry and values 
   CHECK(reloaded.value<double>(0, 3).value() == Catch::Approx(4.0));
 
   CHECK_FALSE(image.saveComponentToDisk(1, testDirectory() / "missing-component.nrrd"));
+}
+
+TEST_CASE("Image writer exports every component from separated storage", "[image][export][io]")
+{
+  Image image = makeThreeComponentImage();
+  const fs::path fileName = testDirectory() / "exported-vector.nrrd";
+
+  const image_io::WriteResult result = image_io::writeImage(image, fileName);
+  REQUIRE(result);
+
+  Image reloaded(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  REQUIRE(reloaded.header().numComponentsPerPixel() == 3u);
+  CHECK(reloaded.header().memoryComponentType() == ComponentType::Float32);
+  CHECK(reloaded.value<float>(0u, 3u) == Catch::Approx(4.0f));
+  CHECK(reloaded.value<float>(1u, 0u) == Catch::Approx(4.0f));
+  CHECK(reloaded.value<float>(2u, 2u) == Catch::Approx(10.0f));
+}
+
+TEST_CASE("Image writer converts formats while preserving physical geometry", "[image][export][geometry][io]")
+{
+  const glm::uvec3 dimensions{2u, 2u, 2u};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::UInt16, 1u, dimensions);
+  ioInfo.m_spaceInfo.m_origin = {11.0, -7.0, 3.5};
+  ioInfo.m_spaceInfo.m_spacing = {0.4, 1.25, 2.5};
+  ioInfo.m_spaceInfo.m_directions = {{0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}};
+  ImageHeader header(ioInfo, ioInfo, false);
+  const std::vector<std::uint16_t> values{1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u};
+  const std::vector<const void*> buffers{values.data()};
+  const Image image = Image::fromCopiedData(
+    header,
+    "geometry",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+  const fs::path fileName = testDirectory() / "converted-image.mha";
+
+  const image_io::WriteResult result = image_io::writeImage(image, fileName);
+  INFO(result.message);
+  REQUIRE(result);
+
+  const Image reloaded(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  CHECK(reloaded.header().pixelDimensions() == dimensions);
+  CHECK(reloaded.header().origin().x == Catch::Approx(11.0f));
+  CHECK(reloaded.header().origin().y == Catch::Approx(-7.0f));
+  CHECK(reloaded.header().origin().z == Catch::Approx(3.5f));
+  CHECK(reloaded.header().spacing().x == Catch::Approx(0.4f));
+  CHECK(reloaded.header().spacing().y == Catch::Approx(1.25f));
+  CHECK(reloaded.header().spacing().z == Catch::Approx(2.5f));
+  for (glm::length_t column = 0; column < 3; ++column) {
+    for (glm::length_t row = 0; row < 3; ++row) {
+      CHECK(reloaded.header().directions()[column][row] == Catch::Approx(image.header().directions()[column][row]));
+    }
+  }
+  CHECK(reloaded.value<std::uint16_t>(0u, 7u) == 8u);
+}
+
+TEST_CASE("Image writer exports planar interleaved RGB data", "[image][export][raster][io]")
+{
+  const Image image = makeRawRasterRgbImage();
+  const fs::path fileName = testDirectory() / "exported-rgb.png";
+
+  REQUIRE(image_io::writeImage(image, fileName));
+
+  const Image reloaded(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::InterleavedImage);
+  REQUIRE(reloaded.header().numComponentsPerPixel() == 3u);
+  CHECK(reloaded.header().memoryComponentType() == ComponentType::UInt8);
+  CHECK(reloaded.value<std::uint8_t>(0u, 0u) == 40u);
+  CHECK(reloaded.value<std::uint8_t>(1u, 2u) == 110u);
+  CHECK(reloaded.value<std::uint8_t>(2u, 3u) == 150u);
+}
+
+TEST_CASE("Image writer preserves regular time axes and every frame", "[image][export][time][io]")
+{
+  Image image = makeTimeSeriesVectorImage();
+  const fs::path fileName = testDirectory() / "exported-time-series.nrrd";
+
+  REQUIRE(image_io::writeImage(image, fileName));
+
+  Image reloaded(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  REQUIRE(reloaded.timeAxis().numTimePoints() == 2u);
+  CHECK(reloaded.timeAxis().value(0u) == Catch::Approx(0.0));
+  CHECK(reloaded.timeAxis().spacing() == Catch::Approx(1.0));
+  CHECK(reloaded.timeAxis().units() == "sec");
+  REQUIRE(reloaded.header().numComponentsPerPixel() == 3u);
+  CHECK(reloaded.value<float>(0u, 0u, 1u) == Catch::Approx(11.0f));
+  CHECK(reloaded.value<float>(1u, 3u, 1u) == Catch::Approx(18.0f));
+  CHECK(reloaded.value<float>(2u, 3u, 1u) == Catch::Approx(22.0f));
+}
+
+TEST_CASE("Image writer can select one component without changing source identity", "[image][export][component][io]")
+{
+  Image image = makeTimeSeriesVectorImage();
+  const fs::path sourceFileName = image.header().fileName();
+  const fs::path fileName = testDirectory() / "exported-component.nrrd";
+
+  REQUIRE(image_io::writeImage(image, fileName, {.component = 1u}));
+  CHECK(image.header().fileName() == sourceFileName);
+
+  Image reloaded(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  REQUIRE(reloaded.header().numComponentsPerPixel() == 1u);
+  REQUIRE(reloaded.timeAxis().numTimePoints() == 2u);
+  CHECK(reloaded.value<float>(0u, 0u, 0u) == Catch::Approx(5.0f));
+  CHECK(reloaded.value<float>(0u, 3u, 1u) == Catch::Approx(18.0f));
+}
+
+TEST_CASE("Image writer reports invalid requests without throwing", "[image][export][errors]")
+{
+  Image image = makeRawImage();
+
+  CHECK(image_io::writeImage(image, {}).error == image_io::WriteError::EmptyPath);
+  CHECK(
+    image_io::writeImage(image, testDirectory() / "invalid-component.nrrd", {.component = 2u}).error ==
+    image_io::WriteError::InvalidComponent);
+  CHECK(
+    image_io::writeImage(image, testDirectory() / "invalid-time.nrrd", {.timePoint = 1u}).error ==
+    image_io::WriteError::InvalidTimePoint);
+  CHECK(
+    image_io::writeImage(image, testDirectory() / "unsupported.entropy-image").error ==
+    image_io::WriteError::UnsupportedFormat);
+
+  const glm::uvec3 volumeDimensions{2u, 2u, 2u};
+  ImageIoInfo volumeInfo = makeIoInfo(ComponentType::UInt16, 1u, volumeDimensions);
+  ImageHeader volumeHeader(volumeInfo, volumeInfo, false);
+  const std::vector<std::uint16_t> volumeValues(8u, 1u);
+  const std::vector<const void*> volumeBuffers{volumeValues.data()};
+  const Image volume = Image::fromCopiedData(
+    volumeHeader,
+    "volume",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    volumeBuffers);
+  CHECK(image_io::writeImage(volume, testDirectory() / "volume.png").error == image_io::WriteError::UnsupportedFormat);
+
+  const std::vector<std::uint16_t> irregularValues{1u, 2u, 3u, 4u, 5u, 6u};
+  ImageIoInfo irregularInfo = makeIoInfo(ComponentType::UInt16, 1u, glm::uvec3{1u, 1u, 2u});
+  ImageHeader irregularHeader(irregularInfo, irregularInfo, false);
+  const std::vector<const void*> irregularBuffers{irregularValues.data()};
+  const Image irregularTimeImage = Image::fromCopiedData(
+    irregularHeader,
+    "irregular-time",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    irregularBuffers,
+    ImageTimeAxis{{0.0, 1.0, 3.0}, "sec"});
+  CHECK(
+    image_io::writeImage(irregularTimeImage, testDirectory() / "irregular-time.nrrd").error ==
+    image_io::WriteError::IrregularTimeAxis);
 }

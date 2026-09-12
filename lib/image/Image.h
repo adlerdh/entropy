@@ -104,11 +104,11 @@ public:
   ~Image() = default;
 
   /**
-   * @brief Save an image component to disk. If the image is successfully saved and a
-   * new file name is provided, then the Image's file name is set to the new file name.
-   * @param[in] component Component of the image to save
-   * @param[in] newFileName Optional new file name at which to save the image
-   * @return True iff the image was saved successfully
+   * @brief Save one image component and all of its time points to disk.
+   * @param[in] component Component of the image to save.
+   * @param[in] newFileName Optional destination. The source file name is used when omitted.
+   * @return True if the image was saved successfully.
+   * @note Exporting never changes the image's source file name.
    */
   bool saveComponentToDisk(uint32_t component, const std::optional<std::filesystem::path>& newFileName);
 

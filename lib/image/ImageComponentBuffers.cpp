@@ -1,153 +1,24 @@
 #include "image/Image.h"
+#include "image/ImageWriter.h"
 
 #include "internal/ImageCastHelper.tpp"
 #include "internal/ImageUtility.tpp"
-#include "internal/ImageUtilityItk.h"
-#include "image/ImageUtility.h"
 
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <array>
-#include <vector>
 
 namespace fs = std::filesystem;
 
-namespace
-{
-template<typename T>
-std::vector<T> copyComponentValues(const Image& image, uint32_t component)
-{
-  std::vector<T> values;
-  values.reserve(image.header().numPixels());
-
-  for (std::size_t i = 0; i < image.header().numPixels(); ++i) {
-    const auto value = image.value<T>(component, i);
-    if (!value) {
-      return {};
-    }
-    values.push_back(*value);
-  }
-
-  return values;
-}
-
-template<typename T>
-const T* componentBufferForSave(const Image& image, uint32_t component, std::vector<T>& scratch)
-{
-  if (Image::MultiComponentBufferType::InterleavedImage == image.bufferType()) {
-    scratch = copyComponentValues<T>(image, component);
-    return scratch.size() == image.header().numPixels() ? scratch.data() : nullptr;
-  }
-
-  return static_cast<const T*>(image.bufferAsVoid(component));
-}
-} // namespace
-
 bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName)
 {
-  constexpr uint32_t DIM = 3;
-  constexpr bool isVectorImageLocal = false;
-  const fs::path fileName = (newFileName) ? *newFileName : m_header.fileName();
-
-  if (component >= m_header.numComponentsPerPixel()) {
-    spdlog::error(
-      "Invalid image component {} to save to disk; the image has {} components",
-      component,
-      m_header.numComponentsPerPixel());
-    return false;
+  const fs::path fileName = newFileName.value_or(m_header.fileName());
+  const image_io::WriteResult result = image_io::writeImage(*this, fileName, {.component = component});
+  if (!result) {
+    spdlog::error("Cannot write image component {} to '{}': {}", component, fileName, result.message);
   }
-
-  if (!hasPixelData()) {
-    spdlog::error("Cannot save image component {} to disk; pixel data is not loaded", component);
-    return false;
-  }
-
-  std::array<uint32_t, DIM> dims;
-  std::array<double, DIM> origin;
-  std::array<double, DIM> spacing;
-  std::array<std::array<double, DIM>, DIM> directions;
-
-  for (uint32_t i = 0; i < DIM; ++i) {
-    const int ii = static_cast<int>(i);
-    dims[i] = m_header.pixelDimensions()[ii];
-    origin[i] = static_cast<double>(m_header.origin()[ii]);
-    spacing[i] = static_cast<double>(m_header.spacing()[ii]);
-    directions[i] = {
-      static_cast<double>(m_header.directions()[ii].x),
-      static_cast<double>(m_header.directions()[ii].y),
-      static_cast<double>(m_header.directions()[ii].z)};
-  }
-
-  switch (m_header.memoryComponentType()) {
-    case ComponentType::Int8: {
-      std::vector<int8_t> scratch;
-      const auto* buffer = componentBufferForSave<int8_t>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<int8_t, DIM, isVectorImageLocal>(image, fileName);
-    }
-    case ComponentType::UInt8: {
-      std::vector<uint8_t> scratch;
-      const auto* buffer = componentBufferForSave<uint8_t>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<uint8_t, DIM, isVectorImageLocal>(image, fileName);
-    }
-    case ComponentType::Int16: {
-      std::vector<int16_t> scratch;
-      const auto* buffer = componentBufferForSave<int16_t>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<int16_t, DIM, isVectorImageLocal>(image, fileName);
-    }
-    case ComponentType::UInt16: {
-      std::vector<uint16_t> scratch;
-      const auto* buffer = componentBufferForSave<uint16_t>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<uint16_t, DIM, isVectorImageLocal>(image, fileName);
-    }
-    case ComponentType::Int32: {
-      std::vector<int32_t> scratch;
-      const auto* buffer = componentBufferForSave<int32_t>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<int32_t, DIM, isVectorImageLocal>(image, fileName);
-    }
-    case ComponentType::UInt32: {
-      std::vector<uint32_t> scratch;
-      const auto* buffer = componentBufferForSave<uint32_t>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<uint32_t, DIM, isVectorImageLocal>(image, fileName);
-    }
-    case ComponentType::Float32: {
-      std::vector<float> scratch;
-      const auto* buffer = componentBufferForSave<float>(*this, component, scratch);
-      if (!buffer) {
-        return false;
-      }
-      auto image = makeScalarImage(dims, origin, spacing, directions, buffer);
-      return writeImage<float, DIM, isVectorImageLocal>(image, fileName);
-    }
-    default: {
-      return false;
-    }
-  }
+  return static_cast<bool>(result);
 }
 
 bool Image::generateSortedBuffers()

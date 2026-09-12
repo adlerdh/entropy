@@ -78,7 +78,7 @@ enum class MainMenuAction
   AddIsosurfaceRange,
   ImportSurfaceMesh,
   CreateSegmentation,
-  SaveSegmentation,
+  ExportActiveSegmentation,
   ClearSegmentation,
   RemoveSegmentation,
   PreviousForegroundLabel,

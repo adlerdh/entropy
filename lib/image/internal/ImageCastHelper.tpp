@@ -5,7 +5,9 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cmath>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 /**
@@ -19,22 +21,39 @@
 template<typename SrcCompType, typename DstCompType>
 std::vector<DstCompType> createBuffer_dispatch(const void* buffer, std::size_t numElements)
 {
-  // Lowest and max values of destination component type, cast to source component type
-  static const SrcCompType k_lowestValue = static_cast<SrcCompType>(std::numeric_limits<DstCompType>::lowest());
-  static const SrcCompType k_maximumValue = static_cast<SrcCompType>(std::numeric_limits<DstCompType>::max());
-
-  std::vector<DstCompType> data(numElements, 0);
-
   if (!buffer) {
-    spdlog::error("Null buffer when creating buffer: returning zero data");
-    return data;
+    spdlog::error("Cannot create an image buffer from a null source buffer");
+    throwDebug("Cannot create an image buffer from a null source buffer");
   }
 
+  std::vector<DstCompType> data(numElements, 0);
   const SrcCompType* bufferCast = static_cast<const SrcCompType*>(buffer);
+  constexpr long double k_lowestValue = static_cast<long double>(std::numeric_limits<DstCompType>::lowest());
+  constexpr long double k_maximumValue = static_cast<long double>(std::numeric_limits<DstCompType>::max());
 
-  // Clamp values to destination range [lowest, maximum] prior to cast:
   for (std::size_t i = 0; i < numElements; ++i) {
-    data[i] = static_cast<DstCompType>(std::min(std::max(bufferCast[i], k_lowestValue), k_maximumValue));
+    if constexpr (std::is_floating_point_v<SrcCompType>) {
+      if (std::isnan(bufferCast[i])) {
+        if constexpr (std::is_floating_point_v<DstCompType>) {
+          data[i] = static_cast<DstCompType>(bufferCast[i]);
+        }
+        else {
+          data[i] = DstCompType{};
+        }
+        continue;
+      }
+    }
+
+    const long double value = static_cast<long double>(bufferCast[i]);
+    if (value <= k_lowestValue) {
+      data[i] = std::numeric_limits<DstCompType>::lowest();
+    }
+    else if (value >= k_maximumValue) {
+      data[i] = std::numeric_limits<DstCompType>::max();
+    }
+    else {
+      data[i] = static_cast<DstCompType>(bufferCast[i]);
+    }
   }
 
   return data;

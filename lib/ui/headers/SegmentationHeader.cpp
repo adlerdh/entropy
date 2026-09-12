@@ -89,7 +89,7 @@ void renderSegmentationHeader(
   const AllViewsRecenterType& recenterAllViews)
 {
   static const std::string addSegFromFileString = std::string(ICON_FK_FOLDER_OPEN_O) + " Add...";
-  static const std::string SaveSegString = std::string(ICON_FK_FLOPPY_O) + " Save...";
+  static const std::string exportSegString = std::string(ICON_FK_SHARE_SQUARE_O) + " Export...";
   static const std::string addNewSegString = std::string(ICON_FK_FILE_O) + " Create";
   static const std::string clearSegString = std::string(ICON_FK_ERASER) + " Clear";
   static const std::string removeSegString = std::string(ICON_FK_TRASH_O) + " Remove";
@@ -260,28 +260,6 @@ void renderSegmentationHeader(
     ImGui::SetTooltip("Create a new blank segmentation for this image");
   }
 
-  // Save segmentation:
-  const char* const dialogTitle = "Select Segmentation Image";
-  static const auto dialogFilters = native_dialog::segmentationFilters();
-
-  ImGui::SameLine();
-  const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(SaveSegString.c_str(), dialogTitle, dialogFilters);
-
-  if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Save the segmentation to an image file on disk");
-  }
-
-  if (selectedFile) {
-    static constexpr uint32_t compToSave = 0;
-    if (activeSeg->saveComponentToDisk(compToSave, *selectedFile)) {
-      spdlog::info("Saved segmentation image to file {}", *selectedFile);
-      activeSeg->header().setFileName(*selectedFile);
-    }
-    else {
-      spdlog::error("Error saving segmentation image to file {}", *selectedFile);
-    }
-  }
-
   // Clear segmentation:
   ImGui::SameLine();
   if (ImGui::Button(clearSegString.c_str())) {
@@ -289,6 +267,15 @@ void renderSegmentationHeader(
   }
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Clear all values in this segmentation");
+  }
+
+  // Export segmentation:
+  ImGui::SameLine();
+  if (ImGui::Button(exportSegString.c_str())) {
+    image_export::exportSegmentation(appData, *activeSegUid);
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Export this segmentation to another image file format");
   }
 
   // Remove segmentation:
@@ -307,7 +294,7 @@ void renderSegmentationHeader(
     }
   }
 
-  if (ImGui::Button(ICON_FK_BAR_CHART " Statistics...")) {
+  if (ImGui::Button(ICON_FK_BAR_CHART " Label Statistics...")) {
     appData.guiData().m_requestedRegionStatisticsImageUid = imageUid;
     appData.guiData().m_requestedRegionStatisticsSegmentationUid = *activeSegUid;
     appData.guiData().m_showRegionStatisticsWindow = true;
@@ -392,8 +379,8 @@ void renderSegmentationHeader(
       updateLabelColorTableTexture,
       moveCrosshairsToSegLabelCentroid);
 
-    static const std::string exportLabelText = std::string(ICON_FK_FLOPPY_O) + " Export selected label...";
-    static const std::string exportAllLabelsText = std::string(ICON_FK_FLOPPY_O) + " Export all labels...";
+    static const std::string exportLabelText = std::string(ICON_FK_FLOPPY_O) + " Export selected label mesh...";
+    static const std::string exportAllLabelsText = std::string(ICON_FK_FLOPPY_O) + " Export all...";
     const std::size_t currentLabel = appData.settings().foregroundLabel();
     ImGui::BeginDisabled(currentLabel == 0 || !exportLabelMesh);
     if (ImGui::Button(exportLabelText.c_str())) {

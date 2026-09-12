@@ -106,6 +106,11 @@ std::vector<Filter> imageFilters();
  */
 std::vector<Filter> medicalImageExportFilters();
 
+/**
+ * @brief Filters for medical and standard 2D image formats that Entropy can export.
+ */
+std::vector<Filter> imageExportFilters();
+
 /// Filters for supported surface mesh files.
 std::vector<Filter> meshFilters();
 

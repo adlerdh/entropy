@@ -370,7 +370,7 @@ itk::IOComponentEnum toItkComponentType(const ComponentType& componentType)
     case ComponentType::LongLong:
       return itk::IOComponentEnum::LONGLONG;
     case ComponentType::ULongLong:
-      return itk::IOComponentEnum::ULONG;
+      return itk::IOComponentEnum::ULONGLONG;
     case ComponentType::LongDouble:
       return itk::IOComponentEnum::LDOUBLE;
 

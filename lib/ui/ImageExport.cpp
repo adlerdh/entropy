@@ -1,9 +1,12 @@
 #include "ui/ImageExport.h"
 
 #include "ui/NativeFileDialogs.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include "image/Image.h"
+#include "image/ImageWriter.h"
 #include "logic/app/Data.h"
+#include "logic/serialization/ProjectSerialization.h"
 
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
@@ -11,7 +14,6 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <optional>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -36,15 +38,108 @@ std::string sanitizedFileStem(std::string fileName)
   return fileName.empty() ? std::string{"image"} : fileName;
 }
 
-fs::path defaultExportDirectory(const serialize::DicomSource& source, const Image& image)
+fs::path defaultExportDirectory(const serialize::DicomSource* source, const Image& image)
 {
-  if (!source.m_rootPath.empty()) {
-    return source.m_rootPath;
+  if (source && !source->m_rootPath.empty()) {
+    return source->m_rootPath;
   }
-  if (!source.m_files.empty()) {
-    return source.m_files.front().parent_path();
+  if (source && !source->m_files.empty()) {
+    return source->m_files.front().parent_path();
   }
   return image.header().fileName().parent_path();
+}
+
+std::string medicalImageExportFormats()
+{
+  return "Select the output format by giving the exported file one of these extensions:\n\n"
+         "NIfTI: .nii, .nii.gz\n"
+         "NRRD: .nrrd, .nhdr\n"
+         "MetaImage: .mha, .mhd\n"
+         "Analyze 7.5: .img, .hdr";
+}
+
+bool suppressExportFormatGuide(const std::string& title, const std::string& message, const std::string& formats)
+{
+  const auto result = native_dialog::showMessageDialog(
+    {.title = title,
+     .message = message,
+     .informativeText = formats,
+     .firstButton = "Continue",
+     .secondButton = "Don't Show Again",
+     .thirdButton = "",
+     .severity = native_dialog::MessageDialogSeverity::Information});
+  return result && *result == native_dialog::MessageDialogResult::SecondButton;
+}
+
+void showImageExportFormatGuide(AppSettings& settings, bool allowStandardRasterFormats)
+{
+  if (!settings.showImageExportFormatGuide()) return;
+
+  std::string formats = medicalImageExportFormats();
+  if (allowStandardRasterFormats) {
+    formats +=
+      "\n\nFor a single 2D image, Entropy also supports:\n"
+      "JPEG: .jpg, .jpeg, .jpe\n"
+      "PNG: .png\n"
+      "TIFF: .tif, .tiff\n"
+      "BMP: .bmp, .dib";
+  }
+  else {
+    formats += "\n\nStandard image formats such as PNG and JPEG cannot store this image's volume or time-series data.";
+  }
+
+  if (suppressExportFormatGuide(
+        "Image Export Formats",
+        "Entropy writes the image format selected by the filename extension.",
+        formats))
+  {
+    settings.setShowImageExportFormatGuide(false);
+  }
+}
+
+void showSegmentationExportFormatGuide(AppSettings& settings)
+{
+  if (!settings.showSegmentationExportFormatGuide()) return;
+
+  std::string formats = medicalImageExportFormats();
+  formats += "\n\nThese medical image formats preserve segmentation voxel values and spatial geometry.";
+  if (suppressExportFormatGuide(
+        "Segmentation Export Formats",
+        "Entropy writes the segmentation format selected by the filename extension.",
+        formats))
+  {
+    settings.setShowSegmentationExportFormatGuide(false);
+  }
+}
+
+bool exportImageData(
+  const Image& image,
+  const uuids::uuid& imageUid,
+  const std::string& objectName,
+  const fs::path& defaultDirectory,
+  const image_io::WriteOptions& options,
+  bool allowStandardRasterFormats)
+{
+  const std::string defaultName = sanitizedFileStem(image.settings().displayName()) + ".nii.gz";
+  const auto filters =
+    allowStandardRasterFormats ? native_dialog::imageExportFilters() : native_dialog::medicalImageExportFilters();
+  const auto selectedFile = native_dialog::saveFile(filters, defaultDirectory, defaultName);
+  if (!selectedFile) {
+    return false;
+  }
+
+  const image_io::WriteResult result = image_io::writeImage(image, *selectedFile, options);
+  if (!result) {
+    spdlog::error("Failed to export {} {} to '{}': {}", objectName, imageUid, *selectedFile, result.message);
+    native_dialog::showErrorMessageDialog(
+      "Export Failed",
+      "Entropy could not export '" + image.settings().displayName() + "'.",
+      result.message + "\n\nDestination: " + selectedFile->string());
+    return false;
+  }
+
+  spdlog::info("Exported {} {} to '{}'", objectName, imageUid, *selectedFile);
+  return true;
 }
 } // namespace
 
@@ -71,40 +166,42 @@ const serialize::DicomSource* dicomSourceForImage(const AppData& appData, const 
   return image.m_dicomSource ? &*image.m_dicomSource : nullptr;
 }
 
-bool imageHasDicomSource(const AppData& appData, const uuids::uuid& imageUid)
+bool exportImage(AppData& appData, const uuids::uuid& imageUid)
 {
-  return dicomSourceForImage(appData, imageUid) != nullptr;
-}
-
-bool exportDicomImage(AppData& appData, const uuids::uuid& imageUid)
-{
-  const serialize::DicomSource* dicomSource = dicomSourceForImage(appData, imageUid);
-  if (!dicomSource) {
-    spdlog::warn("Cannot export image {}; it is not backed by a DICOM series", imageUid);
-    return false;
-  }
-
   Image* image = appData.image(imageUid);
   if (!image || !image->hasPixelData()) {
-    spdlog::warn("Cannot export DICOM series image {}; pixel data is not loaded", imageUid);
+    spdlog::warn("Cannot export image {}; pixel data is not loaded", imageUid);
     return false;
   }
 
-  const std::string defaultName = sanitizedFileStem(image->settings().displayName()) + ".nii.gz";
-  const auto selectedFile = native_dialog::saveFile(
-    native_dialog::medicalImageExportFilters(),
-    defaultExportDirectory(*dicomSource, *image),
-    defaultName);
-  if (!selectedFile) {
+  const bool allowStandardRasterFormats = image->header().pixelDimensions().z == 1u && !image->isTimeSeries();
+  showImageExportFormatGuide(appData.settings(), allowStandardRasterFormats);
+
+  return exportImageData(
+    *image,
+    imageUid,
+    "image",
+    defaultExportDirectory(dicomSourceForImage(appData, imageUid), *image),
+    {},
+    allowStandardRasterFormats);
+}
+
+bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid)
+{
+  Image* segmentation = appData.seg(segmentationUid);
+  if (!segmentation || !segmentation->hasPixelData()) {
+    spdlog::warn("Cannot export segmentation {}; pixel data is not loaded", segmentationUid);
     return false;
   }
 
-  if (!image->saveComponentToDisk(0, std::optional<fs::path>{selectedFile})) {
-    spdlog::error("Failed to export DICOM series image {} to {}", imageUid, *selectedFile);
-    return false;
-  }
+  showSegmentationExportFormatGuide(appData.settings());
 
-  spdlog::info("Exported DICOM series image {} to {}", imageUid, *selectedFile);
-  return true;
+  return exportImageData(
+    *segmentation,
+    segmentationUid,
+    "segmentation",
+    segmentation->header().fileName().parent_path(),
+    {.component = 0u},
+    false);
 }
 } // namespace image_export

@@ -1148,24 +1148,18 @@ void renderImageHeader(
 
   ImGui::SameLine();
 
-  if (image_export::imageHasDicomSource(appData, imageUid)) {
-    static const std::string exportDicomButtonText = std::string(ICON_FK_FLOPPY_O) + "##ExportDicomSeriesAsImage";
-    const bool canExportImage = image->hasPixelData();
-    if (!canExportImage) {
-      ImGui::BeginDisabled();
-    }
-    if (ImGui::IconButton(exportDicomButtonText.c_str(), buttonSize)) {
-      image_export::exportDicomImage(appData, imageUid);
-    }
-    if (!canExportImage) {
-      ImGui::EndDisabled();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      ImGui::SetTooltip("Export DICOM series as image");
-    }
-
-    ImGui::SameLine();
+  static const std::string exportImageButtonText = std::string(ICON_FK_SHARE_SQUARE_O) + "##ExportImage";
+  const bool canExportImage = image->hasPixelData();
+  ImGui::BeginDisabled(!canExportImage);
+  if (ImGui::IconButton(exportImageButtonText.c_str(), buttonSize)) {
+    image_export::exportImage(appData, imageUid);
   }
+  ImGui::EndDisabled();
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+    ImGui::SetTooltip("Export this image to another image file format");
+  }
+
+  ImGui::SameLine();
 
   if (isRef) {
     ImGui::BeginDisabled();
@@ -3454,10 +3448,6 @@ void renderImageHeader(
 
     ImGui::TreePop();
   }
-
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
 
   ImGui::PopID(); // imageUid
 }

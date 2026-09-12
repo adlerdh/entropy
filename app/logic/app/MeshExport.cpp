@@ -59,17 +59,7 @@ std::optional<mesh::MeshExportSpace> chooseCoordinateSpace()
      .message = "Choose the coordinates to write.",
      .informativeText =
        "Image physical coordinates preserve the mesh before image transforms. Current world coordinates bake in "
-       "the image's affine and forward deformation transforms.\n\n"
-       "Select the output format using its filename extension:\n"
-       "VTK XML PolyData (.vtp)\n"
-       "Legacy VTK PolyData (.vtk)\n"
-       "STL (.stl)\n"
-       "PLY (.ply)\n"
-       "Wavefront OBJ (.obj)\n"
-       "Object File Format (.off)\n"
-       "GIFTI surface (.gii or .surf.gii)\n"
-       "FreeSurfer binary surface (.fsb, .fcv, or a native surface extension)\n"
-       "FreeSurfer ASCII surface (.fsa or .asc)",
+       "the image's affine and forward deformation transforms.",
      .firstButton = "Image Physical",
      .secondButton = "Current World",
      .thirdButton = "Cancel"});
@@ -83,6 +73,40 @@ std::optional<mesh::MeshExportSpace> chooseCoordinateSpace()
     return mesh::MeshExportSpace::CurrentWorld;
   }
   return std::nullopt;
+}
+
+void showMeshExportFormatGuide(AppSettings& settings, bool exportingAllLabels)
+{
+  if (!settings.showMeshExportFormatGuide()) return;
+
+  std::string details =
+    "Select the output format using its filename extension:\n\n"
+    "VTK XML PolyData: .vtp\n"
+    "Legacy VTK PolyData: .vtk\n"
+    "STL: .stl\n"
+    "PLY: .ply\n"
+    "Wavefront OBJ: .obj\n"
+    "Object File Format: .off\n"
+    "GIFTI surface: .gii, .surf.gii\n"
+    "FreeSurfer binary surface: .fsb, .fcv, or a native surface extension\n"
+    "FreeSurfer ASCII surface: .fsa, .asc";
+  if (exportingAllLabels) {
+    details +=
+      "\n\nOne file will be written for every non-empty label. Each output name will be suffixed with its label "
+      "index, for example '_label-12'.";
+  }
+
+  const auto result = native_dialog::showMessageDialog(
+    {.title = "Mesh Export Formats",
+     .message = "Entropy writes the mesh format selected by the filename extension.",
+     .informativeText = details,
+     .firstButton = "Continue",
+     .secondButton = "Don't Show Again",
+     .thirdButton = "",
+     .severity = native_dialog::MessageDialogSeverity::Information});
+  if (result && *result == native_dialog::MessageDialogResult::SecondButton) {
+    settings.setShowMeshExportFormatGuide(false);
+  }
 }
 
 mesh::MeshRecord
@@ -161,6 +185,7 @@ void exportIsosurface(
   if (!image || !surface) {
     return;
   }
+  showMeshExportFormatGuide(appData.settings(), false);
   const auto space = chooseCoordinateSpace();
   if (!space) {
     return;
@@ -196,6 +221,7 @@ void exportSegmentationLabel(
   if (!segmentation) {
     return;
   }
+  showMeshExportFormatGuide(appData.settings(), false);
   const auto space = chooseCoordinateSpace();
   if (!space) {
     return;
@@ -239,15 +265,7 @@ void exportAllSegmentationLabels(AppData& appData, const uuids::uuid& imageUid, 
   if (!segmentation) {
     return;
   }
-  const auto proceed = native_dialog::showMessageDialog(
-    {.title = "Export All Segmentation Labels",
-     .message = "One mesh file will be written for every non-empty label.",
-     .informativeText = "Each output name will be suffixed with its label index, for example '_label-12'.",
-     .firstButton = "Continue",
-     .secondButton = "Cancel"});
-  if (proceed && *proceed != native_dialog::MessageDialogResult::FirstButton) {
-    return;
-  }
+  showMeshExportFormatGuide(appData.settings(), true);
   const auto space = chooseCoordinateSpace();
   if (!space) {
     return;

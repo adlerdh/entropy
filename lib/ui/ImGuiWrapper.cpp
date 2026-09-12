@@ -490,7 +490,7 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
 
   ImGui::DockBuilderDockWindow("Images##Images", leftNode);
   ImGui::DockBuilderDockWindow("Segmentations##Segmentations", leftNode);
-  ImGui::DockBuilderDockWindow("Segmentation Region Statistics##RegionStatistics", bottomNode);
+  ImGui::DockBuilderDockWindow("Segmentation Label Region Statistics##RegionStatistics", bottomNode);
 
   ImGui::DockBuilderDockWindow("Annotations", rightNode);
   ImGui::DockBuilderDockWindow("Landmarks", rightMiddleNode);
@@ -3213,22 +3213,10 @@ void ImGuiWrapper::render()
     static_cast<void>(getActiveImageIndex);
   };
 
-  auto saveActiveSegmentation = [activeSegUid, this]() {
+  auto exportActiveSegmentation = [activeSegUid, this]() {
     const auto segUid = activeSegUid();
-    Image* seg = segUid ? m_appData.seg(*segUid) : nullptr;
-    if (!seg) {
-      return;
-    }
-
-    if (const auto selectedFile = native_dialog::saveFile(native_dialog::segmentationFilters())) {
-      static constexpr uint32_t compToSave = 0;
-      if (seg->saveComponentToDisk(compToSave, selectedFile)) {
-        spdlog::info("Saved segmentation image to file {}", *selectedFile);
-        seg->header().setFileName(*selectedFile);
-      }
-      else {
-        spdlog::error("Error saving segmentation image to file {}", *selectedFile);
-      }
+    if (segUid) {
+      image_export::exportSegmentation(m_appData, *segUid);
     }
   };
 
@@ -3439,7 +3427,7 @@ void ImGuiWrapper::render()
                             activeSegUid,
                             activeAnnotation,
                             createActiveSegmentation,
-                            saveActiveSegmentation,
+                            exportActiveSegmentation,
                             importAnnotationsToActiveImage,
                             exportAnnotationsForActiveImage,
                             createActiveLandmarkGroup,
@@ -3613,7 +3601,7 @@ void ImGuiWrapper::render()
         break;
       case MainMenuAction::ExportActiveImage:
         if (const auto imageUid = activeImageUid()) {
-          image_export::exportDicomImage(m_appData, *imageUid);
+          image_export::exportImage(m_appData, *imageUid);
         }
         break;
       case MainMenuAction::RemoveActiveImage:
@@ -3802,8 +3790,8 @@ void ImGuiWrapper::render()
       case MainMenuAction::CreateSegmentation:
         createActiveSegmentation();
         break;
-      case MainMenuAction::SaveSegmentation:
-        saveActiveSegmentation();
+      case MainMenuAction::ExportActiveSegmentation:
+        exportActiveSegmentation();
         break;
       case MainMenuAction::ClearSegmentation:
         if (const auto segUid = activeSegUid(); segUid && m_clearSeg) m_clearSeg(*segUid);
@@ -4056,7 +4044,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleSegmentationOutline:
         case MainMenuAction::DecreaseSegmentationOpacity:
         case MainMenuAction::IncreaseSegmentationOpacity:
-        case MainMenuAction::SaveSegmentation:
+        case MainMenuAction::ExportActiveSegmentation:
         case MainMenuAction::ClearSegmentation:
           return canUseProjectActions && hasActiveSeg;
         case MainMenuAction::RemoveSegmentation:
@@ -4064,7 +4052,8 @@ void ImGuiWrapper::render()
           return m_appData.imageToSegUids(*activeImageUid()).size() > 1;
         case MainMenuAction::ExportActiveImage:
           if (!canUseProjectActions || !hasActiveImage) return false;
-          return image_export::imageHasDicomSource(m_appData, *activeImageUid());
+          if (const Image* image = m_appData.image(*activeImageUid())) return image->hasPixelData();
+          return false;
         case MainMenuAction::SetActiveImageAsReference:
         case MainMenuAction::RemoveActiveImage:
         case MainMenuAction::MoveActiveImageBackward:

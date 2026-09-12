@@ -57,9 +57,10 @@ std::optional<native_dialog::MessageDialogResult> showZenityDialog(
 {
   std::vector<std::string> args{"zenity"};
   const bool acknowledgementOnly = dialog.secondButton.empty();
-  args.push_back(
-    acknowledgementOnly ? (dialog.severity == native_dialog::MessageDialogSeverity::Error ? "--error" : "--warning")
-                        : "--question");
+  const char* acknowledgementDialog = "--warning";
+  if (dialog.severity == native_dialog::MessageDialogSeverity::Information) acknowledgementDialog = "--info";
+  if (dialog.severity == native_dialog::MessageDialogSeverity::Error) acknowledgementDialog = "--error";
+  args.push_back(acknowledgementOnly ? acknowledgementDialog : "--question");
   args.insert(
     args.end(),
     {"--modal", "--width=440", "--title", dialog.title, "--text", text, "--ok-label", dialog.firstButton});
@@ -85,9 +86,10 @@ std::optional<native_dialog::MessageDialogResult> showKdialogDialog(
   const std::string& text)
 {
   const bool acknowledgementOnly = dialog.secondButton.empty();
-  const std::string dialogType =
-    acknowledgementOnly ? (dialog.severity == native_dialog::MessageDialogSeverity::Error ? "--error" : "--sorry")
-                        : "--warningyesno";
+  const char* acknowledgementDialog = "--sorry";
+  if (dialog.severity == native_dialog::MessageDialogSeverity::Information) acknowledgementDialog = "--msgbox";
+  if (dialog.severity == native_dialog::MessageDialogSeverity::Error) acknowledgementDialog = "--error";
+  const std::string dialogType = acknowledgementOnly ? acknowledgementDialog : "--warningyesno";
   std::vector<std::string> args{"kdialog", dialogType, text, "--title", dialog.title};
   if (!acknowledgementOnly) {
     args.insert(args.end(), {"--yes-label", dialog.firstButton, "--no-label", dialog.secondButton});

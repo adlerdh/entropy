@@ -384,7 +384,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Show Segmentation Region Statistics Panel");
+            ImGui::SetTooltip("Show Segmentation Label Region Statistics Panel");
           }
         }
         ImGui::PopStyleColor(1);

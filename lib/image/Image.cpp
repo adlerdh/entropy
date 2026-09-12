@@ -152,7 +152,10 @@ bool isIntegerComponentType(ComponentType componentType)
 
 bool hasLabelLikeIntegerValues(const Image& image)
 {
-  if (!isIntegerComponentType(image.header().memoryComponentType()) || 0u == image.header().numPixels()) {
+  if (
+    !image.hasPixelData() || !isIntegerComponentType(image.header().memoryComponentType()) ||
+    0u == image.header().numPixels())
+  {
     return false;
   }
 
@@ -403,6 +406,10 @@ Image::Image(
   if (imageDataComponents.empty()) {
     spdlog::error("No image data buffers provided for constructing Image");
     throwDebug("No image data buffers provided for constructing Image");
+  }
+  if (std::any_of(imageDataComponents.begin(), imageDataComponents.end(), [](const void* buffer) { return !buffer; })) {
+    spdlog::error("Null image data buffer provided for constructing Image");
+    throwDebug("Null image data buffer provided for constructing Image");
   }
 
   // The image does not exist on disk, but we need to fill this out anyway:

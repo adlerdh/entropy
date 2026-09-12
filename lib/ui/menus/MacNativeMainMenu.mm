@@ -553,17 +553,13 @@ void addImageMenu(NSMenu* mainMenu) {
   addSymbolMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"", @"plus.rectangle.on.rectangle");
   addSymbolMenuItem(menu, @"Add DICOM Series...", @selector(addDicomSeries:), @"", @"externaldrive.badge.plus");
   addSymbolActionMenuItem(menu, @"Add Surface Mesh...", MainMenuAction::ImportSurfaceMesh, @"square.3.layers.3d");
-  addSymbolActionMenuItem(
-    menu,
-    @"Export DICOM Series as Image...",
-    MainMenuAction::ExportActiveImage,
-    @"square.and.arrow.up");
   [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem* activeImageItem = [[NSMenuItem alloc] initWithTitle:@"Select Active Image" action:nil keyEquivalent:@""];
   setMenuItemSymbol(activeImageItem, @"photo.stack");
   g_activeImagesMenu = [[NSMenu alloc] initWithTitle:@"Select Active Image"];
   [activeImageItem setSubmenu:g_activeImagesMenu];
   [menu addItem:activeImageItem];
+  addSymbolActionMenuItem(menu, @"Export Active Image...", MainMenuAction::ExportActiveImage, @"square.and.arrow.up");
   addSymbolActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage, @"xmark");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference, @"scope");
@@ -711,9 +707,9 @@ void addSegmentationMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Create Blank Segmentation", MainMenuAction::CreateSegmentation, @"doc");
   addSymbolActionMenuItem(
     menu,
-    @"Save Active Segmentation...",
-    MainMenuAction::SaveSegmentation,
-    @"square.and.arrow.down");
+    @"Export Active Segmentation...",
+    MainMenuAction::ExportActiveSegmentation,
+    @"square.and.arrow.up");
   addSymbolActionMenuItem(menu, @"Clear Active Segmentation", MainMenuAction::ClearSegmentation, @"eraser");
   addSymbolActionMenuItem(menu, @"Remove Active Segmentation", MainMenuAction::RemoveSegmentation, @"trash");
   [menu addItem:[NSMenuItem separatorItem]];

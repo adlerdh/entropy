@@ -1,10 +1,12 @@
 #pragma once
 
-#include "logic/serialization/ProjectSerialization.h"
-
 #include <uuid.h>
 
 class AppData;
+namespace serialize
+{
+struct DicomSource;
+}
 
 namespace image_export
 {
@@ -19,22 +21,20 @@ namespace image_export
 const serialize::DicomSource* dicomSourceForImage(const AppData& appData, const uuids::uuid& imageUid);
 
 /**
- * @brief Test whether an image was loaded from an explicit DICOM-series source.
- *
- * @param[in] appData Application data containing the project snapshot.
- * @param[in] imageUid Image UID to query.
- *
- * @return True when the image has DICOM-series source metadata.
- */
-bool imageHasDicomSource(const AppData& appData, const uuids::uuid& imageUid);
-
-/**
- * @brief Export a loaded DICOM-series image through ITK's extension-selected image writer.
+ * @brief Export a loaded image through the extension-selected image writer.
  *
  * @param[in,out] appData Application data containing the image.
  * @param[in] imageUid Image UID to export.
  *
  * @return True when a file was selected and written successfully.
  */
-bool exportDicomImage(AppData& appData, const uuids::uuid& imageUid);
+bool exportImage(AppData& appData, const uuids::uuid& imageUid);
+
+/**
+ * @brief Export a loaded segmentation without changing its project source identity.
+ * @param[in,out] appData Application data containing the segmentation.
+ * @param[in] segmentationUid Segmentation UID to export.
+ * @return True when a destination was selected and written successfully.
+ */
+bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid);
 } // namespace image_export

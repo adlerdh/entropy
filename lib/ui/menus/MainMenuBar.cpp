@@ -438,7 +438,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     addDicomSeries(callbacks);
   }
   actionMenuItem(callbacks, "Add Surface Mesh...", MainMenuAction::ImportSurfaceMesh);
-  actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   ImGui::Separator();
   if (ImGui::BeginMenu("Select Active Image", callbacks.canAddImage)) {
     const auto names = callbacks.imageNames ? callbacks.imageNames() : std::vector<std::string>{};
@@ -455,6 +454,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Activate Next Image", MainMenuAction::ActivateNextImage, "Shift+]");
     ImGui::EndMenu();
   }
+  actionMenuItem(callbacks, "Export Active Image...", MainMenuAction::ExportActiveImage);
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
   ImGui::Separator();
   actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
@@ -526,7 +526,7 @@ void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
     addSegmentation(callbacks);
   }
   actionMenuItem(callbacks, "Create Blank Segmentation", MainMenuAction::CreateSegmentation);
-  actionMenuItem(callbacks, "Save Active Segmentation...", MainMenuAction::SaveSegmentation);
+  actionMenuItem(callbacks, "Export Active Segmentation...", MainMenuAction::ExportActiveSegmentation);
   actionMenuItem(callbacks, "Clear Active Segmentation", MainMenuAction::ClearSegmentation);
   actionMenuItem(callbacks, "Remove Active Segmentation", MainMenuAction::RemoveSegmentation);
   ImGui::Separator();

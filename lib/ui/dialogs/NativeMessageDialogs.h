@@ -19,6 +19,7 @@ enum class MessageDialogResult : std::uint8_t
 /** @brief Visual severity used by the native platform dialog. */
 enum class MessageDialogSeverity : std::uint8_t
 {
+  Information,
   Warning,
   Error
 };

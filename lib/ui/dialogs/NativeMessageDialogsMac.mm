@@ -19,7 +19,17 @@ namespace native_dialog {
 std::optional<MessageDialogResult> showMessageDialog(const MessageDialog& dialog) {
   @autoreleasepool {
     NSAlert* alert = [[NSAlert alloc] init];
-    [alert setAlertStyle:dialog.severity == MessageDialogSeverity::Error ? NSAlertStyleCritical : NSAlertStyleWarning];
+    switch (dialog.severity) {
+      case MessageDialogSeverity::Information:
+        [alert setAlertStyle:NSAlertStyleInformational];
+        break;
+      case MessageDialogSeverity::Warning:
+        [alert setAlertStyle:NSAlertStyleWarning];
+        break;
+      case MessageDialogSeverity::Error:
+        [alert setAlertStyle:NSAlertStyleCritical];
+        break;
+    }
     [alert setMessageText:toNSString(dialog.title)];
     const std::string informativeText = model::combinedInformativeText(dialog.message, dialog.informativeText);
     [alert setInformativeText:toNSString(informativeText)];
