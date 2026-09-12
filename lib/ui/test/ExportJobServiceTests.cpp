@@ -78,7 +78,7 @@ TEST_CASE("Export jobs reject overlap and support cooperative cancellation", "[u
   REQUIRE(service.submit(
     {.description = "Long export",
      .destination = "first.vtp",
-     .task = [&started](ui::export_jobs::JobContext& context) {
+     .task = [&started](const ui::export_jobs::JobContext& context) {
        started.store(true, std::memory_order_release);
        while (!context.cancellationRequested()) {
          std::this_thread::yield();

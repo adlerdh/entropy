@@ -14,7 +14,10 @@ namespace fs = std::filesystem;
 bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName)
 {
   const fs::path fileName = newFileName.value_or(m_header.fileName());
-  const image_io::WriteResult result = image_io::writeImage(*this, fileName, {.component = component});
+  const image_io::WriteResult result = image_io::writeImage(
+    *this,
+    fileName,
+    {.useCompression = true, .component = component, .timePoint = std::nullopt, .progressCallback = {}});
   if (!result) {
     spdlog::error("Cannot write image component {} to '{}': {}", component, fileName, result.message);
   }

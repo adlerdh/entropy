@@ -132,7 +132,10 @@ void renderAnnotationsHeader(
           view->setImageRendered(appData, imageUid, true);
         }
 
-        SPDLOG_TRACE("Changed view {} normal direction to {}", largestCurrentViewUid, glm::to_string(worldAnnotNormal));
+        spdlog::trace(
+          "Changed view {} normal direction to {}",
+          largestCurrentViewUid,
+          glm::to_string(worldAnnotNormal));
       }
       else {
         spdlog::error("Unable to orient a view to the annotation plane");
@@ -183,7 +186,7 @@ void renderAnnotationsHeader(
       spdlog::error("Error importing annotations from JSON file {}", *selectedFile);
       native_dialog::showInputLoadErrorDialog(
         {.inputType = "annotations",
-         .path = *selectedFile,
+         .path = selectedFile,
          .cause = "The annotation JSON file could not be read or parsed."});
       return;
     }

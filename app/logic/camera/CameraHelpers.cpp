@@ -792,7 +792,7 @@ float viewFramingScaleForOverlay(
 }
 
 float viewFramingScaleForOverlay(
-  const glm::mat4& clip_T_world,
+  const glm::mat4& worldToClip,
   const AABB<float>& worldBox,
   const glm::vec2& viewSize,
   const glm::vec4& overlayBounds)
@@ -808,7 +808,7 @@ float viewFramingScaleForOverlay(
   glm::vec2 contentMin{std::numeric_limits<float>::max()};
   glm::vec2 contentMax{std::numeric_limits<float>::lowest()};
   for (const glm::vec3& corner : math::makeAABBoxCorners(worldBox)) {
-    const glm::vec4 clip = clip_T_world * glm::vec4{corner, 1.0f};
+    const glm::vec4 clip = worldToClip * glm::vec4{corner, 1.0f};
     if (!std::isfinite(clip.w) || std::abs(clip.w) <= std::numeric_limits<float>::epsilon()) {
       return 1.0f;
     }

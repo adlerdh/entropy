@@ -36,6 +36,7 @@ target_sources(entropy PRIVATE
   vector/ImageLabelOverlayDrawing.cpp
   vector/LightboxOverlayDrawing.cpp
   vector/ScaleBarDrawing.cpp
+  vector/TransformationGuideDrawing.cpp
   vector/VectorFieldOverlayDrawing.cpp
   vector/ViewOverlayDrawing.cpp
   TextureSetup.cpp

@@ -112,7 +112,7 @@ void renderLandmarkGroupHeader(
           spdlog::error("Error importing landmarks from CSV file {}", *selectedFile);
           native_dialog::showInputLoadErrorDialog(
             {.inputType = "landmarks",
-             .path = *selectedFile,
+             .path = selectedFile,
              .cause = "The landmark CSV file could not be read or parsed."});
         }
       }

@@ -1107,6 +1107,9 @@ TEST_CASE("Imported mesh 2D and 3D visibility serialize independently", "[projec
   serialize::ImportedMesh mesh{
     .m_uid = "11111111-2222-3333-4444-555555555555",
     .m_path = "surface.vtp",
+    .m_name = {},
+    .m_color = glm::vec3{0.8f},
+    .m_opacity = 1.0f,
     .m_visibleIn2d = true,
     .m_visibleIn3d = false};
 

@@ -7,8 +7,12 @@
 TEST_CASE("Region statistics controller optionally adds empty label rows", "[ui][statistics][controller]")
 {
   RegionStatisticsController controller;
-  controller.result =
-    RegionStatisticsResult{.regions = {{.label = 1, .elementCount = 3, .finiteValueCount = 3, .physicalSize = 6.0}}};
+  RegionStatistic statistic;
+  statistic.label = 1;
+  statistic.elementCount = 3;
+  statistic.finiteValueCount = 3;
+  statistic.physicalSize = 6.0;
+  controller.result = RegionStatisticsResult{.regions = {statistic}, .isVolume = true, .elementPhysicalSize = 0.0};
   controller.sortedRegions = controller.result->regions;
   controller.includeEmptyLabels = true;
 

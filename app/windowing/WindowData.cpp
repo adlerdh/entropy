@@ -908,7 +908,7 @@ std::vector<Layout> createGeneratedManagedLayouts(
   std::vector<Layout> generatedLayouts;
   generatedLayouts.reserve(5 + 3 * appData.numImages());
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const uuid_range_t& orderedImageUids = appData.imageUidsOrdered();
   const std::vector<ViewType> managedViewTypes =
     managedSliceViewTypes(appData.numImages(), dicomNativeViewTypesByImage);
 
@@ -1160,7 +1160,6 @@ CameraRestoreSummary restoreManagedLayoutCameraSnapshots(
 }
 
 void initializeUnmatchedManagedLayoutCameras(
-  WindowData& windowData,
   std::vector<Layout>& layouts,
   const std::vector<ViewCameraSnapshot>& snapshots,
   const CameraSnapshotIndex& snapshotIndex,
@@ -1178,7 +1177,7 @@ void initializeUnmatchedManagedLayoutCameras(
 
       if (snapshotIt == snapshotIndex.end()) {
         if (layout.isLightbox() || !initializeFromSyncedRestoredCamera(layout, *view, snapshots, snapshotIndex)) {
-          windowData.recenterView(*view, worldCenter, worldFov, false, true);
+          WindowData::recenterView(*view, worldCenter, worldFov, false, true);
         }
       }
 
@@ -1341,7 +1340,6 @@ void WindowData::reconcileImageDependentLayouts(
   if (!cameraSnapshots.empty() && restoreSummary.m_unmatched > 0) {
     const auto worldBox = data::computeWorldAABBoxEnclosingImages(appData, ImageSelection::AllLoadedImages);
     initializeUnmatchedManagedLayoutCameras(
-      *this,
       generatedLayouts,
       cameraSnapshots,
       cameraSnapshotIndex,
@@ -1566,7 +1564,7 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppD
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const uuid_range_t& orderedImageUids = appData.imageUidsOrdered();
   const std::list<uuid> renderedImages{orderedImageUids.begin(), orderedImageUids.end()};
 
   const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
@@ -1594,7 +1592,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const uuid_range_t& orderedImageUids = appData.imageUidsOrdered();
   const std::list<uuid> renderedImages{orderedImageUids.begin(), orderedImageUids.end()};
 
   const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(

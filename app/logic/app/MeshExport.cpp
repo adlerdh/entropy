@@ -46,7 +46,7 @@ public:
   {
   }
 
-  std::expected<glm::dvec3, std::string> transformPoint(const glm::dvec3& point) const override
+  [[nodiscard]] std::expected<glm::dvec3, std::string> transformPoint(const glm::dvec3& point) const override
   {
     if (!m_warp || m_strength <= 0.0f) {
       return point;
@@ -252,7 +252,7 @@ void exportIsosurface(
   const std::string surfaceUidString = uuids::to_string(surfaceUid);
   const float isoValue = surface->value;
   const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
-  const fs::path destination = *path;
+  const fs::path& destination = *path;
   const bool submitted = service->submit(
     {.description = "Exporting isosurface mesh",
      .destination = destination,
@@ -323,7 +323,7 @@ void exportSegmentationLabel(
   const std::string segmentationUidString = uuids::to_string(segmentationUid);
   const std::string imageUidString = uuids::to_string(imageUid);
   const std::string meshUid = uuids::to_string(generateRandomUuid());
-  const fs::path destination = *path;
+  const fs::path& destination = *path;
   const bool submitted = service->submit(
     {.description = std::format("Exporting segmentation label {} mesh", labelIndex),
      .destination = destination,
@@ -400,7 +400,7 @@ void exportAllSegmentationLabels(AppData& appData, const uuids::uuid& imageUid, 
   const uint32_t timePoint = segmentation->timeAxis().clamp(segmentation->settings().activeTimePoint());
   const std::string segmentationUidString = uuids::to_string(segmentationUid);
   const std::string imageUidString = uuids::to_string(imageUid);
-  const fs::path destination = *basePath;
+  const fs::path& destination = *basePath;
   const bool submitted = service->submit(
     {.description = "Exporting all segmentation label meshes",
      .destination = destination,

@@ -41,6 +41,7 @@ target_sources(entropy PRIVATE
   camera/RaycastIsoSurfacePicker.cpp
 
   interaction/ViewHit.cpp
+  interaction/TransformationGuide.cpp
   interaction/events/ButtonState.cpp
 
   segmentation/AnnotationSegmentation.cpp

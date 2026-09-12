@@ -66,5 +66,7 @@ TEST_CASE("rotated crosshairs use primed local-axis view names", "[viewer][view]
 TEST_CASE("view type display strings tolerate sentinel values", "[viewer][view]")
 {
   CHECK(viewTypeDisplayName(ViewType::NumElements, AnatomicalLabelType::Human, false) == "Unknown");
-  CHECK(viewTypeDisplayName(static_cast<ViewType>(100), AnatomicalLabelType::Cartesian, true) == "Unknown");
+  // Deliberately exercise the defensive default branch with a value outside the enum's declared range.
+  const auto invalidViewType = static_cast<ViewType>(100); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+  CHECK(viewTypeDisplayName(invalidViewType, AnatomicalLabelType::Cartesian, true) == "Unknown");
 }

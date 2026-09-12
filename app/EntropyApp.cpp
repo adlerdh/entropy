@@ -28,7 +28,7 @@ EntropyApp::~EntropyApp()
     m_futureDiscoverDicom.wait();
   }
 
-  m_rendering.prepareForShutdown();
+  Rendering::prepareForShutdown();
 }
 
 CallbackHandler& EntropyApp::callbackHandler()

@@ -83,6 +83,8 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.crosshairsColor = renderSettings.m_crosshairsColor;
   preferences.showCrosshairs = renderSettings.m_showCrosshairs;
   preferences.showCrosshairsInLightboxViews = renderSettings.m_showCrosshairsInLightboxViews;
+  preferences.showTransformationGuides = renderSettings.m_showTransformationGuides;
+  preferences.transformationGuideColor = renderSettings.m_transformationGuideColor;
   preferences.background2dColor = renderSettings.m_2dBackgroundColor;
   preferences.background3dColor = renderSettings.m_3dBackgroundColor;
   preferences.anatomicalLabelColor = renderSettings.m_anatomicalLabelColor;
@@ -241,6 +243,8 @@ void applyRenderPreferences(
   renderSettings.m_showCrosshairs = preferences.showCrosshairs;
   renderSettings.m_showCrosshairsInLightboxViews =
     preferences.showCrosshairs && preferences.showCrosshairsInLightboxViews;
+  renderSettings.m_showTransformationGuides = preferences.showTransformationGuides;
+  renderSettings.m_transformationGuideColor = preferences.transformationGuideColor;
   renderSettings.m_2dBackgroundColor = preferences.background2dColor;
   renderSettings.m_3dBackgroundColor = preferences.background3dColor;
   renderSettings.m_anatomicalLabelColor = preferences.anatomicalLabelColor;

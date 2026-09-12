@@ -28,11 +28,30 @@ TEST_CASE("image label role badges are compact and consistently ordered", "[rend
   using rendering::vector_overlay::imageRoleBadgeLabels;
 
   CHECK((imageRoleBadgeLabels(ImageLabelEntry{}) == std::array<std::string_view, 2>{"", ""}));
-  CHECK((imageRoleBadgeLabels(ImageLabelEntry{.isReference = true}) == std::array<std::string_view, 2>{"REF", ""}));
-  CHECK((imageRoleBadgeLabels(ImageLabelEntry{.isActive = true}) == std::array<std::string_view, 2>{"", "ACTIVE"}));
   CHECK(
-    (imageRoleBadgeLabels(ImageLabelEntry{.isReference = true, .isActive = true}) ==
-     std::array<std::string_view, 2>{"REF", "ACTIVE"}));
+    (imageRoleBadgeLabels(ImageLabelEntry{
+       .displayName = {},
+       .identificationColor = {},
+       .isReference = true,
+       .isActive = false,
+       .isVisible = true,
+       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"REF", ""}));
+  CHECK(
+    (imageRoleBadgeLabels(ImageLabelEntry{
+       .displayName = {},
+       .identificationColor = {},
+       .isReference = false,
+       .isActive = true,
+       .isVisible = true,
+       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"", "ACTIVE"}));
+  CHECK(
+    (imageRoleBadgeLabels(ImageLabelEntry{
+       .displayName = {},
+       .identificationColor = {},
+       .isReference = true,
+       .isActive = true,
+       .isVisible = true,
+       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"REF", "ACTIVE"}));
 }
 
 TEST_CASE("image label swatches communicate opacity and visibility", "[rendering][vector_overlay]")
@@ -42,9 +61,30 @@ TEST_CASE("image label swatches communicate opacity and visibility", "[rendering
   using rendering::vector_overlay::imageSwatchMode;
 
   CHECK(imageSwatchMode(ImageLabelEntry{}) == ImageSwatchMode::Opaque);
-  CHECK(imageSwatchMode(ImageLabelEntry{.effectiveOpacity = 0.5f}) == ImageSwatchMode::Translucent);
-  CHECK(imageSwatchMode(ImageLabelEntry{.effectiveOpacity = 0.0f}) == ImageSwatchMode::Hidden);
-  CHECK(imageSwatchMode(ImageLabelEntry{.isVisible = false}) == ImageSwatchMode::Hidden);
+  CHECK(
+    imageSwatchMode(ImageLabelEntry{
+      .displayName = {},
+      .identificationColor = {},
+      .isReference = false,
+      .isActive = false,
+      .isVisible = true,
+      .effectiveOpacity = 0.5f}) == ImageSwatchMode::Translucent);
+  CHECK(
+    imageSwatchMode(ImageLabelEntry{
+      .displayName = {},
+      .identificationColor = {},
+      .isReference = false,
+      .isActive = false,
+      .isVisible = true,
+      .effectiveOpacity = 0.0f}) == ImageSwatchMode::Hidden);
+  CHECK(
+    imageSwatchMode(ImageLabelEntry{
+      .displayName = {},
+      .identificationColor = {},
+      .isReference = false,
+      .isActive = false,
+      .isVisible = false,
+      .effectiveOpacity = 1.0f}) == ImageSwatchMode::Hidden);
 }
 
 TEST_CASE("vector drawing helpers classify finite positions and rectangles", "[rendering][vector-drawing]")

@@ -10,8 +10,8 @@ void Rendering::updateMetricUniforms()
 {
   auto update = [this](rendering::RenderSettings::MetricParams& params, const char* name) {
     if (const auto cmapUid = m_appData.imageColorMapUid(params.m_colorMapIndex)) {
-      if (const auto* map = m_appData.imageColorMap(*cmapUid)) {
-        params.m_cmapSlopeIntercept = map->slopeIntercept(params.m_invertCmap);
+      if (m_appData.imageColorMap(*cmapUid)) {
+        params.m_cmapSlopeIntercept = ImageColorMap::slopeIntercept(params.m_invertCmap);
       }
       else {
         spdlog::error("Null image color map {} on updating uniforms for {} metric", *cmapUid, name);

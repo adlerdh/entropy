@@ -66,6 +66,8 @@ struct RenderPreferences
   glm::vec4 crosshairsColor{0.05f, 0.6f, 1.0f, 1.0f};
   bool showCrosshairs = true;
   bool showCrosshairsInLightboxViews = true;
+  bool showTransformationGuides = true;
+  glm::vec4 transformationGuideColor{1.0f, 0.72f, 0.16f, 1.0f};
   glm::vec3 background2dColor{0.1f, 0.1f, 0.1f};
   glm::vec4 background3dColor{0.1f, 0.1f, 0.1f, 1.0f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};

@@ -79,6 +79,8 @@ void AppData::clearProjectData()
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
+  m_state.transformationGuide().clear();
+
   m_project = {};
   m_projectFileName = std::nullopt;
 
@@ -790,6 +792,10 @@ bool AppData::removeImage(const uuid& imageUidArg)
   if (std::end(m_imageUidsOrdered) == imageOrderIt) {
     return false;
   }
+
+  // A guide contains world-space geometry captured from the image being transformed. Clear it before removing any
+  // image because the active image can change as a consequence of this operation.
+  m_state.transformationGuide().clear();
 
   const auto imageSegs = imageToSegUids(imageUidArg);
   const auto imageDefs = imageToDefUids(imageUidArg);

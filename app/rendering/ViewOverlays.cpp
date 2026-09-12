@@ -13,6 +13,7 @@
 #include "rendering/vector/ImageLabelOverlayDrawing.h"
 #include "rendering/vector/LightboxOverlayDrawing.h"
 #include "rendering/vector/ScaleBarDrawing.h"
+#include "rendering/vector/TransformationGuideDrawing.h"
 #include "rendering/vector/ViewOverlayDrawing.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "windowing/View.h"
@@ -226,6 +227,9 @@ void Rendering::renderVectorOverlays()
                                               : 0.0f;
   const View* threeDFrustumSource =
     R.m_showThreeDCameraFrustumIn2DViews ? activeThreeDFrustumSource(m_appData) : nullptr;
+  const std::optional<interaction::TransformationGuide> transformationGuide =
+    R.m_showTransformationGuides ? m_appData.state().transformationGuide().guide() : std::nullopt;
+  const std::optional<uuid> transformationGuideViewUid = m_appData.state().transformationGuide().sourceViewUid();
 
   for (const auto& viewUid : windowData.currentViewUids()) {
     const View* view = windowData.getCurrentView(viewUid);
@@ -355,6 +359,21 @@ void Rendering::renderVectorOverlays()
           *view,
           lightboxOffsetUnitReference,
           R.m_lightboxOffsetLabelColor);
+      }
+
+      if (showConfiguredOverlays && transformationGuide && ViewType::ThreeD != view->viewType()) {
+        const bool showTransformationParameters = transformationGuideViewUid && viewUid == *transformationGuideViewUid;
+        rendering::vector_overlay::drawTransformationGuide(
+          m_nvg,
+          miewportViewBounds,
+          windowVP,
+          *view,
+          worldXhairsOffset,
+          *transformationGuide,
+          R.m_transformationGuideColor,
+          m_appData.guiData().m_effectiveUiScale,
+          static_cast<int>(m_appData.guiData().m_txPrecision),
+          showTransformationParameters);
       }
 
       if (showConfiguredOverlays && !windowData.currentLayout().isLightbox()) {

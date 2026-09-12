@@ -117,6 +117,6 @@ void Rendering::renderVectorImageForImage(
 
     renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, false);
   }
-  program->stopUse();
+  GLShaderProgram::stopUse();
   unbindTextures(boundTextures);
 }

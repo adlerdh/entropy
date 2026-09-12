@@ -161,7 +161,7 @@ bool exportImageData(
   const auto imageSnapshot = std::make_shared<Image>(image);
   const std::string imageName = image.settings().displayName();
   const std::string uid = uuids::to_string(imageUid);
-  const fs::path destination = *selectedFile;
+  const fs::path& destination = *selectedFile;
   const bool submitted = service->submit(
     {.description = std::format("Exporting {} '{}'", objectName, imageName),
      .destination = destination,

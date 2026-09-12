@@ -3233,7 +3233,7 @@ void ImGuiWrapper::render()
         spdlog::error("Error importing annotations from JSON file {}", *selectedFile);
         native_dialog::showInputLoadErrorDialog(
           {.inputType = "annotations",
-           .path = *selectedFile,
+           .path = selectedFile,
            .cause = "The annotation JSON file could not be read or parsed."});
         return;
       }
@@ -3343,7 +3343,7 @@ void ImGuiWrapper::render()
       spdlog::error("Error importing landmarks from CSV file {}", *selectedFile);
       native_dialog::showInputLoadErrorDialog(
         {.inputType = "landmarks",
-         .path = *selectedFile,
+         .path = selectedFile,
          .cause = "The landmark CSV file could not be read or parsed."});
       return;
     }
@@ -3649,7 +3649,7 @@ void ImGuiWrapper::render()
               spdlog::error("Error loading initial affine transformation matrix from file {}", *selectedFile);
               native_dialog::showInputLoadErrorDialog(
                 {.inputType = "affine transformation",
-                 .path = *selectedFile,
+                 .path = selectedFile,
                  .cause = "The transformation matrix file could not be read or parsed."});
             }
           }

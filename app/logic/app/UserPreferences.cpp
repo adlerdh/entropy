@@ -66,6 +66,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "showImageBorders",
       "showOverlays",
       "crosshairs",
+      "transformationGuides",
       "synchronizeViewZooms",
       "backgrounds",
       "anatomicalLabels",
@@ -473,6 +474,9 @@ json toJson(
        {{"show", renderPreferences.showCrosshairs},
         {"showInLightboxViews", renderPreferences.showCrosshairsInLightboxViews},
         {"color", vec4ToJson(renderPreferences.crosshairsColor)}}},
+      {"transformationGuides",
+       {{"show", renderPreferences.showTransformationGuides},
+        {"color", vec4ToJson(renderPreferences.transformationGuideColor)}}},
       {"synchronizeViewZooms", settings.synchronizeZooms()},
       {"backgrounds",
        {{"2d", vec3ToJson(renderPreferences.background2dColor)},
@@ -709,6 +713,10 @@ void applyJson(
       setFromJson(renderPreferences.showCrosshairs, *crosshairs, "show");
       setFromJson(renderPreferences.showCrosshairsInLightboxViews, *crosshairs, "showInLightboxViews");
       setVec4FromJson(renderPreferences.crosshairsColor, *crosshairs, "color");
+    }
+    if (const auto guides = views->find("transformationGuides"); guides != views->end() && guides->is_object()) {
+      setFromJson(renderPreferences.showTransformationGuides, *guides, "show");
+      setVec4FromJson(renderPreferences.transformationGuideColor, *guides, "color");
     }
     if (const auto syncZooms = views->find("synchronizeViewZooms");
         syncZooms != views->end() && syncZooms->is_boolean())

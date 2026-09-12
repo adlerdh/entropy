@@ -22,7 +22,7 @@ void EntropyApp::reportInputLoadFailure(std::string inputType, std::optional<fs:
     m_pendingInputLoadFailures.push_back(
       {.inputType = std::move(inputType), .path = std::move(path), .cause = std::move(cause)});
   }
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void EntropyApp::showNextInputLoadFailure()
@@ -44,7 +44,7 @@ void EntropyApp::showNextInputLoadFailure()
        .cause = std::move(failure->cause)});
   }
   if (moreFailuresPending) {
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
   }
 }
 
@@ -142,13 +142,13 @@ void EntropyApp::startAsyncImageLoad(
     m_data.state().setProjectLoadState(ProjectLoadState::Loading);
   }
   m_data.state().setAnimating(true);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 
   auto onProjectLoadingDone = [this, onLoadFailed = std::move(onLoadFailed)](bool projectLoadedSuccessfully) {
     if (projectLoadedSuccessfully) {
       m_imagesReady = true;
       m_imageLoadFailed = false;
-      m_glfw.postEmptyEvent();
+      GlfwWrapper::postEmptyEvent();
       spdlog::debug("Done loading images");
     }
     else {
@@ -165,7 +165,7 @@ void EntropyApp::startAsyncImageLoad(
       m_data.guiData().m_visibleImageCountDuringLoad = std::nullopt;
       m_imagesReady = false;
       m_imageLoadFailed = false;
-      m_glfw.postEmptyEvent();
+      GlfwWrapper::postEmptyEvent();
     }
   };
 

@@ -38,12 +38,16 @@ TEST_CASE("Region statistics exports include optional quartiles", "[ui][statisti
 
 TEST_CASE("Region statistics exports omit disabled quartiles", "[ui][statistics][export]")
 {
+  RegionStatistic statistic;
+  statistic.label = 1;
+  statistic.elementCount = 1;
+  statistic.finiteValueCount = 1;
   const RegionStatisticsDocument document{
     .imageName = "Image",
     .imageValueName = "Intensity",
     .segmentationName = "Segmentation",
     .includesQuartiles = false,
-    .regions = {{.statistic = {.label = 1, .elementCount = 1, .finiteValueCount = 1}, .name = "Region"}}};
+    .regions = {{.statistic = statistic, .name = "Region"}}};
 
   CHECK(regionStatisticsDelimitedText(document, ',').find("Median") == std::string::npos);
   CHECK(regionStatisticsJson(document).find("firstQuartile") == std::string::npos);

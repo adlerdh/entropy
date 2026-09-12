@@ -76,7 +76,9 @@ bool RegionStatisticsController::synchronizeEmptyLabelRows(std::size_t knownLabe
         return region.label == signedLabel;
       });
     if (!exists) {
-      sortedRegions.push_back({.label = signedLabel});
+      RegionStatistic emptyRegion;
+      emptyRegion.label = signedLabel;
+      sortedRegions.push_back(emptyRegion);
       changed = true;
     }
   }

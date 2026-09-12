@@ -155,7 +155,8 @@ TEST_CASE("Region histograms honor label scope and include the maximum", "[image
     std::vector<std::vector<std::uint8_t>>{labels},
     ImageRepresentation::Segmentation);
 
-  const auto histogram = computeRegionHistogram(image, segmentation, {}, 0, 2, {.binCount = 2});
+  const auto histogram =
+    computeRegionHistogram(image, segmentation, {}, 0, 2, {.binCount = 2, .valueRange = std::nullopt});
   REQUIRE(histogram);
   CHECK(histogram->finiteValueCount == 2);
   CHECK(histogram->counts == std::vector<double>{1.0, 1.0});
@@ -226,7 +227,8 @@ TEST_CASE("Region statistics reject mismatched grids", "[image][regions][validat
     ImageRepresentation::Segmentation);
 
   CHECK_FALSE(computeRegionStatistics(image, segmentation, {}, 0));
-  CHECK_FALSE(computeRegionHistogram(image, segmentation, {}, 0, std::nullopt, {.binCount = 16}));
+  CHECK_FALSE(
+    computeRegionHistogram(image, segmentation, {}, 0, std::nullopt, {.binCount = 16, .valueRange = std::nullopt}));
 }
 
 TEST_CASE("Region statistics compute exact interpolated quartiles only when requested", "[image][regions][quartiles]")

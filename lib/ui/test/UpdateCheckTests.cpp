@@ -140,7 +140,7 @@ TEST_CASE("latest GitHub release HTTP response handles missing releases", "[ui][
 
 TEST_CASE("GitHub latest-release endpoint returns a valid Entropy release", "[ui][updates][.network]")
 {
-  const auto result = ui::updates::fetchLatestRelease({.currentVersion = "0.0.0"});
+  const auto result = ui::updates::fetchLatestRelease({.currentVersion = "0.0.0", .etag = {}});
 
   INFO(result.error);
   REQUIRE(result.status == ui::updates::CheckStatus::UpdateAvailable);

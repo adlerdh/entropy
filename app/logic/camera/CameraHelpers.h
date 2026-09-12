@@ -693,14 +693,14 @@ float viewFramingScaleForOverlay(
 
 /**
  * @brief Compute additional symmetric framing from an explicitly frozen World-to-Clip transform
- * @param clip_T_world Transform used to project the content bounds
+ * @param worldToClip Transform used to project the content bounds
  * @param worldBox World-space content bounds
  * @param viewSize View dimensions in device-independent pixels
  * @param overlayBounds Overlay rectangle as `{left, top, width, height}` in top-left-origin view pixels
  * @return Field-of-view multiplier greater than or equal to one
  */
 float viewFramingScaleForOverlay(
-  const glm::mat4& clip_T_world,
+  const glm::mat4& worldToClip,
   const AABB<float>& worldBox,
   const glm::vec2& viewSize,
   const glm::vec4& overlayBounds);

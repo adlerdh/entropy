@@ -160,7 +160,7 @@ void Rendering::renderIsoContoursForImage(
     program->setUniform("u_renderMode", displayModeUniform);
     renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, false);
   }
-  program->stopUse();
+  GLShaderProgram::stopUse();
 
   unbindTextures(boundDefTextures);
   unbindTextures(boundTextures);

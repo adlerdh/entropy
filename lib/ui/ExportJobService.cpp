@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <format>
 #include <mutex>
+#include <ranges>
 #include <system_error>
 #include <thread>
 #include <utility>
@@ -93,8 +94,8 @@ Result Result::cancelled(std::string message)
   return {.outcome = Outcome::Cancelled, .message = std::move(message), .outputFileNames = {}};
 }
 
-JobContext::JobContext(std::shared_ptr<detail::SharedState> state, const std::stop_token stopToken)
-  : m_state{std::move(state)}, m_stopToken{stopToken}
+JobContext::JobContext(std::shared_ptr<detail::SharedState> state, std::stop_token stopToken)
+  : m_state{std::move(state)}, m_stopToken{std::move(stopToken)}
 {
 }
 
@@ -176,8 +177,8 @@ bool Service::submit(Request request)
 
   Task task = std::move(request.task);
   const auto state = m_state;
-  m_worker->thread = std::jthread([state, task = std::move(task)](const std::stop_token stopToken) mutable {
-    JobContext context{state, stopToken};
+  m_worker->thread = std::jthread([state, task = std::move(task)](std::stop_token stopToken) mutable {
+    JobContext context{state, std::move(stopToken)};
     Result result;
     try {
       result = task(context);
@@ -343,13 +344,13 @@ std::optional<std::string> StagedOutput::commit()
 
   const auto rollback = [&entries]() {
     std::string rollbackError;
-    for (auto it = entries.rbegin(); it != entries.rend(); ++it) {
+    for (auto& entry : std::views::reverse(entries)) {
       std::error_code ignored;
-      if (it->published) {
-        std::filesystem::remove(it->destination, ignored);
+      if (entry.published) {
+        std::filesystem::remove(entry.destination, ignored);
       }
-      if (it->originalBackedUp) {
-        if (const auto error = replaceDestination(it->backup, it->destination); error && rollbackError.empty()) {
+      if (entry.originalBackedUp) {
+        if (const auto error = replaceDestination(entry.backup, entry.destination); error && rollbackError.empty()) {
           rollbackError = *error;
         }
       }

@@ -28,9 +28,12 @@ void EntropyApp::setCallbacks()
       m_itkSnapSync.update();
       m_entropyInstanceSync.update();
       const bool syncEnabled = m_data.settings().cursorSyncEnabled() || m_data.settings().entropyInstanceSyncEnabled();
-      if (syncEnabled && !m_data.state().animating()) {
+      const auto transformationGuide = m_data.state().transformationGuide().guide();
+      const bool transformationGuideFading = m_data.renderSettings().m_showTransformationGuides &&
+                                             transformationGuide && !interaction::guideIsDragging(*transformationGuide);
+      if ((syncEnabled || transformationGuideFading) && !m_data.state().animating()) {
         m_glfw.setEventProcessingMode(EventProcessingMode::WaitTimeout);
-        m_glfw.setWaitTimeout(1.0 / 30.0);
+        m_glfw.setWaitTimeout(transformationGuideFading ? 1.0 / 60.0 : 1.0 / 30.0);
       }
       else if (!m_data.state().animating()) {
         m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
@@ -39,8 +42,8 @@ void EntropyApp::setCallbacks()
 
   ImGuiWrapperCallbacks imguiCallbacks;
 
-  imguiCallbacks.platform.postEmptyGlfwEvent = [this]() {
-    m_glfw.postEmptyEvent();
+  imguiCallbacks.platform.postEmptyGlfwEvent = []() {
+    GlfwWrapper::postEmptyEvent();
   };
   imguiCallbacks.platform.readjustViewport = [this]() {
     resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y);

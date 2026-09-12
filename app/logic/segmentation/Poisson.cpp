@@ -141,10 +141,6 @@ void sor(
 
   const float BETA = 1.0f; // computeBeta( imageNorm.data(), dims );
 
-  int isw;
-  int jsw;
-  int ksw;
-
   float omega = 1.0f;
   float val = std::numeric_limits<float>::quiet_NaN();
   float pot = std::numeric_limits<float>::quiet_NaN();
@@ -164,13 +160,13 @@ void sor(
 #endif
 
     // Split updates into even and odd stencil passes:
-    ksw = 0;
+    int ksw = 0;
 
     for (int pass = 0; pass < 2; ++pass) {
-      jsw = ksw;
+      int jsw = ksw;
 
       for (int k = 0; k < dims.z; ++k) {
-        isw = jsw;
+        int isw = jsw;
 
         for (int j = 0; j < dims.y; ++j) {
           for (int i = isw; i < dims.x; i += 2) {

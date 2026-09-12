@@ -190,7 +190,7 @@ void Rendering::renderGrayImageForImage(
       program->setUniform("u_renderMode", displayModeUniform);
       renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, disableIntensityProjectionForEdges);
     }
-    program->stopUse();
+    GLShaderProgram::stopUse();
 
     unbindTextures(boundDefTextures);
     unbindTextures(boundTextures);
@@ -281,7 +281,7 @@ void Rendering::renderGrayImageForImage(
       program->setUniform("u_edgeColor", uniforms.edgeColor);
       renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, true);
     }
-    program->stopUse();
+    GLShaderProgram::stopUse();
 
     unbindTextures(boundDefTextures);
     unbindTextures(boundTextures);

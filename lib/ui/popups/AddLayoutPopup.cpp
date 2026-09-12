@@ -158,7 +158,7 @@ void renderAddLayoutModalPopup(
       if (!isLightbox && LayoutKind::Custom == wd.currentLayout().kind()) {
         wd.currentLayout().setDisplayName(customLayoutName);
       }
-      wd.setDefaultRenderedImagesForLayout(wd.currentLayout(), appData);
+      WindowData::setDefaultRenderedImagesForLayout(wd.currentLayout(), appData);
 
       recenterViews();
     }

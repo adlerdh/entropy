@@ -220,6 +220,6 @@ void Rendering::createShaderPrograms()
     throwDebug("Failed to create mesh DDP resolve program");
   }
 
-  m_asciiRenderer.registerShaderPrograms(m_shaderPrograms);
-  m_pixelEdgeRenderer.registerShaderPrograms(m_shaderPrograms);
+  AsciiRenderer::registerShaderPrograms(m_shaderPrograms);
+  PixelEdgeRenderer::registerShaderPrograms(m_shaderPrograms);
 }

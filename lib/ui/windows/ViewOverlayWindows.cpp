@@ -20,6 +20,7 @@
 #include <cfloat>
 #include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace view_overlay = ui::view_overlay;
@@ -69,38 +70,30 @@ std::string orthogonalDirectionButtonLabel(
   const AnatomicalLabelType anatomicalLabelType,
   const std::optional<QuadrupedBodyRegion>& quadrupedBodyRegion)
 {
-  const char* axisLabel = "";
-  std::size_t labelIndex = 0;
-  switch (direction) {
-    case Directions::Cartesian::PosX:
-      axisLabel = "+X";
-      labelIndex = 0;
-      break;
-    case Directions::Cartesian::NegX:
-      axisLabel = "-X";
-      labelIndex = 3;
-      break;
-    case Directions::Cartesian::PosY:
-      axisLabel = "+Y";
-      labelIndex = 1;
-      break;
-    case Directions::Cartesian::NegY:
-      axisLabel = "-Y";
-      labelIndex = 4;
-      break;
-    case Directions::Cartesian::PosZ:
-      axisLabel = "+Z";
-      labelIndex = 2;
-      break;
-    case Directions::Cartesian::NegZ:
-      axisLabel = "-Z";
-      labelIndex = 5;
-      break;
-    case Directions::Cartesian::XY:
-    case Directions::Cartesian::YZ:
-    case Directions::Cartesian::ZX:
-    case Directions::Cartesian::XYZ:
-      return {};
+  const auto [axisLabel, labelIndex] = [direction]() -> std::pair<const char*, std::size_t> {
+    switch (direction) {
+      case Directions::Cartesian::PosX:
+        return {"+X", 0};
+      case Directions::Cartesian::NegX:
+        return {"-X", 3};
+      case Directions::Cartesian::PosY:
+        return {"+Y", 1};
+      case Directions::Cartesian::NegY:
+        return {"-Y", 4};
+      case Directions::Cartesian::PosZ:
+        return {"+Z", 2};
+      case Directions::Cartesian::NegZ:
+        return {"-Z", 5};
+      case Directions::Cartesian::XY:
+      case Directions::Cartesian::YZ:
+      case Directions::Cartesian::ZX:
+      case Directions::Cartesian::XYZ:
+        return {nullptr, 0};
+    }
+    return {nullptr, 0};
+  }();
+  if (!axisLabel) {
+    return {};
   }
 
   if (AnatomicalLabelType::Cartesian == anatomicalLabelType) {

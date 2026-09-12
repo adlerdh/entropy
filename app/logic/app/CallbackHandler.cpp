@@ -36,6 +36,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -49,6 +50,20 @@ using uuid = uuids::uuid;
 constexpr float parallelThreshold_degrees = 0.1f;
 
 constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
+
+std::array<glm::vec3, 8> imageWorldCorners(const Image& image)
+{
+  const glm::mat4& world_T_subject = image.transformations().worldDef_T_subject();
+  std::array<glm::vec3, 8> worldCorners;
+  std::ranges::transform(
+    image.header().subjectBBoxCorners(),
+    worldCorners.begin(),
+    [&world_T_subject](const glm::vec3& subjectCorner) {
+      const glm::vec4 worldCorner = world_T_subject * glm::vec4{subjectCorner, 1.0f};
+      return glm::vec3{worldCorner} / worldCorner.w;
+    });
+  return worldCorners;
+}
 
 glm::vec2 zoomCenterNdc(
   const AppData& appData,
@@ -1885,6 +1900,9 @@ void CallbackHandler::doImageTranslate(
   bool inPlane)
 {
   View* viewToUse = startHit.view;
+  if (!viewToUse) {
+    return;
+  }
 
   const auto activeImageUid = m_appData.activeImageUid();
   if (!activeImageUid) {
@@ -1924,6 +1942,12 @@ void CallbackHandler::doImageTranslate(
 
   auto& imgTx = activeImage->transformations();
   imgTx.set_worldDef_T_affine_translation(imgTx.get_worldDef_T_affine_translation() + T);
+
+  auto& transformationGuide = m_appData.state().transformationGuide();
+  if (!transformationGuide.isDragging<interaction::TranslationGuide>()) {
+    transformationGuide.beginTranslation(startHit.viewUid, glm::vec3{startHit.worldPos_offsetApplied});
+  }
+  transformationGuide.appendTranslation(T);
 
   // Apply same transformation to the segmentations:
   for (const auto segUid : m_appData.imageToSegUids(*activeImageUid)) {
@@ -1976,6 +2000,12 @@ void CallbackHandler::doImageRotate(
     R = helper::rotation3dAboutCameraPlane(viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos);
   }
 
+  auto& transformationGuide = m_appData.state().transformationGuide();
+  if (!transformationGuide.isDragging<interaction::RotationGuide>()) {
+    transformationGuide.beginRotation(startHit.viewUid, worldRotCenter, glm::vec3{startHit.worldPos_offsetApplied});
+  }
+  transformationGuide.appendRotation(R);
+
   math::rotateFrameAboutWorldPos(imageFrame, R, worldRotCenter);
 
   imgTx.set_worldDef_T_affine_translation(imageFrame.worldOrigin());
@@ -2020,9 +2050,11 @@ void CallbackHandler::doImageScale(
   }
 
   auto& imgTx = activeImage->transformations();
+  const glm::vec3 initialScale = imgTx.get_worldDef_T_affine_scale();
+  const std::array<glm::vec3, 8> initialWorldCorners = imageWorldCorners(*activeImage);
   const auto scaleUpdate = app::computeImageScaleUpdate(
     imgTx.get_worldDef_T_affine(),
-    imgTx.get_worldDef_T_affine_scale(),
+    initialScale,
     m_appData.state().worldRotationCenter(),
     glm::vec3{prevHit.worldPos},
     glm::vec3{currHit.worldPos},
@@ -2037,6 +2069,20 @@ void CallbackHandler::doImageScale(
 
   imgTx.set_worldDef_T_affine_scale(scaleUpdate->m_scale);
   imgTx.set_worldDef_T_affine_translation(scaleUpdate->m_translation);
+
+  auto& transformationGuide = m_appData.state().transformationGuide();
+  if (!transformationGuide.isDragging<interaction::ScaleGuide>()) {
+    transformationGuide.beginScale(
+      startHit.viewUid,
+      m_appData.state().worldRotationCenter(),
+      glm::vec3{startHit.worldPos_offsetApplied},
+      initialScale,
+      initialWorldCorners);
+  }
+  transformationGuide.updateScale(
+    glm::vec3{currHit.worldPos_offsetApplied},
+    scaleUpdate->m_scale,
+    imageWorldCorners(*activeImage));
 
   // Apply same transformation to the segmentations:
   for (const auto segUid : m_appData.imageToSegUids(*activeImageUid)) {

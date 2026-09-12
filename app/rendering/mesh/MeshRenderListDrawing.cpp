@@ -348,11 +348,14 @@ void Rendering::drawMeshRenderListForView(
                                : std::function<void(GLTexture&, GLTexture&)>{}});
   }
   else {
-    m_meshRenderer.drawOpaque(list, context, useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram);
+    rendering::mesh::MeshRenderer::drawOpaque(
+      list,
+      context,
+      useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram);
   }
 
   GLShaderProgram& visibleMeshProgram = useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram;
-  m_meshRenderer.drawAdditive(list, context, visibleMeshProgram);
-  m_meshRenderer.drawMultiplicative(list, context, visibleMeshProgram);
+  rendering::mesh::MeshRenderer::drawAdditive(list, context, visibleMeshProgram);
+  rendering::mesh::MeshRenderer::drawMultiplicative(list, context, visibleMeshProgram);
   rendering::restoreOpenGLRenderState();
 }

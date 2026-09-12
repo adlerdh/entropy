@@ -160,7 +160,7 @@ void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float c
 
   app->windowData().setContentScaleRatios(glm::vec2{contentScaleX, contentScaleY});
   app->imgui().setContentScale(app->windowData().getContentScaleRatio());
-  app->glfw().postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void windowCloseCallback(GLFWwindow* window)
@@ -208,7 +208,7 @@ void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
   app->windowData().setFramebufferSize(fbWidth, fbHeight);
   app->resize(windowWidth, windowHeight);
   app->glfw().renderAndSwapOnce();
-  app->glfw().postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
@@ -227,7 +227,7 @@ void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
   app->windowData().setFramebufferSize(fbWidth, fbHeight);
   app->resize(windowWidth, windowHeight);
   app->glfw().renderAndSwapOnce();
-  app->glfw().postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindowCursorPosY)
@@ -653,6 +653,13 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   if (!app) {
     spdlog::error("Ignoring mouse-button input because the GLFW application pointer is null");
     return;
+  }
+
+  const bool releasedLastTransformationButton =
+    GLFW_RELEASE == action && ((GLFW_MOUSE_BUTTON_LEFT == button && !s_mouseButtonState.right) ||
+                               (GLFW_MOUSE_BUTTON_RIGHT == button && !s_mouseButtonState.left));
+  if (releasedLastTransformationButton) {
+    app->appData().state().transformationGuide().finish();
   }
 
   const ImGuiIO& io = ImGui::GetIO();

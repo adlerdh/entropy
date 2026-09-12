@@ -112,7 +112,7 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
 
   if (const auto cmapUid = m_appData.imageColorMapUid(imgSettings.colorMapIndex())) {
     if (const ImageColorMap* map = m_appData.imageColorMap(*cmapUid)) {
-      uniforms.cmapSlopeIntercept = map->slopeIntercept(imgSettings.isColorMapInverted());
+      uniforms.cmapSlopeIntercept = ImageColorMap::slopeIntercept(imgSettings.isColorMapInverted());
 
       // If the color map has nearest-neighbor interpolation, then do NOT quantize:
       if (ImageColorMap::InterpolationMode::Nearest == map->interpolationMode()) {

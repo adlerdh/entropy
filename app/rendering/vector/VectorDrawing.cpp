@@ -1181,8 +1181,12 @@ void drawVectorFieldArrows(
         4.0f / std::max(screenPixelsPerVoxel(windowViewport, view, *image, worldCrosshairs), 0.1f));
       const float voxelStep = std::min(minStepForScreenSpacing, 100.0f);
 
-      for (float b = 0.0f; b < static_cast<float>(dims[axis1]); b += voxelStep) {
-        for (float a = 0.0f; a < static_cast<float>(dims[axis0]); a += voxelStep) {
+      const auto sampleCountA = static_cast<std::size_t>(std::ceil(static_cast<float>(dims[axis0]) / voxelStep));
+      const auto sampleCountB = static_cast<std::size_t>(std::ceil(static_cast<float>(dims[axis1]) / voxelStep));
+      for (std::size_t sampleB = 0; sampleB < sampleCountB; ++sampleB) {
+        const float b = static_cast<float>(sampleB) * voxelStep;
+        for (std::size_t sampleA = 0; sampleA < sampleCountA; ++sampleA) {
+          const float a = static_cast<float>(sampleA) * voxelStep;
           glm::vec3 pixelPos{0.0f};
           pixelPos[axis0] = a;
           pixelPos[axis1] = b;
@@ -1211,8 +1215,14 @@ void drawVectorFieldArrows(
     else {
       const float startX = viewMin.x + 0.5f * spacingPx;
       const float startY = viewMin.y + 0.5f * spacingPx;
-      for (float y = startY; y < viewMin.y + viewSize.y; y += spacingPx) {
-        for (float x = startX; x < viewMin.x + viewSize.x; x += spacingPx) {
+      const auto columnCount =
+        static_cast<std::size_t>(std::ceil(std::max(0.0f, viewSize.x - 0.5f * spacingPx) / spacingPx));
+      const auto rowCount =
+        static_cast<std::size_t>(std::ceil(std::max(0.0f, viewSize.y - 0.5f * spacingPx) / spacingPx));
+      for (std::size_t row = 0; row < rowCount; ++row) {
+        const float y = startY + static_cast<float>(row) * spacingPx;
+        for (std::size_t column = 0; column < columnCount; ++column) {
+          const float x = startX + static_cast<float>(column) * spacingPx;
           const glm::vec2 samplePos{x, y};
           const glm::vec3 worldNear =
             helper::world_T_miewport(windowViewport, view.camera(), view.viewClip_T_windowClip(), samplePos);

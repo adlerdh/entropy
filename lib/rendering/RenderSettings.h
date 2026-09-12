@@ -100,6 +100,8 @@ struct RenderSettings
   glm::vec4 m_crosshairsColor;
   bool m_showCrosshairs;
   bool m_showCrosshairsInLightboxViews;
+  bool m_showTransformationGuides;
+  glm::vec4 m_transformationGuideColor;
   glm::vec4 m_anatomicalLabelColor;
   bool m_showAnatomicalLabels;
   bool m_showAnatomicalLabelsInLightboxViews;

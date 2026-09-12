@@ -13,7 +13,7 @@ namespace rendering::vector_overlay
 {
 namespace
 {
-constexpr std::string_view k_fontFace = "robotoLight";
+constexpr char k_fontFace[] = "robotoLight";
 constexpr float k_baseFontSize = 14.0f;
 constexpr float k_baseFramePadding = 4.0f;
 constexpr float k_controlToLabelGap = 7.5f;
@@ -233,7 +233,7 @@ void drawImageLabelOverlay(
     frameBounds.bounds.yoffset,
     frameBounds.bounds.width,
     frameBounds.bounds.height);
-  nvgFontFace(nvg, k_fontFace.data());
+  nvgFontFace(nvg, k_fontFace);
   nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 
   for (const ImageLabelEntry& entry : entries) {

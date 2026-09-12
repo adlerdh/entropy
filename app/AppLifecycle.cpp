@@ -241,14 +241,14 @@ void EntropyApp::onImagesReady()
           spdlog::error("Could not apply referenced layout file {}", *layoutsFileName);
           reportInputLoadFailure(
             "layout",
-            *layoutsFileName,
+            layoutsFileName,
             "The layout definitions are invalid or incompatible with the loaded images.");
         }
       }
       else if (!m_data.project().m_layouts.empty()) {
         reportInputLoadFailure(
           "layout",
-          *layoutsFileName,
+          layoutsFileName,
           "The referenced layout file could not be read. Inline project layouts were used instead.");
         spdlog::warn("Falling back to inline project layouts after referenced layout file failed to load");
         applyModifiedDefaultLayouts(
@@ -262,7 +262,7 @@ void EntropyApp::onImagesReady()
           m_data.project().m_currentLayoutIndex);
       }
       else {
-        reportInputLoadFailure("layout", *layoutsFileName, "The referenced layout file could not be read or parsed.");
+        reportInputLoadFailure("layout", layoutsFileName, "The referenced layout file could not be read or parsed.");
       }
     }
     else {

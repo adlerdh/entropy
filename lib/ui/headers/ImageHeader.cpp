@@ -1316,10 +1316,13 @@ void renderImageHeader(
           VectorModeOption{"Curl magnitude", ComponentRenderMode::VectorCurlMagnitude},
           VectorModeOption{"Laplacian magnitude", ComponentRenderMode::VectorLaplacianMagnitude}};
 
-        const auto currentVectorMode = std::find_if(
-          vectorModeOptions.begin(),
-          vectorModeOptions.end(),
-          [&imgSettings](const VectorModeOption& option) { return option.mode == imgSettings.componentRenderMode(); });
+        const auto currentVectorMode = // NOLINT(readability-qualified-auto): std::array iterators need not be pointers.
+          std::find_if(
+            vectorModeOptions.begin(),
+            vectorModeOptions.end(),
+            [&imgSettings](const VectorModeOption& option) {
+              return option.mode == imgSettings.componentRenderMode();
+            });
         const char* currentVectorModeLabel =
           currentVectorMode == vectorModeOptions.end() ? vectorModeOptions[0].label : currentVectorMode->label;
 
@@ -1445,6 +1448,7 @@ void renderImageHeader(
           ComplexModeOption{"Real", ComponentRenderMode::ComplexReal},
           ComplexModeOption{"Imaginary", ComponentRenderMode::ComplexImaginary}};
 
+        // NOLINTNEXTLINE(readability-qualified-auto): std::array iterators need not be pointers.
         const auto currentComplexMode = std::find_if(
           complexModeOptions.begin(),
           complexModeOptions.end(),
@@ -3077,7 +3081,7 @@ void renderImageHeader(
             spdlog::error("Error loading initial affine transformation matrix from file {}", *selectedFile);
             native_dialog::showInputLoadErrorDialog(
               {.inputType = "affine transformation",
-               .path = *selectedFile,
+               .path = selectedFile,
                .cause = "The transformation matrix file could not be read or parsed."});
           }
         }
@@ -3223,7 +3227,7 @@ void renderImageHeader(
             spdlog::error("Error loading manual affine transformation matrix from file {}", *selectedFile);
             native_dialog::showInputLoadErrorDialog(
               {.inputType = "affine transformation",
-               .path = *selectedFile,
+               .path = selectedFile,
                .cause = "The transformation matrix file could not be read or parsed."});
           }
         }

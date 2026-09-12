@@ -566,9 +566,10 @@ bool renderLocalNccSettings(
 
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
     {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
-  const auto selectedPatch = std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
-    return renderData.m_localNccPatchRadius == option.first;
-  });
+  const auto selectedPatch = // NOLINT(readability-qualified-auto): std::array iterators need not be pointers.
+    std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
+      return renderData.m_localNccPatchRadius == option.first;
+    });
   int patchIndex =
     selectedPatch == k_patchSizes.end() ? 2 : static_cast<int>(std::distance(k_patchSizes.begin(), selectedPatch));
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
@@ -662,9 +663,10 @@ bool renderLocalLinearResidualSettings(
 
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
     {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
-  const auto selectedPatch = std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
-    return renderData.m_localLinearResidualPatchRadius == option.first;
-  });
+  const auto selectedPatch = // NOLINT(readability-qualified-auto): std::array iterators need not be pointers.
+    std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
+      return renderData.m_localLinearResidualPatchRadius == option.first;
+    });
   int patchIndex =
     selectedPatch == k_patchSizes.end() ? 2 : static_cast<int>(std::distance(k_patchSizes.begin(), selectedPatch));
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
@@ -839,6 +841,21 @@ void renderViewsTab(
     helpMarker("Do not snap crosshairs to image voxels");
   }
   finishSettingsSection(crosshairsOpen);
+
+  const bool transformationGuidesOpen =
+    ImGui::CollapsingHeader("Transformation Guides", ImGuiTreeNodeFlags_DefaultOpen);
+  if (transformationGuidesOpen) {
+    ImGui::Checkbox("Show transformation guides", &renderData.m_showTransformationGuides);
+    ImGui::SameLine();
+    helpMarker(
+      "Show live visual and numerical measurements in 2D views while manually translating, rotating, or scaling an "
+      "image");
+
+    if (renderData.m_showTransformationGuides) {
+      ImGui::ColorEdit4("Guide color", glm::value_ptr(renderData.m_transformationGuideColor), k_colorAlphaEditFlags);
+    }
+  }
+  finishSettingsSection(transformationGuidesOpen);
 
   // View centering:
   const bool viewRecenteringOpen = ImGui::CollapsingHeader("Recentering", ImGuiTreeNodeFlags_DefaultOpen);
@@ -1359,10 +1376,11 @@ void renderInterfaceTab(
 
     const auto currentScale = appData.settings().uiScaleOverride();
     const auto& uiScaleChoices = ui_settings::uiScaleChoices();
-    auto currentChoice = std::find_if(
-      uiScaleChoices.begin(),
-      uiScaleChoices.end(),
-      [&currentScale](const ui_settings::ScaleChoice& choice) { return choice.scale == currentScale; });
+    auto currentChoice = // NOLINT(readability-qualified-auto): std::array iterators need not be pointers.
+      std::find_if(
+        uiScaleChoices.begin(),
+        uiScaleChoices.end(),
+        [&currentScale](const ui_settings::ScaleChoice& choice) { return choice.scale == currentScale; });
     if (currentChoice == uiScaleChoices.end()) {
       currentChoice = uiScaleChoices.begin();
     }
@@ -1389,7 +1407,7 @@ void renderInterfaceTab(
 
     const UiFontFamily currentFamily = appData.settings().uiFontFamily();
     const auto& uiFontChoices = ui_settings::visibleFontChoices();
-    auto currentFontChoice =
+    auto currentFontChoice = // NOLINT(readability-qualified-auto): std::array iterators need not be pointers.
       std::find_if(uiFontChoices.begin(), uiFontChoices.end(), [currentFamily](const ui_settings::FontChoice& choice) {
         return choice.family == currentFamily;
       });

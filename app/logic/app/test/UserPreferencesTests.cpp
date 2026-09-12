@@ -90,6 +90,8 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.crosshairsColor = {0.1f, 0.2f, 0.3f, 0.4f};
   preferences.showCrosshairs = false;
   preferences.showCrosshairsInLightboxViews = false;
+  preferences.showTransformationGuides = false;
+  preferences.transformationGuideColor = {0.9f, 0.8f, 0.7f, 0.6f};
   preferences.background2dColor = {0.2f, 0.3f, 0.4f};
   preferences.background3dColor = {0.3f, 0.4f, 0.5f, 0.6f};
   preferences.anatomicalLabelColor = {0.7f, 0.6f, 0.5f, 0.4f};
@@ -319,6 +321,8 @@ void requireRenderPreferencesEqual(
   CHECK(actual.crosshairsColor == expected.crosshairsColor);
   CHECK(actual.showCrosshairs == expected.showCrosshairs);
   CHECK(actual.showCrosshairsInLightboxViews == expected.showCrosshairsInLightboxViews);
+  CHECK(actual.showTransformationGuides == expected.showTransformationGuides);
+  CHECK(actual.transformationGuideColor == expected.transformationGuideColor);
   CHECK(actual.background2dColor == expected.background2dColor);
   CHECK(actual.background3dColor == expected.background3dColor);
   CHECK(actual.anatomicalLabelColor == expected.anatomicalLabelColor);
@@ -556,6 +560,13 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("interface").at("precision").at("percentiles") == 7);
   CHECK(root.at("interface").at("precision").at("timeValues") == 8);
   CHECK(root.at("views").at("showOverlays") == false);
+  CHECK(root.at("views").at("transformationGuides").at("show") == false);
+  const json& guideColor = root.at("views").at("transformationGuides").at("color");
+  REQUIRE(guideColor.size() == 4);
+  CHECK(guideColor.at(0).get<float>() == Catch::Approx(0.9f));
+  CHECK(guideColor.at(1).get<float>() == Catch::Approx(0.8f));
+  CHECK(guideColor.at(2).get<float>() == Catch::Approx(0.7f));
+  CHECK(guideColor.at(3).get<float>() == Catch::Approx(0.6f));
   CHECK(root.at("images").at("floatingPointLinearInterpolationPolicy") == "floatingPoint");
   CHECK(root.at("images").at("isocontourFloatingPointInterpolationPolicy") == "floatingPoint");
   CHECK(root.at("registration").at("defaultBackend") == "ANTs");
@@ -625,6 +636,8 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   preferences.showCrosshairs = false;
   preferences.showCrosshairsInLightboxViews = false;
   preferences.showImageBorders = false;
+  preferences.showTransformationGuides = false;
+  preferences.transformationGuideColor = {0.25f, 0.5f, 0.75f, 0.4f};
   preferences.asciiEnabled = true;
   preferences.reversePovRotation = true;
   preferences.synchronizeThreeDCameras = true;
@@ -639,6 +652,8 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
     appPreferences.showCrosshairsInLightboxViews ==
     user_preferences::RenderPreferences{}.showCrosshairsInLightboxViews);
   CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
+  CHECK_FALSE(appPreferences.showTransformationGuides);
+  CHECK(appPreferences.transformationGuideColor == (glm::vec4{0.25f, 0.5f, 0.75f, 0.4f}));
   CHECK(appPreferences.asciiEnabled == true);
   CHECK(appPreferences.reversePovRotation == true);
   CHECK(appPreferences.synchronizeThreeDCameras == true);
@@ -652,6 +667,21 @@ TEST_CASE("DDP changes modify the application settings fingerprint", "[app][sett
   user_preferences::RenderPreferences changed = defaults;
   ++changed.ddpMaxPeelPasses;
   CHECK(user_preferences::toJsonString(settings, changed) != user_preferences::toJsonString(settings, defaults));
+}
+
+TEST_CASE("transformation guide changes modify the application settings fingerprint", "[app][settings]")
+{
+  const AppSettings settings;
+  const user_preferences::RenderPreferences defaults;
+
+  user_preferences::RenderPreferences visibilityChanged = defaults;
+  visibilityChanged.showTransformationGuides = !defaults.showTransformationGuides;
+  CHECK(
+    user_preferences::toJsonString(settings, visibilityChanged) != user_preferences::toJsonString(settings, defaults));
+
+  user_preferences::RenderPreferences colorChanged = defaults;
+  colorChanged.transformationGuideColor = {0.2f, 0.4f, 0.6f, 0.8f};
+  CHECK(user_preferences::toJsonString(settings, colorChanged) != user_preferences::toJsonString(settings, defaults));
 }
 
 TEST_CASE("user preferences reject invalid JSON without mutating existing values", "[app][settings]")
@@ -854,6 +884,13 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("lightbox").at("showImageBorders") == false);
   CHECK(root.at("views").at("crosshairs").at("show") == true);
   CHECK(root.at("views").at("crosshairs").at("showInLightboxViews") == true);
+  CHECK(root.at("views").at("transformationGuides").at("show") == true);
+  CHECK(
+    root.at("views").at("transformationGuides").at("color") == json::array(
+                                                                 {renderPreferences.transformationGuideColor.x,
+                                                                  renderPreferences.transformationGuideColor.y,
+                                                                  renderPreferences.transformationGuideColor.z,
+                                                                  renderPreferences.transformationGuideColor.w}));
   CHECK_FALSE(root.at("views").at("crosshairs").contains("snapping"));
   CHECK_FALSE(root.at("views").contains("lockAnatomicalDirectionsToReferenceImage"));
   CHECK_FALSE(root.at("views").at("anatomicalLabels").contains("type"));
@@ -937,6 +974,9 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
     user_preferences::PrecisionPreferences{});
 
   const auto views = text.find("\"views\"");
+  const auto crosshairs = text.find("\"crosshairs\"", views);
+  const auto transformationGuides = text.find("\"transformationGuides\"", views);
+  const auto synchronizeViewZooms = text.find("\"synchronizeViewZooms\"", views);
   const auto rendering = text.find("\"rendering\"");
   const auto interface = text.find("\"interface\"");
   const auto surfaces = text.find("\"mesh\"");
@@ -952,6 +992,9 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   const auto logVerbosity = text.find("\"logVerbosity\"", diagnostics);
 
   REQUIRE(views != std::string::npos);
+  REQUIRE(crosshairs != std::string::npos);
+  REQUIRE(transformationGuides != std::string::npos);
+  REQUIRE(synchronizeViewZooms != std::string::npos);
   REQUIRE(rendering != std::string::npos);
   REQUIRE(interface != std::string::npos);
   REQUIRE(surfaces != std::string::npos);
@@ -966,6 +1009,8 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   REQUIRE(loggingEnabled != std::string::npos);
   REQUIRE(logVerbosity != std::string::npos);
   CHECK(views < rendering);
+  CHECK(crosshairs < transformationGuides);
+  CHECK(transformationGuides < synchronizeViewZooms);
   CHECK(rendering < interface);
   CHECK(surfaces < ddp);
   CHECK(ddp < raycasting);

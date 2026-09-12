@@ -72,12 +72,10 @@ std::string joinWarnings(const std::vector<std::string>& warnings)
 
 int compareStringsCaseInsensitive(std::string_view left, std::string_view right)
 {
-  const auto leftIt = left.begin();
-  const auto rightIt = right.begin();
   const auto minSize = std::min(left.size(), right.size());
   for (std::size_t i = 0; i < minSize; ++i) {
-    const char leftChar = static_cast<char>(std::tolower(static_cast<unsigned char>(leftIt[i])));
-    const char rightChar = static_cast<char>(std::tolower(static_cast<unsigned char>(rightIt[i])));
+    const char leftChar = static_cast<char>(std::tolower(static_cast<unsigned char>(left[i])));
+    const char rightChar = static_cast<char>(std::tolower(static_cast<unsigned char>(right[i])));
     if (leftChar < rightChar) {
       return -1;
     }

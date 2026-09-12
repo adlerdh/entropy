@@ -26,7 +26,7 @@ public:
   {
   }
 
-  std::expected<glm::dvec3, std::string> transformPoint(const glm::dvec3& point) const override
+  [[nodiscard]] std::expected<glm::dvec3, std::string> transformPoint(const glm::dvec3& point) const override
   {
     const glm::vec4 result =
       deformation_warp::forwardWarpDisplayWorldPosition(m_appData, m_imageUid, glm::vec4{glm::vec3{point}, 1.0f});

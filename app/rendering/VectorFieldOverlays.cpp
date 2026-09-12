@@ -109,7 +109,7 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
 
       renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{ImgSegPair{imageUid, std::nullopt}}, false);
     }
-    program->stopUse();
+    GLShaderProgram::stopUse();
     unbindTextures(boundTextures);
 
     isFixedImage = false;

@@ -629,7 +629,7 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   m_data.setProjectFileName(normalizedFileName);
   recordRecentProjectFile(normalizedFileName);
   updateWindowTitleStatus();
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
   return true;
 }
 
@@ -666,7 +666,7 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
   }
 
   m_data.setProject(createProjectSnapshot());
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
   spdlog::info("Imported layouts from {}", fileName);
 }
 
@@ -711,7 +711,7 @@ void EntropyApp::performLoadProjectFile(const fs::path& fileName)
     if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
     }
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -734,7 +734,7 @@ bool EntropyApp::requestProjectReplacement(GuiData::UnsavedProjectAction action)
 
   m_data.guiData().m_pendingUnsavedProjectAction = action;
   m_data.guiData().m_showUnsavedProjectPopup = true;
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
   return true;
 }
 
@@ -812,7 +812,7 @@ void EntropyApp::continueLargeImageProjectPreflight()
         if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
           m_data.state().setProjectLoadState(ProjectLoadState::Failed);
         }
-        m_glfw.postEmptyEvent();
+        GlfwWrapper::postEmptyEvent();
         return;
       }
 
@@ -832,7 +832,7 @@ void EntropyApp::continueLargeImageProjectPreflight()
       m_data.guiData().m_pendingLargeImageLoadPrompt =
         GuiData::LargeImageLoadPrompt{image->m_imageFileName, *header, true, 0 != m_pendingLargeProjectImageIndex};
       m_data.guiData().m_showLargeImageLoadPrompt = true;
-      m_glfw.postEmptyEvent();
+      GlfwWrapper::postEmptyEvent();
       return;
     }
 
@@ -875,7 +875,7 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
         m_pendingLargeProjectFileName = std::nullopt;
         m_pendingLargeProjectImageIndex = 0;
         clearPendingRecentDataLoad();
-        m_glfw.postEmptyEvent();
+        GlfwWrapper::postEmptyEvent();
         break;
       }
 
@@ -887,7 +887,7 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
           m_pendingLargeProjectFileName = std::nullopt;
           m_pendingLargeProjectImageIndex = 0;
           clearPendingRecentDataLoad();
-          m_glfw.postEmptyEvent();
+          GlfwWrapper::postEmptyEvent();
           break;
         }
 
@@ -914,7 +914,7 @@ void EntropyApp::requestCloseProject()
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::CloseProject;
     m_data.guiData().m_showUnsavedProjectPopup = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -928,13 +928,13 @@ void EntropyApp::requestQuitApp()
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;
     m_data.guiData().m_showUnsavedProjectPopup = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
   if (m_data.guiData().m_appSettingsDirty) {
     m_data.guiData().m_showUnsavedAppSettingsPopup = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -945,13 +945,13 @@ void EntropyApp::requestQuitApp()
   }
 
   m_data.guiData().m_showConfirmCloseAppPopup = true;
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void EntropyApp::quitAppWithoutPrompt()
 {
   m_data.state().setQuitApp(true);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void EntropyApp::continueAfterUnsavedProjectPrompt()
@@ -980,7 +980,7 @@ void EntropyApp::continueAfterUnsavedProjectPrompt()
     case GuiData::UnsavedProjectAction::QuitApp:
       if (m_data.guiData().m_appSettingsDirty) {
         m_data.guiData().m_showUnsavedAppSettingsPopup = true;
-        m_glfw.postEmptyEvent();
+        GlfwWrapper::postEmptyEvent();
         return;
       }
       quitAppWithoutPrompt();
@@ -1043,5 +1043,5 @@ void EntropyApp::closeProject()
   m_rendering.setVectorOverlayVisibility(Rendering::VectorOverlayVisibility::Configured);
   m_glfw.setWindowTitleStatus("");
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }

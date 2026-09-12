@@ -769,11 +769,11 @@ bool EntropyApp::loadSerializedImage(
         if (!serialize::openAffineTxFile(affine_T_subject, *serializedImage.m_initialAffineFileName)) {
           spdlog::error(
             "Unable to read affine transformation from {} for image {}",
-            *serializedImage.m_initialAffineFileName,
+            serializedImage.m_initialAffineFileName,
             *imageUid);
           reportInputLoadFailure(
             "affine transformation",
-            *serializedImage.m_initialAffineFileName,
+            serializedImage.m_initialAffineFileName,
             "The transformation file could not be read or parsed.");
 
           image->transformations().set_affine_T_subject_fileName(std::nullopt);
@@ -809,11 +809,11 @@ bool EntropyApp::loadSerializedImage(
       {
         spdlog::error(
           "Unable to read manual affine transformation from {} for image {}",
-          *serializedImage.m_manualAffineFileName,
+          serializedImage.m_manualAffineFileName,
           *imageUid);
         reportInputLoadFailure(
           "affine transformation",
-          *serializedImage.m_manualAffineFileName,
+          serializedImage.m_manualAffineFileName,
           "The transformation file could not be read or parsed.");
         manualAffineAvailable = false;
       }
@@ -837,7 +837,7 @@ bool EntropyApp::loadSerializedImage(
     }
     catch (const std::exception& e) {
       spdlog::error("Exception loading inverse warp from {}: {}", *serializedImage.m_inverseWarpFieldPath, e.what());
-      reportInputLoadFailure("inverse deformation field", *serializedImage.m_inverseWarpFieldPath, e.what());
+      reportInputLoadFailure("inverse deformation field", serializedImage.m_inverseWarpFieldPath, e.what());
     }
 
     do {
@@ -905,7 +905,7 @@ bool EntropyApp::loadSerializedImage(
     }
     catch (const std::exception& e) {
       spdlog::error("Exception loading forward warp from {}: {}", *serializedImage.m_forwardWarpFieldPath, e.what());
-      reportInputLoadFailure("forward deformation field", *serializedImage.m_forwardWarpFieldPath, e.what());
+      reportInputLoadFailure("forward deformation field", serializedImage.m_forwardWarpFieldPath, e.what());
     }
 
     do {
@@ -984,7 +984,7 @@ bool EntropyApp::loadSerializedImage(
     if (serialize::openAnnotationsFromJsonFile(annots, *serializedImage.m_annotationsFileName)) {
       spdlog::info(
         "Loaded annotations from JSON file {} for image {}",
-        *serializedImage.m_annotationsFileName,
+        serializedImage.m_annotationsFileName,
         *imageUid);
 
       addAnnotationsToImage(std::move(annots), serializedImage.m_annotationsFileName);
@@ -996,7 +996,7 @@ bool EntropyApp::loadSerializedImage(
         *imageUid);
       reportInputLoadFailure(
         "annotations",
-        *serializedImage.m_annotationsFileName,
+        serializedImage.m_annotationsFileName,
         "The annotation JSON file could not be read or parsed.");
     }
   }
@@ -1022,7 +1022,7 @@ bool EntropyApp::loadSerializedImage(
       spdlog::info("Loaded landmarks from CSV file {} for image {}", *lm.m_csvFileName, *imageUid);
     }
     else if (lm.m_csvFileName) {
-      reportInputLoadFailure("landmarks", *lm.m_csvFileName, "The landmark CSV file could not be read or parsed.");
+      reportInputLoadFailure("landmarks", lm.m_csvFileName, "The landmark CSV file could not be read or parsed.");
     }
 
     if (loadedLandmarks) {
@@ -1356,7 +1356,6 @@ void EntropyApp::performLoadImageFiles(const std::vector<fs::path>& fileNames)
   m_pendingRasterAddImages.clear();
   m_pendingRasterImageIndex = 0;
   continueRasterImageHeaderPreflight();
-  return;
 }
 
 void EntropyApp::continueRasterImageHeaderPreflight()
@@ -1386,7 +1385,7 @@ void EntropyApp::continueRasterImageHeaderPreflight()
     prompt.allImages = allImages;
     m_data.guiData().m_pendingRasterImageHeaderPrompt = std::move(prompt);
     m_data.guiData().m_showRasterImageHeaderPrompt = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return true;
   };
 
@@ -1459,7 +1458,7 @@ void EntropyApp::continueRasterImageHeaderPreflight()
     if (imagesToAdd.empty()) {
       clearPendingRecentDataLoad();
       m_preserveLayoutsOnImagesReady = false;
-      m_glfw.postEmptyEvent();
+      GlfwWrapper::postEmptyEvent();
       return;
     }
 
@@ -1539,7 +1538,7 @@ void EntropyApp::handleRasterImageHeaderDecision(
         m_pendingRasterProject = std::nullopt;
         m_pendingRasterImageIndex = 0;
         clearPendingRecentDataLoad();
-        m_glfw.postEmptyEvent();
+        GlfwWrapper::postEmptyEvent();
         return;
       }
       project_image_sequence::erase(*m_pendingRasterProject, m_pendingRasterImageIndex);
@@ -1658,7 +1657,7 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
       m_data.guiData().m_pendingLargeImageLoadPrompt =
         GuiData::LargeImageLoadPrompt{imageFiles.front(), *header, false, true};
       m_data.guiData().m_showLargeImageLoadPrompt = true;
-      m_glfw.postEmptyEvent();
+      GlfwWrapper::postEmptyEvent();
       return;
     }
   }
@@ -1815,7 +1814,7 @@ void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, b
   guiDataLocal.m_pendingDicomSeriesSelectionPrompt = std::nullopt;
   guiDataLocal.m_showDicomSeriesSelectionPopup = false;
   m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 
   m_futureDiscoverDicom = std::async(std::launch::async, [scanInputs]() {
     return dicom::discoverSeries(
@@ -1832,7 +1831,7 @@ void EntropyApp::pollDicomSeriesScan()
 
   using namespace std::chrono_literals;
   if (m_futureDiscoverDicom.wait_for(0ms) != std::future_status::ready) {
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -1867,7 +1866,7 @@ void EntropyApp::pollDicomSeriesScan()
       result.warnings.empty() ? "No loadable DICOM image series was found."
                               : "No loadable DICOM image series was found. " + result.warnings.front());
     m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -1892,7 +1891,7 @@ void EntropyApp::pollDicomSeriesScan()
   guiDataLocal.m_pendingDicomSeriesSelectionPrompt = std::move(prompt);
   guiDataLocal.m_showDicomSeriesSelectionPopup = true;
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void EntropyApp::loadDicomSeries(
@@ -2177,7 +2176,7 @@ bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
   m_data.setProject(createProjectSnapshot());
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
   m_callbackHandler.recenterViews(m_data.state().recenteringMode(), true, true, true, true, true);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 
   spdlog::info("Set {} as the reference image", imageUid);
   return true;
@@ -2229,7 +2228,7 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
   m_data.setProject(createProjectSnapshot());
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
   updateWindowTitleStatus();
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 
   spdlog::info("Removed image {}", imageUid);
   return true;

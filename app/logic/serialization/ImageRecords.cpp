@@ -372,7 +372,7 @@ void from_json(const json& j, serialize::DicomSource& source)
       const auto parsed =
         enumFromName<QuadrupedBodyRegion>(anatomy->value("bodyRegion", ""), k_quadrupedBodyRegionNames))
     {
-      source.m_anatomy.bodyRegion = *parsed;
+      source.m_anatomy.bodyRegion = parsed;
     }
     if (
       const auto parsed =

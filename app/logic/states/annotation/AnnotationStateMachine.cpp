@@ -1177,7 +1177,7 @@ std::vector<std::pair<uuid, size_t> > AnnotationStateMachine::findHitVertices(co
   const float planeDistanceThresh = 0.5f * data::sliceScrollDistance(hit.worldFrontAxis, *activeImage);
 
   const bool forwardWarped = renderAnnotationsWithForwardWarp(*ms_appData, *activeImageUid, *activeImage);
-  const auto annotUidsRange = ms_appData->annotationsForImage(*activeImageUid);
+  const auto& annotUidsRange = ms_appData->annotationsForImage(*activeImageUid);
   std::vector<uuid> uidsOfAnnotsOnImageSlice;
   if (forwardWarped) {
     uidsOfAnnotsOnImageSlice.assign(std::begin(annotUidsRange), std::end(annotUidsRange));
