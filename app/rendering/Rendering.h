@@ -300,6 +300,7 @@ private:
   using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
   using MeshHandle = rendering::mesh::MeshHandle;
 
+  /// Identifies cached mesh geometry for an image-aligned plane or the full image box.
   struct MeshImagePlaneHandleKey
   {
     uuids::uuid imageUid;                                        //!< Source image rendered on the plane
@@ -309,6 +310,7 @@ private:
     bool operator==(const MeshImagePlaneHandleKey&) const = default;
   };
 
+  /// Hashes an image-plane mesh key for use in unordered containers.
   struct MeshImagePlaneHandleKeyHash
   {
     std::size_t operator()(const MeshImagePlaneHandleKey& key) const;
@@ -316,6 +318,7 @@ private:
 
   using MeshImagePlaneHandleMap = std::unordered_map<MeshImagePlaneHandleKey, MeshHandle, MeshImagePlaneHandleKeyHash>;
 
+  /// Cached occupied-label metadata and the immutable segmentation snapshot from which it was computed.
   struct SegmentationLabelInventory
   {
     rendering::mesh::SegmentationSourceIdentity identity; //!< Revisions and time represented by labels/snapshot
@@ -323,6 +326,7 @@ private:
     std::shared_ptr<const Image> snapshot; //!< Temporary immutable pixels reused by pending label extractions
   };
 
+  /// Tracks an asynchronous segmentation-label inventory computation and its source identity.
   struct PendingSegmentationLabelInventory
   {
     rendering::mesh::SegmentationSourceIdentity identity;
@@ -330,6 +334,7 @@ private:
     std::future<std::optional<rendering::mesh::SegmentationLabelInventory>> future;
   };
 
+  /// Inputs that uniquely identify a distance-map generation request.
   struct DistanceMapGenerationRequest
   {
     uint64_t pixelDataRevision = 0;
@@ -337,6 +342,7 @@ private:
     bool operator==(const DistanceMapGenerationRequest&) const = default;
   };
 
+  /// Tracks an asynchronous distance-map computation and the request that launched it.
   struct PendingDistanceMapGeneration
   {
     DistanceMapGenerationRequest request;
@@ -351,12 +357,14 @@ private:
     uint64_t geometryVersion = 0;
   };
 
+  /// Cached plane intersector for one version of imported mesh geometry.
   struct ImportedMeshPlaneIntersectorCache
   {
     uint64_t geometryVersion = 0;
     std::unique_ptr<rendering::mesh::MeshPlaneIntersector> intersector;
   };
 
+  /// Cached world-space slice intersection segments for an imported mesh and plane.
   struct ImportedMeshSliceIntersectionCache
   {
     uint64_t geometryVersion = 0;

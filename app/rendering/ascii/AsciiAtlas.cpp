@@ -8,6 +8,48 @@
 #include <cstring>
 #include <vector>
 
+AsciiAtlas::AsciiAtlas() = default;
+
+bool AsciiAtlas::isBuilt() const noexcept
+{
+  return m_texture.has_value();
+}
+
+int AsciiAtlas::glyphCount() const
+{
+  return m_glyphCount;
+}
+
+glm::ivec2 AsciiAtlas::glyphSize() const
+{
+  return m_glyphPx;
+}
+
+const std::vector<float>& AsciiAtlas::fillFractions() const
+{
+  return m_fillFractions;
+}
+
+const std::vector<GlyphMeta>& AsciiAtlas::glyphMeta() const
+{
+  return m_glyphMeta;
+}
+
+const std::string& AsciiAtlas::characters() const
+{
+  return m_characters;
+}
+
+glm::ivec2 AsciiAtlas::slotSize() const
+{
+  return m_slotPx;
+}
+
+const std::vector<std::vector<uint8_t>>& AsciiAtlas::slotPixels() const
+{
+  return m_slotPixels;
+}
+
 std::vector<float> AsciiAtlas::computeRenderedCoverage(glm::vec2 cellSizePx) const
 {
   if (m_slotPixels.empty()) return {};

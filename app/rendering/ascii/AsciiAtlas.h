@@ -34,7 +34,7 @@ public:
   static constexpr float kPixDistScale = 32.0f;
   static constexpr uint8_t kOnedgeValue = 128;
 
-  AsciiAtlas() = default;
+  AsciiAtlas();
   ~AsciiAtlas();
 
   // Non-copyable, movable
@@ -56,56 +56,32 @@ public:
   bool build(const unsigned char* ttfData, int ttfBytes, const std::string& charset, glm::ivec2 glyphPx);
 
   /// Return whether the atlas owns an uploaded OpenGL texture.
-  bool isBuilt() const noexcept
-  {
-    return m_texture.has_value();
-  }
+  bool isBuilt() const noexcept;
 
   /// Bind/unbind the uploaded atlas texture on one texture unit.
   void bind(uint32_t textureUnit) const;
   void unbind(uint32_t textureUnit) const;
 
   /// Number of glyphs in the atlas
-  int glyphCount() const
-  {
-    return m_glyphCount;
-  }
+  int glyphCount() const;
 
   /// Glyph cell size in pixels
-  glm::ivec2 glyphSize() const
-  {
-    return m_glyphPx;
-  }
+  glm::ivec2 glyphSize() const;
 
   /// Fill fractions in sorted glyph order (darkest to brightest)
-  const std::vector<float>& fillFractions() const
-  {
-    return m_fillFractions;
-  }
+  const std::vector<float>& fillFractions() const;
 
   /// Per-glyph SDF metadata in sorted glyph order
-  const std::vector<GlyphMeta>& glyphMeta() const
-  {
-    return m_glyphMeta;
-  }
+  const std::vector<GlyphMeta>& glyphMeta() const;
 
   /// Characters in sorted glyph order.
-  const std::string& characters() const
-  {
-    return m_characters;
-  }
+  const std::string& characters() const;
 
   /// Slot size in atlas pixels {slotW, slotH} (glyph cell + SDF padding on each side)
-  glm::ivec2 slotSize() const
-  {
-    return m_slotPx;
-  }
+  glm::ivec2 slotSize() const;
 
   /// Per-glyph raw slot pixels in sorted order (for testing and coverage computation)
-  const std::vector<std::vector<uint8_t>>& slotPixels() const
-  {
-    return m_slotPixels;
-  }
+  const std::vector<std::vector<uint8_t>>& slotPixels() const;
 
   /// CPU simulation of rendered coverage per glyph at the given screen cell size.
   /// Returns coverage fraction [0,1] in the same sorted order as fillFractions().
