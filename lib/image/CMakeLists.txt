@@ -62,6 +62,7 @@ target_link_libraries(EntropyImage
     Entropy::Common
   PRIVATE
     ${ITK_LIBRARIES}
+    gdcmMSFF
     entropy_warnings
 )
 

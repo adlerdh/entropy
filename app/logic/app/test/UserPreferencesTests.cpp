@@ -930,7 +930,9 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("system").at("updates").at("automaticChecks") == false);
   CHECK(root.at("system").at("performance").at("frameRate").at("limit") == false);
   CHECK(root.at("system").at("diagnostics").at("enabled") == true);
-  CHECK(root.at("system").at("diagnostics").at("logVerbosity") == logging::logLevelLabel(logging::defaultLogLevel()));
+  CHECK(
+    root.at("system").at("diagnostics").at("logVerbosity")
+    == std::string{logging::logLevelLabel(logging::defaultLogLevel())});
 }
 
 TEST_CASE("user preferences preserve logging verbosity while logging is disabled", "[app][settings][logging]")

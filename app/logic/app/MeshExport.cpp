@@ -250,7 +250,7 @@ void exportIsosurface(
   const ExportTransformSnapshot transform = captureTransform(appData, imageUid);
   const std::string imageUidString = uuids::to_string(imageUid);
   const std::string surfaceUidString = uuids::to_string(surfaceUid);
-  const float isoValue = surface->value;
+  const float isoValue = static_cast<float>(surface->value);
   const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
   const fs::path& destination = *path;
   const bool submitted = service->submit(
