@@ -5,22 +5,23 @@
 #include "image/Image.h"
 #include "image/Isosurface.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/mesh/AmbientOcclusionPass.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
 #include "rendering/mesh/MeshBounds.h"
 #include "rendering/mesh/MeshDdpPass.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
-#include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtraction.h"
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
-#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshSegmentationPolicy.h"
 #include "rendering/mesh/MeshShadowMapPass.h"
 #include "rendering/mesh/MeshShadowMapProjection.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/mesh/MeshViewContext.h"
 #include "rendering/mesh/MeshViewViewport.h"
+#include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/gl/OpenGLRenderState.h"
 #include "windowing/View.h"
 
 #include <glad/glad.h>
@@ -70,6 +71,19 @@ void Rendering::reconcileExtractedMeshResources()
     if (!image) {
       continue;
     }
+    for (const uuids::uuid& meshUid : m_appData.imageToImportedMeshUids(imageUid)) {
+      const auto versionIt = m_importedMeshVersions.find(meshUid);
+      liveKeys.insert(rendering::mesh::MeshGeometryKey{
+        .sourceUid = meshUid,
+        .sourceDataVersion = 1,
+        .sourceGeometryVersion = versionIt == m_importedMeshVersions.end() ? 1 : versionIt->second,
+        .component = std::nullopt,
+        .labelValue = std::nullopt,
+        .timePoint = 0,
+        .isoValue = 0.0,
+        .extractionAlgorithm = "imported-surface",
+        .extractionAlgorithmVersion = 1});
+    }
     const uint32_t component = image->settings().activeComponent();
     const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
     for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, component)) {
@@ -79,9 +93,9 @@ void Rendering::reconcileExtractedMeshResources()
       }
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
-        .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
-        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+        .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
+        .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
       liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridIsosurfaceRequest(
         imageUid,
         image->pixelDataRevision(),
@@ -105,18 +119,22 @@ void Rendering::reconcileExtractedMeshResources()
     }
     const uint32_t timePoint = segmentation->timeAxis().clamp(segmentation->settings().activeTimePoint());
     const auto inventory = m_segmentationLabelInventories.find(segmentationUid);
-    const bool inventoryIsCurrent = inventory != m_segmentationLabelInventories.end() &&
-                                    inventory->second.pixelDataRevision == segmentation->pixelDataRevision() &&
-                                    inventory->second.timePoint == timePoint;
+    const bool inventoryIsCurrent =
+      inventory != m_segmentationLabelInventories.end() && rendering::mesh::sameSegmentationValues(
+                                                             inventory->second.identity,
+                                                             rendering::mesh::SegmentationSourceIdentity{
+                                                               .pixelDataRevision = segmentation->pixelDataRevision(),
+                                                               .geometryRevision = segmentation->geometryRevision(),
+                                                               .timePoint = timePoint});
     for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
       if (inventoryIsCurrent && !inventory->second.labels.contains(static_cast<int64_t>(labelIndex))) {
         continue;
       }
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
-        .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
-        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+        .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
+        .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
       liveKeys.insert(rendering::mesh::geometryKeyForRequest(rendering::mesh::makeScalarGridSegmentationRequest(
         segmentationUid,
         segmentation->pixelDataRevision(),
@@ -127,24 +145,35 @@ void Rendering::reconcileExtractedMeshResources()
     }
   }
 
-  rendering::mesh::reconcileExtractedMeshResources(
-    liveKeys,
-    m_meshCpuCache,
-    m_meshHandles,
-    [this](const uuids::uuid& handleUid) { m_meshGpuStore.remove(handleUid); });
-  m_meshExtractionQueue.cancelNotIn(liveKeys);
+  m_meshExtractions.retainOnly(liveKeys);
+  m_meshResources.retainOnly(liveKeys);
+  std::erase_if(m_importedMeshData, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
+  std::erase_if(m_importedMeshVersions, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
+  std::erase_if(m_importedMeshPlaneIntersectors, [this](const auto& entry) {
+    return !m_appData.importedMesh(entry.first);
+  });
+  for (auto& viewIntersections : m_importedMeshSliceIntersections) {
+    std::erase_if(viewIntersections.second, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
+  }
 }
 
 void Rendering::consumeCompletedMeshExtractions()
 {
-  for (rendering::mesh::MeshExtractionJobResult& result : m_meshExtractionQueue.takeCompleted()) {
-    const rendering::mesh::MeshExtractionRunResult applied =
-      rendering::mesh::applyExtractionJobResult(std::move(result), m_meshCpuCache);
+  for (const rendering::mesh::MeshExtractionRunResult& applied : m_meshExtractions.consumeCompleted()) {
     if (rendering::mesh::MeshExtractionRunStatus::Failed == applied.status) {
       spdlog::error("Mesh extraction failed for {}: {}", applied.key.sourceUid, fmt::join(applied.diagnostics, "; "));
     }
     else if (rendering::mesh::MeshExtractionRunStatus::Empty == applied.status) {
       spdlog::debug("Mesh extraction produced no contour for {}", applied.key.sourceUid);
+    }
+    else if (rendering::mesh::MeshExtractionRunStatus::Ready == applied.status) {
+      if (const rendering::mesh::MeshData* mesh = m_meshExtractions.readyMesh(applied.key)) {
+        spdlog::debug(
+          "Mesh extraction completed for {} with {} vertices and {} triangles",
+          applied.key.sourceUid,
+          mesh->positions.size(),
+          mesh->indices.size() / 3u);
+      }
     }
   }
 }
@@ -155,8 +184,8 @@ void Rendering::updateMeshExtractionStatus()
     return;
   }
 
-  const std::size_t activeJobs = m_meshExtractionQueue.activeCount();
-  std::vector<std::string> activeDescriptions = m_meshExtractionQueue.activeDescriptions();
+  const std::size_t activeJobs = m_meshExtractions.activeCount();
+  std::vector<std::string> activeDescriptions = m_meshExtractions.activeDescriptions();
   std::scoped_lock lock(m_appData.guiData().m_meshExtractionStatus->mutex);
   m_appData.guiData().m_meshExtractionStatus->visible = activeJobs > 0;
   m_appData.guiData().m_meshExtractionStatus->title = activeJobs == 1 ? "Computing mesh" : "Computing meshes";
@@ -167,14 +196,14 @@ void Rendering::updateMeshExtractionStatus()
 void Rendering::clearMeshViewBackgroundForView(const View& view)
 {
   const rendering::mesh::ScopedMeshViewViewport scopedViewport{view, m_appData.windowData()};
+  const OpenGLStateGuard state;
 
-  std::array<GLfloat, 4> previousClearColor{};
-  glGetFloatv(GL_COLOR_CLEAR_VALUE, previousClearColor.data());
-
-  const auto& bg = m_appData.renderData().m_3dBackgroundColor;
+  const auto& bg = m_appData.renderSettings().m_3dBackgroundColor;
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_TRUE);
+  glStencilMask(0xffffffffu);
   glClearColor(bg.r, bg.g, bg.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  glClearColor(previousClearColor[0], previousClearColor[1], previousClearColor[2], previousClearColor[3]);
 }
 
 void Rendering::drawMeshRenderListForView(
@@ -186,32 +215,35 @@ void Rendering::drawMeshRenderListForView(
   std::array<GLint, 4> viewViewport{};
   glGetIntegerv(GL_VIEWPORT, viewViewport.data());
 
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(
-    m_meshGpuStore,
+    m_meshResources.gpuStore(),
     view,
     glm::vec4{
-      renderData.m_lightingAmbient,
-      renderData.m_lightingDiffuse,
-      renderData.m_lightingSpecular,
-      renderData.m_lightingSpecularPower});
+      renderSettings.m_lightingAmbient,
+      renderSettings.m_lightingDiffuse,
+      renderSettings.m_lightingSpecular,
+      renderSettings.m_lightingSpecularPower});
   context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
-  context.triangleEdgesEnabled = renderData.m_meshSurfaceMaterialSettings.triangleEdgesEnabled;
+  context.triangleEdgesEnabled = renderSettings.m_meshSurfaceMaterialSettings.triangleEdgesEnabled;
   const bool useTriangleGeometryProgram =
-    rendering::mesh::requiresMeshGeometryShader(renderData.m_meshSurfaceMaterialSettings);
+    rendering::mesh::requiresMeshGeometryShader(renderSettings.m_meshSurfaceMaterialSettings);
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
-    renderData.m_meshAdvancedLightingSettings,
+    renderSettings.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{
       .shadowMapPassAvailable = true,
       .ambientOcclusionPassAvailable = true});
 
   const auto cpuMeshLookup = [this](const rendering::mesh::MeshHandle& handle) -> const rendering::mesh::MeshData* {
-    for (const auto& [key, storedHandle] : m_meshHandles) {
-      if (storedHandle == handle) {
-        return m_meshCpuCache.readyMesh(key);
-      }
+    const rendering::mesh::MeshGeometryKey* key = m_meshResources.findKey(handle);
+    if (!key) {
+      return nullptr;
     }
-    return nullptr;
+    if (const rendering::mesh::MeshData* extracted = m_meshExtractions.readyMesh(*key)) {
+      return extracted;
+    }
+    const auto imported = m_importedMeshData.find(key->sourceUid);
+    return imported == m_importedMeshData.end() ? nullptr : &imported->second;
   };
 
   const std::optional<rendering::mesh::MeshBounds> sceneBounds =
@@ -228,7 +260,6 @@ void Rendering::drawMeshRenderListForView(
     if (projection) {
       shadowContext.clip_T_world = projection->lightClip_T_world;
       shadowContext.lightDirectionWorld = projection->lightDirectionWorld;
-      shadowContext.shadowDepthPass = true;
       shadowContext.advancedLighting.shadows.state = rendering::mesh::MeshAdvancedLightingFeatureState::Disabled;
       shadowContext.shadowDepthTexture = nullptr;
     }
@@ -269,13 +300,13 @@ void Rendering::drawMeshRenderListForView(
     }
   }
 
-  const rendering::mesh::MeshDdpSettings& ddpSettings = renderData.m_meshDdpSettings;
+  const rendering::mesh::MeshDdpSettings& ddpSettings = renderSettings.m_meshDdpSettings;
   rendering::mesh::MeshDdpPlan ddpPlan = rendering::mesh::meshDdpPlanForRenderList(list, ddpSettings);
   if (hasImagePlaneDdpRenderables(imagePlaneList)) {
     ddpPlan = rendering::mesh::meshDdpPlanWithExtraRenderables(
       ddpPlan,
       ddpSettings,
-      static_cast<uint32_t>(imagePlaneList->imagePlanes.size()));
+      static_cast<uint32_t>(rendering::mesh::visibleImagePlaneOrientationCount(*imagePlaneList)));
   }
   for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, ddpSettings)) {
     spdlog::debug("{}", diagnostic);
@@ -298,29 +329,37 @@ void Rendering::drawMeshRenderListForView(
       .completionProgram = m_meshDdpCompletionProgram,
       .backBlendProgram = m_meshDdpBackBlendProgram,
       .resolveProgram = m_meshDdpResolveProgram,
+      .prepareExtraLayers = imagePlaneList
+                              ? [this, &view, imagePlaneList, &ddpContext]() {
+                                  prepareMeshImagePlaneDdpCompositesForView(view, *imagePlaneList, ddpContext);
+                                }
+                              : std::function<void()>{},
       .drawExtraDepthBounds = imagePlaneList
-                                 ? [this, &view, imagePlaneList, &context]() {
-                                     drawMeshImagePlaneDdpDepthBoundsForView(view, *imagePlaneList, context);
+                                 ? [this, &view, imagePlaneList, &ddpContext]() {
+                                     drawMeshImagePlaneDdpDepthBoundsForView(view, *imagePlaneList, ddpContext);
                                    }
                                  : std::function<void()>{},
       .drawExtraPeelLayers = imagePlaneList
-                               ? [this, &view, imagePlaneList, &context](GLTexture& previousDepthBounds,
-                                                                           GLTexture& previousFrontColor) {
+                               ? [this, &view, imagePlaneList, &ddpContext](GLTexture& previousDepthBounds,
+                                                                              GLTexture& previousFrontColor) {
                                    drawMeshImagePlaneDdpPeelLayersForView(
                                      view,
                                      *imagePlaneList,
-                                     context,
+                                     ddpContext,
                                      previousDepthBounds,
                                      previousFrontColor);
                                  }
                                : std::function<void(GLTexture&, GLTexture&)>{}});
   }
   else {
-    m_meshRenderer.drawOpaque(list, context, useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram);
+    rendering::mesh::MeshRenderer::drawOpaque(
+      list,
+      context,
+      useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram);
   }
 
   GLShaderProgram& visibleMeshProgram = useTriangleGeometryProgram ? m_meshEdgesProgram : m_meshProgram;
-  m_meshRenderer.drawAdditive(list, context, visibleMeshProgram);
-  m_meshRenderer.drawMultiplicative(list, context, visibleMeshProgram);
-  setupOpenGLState();
+  rendering::mesh::MeshRenderer::drawAdditive(list, context, visibleMeshProgram);
+  rendering::mesh::MeshRenderer::drawMultiplicative(list, context, visibleMeshProgram);
+  rendering::restoreOpenGLRenderState();
 }

@@ -56,8 +56,8 @@ void Rendering::renderMeshLandmarksForView(const View& view)
   }
 
   const rendering::mesh::MeshHandle& handle = landmarkSphereMeshHandle();
-  if (!m_meshGpuStore.lookup(handle)) {
-    if (!m_meshGpuStore.uploadOrReplace(rendering::mesh::makeSphereMesh(1.0f, 12, 24), handle)) {
+  if (!m_meshResources.lookup(handle)) {
+    if (!m_meshResources.uploadOrReplace(rendering::mesh::makeSphereMesh(1.0f, 12, 24), handle)) {
       return;
     }
   }

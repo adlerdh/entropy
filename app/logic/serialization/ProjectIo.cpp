@@ -74,8 +74,8 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "imageBoxVisible",
       "reverseRotateAboutEye",
       "crosshairsGlyphVisible",
-      "crosshairsGlyphDiameterVox",
-      "crosshairsGlyphLengthVox",
+      "crosshairsGlyphDiameterScenePercent",
+      "crosshairsGlyphLengthScenePercent",
       "lighting",
       "imagePlanes"};
   }
@@ -83,7 +83,8 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
     preferredKeys = {"ambient", "diffuse", "specular", "specularPower"};
   }
   else if (path == "settings/rendering/threeD/imagePlanes") {
-    preferredKeys = {"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"};
+    preferredKeys =
+      {"visible", "segmentationsVisible", "isocontoursVisible", "opacity", "viewAngleOpacity", "shading", "lighting"};
   }
   else if (path == "settings/rendering/raycasting") {
     preferredKeys = {"samplingFactor", "distanceMap", "renderFrontFaces", "renderBackFaces", "segmentationMasking"};
@@ -102,14 +103,11 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "rimLighting",
       "smoothing",
       "pointPicking",
-      "clipPlane",
+      "cutaway",
       "enabled"};
   }
   else if (path == "settings/rendering/mesh/smoothing") {
     preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};
-  }
-  else if (path == "settings/rendering/mesh/clipPlane") {
-    preferredKeys = {"enabled", "worldPlane"};
   }
   else if (path == "settings/rendering/mesh/shadows") {
     preferredKeys = {"enabled", "mapSizePixels", "strength", "depthBias"};
@@ -132,6 +130,15 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   else if (path == "settings/rendering/segmentations/imageOpacityModulation") {
     preferredKeys = {"twoD", "threeD"};
   }
+  else if (path == "settings/view/anatomicalLabels") {
+    preferredKeys = {
+      "visible",
+      "visibleInLightboxes",
+      "type",
+      "quadrupedBodyRegion",
+      "leftRightDisplayConvention",
+      "lockDirectionsToReferenceImage"};
+  }
   else if (path.ends_with("/settings/isosurfaces")) {
     preferredKeys = {"applyImageColormap", "modulateOpacityWithImageOpacity", "contourLineWidth2D", "opacityModulator"};
   }
@@ -141,11 +148,18 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "value",
       "visibleIn2D",
       "visibleIn3D",
+      "includeInCutaway",
       "color",
       "opacity",
       "contourFillOpacity",
       "fillAboveIsovalue",
       "material"};
+  }
+  else if (path.ends_with("/settings/labels/values")) {
+    preferredKeys = {"visible", "showMesh", "includeInCutaway", "index", "name", "color"};
+  }
+  else if (path.find("/meshes/") != std::string::npos) {
+    preferredKeys = {"uid", "path", "name", "visible", "opacity", "color"};
   }
 
   const auto append = [&](const std::string& key) {
@@ -407,6 +421,10 @@ bool open(EntropyProject& project, const fs::path& fileName)
       }
     }
 
+    for (serialize::ImportedMesh& mesh : image.m_importedMeshes) {
+      mesh.m_path = fs::absolute(mesh.m_path).lexically_normal();
+    }
+
     fs::current_path(saveCurrentPath); // restore current path
   };
 
@@ -522,6 +540,10 @@ bool save(const EntropyProject& project, const fs::path& fileName)
       if (lm.m_csvFileName && !lm.m_csvFileName->empty()) {
         lm.m_csvFileName = fs::relative(*lm.m_csvFileName, projectBasePath);
       }
+    }
+
+    for (serialize::ImportedMesh& mesh : image.m_importedMeshes) {
+      mesh.m_path = fs::relative(mesh.m_path, projectBasePath);
     }
   };
 

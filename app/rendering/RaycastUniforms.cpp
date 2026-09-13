@@ -3,10 +3,11 @@
 #include "image/Image.h"
 #include "image/ImageSettings.h"
 #include "logic/app/Data.h"
-#include "rendering/RenderData.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 
 #include <glm/glm.hpp>
@@ -26,11 +27,12 @@ void Rendering::setRaycastIsoUniforms(
   GLShaderProgram& program,
   const ImgSegPair& imgSegPair,
   const Image& image,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   const bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& settings = m_appData.renderSettings();
+  const rendering::RenderDerivedData& derived = m_appData.renderDerivedData();
 
   program.setSamplerUniform("u_imgTex", s_imgTexSampler.index);
   program.setSamplerUniform("u_jumpTex", s_jumpTexSampler.index);
@@ -40,29 +42,29 @@ void Rendering::setRaycastIsoUniforms(
   program.setUniform("u_texGrads", uniforms.textureGradientStep);
 
   // Shader arrays are fixed at 8 isosurfaces.
-  program.setUniform("u_numIsos", renderData.m_isosurfaceData.numIsos);
-  program.setUniform("u_isoValues", renderData.m_isosurfaceData.values);
-  program.setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
-  program.setUniform("u_isoRimOpacityStrengths", renderData.m_isosurfaceData.rimOpacityStrengths);
-  program.setUniform("u_isoRimEmissionStrengths", renderData.m_isosurfaceData.rimEmissionStrengths);
-  program.setUniform("u_isoRimPowers", renderData.m_isosurfaceData.rimPowers);
-  program.setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
-  program.setUniform("u_lightingAmbient", renderData.m_lightingAmbient);
-  program.setUniform("u_lightingDiffuse", renderData.m_lightingDiffuse);
-  program.setUniform("u_lightingSpecular", renderData.m_lightingSpecular);
-  program.setUniform("u_lightingSpecularPower", renderData.m_lightingSpecularPower);
+  program.setUniform("u_numIsos", derived.isosurfaces.numIsos);
+  program.setUniform("u_isoValues", derived.isosurfaces.values);
+  program.setUniform("u_isoOpacities", derived.isosurfaces.opacities);
+  program.setUniform("u_isoRimOpacityStrengths", derived.isosurfaces.rimOpacityStrengths);
+  program.setUniform("u_isoRimEmissionStrengths", derived.isosurfaces.rimEmissionStrengths);
+  program.setUniform("u_isoRimPowers", derived.isosurfaces.rimPowers);
+  program.setUniform("u_isoColors", derived.isosurfaces.colors);
+  program.setUniform("u_lightingAmbient", settings.m_lightingAmbient);
+  program.setUniform("u_lightingDiffuse", settings.m_lightingDiffuse);
+  program.setUniform("u_lightingSpecular", settings.m_lightingSpecular);
+  program.setUniform("u_lightingSpecularPower", settings.m_lightingSpecularPower);
 
-  program.setUniform("u_samplingFactor", std::clamp(renderData.m_raycastSamplingFactor, 0.5f, 2.0f));
+  program.setUniform("u_samplingFactor", std::clamp(settings.m_raycastSamplingFactor, 0.5f, 2.0f));
   program.setUniform("u_imgInvDims", 1.0f / glm::vec3{image.header().pixelDimensions()});
-  program.setUniform("u_renderFrontFaces", renderData.m_renderFrontFaces);
-  program.setUniform("u_renderBackFaces", renderData.m_renderBackFaces);
-  program.setUniform("u_bgColor", renderData.m_3dBackgroundColor.a * renderData.m_3dBackgroundColor);
-  program.setUniform("u_bgEdgeBrighteningEnabled", renderData.m_raycastBackgroundEdgeBrighteningEnabled);
-  program.setUniform("u_noHitTransparent", renderData.m_3dTransparentIfNoHit);
+  program.setUniform("u_renderFrontFaces", settings.m_renderFrontFaces);
+  program.setUniform("u_renderBackFaces", settings.m_renderBackFaces);
+  program.setUniform("u_bgColor", settings.m_3dBackgroundColor.a * settings.m_3dBackgroundColor);
+  program.setUniform("u_bgEdgeBrighteningEnabled", settings.m_raycastBackgroundEdgeBrighteningEnabled);
+  program.setUniform("u_noHitTransparent", settings.m_3dTransparentIfNoHit);
 
   if (renderWarped && deformationUid && imgSegPair.first) {
-    const auto sampleUniformsIt = renderData.m_uniforms.find(*imgSegPair.first);
-    const glm::mat4 sampleTex_T_world = sampleUniformsIt != renderData.m_uniforms.end()
+    const auto sampleUniformsIt = derived.imageUniforms.find(*imgSegPair.first);
+    const glm::mat4 sampleTex_T_world = sampleUniformsIt != derived.imageUniforms.end()
                                           ? sampleUniformsIt->second.imgTexture_T_world
                                           : uniforms.imgTexture_T_world;
     setDeformationUniforms(program, *imgSegPair.first, *deformationUid, sampleTex_T_world);

@@ -7,7 +7,7 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraStartFrameType.h"
 #include "logic/camera/MathUtility.h"
-#include "rendering/utility/math/SliceIntersector.h"
+#include "rendering/helpers/SliceIntersector.h"
 #include "windowing/ViewCameraDefaults.h"
 
 #include <glm/glm.hpp>
@@ -198,7 +198,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
         glm::to_string(worldViewPlane));
     }
     else if (k_maxNumWarnings == g_parallelCameraWarningCount) {
-      spdlog::warn("Halting warning about camera front direction.");
+      spdlog::debug("Suppressing further warnings about camera front direction");
     }
 
     return worldCrosshairs;
@@ -296,7 +296,7 @@ void View::setViewType(const ViewType& newViewType)
     }
   }
 
-  m_viewType = newViewType;
+  ControlFrame::setViewType(newViewType);
 
   if (ViewType::ThreeD != m_viewType) {
     if (wasThreeD && !m_sliceCameraActivated && m_sliceCameraDefaultWorldCenter && m_sliceCameraDefaultWorldFov) {
@@ -307,11 +307,6 @@ void View::setViewType(const ViewType& newViewType)
     }
     m_sliceCameraActivated = true;
   }
-}
-
-void View::setRenderMode(const ViewRenderMode& renderMode)
-{
-  ControlFrame::setRenderMode(renderMode);
 }
 
 void View::reconcileRenderModeForImageCount(const std::size_t imageCount)

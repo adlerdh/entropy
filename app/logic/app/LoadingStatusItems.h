@@ -15,6 +15,11 @@ namespace serialize
 struct EntropyProject;
 }
 
+namespace registration
+{
+struct ImportPlan;
+}
+
 namespace loading_status
 {
 /**
@@ -37,6 +42,9 @@ std::vector<GuiData::LoadingStatusItem> projectItems(const serialize::EntropyPro
  * @return Loading-status rows with series file-size totals when available.
  */
 std::vector<GuiData::LoadingStatusItem> dicomSeriesItems(const std::vector<dicom::SeriesInfo>& series);
+
+/** @brief Create loading-status rows for the file-backed steps of a registration import plan. */
+std::vector<GuiData::LoadingStatusItem> registrationItems(const registration::ImportPlan& plan);
 
 /**
  * @brief Compare loading-status paths using exact, canonical, or filename-only matching.

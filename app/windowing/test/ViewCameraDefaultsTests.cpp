@@ -30,3 +30,9 @@ TEST_CASE("orthogonal slice cameras track live crosshairs axes", "[windowing][ca
   CHECK_FALSE(windowing::sliceCameraTracksCrosshairs(ViewType::Oblique));
   CHECK_FALSE(windowing::sliceCameraTracksCrosshairs(ViewType::ThreeD));
 }
+
+TEST_CASE("default framing ignores shared lightbox controls", "[windowing][camera][lightbox]")
+{
+  CHECK(windowing::defaultFramingAvoidsControls(false));
+  CHECK_FALSE(windowing::defaultFramingAvoidsControls(true));
+}

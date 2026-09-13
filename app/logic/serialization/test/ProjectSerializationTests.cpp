@@ -117,7 +117,9 @@ TEST_CASE("Project serialization omits default settings", "[project][serializati
   CHECK(defaultThreeD.empty());
   CHECK(defaultRaycasting.empty());
   CHECK(defaultMesh.empty());
+  CHECK(serialize::ProjectIntensityProjectionSettings{}.m_useMaximumImageExtent);
   CHECK(defaultIntensityProjection.empty());
+  CHECK(serialize::ProjectSegmentationDisplaySettings{}.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
   CHECK(defaultSegmentation.empty());
   CHECK(defaultIsocontours.empty());
 
@@ -177,6 +179,12 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
     .m_rootPath = dicomRoot,
     .m_studyInstanceUid = "1.2.3.study",
     .m_seriesInstanceUid = "1.2.3.series",
+    .m_anatomy =
+      DicomAnatomyInfo{
+        .orientation = DicomAnatomicalOrientation::Quadruped,
+        .bodyRegion = QuadrupedBodyRegion::Head,
+        .bodyRegionSource = DicomBodyRegionSource::AnatomicRegionSequence,
+        .nonHumanSpecies = true},
     .m_files = {slice1, slice2}};
 
   REQUIRE(serialize::save(project, projectFile));
@@ -189,6 +197,8 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
     savedJson.at("images").at(0).at("dicomSource").at("paths") ==
     json::array({"dicom/slice-001.dcm", "dicom/slice-002.dcm"}));
   CHECK_FALSE(savedJson.at("images").at(0).at("dicomSource").contains("files"));
+  CHECK(savedJson.at("images").at(0).at("dicomSource").at("anatomy").at("orientation") == "quadruped");
+  CHECK(savedJson.at("images").at(0).at("dicomSource").at("anatomy").at("bodyRegion") == "head");
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
@@ -199,6 +209,10 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
   CHECK(source.m_rootPath == fs::canonical(dicomRoot));
   CHECK(source.m_studyInstanceUid == "1.2.3.study");
   CHECK(source.m_seriesInstanceUid == "1.2.3.series");
+  CHECK(source.m_anatomy.orientation == DicomAnatomicalOrientation::Quadruped);
+  CHECK(source.m_anatomy.bodyRegion == QuadrupedBodyRegion::Head);
+  CHECK(source.m_anatomy.bodyRegionSource == DicomBodyRegionSource::AnatomicRegionSequence);
+  CHECK(source.m_anatomy.nonHumanSpecies);
   REQUIRE(source.m_files.size() == 2);
   CHECK(source.m_files.at(0) == fs::canonical(slice1));
   CHECK(source.m_files.at(1) == fs::canonical(slice2));
@@ -240,6 +254,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   project.m_view.m_landmarksOnTop = true;
   project.m_view.m_hideAnnotationVertices = true;
   project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
+  project.m_view.m_quadrupedBodyRegion = QuadrupedBodyRegion::DistalForelimb;
+  project.m_view.m_viewConvention = ViewConvention::Neurological;
   project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
 
@@ -257,6 +273,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(view.at("anatomicalLabels").at("visible") == false);
   CHECK(view.at("anatomicalLabels").at("visibleInLightboxes") == false);
   CHECK(view.at("anatomicalLabels").at("type") == "rodent");
+  CHECK(view.at("anatomicalLabels").at("quadrupedBodyRegion") == "distalForelimb");
+  CHECK(view.at("anatomicalLabels").at("leftRightDisplayConvention") == "neurological");
   CHECK(view.at("anatomicalLabels").at("lockDirectionsToReferenceImage") == true);
   CHECK_FALSE(view.at("scaleBars").contains("visible"));
   CHECK(view.at("scaleBars").at("visibleInLightboxes") == true);
@@ -289,6 +307,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(parsed.m_view.m_landmarksOnTop == true);
   CHECK(parsed.m_view.m_hideAnnotationVertices == true);
   CHECK(parsed.m_view.m_anatomicalLabelType == AnatomicalLabelType::Rodent);
+  CHECK(parsed.m_view.m_quadrupedBodyRegion == QuadrupedBodyRegion::DistalForelimb);
+  CHECK(parsed.m_view.m_viewConvention == ViewConvention::Neurological);
   CHECK(parsed.m_view.m_lockAnatomicalDirectionsToReferenceImage == true);
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
 }
@@ -373,8 +393,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_transparentBackground = false;
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
+  project.m_threeDRendering.m_imagePlaneOpacity = 0.73f;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
   project.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
+  project.m_threeDRendering.m_imagePlaneIsocontoursVisible = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.31f;
   project.m_threeDRendering.m_imagePlaneLightingDiffuse = 0.62f;
@@ -385,8 +407,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_threeDRendering.m_lightingSpecular = 0.51f;
   project.m_threeDRendering.m_lightingSpecularPower = 48.0f;
   project.m_threeDRendering.m_showCrosshairsIn3D = true;
-  project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
-  project.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals = 9.5f;
+  project.m_threeDRendering.m_crosshairs3DGlyphDiameterScenePercent = 1.75f;
+  project.m_threeDRendering.m_crosshairs3DGlyphLengthScenePercent = 9.5f;
   project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
@@ -425,9 +447,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_meshRendering.m_rimPower = 3.5f;
   project.m_meshRendering.m_ddpMaxPeelPasses = 12;
   project.m_meshRendering.m_pickingEnabled = false;
-  project.m_meshRendering.m_clipPlaneEnabled = true;
-  project.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.5f};
-  project.m_intensityProjection.m_useMaximumImageExtent = true;
+  project.m_meshRendering.m_cutawayEnabled = true;
+  project.m_intensityProjection.m_useMaximumImageExtent = false;
   project.m_intensityProjection.m_slabThicknessMm = 12.5f;
   project.m_intensityProjection.m_xrayEnergyKeV = 120.0f;
   project.m_intensityProjection.m_xrayWindow = 0.35f;
@@ -458,8 +479,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(threeD.at("transparentBackground") == false);
   CHECK(threeD.at("imageBoxVisible") == true);
   CHECK(threeD.at("imagePlanes").at("visible") == false);
+  CHECK(threeD.at("imagePlanes").at("opacity") == 0.73f);
   CHECK(threeD.at("imagePlanes").at("viewAngleOpacity") == false);
   CHECK(threeD.at("imagePlanes").at("segmentationsVisible") == false);
+  CHECK(threeD.at("imagePlanes").at("isocontoursVisible") == false);
   CHECK(threeD.at("imagePlanes").at("shading") == false);
   CHECK(threeD.at("imagePlanes").at("lighting").at("ambient") == 0.31f);
   CHECK(threeD.at("imagePlanes").at("lighting").at("diffuse") == 0.62f);
@@ -470,8 +493,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(threeD.at("lighting").at("specular") == 0.51f);
   CHECK(threeD.at("lighting").at("specularPower") == 48.0f);
   CHECK_FALSE(threeD.contains("crosshairsGlyphVisible"));
-  CHECK(threeD.at("crosshairsGlyphDiameterVox") == 1.75f);
-  CHECK(threeD.at("crosshairsGlyphLengthVox") == 9.5f);
+  CHECK(threeD.at("crosshairsGlyphDiameterScenePercent") == 1.75f);
+  CHECK(threeD.at("crosshairsGlyphLengthScenePercent") == 9.5f);
+  CHECK_FALSE(threeD.contains("crosshairsGlyphDiameterVox"));
+  CHECK_FALSE(threeD.contains("crosshairsGlyphLengthVox"));
   CHECK(threeD.at("cameraFrustumVisibleIn2DViews") == true);
   CHECK(threeD.at("reverseRotateAboutEye") == true);
   CHECK(threeD.at("cameraFrustumColor").at(0) == 1.0f);
@@ -516,9 +541,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(dualDepthPeeling.at("maxPeelPasses") == 12);
   CHECK_FALSE(mesh.contains("dualDepthPeeling"));
   CHECK(mesh.at("pointPicking") == false);
-  CHECK(mesh.at("clipPlane").at("enabled") == true);
-  CHECK(mesh.at("clipPlane").at("worldPlane").at(1) == 1.0f);
-  CHECK(mesh.at("clipPlane").at("worldPlane").at(3) == -12.5f);
+  CHECK(mesh.at("cutaway") == true);
   CHECK_FALSE(raycasting.contains("transparentBackgroundWhenNoHit"));
   CHECK_FALSE(raycasting.contains("imageBoxVisible"));
   CHECK_FALSE(raycasting.contains("meshRenderingEnabled"));
@@ -529,11 +552,11 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK_FALSE(raycasting.contains("meshClipPlane"));
   CHECK_FALSE(raycasting.contains("backgroundEdgeBrighteningEnabled"));
   CHECK_FALSE(raycasting.contains("showCrosshairsIn3D"));
-  CHECK_FALSE(raycasting.contains("crosshairs3DGlyphDiameterVoxelDiagonals"));
+  CHECK_FALSE(raycasting.contains("crosshairsGlyphDiameterScenePercent"));
   CHECK_FALSE(raycasting.contains("showThreeDCameraFrustumIn2DViews"));
   CHECK_FALSE(raycasting.contains("reverseThreeDRotateAboutEye"));
   CHECK_FALSE(raycasting.contains("threeDCameraFrustumColor"));
-  CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == true);
+  CHECK(rendering.at("intensityProjection").at("useMaximumImageExtent") == false);
   CHECK(rendering.at("intensityProjection").at("slabThicknessMm") == 12.5f);
   CHECK(rendering.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
   CHECK(rendering.at("segmentations").at("outlineStyle") == "voxel");
@@ -549,8 +572,10 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_transparentBackground == false);
   CHECK(parsed.m_threeDRendering.m_imageBoxVisible == true);
   CHECK(parsed.m_threeDRendering.m_imagePlanesVisible == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneOpacity == 0.73f);
   CHECK(parsed.m_threeDRendering.m_imagePlaneViewAngleOpacity == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneSegmentationsVisible == false);
+  CHECK(parsed.m_threeDRendering.m_imagePlaneIsocontoursVisible == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneShading == false);
   CHECK(parsed.m_threeDRendering.m_imagePlaneLightingAmbient == 0.31f);
   CHECK(parsed.m_threeDRendering.m_imagePlaneLightingDiffuse == 0.62f);
@@ -561,8 +586,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_threeDRendering.m_lightingSpecular == 0.51f);
   CHECK(parsed.m_threeDRendering.m_lightingSpecularPower == 48.0f);
   CHECK(parsed.m_threeDRendering.m_showCrosshairsIn3D == true);
-  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
-  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals == 9.5f);
+  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphDiameterScenePercent == 1.75f);
+  CHECK(parsed.m_threeDRendering.m_crosshairs3DGlyphLengthScenePercent == 9.5f);
   CHECK(parsed.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews == true);
   CHECK(parsed.m_threeDRendering.m_reverseThreeDRotateAboutEye == true);
   CHECK(parsed.m_threeDRendering.m_threeDCameraFrustumColor.x == 1.0f);
@@ -604,9 +629,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 32);
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 12);
   CHECK(parsed.m_meshRendering.m_pickingEnabled == false);
-  CHECK(parsed.m_meshRendering.m_clipPlaneEnabled == true);
-  CHECK(parsed.m_meshRendering.m_clipPlaneWorld == glm::vec4{0.0f, 1.0f, 0.0f, -12.5f});
-  CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == true);
+  CHECK(parsed.m_meshRendering.m_cutawayEnabled == true);
+  CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == false);
   CHECK(parsed.m_intensityProjection.m_slabThicknessMm == 12.5f);
   CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
   CHECK(parsed.m_intensityProjection.m_xrayWindow == 0.35f);
@@ -647,6 +671,15 @@ TEST_CASE("Independent image-plane defaults are not serialized", "[project][seri
   CHECK(parsed.m_imagePlaneLightingSpecularPower == 16.0f);
 }
 
+TEST_CASE("Legacy voxel-relative crosshairs glyph settings are ignored", "[project][serialization]")
+{
+  const json legacyThreeD{{"crosshairsGlyphDiameterVox", 3.0f}, {"crosshairsGlyphLengthVox", 30.0f}};
+
+  const auto parsed = legacyThreeD.get<serialize::ProjectThreeDRenderingSettings>();
+  CHECK(parsed.m_crosshairs3DGlyphDiameterScenePercent == 0.25f);
+  CHECK(parsed.m_crosshairs3DGlyphLengthScenePercent == 4.0f);
+}
+
 TEST_CASE("Saved project rendering settings follow the application settings order", "[project][serialization]")
 {
   const fs::path root = uniqueTempProjectDirectory();
@@ -654,17 +687,25 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_view.m_showAnatomicalLabels = false;
+  project.m_view.m_showAnatomicalLabelsInLightboxViews = false;
+  project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Quadruped;
+  project.m_view.m_quadrupedBodyRegion = QuadrupedBodyRegion::Head;
+  project.m_view.m_viewConvention = ViewConvention::Neurological;
+  project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_threeDRendering.m_transparentBackground = false;
   project.m_threeDRendering.m_imageBoxVisible = true;
   project.m_threeDRendering.m_imagePlanesVisible = false;
+  project.m_threeDRendering.m_imagePlaneOpacity = 0.65f;
   project.m_threeDRendering.m_imagePlaneViewAngleOpacity = false;
   project.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
+  project.m_threeDRendering.m_imagePlaneIsocontoursVisible = false;
   project.m_threeDRendering.m_imagePlaneShading = false;
   project.m_threeDRendering.m_imagePlaneLightingAmbient = 0.4f;
   project.m_threeDRendering.m_lightingAmbient = 0.6f;
   project.m_threeDRendering.m_showCrosshairsIn3D = false;
-  project.m_threeDRendering.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.5f;
-  project.m_threeDRendering.m_crosshairs3DGlyphLengthVoxelDiagonals = 12.0f;
+  project.m_threeDRendering.m_crosshairs3DGlyphDiameterScenePercent = 1.5f;
+  project.m_threeDRendering.m_crosshairs3DGlyphLengthScenePercent = 12.0f;
   project.m_threeDRendering.m_showThreeDCameraFrustumIn2DViews = true;
   project.m_threeDRendering.m_reverseThreeDRotateAboutEye = true;
   project.m_threeDRendering.m_threeDCameraFrustumColor = {1.0f, 0.0f, 0.0f, 1.0f};
@@ -681,7 +722,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_meshRendering.m_triangleEdgeColor = {0.2f, 0.3f, 0.4f};
   project.m_meshRendering.m_pbrShadingEnabled = true;
   project.m_meshRendering.m_pickingEnabled = false;
-  project.m_meshRendering.m_clipPlaneEnabled = true;
+  project.m_meshRendering.m_cutawayEnabled = true;
   project.m_meshRendering.m_shadowsEnabled = true;
   project.m_meshRendering.m_ambientOcclusionEnabled = true;
   project.m_meshRendering.m_rimLightingEnabled = true;
@@ -725,6 +766,14 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   };
   const auto& orderedRendering = ordered.at("settings").at("rendering");
   CHECK(
+    objectKeys(ordered.at("settings").at("view").at("anatomicalLabels")) == std::vector<std::string>{
+                                                                              "visible",
+                                                                              "visibleInLightboxes",
+                                                                              "type",
+                                                                              "quadrupedBodyRegion",
+                                                                              "leftRightDisplayConvention",
+                                                                              "lockDirectionsToReferenceImage"});
+  CHECK(
     objectKeys(orderedRendering) ==
     std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours", "segmentations"});
   CHECK(objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"maxPeelPasses"});
@@ -736,8 +785,8 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                    "imageBoxVisible",
                                                    "reverseRotateAboutEye",
                                                    "crosshairsGlyphVisible",
-                                                   "crosshairsGlyphDiameterVox",
-                                                   "crosshairsGlyphLengthVox",
+                                                   "crosshairsGlyphDiameterScenePercent",
+                                                   "crosshairsGlyphLengthScenePercent",
                                                    "lighting",
                                                    "imagePlanes"});
   CHECK(
@@ -751,14 +800,20 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                  "rimLighting",
                                                  "smoothing",
                                                  "pointPicking",
-                                                 "clipPlane",
+                                                 "cutaway",
                                                  "enabled"});
   CHECK(
     objectKeys(orderedRendering.at("mesh").at("smoothing")) ==
     std::vector<std::string>{"segmentations", "isosurfaces", "iterations"});
   CHECK(
-    objectKeys(orderedRendering.at("threeD").at("imagePlanes")) ==
-    std::vector<std::string>{"visible", "segmentationsVisible", "viewAngleOpacity", "shading", "lighting"});
+    objectKeys(orderedRendering.at("threeD").at("imagePlanes")) == std::vector<std::string>{
+                                                                     "visible",
+                                                                     "segmentationsVisible",
+                                                                     "isocontoursVisible",
+                                                                     "opacity",
+                                                                     "viewAngleOpacity",
+                                                                     "shading",
+                                                                     "lighting"});
   CHECK(
     objectKeys(orderedRendering.at("raycasting")) == std::vector<std::string>{
                                                        "samplingFactor",
@@ -788,6 +843,23 @@ TEST_CASE("Project serialization ignores obsolete DDP settings nested under mesh
   CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 5);
 }
 
+TEST_CASE("Project serialization ignores the obsolete global mesh clip plane", "[project][serialization][cutaway]")
+{
+  const json root = {
+    {"images", json::array({{{"path", "image.nii.gz"}}})},
+    {"settings",
+     {{"rendering",
+       {{"mesh", {{"clipPlane", {{"enabled", true}, {"worldPlane", json::array({1.0, 0.0, 0.0, -2.0})}}}}}}}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  CHECK_FALSE(parsed.m_meshRendering.m_cutawayEnabled);
+  const json rewritten = parsed;
+  const json mesh =
+    rewritten.value("settings", json::object()).value("rendering", json::object()).value("mesh", json::object());
+  CHECK_FALSE(mesh.contains("clipPlane"));
+  CHECK_FALSE(mesh.contains("cutaway"));
+}
+
 TEST_CASE("Project serialization ignores the obsolete singular segmentation settings key", "[project][serialization]")
 {
   const json root = {
@@ -797,7 +869,7 @@ TEST_CASE("Project serialization ignores the obsolete singular segmentation sett
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
   CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
-  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
   const json saved = parsed;
   const json rendering = saved.value("settings", json::object()).value("rendering", json::object());
   CHECK_FALSE(rendering.contains("segmentation"));
@@ -884,7 +956,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
   CHECK(parsed.m_intensityProjection.m_xrayLevel == 1.0f);
   CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
   CHECK_FALSE(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
-  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 1.0f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
   CHECK(
@@ -996,6 +1068,59 @@ TEST_CASE("Project serialization preserves removed default layout indices", "[pr
   CHECK(loaded.m_removedDefaultLayoutIndices == std::vector<std::size_t>{1, 4});
   REQUIRE(loaded.m_currentLayoutIndex);
   CHECK(*loaded.m_currentLayoutIndex == 3);
+}
+
+TEST_CASE(
+  "Imported image meshes serialize sparsely and independently from generated surfaces",
+  "[project][serialization][mesh]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_referenceImage.m_importedMeshes.push_back(
+    {.m_uid = "11111111-2222-3333-4444-555555555555", .m_path = "surface.vtp", .m_name = "surface"});
+
+  const json serialized = project;
+  const json& meshes = serialized.at("images").at(0).at("meshes");
+  REQUIRE(meshes.size() == 1);
+  CHECK(meshes.at(0).at("uid") == "11111111-2222-3333-4444-555555555555");
+  CHECK(meshes.at(0).at("path") == "surface.vtp");
+  CHECK_FALSE(meshes.at(0).contains("name"));
+  CHECK_FALSE(meshes.at(0).contains("visible2d"));
+  CHECK_FALSE(meshes.at(0).contains("visible3d"));
+  CHECK_FALSE(meshes.at(0).contains("opacity"));
+  CHECK_FALSE(meshes.at(0).contains("color"));
+
+  serialize::EntropyProject restored = serialized.get<serialize::EntropyProject>();
+  REQUIRE(restored.m_referenceImage.m_importedMeshes.size() == 1);
+  const auto& restoredMesh = restored.m_referenceImage.m_importedMeshes.front();
+  CHECK(restoredMesh.m_uid == "11111111-2222-3333-4444-555555555555");
+  CHECK(restoredMesh.m_path == "surface.vtp");
+  CHECK(restoredMesh.m_name == "surface");
+  CHECK_FALSE(restoredMesh.m_visibleIn2d);
+  CHECK(restoredMesh.m_visibleIn3d);
+  CHECK(restoredMesh.m_opacity == 1.0f);
+  CHECK(restoredMesh.m_color == glm::vec3{0.8f});
+}
+
+TEST_CASE("Imported mesh 2D and 3D visibility serialize independently", "[project][serialization][mesh]")
+{
+  serialize::ImportedMesh mesh{
+    .m_uid = "11111111-2222-3333-4444-555555555555",
+    .m_path = "surface.vtp",
+    .m_name = {},
+    .m_color = glm::vec3{0.8f},
+    .m_opacity = 1.0f,
+    .m_visibleIn2d = true,
+    .m_visibleIn3d = false};
+
+  const json serialized = mesh;
+  CHECK(serialized.at("visible2d") == true);
+  CHECK(serialized.at("visible3d") == false);
+  CHECK_FALSE(serialized.contains("visible"));
+
+  const serialize::ImportedMesh restored = serialized.get<serialize::ImportedMesh>();
+  CHECK(restored.m_visibleIn2d);
+  CHECK_FALSE(restored.m_visibleIn3d);
 }
 
 TEST_CASE("Project serialization preserves modified default layout overrides", "[project][serialization]")
@@ -1570,6 +1695,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK_FALSE(defaultSurface.contains("fillAboveIsovalue"));
   CHECK_FALSE(defaultSurface.contains("visibleIn2D"));
   CHECK_FALSE(defaultSurface.contains("visibleIn3D"));
+  CHECK_FALSE(defaultSurface.contains("includeInCutaway"));
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
@@ -1583,6 +1709,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   imageSurface.m_surface.fillOpacity = 0.15f;
   imageSurface.m_surface.fillAboveIsovalue = true;
   imageSurface.m_surface.visibleIn2d = false;
+  imageSurface.m_surface.includeInCutaway = false;
   project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
 
   const json root = project;
@@ -1592,6 +1719,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(savedSurface.at("surface").at("contourFillOpacity") == 0.15f);
   CHECK(savedSurface.at("surface").at("fillAboveIsovalue") == true);
   CHECK(savedSurface.at("surface").at("visibleIn2D") == false);
+  CHECK(savedSurface.at("surface").at("includeInCutaway") == false);
   CHECK_FALSE(savedSurface.at("surface").contains("visibleIn3D"));
   CHECK_FALSE(savedSurface.at("surface").contains("visible"));
   CHECK_FALSE(savedSurface.at("surface").contains("fillOpacity"));
@@ -1609,6 +1737,7 @@ TEST_CASE("Project serialization preserves image isosurfaces", "[project][serial
   CHECK(parsedSurface.m_surface.fillAboveIsovalue);
   CHECK_FALSE(parsedSurface.m_surface.visibleIn2d);
   CHECK(parsedSurface.m_surface.visibleIn3d);
+  CHECK_FALSE(parsedSurface.m_surface.includeInCutaway);
 
   Isosurface hiddenIn3d;
   hiddenIn3d.visibleIn3d = false;
@@ -1784,7 +1913,8 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
           .m_name = "Hippocampus",
           .m_color = glm::vec4{0.1f, 0.2f, 0.3f, 0.4f},
           .m_visible = false,
-          .m_showMesh = true}}}}});
+          .m_showMesh = true,
+          .m_includeInCutaway = false}}}}});
 
   const json root = project;
   const json& settings = root.at("images").at(0).at("segmentations").at(0).at("settings");
@@ -1800,6 +1930,7 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(settings.at("labels").at("values").at(0).at("color") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
   CHECK(settings.at("labels").at("values").at(0).at("visible") == false);
   CHECK(settings.at("labels").at("values").at(0).at("showMesh") == true);
+  CHECK(settings.at("labels").at("values").at(0).at("includeInCutaway") == false);
   CHECK_FALSE(settings.contains("interpolationMode"));
   CHECK_FALSE(settings.contains("displayName"));
   CHECK_FALSE(settings.contains("visibility"));
@@ -1826,6 +1957,7 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(parsedSettings.m_labels->m_values.front().m_color == glm::vec4{0.1f, 0.2f, 0.3f, 0.4f});
   CHECK_FALSE(parsedSettings.m_labels->m_values.front().m_visible);
   CHECK(parsedSettings.m_labels->m_values.front().m_showMesh);
+  CHECK_FALSE(parsedSettings.m_labels->m_values.front().m_includeInCutaway);
 }
 
 TEST_CASE("Project serialization preserves standard raster spatial metadata", "[project][serialization]")

@@ -7,10 +7,11 @@
 #include "image/ImageTypes.h"
 #include "logic/app/Data.h"
 #include "logic/app/ParcellationLabelTable.h"
-#include "rendering/RenderData.h"
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
@@ -58,7 +59,10 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
     }
   }
 
-  if (m_appData.renderData().m_imageTextures.find(effectiveImageUid) == m_appData.renderData().m_imageTextures.end()) {
+  if (
+    m_appData.renderResources().m_imageTextures.find(effectiveImageUid) ==
+    m_appData.renderResources().m_imageTextures.end())
+  {
     spdlog::debug("Image {} has no texture for interpolation update", effectiveImageUid);
     return;
   }
@@ -71,7 +75,7 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
   if (!renderAllComponents) {
     // Modify the active component
     const uint32_t activeComp = image->settings().activeComponent();
-    auto& textures = m_appData.renderData().m_imageTextures.at(effectiveImageUid);
+    auto& textures = m_appData.renderResources().m_imageTextures.at(effectiveImageUid);
     if (textures.empty()) {
       spdlog::warn("Image {} has no component textures for interpolation update", effectiveImageUid);
       return;
@@ -111,7 +115,7 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
   }
   else {
     // Modify all components for color images
-    auto& textures = m_appData.renderData().m_imageTextures.at(effectiveImageUid);
+    auto& textures = m_appData.renderResources().m_imageTextures.at(effectiveImageUid);
     for (GLTexture& texture : textures) {
       tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
       tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
@@ -151,7 +155,7 @@ void Rendering::updateImageColorMapInterpolation(std::size_t colorMapIndex)
     return;
   }
 
-  GLTexture& texture = m_appData.renderData().m_colormapTextures.at(*cmapUid);
+  GLTexture& texture = m_appData.renderResources().m_colormapTextures.at(*cmapUid);
   tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
   tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
 
@@ -195,8 +199,8 @@ void Rendering::updateLabelColorTableTexture(std::size_t tableIndex)
     return;
   }
 
-  auto it = m_appData.renderData().m_labelBufferTextures.find(*tableUid);
-  if (std::end(m_appData.renderData().m_labelBufferTextures) == it) {
+  auto it = m_appData.renderResources().m_labelBufferTextures.find(*tableUid);
+  if (std::end(m_appData.renderResources().m_labelBufferTextures) == it) {
     spdlog::error("Buffer texture for label color table {} is invalid", *tableUid);
     return;
   }

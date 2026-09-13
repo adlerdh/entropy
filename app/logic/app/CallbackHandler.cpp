@@ -36,6 +36,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -45,12 +46,24 @@ namespace
 {
 using uuid = uuids::uuid;
 
-constexpr float viewAABBoxScaleFactor = 1.10f;
-
 // Angle threshold (in degrees) for checking whether two vectors are parallel
 constexpr float parallelThreshold_degrees = 0.1f;
 
 constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
+
+std::array<glm::vec3, 8> imageWorldCorners(const Image& image)
+{
+  const glm::mat4& world_T_subject = image.transformations().worldDef_T_subject();
+  std::array<glm::vec3, 8> worldCorners;
+  std::ranges::transform(
+    image.header().subjectBBoxCorners(),
+    worldCorners.begin(),
+    [&world_T_subject](const glm::vec3& subjectCorner) {
+      const glm::vec4 worldCorner = world_T_subject * glm::vec4{subjectCorner, 1.0f};
+      return glm::vec3{worldCorner} / worldCorner.w;
+    });
+  return worldCorners;
+}
 
 glm::vec2 zoomCenterNdc(
   const AppData& appData,
@@ -154,6 +167,7 @@ bool CallbackHandler::clearSegVoxels(const uuid& segUid)
 
   m_rendering.updateSegTexture(segUid, seg->header().memoryComponentType(), dataOffset, dataSize, seg->bufferAsVoid(0));
 
+  spdlog::info("Cleared all voxel labels from segmentation {}", segUid);
   return true;
 }
 
@@ -336,7 +350,7 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
     return std::nullopt;
   }
 
-  spdlog::debug("Created blank segmentation {} ('{}') for image {}", *segUid, displayName, matchImageUid);
+  spdlog::info("Created blank segmentation {} ('{}') for image {}", *segUid, displayName, matchImageUid);
 
   return assignSegToImageWithColorTableAndTextures(matchImageUid, *segUid, true, true);
 }
@@ -401,7 +415,7 @@ std::optional<uuid> CallbackHandler::assignSegToImageWithColorTableAndTextures(
 
   SPDLOG_TRACE("Creating texture for segmentation {}", segUid);
 
-  if (m_appData.renderData().m_segTextures.count(segUid) == 0) {
+  if (!m_appData.renderResources().hasSegmentation(segUid)) {
     const std::vector<uuid> createdSegTexUids = createSegTextures(m_appData, std::vector<uuid>{segUid});
     if (createdSegTexUids.empty()) {
       spdlog::error("Unable to create texture for segmentation {}", segUid);
@@ -657,7 +671,7 @@ void CallbackHandler::recenterViews(
   constexpr CrosshairsSnapping forceSnapping = CrosshairsSnapping::ReferenceImage;
 
   if (0 == m_appData.numImages()) {
-    spdlog::warn("No images loaded: preparing views using default bounds");
+    spdlog::debug("Preparing views with default bounds because no images are loaded");
   }
 
   // Compute the AABB that we are recentering views on:
@@ -684,12 +698,29 @@ void CallbackHandler::recenterViews(
   // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter,
   // forceSnapping );
 
+  const glm::vec3 worldBoxSize = math::computeAABBoxSize(worldBox);
   m_appData.windowData().recenterAllViews(
     worldCenter,
-    viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
+    helper::defaultViewFramingSize(worldBoxSize),
     resetZoom,
     resetObliqueOrientation,
     excludedViews);
+  if (resetZoom) {
+    const float uiScale = std::max(1.0f, m_appData.guiData().m_effectiveUiScale);
+    constexpr glm::vec2 defaultControlExtent{240.0f, 26.0f};
+    constexpr float controlClearance = 4.0f;
+    m_appData.windowData().applyTwoDViewOverlaySafeFraming(
+      worldBox,
+      m_appData.guiData().m_viewOverlayControlExtents,
+      uiScale * defaultControlExtent,
+      uiScale * controlClearance,
+      m_appData.guiData().m_renderUiOverlays,
+      true,
+      excludedViews);
+  }
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
+  }
 }
 
 void CallbackHandler::recenterView(const ImageSelection& imageSelection, const uuid& viewUid)
@@ -702,7 +733,7 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   constexpr bool resetObliqueOrientation = true;
 
   if (0 == m_appData.numImages()) {
-    spdlog::warn("No images loaded, so recentering view {} using default bounds", viewUid);
+    spdlog::debug("Recentering view {} with default bounds because no images are loaded", viewUid);
   }
 
   // Size and position the views based on the enclosing AABB of the image selection:
@@ -712,8 +743,15 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   const glm::vec3 worldPos = m_appData.state().worldCrosshairs().worldOrigin();
   const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
 
-  m_appData.windowData()
-    .recenterView(viewUid, worldPosSnapped, viewAABBoxScaleFactor * worldBoxSize, resetZoom, resetObliqueOrientation);
+  m_appData.windowData().recenterView(
+    viewUid,
+    worldPosSnapped,
+    helper::defaultViewFramingSize(worldBoxSize),
+    resetZoom,
+    resetObliqueOrientation);
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(viewUid);
+  }
 }
 
 void CallbackHandler::doCrosshairsMove(const ViewHit& hit)
@@ -1143,8 +1181,8 @@ void CallbackHandler::doWindowLevel(
     constexpr float winMin = 0.0f;
     constexpr float winMax = 1.0f;
 
-    float oldLevel = m_appData.renderData().m_xrayIntensityLevel;
-    float oldWindow = m_appData.renderData().m_xrayIntensityWindow;
+    float oldLevel = m_appData.renderSettings().m_xrayIntensityLevel;
+    float oldWindow = m_appData.renderSettings().m_xrayIntensityWindow;
 
     const float levelDelta =
       multiplier * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
@@ -1153,8 +1191,8 @@ void CallbackHandler::doWindowLevel(
     const float newLevel = std::min(std::max(oldLevel + levelDelta, levelMin), levelMax);
     const float newWindow = std::min(std::max(oldWindow + winDelta, winMin), winMax);
 
-    m_appData.renderData().m_xrayIntensityLevel = newLevel;
-    m_appData.renderData().m_xrayIntensityWindow = newWindow;
+    m_appData.renderSettings().m_xrayIntensityLevel = newLevel;
+    m_appData.renderSettings().m_xrayIntensityWindow = newWindow;
   }
   else {
     const auto activeImageUid = m_appData.activeImageUid();
@@ -1417,6 +1455,10 @@ void CallbackHandler::doCameraRotate3d(
       helper::rotateAboutWorldPoint(syncedView->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos);
     }
   }
+
+  if (ViewType::ThreeD == viewToRotate->viewType()) {
+    synchronizeThreeDCamerasFrom(*viewToRotate);
+  }
 }
 
 namespace
@@ -1475,7 +1517,7 @@ bool prepareThreeDView(AppData& appData, View* view)
     return false;
   }
 
-  appData.renderData().m_lastInteractedThreeDViewUid = view->uid();
+  appData.renderSettings().m_lastInteractedThreeDViewUid = view->uid();
   const camera3d::SceneFrame scene = threeDSceneFrameForView(appData, *view);
   view->initializeThreeDCameraIfNeeded(scene);
   camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
@@ -1495,6 +1537,7 @@ void CallbackHandler::doThreeDCameraOrbit(const ViewHit& startHit, const ViewHit
   const camera3d::SceneFrame scene = threeDSceneFrameForView(m_appData, *view);
   state.m_orbitTarget = threeDTargetForView(m_appData, *view, scene);
   camera3d::orbit(view->threeDCamera(), state, prevHit.viewClipPos, currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraRotateAboutEye(
@@ -1506,12 +1549,13 @@ void CallbackHandler::doThreeDCameraRotateAboutEye(
   if (!prepareThreeDView(m_appData, view)) {
     return;
   }
-  const bool reverseRotation = m_appData.renderData().m_reverseThreeDRotateAboutEye;
+  const bool reverseRotation = m_appData.renderSettings().m_reverseThreeDRotateAboutEye;
   camera3d::rotateAboutEye(
     view->threeDCamera(),
     view->threeDState(),
     reverseRotation ? currHit.viewClipPos : prevHit.viewClipPos,
     reverseRotation ? prevHit.viewClipPos : currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraRoll(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
@@ -1521,6 +1565,7 @@ void CallbackHandler::doThreeDCameraRoll(const ViewHit& startHit, const ViewHit&
     return;
   }
   camera3d::roll(view->threeDCamera(), view->threeDState(), prevHit.viewClipPos, currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraPan(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
@@ -1537,6 +1582,7 @@ void CallbackHandler::doThreeDCameraPan(const ViewHit& startHit, const ViewHit& 
     startHit.viewClipPos,
     prevHit.viewClipPos,
     currHit.viewClipPos);
+  synchronizeThreeDCamerasFrom(*view);
 }
 
 void CallbackHandler::doThreeDCameraScroll(
@@ -1555,6 +1601,7 @@ void CallbackHandler::doThreeDCameraScroll(
     static_cast<float>(scrollOffset.y),
     faster,
     adjustPerspectiveFov);
+  synchronizeThreeDCamerasFrom(*hit.view);
 }
 
 void CallbackHandler::doThreeDCameraKeyboardPanOrRotate(
@@ -1575,6 +1622,7 @@ void CallbackHandler::doThreeDCameraKeyboardPanOrRotate(
   else {
     camera3d::pan(hit.view->threeDCamera(), hit.view->threeDState(), glm::vec2{0.0f}, -delta);
   }
+  synchronizeThreeDCamerasFrom(*hit.view);
 }
 
 void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& camera_T_world_rotationDelta)
@@ -1698,7 +1746,7 @@ void CallbackHandler::doThreeDIsosurfacePick(const ViewHit& hit)
     const uint32_t activeComponent = settings.activeComponent();
     const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
     const float stepLength =
-      std::max(1.0e-5f, m_appData.renderData().m_raycastSamplingFactor * minPositiveSpacing(*image));
+      std::max(1.0e-5f, m_appData.renderSettings().m_raycastSamplingFactor * minPositiveSpacing(*image));
     const glm::vec3 worldRayOrigin = helper::world_T_ndc(hit.view->threeDCamera(), glm::vec3{hit.viewClipPos, -1.0f});
     const glm::vec3 worldRayDirection = helper::worldRayDirection(hit.view->threeDCamera(), hit.viewClipPos);
 
@@ -1709,8 +1757,8 @@ void CallbackHandler::doThreeDIsosurfacePick(const ViewHit& hit)
        .world_T_pixel = image->transformations().worldDef_T_pixel(),
        .pixelDimensions = glm::vec3{image->header().pixelDimensions()},
        .stepLength = stepLength,
-       .renderFrontFaces = m_appData.renderData().m_renderFrontFaces,
-       .renderBackFaces = m_appData.renderData().m_renderBackFaces,
+       .renderFrontFaces = m_appData.renderSettings().m_renderFrontFaces,
+       .renderBackFaces = m_appData.renderSettings().m_renderBackFaces,
        .isoValues = isoValues,
        .sampleValue = [image, activeComponent, activeTimePoint](const glm::vec3& pixelPos) {
          return image->valueLinear<double>(activeComponent, pixelPos.x, pixelPos.y, pixelPos.z, activeTimePoint);
@@ -1852,6 +1900,9 @@ void CallbackHandler::doImageTranslate(
   bool inPlane)
 {
   View* viewToUse = startHit.view;
+  if (!viewToUse) {
+    return;
+  }
 
   const auto activeImageUid = m_appData.activeImageUid();
   if (!activeImageUid) {
@@ -1891,6 +1942,12 @@ void CallbackHandler::doImageTranslate(
 
   auto& imgTx = activeImage->transformations();
   imgTx.set_worldDef_T_affine_translation(imgTx.get_worldDef_T_affine_translation() + T);
+
+  auto& transformationGuide = m_appData.state().transformationGuide();
+  if (!transformationGuide.isDragging<interaction::TranslationGuide>()) {
+    transformationGuide.beginTranslation(startHit.viewUid, glm::vec3{startHit.worldPos_offsetApplied});
+  }
+  transformationGuide.appendTranslation(T);
 
   // Apply same transformation to the segmentations:
   for (const auto segUid : m_appData.imageToSegUids(*activeImageUid)) {
@@ -1943,6 +2000,12 @@ void CallbackHandler::doImageRotate(
     R = helper::rotation3dAboutCameraPlane(viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos);
   }
 
+  auto& transformationGuide = m_appData.state().transformationGuide();
+  if (!transformationGuide.isDragging<interaction::RotationGuide>()) {
+    transformationGuide.beginRotation(startHit.viewUid, worldRotCenter, glm::vec3{startHit.worldPos_offsetApplied});
+  }
+  transformationGuide.appendRotation(R);
+
   math::rotateFrameAboutWorldPos(imageFrame, R, worldRotCenter);
 
   imgTx.set_worldDef_T_affine_translation(imageFrame.worldOrigin());
@@ -1987,9 +2050,11 @@ void CallbackHandler::doImageScale(
   }
 
   auto& imgTx = activeImage->transformations();
+  const glm::vec3 initialScale = imgTx.get_worldDef_T_affine_scale();
+  const std::array<glm::vec3, 8> initialWorldCorners = imageWorldCorners(*activeImage);
   const auto scaleUpdate = app::computeImageScaleUpdate(
     imgTx.get_worldDef_T_affine(),
-    imgTx.get_worldDef_T_affine_scale(),
+    initialScale,
     m_appData.state().worldRotationCenter(),
     glm::vec3{prevHit.worldPos},
     glm::vec3{currHit.worldPos},
@@ -2004,6 +2069,20 @@ void CallbackHandler::doImageScale(
 
   imgTx.set_worldDef_T_affine_scale(scaleUpdate->m_scale);
   imgTx.set_worldDef_T_affine_translation(scaleUpdate->m_translation);
+
+  auto& transformationGuide = m_appData.state().transformationGuide();
+  if (!transformationGuide.isDragging<interaction::ScaleGuide>()) {
+    transformationGuide.beginScale(
+      startHit.viewUid,
+      m_appData.state().worldRotationCenter(),
+      glm::vec3{startHit.worldPos_offsetApplied},
+      initialScale,
+      initialWorldCorners);
+  }
+  transformationGuide.updateScale(
+    glm::vec3{currHit.worldPos_offsetApplied},
+    scaleUpdate->m_scale,
+    imageWorldCorners(*activeImage));
 
   // Apply same transformation to the segmentations:
   for (const auto segUid : m_appData.imageToSegUids(*activeImageUid)) {
@@ -2105,8 +2184,8 @@ void CallbackHandler::changeImageOpacity(double delta)
 void CallbackHandler::changeSegOpacity(double delta, bool interior)
 {
   if (interior) {
-    const float op = m_appData.renderData().m_segInteriorOpacity;
-    m_appData.renderData().m_segInteriorOpacity = std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
+    const float op = m_appData.renderSettings().m_segInteriorOpacity;
+    m_appData.renderSettings().m_segInteriorOpacity = std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
   }
   else {
     const auto imgUid = m_appData.activeImageUid();
@@ -2158,14 +2237,14 @@ void CallbackHandler::toggleSegVisibility()
 
 void CallbackHandler::toggleSegGlobalOutline()
 {
-  switch (m_appData.renderData().m_segOutlineStyle) {
+  switch (m_appData.renderSettings().m_segOutlineStyle) {
     case SegmentationOutlineStyle::Disabled: {
-      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+      m_appData.renderSettings().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
       break;
     }
     case SegmentationOutlineStyle::ViewPixel:
     case SegmentationOutlineStyle::ImageVoxel: {
-      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+      m_appData.renderSettings().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
       break;
     }
   }
@@ -2319,6 +2398,7 @@ void CallbackHandler::setShowOverlays(bool show)
   m_appData.settings().setOverlays(show); // this holds the data
   m_rendering.setShowVectorOverlays(show);
   m_appData.guiData().m_renderUiOverlays = show;
+  refreshTwoDViewOverlaySafeFraming();
 }
 
 bool CallbackHandler::showUserInterface() const
@@ -2330,69 +2410,39 @@ void CallbackHandler::setShowUserInterface(bool show)
 {
   m_appData.guiData().m_renderUiWindows = show;
   m_appData.guiData().m_renderUiOverlays = show;
+
+  refreshTwoDViewOverlaySafeFraming();
+}
+
+void CallbackHandler::refreshTwoDViewOverlaySafeFraming()
+{
+  const auto worldBox = data::computeWorldAABBoxEnclosingImages(m_appData, m_appData.state().recenteringMode());
+  const float uiScale = std::max(1.0f, m_appData.guiData().m_effectiveUiScale);
+  constexpr glm::vec2 defaultControlExtent{240.0f, 26.0f};
+  constexpr float controlClearance = 4.0f;
+  m_appData.windowData().applyTwoDViewOverlaySafeFraming(
+    worldBox,
+    m_appData.guiData().m_viewOverlayControlExtents,
+    uiScale * defaultControlExtent,
+    uiScale * controlClearance,
+    m_appData.guiData().m_renderUiOverlays,
+    false);
 }
 
 void CallbackHandler::toggleCrosshairs()
 {
-  auto& R = m_appData.renderData();
+  auto& R = m_appData.renderSettings();
   R.m_showCrosshairs = !R.m_showCrosshairs;
   R.m_showCrosshairsInLightboxViews = R.m_showCrosshairs;
 }
 
 void CallbackHandler::cycleViewOverlays()
 {
-  enum class OverlayState
-  {
-    All,
-    CrosshairsOnly,
-    None,
-    Mixed
-  };
-
-  auto& R = m_appData.renderData();
-
-  const bool anyOverlay = R.m_showCrosshairs || R.m_showAnatomicalLabels || R.m_showScaleBars ||
-                          R.m_showLightboxOffsetLabels || R.m_showThreeDCameraFrustumIn2DViews;
-  const bool crosshairsOnly = R.m_showCrosshairs && !R.m_showAnatomicalLabels && !R.m_showScaleBars &&
-                              !R.m_showLightboxOffsetLabels && !R.m_showThreeDCameraFrustumIn2DViews;
-  const bool allOverlays = R.m_showCrosshairs && R.m_showAnatomicalLabels && R.m_showScaleBars &&
-                           R.m_showLightboxOffsetLabels && R.m_showThreeDCameraFrustumIn2DViews;
-
-  const OverlayState state = !anyOverlay      ? OverlayState::None
-                             : crosshairsOnly ? OverlayState::CrosshairsOnly
-                             : allOverlays    ? OverlayState::All
-                                              : OverlayState::Mixed;
-
-  const auto setAll = [&R](bool show) {
-    R.m_showCrosshairs = show;
-    R.m_showCrosshairsInLightboxViews = show;
-    R.m_showAnatomicalLabels = show;
-    R.m_showAnatomicalLabelsInLightboxViews = show;
-    R.m_showScaleBars = show;
-    R.m_showScaleBarsInLightboxViews = show;
-    R.m_showLightboxOffsetLabels = show;
-    R.m_showThreeDCameraFrustumIn2DViews = show;
-  };
-
-  switch (state) {
-    case OverlayState::All:
-      R.m_showCrosshairs = true;
-      R.m_showCrosshairsInLightboxViews = true;
-      R.m_showAnatomicalLabels = false;
-      R.m_showAnatomicalLabelsInLightboxViews = false;
-      R.m_showScaleBars = false;
-      R.m_showScaleBarsInLightboxViews = false;
-      R.m_showLightboxOffsetLabels = false;
-      R.m_showThreeDCameraFrustumIn2DViews = false;
-      break;
-    case OverlayState::CrosshairsOnly:
-      setAll(false);
-      break;
-    case OverlayState::None:
-    case OverlayState::Mixed:
-      setAll(true);
-      break;
-  }
+  using Visibility = Rendering::VectorOverlayVisibility;
+  const Visibility next = rendering::view_overlay::nextVisibility(
+    m_rendering.vectorOverlayVisibility(),
+    m_appData.renderSettings().m_showCrosshairs);
+  m_rendering.setVectorOverlayVisibility(next);
 }
 
 void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, int stepY)
@@ -2572,11 +2622,13 @@ void CallbackHandler::toggleFullScreenMode(bool forceWindowMode)
 bool CallbackHandler::setLockManualImageTransformation(const uuid& imageUid, bool locked)
 {
   if (!locked && m_appData.refImageUid() == imageUid) {
+    spdlog::warn("Cannot unlock manual transformation for reference image {} because it defines world space", imageUid);
     return false;
   }
 
   Image* image = m_appData.image(imageUid);
   if (!image) {
+    spdlog::error("Cannot {} manual transformation for missing image {}", locked ? "lock" : "unlock", imageUid);
     return false;
   }
 
@@ -2589,6 +2641,11 @@ bool CallbackHandler::setLockManualImageTransformation(const uuid& imageUid, boo
     }
   }
 
+  spdlog::info(
+    "{} manual transformation for image {} and its {} segmentation(s)",
+    locked ? "Locked" : "Unlocked",
+    imageUid,
+    m_appData.imageToSegUids(imageUid).size());
   return true;
 }
 
@@ -2646,6 +2703,13 @@ bool CallbackHandler::checkAndSetActiveView(const uuid& viewUid)
   return true;
 }
 
+void CallbackHandler::synchronizeThreeDCamerasFrom(const View& sourceView)
+{
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras && ViewType::ThreeD == sourceView.viewType()) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras(sourceView.uid());
+  }
+}
+
 void CallbackHandler::updateThreeDViewsFollowingCrosshairs()
 {
   const glm::vec3 crosshairs = m_appData.state().worldCrosshairs().worldOrigin();
@@ -2656,5 +2720,8 @@ void CallbackHandler::updateThreeDViewsFollowingCrosshairs()
     }
     view->threeDState().m_crosshairsFollowOffset = glm::vec3{0.0f};
     camera3d::followCrosshairs(view->threeDCamera(), view->threeDState(), crosshairs);
+  }
+  if (m_appData.renderSettings().m_synchronizeThreeDCameras) {
+    m_appData.windowData().synchronizeCurrentLayoutThreeDCameras();
   }
 }

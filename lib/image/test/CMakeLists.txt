@@ -1,4 +1,5 @@
 add_executable(TestImage
+  CtWindowingTests.cpp
   DicomSeriesTests.cpp
   ImageColorMapTests.cpp
   ImageCoreTests.cpp
@@ -9,6 +10,8 @@ add_executable(TestImage
   WarpInversionTests.cpp
   ComprehensiveImageLoadingTests.cpp
   ImageLoadingTests.cpp
+  ImagePublicHeaderTests.cpp
+  RegionStatisticsTests.cpp
   SegmentationDerivedDataTests.cpp
   ImageWindowDefaultsTests.cpp
   ../../../test/image_generator/ImageGenerator.cpp

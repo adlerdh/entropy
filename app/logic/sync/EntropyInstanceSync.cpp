@@ -533,7 +533,12 @@ void EntropyInstanceSync::logOptionChanges()
 {
   const bool enabled = m_appData.settings().entropyInstanceSyncEnabled();
   if (!m_lastLoggedEnabled || *m_lastLoggedEnabled != enabled) {
-    SPDLOG_TRACE("Entropy instance cursor sync enabled={}", enabled);
+    if (m_lastLoggedEnabled || enabled) {
+      spdlog::info("Entropy instance synchronization {}", enabled ? "enabled" : "disabled");
+    }
+    else {
+      spdlog::debug("Entropy instance synchronization is disabled");
+    }
     m_lastLoggedEnabled = enabled;
   }
 }

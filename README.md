@@ -18,10 +18,10 @@ It is designed for projects containing multiple images in a common reference spa
 and 3D views, and several comparison modes make it easier to inspect images and evaluate their spatial alignment.
 
 Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor
-[James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656).
+[James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656), Director of the Penn Image
+Computing and Science Lab (PICSL).
 
-Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of
-Pennsylvania. All rights reserved.
+Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Trustees of The University of Pennsylvania. All rights reserved.
 
 ## Get Entropy
 
@@ -244,7 +244,7 @@ The command line accepts image, DICOM, and project inputs:
 | `--dicom`, `-d` | DICOM folder or file to scan |
 | `--project`, `-p` | Entropy project JSON file, mutually exclusive with `--image`, `--seg`, and `--dicom` |
 | `--layouts` | View layouts specification JSON file |
-| `--log-level`, `-l` | Console log level |
+| `--log-level`, `-l` | Console and file log level |
 
 Examples:
 ```sh
@@ -317,8 +317,8 @@ Settings owned by a project are saved in project JSON files instead of the appli
 
 ### Logging
 
-Entropy writes logs to the console and to daily log files. Log verbosity can be changed from Application Settings or
-with `--log-level`. Default log locations:
+Entropy writes logs to the console and to daily log files. Logging can be disabled globally under System > Diagnostics
+in Application Settings. Log verbosity can be changed there or with `--log-level`. Default log locations:
 
 - macOS: `~/Library/Logs/Entropy/`
 - Windows: `%APPDATA%\Entropy\Logs\`

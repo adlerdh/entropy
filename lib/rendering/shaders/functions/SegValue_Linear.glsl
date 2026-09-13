@@ -1,0 +1,95 @@
+// float cubicPulse(float center, float width, float x)
+// {
+//   x = abs(x - center);
+//   if (x > width) return 0.0;
+//   x /= width;
+//   return 1.0 - x * x * (3.0 - 2.0 * x);
+// }
+
+int lt(int x, int y)
+{
+  return max(sign(y - x), 0);
+}
+
+int ge(int x, int y)
+{
+  return (1 - lt(x, y));
+}
+
+bool isLabelVisible(int label)
+{
+  // Labels greater than the size of the segmentation label color texture are mapped to 0.
+  label -= label * ge(label, textureSize(u_segLabelCmapTex));
+  return (texelFetch(u_segLabelCmapTex, label).a > 0.0);
+}
+
+const uvec3 neigh[8] = uvec3[8](
+  uvec3(0, 0, 0),
+  uvec3(0, 0, 1),
+  uvec3(0, 1, 0),
+  uvec3(0, 1, 1),
+  uvec3(1, 0, 0),
+  uvec3(1, 0, 1),
+  uvec3(1, 1, 0),
+  uvec3(1, 1, 1));
+
+/// This does a linear lookup over texture values in the segmentation.
+uint getSegValue(vec3 texOffset, out float opacity)
+{
+  opacity = 1.0;
+
+  vec3 baseTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos) + texOffset;
+  if (!isInsideTexture(baseTc)) {
+    return 0u;
+  }
+
+  vec3 baseVoxCoord = baseTc * vec3(segTextureSize()) - vec3(0.5);
+  vec3 c = floor(baseVoxCoord);
+  vec3 d = pow(vec3(segTextureSize()), vec3(-1));
+
+  // texture coordinates corresponding to the CENTER of the voxel
+  vec3 t = vec3(c.x * d.x, c.y * d.y, c.z * d.z) + 0.5 * d;
+
+  uint neighCenterLabels[8];
+  for (int i = 0; i < 8; ++i) {
+    neighCenterLabels[i] = safeSegLookup(t + neigh[i] * d);
+  }
+
+  vec3 fracPart = baseVoxCoord - c;                    // fractional part
+  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart); // interpolation weights
+
+  // float segEdgeWidth = 0.02;
+  float maxInterp = 0.0;
+  uint bestLabel = 0u;
+
+  // Look up texture values in the fragment and its 8 neighbors.
+  // The center fragment (row = 0, col = 0) has index i = 4.
+  for (int i = 0; i <= 8; ++i) {
+    int j = int(mod(i + 4, 9));                 // j = [4, 5, 6, 7, 8, 0, 1, 2, 3]
+    float row = float(mod(j, 3) - 1);           // [-1, 0, 1]
+    float col = float(floor(float(j / 3)) - 1); // [-1, 0, 1]
+
+    vec3 texPos = row * u_texSamplingDirsForSmoothSeg[0] + col * u_texSamplingDirsForSmoothSeg[1];
+
+    // Segmentation value of neighbor at (row, col) offset
+    uint label = safeSegLookup(baseTc + texPos);
+
+    float interp = 0.0;
+    for (int j = 0; j <= 7; ++j) {
+      interp += float(neighCenterLabels[j] == label) * w[neigh[j].x].x * w[neigh[j].y].y * w[neigh[j].z].z;
+    }
+
+    // This feathers the edges:
+    // opacity = smoothstep(
+    //   clamp(u_segInterpCutoff - segEdgeWidth/2.0, 0.0, 1.0),
+    //   clamp(u_segInterpCutoff + segEdgeWidth/2.0, 0.0, 1.0), interp);
+    // opacity = cubicPulse(u_segInterpCutoff, segEdgeWidth, interp);
+
+    if (interp > maxInterp && interp >= u_segInterpCutoff && isLabelVisible(int(label))) {
+      maxInterp = interp;
+      bestLabel = label;
+    }
+  }
+
+  return bestLabel;
+}

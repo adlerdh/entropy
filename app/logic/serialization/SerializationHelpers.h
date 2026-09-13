@@ -97,10 +97,34 @@ std::optional<Enum> enumFromName(std::string_view name, const std::array<EnumNam
 }
 
 constexpr std::array k_anatomicalLabelNames{
+  EnumName{AnatomicalLabelType::Automatic, "automatic"},
   EnumName{AnatomicalLabelType::Human, "human"},
   EnumName{AnatomicalLabelType::Cartesian, "cartesian"},
   EnumName{AnatomicalLabelType::Rodent, "rodent"},
+  EnumName{AnatomicalLabelType::Quadruped, "quadruped"},
   EnumName{AnatomicalLabelType::Disabled, "disabled"}};
+
+constexpr std::array k_quadrupedBodyRegionNames{
+  EnumName{QuadrupedBodyRegion::Automatic, "automatic"},
+  EnumName{QuadrupedBodyRegion::Head, "head"},
+  EnumName{QuadrupedBodyRegion::NeckTrunkTail, "neckTrunkTail"},
+  EnumName{QuadrupedBodyRegion::ProximalLimb, "proximalLimb"},
+  EnumName{QuadrupedBodyRegion::DistalForelimb, "distalForelimb"},
+  EnumName{QuadrupedBodyRegion::DistalHindlimb, "distalHindlimb"}};
+
+constexpr std::array k_viewConventionNames{
+  EnumName{ViewConvention::Radiological, "radiological"},
+  EnumName{ViewConvention::Neurological, "neurological"}};
+
+constexpr std::array k_dicomAnatomicalOrientationNames{
+  EnumName{DicomAnatomicalOrientation::Unspecified, "unspecified"},
+  EnumName{DicomAnatomicalOrientation::Biped, "biped"},
+  EnumName{DicomAnatomicalOrientation::Quadruped, "quadruped"}};
+
+constexpr std::array k_dicomBodyRegionSourceNames{
+  EnumName{DicomBodyRegionSource::None, "none"},
+  EnumName{DicomBodyRegionSource::AnatomicRegionSequence, "anatomicRegionSequence"},
+  EnumName{DicomBodyRegionSource::BodyPartExamined, "bodyPartExamined"}};
 
 constexpr std::array k_crosshairsSnappingNames{
   EnumName{CrosshairsSnapping::Disabled, "disabled"},

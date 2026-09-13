@@ -2,8 +2,8 @@
 
 #include "common/UuidRange.h"
 
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <array>
 #include <cstdint>

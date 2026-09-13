@@ -2,7 +2,8 @@
 
 #include "common/Viewport.h"
 #include "logic/camera/CameraTypes.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 
 #include <glm/fwd.hpp>
 
@@ -40,11 +41,13 @@ class View;
  * @param imagePairs Fixed/moving image UID pairs used by the selected render mode.
  * @param getImage Lookup callback that resolves an optional image UID to an image pointer.
  * @param showEdges When true, render pixel edge overlays instead of intensity projection sampling.
+ * @param metricUsesWorldSampling Whether a warped metric shader samples patch offsets in world rather than texture
+ * space.
  */
 void drawImageQuad(
   GLShaderProgram& program,
   const ViewRenderMode& renderMode,
-  RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -56,7 +59,8 @@ void drawImageQuad(
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage,
-  bool showEdges);
+  bool showEdges,
+  bool metricUsesWorldSampling = false);
 
 /**
  * @brief Draw a segmentation overlay on the current 2D image plane.
@@ -78,7 +82,7 @@ void drawImageQuad(
  */
 void drawSegQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const Image& seg,
   const Image& geometryImage,
   const View& view,
@@ -98,7 +102,8 @@ void drawSegQuad(
  *
  * @param program Shader program selected for segmentation preview rendering.
  * @param quad Shared quad geometry used for image-plane rendering.
- * @param texture_T_world Transform from world/LPS coordinates to preview texture coordinates.
+ * @param texture_T_world Transform used to compute preview outline sampling. The caller uploads the shader's direct
+ * or deformation sampling transform before calling this function.
  * @param voxel_T_world Transform from world/LPS coordinates to preview voxel coordinates.
  * @param textureSize Preview texture size in texels.
  * @param view View whose camera, clip depth, and view transform define the rendered plane.
@@ -111,7 +116,7 @@ void drawSegQuad(
  */
 void drawSegPreviewQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const glm::mat4& texture_T_world,
   const glm::mat4& voxel_T_world,
   const glm::uvec3& textureSize,
@@ -139,7 +144,7 @@ void drawSegPreviewQuad(
  */
 void drawRaycastQuad(
   GLShaderProgram& program,
-  RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& imagePairs,

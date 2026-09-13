@@ -154,6 +154,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedView.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
+  auto changedQuadrupedRegion = project;
+  changedQuadrupedRegion.m_view.m_quadrupedBodyRegion = QuadrupedBodyRegion::Head;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedQuadrupedRegion));
+
   changedView = project;
   changedView.m_view.m_showAnatomicalLabels = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
@@ -228,7 +232,15 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_imagePlaneOpacity = 0.5f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
+
+  changedThreeDRendering = project;
   changedThreeDRendering.m_threeDRendering.m_imagePlaneSegmentationsVisible = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
+
+  changedThreeDRendering = project;
+  changedThreeDRendering.m_threeDRendering.m_imagePlaneIsocontoursVisible = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedThreeDRendering));
 
   auto changedMeshRendering = project;
@@ -280,11 +292,7 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   changedMeshRendering = project;
-  changedMeshRendering.m_meshRendering.m_clipPlaneEnabled = true;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
-
-  changedMeshRendering = project;
-  changedMeshRendering.m_meshRendering.m_clipPlaneWorld = {0.0f, 1.0f, 0.0f, -1.0f};
+  changedMeshRendering.m_meshRendering.m_cutawayEnabled = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedMeshRendering));
 
   auto changedImageIsosurfaces = project;
@@ -296,7 +304,7 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedIntensityProjection));
 
   auto changedSegmentationDisplay = project;
-  changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ViewPixel;
+  changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::Disabled;
   CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
 
   changedSegmentationDisplay = project;

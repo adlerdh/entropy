@@ -1,0 +1,689 @@
+#include "rendering/ShaderProgramSetup.h"
+#include "rendering/ShaderPreprocessor.h"
+#include "rendering/ShaderSourceSetup.h"
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <array>
+#include <regex>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+namespace shader_setup = rendering::shader_setup;
+
+namespace
+{
+
+struct DeclaredUniform
+{
+  std::string type;
+  std::string name;
+};
+
+std::vector<DeclaredUniform> declaredUniforms(const std::string& source)
+{
+  static const std::regex declaration{R"((?:^|\n)[ \t]*uniform\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z_][A-Za-z0-9_]*))"};
+  std::vector<DeclaredUniform> uniforms;
+  for (auto match = std::sregex_iterator(source.begin(), source.end(), declaration); match != std::sregex_iterator{};
+       ++match)
+  {
+    uniforms.push_back({.type = (*match)[1].str(), .name = (*match)[2].str()});
+  }
+  return uniforms;
+}
+
+std::string canonicalUniformName(const std::string& name)
+{
+  const std::size_t arrayIndex = name.find('[');
+  return name.substr(0, arrayIndex);
+}
+
+bool registeredTypeMatchesGlsl(const UniformType registered, const std::string& glsl)
+{
+  if (glsl.starts_with("sampler") || glsl.starts_with("isampler") || glsl.starts_with("usampler")) {
+    return registered == UniformType::Sampler || registered == UniformType::SamplerVector;
+  }
+  if (glsl == "float") {
+    return registered == UniformType::Float || registered == UniformType::FloatVector ||
+           registered == UniformType::FloatArray2 || registered == UniformType::FloatArray3 ||
+           registered == UniformType::FloatArray4 || registered == UniformType::FloatArray5;
+  }
+  if (glsl == "int") {
+    return registered == UniformType::Int || registered == UniformType::IntVector;
+  }
+  if (glsl == "uint") {
+    return registered == UniformType::UInt || registered == UniformType::UIntArray5;
+  }
+  if (glsl == "vec2") {
+    return registered == UniformType::Vec2 || registered == UniformType::Vec2Vector;
+  }
+  if (glsl == "vec3") {
+    return registered == UniformType::Vec3 || registered == UniformType::Vec3Vector ||
+           registered == UniformType::Vec3Array8;
+  }
+  if (glsl == "vec4") {
+    return registered == UniformType::Vec4 || registered == UniformType::Vec4Vector;
+  }
+  if (glsl == "bool") return registered == UniformType::Bool;
+  if (glsl == "bvec2") return registered == UniformType::BVec2;
+  if (glsl == "ivec2") return registered == UniformType::IVec2;
+  if (glsl == "mat2") return registered == UniformType::Mat2;
+  if (glsl == "mat3") return registered == UniformType::Mat3;
+  if (glsl == "mat4") return registered == UniformType::Mat4 || registered == UniformType::Mat4Vector;
+  return false;
+}
+
+} // namespace
+
+TEST_CASE("shader program setup registers every main renderer shader exactly once", "[rendering][shaders]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+
+  const std::array expectedShaderTypes{
+    ShaderProgramType::ImageGrayLinear,
+    ShaderProgramType::ImageGrayLinearFloating,
+    ShaderProgramType::ImageGrayCubic,
+    ShaderProgramType::ImageGrayLinearWarped,
+    ShaderProgramType::ImageGrayLinearFloatingWarped,
+    ShaderProgramType::ImageGrayCubicWarped,
+    ShaderProgramType::ImageColorLinear,
+    ShaderProgramType::ImageColorCubic,
+    ShaderProgramType::ImageColorLinearWarped,
+    ShaderProgramType::ImageColorCubicWarped,
+    ShaderProgramType::VectorDirectionColorLinear,
+    ShaderProgramType::VectorDirectionColorCubic,
+    ShaderProgramType::VectorSignedNormalProjectionLinear,
+    ShaderProgramType::VectorSignedNormalProjectionCubic,
+    ShaderProgramType::VectorPlanarProjectionColorLinear,
+    ShaderProgramType::VectorPlanarProjectionColorCubic,
+    ShaderProgramType::VectorWarpedGridLinear,
+    ShaderProgramType::VectorWarpedGridCubic,
+    ShaderProgramType::EdgeSobelLinear,
+    ShaderProgramType::EdgeSobelCubic,
+    ShaderProgramType::EdgeSobelLinearWarped,
+    ShaderProgramType::EdgeSobelCubicWarped,
+    ShaderProgramType::XrayLinear,
+    ShaderProgramType::XrayCubic,
+    ShaderProgramType::XrayLinearWarped,
+    ShaderProgramType::XrayCubicWarped,
+    ShaderProgramType::SegmentationNearest,
+    ShaderProgramType::SegmentationLinear,
+    ShaderProgramType::SegmentationNearestWarped,
+    ShaderProgramType::SegmentationLinearWarped,
+    ShaderProgramType::IsoContourLinearFloating,
+    ShaderProgramType::IsoContourLinearFixed,
+    ShaderProgramType::IsoContourCubicFixed,
+    ShaderProgramType::IsoContourLinearFloatingWarped,
+    ShaderProgramType::IsoContourLinearFixedWarped,
+    ShaderProgramType::IsoContourCubicFixedWarped,
+    ShaderProgramType::DifferenceLinear,
+    ShaderProgramType::DifferenceCubic,
+    ShaderProgramType::DifferenceLinearWarped,
+    ShaderProgramType::DifferenceCubicWarped,
+    ShaderProgramType::LocalNccLinear,
+    ShaderProgramType::LocalNccCubic,
+    ShaderProgramType::LocalNccLinearWarped,
+    ShaderProgramType::LocalNccCubicWarped,
+    ShaderProgramType::LocalLinearResidualLinear,
+    ShaderProgramType::LocalLinearResidualCubic,
+    ShaderProgramType::LocalLinearResidualLinearWarped,
+    ShaderProgramType::LocalLinearResidualCubicWarped,
+    ShaderProgramType::OverlapLinear,
+    ShaderProgramType::OverlapCubic,
+    ShaderProgramType::OverlapLinearWarped,
+    ShaderProgramType::OverlapCubicWarped};
+
+  REQUIRE(setup.shaderTypes.size() == expectedShaderTypes.size());
+  REQUIRE(setup.shaderInfo.size() == expectedShaderTypes.size());
+
+  std::unordered_set<ShaderProgramType> uniqueShaderTypes;
+  for (const ShaderProgramType shaderType : setup.shaderTypes) {
+    REQUIRE(uniqueShaderTypes.insert(shaderType).second);
+    REQUIRE(setup.shaderInfo.contains(shaderType));
+    REQUIRE_FALSE(setup.shaderInfo.at(shaderType).vsFileName.empty());
+    REQUIRE_FALSE(setup.shaderInfo.at(shaderType).fsFileName.empty());
+  }
+
+  for (const ShaderProgramType shaderType : expectedShaderTypes) {
+    REQUIRE(uniqueShaderTypes.contains(shaderType));
+  }
+
+  REQUIRE_FALSE(setup.shaderInfo.contains(ShaderProgramType::AsciiPost));
+  REQUIRE_FALSE(setup.shaderInfo.contains(ShaderProgramType::AsciiCellMean));
+  REQUIRE_FALSE(setup.shaderInfo.contains(ShaderProgramType::AsciiCellRegions));
+  REQUIRE_FALSE(setup.shaderInfo.contains(ShaderProgramType::AsciiPostSpatial));
+  REQUIRE_FALSE(setup.shaderInfo.contains(ShaderProgramType::PixelEdgePost));
+}
+
+TEST_CASE("shader program setup exposes complete texture lookup replacement sources", "[rendering][shaders]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+
+  REQUIRE_FALSE(setup.lookupReplacementSources.linear3D.empty());
+  REQUIRE_FALSE(setup.lookupReplacementSources.linear2D.empty());
+  REQUIRE_FALSE(setup.lookupReplacementSources.floatingPointLinear3D.empty());
+  REQUIRE_FALSE(setup.lookupReplacementSources.floatingPointLinear2D.empty());
+  REQUIRE_FALSE(setup.lookupReplacementSources.cubic3D.empty());
+  REQUIRE_FALSE(setup.lookupReplacementSources.cubic2D.empty());
+  REQUIRE_FALSE(setup.lookupReplacementSources.uintLinear2D.empty());
+}
+
+TEST_CASE("color image shader interfaces use component textures without a color map", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  const std::array colorImagePrograms{
+    ShaderProgramType::ImageColorLinear,
+    ShaderProgramType::ImageColorCubic,
+    ShaderProgramType::ImageColorLinearWarped,
+    ShaderProgramType::ImageColorCubicWarped};
+
+  for (const ShaderProgramType type : colorImagePrograms) {
+    const Uniforms& uniforms = setup.shaderInfo.at(type).fsUniforms;
+    INFO("shader type: " << to_string(type));
+    CHECK(uniforms.containsKey("u_imgTex"));
+    CHECK_FALSE(uniforms.containsKey("u_cmapTex"));
+  }
+}
+
+TEST_CASE("every main shader variant preprocesses without unresolved directives", "[rendering][shaders]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  for (const ShaderProgramType shaderType : setup.shaderTypes) {
+    const auto& info = setup.shaderInfo.at(shaderType);
+    for (const auto dimension : {rendering::TextureDimension::Texture3D, rendering::TextureDimension::Texture2D}) {
+      const auto replacements = rendering::shaderReplacementsForTextureDimension(
+        info.fsReplacements,
+        dimension,
+        setup.lookupReplacementSources);
+      const std::string source = shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName);
+      INFO("shader type: " << to_string(shaderType));
+      CHECK_NOTHROW(rendering::preprocessShaderSource(source, replacements));
+    }
+  }
+}
+
+TEST_CASE("local metric shader registries distinguish texture and world sampling", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  const std::array textureSamplingPrograms{
+    ShaderProgramType::LocalNccLinear,
+    ShaderProgramType::LocalNccCubic,
+    ShaderProgramType::LocalLinearResidualLinear,
+    ShaderProgramType::LocalLinearResidualCubic};
+  const std::array worldSamplingPrograms{
+    ShaderProgramType::LocalNccLinearWarped,
+    ShaderProgramType::LocalNccCubicWarped,
+    ShaderProgramType::LocalLinearResidualLinearWarped,
+    ShaderProgramType::LocalLinearResidualCubicWarped};
+
+  for (const ShaderProgramType type : textureSamplingPrograms) {
+    const Uniforms& uniforms = setup.shaderInfo.at(type).fsUniforms;
+    CHECK(uniforms.containsKey("u_tex0SamplingDirX"));
+    CHECK(uniforms.containsKey("u_tex0SamplingDirY"));
+    CHECK(uniforms.containsKey("u_texSamplingDirZ"));
+    CHECK_FALSE(uniforms.containsKey("u_worldSamplingDirX"));
+    CHECK_FALSE(uniforms.containsKey("u_worldSamplingDirY"));
+    CHECK_FALSE(uniforms.containsKey("u_worldSamplingDirZ"));
+  }
+
+  for (const ShaderProgramType type : worldSamplingPrograms) {
+    const Uniforms& uniforms = setup.shaderInfo.at(type).fsUniforms;
+    CHECK(uniforms.containsKey("u_worldSamplingDirX"));
+    CHECK(uniforms.containsKey("u_worldSamplingDirY"));
+    CHECK(uniforms.containsKey("u_worldSamplingDirZ"));
+  }
+}
+
+TEST_CASE("every declared main-shader uniform is represented in the C++ registries", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  for (const ShaderProgramType shaderType : setup.shaderTypes) {
+    const auto& info = setup.shaderInfo.at(shaderType);
+    std::unordered_set<std::string> registered;
+    for (const Uniforms* uniforms : {&info.vsUniforms, &info.fsUniforms}) {
+      for (const auto& [name, declaration] : (*uniforms)()) {
+        static_cast<void>(declaration);
+        registered.insert(canonicalUniformName(name));
+      }
+    }
+
+    for (const auto dimension : {rendering::TextureDimension::Texture3D, rendering::TextureDimension::Texture2D}) {
+      const auto replacements = rendering::shaderReplacementsForTextureDimension(
+        info.fsReplacements,
+        dimension,
+        setup.lookupReplacementSources);
+      const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.vsFileName);
+      const std::string fragment = rendering::preprocessShaderSource(
+        shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName),
+        replacements);
+      auto declared = declaredUniforms(vertex);
+      const auto fragmentUniforms = declaredUniforms(fragment);
+      declared.insert(declared.end(), fragmentUniforms.begin(), fragmentUniforms.end());
+      for (const auto& [type, name] : declared) {
+        static_cast<void>(type);
+        INFO("shader type: " << to_string(shaderType));
+        INFO("uniform: " << name);
+        CHECK(registered.contains(canonicalUniformName(name)));
+      }
+    }
+  }
+}
+
+TEST_CASE("every registered main-shader uniform is declared by its shader", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  for (const ShaderProgramType shaderType : setup.shaderTypes) {
+    const auto& info = setup.shaderInfo.at(shaderType);
+    for (const auto dimension : {rendering::TextureDimension::Texture3D, rendering::TextureDimension::Texture2D}) {
+      const auto replacements = rendering::shaderReplacementsForTextureDimension(
+        info.fsReplacements,
+        dimension,
+        setup.lookupReplacementSources);
+      auto declared = declaredUniforms(shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.vsFileName));
+      const auto fragmentUniforms = declaredUniforms(rendering::preprocessShaderSource(
+        shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName),
+        replacements));
+      declared.insert(declared.end(), fragmentUniforms.begin(), fragmentUniforms.end());
+
+      std::unordered_set<std::string> declaredNames;
+      for (const auto& uniform : declared) {
+        declaredNames.insert(canonicalUniformName(uniform.name));
+      }
+      for (const Uniforms* uniforms : {&info.vsUniforms, &info.fsUniforms}) {
+        for (const auto& [name, declaration] : (*uniforms)()) {
+          if (!declaration.m_isRequired) {
+            continue;
+          }
+          INFO("shader type: " << to_string(shaderType));
+          INFO("uniform: " << name);
+          CHECK(declaredNames.contains(canonicalUniformName(name)));
+        }
+      }
+    }
+  }
+}
+
+TEST_CASE("main-shader uniform registry types match GLSL declarations", "[rendering][shaders][uniforms]")
+{
+  const auto setup = shader_setup::buildProgramSetup();
+  for (const ShaderProgramType shaderType : setup.shaderTypes) {
+    const auto& info = setup.shaderInfo.at(shaderType);
+    std::unordered_map<std::string, UniformType> registered;
+    for (const Uniforms* uniforms : {&info.vsUniforms, &info.fsUniforms}) {
+      for (const auto& [name, declaration] : (*uniforms)()) {
+        registered.insert_or_assign(canonicalUniformName(name), declaration.m_type);
+      }
+    }
+
+    for (const auto dimension : {rendering::TextureDimension::Texture3D, rendering::TextureDimension::Texture2D}) {
+      const auto replacements = rendering::shaderReplacementsForTextureDimension(
+        info.fsReplacements,
+        dimension,
+        setup.lookupReplacementSources);
+      auto declared = declaredUniforms(shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.vsFileName));
+      const auto fragmentUniforms = declaredUniforms(rendering::preprocessShaderSource(
+        shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + info.fsFileName),
+        replacements));
+      declared.insert(declared.end(), fragmentUniforms.begin(), fragmentUniforms.end());
+      for (const auto& [glslType, name] : declared) {
+        const auto registeredType = registered.find(canonicalUniformName(name));
+        if (registeredType == registered.end()) {
+          continue;
+        }
+        INFO("shader type: " << to_string(shaderType));
+        INFO("uniform: " << name);
+        INFO("GLSL type: " << glslType);
+        CHECK(registeredTypeMatchesGlsl(registeredType->second, glslType));
+      }
+    }
+  }
+}
+
+TEST_CASE("image edge shaders use independent scale and threshold controls", "[rendering][shaders][pixel-edge]")
+{
+  const std::string voxel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/Edge.fs");
+  const std::string sobel =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/functions/ComputeEdge_Sobel.glsl");
+  const std::string screen = shader_setup::loadEmbeddedShaderSource("rendering/shaders/PixelEdgePost.fs");
+
+  CHECK(voxel.find("computeEdge(V) * u_edgeScale") != std::string::npos);
+  CHECK(voxel.find("gradMag >= u_edgeThreshold") != std::string::npos);
+  CHECK(voxel.find("gradMag * gradColormap.a * vec4(gradColormap.rgb, 1.0)") != std::string::npos);
+  CHECK(sobel.find("float computeEdge(mat3 V)") != std::string::npos);
+  CHECK(sobel.find("/ max(edgeMagnitude") == std::string::npos);
+
+  CHECK(screen.find("colorPM.rgb / colorPM.a") != std::string::npos);
+  CHECK(screen.find("edgePM *= sourcePM.a") != std::string::npos);
+  CHECK(screen.find("rawEdge >= edgeForward && rawEdge > edgeBackward") != std::string::npos);
+}
+
+TEST_CASE("raycast and mesh isosurfaces use matching simple lighting contributions", "[rendering][shaders]")
+{
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
+  const std::string mesh = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.fs");
+
+  CHECK(raycast.find("u_isoColors[i] * (u_lightingAmbient + u_lightingDiffuse * d)") != std::string::npos);
+  CHECK(raycast.find("vec3(u_lightingSpecular * s)") != std::string::npos);
+  CHECK(mesh.find("albedo * u_lightingAmbient * ao") != std::string::npos);
+  CHECK(mesh.find("direct * shadow") != std::string::npos);
+  CHECK(mesh.find("vec3(u_lightingSpecular * specular)") != std::string::npos);
+  CHECK(raycast.find("uniform vec3 u_ambient") == std::string::npos);
+  CHECK(raycast.find("uniform vec3 u_diffuse") == std::string::npos);
+  CHECK(raycast.find("uniform vec3 u_specular") == std::string::npos);
+}
+
+TEST_CASE("raycast shaders use their screen-space transform contract", "[rendering][shaders][uniforms]")
+{
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.vs");
+  const std::string fragment = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
+
+  CHECK(vertex.find("uniform mat4 u_world_T_clip") != std::string::npos);
+  CHECK(fragment.find("uniform mat4 u_clip_T_imgTex") != std::string::npos);
+  CHECK(vertex.find("u_clip_T_world") == std::string::npos);
+  CHECK(fragment.find("u_clip_T_world") == std::string::npos);
+}
+
+TEST_CASE("shader loops defend fixed-size inputs and unsupported projection modes", "[rendering][shaders]")
+{
+  const std::string difference = shader_setup::loadEmbeddedShaderSource("rendering/shaders/Difference.fs");
+  const std::string ascii = shader_setup::loadEmbeddedShaderSource("rendering/shaders/AsciiPostSpatial.fs");
+  const std::string mesh = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.fs");
+  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
+
+  CHECK(difference.find("u_mipMode >= MAX_IP_MODE && u_mipMode <= MIN_IP_MODE") != std::string::npos);
+  CHECK(ascii.find("clamp(u_asciiGlyphCount, 1, 128)") != std::string::npos);
+  CHECK(mesh.find("clamp(u_clipPlaneCount, 0, 8)") != std::string::npos);
+  CHECK(meshPeel.find("clamp(u_clipPlaneCount, 0, 8)") != std::string::npos);
+  CHECK(mesh.find("clamp(u_shadowStrength, 0.0, 1.0)") != std::string::npos);
+  CHECK(meshPeel.find("clamp(u_shadowStrength, 0.0, 1.0)") != std::string::npos);
+}
+
+TEST_CASE("all surface passes implement per-renderable octant cutaway", "[rendering][shaders][mesh][cutaway]")
+{
+  const std::array shaderPaths{
+    "rendering/shaders/mesh/Mesh.fs",
+    "rendering/shaders/mesh/MeshDdpInit.fs",
+    "rendering/shaders/mesh/MeshDdpPeel.fs",
+    "rendering/shaders/mesh/MeshShadowDepth.fs",
+    "rendering/shaders/mesh/AmbientOcclusionGeometry.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("uniform bool u_cutawayEnabled") != std::string::npos);
+    CHECK(shader.find("uniform vec4 u_cutawayPlanes[3]") != std::string::npos);
+    CHECK(shader.find("u_cutawayEnabled && dot(u_cutawayPlanes[0].xyz, v_worldPosition)") != std::string::npos);
+    CHECK(shader.find("dot(u_cutawayPlanes[1].xyz, v_worldPosition)") != std::string::npos);
+    CHECK(shader.find("dot(u_cutawayPlanes[2].xyz, v_worldPosition)") != std::string::npos);
+  }
+}
+
+TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP paths", "[rendering][shaders][pbr]")
+{
+  const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("albedo * kPbrAmbientStrength * clamp(u_ambientOcclusion") != std::string::npos);
+    CHECK(shader.find("diffuse * (kPi * kPbrDiffuseStrength)") != std::string::npos);
+    CHECK(shader.find("specular * (kPi * kPbrSpecularStrength)") != std::string::npos);
+    CHECK(shader.find("kPbrFillLightDirection") != std::string::npos);
+    CHECK(shader.find("kPbrFillLightStrength") != std::string::npos);
+    CHECK(shader.find("ambient + keyLighting + fillLighting") != std::string::npos);
+    CHECK(shader.find("faceforward(normal, -viewDirection, normal)") != std::string::npos);
+    CHECK(shader.find("0.14 * albedo") == std::string::npos);
+  }
+}
+
+TEST_CASE("mesh rim lighting uses the same silhouette equation in opaque and DDP shaders", "[rendering][shaders][mesh]")
+{
+  const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("1.0 - abs(dot(normal, viewDirection))") != std::string::npos);
+    CHECK(shader.find("mix(1.0, rim, clamp(u_rimOpacityStrength, 0.0, 1.0))") != std::string::npos);
+    CHECK(shader.find("color.a *= alphaScale") != std::string::npos);
+  }
+}
+
+TEST_CASE("mesh flat shading uses geometric face normals in opaque and DDP paths", "[rendering][shaders][mesh]")
+{
+  const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
+
+  for (const char* shaderPath : shaderPaths) {
+    const std::string shader = shader_setup::loadEmbeddedShaderSource(shaderPath);
+    CHECK(shader.find("uniform bool u_flatShadingEnabled") != std::string::npos);
+    CHECK(shader.find("flat in vec3 v_worldFaceNormal") != std::string::npos);
+    CHECK(shader.find("u_flatShadingEnabled && dot(v_worldFaceNormal, v_worldFaceNormal)") != std::string::npos);
+    CHECK(shader.find("!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal)") != std::string::npos);
+    CHECK(shader.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
+  }
+
+  const std::string geometry = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshEdges.gs");
+  CHECK(geometry.find("flat out vec3 v_worldFaceNormal") != std::string::npos);
+  CHECK(geometry.find("edge_worldPosition[1] - edge_worldPosition[0]") != std::string::npos);
+  CHECK(geometry.find("v_worldFaceNormal = faceNormal") != std::string::npos);
+}
+
+TEST_CASE("mesh topology edges use anti-aliased barycentric coordinates", "[rendering][shaders][mesh]")
+{
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshEdges.vs");
+  const std::string geometry = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshEdges.gs");
+  CHECK(vertex.find("out vec3 edge_worldPosition") != std::string::npos);
+  CHECK(vertex.find("gl_Position = u_clip_T_world * worldPosition") != std::string::npos);
+  CHECK(geometry.find("noperspective out vec3 v_barycentric") != std::string::npos);
+  CHECK(geometry.find("gl_Position = gl_in[corner].gl_Position") != std::string::npos);
+  CHECK(geometry.find("vec3(1.0, 0.0, 0.0)") != std::string::npos);
+
+  const std::array fragmentPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};
+  for (const char* fragmentPath : fragmentPaths) {
+    const std::string fragment = shader_setup::loadEmbeddedShaderSource(fragmentPath);
+    CHECK(fragment.find("uniform bool u_triangleEdgesEnabled") != std::string::npos);
+    CHECK(fragment.find("uniform vec3 u_triangleEdgeColor") != std::string::npos);
+    CHECK(fragment.find("fwidth(v_barycentric) * 1.25") != std::string::npos);
+    CHECK(fragment.find("applyTriangleEdges") != std::string::npos);
+  }
+}
+
+TEST_CASE("mesh DDP resolve applies image-space antialiasing", "[rendering][shaders][mesh][ddp]")
+{
+  const std::string resolve = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpResolve.fs");
+  CHECK(resolve.find("vec4 antialiasedComposite") != std::string::npos);
+  CHECK(resolve.find("vec4 bilinearCompositeAt") != std::string::npos);
+  CHECK(resolve.find("lumaRange < max(k_lumaThreshold") != std::string::npos);
+  CHECK(resolve.find("outColor = antialiasedComposite(pixelCoord, textureSizePx)") != std::string::npos);
+}
+
+TEST_CASE("mesh SSAO uses reconstructed geometry and an edge-preserving filter", "[rendering][shaders][ssao]")
+{
+  const std::string resolve =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionResolve.fs");
+  const std::string filter = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionFilter.fs");
+
+  CHECK(resolve.find("u_camera_T_clip") != std::string::npos);
+  CHECK(resolve.find("u_clip_T_camera") != std::string::npos);
+  CHECK(resolve.find("u_camera_T_worldNormal") != std::string::npos);
+  CHECK(resolve.find("u_sampleCount") != std::string::npos);
+  CHECK(resolve.find("tangent_T_camera * hemisphere") != std::string::npos);
+  CHECK(resolve.find("smoothstep(radiusMm * 0.5, radiusMm, separation)") != std::string::npos);
+  CHECK(filter.find("normalWeight") != std::string::npos);
+  CHECK(filter.find("depthWeight") != std::string::npos);
+  CHECK(filter.find("pow(clamp(filtered, 0.0, 1.0), max(u_power") != std::string::npos);
+  CHECK(filter.find("(1.0 - powered) * max(u_contrast") != std::string::npos);
+}
+
+TEST_CASE("ASCII compositing addresses the full framebuffer from the render viewport", "[rendering][shaders][ascii]")
+{
+  const std::string post = shader_setup::loadEmbeddedShaderSource("rendering/shaders/AsciiPost.fs");
+  const std::string spatial = shader_setup::loadEmbeddedShaderSource("rendering/shaders/AsciiPostSpatial.fs");
+
+  CHECK(post.find("u_sceneOriginPx + v_uv * u_viewSizePx") != std::string::npos);
+  CHECK(spatial.find("u_sceneOriginPx + v_uv * u_viewSizePx") != std::string::npos);
+}
+
+TEST_CASE("raycasting does not render the mesh-only 3D crosshairs", "[rendering][shaders][crosshairs]")
+{
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
+
+  CHECK(raycast.find("u_showCrosshairs3D") == std::string::npos);
+  CHECK(raycast.find("raySphereFirstHit") == std::string::npos);
+}
+
+TEST_CASE("DDP receives pre-composited image stacks as three geometric layers", "[rendering][shaders][ddp]")
+{
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+  const std::string compositeInit =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneCompositeDdpInit.fs");
+  const std::string compositePeel =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneCompositeDdpPeel.fs");
+  const std::string meshPeel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
+  const std::string depth = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpDepth.glsl");
+
+  CHECK(peel.find("IMAGE_PLANE_COMPOSITE_PASS") != std::string::npos);
+  CHECK(peel.find("outCompositeColor = premultipliedColor") != std::string::npos);
+  CHECK(compositeInit.find("u_compositeColorTex") != std::string::npos);
+  CHECK(compositeInit.find("u_compositeDepthTex") != std::string::npos);
+  CHECK(compositePeel.find("u_compositeColorTex") != std::string::npos);
+  CHECK(compositePeel.find("u_compositeDepthTex") != std::string::npos);
+  CHECK(compositeInit.find("ddpOrderedImagePlaneDepth(depth, u_ddpDepthOrder)") != std::string::npos);
+  CHECK(compositePeel.find("ddpOrderedImagePlaneDepth(depth, u_ddpDepthOrder)") != std::string::npos);
+  CHECK(meshPeel.find("ddpDepthIsOutside(fragmentDepth, previousDepthBounds)") != std::string::npos);
+  CHECK(depth.find("floatBitsToUint(boundedDepth)") != std::string::npos);
+  CHECK(depth.find("depthBits - depthOrder") != std::string::npos);
+  CHECK(depth.find("epsilon") == std::string::npos);
+  CHECK(depth.find("image layer") == std::string::npos);
+  CHECK(depth.find("fragmentDepth - depthBias") == std::string::npos);
+  CHECK(meshPeel.find("kDepthEpsilon") == std::string::npos);
+}
+
+TEST_CASE("DDP uses invariant rasterization and depth-bound completion", "[rendering][shaders][ddp]")
+{
+  const std::array vertexPaths{
+    "rendering/shaders/mesh/Mesh.vs",
+    "rendering/shaders/mesh/MeshEdges.vs",
+    "rendering/shaders/mesh/MeshEdges.gs",
+    "rendering/shaders/mesh/MeshImagePlane.vs"};
+  for (const char* path : vertexPaths) {
+    const std::string source = shader_setup::loadEmbeddedShaderSource(path);
+    CHECK(source.find("invariant gl_Position") != std::string::npos);
+  }
+
+  const std::string completion = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpCompletion.fs");
+  CHECK(completion.find("u_depthBoundsTex") != std::string::npos);
+  CHECK(completion.find("ddpDepthBoundsAreValid") != std::string::npos);
+  CHECK(completion.find("u_backTempTex") == std::string::npos);
+}
+
+TEST_CASE("image plane DDP rejects transparent fragments before depth classification", "[rendering][shaders][ddp]")
+{
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  const std::size_t colorEvaluation = peel.find("vec4 premultipliedColor = imagePlaneColor()");
+  const std::size_t transparentDiscard = peel.find("if (premultipliedColor.a <= 0.0)");
+  const std::size_t depthClassification = peel.find("if (ddpDepthIsOutside(fragmentDepth, previousDepthBounds))");
+  REQUIRE(colorEvaluation != std::string::npos);
+  REQUIRE(transparentDiscard != std::string::npos);
+  REQUIRE(depthClassification != std::string::npos);
+  CHECK(colorEvaluation < transparentDiscard);
+  CHECK(transparentDiscard < depthClassification);
+}
+
+TEST_CASE("image-plane color evaluation rejects samples outside each pre-composited image", "[rendering][shaders][ddp]")
+{
+  const std::string display =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::size_t displayFunction = display.find("vec4 displayedImagePlaneColor");
+  const std::size_t boundsCheck = display.find("if (!isInsideTexture(sampleTc))", displayFunction);
+  const std::size_t componentDispatch = display.find("if (u_componentRenderMode", displayFunction);
+  REQUIRE(displayFunction != std::string::npos);
+  REQUIRE(boundsCheck != std::string::npos);
+  REQUIRE(componentDispatch != std::string::npos);
+  CHECK(boundsCheck < componentDispatch);
+}
+
+TEST_CASE("image plane DDP borders use explicit polygon boundaries", "[rendering][shaders][ddp]")
+{
+  const std::string display =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::string border = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneBorder.fs");
+  const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  CHECK(init.find("u_boundaryWorldPositions") != std::string::npos);
+  CHECK(peel.find("u_boundaryWorldPositions") != std::string::npos);
+  CHECK(init.find("u_viewportOrigin") != std::string::npos);
+  CHECK(peel.find("u_viewportOrigin") != std::string::npos);
+  CHECK(init.find("imagePlaneBorderDistancePixels()") != std::string::npos);
+  CHECK(peel.find("imagePlaneBorderDistancePixels()") != std::string::npos);
+  CHECK(display.find("clipImagePlaneBoundarySegment") != std::string::npos);
+  CHECK(display.find("gl_FragCoord.xy - u_viewportOrigin") != std::string::npos);
+  CHECK(display.find("imagePlaneEdgeAntialiasRadiusPixels") != std::string::npos);
+  CHECK(display.find("fwidth(borderDistancePixels)") != std::string::npos);
+  CHECK(display.find("imagePlaneOuterEdgeCoverage") != std::string::npos);
+  CHECK(init.find("imagePlaneBorderCoverage(borderDistancePixels)") != std::string::npos);
+  CHECK(peel.find("imagePlaneBorderCoverage(borderDistancePixels)") != std::string::npos);
+  CHECK(init.find("imagePlaneOuterEdgeCoverage(borderDistancePixels) * combinedAlpha") != std::string::npos);
+  CHECK(peel.find("imagePlaneOuterEdgeCoverage(borderDistancePixels) * combinedColor") != std::string::npos);
+  CHECK(border.find("clipBoundarySegment") != std::string::npos);
+  CHECK(border.find("gl_FragCoord.xy - u_viewportOrigin") != std::string::npos);
+  CHECK(border.find("0.5 * u_imagePlaneBorderWidthPixels") != std::string::npos);
+  CHECK(border.find("fwidth(nearestDistancePixels)") != std::string::npos);
+  CHECK(border.find("gl_FragDepth = clamp(nearestWindowDepth") != std::string::npos);
+  CHECK(init.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
+  CHECK(peel.find("for (int axis = 0; axis < 3; ++axis)") == std::string::npos);
+}
+
+TEST_CASE("3D image planes use the same multi-component display modes as 2D images", "[rendering][shaders][ddp]")
+{
+  const std::string display =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
+  const std::string init = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpInit.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshImagePlaneDdpPeel.fs");
+
+  CHECK(display.find("u_imgRgbaTex[4]") != std::string::npos);
+  CHECK(display.find("colorImagePlaneColor") != std::string::npos);
+  CHECK(display.find("vectorImagePlaneColor") != std::string::npos);
+  CHECK(display.find("scalarImagePlaneColor") != std::string::npos);
+  CHECK(display.find("u_imgSlopeInterceptRgba") != std::string::npos);
+  CHECK(display.find("u_imgThresholdsRgba") != std::string::npos);
+  CHECK(display.find("u_imgOpacityRgba") != std::string::npos);
+  CHECK(init.find("displayedImagePlaneColor(sampleTc, fs_in.v_worldPos).a") != std::string::npos);
+  CHECK(peel.find("displayedImagePlaneColor(sampleTc, fs_in.v_worldPos)") != std::string::npos);
+}
+
+TEST_CASE("mesh shaders reconstruct missing normals and filter shadow maps", "[rendering][shaders][mesh]")
+{
+  const std::string vertex = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.vs");
+  const std::string opaque = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/Mesh.fs");
+  const std::string peel = shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/MeshDdpPeel.fs");
+
+  CHECK(vertex.find("normalLength2 > 1.0e-12") != std::string::npos);
+  CHECK(opaque.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
+  CHECK(peel.find("cross(dFdx(v_worldPosition), dFdy(v_worldPosition))") != std::string::npos);
+  CHECK(opaque.find("occludedSamples / 9.0") != std::string::npos);
+  CHECK(peel.find("occludedSamples / 9.0") != std::string::npos);
+  CHECK(opaque.find("u_shadowMapEnabled && lightLength2 > 1.0e-12") != std::string::npos);
+  CHECK(peel.find("u_shadowMapEnabled && lightLength2 > 1.0e-12") != std::string::npos);
+  CHECK(opaque.find("eyeDistance2 > 1.0e-12") != std::string::npos);
+  CHECK(peel.find("eyeDistance2 > 1.0e-12") != std::string::npos);
+  CHECK(opaque.find("u_shadowDepthBias * mix(1.0, 3.0, normalOffset)") != std::string::npos);
+  CHECK(peel.find("u_shadowDepthBias * mix(1.0, 3.0, normalOffset)") != std::string::npos);
+  CHECK(opaque.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
+  CHECK(peel.find("textureSize(u_screenAmbientOcclusionTex, 0) - ivec2(1)") != std::string::npos);
+}
+
+TEST_CASE("mesh SSAO rejects clipped samples and follows the visible normal model", "[rendering][shaders][ssao]")
+{
+  const std::string geometry =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionGeometry.fs");
+  const std::string resolve =
+    shader_setup::loadEmbeddedShaderSource("rendering/shaders/mesh/AmbientOcclusionResolve.fs");
+
+  CHECK(geometry.find("uniform bool u_flatShadingEnabled") != std::string::npos);
+  CHECK(geometry.find("flat in vec3 v_worldFaceNormal") != std::string::npos);
+  CHECK(geometry.find("u_flatShadingEnabled && dot(v_worldFaceNormal, v_worldFaceNormal)") != std::string::npos);
+  CHECK(geometry.find("!u_flatShadingEnabled && dot(v_worldNormal, v_worldNormal)") != std::string::npos);
+  CHECK(resolve.find("sampleNdc.z <= -1.0 || sampleNdc.z >= 1.0") != std::string::npos);
+}

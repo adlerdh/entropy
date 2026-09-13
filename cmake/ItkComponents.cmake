@@ -18,6 +18,9 @@ set(entropy_ITK_COMPONENTS
   ITKImageGrid
   ITKImageFunction
   ITKStatistics
+  ITKIOMeshFreeSurfer
+  ITKIOMeshGifti
+  ITKIOMeshOFF
 )
 
 set(entropy_ITK_DISABLED_COMPONENTS

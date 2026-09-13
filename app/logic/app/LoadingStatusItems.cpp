@@ -2,6 +2,7 @@
 
 #include "image/DicomSeries.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "registration/ImportPlan.h"
 
 #include <cstdint>
 #include <optional>
@@ -100,6 +101,31 @@ std::vector<GuiData::LoadingStatusItem> dicomSeriesItems(const std::vector<dicom
       seriesInfo.files.empty() ? fs::path{seriesInfo.seriesInstanceUid} : seriesInfo.files.front(),
       totalFileSizeBytes(seriesInfo.files));
   });
+  return items;
+}
+
+std::vector<GuiData::LoadingStatusItem> registrationItems(const registration::ImportPlan& plan)
+{
+  std::vector<GuiData::LoadingStatusItem> items;
+  items.reserve(plan.steps.size());
+  for (const registration::ImportStep& step : plan.steps) {
+    switch (step.action) {
+      case registration::ImportAction::LoadWarpedImage:
+      case registration::ImportAction::LoadInverseWarp:
+      case registration::ImportAction::LoadForwardWarp:
+        items.push_back(imageItem(step.path));
+        break;
+      case registration::ImportAction::LoadWarpedSegmentation:
+        items.push_back(segmentationItem(step.path));
+        break;
+      case registration::ImportAction::ApplyAffineTransform:
+      case registration::ImportAction::AssignWarpsToMovingImage:
+      case registration::ImportAction::TransformLandmarksAndAnnotations:
+      case registration::ImportAction::LoadTransformedSurface:
+      case registration::ImportAction::MakeWarpedImageActive:
+        break;
+    }
+  }
   return items;
 }
 

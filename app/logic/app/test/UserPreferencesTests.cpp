@@ -1,5 +1,7 @@
 #include "logic/app/UserPreferences.h"
 
+#include "common/LoggingSettings.h"
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
@@ -41,6 +43,9 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setShowGlobalTimeControls(false);
   settings.setSynchronizeTimeSeries(false);
   settings.setAutomaticUpdateChecksEnabled(true);
+  settings.setShowImageExportFormatGuide(false);
+  settings.setShowSegmentationExportFormatGuide(false);
+  settings.setShowMeshExportFormatGuide(false);
   settings.setReplaceBackgroundWithForeground(true);
   settings.setUse3dBrush(true);
   settings.setUseIsotropicBrush(false);
@@ -85,12 +90,15 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.crosshairsColor = {0.1f, 0.2f, 0.3f, 0.4f};
   preferences.showCrosshairs = false;
   preferences.showCrosshairsInLightboxViews = false;
+  preferences.showTransformationGuides = false;
+  preferences.transformationGuideColor = {0.9f, 0.8f, 0.7f, 0.6f};
   preferences.background2dColor = {0.2f, 0.3f, 0.4f};
   preferences.background3dColor = {0.3f, 0.4f, 0.5f, 0.6f};
   preferences.anatomicalLabelColor = {0.7f, 0.6f, 0.5f, 0.4f};
   preferences.showAnatomicalLabels = false;
   preferences.showAnatomicalLabelsInLightboxViews = false;
   preferences.anatomicalLabelType = AnatomicalLabelType::Rodent;
+  preferences.quadrupedBodyRegion = QuadrupedBodyRegion::DistalHindlimb;
   preferences.anatomicalLabelScale = 1.6f;
   preferences.showScaleBars = false;
   preferences.showScaleBarsInLightboxViews = true;
@@ -103,7 +111,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showLightboxOffsetLabels = true;
   preferences.lightboxOffsetLabelColor = {0.4f, 0.5f, 0.6f, 0.7f};
   preferences.floatingPointLinearInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
-  preferences.useMaximumIntensityProjectionExtent = true;
+  preferences.useMaximumIntensityProjectionExtent = false;
   preferences.intensityProjectionSlabThicknessMm = 12.5f;
   preferences.xrayEnergyKeV = 120.0f;
   preferences.xrayWindow = 0.35f;
@@ -156,8 +164,10 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.transparent3DBackground = false;
   preferences.imageBoxVisible = true;
   preferences.showImagePlanesIn3D = false;
+  preferences.imagePlaneOpacity = 0.63f;
   preferences.modulateImagePlaneOpacityWithViewAngle = false;
   preferences.showSegmentationsOnImagePlanesIn3D = false;
+  preferences.showIsocontoursOnImagePlanesIn3D = false;
   preferences.shadeImagePlanesIn3D = false;
   preferences.imagePlaneLightingAmbient = 0.11f;
   preferences.imagePlaneLightingDiffuse = 0.22f;
@@ -177,9 +187,10 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.renderFrontFaces = false;
   preferences.renderBackFaces = true;
   preferences.reversePovRotation = true;
+  preferences.synchronizeThreeDCameras = true;
   preferences.showCrosshairsIn3D = false;
-  preferences.crosshairs3DGlyphDiameterVoxelDiagonals = 2.5f;
-  preferences.crosshairs3DGlyphLengthVoxelDiagonals = 24.0f;
+  preferences.crosshairs3DGlyphDiameterScenePercent = 2.5f;
+  preferences.crosshairs3DGlyphLengthScenePercent = 24.0f;
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.smoothSegmentationMeshes = false;
@@ -187,8 +198,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.meshSmoothingIterations = 40;
   preferences.meshSmoothingPassBand = 0.2f;
   preferences.meshPickingEnabled = false;
-  preferences.meshClipPlaneEnabled = true;
-  preferences.meshClipPlaneWorld = {0.0f, 1.0f, 0.0f, -12.0f};
+  preferences.meshCutawayEnabled = true;
   preferences.meshShadowsEnabled = true;
   preferences.meshShadowMapSizePixels = 2048;
   preferences.meshShadowStrength = 0.7f;
@@ -253,6 +263,9 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.showGlobalTimeControls() == expected.showGlobalTimeControls());
   CHECK(actual.synchronizeTimeSeries() == expected.synchronizeTimeSeries());
   CHECK(actual.automaticUpdateChecksEnabled() == expected.automaticUpdateChecksEnabled());
+  CHECK(actual.showImageExportFormatGuide() == expected.showImageExportFormatGuide());
+  CHECK(actual.showSegmentationExportFormatGuide() == expected.showSegmentationExportFormatGuide());
+  CHECK(actual.showMeshExportFormatGuide() == expected.showMeshExportFormatGuide());
   CHECK(actual.recentImageGroups().size() == expected.recentImageGroups().size());
   if (!expected.recentImageGroups().empty()) {
     CHECK(actual.recentImageGroups().front().paths == expected.recentImageGroups().front().paths);
@@ -308,12 +321,15 @@ void requireRenderPreferencesEqual(
   CHECK(actual.crosshairsColor == expected.crosshairsColor);
   CHECK(actual.showCrosshairs == expected.showCrosshairs);
   CHECK(actual.showCrosshairsInLightboxViews == expected.showCrosshairsInLightboxViews);
+  CHECK(actual.showTransformationGuides == expected.showTransformationGuides);
+  CHECK(actual.transformationGuideColor == expected.transformationGuideColor);
   CHECK(actual.background2dColor == expected.background2dColor);
   CHECK(actual.background3dColor == expected.background3dColor);
   CHECK(actual.anatomicalLabelColor == expected.anatomicalLabelColor);
   CHECK(actual.showAnatomicalLabels == expected.showAnatomicalLabels);
   CHECK(actual.showAnatomicalLabelsInLightboxViews == expected.showAnatomicalLabelsInLightboxViews);
   CHECK(actual.anatomicalLabelType == expected.anatomicalLabelType);
+  CHECK(actual.quadrupedBodyRegion == expected.quadrupedBodyRegion);
   CHECK(actual.anatomicalLabelScale == Catch::Approx(expected.anatomicalLabelScale));
   CHECK(actual.showScaleBars == expected.showScaleBars);
   CHECK(actual.showScaleBarsInLightboxViews == expected.showScaleBarsInLightboxViews);
@@ -379,8 +395,10 @@ void requireRenderPreferencesEqual(
   CHECK(actual.transparent3DBackground == expected.transparent3DBackground);
   CHECK(actual.imageBoxVisible == expected.imageBoxVisible);
   CHECK(actual.showImagePlanesIn3D == expected.showImagePlanesIn3D);
+  CHECK(actual.imagePlaneOpacity == Catch::Approx(expected.imagePlaneOpacity));
   CHECK(actual.modulateImagePlaneOpacityWithViewAngle == expected.modulateImagePlaneOpacityWithViewAngle);
   CHECK(actual.showSegmentationsOnImagePlanesIn3D == expected.showSegmentationsOnImagePlanesIn3D);
+  CHECK(actual.showIsocontoursOnImagePlanesIn3D == expected.showIsocontoursOnImagePlanesIn3D);
   CHECK(actual.shadeImagePlanesIn3D == expected.shadeImagePlanesIn3D);
   CHECK(actual.imagePlaneLightingAmbient == Catch::Approx(expected.imagePlaneLightingAmbient));
   CHECK(actual.imagePlaneLightingDiffuse == Catch::Approx(expected.imagePlaneLightingDiffuse));
@@ -400,10 +418,10 @@ void requireRenderPreferencesEqual(
   CHECK(actual.renderFrontFaces == expected.renderFrontFaces);
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
   CHECK(actual.reversePovRotation == expected.reversePovRotation);
+  CHECK(actual.synchronizeThreeDCameras == expected.synchronizeThreeDCameras);
   CHECK(actual.showCrosshairsIn3D == expected.showCrosshairsIn3D);
-  CHECK(
-    actual.crosshairs3DGlyphDiameterVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphDiameterVoxelDiagonals));
-  CHECK(actual.crosshairs3DGlyphLengthVoxelDiagonals == Catch::Approx(expected.crosshairs3DGlyphLengthVoxelDiagonals));
+  CHECK(actual.crosshairs3DGlyphDiameterScenePercent == Catch::Approx(expected.crosshairs3DGlyphDiameterScenePercent));
+  CHECK(actual.crosshairs3DGlyphLengthScenePercent == Catch::Approx(expected.crosshairs3DGlyphLengthScenePercent));
   CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
   CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
   CHECK(actual.smoothSegmentationMeshes == expected.smoothSegmentationMeshes);
@@ -411,8 +429,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.meshSmoothingIterations == expected.meshSmoothingIterations);
   CHECK(actual.meshSmoothingPassBand == Catch::Approx(expected.meshSmoothingPassBand));
   CHECK(actual.meshPickingEnabled == expected.meshPickingEnabled);
-  CHECK(actual.meshClipPlaneEnabled == expected.meshClipPlaneEnabled);
-  CHECK(actual.meshClipPlaneWorld == expected.meshClipPlaneWorld);
+  CHECK(actual.meshCutawayEnabled == expected.meshCutawayEnabled);
   CHECK(actual.meshShadowsEnabled == expected.meshShadowsEnabled);
   CHECK(actual.meshShadowMapSizePixels == expected.meshShadowMapSizePixels);
   CHECK(actual.meshShadowStrength == Catch::Approx(expected.meshShadowStrength));
@@ -461,7 +478,8 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.crosshairsSnapping = CrosshairsSnapping::Disabled;
   renderPreferences.showAnatomicalLabels = true;
   renderPreferences.showAnatomicalLabelsInLightboxViews = true;
-  renderPreferences.anatomicalLabelType = AnatomicalLabelType::Human;
+  renderPreferences.anatomicalLabelType = AnatomicalLabelType::Automatic;
+  renderPreferences.quadrupedBodyRegion = QuadrupedBodyRegion::Automatic;
 
   const user_preferences::RenderPreferences defaults;
   renderPreferences.squaredDifference = defaults.squaredDifference;
@@ -542,6 +560,13 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("interface").at("precision").at("percentiles") == 7);
   CHECK(root.at("interface").at("precision").at("timeValues") == 8);
   CHECK(root.at("views").at("showOverlays") == false);
+  CHECK(root.at("views").at("transformationGuides").at("show") == false);
+  const json& guideColor = root.at("views").at("transformationGuides").at("color");
+  REQUIRE(guideColor.size() == 4);
+  CHECK(guideColor.at(0).get<float>() == Catch::Approx(0.9f));
+  CHECK(guideColor.at(1).get<float>() == Catch::Approx(0.8f));
+  CHECK(guideColor.at(2).get<float>() == Catch::Approx(0.7f));
+  CHECK(guideColor.at(3).get<float>() == Catch::Approx(0.6f));
   CHECK(root.at("images").at("floatingPointLinearInterpolationPolicy") == "floatingPoint");
   CHECK(root.at("images").at("isocontourFloatingPointInterpolationPolicy") == "floatingPoint");
   CHECK(root.at("registration").at("defaultBackend") == "ANTs");
@@ -611,8 +636,11 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   preferences.showCrosshairs = false;
   preferences.showCrosshairsInLightboxViews = false;
   preferences.showImageBorders = false;
+  preferences.showTransformationGuides = false;
+  preferences.transformationGuideColor = {0.25f, 0.5f, 0.75f, 0.4f};
   preferences.asciiEnabled = true;
   preferences.reversePovRotation = true;
+  preferences.synchronizeThreeDCameras = true;
   preferences.ddpMaxPeelPasses = 12;
 
   const user_preferences::RenderPreferences appPreferences =
@@ -624,8 +652,11 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
     appPreferences.showCrosshairsInLightboxViews ==
     user_preferences::RenderPreferences{}.showCrosshairsInLightboxViews);
   CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
+  CHECK_FALSE(appPreferences.showTransformationGuides);
+  CHECK(appPreferences.transformationGuideColor == (glm::vec4{0.25f, 0.5f, 0.75f, 0.4f}));
   CHECK(appPreferences.asciiEnabled == true);
   CHECK(appPreferences.reversePovRotation == true);
+  CHECK(appPreferences.synchronizeThreeDCameras == true);
   CHECK(appPreferences.ddpMaxPeelPasses == 12u);
 }
 
@@ -636,6 +667,21 @@ TEST_CASE("DDP changes modify the application settings fingerprint", "[app][sett
   user_preferences::RenderPreferences changed = defaults;
   ++changed.ddpMaxPeelPasses;
   CHECK(user_preferences::toJsonString(settings, changed) != user_preferences::toJsonString(settings, defaults));
+}
+
+TEST_CASE("transformation guide changes modify the application settings fingerprint", "[app][settings]")
+{
+  const AppSettings settings;
+  const user_preferences::RenderPreferences defaults;
+
+  user_preferences::RenderPreferences visibilityChanged = defaults;
+  visibilityChanged.showTransformationGuides = !defaults.showTransformationGuides;
+  CHECK(
+    user_preferences::toJsonString(settings, visibilityChanged) != user_preferences::toJsonString(settings, defaults));
+
+  user_preferences::RenderPreferences colorChanged = defaults;
+  colorChanged.transformationGuideColor = {0.2f, 0.4f, 0.6f, 0.8f};
+  CHECK(user_preferences::toJsonString(settings, colorChanged) != user_preferences::toJsonString(settings, defaults));
 }
 
 TEST_CASE("user preferences reject invalid JSON without mutating existing values", "[app][settings]")
@@ -726,6 +772,10 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
       }
     },
     "rendering": {
+      "threeD": {
+        "crosshairsDiameterVox": 3,
+        "crosshairsLengthVox": 30
+      },
       "raycasting": {
         "samplingFactor": 0
       }
@@ -757,6 +807,12 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
   CHECK(precisionPreferences.timeValuePrecision == 9);
   CHECK(renderPreferences.crosshairsColor == user_preferences::RenderPreferences{}.crosshairsColor);
   CHECK(renderPreferences.crosshairsSnapping == user_preferences::RenderPreferences{}.crosshairsSnapping);
+  CHECK(
+    renderPreferences.crosshairs3DGlyphDiameterScenePercent ==
+    Catch::Approx(user_preferences::RenderPreferences{}.crosshairs3DGlyphDiameterScenePercent));
+  CHECK(
+    renderPreferences.crosshairs3DGlyphLengthScenePercent ==
+    Catch::Approx(user_preferences::RenderPreferences{}.crosshairs3DGlyphLengthScenePercent));
   CHECK(renderPreferences.anatomicalLabelScale == Catch::Approx(2.0f));
   CHECK(renderPreferences.scaleBarTargetFraction == Catch::Approx(1.0f));
   CHECK(renderPreferences.scaleBarMarginPx == Catch::Approx(12.0f));
@@ -804,6 +860,8 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   const AppSettings settings;
   const user_preferences::RenderPreferences renderPreferences = user_preferences::defaultRenderPreferences();
 
+  CHECK(renderPreferences.segmentationOutlineStyle == SegmentationOutlineStyle::ViewPixel);
+
   const json root = json::parse(user_preferences::toJsonString(settings, renderPreferences));
 
   CHECK(root.at("interface").at("uiScale") == "auto");
@@ -813,6 +871,9 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("interface").at("showLayoutTabs") == true);
   CHECK(root.at("interface").at("layoutTabsPosition") == "top");
   CHECK(root.at("interface").at("showGlobalTimeControls") == true);
+  CHECK(root.at("interface").at("showImageExportFormatGuide") == true);
+  CHECK(root.at("interface").at("showSegmentationExportFormatGuide") == true);
+  CHECK(root.at("interface").at("showMeshExportFormatGuide") == true);
   CHECK(root.at("interface").at("precision").at("imageValues") == 3);
   CHECK(root.at("interface").at("precision").at("coordinates") == 3);
   CHECK(root.at("interface").at("precision").at("transformations") == 3);
@@ -823,6 +884,13 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("lightbox").at("showImageBorders") == false);
   CHECK(root.at("views").at("crosshairs").at("show") == true);
   CHECK(root.at("views").at("crosshairs").at("showInLightboxViews") == true);
+  CHECK(root.at("views").at("transformationGuides").at("show") == true);
+  CHECK(
+    root.at("views").at("transformationGuides").at("color") == json::array(
+                                                                 {renderPreferences.transformationGuideColor.x,
+                                                                  renderPreferences.transformationGuideColor.y,
+                                                                  renderPreferences.transformationGuideColor.z,
+                                                                  renderPreferences.transformationGuideColor.w}));
   CHECK_FALSE(root.at("views").at("crosshairs").contains("snapping"));
   CHECK_FALSE(root.at("views").contains("lockAnatomicalDirectionsToReferenceImage"));
   CHECK_FALSE(root.at("views").at("anatomicalLabels").contains("type"));
@@ -840,12 +908,18 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
   CHECK_FALSE(root.at("rendering").contains("asciiShading"));
   CHECK_FALSE(root.at("rendering").contains("frameRate"));
+  CHECK(root.at("rendering").at("camera").at("synchronizeThreeDCameras") == false);
+  CHECK(root.at("rendering").at("threeD").at("crosshairsDiameterScenePercent").get<float>() == Catch::Approx(0.25f));
+  CHECK(root.at("rendering").at("threeD").at("crosshairsLengthScenePercent").get<float>() == Catch::Approx(4.0f));
+  CHECK_FALSE(root.at("rendering").at("threeD").contains("crosshairsDiameterVox"));
+  CHECK_FALSE(root.at("rendering").at("threeD").contains("crosshairsLengthVox"));
   CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
   CHECK(
     root.at("rendering").at("mesh").at("triangleEdgeColor") == json::array(
                                                                  {renderPreferences.meshTriangleEdgeColor.x,
                                                                   renderPreferences.meshTriangleEdgeColor.y,
                                                                   renderPreferences.meshTriangleEdgeColor.z}));
+  CHECK(root.at("rendering").at("mesh").at("cutaway") == false);
   CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
   CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
   CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));
@@ -855,6 +929,43 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
   CHECK(root.at("system").at("updates").at("automaticChecks") == false);
   CHECK(root.at("system").at("performance").at("frameRate").at("limit") == false);
+  CHECK(root.at("system").at("diagnostics").at("enabled") == true);
+  CHECK(
+    root.at("system").at("diagnostics").at("logVerbosity") ==
+    std::string{logging::logLevelLabel(logging::defaultLogLevel())});
+}
+
+TEST_CASE("user preferences preserve logging verbosity while logging is disabled", "[app][settings][logging]")
+{
+  const bool previousEnabled = logging::loggingEnabled();
+  const auto previousLevel = logging::applicationLogLevel();
+
+  AppSettings settings;
+  user_preferences::RenderPreferences renderPreferences = user_preferences::defaultRenderPreferences();
+  user_preferences::PrecisionPreferences precisionPreferences;
+  const std::string text = R"({
+    "system": {
+      "diagnostics": {
+        "enabled": false,
+        "logVerbosity": "Warning"
+      }
+    }
+  })";
+
+  const bool parsed = user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, text);
+  const bool enabled = logging::loggingEnabled();
+  const auto level = logging::applicationLogLevel();
+  const json serialized =
+    json::parse(user_preferences::toJsonString(settings, renderPreferences, precisionPreferences));
+
+  logging::setApplicationLogLevel(previousLevel);
+  logging::setLoggingEnabled(previousEnabled);
+
+  REQUIRE(parsed);
+  CHECK_FALSE(enabled);
+  CHECK(level == spdlog::level::warn);
+  CHECK(serialized.at("system").at("diagnostics").at("enabled") == false);
+  CHECK(serialized.at("system").at("diagnostics").at("logVerbosity") == "Warning");
 }
 
 TEST_CASE("user preference JSON follows the settings-window order", "[app][settings]")
@@ -865,24 +976,50 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
     user_preferences::PrecisionPreferences{});
 
   const auto views = text.find("\"views\"");
+  const auto crosshairs = text.find("\"crosshairs\"", views);
+  const auto transformationGuides = text.find("\"transformationGuides\"", views);
+  const auto synchronizeViewZooms = text.find("\"synchronizeViewZooms\"", views);
   const auto rendering = text.find("\"rendering\"");
   const auto interface = text.find("\"interface\"");
   const auto surfaces = text.find("\"mesh\"");
   const auto ddp = text.find("\"dualDepthPeeling\"");
   const auto raycasting = text.find("\"raycasting\"");
   const auto ascii = text.find("\"asciiShading\"");
+  const auto reversePovRotation = text.find("\"reversePovRotation\"");
+  const auto synchronizeThreeDCameras = text.find("\"synchronizeThreeDCameras\"");
+  const auto performance = text.find("\"performance\"");
+  const auto updates = text.find("\"updates\"");
+  const auto diagnostics = text.find("\"diagnostics\"");
+  const auto loggingEnabled = text.find("\"enabled\"", diagnostics);
+  const auto logVerbosity = text.find("\"logVerbosity\"", diagnostics);
 
   REQUIRE(views != std::string::npos);
+  REQUIRE(crosshairs != std::string::npos);
+  REQUIRE(transformationGuides != std::string::npos);
+  REQUIRE(synchronizeViewZooms != std::string::npos);
   REQUIRE(rendering != std::string::npos);
   REQUIRE(interface != std::string::npos);
   REQUIRE(surfaces != std::string::npos);
   REQUIRE(ddp != std::string::npos);
   REQUIRE(raycasting != std::string::npos);
   REQUIRE(ascii != std::string::npos);
+  REQUIRE(reversePovRotation != std::string::npos);
+  REQUIRE(synchronizeThreeDCameras != std::string::npos);
+  REQUIRE(performance != std::string::npos);
+  REQUIRE(updates != std::string::npos);
+  REQUIRE(diagnostics != std::string::npos);
+  REQUIRE(loggingEnabled != std::string::npos);
+  REQUIRE(logVerbosity != std::string::npos);
   CHECK(views < rendering);
+  CHECK(crosshairs < transformationGuides);
+  CHECK(transformationGuides < synchronizeViewZooms);
   CHECK(rendering < interface);
   CHECK(surfaces < ddp);
   CHECK(ddp < raycasting);
   CHECK(views < ascii);
   CHECK(ascii < rendering);
+  CHECK(reversePovRotation < synchronizeThreeDCameras);
+  CHECK(performance < updates);
+  CHECK(updates < diagnostics);
+  CHECK(loggingEnabled < logVerbosity);
 }

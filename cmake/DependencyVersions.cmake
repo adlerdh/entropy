@@ -3,7 +3,7 @@ set(catch2_VERSION "3.8.1")
 set(cli11_VERSION "2.6.2")
 set(cmakerc_VERSION "2.0.1")
 set(curl_VERSION "8.21.0")
-set(glfw_VERSION "3.4")
+set(glfw_VERSION "3.5.1")
 set(glm_VERSION "1.0.3")
 set(iconfont_VERSION "210b5a399a64270674560d633638952d1e8d804d")
 set(imgui_VERSION "1.92.8-docking")
@@ -21,24 +21,25 @@ set(vtk_VERSION "9.6.2")
 include(ItkComponents)
 
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
+
 foreach(dependency IN ITEMS
-    catch2
-    cli11
-    cmakerc
-    curl
-    glfw
-    glm
-    iconfont
-    imgui
-    implot
-    itk
-    nanovg
-    nativefiledialog
-    nlohmann_json
-    qtbase
-    spdlog
-    stduuid
-    tinyfsm
-    vtk)
+  catch2
+  cli11
+  cmakerc
+  curl
+  glfw
+  glm
+  iconfont
+  imgui
+  implot
+  itk
+  nanovg
+  nativefiledialog
+  nlohmann_json
+  qtbase
+  spdlog
+  stduuid
+  tinyfsm
+  vtk)
   set(${dependency}_PREFIX "${EXTERNAL_DIR}/${dependency}-${${dependency}_VERSION}")
 endforeach()

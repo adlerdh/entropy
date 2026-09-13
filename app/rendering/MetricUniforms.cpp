@@ -8,10 +8,10 @@
 
 void Rendering::updateMetricUniforms()
 {
-  auto update = [this](RenderData::MetricParams& params, const char* name) {
+  auto update = [this](rendering::RenderSettings::MetricParams& params, const char* name) {
     if (const auto cmapUid = m_appData.imageColorMapUid(params.m_colorMapIndex)) {
-      if (const auto* map = m_appData.imageColorMap(*cmapUid)) {
-        params.m_cmapSlopeIntercept = map->slopeIntercept(params.m_invertCmap);
+      if (m_appData.imageColorMap(*cmapUid)) {
+        params.m_cmapSlopeIntercept = ImageColorMap::slopeIntercept(params.m_invertCmap);
       }
       else {
         spdlog::error("Null image color map {} on updating uniforms for {} metric", *cmapUid, name);
@@ -25,8 +25,8 @@ void Rendering::updateMetricUniforms()
     }
   };
 
-  update(m_appData.renderData().m_squaredDifferenceParams, "Difference");
-  update(m_appData.renderData().m_localNccParams, "Local NCC");
-  update(m_appData.renderData().m_localLinearResidualParams, "Local Linear Residual");
-  update(m_appData.renderData().m_jointHistogramParams, "Joint Histogram");
+  update(m_appData.renderSettings().m_squaredDifferenceParams, "Difference");
+  update(m_appData.renderSettings().m_localNccParams, "Local NCC");
+  update(m_appData.renderSettings().m_localLinearResidualParams, "Local Linear Residual");
+  update(m_appData.renderSettings().m_jointHistogramParams, "Joint Histogram");
 }

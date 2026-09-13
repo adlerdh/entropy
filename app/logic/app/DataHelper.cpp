@@ -410,7 +410,7 @@ std::optional<uuids::uuid> createLabelColorTableForSegmentation(AppData& appData
   seg->settings().setLabelTableIndex(newTableIndex);
 
   spdlog::info(
-    "Create new label color table (index {}) with {} labels for segmentation {}",
+    "Created label color table at index {} with {} labels for segmentation {}",
     newTableIndex,
     numLabels,
     segUid);
@@ -589,7 +589,7 @@ glm::vec3 snapWorldPointToImageVoxels(
   const glm::vec3& worldPos,
   const std::optional<CrosshairsSnapping>& force)
 {
-  const CrosshairsSnapping snapping = force ? *force : appData.renderData().m_snapCrosshairs;
+  const CrosshairsSnapping snapping = force ? *force : appData.renderSettings().m_snapCrosshairs;
 
   switch (snapping) {
     case CrosshairsSnapping::ReferenceImage: {

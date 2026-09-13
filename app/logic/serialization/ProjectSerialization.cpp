@@ -114,6 +114,16 @@ void to_json(json& j, const ProjectViewSettings& settings)
     enumToName(defaults.m_anatomicalLabelType, k_anatomicalLabelNames));
   addIfChanged(
     anatomicalLabels,
+    "quadrupedBodyRegion",
+    enumToName(settings.m_quadrupedBodyRegion, k_quadrupedBodyRegionNames),
+    enumToName(defaults.m_quadrupedBodyRegion, k_quadrupedBodyRegionNames));
+  addIfChanged(
+    anatomicalLabels,
+    "leftRightDisplayConvention",
+    enumToName(settings.m_viewConvention, k_viewConventionNames),
+    enumToName(defaults.m_viewConvention, k_viewConventionNames));
+  addIfChanged(
+    anatomicalLabels,
     "lockDirectionsToReferenceImage",
     settings.m_lockAnatomicalDirectionsToReferenceImage,
     defaults.m_lockAnatomicalDirectionsToReferenceImage);
@@ -184,6 +194,19 @@ void from_json(const json& j, ProjectViewSettings& settings)
         settings.m_showAnatomicalLabels = false;
         settings.m_anatomicalLabelType = AnatomicalLabelType::Human;
       }
+    }
+    if (
+      const auto parsed = enumFromName<QuadrupedBodyRegion>(
+        anatomicalLabels->value("quadrupedBodyRegion", ""),
+        k_quadrupedBodyRegionNames))
+    {
+      settings.m_quadrupedBodyRegion = *parsed;
+    }
+    if (
+      const auto parsed =
+        enumFromName<ViewConvention>(anatomicalLabels->value("leftRightDisplayConvention", ""), k_viewConventionNames))
+    {
+      settings.m_viewConvention = *parsed;
     }
     if (const auto value = anatomicalLabels->find("lockDirectionsToReferenceImage");
         value != anatomicalLabels->end() && value->is_boolean())
@@ -472,14 +495,20 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
   addIfChanged(imagePlanes, "visible", settings.m_imagePlanesVisible, defaults.m_imagePlanesVisible);
   addIfChanged(
     imagePlanes,
-    "viewAngleOpacity",
-    settings.m_imagePlaneViewAngleOpacity,
-    defaults.m_imagePlaneViewAngleOpacity);
-  addIfChanged(
-    imagePlanes,
     "segmentationsVisible",
     settings.m_imagePlaneSegmentationsVisible,
     defaults.m_imagePlaneSegmentationsVisible);
+  addIfChanged(
+    imagePlanes,
+    "isocontoursVisible",
+    settings.m_imagePlaneIsocontoursVisible,
+    defaults.m_imagePlaneIsocontoursVisible);
+  addIfChanged(imagePlanes, "opacity", settings.m_imagePlaneOpacity, defaults.m_imagePlaneOpacity);
+  addIfChanged(
+    imagePlanes,
+    "viewAngleOpacity",
+    settings.m_imagePlaneViewAngleOpacity,
+    defaults.m_imagePlaneViewAngleOpacity);
   addIfChanged(imagePlanes, "shading", settings.m_imagePlaneShading, defaults.m_imagePlaneShading);
   json imagePlaneLighting = json::object();
   addIfChanged(
@@ -519,14 +548,14 @@ void to_json(json& j, const ProjectThreeDRenderingSettings& settings)
   addIfChanged(j, "crosshairsGlyphVisible", settings.m_showCrosshairsIn3D, defaults.m_showCrosshairsIn3D);
   addIfChanged(
     j,
-    "crosshairsGlyphDiameterVox",
-    settings.m_crosshairs3DGlyphDiameterVoxelDiagonals,
-    defaults.m_crosshairs3DGlyphDiameterVoxelDiagonals);
+    "crosshairsGlyphDiameterScenePercent",
+    settings.m_crosshairs3DGlyphDiameterScenePercent,
+    defaults.m_crosshairs3DGlyphDiameterScenePercent);
   addIfChanged(
     j,
-    "crosshairsGlyphLengthVox",
-    settings.m_crosshairs3DGlyphLengthVoxelDiagonals,
-    defaults.m_crosshairs3DGlyphLengthVoxelDiagonals);
+    "crosshairsGlyphLengthScenePercent",
+    settings.m_crosshairs3DGlyphLengthScenePercent,
+    defaults.m_crosshairs3DGlyphLengthScenePercent);
   addIfChanged(
     j,
     "cameraFrustumVisibleIn2DViews",
@@ -556,13 +585,20 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
     if (const auto value = imagePlanes->find("visible"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlanesVisible = value->get<bool>();
     }
-    if (const auto value = imagePlanes->find("viewAngleOpacity"); value != imagePlanes->end() && value->is_boolean()) {
-      settings.m_imagePlaneViewAngleOpacity = value->get<bool>();
-    }
     if (const auto value = imagePlanes->find("segmentationsVisible");
         value != imagePlanes->end() && value->is_boolean())
     {
       settings.m_imagePlaneSegmentationsVisible = value->get<bool>();
+    }
+    if (const auto value = imagePlanes->find("isocontoursVisible"); value != imagePlanes->end() && value->is_boolean())
+    {
+      settings.m_imagePlaneIsocontoursVisible = value->get<bool>();
+    }
+    if (const auto value = imagePlanes->find("opacity"); value != imagePlanes->end() && value->is_number()) {
+      settings.m_imagePlaneOpacity = std::clamp(value->get<float>(), 0.0f, 1.0f);
+    }
+    if (const auto value = imagePlanes->find("viewAngleOpacity"); value != imagePlanes->end() && value->is_boolean()) {
+      settings.m_imagePlaneViewAngleOpacity = value->get<bool>();
     }
     if (const auto value = imagePlanes->find("shading"); value != imagePlanes->end() && value->is_boolean()) {
       settings.m_imagePlaneShading = value->get<bool>();
@@ -599,11 +635,11 @@ void from_json(const json& j, ProjectThreeDRenderingSettings& settings)
   if (const auto value = j.find("crosshairsGlyphVisible"); value != j.end() && value->is_boolean()) {
     settings.m_showCrosshairsIn3D = value->get<bool>();
   }
-  if (const auto value = j.find("crosshairsGlyphDiameterVox"); value != j.end() && value->is_number()) {
-    settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
+  if (const auto value = j.find("crosshairsGlyphDiameterScenePercent"); value != j.end() && value->is_number()) {
+    settings.m_crosshairs3DGlyphDiameterScenePercent = std::clamp(value->get<float>(), 0.05f, 5.0f);
   }
-  if (const auto value = j.find("crosshairsGlyphLengthVox"); value != j.end() && value->is_number()) {
-    settings.m_crosshairs3DGlyphLengthVoxelDiagonals = std::clamp(value->get<float>(), 1.0f, 50.0f);
+  if (const auto value = j.find("crosshairsGlyphLengthScenePercent"); value != j.end() && value->is_number()) {
+    settings.m_crosshairs3DGlyphLengthScenePercent = std::clamp(value->get<float>(), 0.5f, 50.0f);
   }
   if (const auto value = j.find("cameraFrustumVisibleIn2DViews"); value != j.end() && value->is_boolean()) {
     settings.m_showThreeDCameraFrustumIn2DViews = value->get<bool>();
@@ -702,10 +738,7 @@ void to_json(json& j, const ProjectMeshRenderingSettings& settings)
   addIfChanged(smoothing, "passBand", settings.m_meshSmoothingPassBand, defaults.m_meshSmoothingPassBand);
   addIfNotEmpty(j, "smoothing", std::move(smoothing));
   addIfChanged(j, "pointPicking", settings.m_pickingEnabled, defaults.m_pickingEnabled);
-  json clipPlane = json::object();
-  addIfChanged(clipPlane, "enabled", settings.m_clipPlaneEnabled, defaults.m_clipPlaneEnabled);
-  addIfChanged(clipPlane, "worldPlane", vec4ToJson(settings.m_clipPlaneWorld), vec4ToJson(defaults.m_clipPlaneWorld));
-  addIfNotEmpty(j, "clipPlane", std::move(clipPlane));
+  addIfChanged(j, "cutaway", settings.m_cutawayEnabled, defaults.m_cutawayEnabled);
 
   json shadows = json::object();
   addIfChanged(shadows, "enabled", settings.m_shadowsEnabled, defaults.m_shadowsEnabled);
@@ -781,15 +814,8 @@ void from_json(const json& j, ProjectMeshRenderingSettings& settings)
   if (const auto value = j.find("pointPicking"); value != j.end() && value->is_boolean()) {
     settings.m_pickingEnabled = value->get<bool>();
   }
-  if (const auto clipPlane = j.find("clipPlane"); clipPlane != j.end() && clipPlane->is_object()) {
-    if (const auto value = clipPlane->find("enabled"); value != clipPlane->end() && value->is_boolean()) {
-      settings.m_clipPlaneEnabled = value->get<bool>();
-    }
-    if (const auto value = clipPlane->find("worldPlane");
-        value != clipPlane->end() && value->is_array() && value->size() == 4)
-    {
-      settings.m_clipPlaneWorld = vec4FromJson(*value);
-    }
+  if (const auto value = j.find("cutaway"); value != j.end() && value->is_boolean()) {
+    settings.m_cutawayEnabled = value->get<bool>();
   }
   if (const auto shadows = j.find("shadows"); shadows != j.end() && shadows->is_object()) {
     if (const auto value = shadows->find("enabled"); value != shadows->end() && value->is_boolean()) {

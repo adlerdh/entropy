@@ -1,17 +1,50 @@
 add_library(EntropyCommon STATIC)
 add_library(Entropy::Common ALIAS EntropyCommon)
 
-target_sources(EntropyCommon PRIVATE
-  ClipboardFormats.cpp
-  CoordinateFrame.cpp
-  DirectionMaps.cpp
-  "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
-  InputParams.cpp
-  InputParser.cpp
-  MathFuncs.cpp
-  Types.cpp
-  UuidUtility.cpp
-  Viewport.cpp
+target_sources(EntropyCommon
+  PRIVATE
+    common/AnatomicalLabels.cpp
+    common/ClipboardFormats.cpp
+    common/CoordinateFrame.cpp
+    common/DirectionMaps.cpp
+    "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
+    common/InputParams.cpp
+    common/InputParser.cpp
+    common/LoggingSettings.cpp
+    common/MathFuncs.cpp
+    common/Types.cpp
+    common/UuidUtility.cpp
+    common/Viewport.cpp
+  PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES
+      common/AABB.h
+      common/AnatomicalLabels.h
+      common/AsyncTasks.h
+      common/ClipboardFormats.h
+      common/ClipboardPayload.h
+      common/CoordinateFrame.h
+      common/DirectionMaps.h
+      common/Exception.hpp
+      common/Geometry.h
+      common/HistogramSettings.h
+      common/InputParams.h
+      common/InputParser.h
+      common/IntersectionTypes.h
+      common/LoggingDefaults.h
+      common/LoggingSettings.h
+      common/MathFuncs.h
+      common/ObjectCounter.hpp
+      common/PublicTypes.h
+      common/SegmentationTypes.h
+      common/Types.h
+      common/Utility.hpp
+      common/UuidRange.h
+      common/UuidUtility.h
+      common/Viewport.h
+      common/VnlMath.h
 )
 
 if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
@@ -23,7 +56,8 @@ endif()
 
 target_include_directories(EntropyCommon
   PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/.."
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
     "${CMAKE_BINARY_DIR}" # for BuildStamp.h
     "${entropy_EXT_DIR}"

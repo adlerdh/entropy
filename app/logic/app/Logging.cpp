@@ -1,9 +1,15 @@
 #include "logic/app/Logging.h"
 #include "common/Exception.hpp"
-#include "common/LoggingDefaults.h"
+#include "common/LoggingSettings.h"
 #include "logic/app/AppPaths.h"
 
+#include <spdlog/fmt/std.h>
+#include <spdlog/sinks/daily_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
 #include <filesystem>
+#include <memory>
 #include <sstream>
 
 void Logging::setup()
@@ -13,30 +19,31 @@ void Logging::setup()
     std::filesystem::create_directories(logDir);
     const std::filesystem::path logFileName = logDir / "entropy.txt";
 
-    // Create multi-threaded sinks for console and daily file logging.
-    // Assign default sink logging levels.
+    // Create multi-threaded sinks for console and daily file logging. Start them disabled so the
+    // complete configuration is applied atomically after the new default logger is installed.
 
-    m_console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    m_console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [tid %t] [%^%l%$] %v");
-    m_console_sink->set_level(logging::defaultLogLevel());
+    auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    consoleSink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [tid %t] [%^%l%$] %v");
+    consoleSink->set_level(spdlog::level::off);
 
-    // The daily file sink uses shows more info: logger name and time zone.
-    // Note: debug logging needs SPDLOG_XXX macro
-    m_daily_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(logFileName.string(), 23, 59);
-    m_daily_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e %z] [%n] [tid %t] [%l] [%s:%#] %v");
-    m_daily_sink->set_level(logging::defaultLogLevel());
+    // The daily file sink includes the logger name and time zone. Source file and line are included
+    // when the call site uses an SPDLOG_* macro that supplies source-location metadata.
+    auto dailySink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(logFileName.string(), 23, 59);
+    dailySink->set_pattern("[%Y-%m-%d %H:%M:%S.%e %z] [%n] [tid %t] [%l] [%s:%#] %v");
+    dailySink->set_level(spdlog::level::off);
 
-    spdlog::sinks_init_list sink_list{m_console_sink, m_daily_sink};
+    spdlog::sinks_init_list sinkList{consoleSink, dailySink};
 
     // Create synchronous loggers sharing the same sinks
-    auto default_logger = std::make_shared<spdlog::logger>("default", std::begin(sink_list), std::end(sink_list));
+    auto defaultLogger = std::make_shared<spdlog::logger>("default", std::begin(sinkList), std::end(sinkList));
 
-    default_logger->set_level(spdlog::level::trace);
-    default_logger->flush_on(spdlog::level::debug);
+    defaultLogger->set_level(spdlog::level::trace);
+    defaultLogger->flush_on(spdlog::level::debug);
 
     // Register for global access with spdlog::get
-    spdlog::register_logger(default_logger);
-    spdlog::set_default_logger(default_logger);
+    spdlog::register_logger(defaultLogger);
+    spdlog::set_default_logger(defaultLogger);
+    logging::setApplicationLogLevel(logging::defaultLogLevel());
   }
   catch (const spdlog::spdlog_ex& e) {
     std::ostringstream ss;
@@ -49,25 +56,5 @@ void Logging::setup()
     throwDebug(ss.str());
   }
 
-  spdlog::debug("Setup the logger");
-}
-
-void Logging::setConsoleSinkLevel(spdlog::level::level_enum level)
-{
-  if (m_console_sink) {
-    m_console_sink->set_level(level);
-  }
-  else {
-    spdlog::error("Console logging sink is null");
-  }
-}
-
-void Logging::setDailyFileSinkLevel(spdlog::level::level_enum level)
-{
-  if (m_daily_sink) {
-    m_daily_sink->set_level(level);
-  }
-  else {
-    spdlog::error("Daily file logging sink is null");
-  }
+  spdlog::debug("Initialized console and daily file logging in {}", app_paths::logDirectory());
 }

@@ -1,0 +1,364 @@
+#pragma once
+
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/GLTextureTypes.h"
+
+#include "common/Types.h"
+
+#include <glm/fwd.hpp>
+#include <glm/vec3.hpp>
+
+#include <glad/glad.h>
+
+#include <cstdint>
+#include <optional>
+#include <unordered_map>
+#include <unordered_set>
+
+/**
+ * @brief RAII wrapper around an OpenGL texture object.
+ *
+ * The wrapper owns the texture name, remembers its target and logical dimensions, and provides the typed format helpers
+ * used when uploading native image component data to OpenGL.
+ */
+class GLTexture final
+{
+public:
+  /**
+   * @brief Multisample texture allocation parameters.
+   */
+  struct MultisampleSettings
+  {
+    MultisampleSettings() : m_numSamples(1), m_fixedSampleLocations(false) {}
+
+    MultisampleSettings(GLsizei numSamples, GLboolean fixedSampleLocation)
+      : m_numSamples(numSamples), m_fixedSampleLocations(fixedSampleLocation)
+    {
+    }
+
+    GLsizei m_numSamples;             //!< Number of samples per texel
+    GLboolean m_fixedSampleLocations; //!< Whether sample locations are identical for every texel
+  };
+
+  /**
+   * @brief Pixel pack/unpack storage state used around texture transfers.
+   */
+  struct PixelStoreSettings
+  {
+    PixelStoreSettings()
+      : m_alignment(4)
+      , m_skipImages(0)
+      , m_skipRows(0)
+      , m_skipPixels(0)
+      , m_imageHeight(0)
+      , m_rowLength(0)
+      , m_lsbFirst(false)
+      , m_swapBytes(false)
+    {
+    }
+
+    PixelStoreSettings(
+      GLint alignment,
+      GLint skipImages,
+      GLint skipRows,
+      GLint skipPixels,
+      GLint imageHeight,
+      GLint rowLength,
+      GLboolean lsbFirst,
+      GLboolean swapBytes)
+      : m_alignment(alignment)
+      , m_skipImages(skipImages)
+      , m_skipRows(skipRows)
+      , m_skipPixels(skipPixels)
+      , m_imageHeight(imageHeight)
+      , m_rowLength(rowLength)
+      , m_lsbFirst(lsbFirst)
+      , m_swapBytes(swapBytes)
+    {
+    }
+
+    /// Specifies the alignment requirements for the start of each pixel row in memory.
+    /// The allowable values are
+    /// 1 (byte-alignment),
+    /// 2 (rows aligned to even-numbered bytes),
+    /// 4 (word-alignment), and
+    /// 8 (rows start on double-word boundaries)
+    GLint m_alignment = 4;
+
+    /// Setting to k is equivalent to incrementing the pointer by k*L components or indices,
+    /// where L is the number of components or indices per image
+    GLint m_skipImages = 0;
+
+    /// Setting to j is equivalent to incrementing the pointer by j*M components or indices,
+    /// where M is the number of components or indices per row
+    GLint m_skipRows = 0;
+
+    /// Setting to i is equivalent to incrementing the pointer by i*N components or indices,
+    /// where N is the number of components or indices in each pixel
+    GLint m_skipPixels = 0;
+
+    GLint m_imageHeight = 0; //!< Pixels per image slice when greater than zero
+
+    GLint m_rowLength = 0; //!< Pixels per row when greater than zero
+
+    /// If true, bits are ordered within a byte from least significant to most significant;
+    /// otherwise, the first bit in each byte is the most significant one
+    GLboolean m_lsbFirst = false;
+
+    /// If true, byte ordering for multibyte color components, depth components,
+    /// or stencil indices is reversed. That is, if a four-byte component consists of
+    /// bytes b0b0, b1b1, b2b2, b3b3, it is stored in memory as b3b3, b2b2, b1b1, b0b0
+    /// if true. This has no effect on the memory order of components within a pixel,
+    /// only on the order of bytes within components or indices
+    GLboolean m_swapBytes = false;
+  };
+
+  explicit GLTexture(
+    tex::Target target,
+    MultisampleSettings multisampleSettings = MultisampleSettings(),
+    std::optional<PixelStoreSettings> pixelPackSettings = std::nullopt,
+    std::optional<PixelStoreSettings> pixelUnpackSettings = std::nullopt);
+
+  GLTexture(const GLTexture&) = delete;
+  GLTexture(GLTexture&& other) noexcept;
+
+  GLTexture& operator=(const GLTexture&) = delete;
+  GLTexture& operator=(GLTexture&& other) noexcept;
+
+  ~GLTexture();
+
+  /// Generate the GL texture name if needed.
+  void generate();
+
+  /// Delete the owned texture name and reset allocation metadata.
+  void destroy();
+
+  /// Bind the texture to the current context or to a specific texture unit.
+  void bind(std::optional<uint32_t> textureUnit = std::nullopt) const;
+
+  /// Return whether this texture is currently bound, optionally on the supplied texture unit.
+  bool isBound(std::optional<uint32_t> textureUnit = std::nullopt) const;
+
+  /// Unbind this texture target from the current context, or from one specific texture unit.
+  void unbind(std::optional<uint32_t> textureUnit = std::nullopt) const;
+
+  tex::Target target() const;
+
+  GLuint id() const;
+
+  /// Return the logical texture dimensions last supplied to `setSize()`.
+  glm::uvec3 size() const;
+
+  /// Store logical dimensions used by upload helpers and rendering metadata.
+  void setSize(const glm::uvec3& sizeArg);
+
+  /**
+   * @brief Allocate mutable base-level storage and optionally initialize it with pixel data.
+   *
+   * Entropy allocates level zero directly and derives any lower-resolution levels through automatic mipmap
+   * generation. Passing a nonzero level is rejected.
+   **/
+  void setData(
+    GLint level,
+    const tex::SizedInternalFormat& internalFormat,
+    const tex::BufferPixelFormat& format,
+    const tex::BufferPixelDataType& type,
+    const GLvoid* data);
+
+  /**
+   * @brief Write pixel data to a subregion of an existing texture's base level.
+   *
+   * Storage must already have been allocated by `setData()`. The data pointer and every region extent must be
+   * non-null/nonzero, and the complete region must lie within `size()`. Passing a nonzero level is rejected.
+   **/
+  void setSubData(
+    GLint level,
+    const glm::uvec3& offset,
+    const glm::uvec3& sizeArg,
+    const tex::BufferPixelFormat& format,
+    const tex::BufferPixelDataType& type,
+    const GLvoid* data);
+
+  /// Allocate and upload one base-level cube-map face. Passing a nonzero level is rejected.
+  void setCubeMapFaceData(
+    const tex::CubeMapFace& face,
+    GLint level,
+    const tex::SizedInternalFormat& internalFormat,
+    const tex::BufferPixelFormat& format,
+    const tex::BufferPixelDataType& type,
+    const GLvoid* data);
+
+  /**
+   * @remark If the selected texture image does not contain four components, the following mappings
+   * are applied. Single-component textures are treated as RGBA buffers with red set to the
+   * single-component value, green set to 0, blue set to 0, and alpha set to 1.
+   * Two-component textures are treated as RGBA buffers with red set to the value of component zero,
+   * alpha set to the value of component one, and green and blue set to 0. Finally, three-component
+   * textures are treated as RGBA buffers with red set to component zero, green set to component
+   * one, blue set to component two, and alpha set to 1.
+   */
+  void readData(GLint level, const tex::BufferPixelFormat& format, const tex::BufferPixelDataType& type, GLvoid* data);
+
+  void readCubeMapFaceData(
+    const tex::CubeMapFace& face,
+    GLint level,
+    const tex::BufferPixelFormat& format,
+    const tex::BufferPixelDataType& type,
+    GLvoid* data);
+
+  void setMinificationFilter(const tex::MinificationFilter& filter);
+  void setMagnificationFilter(const tex::MagnificationFilter& filter);
+
+  void setSwizzleMask(
+    const tex::SwizzleValue& rValue,
+    const tex::SwizzleValue& gValue,
+    const tex::SwizzleValue& bValue,
+    const tex::SwizzleValue& aValue);
+
+  void setWrapMode(const tex::WrapMode& mode);
+
+  void setBorderColor(const glm::vec4& color);
+
+  /// Enable or disable automatic mipmap generation after texture uploads.
+  void setAutoGenerateMipmaps(bool enabled);
+
+  void setPixelPackSettings(const PixelStoreSettings& settings);
+  void setPixelUnpackSettings(const PixelStoreSettings& settings);
+
+  // Sized internal normalized formats:
+
+  static tex::SizedInternalFormat getSizedInternalNormalizedRedFormat(const ComponentType& componentType);
+
+  static tex::SizedInternalFormat getSizedInternalNormalizedRGFormat(const ComponentType& componentType);
+
+  static tex::SizedInternalFormat getSizedInternalNormalizedRGBFormat(const ComponentType& componentType);
+
+  static tex::SizedInternalFormat getSizedInternalNormalizedRGBAFormat(const ComponentType& componentType);
+
+  // Sized internal non-normalized formats:
+
+  static tex::SizedInternalFormat getSizedInternalRedFormat(const ComponentType& componentType);
+
+  static tex::SizedInternalFormat getSizedInternalRGFormat(const ComponentType& componentType);
+
+  static tex::SizedInternalFormat getSizedInternalRGBFormat(const ComponentType& componentType);
+
+  static tex::SizedInternalFormat getSizedInternalRGBAFormat(const ComponentType& componentType);
+
+  // Normalized buffer pixel formats:
+
+  static tex::BufferPixelFormat getBufferPixelNormalizedRedFormat(const ComponentType& componentType);
+
+  static tex::BufferPixelFormat getBufferPixelNormalizedRGFormat(const ComponentType& componentType);
+
+  static tex::BufferPixelFormat getBufferPixelNormalizedRGBFormat(const ComponentType& componentType);
+
+  static tex::BufferPixelFormat getBufferPixelNormalizedRGBAFormat(const ComponentType& componentType);
+
+  // Non-normalized buffer pixel formats:
+
+  static tex::BufferPixelFormat getBufferPixelRedFormat(const ComponentType& componentType);
+
+  static tex::BufferPixelFormat getBufferPixelRGFormat(const ComponentType& componentType);
+
+  static tex::BufferPixelFormat getBufferPixelRGBFormat(const ComponentType& componentType);
+
+  static tex::BufferPixelFormat getBufferPixelRGBAFormat(const ComponentType& componentType);
+
+  // Buffer pixel data type:
+
+  static tex::BufferPixelDataType getBufferPixelDataType(const ComponentType& componentType);
+
+private:
+  friend class GLBufferTexture;
+
+  static const std::unordered_map<tex::Target, tex::Binding> s_bindingMap;
+
+  // Sized internal normalized formats:
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
+    s_componentTypeToSizedInternalNormalizedRedFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
+    s_componentTypeToSizedInternalNormalizedRGFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
+    s_componentTypeToSizedInternalNormalizedRGBFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
+    s_componentTypeToSizedInternalNormalizedRGBAFormatMap;
+
+  // Sized internal non-normalized formats:
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRedFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRGFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRGBFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRGBAFormatMap;
+
+  // Normalized buffer pixel formats:
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
+    s_componentTypeToBufferPixelRedNormalizedFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
+    s_componentTypeToBufferPixelRGNormalizedFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
+    s_componentTypeToBufferPixelRGBNormalizedFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
+    s_componentTypeToBufferPixelRGBANormalizedFormatMap;
+
+  // Non-normalized buffer pixel formats:
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRedFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRGFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRGBFormatMap;
+
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRGBAFormatMap;
+
+  // Buffer pixel data type:
+  static const std::unordered_map<ComponentType, tex::BufferPixelDataType> s_componentTypeToBufferPixelDataTypeMap;
+
+  GLErrorChecker m_errorChecker;
+
+  tex::Target m_target;
+  GLenum m_targetEnum;
+  GLuint m_id;
+  glm::uvec3 m_size{0u};
+  bool m_hasAllocatedStorage = false;
+  std::unordered_set<GLint> m_allocatedLevels;
+  std::unordered_map<GLint, uint8_t> m_allocatedCubeFaces;
+  bool m_autoGenerateMipmaps = false;
+  mutable bool m_loggedSuspiciousBind = false;
+  mutable bool m_loggedUnitZeroBind = false;
+  GLint m_lastInternalFormat = 0;
+  GLenum m_lastBufferFormat = 0;
+  GLenum m_lastBufferType = 0;
+
+  MultisampleSettings m_multisampleSettings;
+  std::optional<PixelStoreSettings> m_pixelPackSettings;
+  std::optional<PixelStoreSettings> m_pixelUnpackSettings;
+
+  class Binder
+  {
+  public:
+    explicit Binder(GLTexture& texture);
+    ~Binder();
+
+  private:
+    GLTexture& m_texture;
+    GLint m_boundID;
+  };
+
+  class PixelStoreGuard;
+
+  static PixelStoreSettings getPixelPackSettings();
+  static PixelStoreSettings getPixelUnpackSettings();
+
+  static void applyPixelPackSettings(const PixelStoreSettings& settings);
+  static void applyPixelUnpackSettings(const PixelStoreSettings& settings);
+
+  void setBufferTextureStorage(GLint internalFormat, GLuint bufferId, std::size_t texelCount);
+};

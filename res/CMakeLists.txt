@@ -41,6 +41,8 @@ entropy_add_license_resource(entropy_LICENSES "GLM.txt" "${glm_PREFIX}/src/copyi
 entropy_add_license_resource(entropy_LICENSES "IconFontCppHeaders.txt" "${CMAKE_CURRENT_SOURCE_DIR}/licenses/IconFontCppHeaders-Zlib.txt")
 entropy_add_license_resource(entropy_LICENSES "ImPlot.txt" "${implot_PREFIX}/src/implot/LICENSE")
 entropy_add_license_resource(entropy_LICENSES "ITK-NOTICE.txt" "${itk_PREFIX}/src/NOTICE")
+entropy_add_license_resource(entropy_LICENSES "gifticlib.txt"
+  "${itk_PREFIX}/src/Modules/ThirdParty/GIFTI/src/gifticlib/LICENSE.gifti")
 entropy_add_license_resource(entropy_LICENSES "NanoVG.txt" "${nanovg_PREFIX}/src/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "NativeFileDialogExtended.txt" "${nativefiledialog_PREFIX}/src/LICENSE")
 entropy_add_license_resource(entropy_LICENSES "nlohmann-json.txt" "${nlohmann_json_PREFIX}/src/LICENSE.MIT")
@@ -56,7 +58,7 @@ entropy_add_license_resource(entropy_LICENSES "imgui-knobs.txt" "${entropy_EXT_D
 entropy_add_license_resource(entropy_LICENSES "PNPOLY.txt" "${entropy_EXT_DIR}/wrfranklin/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "SafeCLib.txt" "${entropy_EXT_DIR}/safeclib/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "CubicBSplineInterpolation.txt"
-  "${entropy_APP_DIR}/rendering/shaders/functions/TricubicReadme.txt")
+  "${entropy_LIB_DIR}/rendering/shaders/functions/TricubicReadme.txt")
 
 entropy_add_license_resource(entropy_LICENSES "Cousine.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Cousine/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "ForkAwesome.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/ForkAwesome/LICENSES.txt")

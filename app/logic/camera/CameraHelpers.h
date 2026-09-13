@@ -3,6 +3,7 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/Projection.h"
 
+#include "common/AABB.h"
 #include "common/DirectionMaps.h"
 #include "common/Types.h"
 
@@ -670,6 +671,41 @@ std::optional<glm::vec3>
 worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, const glm::vec3& worldPlanePos);
 
 /**
+ * @brief Expand scene extents by Entropy's default five-percent framing margin on every side
+ * @param worldBoxSize World-space size to frame
+ * @return Size enlarged by ten percent overall
+ */
+glm::vec3 defaultViewFramingSize(const glm::vec3& worldBoxSize);
+
+/**
+ * @brief Compute additional symmetric framing needed to keep projected content out of a screen overlay
+ * @param camera Orthographic camera after its ordinary default framing has been applied
+ * @param worldBox World-space content bounds
+ * @param viewSize View dimensions in device-independent pixels
+ * @param overlayBounds Overlay rectangle as `{left, top, width, height}` in top-left-origin view pixels
+ * @return Field-of-view multiplier greater than or equal to one
+ */
+float viewFramingScaleForOverlay(
+  const Camera& camera,
+  const AABB<float>& worldBox,
+  const glm::vec2& viewSize,
+  const glm::vec4& overlayBounds);
+
+/**
+ * @brief Compute additional symmetric framing from an explicitly frozen World-to-Clip transform
+ * @param worldToClip Transform used to project the content bounds
+ * @param worldBox World-space content bounds
+ * @param viewSize View dimensions in device-independent pixels
+ * @param overlayBounds Overlay rectangle as `{left, top, width, height}` in top-left-origin view pixels
+ * @return Field-of-view multiplier greater than or equal to one
+ */
+float viewFramingScaleForOverlay(
+  const glm::mat4& worldToClip,
+  const AABB<float>& worldBox,
+  const glm::vec2& viewSize,
+  const glm::vec4& overlayBounds);
+
+/**
  * @brief Position the camera to look at a target in World space and adjust the camera such that
  * it fits a given AABB (defined in World space) in its field of view
  * @param[in] camera Camera to mutate
@@ -771,7 +807,7 @@ glm::vec4 world_T_view(const Viewport& viewport, const Camera& camera, const glm
  * @return Pixel size in World units
  * @throw Propagates exceptions from camera transform access
  *
- * @todo Make this function valid for perspective views, too
+ * @note Returns non-finite values for a perspective camera because its pixel size depends on depth.
  */
 glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera);
 
@@ -825,12 +861,13 @@ glm::vec3 world_T_miewport(
   const glm::vec2& miewportPos);
 
 /**
- * @brief Compute World-space pixel size for a view embedded in a window
+ * @brief Compute World-space pixel size for an orthographic view embedded in a window
  * @param windowVP Window viewport
  * @param camera View camera
  * @param viewClip_T_windowClip Transform from Window clip space to View clip space
  * @return Pixel size in World units
  * @throw Propagates exceptions from camera transform access
+ * @note Returns non-finite values for a perspective camera because its pixel size depends on depth.
  */
 glm::vec2 worldPixelSize(const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip);
 

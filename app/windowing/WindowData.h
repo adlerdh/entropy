@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/AABB.h"
 #include "common/Types.h"
 #include "common/UuidRange.h"
 #include "common/Viewport.h"
@@ -93,6 +94,25 @@ public:
     const std::set<uuid>& excludedViews = {});
 
   /**
+   * @brief Enlarge default 2D camera fields of view enough to avoid top-left view controls
+   * @param worldBox Unpadded World-space content bounds
+   * @param controlExtents Right/bottom control edges in view-local device-independent pixels
+   * @param fallbackExtent Conservative control extent used before a view has reported its measured size
+   * @param clearance Additional screen-space clearance around the controls
+   * @param avoidControls True to reserve the control footprint, false to restore ordinary default framing
+   * @param rememberWorldBox True when this box replaces the content bounds previously framed by the views
+   * @param excludedViews Views whose cameras must remain unchanged
+   */
+  void applyTwoDViewOverlaySafeFraming(
+    const AABB<float>& worldBox,
+    const std::unordered_map<uuid, glm::vec2>& controlExtents,
+    const glm::vec2& fallbackExtent,
+    float clearance,
+    bool avoidControls,
+    bool rememberWorldBox,
+    const std::set<uuid>& excludedViews = {});
+
+  /**
    * @brief Recenter one current-layout view by UID
    * @param viewUid UID of the view to recenter
    * @param worldCenter Target center in World space
@@ -175,6 +195,13 @@ public:
    * @param viewUid Active view UID, or `std::nullopt` to clear active view state
    */
   void setActiveViewUid(const std::optional<uuid>& uid);
+
+  /**
+   * @brief Synchronize all 3D cameras in the current layout from one source view
+   * @param preferredSourceUid Preferred source view. The active or first initialized 3D view is used as fallback.
+   * @return True when a 3D source view was available
+   */
+  bool synchronizeCurrentLayoutThreeDCameras(std::optional<uuid> preferredSourceUid = std::nullopt);
 
   /**
    * @brief Get the number of layouts
@@ -555,35 +582,45 @@ private:
    */
   void updateAllViews();
 
-  /** @brief Crosshairs state referenced by all views */
+  /// Crosshairs state referenced by all views
   const CrosshairsState& m_crosshairs;
 
-  /** @brief Window viewport encompassing all views */
+  /// Window viewport encompassing all views
   Viewport m_viewport;
 
-  /** @brief Window position in screen space with origin at the lower-left screen corner */
+  /// Window position in screen space with origin at the lower-left screen corner
   glm::ivec2 m_windowPos;
 
-  /** @brief Logical window size that should not be passed to `glViewport` */
+  /// Logical window size that should not be passed to `glViewport`
   glm::ivec2 m_windowSize;
 
-  /** @brief Window framebuffer size in pixels passed to `glViewport` */
+  /// Window framebuffer size in pixels passed to `glViewport`
   glm::ivec2 m_framebufferSize;
 
-  /** @brief GLFW content scale ratio in x and y */
+  /// GLFW content scale ratio in x and y
   glm::vec2 m_contentScaleRatio;
 
-  /** @brief All view layouts in UI order */
+  /// All view layouts in UI order
   std::vector<Layout> m_layouts;
-  /** @brief Index of the layout currently on display */
+
+  /// Index of the layout currently on display
   std::size_t m_currentLayout;
 
-  /** @brief UID of the view in which the user is currently interacting with the mouse */
+  /// UID of the view in which the user is currently interacting with the mouse
   std::optional<uuid> m_activeViewUid = std::nullopt;
 
-  /** @brief Default view orientation convention used for all views */
+  /// Default view orientation convention used for all views
   ViewConvention m_viewConvention = ViewConvention::Radiological;
 
-  /** @brief View alignment mode */
+  /// View alignment mode
   ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs;
+
+  /// Unadjusted default field of view retained while screen-space control clearance is applied
+  std::unordered_map<uuid, glm::vec2> m_twoDViewBaseDefaultFovs;
+
+  /// Content bounds used for each 2D view's latest default framing
+  std::unordered_map<uuid, AABB<float>> m_twoDViewFramingWorldBoxes;
+
+  /// World-to-Camera transform at which each 2D view's latest default framing was established
+  std::unordered_map<uuid, glm::mat4> m_twoDViewFramingCameraTransforms;
 };

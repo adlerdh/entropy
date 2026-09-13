@@ -5,12 +5,14 @@
 
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
+#include "logic/app/RecentDataLoad.h"
 #include "logic/app/Settings.h"
 #include "logic/app/State.h"
 #include "logic/sync/EntropyInstanceSync.h"
 #include "logic/sync/ItkSnapSync.h"
 
 #include "rendering/Rendering.h"
+#include "rendering/FramePacer.h"
 #include "ui/ImGuiWrapper.h"
 #include "viewer/ViewTypes.h"
 
@@ -20,9 +22,11 @@
 
 #include <atomic>
 #include <cstdint>
+#include <deque>
 #include <filesystem>
 #include <functional>
 #include <future>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -77,127 +81,11 @@ public:
    */
   void loadImagesFromParams(const InputParams& params);
 
-  /** @brief Replace the current project with one image file. */
-  void loadImageFile(const std::filesystem::path& fileName);
-
-  /** @brief Replace the current project with image files. */
-  void loadImageFiles(const std::vector<std::filesystem::path>& fileNames);
-
-  /** @brief Add one image file to the current project. */
-  void addImageFile(const std::filesystem::path& fileName);
-
-  /** @brief Add image files to the current project. */
-  void addImageFiles(const std::vector<std::filesystem::path>& fileNames);
-
   /** @brief Open or add dropped files according to their type and current project state. */
   void handleDroppedFiles(const std::vector<std::filesystem::path>& fileNames);
 
-  /** @brief Replace the current project with DICOM series discovered from folders or files. */
-  void openDicomSeriesFolders(const std::vector<std::filesystem::path>& folderNames);
-
-  /** @brief Add a segmentation file to the active image. */
-  void addSegmentationFile(const std::filesystem::path& fileName);
-
-  /** @brief Add a segmentation file to a specific image. */
-  void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
-
-  /** @brief Import outputs from a completed registration job through the async loading pipeline. */
-  void importRegistrationJobOutputs(const std::string& jobId);
-
-  /** @brief Replace the current project with a serialized project file. */
-  void loadProjectFile(const std::filesystem::path& fileName);
-
-  /**
-   * @brief Save the current project to its existing project path.
-   * @return True when the project was saved.
-   */
-  bool saveProject();
-
-  /**
-   * @brief Save the current project to a specific path.
-   * @param fileName Destination project path.
-   * @return True when the project was saved.
-   */
-  bool saveProjectAs(const std::filesystem::path& fileName);
-
-  /** @brief Replace the current layout list from a layout JSON file. */
-  void loadLayoutsFile(const std::filesystem::path& fileName);
-
-  /**
-   * @brief Save the current layout list to a layout JSON file.
-   * @return True when the layouts were saved.
-   */
-  bool saveLayoutsFile(const std::filesystem::path& fileName);
-
-  /**
-   * @brief Make an image the project reference image.
-   * @return True when the reference image changed.
-   */
-  bool setReferenceImage(const uuids::uuid& imageUid);
-
-  /**
-   * @brief Remove an image and its dependent project data.
-   * @return True when the image was removed.
-   */
-  bool removeImage(const uuids::uuid& imageUid);
-
-  /** @brief Request project close, prompting first when there are unsaved changes. */
-  void requestCloseProject();
-
   /** @brief Request application quit, prompting first when there are unsaved changes. */
   void requestQuitApp();
-
-  /** @brief Quit without an unsaved-project prompt. */
-  void quitAppWithoutPrompt();
-
-  /** @brief Close the current project and reset project-owned state. */
-  void closeProject();
-
-  /** @brief Reset project-wide settings without removing loaded data or transforms. */
-  void resetProjectSettings();
-
-  /** @brief Continue the pending action selected before the unsaved-project prompt appeared. */
-  void continueAfterUnsavedProjectPrompt();
-
-  /**
-   * @brief Load one serialized image and its related project data.
-   * @param image Serialized image structure.
-   * @param isReferenceImage True when this image should become the reference image.
-   * @param resolvedDicomSeries Already-discovered DICOM series to load, or nullptr to resolve from
-   * serialized metadata.
-   * @return True when the image and dependent data were loaded.
-   * @throws Propagates image-loading exceptions from the image library.
-   */
-  bool loadSerializedImage(
-    const serialize::Image& serializedImage,
-    bool isReferenceImage,
-    const dicom::SeriesInfo* resolvedDicomSeries = nullptr);
-
-  /**
-   * @brief Load a segmentation from disk.
-   * @param fileName Segmentation image path.
-   * @param imageUid Optional image UID to pair with the segmentation.
-   * @return Segmentation UID and true when loaded; existing UID and false when already loaded.
-   * @throws Propagates image-loading exceptions from the image library.
-   */
-  std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
-    const std::filesystem::path& fileName,
-    const std::optional<uuids::uuid>& matchingImageUid = std::nullopt);
-
-  /**
-   * @brief Load a warp field from disk.
-   * @param fileName Warp-field image path.
-   * @return Warp-field UID and true when loaded; existing UID and false when already loaded.
-   * @throws Propagates image-loading exceptions from the image library.
-   */
-  std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const std::filesystem::path& fileName);
-
-  /**  Load a warp field asynchronously and assign it to an image when loading completes. */
-  void loadAndAssignDeformationField(
-    const uuids::uuid& imageUid,
-    const std::filesystem::path& fileName,
-    bool forwardWarp,
-    std::optional<uuids::uuid> inverseWarpReferenceImageUid = std::nullopt);
 
   /** @brief Access UI callback operations. */
   CallbackHandler& callbackHandler();
@@ -207,24 +95,6 @@ public:
 
   /** @brief Access mutable application data. */
   AppData& appData();
-
-  /** @brief Access immutable application settings. */
-  const AppSettings& appSettings() const;
-
-  /** @brief Access mutable application settings. */
-  AppSettings& appSettings();
-
-  /** @brief Access immutable runtime state. */
-  const AppState& appState() const;
-
-  /** @brief Access mutable runtime state. */
-  AppState& appState();
-
-  /** @brief Access immutable transient UI state. */
-  const GuiData& guiData() const;
-
-  /** @brief Access mutable transient UI state. */
-  GuiData& guiData();
 
   /** @brief Access immutable GLFW/window services. */
   const GlfwWrapper& glfw() const;
@@ -250,6 +120,90 @@ public:
 private:
   /** @brief Wire UI, window, and rendering callbacks to application operations. */
   void setCallbacks();
+
+  /** @brief Replace the current project with one image file. */
+  void loadImageFile(const std::filesystem::path& fileName);
+
+  /** @brief Replace the current project with image files. */
+  void loadImageFiles(const std::vector<std::filesystem::path>& fileNames);
+
+  /** @brief Add one image file to the current project. */
+  void addImageFile(const std::filesystem::path& fileName);
+
+  /** @brief Add image files to the current project. */
+  void addImageFiles(const std::vector<std::filesystem::path>& fileNames);
+
+  /** @brief Replace the current project with DICOM series discovered from folders or files. */
+  void openDicomSeriesFolders(const std::vector<std::filesystem::path>& folderNames);
+
+  /** @brief Add a segmentation file to the active image. */
+  void addSegmentationFile(const std::filesystem::path& fileName);
+
+  /** @brief Add a segmentation file to a specific image. */
+  void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
+
+  /** @brief Prompt for surface mesh files and import them for a specific image. */
+  void importSurfaceMeshesForImage(const uuids::uuid& imageUid);
+
+  /** @brief Import outputs from a completed registration job through the async loading pipeline. */
+  void importRegistrationJobOutputs(const std::string& jobId);
+
+  /** @brief Replace the current project with a serialized project file. */
+  void loadProjectFile(const std::filesystem::path& fileName);
+
+  /** @brief Save the current project to its existing project path. */
+  bool saveProject();
+
+  /** @brief Save the current project to a specific path. */
+  bool saveProjectAs(const std::filesystem::path& fileName);
+
+  /** @brief Replace the current layout list from a layout JSON file. */
+  void loadLayoutsFile(const std::filesystem::path& fileName);
+
+  /** @brief Save the current layout list to a layout JSON file. */
+  bool saveLayoutsFile(const std::filesystem::path& fileName);
+
+  /** @brief Make an image the project reference image. */
+  bool setReferenceImage(const uuids::uuid& imageUid);
+
+  /** @brief Remove an image and its dependent project data. */
+  bool removeImage(const uuids::uuid& imageUid);
+
+  /** @brief Request project close, prompting first when there are unsaved changes. */
+  void requestCloseProject();
+
+  /** @brief Quit without an unsaved-project prompt. */
+  void quitAppWithoutPrompt();
+
+  /** @brief Close the current project and reset project-owned state. */
+  void closeProject();
+
+  /** @brief Reset project-wide settings without removing loaded data or transforms. */
+  void resetProjectSettings();
+
+  /** @brief Continue the pending action selected before the unsaved-project prompt appeared. */
+  void continueAfterUnsavedProjectPrompt();
+
+  /** @brief Load a warp field asynchronously and assign it to an image when loading completes. */
+  void loadAndAssignDeformationField(
+    const uuids::uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid = std::nullopt);
+
+  /** @brief Load one serialized image and its dependent project data. */
+  bool loadSerializedImage(
+    const serialize::Image& serializedImage,
+    bool isReferenceImage,
+    const dicom::SeriesInfo* resolvedDicomSeries = nullptr);
+
+  /** @brief Load a segmentation from disk, optionally pairing it with an image. */
+  std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
+    const std::filesystem::path& fileName,
+    const std::optional<uuids::uuid>& matchingImageUid = std::nullopt);
+
+  /** @brief Load a warp field from disk. */
+  std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const std::filesystem::path& fileName);
 
   /**
    * @brief Complete an async DICOM discovery task and open the series-selection UI.
@@ -288,11 +242,9 @@ private:
    * @param windowTitleStatus Temporary status text for the window title.
    * @param loadTask Background task that returns true on success.
    * @param onLoadFailed Main-thread callback when loading fails.
-   * @param showLoadingOverlay True to show a loading
-   * overlay while the task runs.
+   * @param showLoadingOverlay True to show a loading overlay while the task runs.
    * @param loadingItems Items to show in the loading-status popup.
-   * @param
-   * loadingStatusTitle Title for the loading-status popup.
+   * @param loadingStatusTitle Title for the loading-status popup.
    */
   void startAsyncImageLoad(
     const std::string& windowTitleStatusArg,
@@ -310,6 +262,16 @@ private:
 
   /** @brief Hide and clear the loading-status popup. */
   void hideLoadingStatus();
+
+  /** @brief Queue a user-visible native error dialog for a failed input load. Thread-safe. */
+  void reportInputLoadFailure(std::string inputType, std::optional<std::filesystem::path> path, std::string cause);
+
+  /** @brief Show the next queued input-load failure on the main thread. */
+  void showNextInputLoadFailure();
+
+  void beginPendingRecentDataLoad(recent_data::Kind kind, std::vector<std::filesystem::path> paths);
+  void commitPendingRecentDataLoad();
+  void clearPendingRecentDataLoad();
 
   /** @brief Begin loading a serialized project, including any large-image preflight prompts. */
   void beginLoadProject(serialize::EntropyProject project, std::optional<std::filesystem::path> projectFileName);
@@ -431,8 +393,27 @@ private:
   /// Background DICOM discovery task, when a scan is active.
   std::future<dicom::DiscoverResult> m_futureDiscoverDicom;
 
+  struct PendingInputLoadFailure
+  {
+    std::string inputType;
+    std::optional<std::filesystem::path> path;
+    std::string cause;
+  };
+
+  /// Input-load failures waiting to be shown as native dialogs on the main thread.
+  std::deque<PendingInputLoadFailure> m_pendingInputLoadFailures;
+
+  /// Protects pending input-load failures reported by asynchronous loaders.
+  std::mutex m_pendingInputLoadFailuresMutex;
+
   /// Whether selections from the active DICOM scan should be added to the current project.
   bool m_pendingDicomScanAddToExistingProject = false;
+
+  /// DICOM paths retained between discovery and the user's series selection.
+  std::vector<std::filesystem::path> m_pendingDicomRecentPaths;
+
+  /// User-initiated input load awaiting successful completion before entering Recent data.
+  recent_data::PendingLoad m_pendingRecentDataLoad;
 
   /// DICOM source metadata keyed by loaded image UID for project serialization.
   std::unordered_map<uuids::uuid, serialize::DicomSource> m_dicomSourcesByImageUid;
@@ -541,6 +522,9 @@ private:
 
   /// GLFW window, input, and render-loop services.
   GlfwWrapper m_glfw;
+
+  /// Host-side frame pacing, kept independent from image and GPU rendering.
+  rendering::FramePacer m_framePacer;
 
   /// Application-owned project data, settings, runtime state, and window layouts.
   AppData m_data;

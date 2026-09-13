@@ -5,7 +5,8 @@
 #include "image/Isosurface.h"
 #include "logic/app/Data.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "windowing/View.h"
 
@@ -28,14 +29,14 @@ std::optional<Rendering::ImgSegPair> Rendering::raycastImageForView(const View& 
 
 Rendering::CurrentImages Rendering::raycastImagesForView(const View& view)
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderResources& resources = m_appData.renderResources();
   CurrentImages imageSegPairs;
   for (ImgSegPair& pair : meshSceneImagesForView(view)) {
     if (!pair.first) {
       continue;
     }
     const uuids::uuid textureUid = m_appData.effectiveImageUidForRendering(*pair.first);
-    if (!rendering::imageHasRaycastableTextureLayout(R.m_imageTextureLayouts, textureUid)) {
+    if (!rendering::imageHasRaycastableTextureLayout(resources.m_imageTextureLayouts, textureUid)) {
       continue;
     }
 
@@ -62,7 +63,7 @@ std::optional<Rendering::ImgSegPair> Rendering::meshSceneImageForView(const View
 
 Rendering::CurrentImages Rendering::meshSceneImagesForView(const View& view)
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderResources& resources = m_appData.renderResources();
   CurrentImages imageSegPairs;
 
   for (const uuids::uuid& imageUid : view.visibleImages()) {
@@ -73,8 +74,8 @@ Rendering::CurrentImages Rendering::meshSceneImagesForView(const View& view)
 
     const uuids::uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
     if (
-      std::end(R.m_imageTextures) == R.m_imageTextures.find(renderImageUid) ||
-      !rendering::imageHasMeshSceneTextureLayout(R.m_imageTextureLayouts, renderImageUid))
+      std::end(resources.m_imageTextures) == resources.m_imageTextures.find(renderImageUid) ||
+      !rendering::imageHasMeshSceneTextureLayout(resources.m_imageTextureLayouts, renderImageUid))
     {
       continue;
     }
@@ -83,7 +84,7 @@ Rendering::CurrentImages Rendering::meshSceneImagesForView(const View& view)
     imgSegPair.first = imageUid;
 
     if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
-      if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
+      if (std::end(resources.m_segTextures) != resources.m_segTextures.find(*segUid)) {
         imgSegPair.second = *segUid;
       }
     }

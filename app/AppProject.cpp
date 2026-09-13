@@ -3,7 +3,9 @@
 #include "image/ImageUtility.h"
 #include "logic/app/AppPaths.h"
 #include "layout/LayoutFileSerialization.h"
+#include "logic/app/LargeImagePolicy.h"
 #include "logic/app/LoadingStatusItems.h"
+#include "logic/app/ProjectImageSequence.h"
 #include "logic/app/ProjectLayoutDelta.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "logic/app/ProjectSnapshotSettings.h"
@@ -13,6 +15,7 @@
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "mesh/MeshTypes.h"
 #include "registration/Artifacts.h"
 #include "ui/NativeFileDialogs.h"
 
@@ -46,44 +49,6 @@ bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileN
     .m_currentLayoutIndex = appData.windowData().currentLayoutIndex(),
     .m_layouts = appData.windowData().createProjectLayoutSnapshots(appData.imageUidsOrdered())};
   return layout::save(layoutFile, layoutsFileName);
-}
-
-constexpr uint64_t LargeImageWarningBytes = 2ull * 1024ull * 1024ull * 1024ull;
-
-bool shouldPromptForLargeImage(const ImageHeader& header)
-{
-  return header.memoryImageSizeInBytes() >= LargeImageWarningBytes;
-}
-
-std::size_t numSerializedImages(const serialize::EntropyProject& project)
-{
-  return 1 + project.m_additionalImages.size();
-}
-
-serialize::Image* serializedImageAt(serialize::EntropyProject& project, std::size_t index)
-{
-  if (0 == index) {
-    return &project.m_referenceImage;
-  }
-
-  const std::size_t additionalIndex = index - 1;
-  if (additionalIndex < project.m_additionalImages.size()) {
-    return &project.m_additionalImages[additionalIndex];
-  }
-
-  return nullptr;
-}
-
-void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t index)
-{
-  if (0 == index) {
-    return;
-  }
-
-  const std::size_t additionalIndex = index - 1;
-  if (additionalIndex < project.m_additionalImages.size()) {
-    project.m_additionalImages.erase(project.m_additionalImages.begin() + static_cast<std::ptrdiff_t>(additionalIndex));
-  }
 }
 
 bool isApproximatelyIdentity(const glm::mat4& matrix)
@@ -400,6 +365,22 @@ serialize::Image EntropyApp::createImageSnapshot(
     }
   }
 
+  for (const auto& meshUid : m_data.imageToImportedMeshUids(imageUid)) {
+    const mesh::MeshRecord* imported = m_data.importedMesh(meshUid);
+    if (!imported || imported->sourcePath.empty()) {
+      spdlog::warn("Cannot serialize missing or pathless imported mesh {} for image {}", meshUid, imageUid);
+      continue;
+    }
+    serializedImage.m_importedMeshes.push_back(serialize::ImportedMesh{
+      .m_uid = uuids::to_string(meshUid),
+      .m_path = imported->sourcePath,
+      .m_name = imported->name,
+      .m_color = imported->display.baseColor,
+      .m_opacity = imported->display.opacity,
+      .m_visibleIn2d = imported->display.visibleIn2d,
+      .m_visibleIn3d = imported->display.visibleIn3d});
+  }
+
   return serializedImage;
 }
 
@@ -555,11 +536,11 @@ void EntropyApp::saveAppSettingsQuietly()
 
   std::string error;
   const fs::path settingsFile = app_paths::userSettingsFile();
-  if (!user_preferences::save(m_data.settings(), m_data.renderData(), m_data.guiData(), settingsFile, &error)) {
+  if (!user_preferences::save(m_data.settings(), m_data.renderSettings(), m_data.guiData(), settingsFile, &error)) {
     spdlog::warn("Could not save recent file history to {}: {}", settingsFile, error);
     return;
   }
-  user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderData(), m_data.guiData());
+  user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
 }
 
 void EntropyApp::recordRecentImageGroup(const std::vector<fs::path>& fileNames)
@@ -578,6 +559,36 @@ void EntropyApp::recordRecentProjectFile(const fs::path& fileName)
 {
   m_data.settings().recordRecentProjectFile(fileName);
   saveAppSettingsQuietly();
+}
+
+void EntropyApp::beginPendingRecentDataLoad(recent_data::Kind kind, std::vector<fs::path> paths)
+{
+  m_pendingRecentDataLoad.begin(kind, std::move(paths));
+}
+
+void EntropyApp::commitPendingRecentDataLoad()
+{
+  const std::optional<recent_data::Entry> entry = m_pendingRecentDataLoad.takeCompleted();
+  if (!entry) {
+    return;
+  }
+
+  switch (entry->kind) {
+    case recent_data::Kind::Images:
+      recordRecentImageGroup(entry->paths);
+      break;
+    case recent_data::Kind::Dicom:
+      recordRecentDicomGroup(entry->paths);
+      break;
+    case recent_data::Kind::Project:
+      recordRecentProjectFile(entry->paths.front());
+      break;
+  }
+}
+
+void EntropyApp::clearPendingRecentDataLoad()
+{
+  m_pendingRecentDataLoad.cancel();
 }
 
 bool EntropyApp::saveProject()
@@ -618,7 +629,7 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   m_data.setProjectFileName(normalizedFileName);
   recordRecentProjectFile(normalizedFileName);
   updateWindowTitleStatus();
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
   return true;
 }
 
@@ -631,6 +642,7 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
 
   layout::LayoutFile layoutFile;
   if (!layout::open(layoutFile, fileName)) {
+    reportInputLoadFailure("layout", fileName, "The layout file could not be read or parsed.");
     return;
   }
 
@@ -642,11 +654,19 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
          .applyProjectLayoutSnapshots(layoutFile.m_layouts, m_data.imageUidsOrdered(), layoutFile.m_currentLayoutIndex))
   {
     spdlog::error("Could not apply layout file {}", fileName);
+    reportInputLoadFailure(
+      "layout",
+      fileName,
+      "The layout definitions are invalid or incompatible with the currently loaded images.");
     return;
   }
 
+  if (m_data.renderSettings().m_synchronizeThreeDCameras) {
+    m_data.windowData().synchronizeCurrentLayoutThreeDCameras();
+  }
+
   m_data.setProject(createProjectSnapshot());
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
   spdlog::info("Imported layouts from {}", fileName);
 }
 
@@ -669,7 +689,7 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
     return;
   }
 
-  spdlog::info("Opening project file {}", fileName);
+  spdlog::info("Requested project file {}", fileName);
 
   m_pendingProjectReplacementPaths = {fileName};
   if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenProject)) {
@@ -683,18 +703,17 @@ void EntropyApp::performLoadProjectFile(const fs::path& fileName)
 {
   serialize::EntropyProject project;
 
-  spdlog::info("Loading project file {}", fileName);
+  spdlog::info("Reading project file {}", fileName);
 
   if (!serialize::open(project, fileName)) {
     spdlog::error("Could not open project file {}", fileName);
+    reportInputLoadFailure("project", fileName, "The project file could not be read or parsed.");
     if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
     }
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
-
-  recordRecentProjectFile(fileName);
 
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
     closeProject();
@@ -715,7 +734,7 @@ bool EntropyApp::requestProjectReplacement(GuiData::UnsavedProjectAction action)
 
   m_data.guiData().m_pendingUnsavedProjectAction = action;
   m_data.guiData().m_showUnsavedProjectPopup = true;
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
   return true;
 }
 
@@ -726,6 +745,9 @@ void EntropyApp::clearPendingProjectReplacement()
 
 void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
 {
+  if (projectFileName) {
+    beginPendingRecentDataLoad(recent_data::Kind::Project, {*projectFileName});
+  }
   closeProject();
   if (projectFileName) {
     spdlog::info("Beginning project load from {}", *projectFileName);
@@ -749,6 +771,7 @@ void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::option
     "Loading project...",
     [this]() { return loadProject(m_data.project()); },
     [this]() {
+      clearPendingRecentDataLoad();
       m_data.clearProjectData();
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
       m_data.state().setAnimating(false);
@@ -765,8 +788,8 @@ void EntropyApp::continueLargeImageProjectPreflight()
     return;
   }
 
-  while (m_pendingLargeProjectImageIndex < numSerializedImages(*m_pendingLargeProject)) {
-    serialize::Image* image = serializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+  while (m_pendingLargeProjectImageIndex < project_image_sequence::size(*m_pendingLargeProject)) {
+    serialize::Image* image = project_image_sequence::at(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
     if (!image) {
       m_pendingLargeProjectImageIndex++;
       continue;
@@ -780,23 +803,26 @@ void EntropyApp::continueLargeImageProjectPreflight()
     if (!header) {
       if (0 == m_pendingLargeProjectImageIndex) {
         spdlog::error("Could not read reference image header from {}; cancelling project load", image->m_imageFileName);
+        reportInputLoadFailure("image", image->m_imageFileName, "The reference image header could not be read.");
         m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
         m_pendingLargeProject = std::nullopt;
         m_pendingLargeProjectFileName = std::nullopt;
         m_pendingLargeProjectImageIndex = 0;
+        clearPendingRecentDataLoad();
         if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
           m_data.state().setProjectLoadState(ProjectLoadState::Failed);
         }
-        m_glfw.postEmptyEvent();
+        GlfwWrapper::postEmptyEvent();
         return;
       }
 
       spdlog::error("Could not read image header from {}; skipping it", image->m_imageFileName);
-      eraseSerializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+      reportInputLoadFailure("image", image->m_imageFileName, "The image header could not be read.");
+      project_image_sequence::erase(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
       continue;
     }
 
-    if (shouldPromptForLargeImage(*header)) {
+    if (large_image_policy::requiresConfirmation(header->memoryImageSizeInBytes())) {
       spdlog::warn(
         "Image {} is large: estimated in-memory size is {:.2f} GiB",
         image->m_imageFileName,
@@ -806,7 +832,7 @@ void EntropyApp::continueLargeImageProjectPreflight()
       m_data.guiData().m_pendingLargeImageLoadPrompt =
         GuiData::LargeImageLoadPrompt{image->m_imageFileName, *header, true, 0 != m_pendingLargeProjectImageIndex};
       m_data.guiData().m_showLargeImageLoadPrompt = true;
-      m_glfw.postEmptyEvent();
+      GlfwWrapper::postEmptyEvent();
       return;
     }
 
@@ -848,7 +874,8 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
         m_pendingLargeProject = std::nullopt;
         m_pendingLargeProjectFileName = std::nullopt;
         m_pendingLargeProjectImageIndex = 0;
-        m_glfw.postEmptyEvent();
+        clearPendingRecentDataLoad();
+        GlfwWrapper::postEmptyEvent();
         break;
       }
 
@@ -859,15 +886,16 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
           m_pendingLargeProject = std::nullopt;
           m_pendingLargeProjectFileName = std::nullopt;
           m_pendingLargeProjectImageIndex = 0;
-          m_glfw.postEmptyEvent();
+          clearPendingRecentDataLoad();
+          GlfwWrapper::postEmptyEvent();
           break;
         }
 
-        serialize::Image* image = serializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+        serialize::Image* image = project_image_sequence::at(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
         if (image) {
           spdlog::info("Skipping large image {} during project load", image->m_imageFileName);
         }
-        eraseSerializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+        project_image_sequence::erase(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
       }
       else {
         m_pendingLargeProjectImageIndex++;
@@ -886,7 +914,7 @@ void EntropyApp::requestCloseProject()
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::CloseProject;
     m_data.guiData().m_showUnsavedProjectPopup = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -895,18 +923,18 @@ void EntropyApp::requestCloseProject()
 
 void EntropyApp::requestQuitApp()
 {
-  user_preferences::updateAppSettingsDirtyState(m_data.settings(), m_data.renderData(), m_data.guiData());
+  user_preferences::updateAppSettingsDirtyState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
 
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;
     m_data.guiData().m_showUnsavedProjectPopup = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
   if (m_data.guiData().m_appSettingsDirty) {
     m_data.guiData().m_showUnsavedAppSettingsPopup = true;
-    m_glfw.postEmptyEvent();
+    GlfwWrapper::postEmptyEvent();
     return;
   }
 
@@ -917,13 +945,13 @@ void EntropyApp::requestQuitApp()
   }
 
   m_data.guiData().m_showConfirmCloseAppPopup = true;
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void EntropyApp::quitAppWithoutPrompt()
 {
   m_data.state().setQuitApp(true);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void EntropyApp::continueAfterUnsavedProjectPrompt()
@@ -952,7 +980,7 @@ void EntropyApp::continueAfterUnsavedProjectPrompt()
     case GuiData::UnsavedProjectAction::QuitApp:
       if (m_data.guiData().m_appSettingsDirty) {
         m_data.guiData().m_showUnsavedAppSettingsPopup = true;
-        m_glfw.postEmptyEvent();
+        GlfwWrapper::postEmptyEvent();
         return;
       }
       quitAppWithoutPrompt();
@@ -962,6 +990,14 @@ void EntropyApp::continueAfterUnsavedProjectPrompt()
 
 void EntropyApp::closeProject()
 {
+  const std::size_t imageCount = m_data.numImages();
+  if (const auto& projectFileName = m_data.projectFileName()) {
+    spdlog::info("Closing project {} containing {} image(s)", *projectFileName, imageCount);
+  }
+  else if (imageCount > 0) {
+    spdlog::info("Closing unsaved project containing {} image(s)", imageCount);
+  }
+
   m_imageLoadCancelled = true;
 
   if (m_futureLoadProject.valid()) {
@@ -997,18 +1033,15 @@ void EntropyApp::closeProject()
   m_data.guiData().m_showConfirmCloseAppPopup = false;
   m_data.guiData().m_showLargeImageLoadPrompt = false;
 
-  auto& renderData = m_data.renderData();
-  renderData.m_imageTextures.clear();
-  renderData.m_imageTextureLayouts.clear();
-  renderData.m_distanceMapTextures.clear();
-  renderData.m_segTextures.clear();
-  renderData.m_segTextureLayouts.clear();
-  renderData.m_labelBufferTextures.clear();
-  renderData.m_colormapTextures.clear();
-  renderData.m_uniforms.clear();
+  m_data.renderResources().clearLoadedData();
+  m_data.renderDerivedData().clear();
 
   m_data.clearProjectData();
+  m_data.guiData().m_renderUiWindows = true;
+  m_data.guiData().m_renderUiOverlays = true;
+  m_data.guiData().m_viewOverlayControlExtents.clear();
+  m_rendering.setVectorOverlayVisibility(Rendering::VectorOverlayVisibility::Configured);
   m_glfw.setWindowTitleStatus("");
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-  m_glfw.postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }

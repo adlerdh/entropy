@@ -13,7 +13,7 @@ taken from the upstream license files for the pinned source versions.
 | [CLI11](https://github.com/CLIUtils/CLI11) | v2.6.2 | https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.6.2.tar.gz | BSD-3-Clause |
 | [CMakeRC](https://github.com/vector-of-bool/cmrc) | 2.0.1 | https://github.com/vector-of-bool/cmrc/archive/refs/tags/2.0.1.tar.gz | MIT |
 | [curl / libcurl](https://curl.se/libcurl/) | 8.21.0 | https://curl.se/download/curl-8.21.0.tar.xz | curl license |
-| [GLFW](https://github.com/glfw/glfw) | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |
+| [GLFW](https://github.com/glfw/glfw) | 3.5.1 | https://github.com/glfw/glfw/releases/download/3.5.1/glfw-3.5.1.zip | zlib/libpng |
 | [GLM](https://github.com/g-truc/glm) | 1.0.3 | https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz | Happy Bunny License (Modified MIT) or MIT |
 | [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | 210b5a3 | https://github.com/juliettef/IconFontCppHeaders/archive/210b5a399a64270674560d633638952d1e8d804d.tar.gz | zlib |
 | [Dear ImGui](https://github.com/ocornut/imgui) | v1.92.8-docking | https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8-docking.tar.gz | MIT |

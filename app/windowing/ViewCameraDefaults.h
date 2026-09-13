@@ -27,4 +27,11 @@ ProjectionType initialSliceProjectionType(ViewType viewType) noexcept;
  */
 bool sliceCameraTracksCrosshairs(ViewType viewType) noexcept;
 
+/**
+ * @brief Return whether default 2D framing should reserve space for overlaid view controls
+ * @param isLightbox True when the controls belong to an entire lightbox layout
+ * @return False for lightboxes, whose shared controls cover only a small fraction of the grid
+ */
+bool defaultFramingAvoidsControls(bool isLightbox) noexcept;
+
 } // namespace windowing

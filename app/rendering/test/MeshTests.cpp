@@ -4,6 +4,7 @@
 #include "image/Image.h"
 #include "image/ImageHeader.h"
 #include "image/ImageIoInfo.h"
+#include "image/ImageTimeAxis.h"
 #include "image/ImageTransformations.h"
 #include "image/ImageTypes.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
@@ -12,6 +13,7 @@
 #include "rendering/mesh/MeshClipPlanes.h"
 #include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshCrosshairsPolicy.h"
+#include "rendering/mesh/MeshCutaway.h"
 #include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
 #include "rendering/mesh/MeshDrawOptions.h"
@@ -20,6 +22,7 @@
 #include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionRunner.h"
 #include "rendering/mesh/MeshGeneration.h"
+#include "rendering/mesh/MeshGenerationOptions.h"
 #include "rendering/mesh/MeshGlyphs.h"
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImageAdapter.h"
@@ -36,7 +39,6 @@
 #include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 #include "rendering/mesh/MeshRenderList.h"
-#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshScalarGrid.h"
 #include "rendering/mesh/MeshScene.h"
 #include "rendering/mesh/MeshSegmentationPolicy.h"
@@ -53,6 +55,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -61,6 +64,7 @@
 #include <filesystem>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <ranges>
@@ -114,6 +118,22 @@ bool isClosedTriangleMesh(const mesh::MeshData& meshData)
          std::ranges::all_of(edgeUseCounts, [](const auto& edge) { return edge.second == 2u; });
 }
 
+bool triangleWindingAgreesWithNormals(const mesh::MeshData& meshData)
+{
+  for (std::size_t i = 0; i + 2u < meshData.indices.size(); i += 3u) {
+    const uint32_t ia = meshData.indices[i];
+    const uint32_t ib = meshData.indices[i + 1u];
+    const uint32_t ic = meshData.indices[i + 2u];
+    const glm::vec3 faceNormal =
+      glm::cross(meshData.positions[ib] - meshData.positions[ia], meshData.positions[ic] - meshData.positions[ia]);
+    const glm::vec3 pointNormal = meshData.normals[ia] + meshData.normals[ib] + meshData.normals[ic];
+    if (glm::dot(faceNormal, pointNormal) <= 0.0f) {
+      return false;
+    }
+  }
+  return true;
+}
+
 mesh::ScalarGrid3D makePlanarScalarGrid()
 {
   mesh::ScalarGrid3D grid;
@@ -151,11 +171,27 @@ mesh::ScalarGrid3D makeBinaryLabelGrid()
 ImageIoInfo
 makeMeshIoInfo(const ComponentType componentType, const uint32_t numComponents, const glm::uvec3& dimensions)
 {
+  const auto componentSize = [](const ComponentType type) -> uint32_t {
+    switch (type) {
+      case ComponentType::Int8:
+      case ComponentType::UInt8:
+        return 1u;
+      case ComponentType::Int16:
+      case ComponentType::UInt16:
+        return 2u;
+      case ComponentType::Int32:
+      case ComponentType::UInt32:
+      case ComponentType::Float32:
+        return 4u;
+      default:
+        return 0u;
+    }
+  };
   ImageIoInfo info;
   info.m_fileInfo.m_fileName = "mesh-grid-test.nii";
   info.m_componentInfo.m_componentType = componentType;
   info.m_componentInfo.m_componentTypeString = componentTypeString(componentType);
-  info.m_componentInfo.m_componentSizeInBytes = sizeof(float);
+  info.m_componentInfo.m_componentSizeInBytes = componentSize(componentType);
   info.m_pixelInfo.m_pixelType = numComponents == 1 ? PixelType::Scalar : PixelType::Vector;
   info.m_pixelInfo.m_pixelTypeString = numComponents == 1 ? "Scalar" : "Vector";
   info.m_pixelInfo.m_numComponents = numComponents;
@@ -523,6 +559,76 @@ TEST_CASE("ray triangle picking honors enabled clip planes", "[rendering][mesh]"
 
   CHECK(mesh::pickNearestTriangle(data, ray, clipPlanes).has_value());
   CHECK(!mesh::pickNearestTriangle(data, ray, rejectingClipPlanes).has_value());
+}
+
+TEST_CASE("mesh culling and picking preserve front faces under reflections", "[rendering][mesh]")
+{
+  const mesh::MeshData data = makeTriangleMesh();
+  const mesh::MeshPickRay frontRay{glm::vec3{0.0f, 0.0f, 4.0f}, glm::vec3{0.0f, 0.0f, -1.0f}};
+  const mesh::MeshPickRay backRay{glm::vec3{0.0f, 0.0f, -4.0f}, glm::vec3{0.0f, 0.0f, 1.0f}};
+  const glm::mat4 reflected = glm::scale(glm::mat4{1.0f}, glm::vec3{-1.0f, 1.0f, 1.0f});
+
+  CHECK_FALSE(mesh::meshTransformReversesOrientation(glm::mat4{1.0f}));
+  CHECK(mesh::meshTransformReversesOrientation(reflected));
+  CHECK(mesh::pickNearestTriangle(data, frontRay, glm::mat4{1.0f}, {}, {}, true));
+  CHECK_FALSE(mesh::pickNearestTriangle(data, backRay, glm::mat4{1.0f}, {}, {}, true));
+  CHECK(mesh::pickNearestTriangle(data, frontRay, reflected, {}, {}, true));
+  CHECK_FALSE(mesh::pickNearestTriangle(data, backRay, reflected, {}, {}, true));
+}
+
+TEST_CASE("viewer-facing cutaway removes exactly one crosshairs octant", "[rendering][mesh][cutaway]")
+{
+  const auto cutaway =
+    mesh::viewerFacingOctantCutaway(glm::vec3{1.0f, 2.0f, 3.0f}, glm::mat3{1.0f}, glm::vec3{10.0f, 20.0f, 30.0f});
+
+  REQUIRE(cutaway);
+  CHECK(cutaway->enabled);
+  CHECK(mesh::pointInsideRemovedOctant(glm::vec3{2.0f, 3.0f, 4.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{0.0f, 3.0f, 4.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{2.0f, 1.0f, 4.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{2.0f, 3.0f, 2.0f}, *cutaway));
+}
+
+TEST_CASE("viewer-facing cutaway follows rotated crosshairs and camera octant", "[rendering][mesh][cutaway]")
+{
+  const glm::mat3 rotatedAxes{glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}};
+  const auto cutaway = mesh::viewerFacingOctantCutaway(glm::vec3{0.0f}, rotatedAxes, glm::vec3{4.0f, 5.0f, -6.0f});
+
+  REQUIRE(cutaway);
+  CHECK(mesh::pointInsideRemovedOctant(glm::vec3{1.0f, 1.0f, -1.0f}, *cutaway));
+  CHECK_FALSE(mesh::pointInsideRemovedOctant(glm::vec3{-1.0f, 1.0f, -1.0f}, *cutaway));
+  CHECK_FALSE(mesh::viewerFacingOctantCutaway(
+    glm::vec3{0.0f},
+    glm::mat3{glm::vec3{0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}},
+    glm::vec3{1.0f}));
+}
+
+TEST_CASE("mesh picking honors per-renderable cutaway", "[rendering][mesh][cutaway][picking]")
+{
+  const mesh::MeshData triangle = makeTriangleMesh();
+  mesh::MeshRenderable cut;
+  cut.mesh.geometryVersion = 1;
+  cut.drawOptions.pickingMode = mesh::MeshPickingMode::Triangle;
+  const auto cutaway =
+    mesh::viewerFacingOctantCutaway(glm::vec3{-2.0f, -2.0f, -1.0f}, glm::mat3{1.0f}, glm::vec3{4.0f});
+  REQUIRE(cutaway);
+  cut.drawOptions.cutaway = *cutaway;
+
+  mesh::MeshRenderable uncut = cut;
+  uncut.mesh.geometryVersion = 2;
+  uncut.world_T_mesh = glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, -1.0f});
+  uncut.drawOptions.cutaway = {};
+
+  const std::vector renderables{cut, uncut};
+  const auto hit = mesh::pickNearestRenderable(
+    {.worldRay = {.origin = glm::vec3{0.0f, 0.0f, 4.0f}, .direction = glm::vec3{0.0f, 0.0f, -1.0f}},
+     .renderables = renderables,
+     .meshLookup = [&triangle](const mesh::MeshHandle&) {
+       return &triangle;
+     }});
+
+  REQUIRE(hit);
+  CHECK(hit->mesh.geometryVersion == 2);
 }
 
 TEST_CASE("scene picking chooses nearest visible transformed renderable", "[rendering][mesh]")
@@ -949,56 +1055,62 @@ TEST_CASE("mesh crosshairs glyph policy disables invalid or redundant glyphs", "
   CHECK(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
 
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = false,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = true,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 0.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 0.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 8.0f,
-     .voxelDiagonalWorld = 0.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 8.0f,
+     .sceneDiagonalWorld = 0.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshCrosshairsGlyph(
     {.showCrosshairsIn3D = true,
      .cameraFollowsCrosshairs = false,
-     .diameterVoxelDiagonals = 2.0f,
-     .lengthVoxelDiagonals = 0.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .diameterScenePercent = 2.0f,
+     .lengthScenePercent = 0.0f,
+     .sceneDiagonalWorld = 300.0f}));
 }
 
-TEST_CASE("mesh crosshairs glyph style converts voxel units to physical dimensions", "[rendering][mesh]")
+TEST_CASE("mesh crosshairs glyph style converts scene percentages to physical dimensions", "[rendering][mesh]")
 {
   const mesh::MeshCrosshairsGlyphInputs inputs{
     .showCrosshairsIn3D = true,
     .cameraFollowsCrosshairs = false,
-    .diameterVoxelDiagonals = 2.0f,
-    .lengthVoxelDiagonals = 8.0f,
-    .voxelDiagonalWorld = 3.0f};
+    .diameterScenePercent = 2.0f,
+    .lengthScenePercent = 8.0f,
+    .sceneDiagonalWorld = 300.0f};
 
   const mesh::MeshCrosshairsGlyphStyle style = mesh::meshCrosshairsGlyphStyle(inputs);
 
   CHECK(style.radiusWorld == Catch::Approx(3.0f));
   CHECK(style.halfLengthWorld == Catch::Approx(12.0f));
   CHECK(style.visible);
+
+  mesh::MeshCrosshairsGlyphInputs largerScene = inputs;
+  largerScene.sceneDiagonalWorld = 600.0f;
+  const mesh::MeshCrosshairsGlyphStyle largerStyle = mesh::meshCrosshairsGlyphStyle(largerScene);
+  CHECK(largerStyle.radiusWorld == Catch::Approx(2.0f * style.radiusWorld));
+  CHECK(largerStyle.halfLengthWorld == Catch::Approx(2.0f * style.halfLengthWorld));
 }
 
 TEST_CASE("mesh landmark glyph policy disables hidden or degenerate glyphs", "[rendering][mesh]")
@@ -1229,8 +1341,11 @@ TEST_CASE("global surface settings create one material policy for every mesh typ
   CHECK(material.rimEmissionStrength == Catch::Approx(1.25f));
   CHECK(material.rimPower == Catch::Approx(3.5f));
 
-  const mesh::SegmentationLabelMeshStyle segmentation =
-    mesh::segmentationLabelMeshStyle(4, color, {.showMesh = true, .opacity = 1.0f}, settings);
+  const mesh::SegmentationLabelMeshStyle segmentation = mesh::segmentationLabelMeshStyle(
+    4,
+    color,
+    {.showMesh = true, .opacity = 1.0f, .hasSharedBoundary = true},
+    settings);
   CHECK(segmentation.material == material);
   CHECK(segmentation.backfaceCulling);
 
@@ -1252,6 +1367,7 @@ TEST_CASE("isosurface and segmentation extraction requests build distinct geomet
     .component = 2,
     .timePoint = 5,
     .isoValue = 42.5,
+    .generationOptions = {},
     .algorithm = "flying-edges",
     .algorithmVersion = 6};
 
@@ -1261,6 +1377,7 @@ TEST_CASE("isosurface and segmentation extraction requests build distinct geomet
     .segmentationGeometryVersion = 8,
     .labelValue = 9,
     .timePoint = 10,
+    .generationOptions = {},
     .algorithm = "marching-cubes-label",
     .algorithmVersion = 11};
 
@@ -1345,6 +1462,7 @@ TEST_CASE("scalar-grid isosurface policy builds stable extraction requests", "[r
   CHECK(request.component == 2);
   CHECK(request.timePoint == 4);
   CHECK(request.isoValue == Catch::Approx(17.5));
+  CHECK(request.generationOptions == options);
   CHECK(request.algorithm == mesh::kScalarGridIsosurfaceAlgorithm);
   CHECK(request.algorithmVersion != 0);
 
@@ -1393,11 +1511,13 @@ TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "
   CHECK(mesh::compositingModeForLabelAlpha(0.999f) == mesh::MeshCompositingMode::Opaque);
   CHECK(mesh::compositingModeForLabelAlpha(0.998f) == mesh::MeshCompositingMode::AlphaOverDdp);
   CHECK(
-    mesh::compositingModeForLabelAlpha(0.998f, mesh::MeshCompositingMode::Additive) ==
+    mesh::compositingModeForLabelAlpha(0.998f, false, 0.0f, mesh::MeshCompositingMode::Additive) ==
     mesh::MeshCompositingMode::Additive);
   CHECK(
-    mesh::compositingModeForLabelAlpha(1.0f, mesh::MeshCompositingMode::Multiplicative) ==
+    mesh::compositingModeForLabelAlpha(1.0f, false, 0.0f, mesh::MeshCompositingMode::Multiplicative) ==
     mesh::MeshCompositingMode::Opaque);
+  CHECK(mesh::compositingModeForLabelAlpha(1.0f, true, 1.0f) == mesh::MeshCompositingMode::AlphaOverDdp);
+  CHECK(mesh::compositingModeForLabelAlpha(1.0f, true, 0.0f) == mesh::MeshCompositingMode::Opaque);
 
   const mesh::SegmentationLabelMeshStyle style = mesh::segmentationLabelMeshStyle(
     4,
@@ -1412,21 +1532,39 @@ TEST_CASE("segmentation mesh style preserves label value and modulates alpha", "
   CHECK(style.material.baseColor.b == Catch::Approx(0.3f));
   CHECK(style.material.baseColor.a == Catch::Approx(0.125f));
   CHECK(style.compositingMode == mesh::MeshCompositingMode::Multiplicative);
+  CHECK_FALSE(style.backfaceCulling);
   CHECK(style.visible);
+
+  const mesh::SegmentationLabelMeshStyle touchingStyle = mesh::segmentationLabelMeshStyle(
+    4,
+    glm::vec4{0.1f, 0.2f, 0.3f, 0.5f},
+    {.showMesh = true, .opacity = 0.25f, .hasSharedBoundary = true});
+  CHECK(touchingStyle.backfaceCulling);
+
+  const mesh::SegmentationLabelMeshStyle rimLitStyle = mesh::segmentationLabelMeshStyle(
+    4,
+    glm::vec4{0.1f, 0.2f, 0.3f, 1.0f},
+    {.showMesh = true, .opacity = 1.0f},
+    {.rimLightingEnabled = true, .rimOpacityStrength = 1.0f});
+  CHECK(rimLitStyle.compositingMode == mesh::MeshCompositingMode::AlphaOverDdp);
 }
 
 TEST_CASE("scalar-grid segmentation policy builds stable extraction requests", "[rendering][mesh]")
 {
   const uuids::uuid segmentationUid = generateRandomUuid();
 
-  const mesh::SegmentationMeshRequest request = mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7);
+  const mesh::MeshGenerationOptions options{.smoothSurface = false, .smoothingIterations = 17};
+  const mesh::SegmentationMeshRequest request =
+    mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7, options);
 
   CHECK(request.segmentationUid == segmentationUid);
   CHECK(request.segmentationDataVersion == 13);
   CHECK(request.segmentationGeometryVersion == 14);
   CHECK(request.labelValue == 5);
   CHECK(request.timePoint == 7);
+  CHECK(request.generationOptions == options);
   CHECK(request.algorithm == mesh::kScalarGridSegmentationAlgorithm);
+  CHECK(request.algorithm == "cropped-binary-vtk-discrete-flying-edges-3d");
   CHECK(request.algorithmVersion != 0u);
 
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
@@ -1439,7 +1577,8 @@ TEST_CASE("scalar-grid segmentation policy builds stable extraction requests", "
   CHECK(key.extractionAlgorithm == mesh::kScalarGridSegmentationAlgorithm);
   CHECK(key.extractionAlgorithmVersion == request.algorithmVersion);
 
-  const mesh::SegmentationMeshRequest same = mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7);
+  const mesh::SegmentationMeshRequest same =
+    mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7, options);
   const mesh::SegmentationMeshRequest differentSmoothing =
     mesh::makeScalarGridSegmentationRequest(segmentationUid, 13, 14, 5, 7, {.smoothingIterations = 40});
   CHECK(same.algorithmVersion == request.algorithmVersion);
@@ -1486,7 +1625,7 @@ TEST_CASE("mesh cache stores pending, ready, failed, stale, and evicted states",
   CHECK(!evictedEntry->mesh);
 }
 
-TEST_CASE("mesh resource reconciliation releases only obsolete extracted geometry", "[rendering][mesh]")
+TEST_CASE("mesh cache reconciliation removes only obsolete extracted geometry", "[rendering][mesh]")
 {
   mesh::MeshGeometryKey retainedKey;
   retainedKey.sourceUid = generateRandomUuid();
@@ -1497,23 +1636,11 @@ TEST_CASE("mesh resource reconciliation releases only obsolete extracted geometr
   mesh::MeshCache cache;
   cache.markPending(retainedKey);
   cache.markPending(obsoleteKey);
-  const mesh::MeshHandle retainedHandle{.uid = generateRandomUuid(), .geometryVersion = 1};
-  const mesh::MeshHandle obsoleteHandle{.uid = generateRandomUuid(), .geometryVersion = 2};
-  mesh::MeshHandleMap handles{{retainedKey, retainedHandle}, {obsoleteKey, obsoleteHandle}};
-  std::vector<uuids::uuid> released;
-
-  const std::size_t removed = mesh::reconcileExtractedMeshResources(
-    mesh::MeshGeometryKeySet{retainedKey},
-    cache,
-    handles,
-    [&released](const uuids::uuid& uid) { released.push_back(uid); });
+  const std::size_t removed = cache.retainOnly(mesh::MeshGeometryKeySet{retainedKey});
 
   CHECK(removed == 1u);
-  CHECK(handles.contains(retainedKey));
-  CHECK_FALSE(handles.contains(obsoleteKey));
   CHECK(cache.contains(retainedKey));
   CHECK_FALSE(cache.contains(obsoleteKey));
-  CHECK(released == std::vector<uuids::uuid>{obsoleteHandle.uid});
 
   const mesh::MeshExtractionRunResult stale = mesh::applyExtractionJobResult(
     {.key = obsoleteKey,
@@ -1832,6 +1959,7 @@ TEST_CASE("isosurface extraction runner stores ready mesh results", "[rendering]
     .component = 3,
     .timePoint = 4,
     .isoValue = 5.0,
+    .generationOptions = {},
     .algorithm = "test",
     .algorithmVersion = 6};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
@@ -1851,7 +1979,10 @@ TEST_CASE("isosurface extraction runner stores ready mesh results", "[rendering]
 
 TEST_CASE("isosurface extraction runner stores failure when no mesh is produced", "[rendering][mesh]")
 {
-  const mesh::IsosurfaceMeshRequest request{.imageUid = generateRandomUuid(), .algorithm = "test"};
+  const mesh::IsosurfaceMeshRequest request{
+    .imageUid = generateRandomUuid(),
+    .generationOptions = {},
+    .algorithm = "test"};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   FakeIsosurfaceExtractor extractor;
@@ -1869,7 +2000,10 @@ TEST_CASE("isosurface extraction runner stores failure when no mesh is produced"
 
 TEST_CASE("isosurface extraction runner rejects wrong-key backend results", "[rendering][mesh]")
 {
-  const mesh::IsosurfaceMeshRequest request{.imageUid = generateRandomUuid(), .algorithm = "test"};
+  const mesh::IsosurfaceMeshRequest request{
+    .imageUid = generateRandomUuid(),
+    .generationOptions = {},
+    .algorithm = "test"};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   FakeIsosurfaceExtractor extractor;
@@ -1890,7 +2024,10 @@ TEST_CASE("isosurface extraction runner rejects wrong-key backend results", "[re
 
 TEST_CASE("isosurface extraction runner discards results when request becomes stale", "[rendering][mesh]")
 {
-  const mesh::IsosurfaceMeshRequest request{.imageUid = generateRandomUuid(), .algorithm = "test"};
+  const mesh::IsosurfaceMeshRequest request{
+    .imageUid = generateRandomUuid(),
+    .generationOptions = {},
+    .algorithm = "test"};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
 
   mesh::MeshCache cache;
@@ -1916,6 +2053,7 @@ TEST_CASE("segmentation extraction runner stores label mesh results", "[renderin
     .segmentationGeometryVersion = 2,
     .labelValue = 11,
     .timePoint = 3,
+    .generationOptions = {},
     .algorithm = "test-label",
     .algorithmVersion = 4};
   const mesh::MeshGeometryKey key = mesh::geometryKeyForRequest(request);
@@ -2054,6 +2192,96 @@ TEST_CASE("image label adapter preserves exact 32-bit label identity", "[renderi
   REQUIRE(mesh::generateBinaryMaskSurface(*grid));
 }
 
+TEST_CASE("segmentation inventories use native unsigned buffers and time-component addressing", "[rendering][mesh]")
+{
+  const glm::uvec3 dimensions{2, 2, 2};
+
+  SECTION("8-bit isolated label")
+  {
+    const ImageIoInfo ioInfo = makeMeshIoInfo(ComponentType::UInt8, 1, dimensions);
+    const std::vector<uint8_t> values{0u, 7u, 0u, 7u, 0u, 0u, 0u, 0u};
+    const std::vector<const void*> buffers{values.data()};
+    const Image image = Image::fromCopiedData(
+      ImageHeader{ioInfo, ioInfo, false},
+      "uint8-labels",
+      Image::ImageRepresentation::Segmentation,
+      Image::MultiComponentBufferType::SeparateImages,
+      buffers);
+
+    const auto inventory = mesh::segmentationLabelInventory(image, 0);
+    REQUIRE(inventory);
+    REQUIRE(inventory->contains(7));
+    CHECK(inventory->at(7).minVoxel == glm::uvec3{1, 0, 0});
+    CHECK(inventory->at(7).maxVoxel == glm::uvec3{1, 1, 0});
+    CHECK_FALSE(inventory->at(7).hasSharedBoundary);
+  }
+
+  SECTION("16-bit touching labels")
+  {
+    const ImageIoInfo ioInfo = makeMeshIoInfo(ComponentType::UInt16, 1, dimensions);
+    const std::vector<uint16_t> values{1000u, 2000u, 1000u, 2000u, 1000u, 2000u, 1000u, 2000u};
+    const std::vector<const void*> buffers{values.data()};
+    const Image image = Image::fromCopiedData(
+      ImageHeader{ioInfo, ioInfo, false},
+      "uint16-labels",
+      Image::ImageRepresentation::Segmentation,
+      Image::MultiComponentBufferType::SeparateImages,
+      buffers);
+
+    const auto inventory = mesh::segmentationLabelInventory(image, 0);
+    REQUIRE(inventory);
+    REQUIRE(inventory->contains(1000));
+    REQUIRE(inventory->contains(2000));
+    CHECK(inventory->at(1000).hasSharedBoundary);
+    CHECK(inventory->at(2000).hasSharedBoundary);
+  }
+
+  SECTION("interleaved component at a later time point")
+  {
+    const ImageIoInfo ioInfo = makeMeshIoInfo(ComponentType::UInt16, 2, dimensions);
+    std::vector<uint16_t> values(32u, 0u);
+    for (std::size_t voxel = 0; voxel < 8u; ++voxel) {
+      values[voxel * 2u + 1u] = 3u;
+      values[(8u + voxel) * 2u + 1u] = voxel < 4u ? 9u : 10u;
+    }
+    const std::vector<const void*> buffers{values.data()};
+    const Image image = Image::fromCopiedData(
+      ImageHeader{ioInfo, ioInfo, false},
+      "interleaved-time-labels",
+      Image::ImageRepresentation::Image,
+      Image::MultiComponentBufferType::InterleavedImage,
+      buffers,
+      ImageTimeAxis{2u, 0.0, 1.0, "sec"});
+
+    const auto inventory = mesh::segmentationLabelInventory(image, 1, 1);
+    REQUIRE(inventory);
+    CHECK(inventory->size() == 2u);
+    REQUIRE(inventory->contains(9));
+    REQUIRE(inventory->contains(10));
+    CHECK(inventory->at(9).maxVoxel.z == 0u);
+    CHECK(inventory->at(10).minVoxel.z == 1u);
+    CHECK(inventory->at(9).hasSharedBoundary);
+    CHECK(inventory->at(10).hasSharedBoundary);
+
+    const auto mask = mesh::labelMaskGridFromImageComponent(image, 1, 10, inventory->at(10), 1);
+    REQUIRE(mask);
+    CHECK(mask->values[mesh::scalarGridValueIndex(mask->dimensions, 1, 1, 1)] == 1.0f);
+  }
+}
+
+TEST_CASE("segmentation source identities separate pixel values from geometry", "[rendering][mesh]")
+{
+  const mesh::SegmentationSourceIdentity original{.pixelDataRevision = 4, .geometryRevision = 8, .timePoint = 2};
+  const mesh::SegmentationSourceIdentity geometryChanged{.pixelDataRevision = 4, .geometryRevision = 9, .timePoint = 2};
+  const mesh::SegmentationSourceIdentity pixelsChanged{.pixelDataRevision = 5, .geometryRevision = 8, .timePoint = 2};
+  const mesh::SegmentationSourceIdentity timeChanged{.pixelDataRevision = 4, .geometryRevision = 8, .timePoint = 3};
+
+  CHECK(original != geometryChanged);
+  CHECK(mesh::sameSegmentationValues(original, geometryChanged));
+  CHECK_FALSE(mesh::sameSegmentationValues(original, pixelsChanged));
+  CHECK_FALSE(mesh::sameSegmentationValues(original, timeChanged));
+}
+
 TEST_CASE("cropped segmentation masks add background padding and close volume-edge labels", "[rendering][mesh]")
 {
   constexpr int64_t targetLabel = 16'777'217;
@@ -2070,6 +2298,22 @@ TEST_CASE("cropped segmentation masks add background padding and close volume-ed
   REQUIRE(meshData);
   CHECK(mesh::isValidMeshData(*meshData));
   CHECK(isClosedTriangleMesh(*meshData));
+  CHECK(triangleWindingAgreesWithNormals(*meshData));
+}
+
+TEST_CASE("segmentation extraction preserves winding and normals through reflected geometry", "[rendering][mesh]")
+{
+  mesh::ScalarGrid3D grid = makeBinaryLabelGrid();
+  grid.grid_T_voxelIndex = glm::translate(glm::mat4{1.0f}, glm::vec3{4.0f, 5.0f, 6.0f}) *
+                           glm::scale(glm::mat4{1.0f}, glm::vec3{-2.0f, 3.0f, 4.0f});
+  mesh::MeshGenerationOptions options;
+  options.smoothSurface = false;
+
+  const auto meshData = mesh::generateDiscreteLabelSurface(grid, 7, options);
+
+  REQUIRE(meshData);
+  CHECK(mesh::isValidMeshData(*meshData));
+  CHECK(triangleWindingAgreesWithNormals(*meshData));
 }
 
 TEST_CASE("segmentation label inventory contains only values present in the volume", "[rendering][mesh]")
@@ -2087,78 +2331,12 @@ TEST_CASE("segmentation label inventory contains only values present in the volu
   CHECK_FALSE(labels->contains(1));
   CHECK(labels->at(targetLabel).minVoxel == glm::uvec3{0, 0, 0});
   CHECK(labels->at(targetLabel).maxVoxel == glm::uvec3{0, 1, 1});
+  CHECK(labels->at(targetLabel).hasSharedBoundary);
+  CHECK(labels->at(adjacentLabel).hasSharedBoundary);
   CHECK_FALSE(mesh::segmentationLabelInventory(image, 1));
 }
 
-TEST_CASE(
-  "joint segmentation extraction gives adjacent labels one oppositely oriented shared boundary",
-  "[rendering][mesh]")
-{
-  const Image image = makeMeshLabelImage();
-  const std::optional<mesh::PackedSegmentationGrid> packed = mesh::packedSegmentationGridFromImageComponent(image, 0);
-  REQUIRE(packed);
-  REQUIRE(packed->labelValues.size() == 2u);
-
-  mesh::MeshGenerationOptions options;
-  options.smoothSurface = true;
-  options.smoothingIterations = 10;
-  const std::optional<mesh::SegmentationLabelMeshes> meshes =
-    mesh::generatePackedSegmentationLabelSurfaces(packed->grid, packed->labelValues, options);
-  REQUIRE(meshes);
-  REQUIRE(meshes->size() == 2u);
-
-  const mesh::MeshData& first = meshes->at(packed->labelValues[0]);
-  const mesh::MeshData& second = meshes->at(packed->labelValues[1]);
-  CHECK(mesh::isValidMeshData(first));
-  CHECK(mesh::isValidMeshData(second));
-  CHECK(isClosedTriangleMesh(first));
-  CHECK(isClosedTriangleMesh(second));
-
-  const auto signedVolume = [](const mesh::MeshData& meshData) {
-    double volume = 0.0;
-    for (std::size_t index = 0; index < meshData.indices.size(); index += 3u) {
-      const glm::dvec3 p0{meshData.positions[meshData.indices[index]]};
-      const glm::dvec3 p1{meshData.positions[meshData.indices[index + 1u]]};
-      const glm::dvec3 p2{meshData.positions[meshData.indices[index + 2u]]};
-      volume += glm::dot(p0, glm::cross(p1, p2)) / 6.0;
-    }
-    return volume;
-  };
-  CHECK(signedVolume(first) > 0.0);
-  CHECK(signedVolume(second) > 0.0);
-
-  const auto triangle = [](const mesh::MeshData& meshData, const std::size_t index) {
-    return std::array{
-      meshData.positions[meshData.indices[index]],
-      meshData.positions[meshData.indices[index + 1u]],
-      meshData.positions[meshData.indices[index + 2u]]};
-  };
-  const auto sameVertices = [](const std::array<glm::vec3, 3>& lhs, const std::array<glm::vec3, 3>& rhs) {
-    return std::ranges::all_of(lhs, [&rhs](const glm::vec3& point) {
-      return std::ranges::any_of(rhs, [&point](const glm::vec3& other) { return point == other; });
-    });
-  };
-
-  std::size_t sharedTriangleCount = 0;
-  for (std::size_t firstIndex = 0; firstIndex < first.indices.size(); firstIndex += 3u) {
-    const auto firstTriangle = triangle(first, firstIndex);
-    for (std::size_t secondIndex = 0; secondIndex < second.indices.size(); secondIndex += 3u) {
-      const auto secondTriangle = triangle(second, secondIndex);
-      if (!sameVertices(firstTriangle, secondTriangle)) {
-        continue;
-      }
-      const glm::vec3 firstNormal =
-        glm::cross(firstTriangle[1] - firstTriangle[0], firstTriangle[2] - firstTriangle[0]);
-      const glm::vec3 secondNormal =
-        glm::cross(secondTriangle[1] - secondTriangle[0], secondTriangle[2] - secondTriangle[0]);
-      CHECK(glm::dot(firstNormal, secondNormal) < 0.0f);
-      ++sharedTriangleCount;
-    }
-  }
-  CHECK(sharedTriangleCount > 0u);
-}
-
-TEST_CASE("segmentation extraction jobs share one multi-label generation batch", "[rendering][mesh]")
+TEST_CASE("segmentation extraction jobs preserve per-label geometry for adjacent labels", "[rendering][mesh]")
 {
   constexpr int64_t firstLabel = 16'777'216;
   constexpr int64_t secondLabel = 16'777'217;
@@ -2166,14 +2344,17 @@ TEST_CASE("segmentation extraction jobs share one multi-label generation batch",
   const auto image = std::make_shared<Image>(makeMeshLabelImage());
   mesh::MeshGenerationOptions options;
   options.smoothSurface = false;
-  const auto batch = std::make_shared<mesh::SegmentationExtractionBatch>(image, 0, options);
+  const auto inventory = mesh::segmentationLabelInventory(*image, 0);
+  REQUIRE(inventory);
 
   const mesh::SegmentationMeshRequest firstRequest =
     mesh::makeScalarGridSegmentationRequest(segmentationUid, 1, 1, firstLabel, 0, options);
   const mesh::SegmentationMeshRequest secondRequest =
     mesh::makeScalarGridSegmentationRequest(segmentationUid, 1, 1, secondLabel, 0, options);
-  mesh::MeshExtractionJobResult first = mesh::makeSegmentationExtractionJob(firstRequest, batch)();
-  mesh::MeshExtractionJobResult second = mesh::makeSegmentationExtractionJob(secondRequest, batch)();
+  mesh::MeshExtractionJobResult first =
+    mesh::makeSegmentationExtractionJob(firstRequest, inventory->at(firstLabel), image)();
+  mesh::MeshExtractionJobResult second =
+    mesh::makeSegmentationExtractionJob(secondRequest, inventory->at(secondLabel), image)();
 
   REQUIRE(first.result);
   REQUIRE(second.result);
@@ -2384,25 +2565,75 @@ TEST_CASE("image plane render list filters non-drawable image planes", "[renderi
   CHECK(mesh::visibleImagePlaneCount(list) == 1);
 }
 
-TEST_CASE("image plane DDP depth ordering uses minimal bottom-to-top tie breaks", "[rendering][mesh][ddp]")
+TEST_CASE("image plane orientation lists preserve bottom-to-top image order", "[rendering][mesh][ddp]")
+{
+  const mesh::MeshHandle handle{.uid = generateRandomUuid(), .geometryVersion = 1};
+  const auto makePlane = [&handle](const mesh::MeshImagePlaneOrientation orientation) {
+    return mesh::makeImagePlaneRenderable(
+      handle,
+      glm::mat4{1.0f},
+      glm::vec3{0.0f},
+      mesh::MeshImagePlaneTexture{
+        .imageUid = generateRandomUuid(),
+        .segmentationUid = std::nullopt,
+        .component = 0,
+        .timePoint = 0},
+      1.0f,
+      false,
+      true,
+      orientation);
+  };
+
+  const std::vector imagePlanes{
+    makePlane(mesh::MeshImagePlaneOrientation::Axial),
+    makePlane(mesh::MeshImagePlaneOrientation::Coronal),
+    makePlane(mesh::MeshImagePlaneOrientation::Sagittal),
+    makePlane(mesh::MeshImagePlaneOrientation::Axial)};
+  const mesh::MeshImagePlaneRenderList list = mesh::buildImagePlaneRenderList(imagePlanes);
+  const mesh::MeshImagePlaneRenderList axial =
+    mesh::imagePlaneRenderListForOrientation(list, mesh::MeshImagePlaneOrientation::Axial);
+
+  REQUIRE(axial.imagePlanes.size() == 2u);
+  CHECK(&axial.imagePlanes[0].get() == &imagePlanes[0]);
+  CHECK(&axial.imagePlanes[1].get() == &imagePlanes[3]);
+  CHECK(mesh::visibleImagePlaneOrientationCount(list) == 3u);
+  CHECK(mesh::visibleImagePlaneOrientationCount(axial) == 1u);
+}
+
+TEST_CASE("pre-composited image-plane orientations use only adjacent DDP depths", "[rendering][mesh][ddp]")
 {
   using Orientation = mesh::MeshImagePlaneOrientation;
-  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Axial) == 1u);
-  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Coronal) == 2u);
-  CHECK(mesh::imagePlaneDdpDepthOrder(0u, Orientation::Sagittal) == 3u);
-  CHECK(mesh::imagePlaneDdpDepthOrder(1u, Orientation::Axial) == 4u);
+  CHECK(mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Axial) == 1u);
+  CHECK(mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Coronal) == 2u);
+  CHECK(mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Sagittal) == 3u);
 
   const float depth = 0.5f;
   const float axialDepth =
-    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(0u, Orientation::Axial));
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Axial));
   const float coronalDepth =
-    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(0u, Orientation::Coronal));
-  const float nextImageDepth =
-    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneDdpDepthOrder(1u, Orientation::Axial));
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Coronal));
+  const float sagittalDepth =
+    mesh::orderedImagePlaneDdpDepth(depth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Sagittal));
   CHECK(axialDepth < depth);
   CHECK(coronalDepth < axialDepth);
-  CHECK(nextImageDepth < coronalDepth);
-  CHECK(depth - nextImageDepth < 1.0e-6f);
+  CHECK(sagittalDepth < coronalDepth);
+  CHECK(std::bit_cast<uint32_t>(axialDepth) - std::bit_cast<uint32_t>(coronalDepth) == 1u);
+  CHECK(std::bit_cast<uint32_t>(coronalDepth) - std::bit_cast<uint32_t>(sagittalDepth) == 1u);
+
+  // Adjacent representable values remain distinct near the camera without the broad false-depth band that previously
+  // changed quadrants around orthogonal plane intersections.
+  constexpr float nearCameraDepth = 1.0e-8f;
+  const float nearAxial =
+    mesh::orderedImagePlaneDdpDepth(nearCameraDepth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Axial));
+  const float nearCoronal =
+    mesh::orderedImagePlaneDdpDepth(nearCameraDepth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Coronal));
+  const float nearSagittal =
+    mesh::orderedImagePlaneDdpDepth(nearCameraDepth, mesh::imagePlaneCompositeDdpDepthOrder(Orientation::Sagittal));
+  CHECK(nearAxial > 0.0f);
+  CHECK(nearCoronal > 0.0f);
+  CHECK(nearSagittal > 0.0f);
+  CHECK(nearCoronal < nearAxial);
+  CHECK(nearSagittal < nearCoronal);
 }
 
 TEST_CASE("image plane borders are hidden with their source image", "[rendering][mesh]")
@@ -2655,6 +2886,24 @@ TEST_CASE("image plane orientation opacity follows legacy auto-hiding behavior",
     mesh::imagePlaneViewOpacityMultiplier(glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f, 2.0f, 0.0f}) ==
     Catch::Approx(0.0f));
   CHECK(mesh::imagePlaneViewOpacityMultiplier(glm::vec3{0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}) == Catch::Approx(0.0f));
+}
+
+TEST_CASE("global image plane opacity combines safely with view-angle fading", "[rendering][mesh]")
+{
+  CHECK(mesh::imagePlaneOpacityMultiplier(1.0f, 1.0f) == Catch::Approx(1.0f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(0.6f, 0.5f) == Catch::Approx(0.3f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(-1.0f, 1.0f) == Catch::Approx(0.0f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(2.0f, 2.0f) == Catch::Approx(1.0f));
+  CHECK(mesh::imagePlaneOpacityMultiplier(std::numeric_limits<float>::quiet_NaN(), 1.0f) == Catch::Approx(0.0f));
+}
+
+TEST_CASE("3D image-plane isocontours accept visible lines or fills", "[rendering][mesh][isocontour]")
+{
+  CHECK(mesh::imagePlaneIsocontourDrawable(true, true, 1.0f, 0.0f));
+  CHECK(mesh::imagePlaneIsocontourDrawable(true, true, 0.0f, 0.5f));
+  CHECK_FALSE(mesh::imagePlaneIsocontourDrawable(true, true, 0.0f, 0.0f));
+  CHECK_FALSE(mesh::imagePlaneIsocontourDrawable(false, true, 1.0f, 1.0f));
+  CHECK_FALSE(mesh::imagePlaneIsocontourDrawable(true, false, 1.0f, 1.0f));
 }
 
 TEST_CASE("orthogonal image plane scene omits planes outside the image box", "[rendering][mesh]")

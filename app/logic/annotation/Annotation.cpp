@@ -24,16 +24,7 @@ static const glm::vec4 sk_defaultSubjectPlaneEquation{1.0f, 0.0f, 0.0f, 0.0f};
 
 Annotation::Annotation(std::string name, const glm::vec4& color, const glm::vec4& subjectPlaneEquation)
   : m_displayName(std::move(name))
-  ,
-
-  m_highlighted(false)
-  , m_visible(true)
-  , m_filled(false)
-  , m_vertexVisibility(true)
-  , m_dirty(false)
-  ,
-
-  m_opacity(sk_defaultOpacity)
+  , m_opacity(sk_defaultOpacity)
   , m_vertexColor{color}
   , m_fillColor{color.r, color.g, color.b, 0.5f * color.a}
   , m_lineColor{color}

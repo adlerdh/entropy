@@ -1,61 +1,70 @@
 set(entropy_UI_SOURCES
-  "${CMAKE_CURRENT_SOURCE_DIR}/AboutIcon.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/DicomMetadataTable.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/GradientBackgroundRenderer.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/GuiData.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/headers/AnnotationHeader.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/headers/ImageHeader.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/headers/ImageHeaderInformation.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/headers/LandmarkHeader.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/headers/SegmentationHeader.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Helpers.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/ImageExport.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/IsosurfaceRangeModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/headers/IsosurfaceHeader.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiCustomControls.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiWrapper.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/LinuxUiScale.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/menus/MainMenuBar.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/NativeFileDialogs.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/AboutPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/AddLayoutPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/ConfirmClosePopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/ConfirmRemoveImagePopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/ConfirmSetReferenceImagePopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/DicomFolderPathPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/DicomSeriesSelectionPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/LargeImageLoadPromptPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/RasterImageHeaderPromptPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/popups/UnsavedProjectPopup.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Style.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/settings/SettingsModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/ThirdPartyLicenses.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/toolbars/AnnotationToolbar.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/toolbars/ModeToolbar.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/toolbars/SegmentationToolbar.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/UiScaleManager.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/updates/UpdateCheck.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/widgets/ActiveImageSelection.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/widgets/ActiveImageSelectionModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/widgets/LandmarkWidget.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/widgets/PaletteWidget.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/widgets/SegmentationLabelsWidget.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/AnnotationWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/ImagePropertiesWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionTableWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/InspectionWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/IsosurfacesWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/KeyboardShortcuts.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/LandmarkPropertiesWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/LoadingStatusModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/OpacityMixerModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/OpacityMixerWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/RegistrationWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/SegmentationPropertiesWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/SettingsWindow.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/ViewOverlayModel.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/windows/ViewOverlayWindows.cpp"
+  ui/AboutIcon.cpp
+  ui/DicomMetadataTable.cpp
+  ui/ExportJobService.cpp
+  ui/dialogs/InputLoadErrorDialog.cpp
+  ui/dialogs/InputLoadErrorDialogNative.cpp
+  ui/dialogs/NativeMessageDialogModel.cpp
+  ui/dialogs/WarpFieldAssignment.cpp
+  ui/GradientBackgroundRenderer.cpp
+  ui/GuiData.cpp
+  ui/headers/AnnotationHeader.cpp
+  ui/headers/ImageHeader.cpp
+  ui/headers/ImageHeaderInformation.cpp
+  ui/headers/LandmarkHeader.cpp
+  ui/headers/SegmentationHeader.cpp
+  ui/Helpers.cpp
+  ui/ImageExport.cpp
+  ui/IsosurfaceRangeModel.cpp
+  ui/headers/IsosurfaceHeader.cpp
+  ui/ImGuiCustomControls.cpp
+  ui/ImGuiWrapper.cpp
+  ui/LinuxUiScale.cpp
+  ui/menus/MainMenuBar.cpp
+  ui/NativeFileDialogs.cpp
+  ui/RegionStatisticsExport.cpp
+  ui/popups/AboutPopup.cpp
+  ui/popups/AddLayoutPopup.cpp
+  ui/popups/ConfirmClosePopup.cpp
+  ui/popups/ConfirmRemoveImagePopup.cpp
+  ui/popups/ConfirmSetReferenceImagePopup.cpp
+  ui/popups/DicomFolderPathPopup.cpp
+  ui/popups/DicomSeriesSelectionPopup.cpp
+  ui/popups/LargeImageLoadPromptPopup.cpp
+  ui/popups/RasterImageHeaderPromptPopup.cpp
+  ui/popups/UnsavedProjectPopup.cpp
+  ui/Style.cpp
+  ui/settings/SettingsModel.cpp
+  ui/ThirdPartyLicenses.cpp
+  ui/toolbars/AnnotationToolbar.cpp
+  ui/toolbars/ModeToolbar.cpp
+  ui/toolbars/SegmentationToolbar.cpp
+  ui/UiScaleManager.cpp
+  ui/updates/UpdateCheck.cpp
+  ui/widgets/ActiveImageSelection.cpp
+  ui/widgets/ActiveImageSelectionModel.cpp
+  ui/widgets/LandmarkWidget.cpp
+  ui/widgets/PaletteWidget.cpp
+  ui/widgets/SegmentationLabelsWidget.cpp
+  ui/windows/AnnotationWindow.cpp
+  ui/windows/ExportStatusWindow.cpp
+  ui/windows/ImagePropertiesWindow.cpp
+  ui/windows/InspectionTableWindow.cpp
+  ui/windows/InspectionWindow.cpp
+  ui/windows/InspectionWindowSizing.cpp
+  ui/windows/IsosurfacesWindow.cpp
+  ui/windows/KeyboardShortcuts.cpp
+  ui/windows/LandmarkPropertiesWindow.cpp
+  ui/windows/LoadingStatusModel.cpp
+  ui/windows/OpacityMixerModel.cpp
+  ui/windows/OpacityMixerWindow.cpp
+  ui/windows/RegistrationWindow.cpp
+  ui/windows/RegionStatisticsWindow.cpp
+  ui/windows/RegionStatisticsController.cpp
+  ui/windows/SegmentationPropertiesWindow.cpp
+  ui/windows/SettingsWindow.cpp
+  ui/windows/ViewOverlayModel.cpp
+  ui/windows/ViewOverlayWindows.cpp
 
   "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
   "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
@@ -64,25 +73,108 @@ set(entropy_UI_SOURCES
 
 if(APPLE)
   list(APPEND entropy_UI_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/ClipboardMac.mm"
-    "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogsMac.mm"
-    "${CMAKE_CURRENT_SOURCE_DIR}/menus/MacNativeMainMenu.mm"
+    ui/ClipboardMac.mm
+    ui/dialogs/NativeMessageDialogsMac.mm
+    ui/menus/MacNativeMainMenu.mm
   )
 elseif(WIN32)
   list(APPEND entropy_UI_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/ClipboardWin.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogsWin.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/menus/WinNativeMainMenu.cpp"
+    ui/ClipboardWin.cpp
+    ui/dialogs/NativeMessageDialogsWin.cpp
+    ui/menus/WinNativeMainMenu.cpp
   )
 else()
   list(APPEND entropy_UI_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/Clipboard.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogs.cpp"
+    ui/Clipboard.cpp
+    ui/dialogs/NativeMessageDialogs.cpp
   )
 endif()
 
 add_library(EntropyUI STATIC ${entropy_UI_SOURCES})
 add_library(Entropy::UI ALIAS EntropyUI)
+
+target_sources(EntropyUI
+  PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES
+      ui/AboutIcon.h
+      ui/Clipboard.h
+      ui/DicomMetadataTable.h
+      ui/ExportJobService.h
+      ui/GradientBackgroundRenderer.h
+      ui/GuiData.h
+      ui/Helpers.h
+      ui/ImGuiCustomControls.h
+      ui/ImGuiWrapper.h
+      ui/ImageExport.h
+      ui/IsosurfaceRangeModel.h
+      ui/LinuxUiScale.h
+      ui/NativeFileDialogs.h
+      ui/RegionStatisticsExport.h
+      ui/Scaling.h
+      ui/Style.h
+      ui/ThirdPartyLicenses.h
+      ui/UiControls.h
+      ui/UiScaleManager.h
+      ui/dialogs/InputLoadErrorDialog.h
+      ui/dialogs/NativeMessageDialogModel.h
+      ui/dialogs/NativeMessageDialogs.h
+      ui/dialogs/WarpFieldAssignment.h
+      ui/entropy_imgui_config.h
+      ui/headers/AnnotationHeader.h
+      ui/headers/HeaderCommon.h
+      ui/headers/Headers.h
+      ui/headers/ImageHeader.h
+      ui/headers/IsosurfaceHeader.h
+      ui/headers/LandmarkHeader.h
+      ui/headers/SegmentationHeader.h
+      ui/menus/MacNativeMainMenu.h
+      ui/menus/MainMenuBar.h
+      ui/menus/WinNativeMainMenu.h
+      ui/popups/AboutPopup.h
+      ui/popups/AddLayoutPopup.h
+      ui/popups/ConfirmationPopups.h
+      ui/popups/DicomPopups.h
+      ui/popups/LargeImageLoadPromptPopup.h
+      ui/popups/PopupCommon.h
+      ui/popups/Popups.h
+      ui/popups/RasterImageHeaderPromptPopup.h
+      ui/settings/SettingsModel.h
+      ui/toolbars/AnnotationToolbar.h
+      ui/toolbars/ModeToolbar.h
+      ui/toolbars/SegmentationToolbar.h
+      ui/toolbars/ToolbarCommon.h
+      ui/toolbars/Toolbars.h
+      ui/updates/UpdateCheck.h
+      ui/widgets/ActiveImageSelection.h
+      ui/widgets/ActiveImageSelectionModel.h
+      ui/widgets/ImageHistogram.h
+      ui/widgets/LandmarkWidget.h
+      ui/widgets/PaletteWidget.h
+      ui/widgets/SegmentationLabelsWidget.h
+      ui/widgets/Widgets.h
+      ui/windows/AnnotationWindow.h
+      ui/windows/ExportStatusWindow.h
+      ui/windows/ImagePropertiesWindow.h
+      ui/windows/InspectionWindow.h
+      ui/windows/InspectionWindowSizing.h
+      ui/windows/IsosurfacesWindow.h
+      ui/windows/KeyboardShortcuts.h
+      ui/windows/LandmarkPropertiesWindow.h
+      ui/windows/LoadingStatusModel.h
+      ui/windows/OpacityMixerModel.h
+      ui/windows/OpacityMixerWindow.h
+      ui/windows/RegionStatisticsController.h
+      ui/windows/RegionStatisticsWindow.h
+      ui/windows/RegistrationWindow.h
+      ui/windows/SegmentationPropertiesWindow.h
+      ui/windows/SettingsWindow.h
+      ui/windows/ViewOverlayModel.h
+      ui/windows/ViewOverlayWindows.h
+      ui/windows/Windows.h
+)
 
 set(entropy_UI_VENDOR_SOURCES
   "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
@@ -110,7 +202,7 @@ endif()
 
 if(APPLE AND (Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY))
   set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiWrapper.cpp"
+    ui/ImGuiWrapper.cpp
     PROPERTIES SKIP_LINTING ON
   )
 endif()
@@ -125,12 +217,16 @@ target_link_libraries(EntropyUI
     Entropy::Common
     Entropy::Image
     Entropy::Registration
+    Entropy::Viewer
     glm::glm
     imgui
     implot
     spdlog::spdlog
     stduuid
   PRIVATE
+    Entropy::Layout
+    Entropy::Mesh
+    Entropy::Rendering
     glad
     glfw
     nanovg
@@ -142,7 +238,6 @@ target_link_libraries(EntropyUI
     entropy::fonts
     entropy::icons
     entropy::licenses
-    entropy::shaders
     entropy_warnings
 )
 
@@ -160,9 +255,13 @@ if(WIN32)
   )
 endif()
 
-target_include_directories(EntropyUI PUBLIC
-  "${entropy_LIB_DIR}"
-  "${entropy_APP_DIR}"
+target_include_directories(EntropyUI
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/ui"
+    "${entropy_APP_DIR}"
 )
 
 target_include_directories(EntropyUI PRIVATE

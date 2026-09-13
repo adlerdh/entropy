@@ -30,16 +30,17 @@ if(NOT _isMultiConfig AND CMAKE_BUILD_TYPE)
 endif()
 
 foreach(_flag_var IN ITEMS
-    CMAKE_C_FLAGS
-    CMAKE_CXX_FLAGS
-    CMAKE_C_FLAGS_DEBUG
-    CMAKE_CXX_FLAGS_DEBUG
-    CMAKE_C_FLAGS_RELEASE
-    CMAKE_CXX_FLAGS_RELEASE
-    CMAKE_C_FLAGS_RELWITHDEBINFO
-    CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    CMAKE_C_FLAGS_MINSIZEREL
-    CMAKE_CXX_FLAGS_MINSIZEREL)
+  CMAKE_C_FLAGS
+  CMAKE_CXX_FLAGS
+  CMAKE_C_FLAGS_DEBUG
+  CMAKE_CXX_FLAGS_DEBUG
+  CMAKE_C_FLAGS_RELEASE
+  CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_C_FLAGS_RELWITHDEBINFO
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  CMAKE_C_FLAGS_MINSIZEREL
+  CMAKE_CXX_FLAGS_MINSIZEREL)
+
   if(DEFINED ${_flag_var} AND NOT "${${_flag_var}}" STREQUAL "")
     list(APPEND _ext_cmake_build_type_args "-D${_flag_var}:STRING=${${_flag_var}}")
   endif()
@@ -72,6 +73,7 @@ endif()
 
 set(_entropy_bundled_dependency_shared_libs ${BUILD_SHARED_LIBS})
 set(_entropy_bundled_dependency_static_libs ${BUILD_STATIC_LIBS})
+
 if(Entropy_STATIC_BUNDLED_DEPENDENCIES)
   set(_entropy_bundled_dependency_shared_libs OFF)
   set(_entropy_bundled_dependency_static_libs ON)
@@ -321,8 +323,8 @@ endif()
 message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")
 
 ExternalProject_Add(glfw
-  URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
-  URL_HASH SHA512=03de56a0599275ff57759ca19e8f69176058252b5e9976193cc3d9bb7b7b78b6a8dac6ed91de483d03c1b4807d21e1302e5e47c2f0c21e63becb4aba9d5affdc
+  URL "https://github.com/glfw/glfw/releases/download/${glfw_VERSION}/glfw-${glfw_VERSION}.zip"
+  URL_HASH SHA512=4ec83b8221763e344c3f50c1ca667afff22f6299101bbbb084c2e31e050348a322a46f25e50abdce7ecd8be82dc795d3a58e2298eac4d1dd5ac678b2a30739f0
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
@@ -603,6 +605,9 @@ set(_vtk_module_args
   -DVTK_MODULE_ENABLE_VTK_FiltersCore:STRING=YES
   -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:STRING=YES
   -DVTK_MODULE_ENABLE_VTK_FiltersSources:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_IOGeometry:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_IOPLY:STRING=YES
+  -DVTK_MODULE_ENABLE_VTK_IOXML:STRING=YES
 )
 
 ExternalProject_Add(VTK

@@ -6,11 +6,13 @@
 #include "image/ImageSettings.h"
 #include "image/ImageTransformations.h"
 #include "logic/app/Data.h"
-#include "rendering/RenderData.h"
+#include "rendering/ImageShaderCapabilities.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/TextureSetup.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <glm/mat4x4.hpp>
 #include <uuid.h>
@@ -38,16 +40,16 @@ uuid deformationSettingsOwnerImageUid(const AppData& appData, const uuid& imageU
 
 } // namespace
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(const uuid& defUid)
+Rendering::BoundTextures Rendering::bindDeformationTextures(const uuid& defUid)
 {
   return bindDeformationTextures(defUid, msk_defTexSamplers);
 }
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
+Rendering::BoundTextures Rendering::bindDeformationTextures(
   const uuid& defUid,
   const Uniforms::SamplerIndexVectorType& samplers)
 {
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  BoundTextures boundTextures;
   if (!ensureDeformationTexture(defUid)) {
     return boundTextures;
   }
@@ -57,16 +59,16 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
     return boundTextures;
   }
 
-  auto& renderData = m_appData.renderData();
-  auto textureIt = renderData.m_imageTextures.find(defUid);
-  if (textureIt == std::end(renderData.m_imageTextures) || textureIt->second.empty()) {
+  auto& resources = m_appData.renderResources();
+  auto textureIt = resources.m_imageTextures.find(defUid);
+  if (textureIt == std::end(resources.m_imageTextures) || textureIt->second.empty()) {
     return boundTextures;
   }
 
   for (std::size_t component = 0; component < 3; ++component) {
     GLTexture& texture = textureIt->second.at(component);
     texture.bind(samplers.indices[component]);
-    boundTextures.emplace_back(texture);
+    boundTextures.emplace_back(texture, samplers.indices[component]);
   }
 
   return boundTextures;
@@ -83,11 +85,11 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
     return def->header().numComponentsPerPixel() >= 3u && textures.size() >= 3u;
   };
 
-  auto& renderData = m_appData.renderData();
-  auto textureIt = renderData.m_imageTextures.find(defUid);
-  const auto layoutIt = renderData.m_imageTextureLayouts.find(defUid);
+  auto& resources = m_appData.renderResources();
+  auto textureIt = resources.m_imageTextures.find(defUid);
+  const auto layoutIt = resources.m_imageTextureLayouts.find(defUid);
   if (
-    textureIt != std::end(renderData.m_imageTextures) && layoutIt != std::end(renderData.m_imageTextureLayouts) &&
+    textureIt != std::end(resources.m_imageTextures) && layoutIt != std::end(resources.m_imageTextureLayouts) &&
     textureLayoutIsUsable(textureIt->second))
   {
     return true;
@@ -99,8 +101,8 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
     return false;
   }
 
-  textureIt = renderData.m_imageTextures.find(defUid);
-  return textureIt != std::end(renderData.m_imageTextures) && renderData.m_imageTextureLayouts.contains(defUid) &&
+  textureIt = resources.m_imageTextures.find(defUid);
+  return textureIt != std::end(resources.m_imageTextures) && resources.m_imageTextureLayouts.contains(defUid) &&
          textureLayoutIsUsable(textureIt->second);
 }
 
@@ -152,10 +154,28 @@ void Rendering::setDeformationUniforms(
   program.setUniform("u_sampleTex_T_world", sampleTex_T_world);
   program.setUniform("u_defSlope_native_T_texture", def->settings().slope_native_T_texture());
   program.setUniform("u_deformationStrength", image->settings().warpStrength());
-  const auto textureIt = m_appData.renderData().m_imageTextures.find(defUid);
+  const auto textureIt = m_appData.renderResources().m_imageTextures.find(defUid);
   const bool packedDeformationTexture =
-    textureIt != std::end(m_appData.renderData().m_imageTextures) && textureIt->second.size() == 1u;
+    textureIt != std::end(m_appData.renderResources().m_imageTextures) && textureIt->second.size() == 1u;
   program.setUniform("u_defInterleaved", packedDeformationTexture);
+}
+
+void Rendering::setImageSamplingTransformUniforms(
+  GLShaderProgram& program,
+  const uuid& imageUid,
+  const std::optional<uuid>& deformationUid,
+  const glm::mat4& sampleTex_T_world) const
+{
+  const auto samplingTransform =
+    deformationUid ? rendering::ImageSamplingTransform::Deformation : rendering::ImageSamplingTransform::Direct;
+  rendering::validateImageSamplingTransform(program.getRegisteredUniforms(), samplingTransform);
+
+  if (deformationUid) {
+    setDeformationUniforms(program, imageUid, *deformationUid, sampleTex_T_world);
+  }
+  else {
+    program.setUniform("u_tex_T_world", sampleTex_T_world);
+  }
 }
 
 void Rendering::setMetricDeformationUniforms(
@@ -179,8 +199,8 @@ void Rendering::setMetricDeformationUniforms(
   program.setUniform("u_deformationStrength" + index, image->settings().warpStrength());
   program.setUniform("u_warpEnabled" + index, true);
 
-  const auto textureIt = m_appData.renderData().m_imageTextures.find(defUid);
+  const auto textureIt = m_appData.renderResources().m_imageTextures.find(defUid);
   const bool packedDeformationTexture =
-    textureIt != std::end(m_appData.renderData().m_imageTextures) && textureIt->second.size() == 1u;
+    textureIt != std::end(m_appData.renderResources().m_imageTextures) && textureIt->second.size() == 1u;
   program.setUniform("u_defInterleaved" + index, packedDeformationTexture);
 }

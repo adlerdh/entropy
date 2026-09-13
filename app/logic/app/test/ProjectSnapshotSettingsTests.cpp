@@ -77,6 +77,8 @@ TEST_CASE("New segmentation labels receive full-range generated colors", "[Proje
 
   CHECK_FALSE(table.getShowMesh(0));
   CHECK(table.getShowMesh(1));
+  CHECK(table.getIncludeInCutaway(0));
+  CHECK(table.getIncludeInCutaway(1));
 
   const std::vector<std::size_t> added = table.addLabels(1);
 
@@ -84,4 +86,5 @@ TEST_CASE("New segmentation labels receive full-range generated colors", "[Proje
   const glm::u8vec3 color = table.getColor(added.front());
   CHECK((color.r > 1 || color.g > 1 || color.b > 1));
   CHECK(table.getShowMesh(added.front()));
+  CHECK(table.getIncludeInCutaway(added.front()));
 }

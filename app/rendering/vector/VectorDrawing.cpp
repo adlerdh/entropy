@@ -1,5 +1,7 @@
 #include "rendering/vector/VectorDrawing.h"
 
+#include "common/AnatomicalLabels.h"
+
 #include "rendering/helpers/VectorDrawingHelpers.h"
 
 #include "common/DirectionMaps.h"
@@ -399,6 +401,7 @@ void drawAnatomicalLabels(
   bool isViewOblique,
   const glm::vec4& fontColor,
   const AnatomicalLabelType& anatLabelType,
+  const std::optional<QuadrupedBodyRegion>& quadrupedBodyRegion,
   float labelScale,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo)
 {
@@ -408,70 +411,9 @@ void drawAnatomicalLabels(
     return;
   }
 
-  auto getLabelAbbrev = [&anatLabelType](int labelIndex) -> const char* {
-    switch (anatLabelType) {
-      case AnatomicalLabelType::Cartesian: {
-        switch (labelIndex) {
-          case 0:
-            return Directions::abbrev(Directions::Cartesian::PosX).c_str();
-          case 1:
-            return Directions::abbrev(Directions::Cartesian::PosY).c_str();
-          case 2:
-            return Directions::abbrev(Directions::Cartesian::PosZ).c_str();
-          case 3:
-            return Directions::abbrev(Directions::Cartesian::NegX).c_str();
-          case 4:
-            return Directions::abbrev(Directions::Cartesian::NegY).c_str();
-          case 5:
-            return Directions::abbrev(Directions::Cartesian::NegZ).c_str();
-          default:
-            return "";
-        }
-        break;
-      }
-      case AnatomicalLabelType::Human: {
-        switch (labelIndex) {
-          case 0:
-            return Directions::abbrev(Directions::Anatomy::Left).c_str();
-          case 1:
-            return Directions::abbrev(Directions::Anatomy::Posterior).c_str();
-          case 2:
-            return Directions::abbrev(Directions::Anatomy::Superior).c_str();
-          case 3:
-            return Directions::abbrev(Directions::Anatomy::Right).c_str();
-          case 4:
-            return Directions::abbrev(Directions::Anatomy::Anterior).c_str();
-          case 5:
-            return Directions::abbrev(Directions::Anatomy::Inferior).c_str();
-          default:
-            return "";
-        }
-        break;
-      }
-      case AnatomicalLabelType::Rodent: {
-        switch (labelIndex) {
-          case 0:
-            return Directions::abbrev(Directions::Animal::Left).c_str();
-          case 1:
-            return Directions::abbrev(Directions::Animal::Dorsal).c_str();
-          case 2:
-            return Directions::abbrev(Directions::Animal::Rostral).c_str();
-          case 3:
-            return Directions::abbrev(Directions::Animal::Right).c_str();
-          case 4:
-            return Directions::abbrev(Directions::Animal::Ventral).c_str();
-          case 5:
-            return Directions::abbrev(Directions::Animal::Caudal).c_str();
-          default:
-            return "";
-        }
-        break;
-      }
-      case AnatomicalLabelType::Disabled: {
-        return "";
-      }
-    }
-    return "";
+  const auto labels = anatomicalDirectionAbbreviations(anatLabelType, quadrupedBodyRegion);
+  auto getLabelAbbrev = [&labels](const int labelIndex) -> const char* {
+    return labelIndex >= 0 && static_cast<std::size_t>(labelIndex) < labels.size() ? labels[labelIndex] : "";
   };
 
   const float inwardShiftMultiplier =
@@ -618,7 +560,7 @@ void drawLandmarks(
     miewportViewBounds.viewport[2],
     miewportViewBounds.viewport[3]);
 
-  const float strokeWidth = appData.renderData().m_globalLandmarkParams.strokeWidth;
+  const float strokeWidth = appData.renderSettings().m_globalLandmarkParams.strokeWidth;
 
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
   const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
@@ -1001,7 +943,7 @@ void drawAnnotations(
       }
 
       // Draw the annotation outer boundary vertices:
-      if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility()) {
+      if (!appData.renderSettings().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility()) {
         for (const glm::vec2& vertex : annotPlaneVertices) {
           const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, vertex);
           const float radius = std::max(sk_vertexRadius, annot->getLineThickness());
@@ -1084,9 +1026,9 @@ void drawVectorFieldArrows(
   const glm::vec2 viewMin{miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset};
   const glm::vec2 viewSize{miewportViewBounds.bounds.width, miewportViewBounds.bounds.height};
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
-  const RenderData& renderData = appData.renderData();
+  const rendering::RenderSettings& renderSettings = appData.renderSettings();
   const float aspectRatio = view.camera().aspectRatio();
-  const float numCheckers = static_cast<float>(renderData.m_numCheckerboardSquares);
+  const float numCheckers = static_cast<float>(renderSettings.m_numCheckerboardSquares);
   const glm::vec4 clipCrosshairs4 = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
   const glm::vec2 clipCrosshairs{clipCrosshairs4 / clipCrosshairs4.w};
 
@@ -1150,11 +1092,11 @@ void drawVectorFieldArrows(
             viewClipPos,
             checkerCoord,
             clipCrosshairs,
-            renderData.m_quadrants,
+            renderSettings.m_quadrants,
             isFixedImage,
             aspectRatio,
-            renderData.m_flashlightRadius,
-            renderData.m_flashlightOverlays))
+            renderSettings.m_flashlightRadius,
+            renderSettings.m_flashlightOverlays))
       {
         return;
       }
@@ -1239,8 +1181,12 @@ void drawVectorFieldArrows(
         4.0f / std::max(screenPixelsPerVoxel(windowViewport, view, *image, worldCrosshairs), 0.1f));
       const float voxelStep = std::min(minStepForScreenSpacing, 100.0f);
 
-      for (float b = 0.0f; b < static_cast<float>(dims[axis1]); b += voxelStep) {
-        for (float a = 0.0f; a < static_cast<float>(dims[axis0]); a += voxelStep) {
+      const auto sampleCountA = static_cast<std::size_t>(std::ceil(static_cast<float>(dims[axis0]) / voxelStep));
+      const auto sampleCountB = static_cast<std::size_t>(std::ceil(static_cast<float>(dims[axis1]) / voxelStep));
+      for (std::size_t sampleB = 0; sampleB < sampleCountB; ++sampleB) {
+        const float b = static_cast<float>(sampleB) * voxelStep;
+        for (std::size_t sampleA = 0; sampleA < sampleCountA; ++sampleA) {
+          const float a = static_cast<float>(sampleA) * voxelStep;
           glm::vec3 pixelPos{0.0f};
           pixelPos[axis0] = a;
           pixelPos[axis1] = b;
@@ -1269,8 +1215,14 @@ void drawVectorFieldArrows(
     else {
       const float startX = viewMin.x + 0.5f * spacingPx;
       const float startY = viewMin.y + 0.5f * spacingPx;
-      for (float y = startY; y < viewMin.y + viewSize.y; y += spacingPx) {
-        for (float x = startX; x < viewMin.x + viewSize.x; x += spacingPx) {
+      const auto columnCount =
+        static_cast<std::size_t>(std::ceil(std::max(0.0f, viewSize.x - 0.5f * spacingPx) / spacingPx));
+      const auto rowCount =
+        static_cast<std::size_t>(std::ceil(std::max(0.0f, viewSize.y - 0.5f * spacingPx) / spacingPx));
+      for (std::size_t row = 0; row < rowCount; ++row) {
+        const float y = startY + static_cast<float>(row) * spacingPx;
+        for (std::size_t column = 0; column < columnCount; ++column) {
+          const float x = startX + static_cast<float>(column) * spacingPx;
           const glm::vec2 samplePos{x, y};
           const glm::vec3 worldNear =
             helper::world_T_miewport(windowViewport, view.camera(), view.viewClip_T_windowClip(), samplePos);

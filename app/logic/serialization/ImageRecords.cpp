@@ -58,12 +58,14 @@ void from_json(const json& j, serialize::SegSettings& settings)
 
 json segmentationLabelToJson(const serialize::SegmentationLabel& label)
 {
-  return json{
+  json result{
     {"index", label.m_index},
     {"name", label.m_name},
     {"color", vec4ToJson(label.m_color)},
     {"visible", label.m_visible},
     {"showMesh", label.m_showMesh}};
+  addIfChanged(result, "includeInCutaway", label.m_includeInCutaway, true);
+  return result;
 }
 
 serialize::SegmentationLabel segmentationLabelFromJson(const json& j)
@@ -83,6 +85,9 @@ serialize::SegmentationLabel segmentationLabelFromJson(const json& j)
   }
   if (const auto showMesh = j.find("showMesh"); showMesh != j.end() && showMesh->is_boolean()) {
     label.m_showMesh = showMesh->get<bool>();
+  }
+  if (const auto include = j.find("includeInCutaway"); include != j.end() && include->is_boolean()) {
+    label.m_includeInCutaway = include->get<bool>();
   }
   return label;
 }
@@ -282,6 +287,30 @@ void from_json(const json& j, serialize::ImageIsosurface& isosurface)
   }
 }
 
+void to_json(json& j, const serialize::ImportedMesh& mesh)
+{
+  const serialize::ImportedMesh defaults;
+  j = json{{"uid", mesh.m_uid}, {"path", pathToString(mesh.m_path)}};
+  addIfChanged(j, "name", mesh.m_name, mesh.m_path.stem().string());
+  addIfChanged(j, "color", vec3ToJson(mesh.m_color), vec3ToJson(defaults.m_color));
+  addIfChanged(j, "opacity", mesh.m_opacity, defaults.m_opacity);
+  addIfChanged(j, "visible2d", mesh.m_visibleIn2d, defaults.m_visibleIn2d);
+  addIfChanged(j, "visible3d", mesh.m_visibleIn3d, defaults.m_visibleIn3d);
+}
+
+void from_json(const json& j, serialize::ImportedMesh& mesh)
+{
+  j.at("uid").get_to(mesh.m_uid);
+  mesh.m_path = j.at("path").get<std::string>();
+  mesh.m_name = j.value("name", mesh.m_path.stem().string());
+  if (const auto color = j.find("color"); color != j.end()) {
+    mesh.m_color = glm::clamp(vec3FromJson(*color), glm::vec3{0.0f}, glm::vec3{1.0f});
+  }
+  mesh.m_opacity = std::clamp(j.value("opacity", mesh.m_opacity), 0.0f, 1.0f);
+  mesh.m_visibleIn2d = j.value("visible2d", mesh.m_visibleIn2d);
+  mesh.m_visibleIn3d = j.value("visible3d", j.value("visible", mesh.m_visibleIn3d));
+}
+
 void to_json(json& j, const serialize::DicomSource& source)
 {
   j = json::object();
@@ -297,6 +326,21 @@ void to_json(json& j, const serialize::DicomSource& source)
   if (!source.m_studyInstanceUid.empty()) {
     j["studyInstanceUid"] = source.m_studyInstanceUid;
   }
+
+  json anatomy = json::object();
+  if (DicomAnatomicalOrientation::Unspecified != source.m_anatomy.orientation) {
+    anatomy["orientation"] = enumToName(source.m_anatomy.orientation, k_dicomAnatomicalOrientationNames);
+  }
+  if (source.m_anatomy.bodyRegion) {
+    anatomy["bodyRegion"] = enumToName(*source.m_anatomy.bodyRegion, k_quadrupedBodyRegionNames);
+  }
+  if (DicomBodyRegionSource::None != source.m_anatomy.bodyRegionSource) {
+    anatomy["bodyRegionSource"] = enumToName(source.m_anatomy.bodyRegionSource, k_dicomBodyRegionSourceNames);
+  }
+  if (source.m_anatomy.nonHumanSpecies) {
+    anatomy["nonHumanSpecies"] = true;
+  }
+  addIfNotEmpty(j, "anatomy", std::move(anatomy));
 
   if (!source.m_files.empty()) {
     std::vector<std::string> paths;
@@ -316,6 +360,27 @@ void from_json(const json& j, serialize::DicomSource& source)
   }
   if (j.count("seriesInstanceUid")) {
     source.m_seriesInstanceUid = j.at("seriesInstanceUid").get<std::string>();
+  }
+  if (const auto anatomy = j.find("anatomy"); anatomy != j.end() && anatomy->is_object()) {
+    if (
+      const auto parsed =
+        enumFromName<DicomAnatomicalOrientation>(anatomy->value("orientation", ""), k_dicomAnatomicalOrientationNames))
+    {
+      source.m_anatomy.orientation = *parsed;
+    }
+    if (
+      const auto parsed =
+        enumFromName<QuadrupedBodyRegion>(anatomy->value("bodyRegion", ""), k_quadrupedBodyRegionNames))
+    {
+      source.m_anatomy.bodyRegion = parsed;
+    }
+    if (
+      const auto parsed =
+        enumFromName<DicomBodyRegionSource>(anatomy->value("bodyRegionSource", ""), k_dicomBodyRegionSourceNames))
+    {
+      source.m_anatomy.bodyRegionSource = *parsed;
+    }
+    source.m_anatomy.nonHumanSpecies = anatomy->value("nonHumanSpecies", false);
   }
   if (j.count("paths")) {
     const auto paths = j.at("paths").get<std::vector<std::string>>();
@@ -386,6 +451,10 @@ void to_json(json& j, const serialize::Image& image)
     j["isosurfaces"] = image.m_isosurfaces;
   }
 
+  if (!image.m_importedMeshes.empty()) {
+    j["meshes"] = image.m_importedMeshes;
+  }
+
   if (image.m_settings) {
     json settings = *image.m_settings;
     addIfNotEmpty(j, "settings", std::move(settings));
@@ -453,6 +522,10 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("isosurfaces")) {
     j.at("isosurfaces").get_to(image.m_isosurfaces);
+  }
+
+  if (j.count("meshes")) {
+    j.at("meshes").get_to(image.m_importedMeshes);
   }
 
   if (j.count("settings")) {

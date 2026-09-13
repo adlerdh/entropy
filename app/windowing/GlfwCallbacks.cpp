@@ -152,7 +152,7 @@ void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float c
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in window content scale callback");
+    spdlog::error("Ignoring window content-scale change because the GLFW application pointer is null");
     return;
   }
 
@@ -160,14 +160,14 @@ void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float c
 
   app->windowData().setContentScaleRatios(glm::vec2{contentScaleX, contentScaleY});
   app->imgui().setContentScale(app->windowData().getContentScaleRatio());
-  app->glfw().postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void windowCloseCallback(GLFWwindow* window)
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in window close callback");
+    spdlog::error("Ignoring window close request because the GLFW application pointer is null");
     return;
   }
 
@@ -184,7 +184,7 @@ void windowPositionCallback(GLFWwindow* window, int screenWindowPosX, int screen
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in window size callback");
+    spdlog::error("Ignoring window position change because the GLFW application pointer is null");
     return;
   }
 
@@ -196,7 +196,7 @@ void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in window size callback");
+    spdlog::error("Ignoring window size change because the GLFW application pointer is null");
     return;
   }
 
@@ -208,14 +208,14 @@ void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
   app->windowData().setFramebufferSize(fbWidth, fbHeight);
   app->resize(windowWidth, windowHeight);
   app->glfw().renderAndSwapOnce();
-  app->glfw().postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in framebuffer size callback");
+    spdlog::error("Ignoring framebuffer size change because the GLFW application pointer is null");
     return;
   }
 
@@ -227,7 +227,7 @@ void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
   app->windowData().setFramebufferSize(fbWidth, fbHeight);
   app->resize(windowWidth, windowHeight);
   app->glfw().renderAndSwapOnce();
-  app->glfw().postEmptyEvent();
+  GlfwWrapper::postEmptyEvent();
 }
 
 void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindowCursorPosY)
@@ -237,7 +237,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
 
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in cursor position callback");
+    spdlog::error("Ignoring cursor movement because the GLFW application pointer is null");
     return;
   }
 
@@ -651,8 +651,15 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in mouse button callback");
+    spdlog::error("Ignoring mouse-button input because the GLFW application pointer is null");
     return;
+  }
+
+  const bool releasedLastTransformationButton =
+    GLFW_RELEASE == action && ((GLFW_MOUSE_BUTTON_LEFT == button && !s_mouseButtonState.right) ||
+                               (GLFW_MOUSE_BUTTON_RIGHT == button && !s_mouseButtonState.left));
+  if (releasedLastTransformationButton) {
+    app->appData().state().transformationGuide().finish();
   }
 
   const ImGuiIO& io = ImGui::GetIO();
@@ -729,7 +736,7 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
 
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in scroll callback");
+    spdlog::error("Ignoring scroll input because the GLFW application pointer is null");
     return;
   }
 
@@ -800,7 +807,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
 
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in key callback");
+    spdlog::error("Ignoring keyboard input because the GLFW application pointer is null");
     return;
   }
 
@@ -1156,7 +1163,7 @@ void dropCallback(GLFWwindow* window, int count, const char** paths)
 
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
   if (!app) {
-    spdlog::warn("App is null in drop callback");
+    spdlog::error("Ignoring dropped files because the GLFW application pointer is null");
     return;
   }
 

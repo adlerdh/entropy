@@ -7,7 +7,9 @@ endif()
 target_sources(entropy PRIVATE
   main.cpp
   AppCallbacks.cpp
+  AppImageLoading.cpp
   AppLifecycle.cpp
+  AppLoading.cpp
   AppProject.cpp
   AppRegistration.cpp
   EntropyApp.cpp
@@ -39,6 +41,9 @@ target_link_libraries(entropy PRIVATE
   Entropy::Common
   Entropy::Image
   Entropy::Layout
+  Entropy::Mesh
+  Entropy::Rendering
+  Entropy::RenderingMeshProcessing
   Entropy::UI
   Entropy::Viewer
   glfw
@@ -79,7 +84,6 @@ endif()
 target_include_directories(entropy PRIVATE
   "${CMAKE_BINARY_DIR}"
   "${entropy_APP_DIR}"
-  "${entropy_LIB_DIR}"
   "${entropy_RES_DIR}"
   "${glad_INCLUDE_DIR}"
   "${iconfont_INCLUDE_DIR}"

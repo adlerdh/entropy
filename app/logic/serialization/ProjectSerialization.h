@@ -196,25 +196,27 @@ struct ProjectComparisonSettings
  */
 struct ProjectThreeDRenderingSettings
 {
-  bool m_transparentBackground = true;                    //!< Make the 3D view background transparent
-  bool m_imageBoxVisible = false;                         //!< Show the image-domain outline in 3D views
-  bool m_imagePlanesVisible = true;                       //!< Show orthogonal image planes in 3D views
-  bool m_imagePlaneViewAngleOpacity = true;               //!< Fade image planes based on view angle
-  bool m_imagePlaneSegmentationsVisible = true;           //!< Show segmentation overlays on 3D image planes
-  bool m_imagePlaneShading = true;                        //!< Apply headlight shading to image planes
-  float m_imagePlaneLightingAmbient = 0.30f;              //!< Image-plane ADS ambient term
-  float m_imagePlaneLightingDiffuse = 0.50f;              //!< Image-plane ADS diffuse term
-  float m_imagePlaneLightingSpecular = 0.20f;             //!< Image-plane ADS specular term
-  float m_imagePlaneLightingSpecularPower = 16.0f;        //!< Image-plane ADS specular exponent
-  float m_lightingAmbient = 0.30f;                        //!< 3D ADS ambient term
-  float m_lightingDiffuse = 0.50f;                        //!< 3D ADS diffuse term
-  float m_lightingSpecular = 0.20f;                       //!< 3D ADS specular term
-  float m_lightingSpecularPower = 16.0f;                  //!< 3D ADS specular exponent
-  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D views
-  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
-  float m_crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;  //!< Per-axis glyph length in voxel diagonals
-  bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views
-  bool m_reverseThreeDRotateAboutEye = false;             //!< Reverse POV 3D camera rotation direction
+  bool m_transparentBackground = true;                   //!< Make the 3D view background transparent
+  bool m_imageBoxVisible = false;                        //!< Show the image-domain outline in 3D views
+  bool m_imagePlanesVisible = true;                      //!< Show orthogonal image planes in 3D views
+  bool m_imagePlaneSegmentationsVisible = true;          //!< Show segmentation overlays on 3D image planes
+  bool m_imagePlaneIsocontoursVisible = true;            //!< Show isocontour overlays on 3D image planes
+  float m_imagePlaneOpacity = 1.0f;                      //!< Overall opacity multiplier for 3D image planes
+  bool m_imagePlaneViewAngleOpacity = true;              //!< Fade image planes based on view angle
+  bool m_imagePlaneShading = true;                       //!< Apply headlight shading to image planes
+  float m_imagePlaneLightingAmbient = 0.30f;             //!< Image-plane ADS ambient term
+  float m_imagePlaneLightingDiffuse = 0.50f;             //!< Image-plane ADS diffuse term
+  float m_imagePlaneLightingSpecular = 0.20f;            //!< Image-plane ADS specular term
+  float m_imagePlaneLightingSpecularPower = 16.0f;       //!< Image-plane ADS specular exponent
+  float m_lightingAmbient = 0.30f;                       //!< 3D ADS ambient term
+  float m_lightingDiffuse = 0.50f;                       //!< 3D ADS diffuse term
+  float m_lightingSpecular = 0.20f;                      //!< 3D ADS specular term
+  float m_lightingSpecularPower = 16.0f;                 //!< 3D ADS specular exponent
+  bool m_showCrosshairsIn3D = true;                      //!< Render crosshairs glyph in 3D views
+  float m_crosshairs3DGlyphDiameterScenePercent = 0.25f; //!< Glyph diameter as a percentage of scene diagonal
+  float m_crosshairs3DGlyphLengthScenePercent = 4.0f;    //!< Per-axis glyph length as a percentage of scene diagonal
+  bool m_showThreeDCameraFrustumIn2DViews = false;       //!< Show the active 3D camera frustum in 2D views
+  bool m_reverseThreeDRotateAboutEye = false;            //!< Reverse POV 3D camera rotation direction
   glm::vec4 m_threeDCameraFrustumColor{
     0x7c / 255.0f,
     0x5e / 255.0f,
@@ -242,36 +244,35 @@ struct ProjectRaycastingSettings
  */
 struct ProjectMeshRenderingSettings
 {
-  bool m_renderingEnabled = true;                     //!< Render committed opaque isosurfaces as meshes when ready
-  bool m_flatShadingEnabled = false;                  //!< Use one geometric normal per rendered mesh triangle
-  bool m_triangleEdgesEnabled = false;                //!< Overlay anti-aliased triangle topology edges
-  glm::vec3 m_triangleEdgeColor{0.0f};                //!< Triangle topology edge color
-  bool m_pbrShadingEnabled = false;                   //!< Use PBR shading for all rendered surface meshes
-  float m_pbrMetallic = 0.2f;                         //!< Global PBR metallic factor
-  float m_pbrRoughness = 0.3f;                        //!< Global PBR roughness factor
-  float m_pbrAmbientOcclusion = 1.0f;                 //!< Global PBR indirect-light occlusion factor
-  bool m_smoothSegmentationMeshes = true;             //!< Smooth extracted segmentation-label surfaces
-  bool m_smoothIsosurfaceMeshes = true;               //!< Smooth extracted scalar isosurfaces
-  uint32_t m_meshSmoothingIterations = 25;            //!< Shared windowed-sinc smoothing iterations
-  float m_meshSmoothingPassBand = 0.1f;               //!< Shared windowed-sinc smoothing pass band
-  uint32_t m_ddpMaxPeelPasses = 5;                    //!< DDP safety/fixed front-back peel iteration count
-  bool m_pickingEnabled = true;                       //!< Allow mesh point picking in 3D views
-  bool m_clipPlaneEnabled = false;                    //!< Enable a project-wide mesh clipping plane
-  glm::vec4 m_clipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f}; //!< World-space mesh clipping plane
-  bool m_shadowsEnabled = false;                      //!< Render mesh shadows when mesh rendering is active
-  uint32_t m_shadowMapSizePixels = 1024;              //!< Mesh shadow-map size in pixels
-  float m_shadowStrength = 0.35f;                     //!< Mesh shadow contribution in [0, 1]
-  float m_shadowDepthBias = 0.001f;                   //!< Mesh shadow depth bias
-  bool m_ambientOcclusionEnabled = false;             //!< Render screen-space ambient occlusion for meshes
-  float m_ambientOcclusionRadiusMm = 5.0f;            //!< Mesh AO view-space radius in physical millimetres
-  float m_ambientOcclusionStrength = 1.0f;            //!< Mesh AO contribution in [0, 1]
-  float m_ambientOcclusionPower = 1.5f;               //!< Mesh AO nonlinear response exponent
-  float m_ambientOcclusionContrast = 1.0f;            //!< Mesh AO shaped occlusion scale
-  uint32_t m_ambientOcclusionSampleCount = 24;        //!< Mesh AO hemisphere samples per pixel
-  bool m_rimLightingEnabled = false;                  //!< Apply rim lighting to all rendered surfaces
-  float m_rimOpacityStrength = 1.0f;                  //!< Global rim opacity modulation strength
-  float m_rimEmissionStrength = 1.0f;                 //!< Global rim glow strength
-  float m_rimPower = 2.0f;                            //!< Global rim falloff exponent
+  bool m_renderingEnabled = true;              //!< Render committed opaque isosurfaces as meshes when ready
+  bool m_flatShadingEnabled = false;           //!< Use one geometric normal per rendered mesh triangle
+  bool m_triangleEdgesEnabled = false;         //!< Overlay anti-aliased triangle topology edges
+  glm::vec3 m_triangleEdgeColor{0.0f};         //!< Triangle topology edge color
+  bool m_pbrShadingEnabled = false;            //!< Use PBR shading for all rendered surface meshes
+  float m_pbrMetallic = 0.2f;                  //!< Global PBR metallic factor
+  float m_pbrRoughness = 0.3f;                 //!< Global PBR roughness factor
+  float m_pbrAmbientOcclusion = 1.0f;          //!< Global PBR indirect-light occlusion factor
+  bool m_smoothSegmentationMeshes = true;      //!< Smooth extracted segmentation-label surfaces
+  bool m_smoothIsosurfaceMeshes = true;        //!< Smooth extracted scalar isosurfaces
+  uint32_t m_meshSmoothingIterations = 25;     //!< Shared windowed-sinc smoothing iterations
+  float m_meshSmoothingPassBand = 0.1f;        //!< Shared windowed-sinc smoothing pass band
+  uint32_t m_ddpMaxPeelPasses = 5;             //!< DDP safety/fixed front-back peel iteration count
+  bool m_pickingEnabled = true;                //!< Allow mesh point picking in 3D views
+  bool m_cutawayEnabled = false;               //!< Cut away the viewer-facing octant of opted-in surface meshes
+  bool m_shadowsEnabled = false;               //!< Render mesh shadows when mesh rendering is active
+  uint32_t m_shadowMapSizePixels = 1024;       //!< Mesh shadow-map size in pixels
+  float m_shadowStrength = 0.35f;              //!< Mesh shadow contribution in [0, 1]
+  float m_shadowDepthBias = 0.001f;            //!< Mesh shadow depth bias
+  bool m_ambientOcclusionEnabled = false;      //!< Render screen-space ambient occlusion for meshes
+  float m_ambientOcclusionRadiusMm = 5.0f;     //!< Mesh AO view-space radius in physical millimetres
+  float m_ambientOcclusionStrength = 1.0f;     //!< Mesh AO contribution in [0, 1]
+  float m_ambientOcclusionPower = 1.5f;        //!< Mesh AO nonlinear response exponent
+  float m_ambientOcclusionContrast = 1.0f;     //!< Mesh AO shaped occlusion scale
+  uint32_t m_ambientOcclusionSampleCount = 24; //!< Mesh AO hemisphere samples per pixel
+  bool m_rimLightingEnabled = false;           //!< Apply rim lighting to all rendered surfaces
+  float m_rimOpacityStrength = 1.0f;           //!< Global rim opacity modulation strength
+  float m_rimEmissionStrength = 1.0f;          //!< Global rim glow strength
+  float m_rimPower = 2.0f;                     //!< Global rim falloff exponent
 };
 
 /**
@@ -279,11 +280,11 @@ struct ProjectMeshRenderingSettings
  */
 struct ProjectIntensityProjectionSettings
 {
-  bool m_useMaximumImageExtent = false; //!< Project through the full image extent
-  float m_slabThicknessMm = 10.0f;      //!< Default projection slab thickness
-  float m_xrayEnergyKeV = 80.0f;        //!< X-ray projection photon energy
-  float m_xrayWindow = 1.0f;            //!< X-ray projection contrast window
-  float m_xrayLevel = 0.5f;             //!< X-ray projection contrast level
+  bool m_useMaximumImageExtent = true; //!< Project through the full image extent
+  float m_slabThicknessMm = 10.0f;     //!< Default projection slab thickness
+  float m_xrayEnergyKeV = 80.0f;       //!< X-ray projection photon energy
+  float m_xrayWindow = 1.0f;           //!< X-ray projection contrast window
+  float m_xrayLevel = 0.5f;            //!< X-ray projection contrast level
 };
 
 /**
@@ -293,9 +294,9 @@ struct ProjectSegmentationDisplaySettings
 {
   bool m_modulateOpacityWithImageOpacity2d = true; //!< Scale 2D segmentation opacity by image opacity
   bool m_modulateOpacityWithImageOpacity3d = true; //!< Scale 3D segmentation-mesh opacity by image opacity
-  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::Disabled; //!< Global segmentation outline
-  float m_interiorOpacity = 0.2f;                                               //!< Interior opacity when outlined
-  float m_erosionFactor = 0.5f;                                                 //!< Linear interpolation cutoff
+  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::ViewPixel; //!< Global segmentation outline
+  float m_interiorOpacity = 0.2f;                                                //!< Interior opacity when outlined
+  float m_erosionFactor = 0.5f;                                                  //!< Linear interpolation cutoff
 };
 
 /**
@@ -447,11 +448,12 @@ struct SegmentationLabel
 {
   bool operator==(const SegmentationLabel&) const = default;
 
-  std::size_t m_index = 0; //!< Label table index
-  std::string m_name;      //!< Label name
-  glm::vec4 m_color{0.0f}; //!< Normalized non-premultiplied RGBA color
-  bool m_visible = true;   //!< Show label in segmentation rendering
-  bool m_showMesh = false; //!< Show label mesh in 3D views
+  std::size_t m_index = 0;        //!< Label table index
+  std::string m_name;             //!< Label name
+  glm::vec4 m_color{0.0f};        //!< Normalized non-premultiplied RGBA color
+  bool m_visible = true;          //!< Show label in segmentation rendering
+  bool m_showMesh = false;        //!< Show label mesh in 3D views
+  bool m_includeInCutaway = true; //!< Apply the global cutaway to this label's mesh
 };
 
 struct SegmentationLabels
@@ -525,6 +527,21 @@ struct ImageIsosurface
   Isosurface m_surface;     //!< User-editable isosurface settings
 };
 
+/// Project record for a user-imported surface mesh associated with an image.
+struct ImportedMesh
+{
+  std::string m_uid;            //!< Stable mesh identifier
+  std::filesystem::path m_path; //!< Source mesh file
+  std::string m_name;           //!< User-visible name
+  glm::vec3 m_color{0.8f};      //!< Base surface color
+  float m_opacity = 1.0f;       //!< Surface opacity
+  bool m_visibleIn2d = false;   //!< Intersection-contour visibility in 2D views
+  bool m_visibleIn3d = true;    //!< Surface visibility in 3D views
+};
+
+void to_json(nlohmann::json& j, const ImportedMesh& mesh);
+void from_json(const nlohmann::json& j, ImportedMesh& mesh);
+
 /**
  * @brief Serialized DICOM-series source metadata for an image.
  *
@@ -537,6 +554,7 @@ struct DicomSource
   std::filesystem::path m_rootPath;           //!< Root folder used to discover the series
   std::string m_studyInstanceUid;             //!< Study Instance UID used to disambiguate the series
   std::string m_seriesInstanceUid;            //!< Series Instance UID to reload
+  DicomAnatomyInfo m_anatomy;                 //!< Normalized patient orientation and body region
   std::vector<std::filesystem::path> m_files; //!< Slice paths in series order
 };
 
@@ -621,6 +639,9 @@ struct Image
    */
   std::vector<serialize::ImageIsosurface> m_isosurfaces;
 
+  /// User-imported meshes associated with this image.
+  std::vector<serialize::ImportedMesh> m_importedMeshes;
+
   /**
    * Optional image settings
    */
@@ -651,7 +672,9 @@ struct ProjectViewSettings
   bool m_annotationsOnTop = false;                   //!< Render annotations over all image planes
   bool m_landmarksOnTop = false;                     //!< Render landmarks over all image planes
   bool m_hideAnnotationVertices = false;             //!< Hide annotation polygon vertices
-  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention
+  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Automatic; //!< Anatomical label convention
+  QuadrupedBodyRegion m_quadrupedBodyRegion = QuadrupedBodyRegion::Automatic; //!< Quadruped region selection
+  ViewConvention m_viewConvention = ViewConvention::Radiological;             //!< Left/right display convention
   bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image
   CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior
 };

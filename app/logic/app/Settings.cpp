@@ -308,6 +308,36 @@ void AppSettings::setAutomaticUpdateChecksEnabled(bool enabled)
   m_automaticUpdateChecksEnabled = enabled;
 }
 
+bool AppSettings::showImageExportFormatGuide() const
+{
+  return m_showImageExportFormatGuide;
+}
+
+void AppSettings::setShowImageExportFormatGuide(bool show)
+{
+  m_showImageExportFormatGuide = show;
+}
+
+bool AppSettings::showSegmentationExportFormatGuide() const
+{
+  return m_showSegmentationExportFormatGuide;
+}
+
+void AppSettings::setShowSegmentationExportFormatGuide(bool show)
+{
+  m_showSegmentationExportFormatGuide = show;
+}
+
+bool AppSettings::showMeshExportFormatGuide() const
+{
+  return m_showMeshExportFormatGuide;
+}
+
+void AppSettings::setShowMeshExportFormatGuide(bool show)
+{
+  m_showMeshExportFormatGuide = show;
+}
+
 const std::vector<RecentPathGroup>& AppSettings::recentImageGroups() const
 {
   return m_recentImageGroups;

@@ -5,10 +5,10 @@
 #include "rendering/ascii/AsciiAtlas.h"
 #include "rendering/ascii/AsciiAtlasBaker.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/utility/gl/GLFrameBufferObject.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLVertexArrayObject.h"
+#include "rendering/gl/GLFrameBufferObject.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLVertexArrayObject.h"
 
 #include <glm/vec2.hpp>
 
@@ -67,8 +67,8 @@ public:
   /**
    * @brief Rebuild the glyph atlas if the user changed the active ASCII character set.
    *
-   * The rebuild flag lives in RenderData so UI code can request a rebuild without touching OpenGL resources directly.
-   * Call this once per frame before render().
+   * The rebuild flag lives in RenderSettings so UI code can request a rebuild without touching OpenGL resources
+   * directly. Call this once per frame before render().
    */
   void maybeRebuildAtlas();
 

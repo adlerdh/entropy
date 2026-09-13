@@ -37,7 +37,7 @@ add_library(imgui STATIC ${imgui_SOURCES})
 target_compile_definitions(imgui PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_config.h")
 target_include_directories(imgui PRIVATE
   "${imgui_SRC_DIR}/imgui"
-  "${entropy_LIB_DIR}"
+  "${entropy_UI_DIR}"
   "${glfw_INCLUDE_DIR}"
 )
 target_link_libraries(imgui PRIVATE glfw spdlog::spdlog)
@@ -68,7 +68,7 @@ target_compile_definitions(implot PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_co
 target_include_directories(implot PRIVATE
   "${implot_SRC_DIR}/implot"
   "${imgui_SRC_DIR}/imgui"
-  "${entropy_LIB_DIR}"
+  "${entropy_UI_DIR}"
 )
 target_link_libraries(implot PRIVATE glfw imgui spdlog::spdlog)
 target_compile_options(implot PRIVATE

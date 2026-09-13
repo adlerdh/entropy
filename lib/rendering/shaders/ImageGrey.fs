@@ -1,0 +1,139 @@
+#version 330 core
+
+// Rendering modes:
+#define IMAGE_RENDER_MODE 0
+#define CHECKER_RENDER_MODE 1
+#define QUADRANTS_RENDER_MODE 2
+#define FLASHLIGHT_RENDER_MODE 3
+
+// Intensity Projection modes:
+#define NO_IP_MODE 0
+#define MAX_IP_MODE 1
+#define MEAN_IP_MODE 2
+#define MIN_IP_MODE 3
+
+in VS_OUT
+{
+  vec3 v_texCoord;
+  vec3 v_worldPos;
+  vec3 v_worldNormal;
+  vec2 v_checkerCoord;
+  vec2 v_clipPos;
+}
+fs_in;
+
+layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
+
+// Texture samplers:
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex;            // image color map (non-premultiplied RGBA)
+
+// Image adjustment uniforms:
+uniform vec2 u_imgSlopeIntercept;        // map texture to normalized intensity [0, 1], plus window/leveling
+uniform vec2 u_imgMinMax;                // min/max image values (texture intenstiy units)
+uniform vec2 u_imgThresholds;            // lower/upper image thresholds (texture intensity units)
+uniform float u_imgOpacity;              // image opacity
+uniform bool u_imagePlaneShadingEnabled; // apply headlight shading to 3D image planes
+uniform vec3 u_cameraWorldPosition;      // camera eye position for 3D image-plane shading
+uniform float u_lightingAmbient;
+uniform float u_lightingDiffuse;
+uniform float u_lightingSpecular;
+uniform float u_lightingSpecularPower;
+
+// Image color map adjustment uniforms:
+uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
+uniform int u_cmapQuantLevels;     // number of color map quantization levels
+uniform vec3 u_cmapHsvModFactors;  // HSV modification factors for color map
+uniform bool u_applyHsvMod;        // flag that HSV modification is applied
+
+// View render mode uniforms:
+uniform int u_renderMode;      // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
+uniform vec2 u_clipCrosshairs; // crosshairs position in Clip space
+
+// Should quadrants comparison mode be done along the x, y directions?
+// If x is true, then compare along x; if y is true, then compare along y.
+// If both are true, then compare along both.
+uniform bvec2 u_quadrants;
+uniform bool u_showFix;                 // flag that the either the fixed (true) or moving image is shown
+uniform float u_aspectRatio;            // view aspect ratio (width / height)
+uniform float u_flashlightRadius;       // flashlight circle radius
+uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
+
+// Intensiy Projection mode uniforms:
+uniform int u_mipMode;            // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
+uniform int u_halfNumMipSamples;  // half number of MIP samples (0 when no projection used)
+uniform vec3 u_texSamplingDirZ;   // Z view camera direction (in texture sampling space)
+uniform vec3 u_worldSamplingDirZ; // Z view camera direction (in world space)
+
+#include "entropy/HELPER_FUNCTIONS.glsl"
+#include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
+/// float textureLookup(sampler3D texture, vec3 texCoord);
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
+/// bool doRender(vec2 clipPos, vec2 checkerCoord);
+#include "entropy/DO_RENDER_FUNCTION.glsl"
+/// float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img);
+#include "entropy/IP_FUNCTION.glsl"
+float blinnPhongImagePlaneLighting(vec3 worldPosition, vec3 worldNormal)
+{
+  if (!u_imagePlaneShadingEnabled) {
+    return 1.0;
+  }
+
+  float normalLength = length(worldNormal);
+  vec3 eyeVector = u_cameraWorldPosition - worldPosition;
+  float eyeVectorLength = length(eyeVector);
+  if (normalLength <= 0.0 || eyeVectorLength <= 0.0) {
+    return 1.0;
+  }
+
+  vec3 normal = worldNormal / normalLength;
+  vec3 viewDirection = eyeVector / eyeVectorLength;
+  float diffuse = abs(dot(normal, viewDirection));
+  float specular = pow(max(abs(dot(normal, viewDirection)), 0.0), max(u_lightingSpecularPower, 0.001));
+  float lighting = u_lightingAmbient + u_lightingDiffuse * diffuse + u_lightingSpecular * specular;
+  return clamp(lighting, 0.0, 1.0);
+}
+
+void main()
+{
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+    discard;
+  }
+
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
+  img = computeProjection(sampleTc, fs_in.v_worldPos, img);
+
+  // Apply window/level and normalize image values to [0.0, 1.0] range:
+  float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
+
+  // Compute color map coords, accounting for quantization levels:
+  float cmapCoord = mix(
+    floor(float(u_cmapQuantLevels) * imgNorm) / max(float(u_cmapQuantLevels - 1), 1.0),
+    imgNorm,
+    float(0 == u_cmapQuantLevels));
+  cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1]; // normalize
+
+  vec4 imgColorOrig = texture(u_cmapTex, cmapCoord); // image color (non-premult.) before HSV
+
+  // Apply HSV modification factors:
+  vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
+  imgColorHsv.x += u_cmapHsvModFactors.x;
+  imgColorHsv.yz *= u_cmapHsvModFactors.yz;
+
+  // Conditionally use HSV modified colors:
+  float mask = float(isInsideTexture(sampleTc));                           // image mask based on texture coords
+  float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds); // alpha = opacity * mask * threshold
+  if (alpha <= 0.0) {
+    discard;
+  }
+
+  vec3 mappedColor = mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod));
+  mappedColor *= blinnPhongImagePlaneLighting(fs_in.v_worldPos, fs_in.v_worldNormal);
+
+  // Output color (premult. RGBA)
+  o_color = alpha * imgColorOrig.a * vec4(mappedColor, 1.0);
+  // o_color.rgb = pow(o_color.rgb, vec3(1.8));
+}

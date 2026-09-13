@@ -1,9 +1,10 @@
 #include "rendering/Rendering.h"
+#include "rendering/gl/OpenGLRenderState.h"
 
 #include "logic/app/Data.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 
 #include <spdlog/spdlog.h>
@@ -28,9 +29,9 @@ void Rendering::volumeRenderOneImage(
     return (imageUid ? m_appData.image(*imageUid) : nullptr);
   };
 
-  drawRaycastQuad(program, m_appData.renderData().m_quad, view, texture_T_world, imageSegPairs, getImage);
+  drawRaycastQuad(program, m_appData.renderResources().m_quad, view, texture_T_world, imageSegPairs, getImage);
 
-  setupOpenGLState();
+  rendering::restoreOpenGLRenderState();
 }
 
 bool Rendering::renderVolumeImagesForView(const View& view, const bool interactiveOverlay)
@@ -46,7 +47,7 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   }
 
   bool meshSceneWasRendered = false;
-  if (!interactiveOverlay && m_appData.renderData().m_isosurfaceMeshRenderingEnabled) {
+  if (!interactiveOverlay && m_appData.renderSettings().m_isosurfaceMeshRenderingEnabled) {
     const bool allMeshesReady = renderIsosurfaceMeshesForView(view, imageSegPairs);
     meshSceneWasRendered = true;
     if (allMeshesReady) {
@@ -85,16 +86,16 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
 
   updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first, onlyIsosurfaceUid);
 
-  const auto& isosurfaceData = m_appData.renderData().m_isosurfaceData;
-  const auto& renderData = m_appData.renderData();
+  const auto& isosurfaceData = m_appData.renderDerivedData().isosurfaces;
+  const auto& renderSettings = m_appData.renderSettings();
   const auto foregroundThresholds = rendering::texture_setup::distanceMapForegroundThresholds(
     settings.componentStatistics(activeComp),
-    renderData.m_distanceMapForegroundLowerPercentile,
-    renderData.m_distanceMapForegroundUpperPercentile);
+    renderSettings.m_distanceMapForegroundLowerPercentile,
+    renderSettings.m_distanceMapForegroundUpperPercentile);
   const auto activeIsovalues = std::span{isosurfaceData.values}.first(
     std::min<std::size_t>(static_cast<std::size_t>(std::max(isosurfaceData.numIsos, 0)), isosurfaceData.values.size()));
   if (
-    renderData.m_useDistanceMapForRaycasting && !renderWarped &&
+    renderSettings.m_useDistanceMapForRaycasting && !renderWarped &&
     rendering::texture_setup::distanceMapSupportsIsovalues(
       foregroundThresholds.first,
       foregroundThresholds.second,
@@ -108,14 +109,14 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   const Image* domainImage = referenceImageUid ? m_appData.image(*referenceImageUid) : image;
 
   const auto boundImageTextures = bindScalarImageTextures(imgSegPair);
-  const auto boundDefTextures =
-    renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+  const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
   const auto boundSegBufferTextures = bindSegBufferTextures(imgSegPair);
 
-  const auto& U = m_appData.renderData().m_uniforms.at(*imgSegPair.first);
-  const auto& domainU = (referenceImageUid && m_appData.renderData().m_uniforms.count(*referenceImageUid) > 0u)
-                          ? m_appData.renderData().m_uniforms.at(*referenceImageUid)
-                          : U;
+  const auto& U = m_appData.renderDerivedData().imageUniforms.at(*imgSegPair.first);
+  const auto& domainU =
+    (referenceImageUid && m_appData.renderDerivedData().imageUniforms.count(*referenceImageUid) > 0u)
+      ? m_appData.renderDerivedData().imageUniforms.at(*referenceImageUid)
+      : U;
 
   GLShaderProgram& program = renderWarped ? m_raycastIsoWarpedProgram : m_raycastIsoProgram;
 
@@ -142,7 +143,7 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
       domainU.imgTexture_T_world,
       CurrentImages{ImgSegPair{referenceImageUid.value_or(*imgSegPair.first), std::nullopt}});
   }
-  program.stopUse();
+  GLShaderProgram::stopUse();
 
   unbindTextures(boundDefTextures);
   unbindTextures(boundImageTextures);

@@ -130,6 +130,16 @@ bool AppState::quitApp() const
   return m_quitApp;
 }
 
+const interaction::TransformationGuideState& AppState::transformationGuide() const
+{
+  return m_transformationGuide;
+}
+
+interaction::TransformationGuideState& AppState::transformationGuide()
+{
+  return m_transformationGuide;
+}
+
 /*
 void AppState::broadcastCrosshairsPosition()
 {

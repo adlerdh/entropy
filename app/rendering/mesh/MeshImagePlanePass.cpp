@@ -7,12 +7,14 @@
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/mesh/MeshGpuData.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
+#include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshViewContext.h"
 #include "rendering/mesh/MeshViewViewport.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/gl/Uniforms.h"
 #include "viewer/ViewModes.h"
 #include "windowing/View.h"
 
@@ -26,6 +28,7 @@
 #include <glm/vec3.hpp>
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <list>
 #include <optional>
@@ -41,73 +44,13 @@ constexpr Uniforms::SamplerIndexType sk_segTexSampler{5};
 constexpr Uniforms::SamplerIndexType sk_segLabelTableTexSampler{6};
 constexpr Uniforms::SamplerIndexType sk_previousDepthBoundsSampler{7};
 constexpr Uniforms::SamplerIndexType sk_previousFrontColorSampler{8};
+constexpr Uniforms::SamplerIndexType sk_compositeColorSampler{9};
+constexpr Uniforms::SamplerIndexType sk_compositeDepthSampler{10};
 
-class ScopedImagePlaneBlendState
-{
-public:
-  ScopedImagePlaneBlendState()
-  {
-    m_blendEnabled = glIsEnabled(GL_BLEND);
-    glGetIntegerv(GL_BLEND_SRC_RGB, &m_srcRgb);
-    glGetIntegerv(GL_BLEND_DST_RGB, &m_dstRgb);
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, &m_srcAlpha);
-    glGetIntegerv(GL_BLEND_DST_ALPHA, &m_dstAlpha);
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, &m_equationRgb);
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &m_equationAlpha);
-  }
-
-  ScopedImagePlaneBlendState(const ScopedImagePlaneBlendState&) = delete;
-  ScopedImagePlaneBlendState& operator=(const ScopedImagePlaneBlendState&) = delete;
-
-  ~ScopedImagePlaneBlendState()
-  {
-    glBlendEquationSeparate(static_cast<GLenum>(m_equationRgb), static_cast<GLenum>(m_equationAlpha));
-    glBlendFuncSeparate(
-      static_cast<GLenum>(m_srcRgb),
-      static_cast<GLenum>(m_dstRgb),
-      static_cast<GLenum>(m_srcAlpha),
-      static_cast<GLenum>(m_dstAlpha));
-    m_blendEnabled ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-  }
-
-private:
-  GLboolean m_blendEnabled = GL_FALSE;
-  GLint m_srcRgb = GL_ONE;
-  GLint m_dstRgb = GL_ZERO;
-  GLint m_srcAlpha = GL_ONE;
-  GLint m_dstAlpha = GL_ZERO;
-  GLint m_equationRgb = GL_FUNC_ADD;
-  GLint m_equationAlpha = GL_FUNC_ADD;
-};
-
-class ScopedImagePlaneDepthState
-{
-public:
-  ScopedImagePlaneDepthState()
-  {
-    m_depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
-    m_stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
-    glGetBooleanv(GL_DEPTH_WRITEMASK, &m_depthWriteEnabled);
-    glGetIntegerv(GL_DEPTH_FUNC, &m_depthFunc);
-  }
-
-  ScopedImagePlaneDepthState(const ScopedImagePlaneDepthState&) = delete;
-  ScopedImagePlaneDepthState& operator=(const ScopedImagePlaneDepthState&) = delete;
-
-  ~ScopedImagePlaneDepthState()
-  {
-    glDepthFunc(static_cast<GLenum>(m_depthFunc));
-    glDepthMask(m_depthWriteEnabled);
-    m_depthTestEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-    m_stencilTestEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
-  }
-
-private:
-  GLboolean m_depthTestEnabled = GL_FALSE;
-  GLboolean m_stencilTestEnabled = GL_FALSE;
-  GLboolean m_depthWriteEnabled = GL_TRUE;
-  GLint m_depthFunc = GL_LESS;
-};
+constexpr std::array<rendering::mesh::MeshImagePlaneOrientation, 3> sk_imagePlaneOrientations{
+  rendering::mesh::MeshImagePlaneOrientation::Axial,
+  rendering::mesh::MeshImagePlaneOrientation::Coronal,
+  rendering::mesh::MeshImagePlaneOrientation::Sagittal};
 
 GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
   // cppcheck-suppress constParameterReference -- returns the selected program as a mutable reference
@@ -119,26 +62,32 @@ GLShaderProgram& shaderProgramForImagePlaneTextureDimension(
   return rendering::TextureDimension::Texture2D == textureDimension ? texture2dProgram : texture3dProgram;
 }
 
-std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
+struct BoundImagePlaneTexture
+{
+  std::reference_wrapper<GLTexture> texture;
+  uint32_t unit = 0u;
+};
+
+std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
   AppData& appData,
   const uuids::uuid& sourceImageUid,
   const uuids::uuid& textureImageUid,
   const uint32_t component,
   const bool bindMultipleComponents,
-  const RenderData::PlanarTextureLayout& textureLayout)
+  const rendering::PlanarTextureLayout& textureLayout)
 {
-  auto& renderData = appData.renderData();
+  auto& renderSettings = appData.renderResources();
   const Image* sourceImage = appData.image(sourceImageUid);
   const Image* textureImage = appData.image(textureImageUid);
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  std::list<BoundImagePlaneTexture> boundTextures;
   GLTexture& blankTexture = rendering::TextureDimension::Texture2D == textureLayout.dimension
-                              ? renderData.m_blankImageBlackTransparentTexture2D
-                              : renderData.m_blankImageBlackTransparentTexture;
-  const auto textureIt = renderData.m_imageTextures.find(textureImageUid);
+                              ? renderSettings.m_blankImageBlackTransparentTexture2D
+                              : renderSettings.m_blankImageBlackTransparentTexture;
+  const auto textureIt = renderSettings.m_imageTextures.find(textureImageUid);
 
   for (std::size_t slot = 0; slot < sk_imgRgbaTexSamplers.indices.size(); ++slot) {
     GLTexture* texture = &blankTexture;
-    if (textureImage && textureIt != renderData.m_imageTextures.end() && !textureIt->second.empty()) {
+    if (textureImage && textureIt != renderSettings.m_imageTextures.end() && !textureIt->second.empty()) {
       const std::size_t requestedComponent = bindMultipleComponents ? slot : component;
       const bool componentExists =
         !bindMultipleComponents || requestedComponent < textureImage->header().numComponentsPerPixel();
@@ -152,73 +101,80 @@ std::list<std::reference_wrapper<GLTexture>> bindDdpImagePlaneTextures(
       }
     }
     texture->bind(sk_imgRgbaTexSamplers.indices[slot]);
-    boundTextures.emplace_back(*texture);
+    boundTextures.push_back({*texture, static_cast<uint32_t>(sk_imgRgbaTexSamplers.indices[slot])});
   }
 
   const std::optional<uuids::uuid> cmapUid =
     sourceImage ? appData.imageColorMapUid(sourceImage->settings().colorMapIndex()) : std::nullopt;
   GLTexture& colorMapTexture =
-    cmapUid ? renderData.m_colormapTextures.at(*cmapUid) : std::begin(renderData.m_colormapTextures)->second;
+    cmapUid ? renderSettings.m_colormapTextures.at(*cmapUid) : std::begin(renderSettings.m_colormapTextures)->second;
   colorMapTexture.bind(sk_imgCmapTexSampler.index);
-  boundTextures.emplace_back(colorMapTexture);
+  boundTextures.push_back({colorMapTexture, sk_imgCmapTexSampler.index});
   return boundTextures;
 }
 
 struct BoundImagePlaneSegmentationTexture
 {
   std::reference_wrapper<GLTexture> texture;
+  uint32_t unit = 0u;
   bool hasSegmentation = false;
 };
 
 BoundImagePlaneSegmentationTexture bindImagePlaneSegmentationTexture(
   AppData& appData,
   const std::optional<uuids::uuid>& segmentationUid,
-  RenderData::TextureDimension textureDimension)
+  rendering::TextureDimension textureDimension)
 {
-  auto& renderData = appData.renderData();
-  GLTexture* texture = textureDimension == RenderData::TextureDimension::Texture2D ? &renderData.m_blankSegTexture2D
-                                                                                   : &renderData.m_blankSegTexture;
+  auto& renderSettings = appData.renderResources();
+  GLTexture* texture = textureDimension == rendering::TextureDimension::Texture2D ? &renderSettings.m_blankSegTexture2D
+                                                                                  : &renderSettings.m_blankSegTexture;
   bool hasSegmentation = false;
 
   if (segmentationUid) {
-    const auto textureIt = renderData.m_segTextures.find(*segmentationUid);
-    if (std::end(renderData.m_segTextures) != textureIt) {
+    const auto textureIt = renderSettings.m_segTextures.find(*segmentationUid);
+    if (std::end(renderSettings.m_segTextures) != textureIt) {
       texture = &textureIt->second;
       hasSegmentation = true;
     }
   }
 
   texture->bind(sk_segTexSampler.index);
-  return {*texture, hasSegmentation};
+  return {*texture, sk_segTexSampler.index, hasSegmentation};
 }
 
-std::list<std::reference_wrapper<GLBufferTexture>> bindImagePlaneSegmentationLabelTableTextures(
+struct BoundImagePlaneBufferTexture
+{
+  std::reference_wrapper<GLBufferTexture> texture;
+  uint32_t unit = 0u;
+};
+
+std::list<BoundImagePlaneBufferTexture> bindImagePlaneSegmentationLabelTableTextures(
   AppData& appData,
   const std::optional<uuids::uuid>& segmentationUid)
 {
-  std::list<std::reference_wrapper<GLBufferTexture>> boundTextures;
-  if (appData.renderData().m_labelBufferTextures.empty()) {
+  std::list<BoundImagePlaneBufferTexture> boundTextures;
+  if (appData.renderResources().m_labelBufferTextures.empty()) {
     return boundTextures;
   }
 
   const Image* segmentation = segmentationUid ? appData.seg(*segmentationUid) : nullptr;
   const std::optional<uuids::uuid> tableUid =
     segmentation ? appData.labelTableUid(segmentation->settings().labelTableIndex()) : std::nullopt;
-  auto tableIt = tableUid ? appData.renderData().m_labelBufferTextures.find(*tableUid)
-                          : appData.renderData().m_labelBufferTextures.end();
-  if (std::end(appData.renderData().m_labelBufferTextures) == tableIt) {
-    tableIt = std::begin(appData.renderData().m_labelBufferTextures);
+  auto tableIt = tableUid ? appData.renderResources().m_labelBufferTextures.find(*tableUid)
+                          : appData.renderResources().m_labelBufferTextures.end();
+  if (std::end(appData.renderResources().m_labelBufferTextures) == tableIt) {
+    tableIt = std::begin(appData.renderResources().m_labelBufferTextures);
   }
 
-  tableIt->second.attachBufferToTexture(sk_segLabelTableTexSampler.index);
-  boundTextures.emplace_back(tableIt->second);
+  tableIt->second.bind(sk_segLabelTableTexSampler.index);
+  boundTextures.push_back({tableIt->second, static_cast<uint32_t>(sk_segLabelTableTexSampler.index)});
   return boundTextures;
 }
 
-void unbindImagePlaneSegmentationLabelTableTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures)
+void unbindImagePlaneSegmentationLabelTableTextures(const std::list<BoundImagePlaneBufferTexture>& textures)
 {
-  for (const std::reference_wrapper<GLBufferTexture> texture : textures) {
-    texture.get().unbind();
+  for (const BoundImagePlaneBufferTexture& binding : textures) {
+    binding.texture.get().unbind(binding.unit);
   }
 }
 
@@ -339,13 +295,13 @@ void setMeshImagePlaneSegmentationUniforms(
   GLShaderProgram& program,
   AppData& appData,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   const bool segmentationVisible)
 {
   const Image* image = appData.image(renderable.texture.imageUid);
   const Image* segmentation =
     renderable.texture.segmentationUid ? appData.seg(*renderable.texture.segmentationUid) : nullptr;
-  const RenderData& renderData = appData.renderData();
+  const rendering::RenderSettings& renderSettings = appData.renderSettings();
   const bool drawSegmentation = segmentationVisible && image && segmentation && uniforms.segOpacity > 0.0f;
 
   program.setUniform("u_segVisible", drawSegmentation);
@@ -353,24 +309,26 @@ void setMeshImagePlaneSegmentationUniforms(
   program.setSamplerUniform("u_segLabelCmapTex", sk_segLabelTableTexSampler.index);
   program.setUniform(
     "u_segOpacity",
-    drawSegmentation
-      ? uniforms.segOpacity * (renderData.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f)
-      : 0.0f);
+    drawSegmentation ? uniforms.segOpacity *
+                         (renderSettings.m_modulateSegmentationOpacityWithImageOpacity2d ? uniforms.imgOpacity : 1.0f) *
+                         renderable.opacityMultiplier
+                     : 0.0f);
   program.setUniform(
     "u_segFillOpacity",
-    (SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle) ? 1.0f : renderData.m_segInteriorOpacity);
-  program.setUniform("u_segInterpCutoff", renderData.m_segInterpCutoff);
+    (SegmentationOutlineStyle::Disabled == renderSettings.m_segOutlineStyle) ? 1.0f
+                                                                             : renderSettings.m_segInteriorOpacity);
+  program.setUniform("u_segInterpCutoff", renderSettings.m_segInterpCutoff);
   program.setUniform(
     "u_segLinearInterpolation",
     drawSegmentation && InterpolationMode::NearestNeighbor != segmentation->settings().interpolationMode());
   program.setUniform(
     "u_segOutlineUsesScreenPixels",
-    drawSegmentation && SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle);
+    drawSegmentation && SegmentationOutlineStyle::ViewPixel == renderSettings.m_segOutlineStyle);
 
   const std::vector<glm::vec3> voxelSamplingDirs =
     image ? computeMeshImagePlaneSegmentationVoxelSamplingDirs(*image, renderable.orientation)
           : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
-  const bool useImageVoxelOutline = SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle;
+  const bool useImageVoxelOutline = SegmentationOutlineStyle::ImageVoxel == renderSettings.m_segOutlineStyle;
   const std::vector<glm::vec3> outlineSamplingDirs =
     useImageVoxelOutline ? voxelSamplingDirs : std::vector<glm::vec3>{glm::vec3{0.0f}, glm::vec3{0.0f}};
   program.setUniform("u_texSamplingDirsForSegOutline", outlineSamplingDirs);
@@ -381,9 +339,9 @@ void setMeshImagePlaneUniforms(
   GLShaderProgram& program,
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
-  const RenderData& renderData,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& textureLayout,
+  const rendering::RenderSettings& renderSettings,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& textureLayout,
   const Image& sourceImage,
   const ViewConvention viewConvention,
   const bool matchComponentRenderMode,
@@ -411,10 +369,10 @@ void setMeshImagePlaneUniforms(
   program.setUniform("u_hasVertexNormals", hasVertexNormals);
   program.setUniform("u_imagePlaneShadingEnabled", renderable.shadingEnabled);
   program.setUniform("u_cameraWorldPosition", context.cameraWorldPosition);
-  program.setUniform("u_lightingAmbient", renderData.m_imagePlaneLightingAmbient);
-  program.setUniform("u_lightingDiffuse", renderData.m_imagePlaneLightingDiffuse);
-  program.setUniform("u_lightingSpecular", renderData.m_imagePlaneLightingSpecular);
-  program.setUniform("u_lightingSpecularPower", renderData.m_imagePlaneLightingSpecularPower);
+  program.setUniform("u_lightingAmbient", renderSettings.m_imagePlaneLightingAmbient);
+  program.setUniform("u_lightingDiffuse", renderSettings.m_imagePlaneLightingDiffuse);
+  program.setUniform("u_lightingSpecular", renderSettings.m_imagePlaneLightingSpecular);
+  program.setUniform("u_lightingSpecularPower", renderSettings.m_imagePlaneLightingSpecularPower);
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_numCheckers", checkerboardSquares);
 
@@ -452,7 +410,9 @@ void setMeshImagePlaneUniforms(
   }
   program.setUniform("u_imagePlaneBorderColor", renderable.borderColor);
   program.setUniform("u_imagePlaneBorderWidthPixels", renderable.borderWidthPixels);
-  program.setUniform("u_ddpDepthOrder", renderable.ddpDepthOrder);
+  // Direct image draws and stack composition preserve physical depth. The later DDP contribution applies its small
+  // tie-break only between the three pre-composited plane orientations.
+  program.setUniform("u_ddpDepthOrder", 0u);
   program.setUniform("u_boundaryVertexCount", static_cast<int>(renderable.boundaryVertexCount));
   program.setUniform(
     "u_boundaryWorldPositions",
@@ -482,8 +442,8 @@ void setMeshImagePlaneIsoContourUniforms(
   GLShaderProgram& program,
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderable& renderable,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& textureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& textureLayout,
   const rendering::mesh::MeshDrawContext& context,
   const int checkerboardSquares,
   const ImageSettings& imageSettings,
@@ -529,8 +489,95 @@ void setMeshImagePlaneIsoContourUniforms(
 void drawUploadedImagePlane(const rendering::mesh::MeshGpuData& gpuData)
 {
   gpuData.vao().bind();
-  gpuData.vao().drawElements(gpuData.drawParams());
-  gpuData.vao().release();
+  GLVertexArrayObject::drawElements(gpuData.drawParams());
+  GLVertexArrayObject::unbind();
+}
+
+void drawAnalyticImagePlaneBorder(
+  const rendering::mesh::MeshImagePlaneRenderable& imagePlane,
+  const rendering::mesh::MeshDrawContext& context,
+  GLShaderProgram& program,
+  const GLVertexArrayObject& fullScreenVao)
+{
+  if (imagePlane.borderColor.a <= 0.0f || imagePlane.borderWidthPixels <= 0.0f || imagePlane.boundaryVertexCount < 2u) {
+    return;
+  }
+
+  std::array<GLint, 4> viewport{};
+  glGetIntegerv(GL_VIEWPORT, viewport.data());
+
+  program.use();
+  program.setUniform("u_imagePlaneBorderColor", imagePlane.borderColor);
+  program.setUniform("u_imagePlaneBorderWidthPixels", imagePlane.borderWidthPixels);
+  program.setUniform("u_boundaryVertexCount", static_cast<int>(imagePlane.boundaryVertexCount));
+  program.setUniform(
+    "u_boundaryWorldPositions",
+    std::vector<glm::vec3>{
+      imagePlane.boundaryWorld.begin(),
+      imagePlane.boundaryWorld.begin() + imagePlane.boundaryVertexCount});
+  program.setUniform("u_viewportOrigin", glm::vec2{viewport[0], viewport[1]});
+  program.setUniform("u_viewportSize", glm::vec2{viewport[2], viewport[3]});
+  program.setUniform("u_clip_T_world", context.clip_T_world);
+  fullScreenVao.bind();
+  GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+  GLVertexArrayObject::unbind();
+  GLShaderProgram::stopUse();
+}
+
+void drawImagePlaneIsocontours(
+  AppData& appData,
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderable& imagePlane,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& textureLayout,
+  const rendering::mesh::MeshDrawContext& context,
+  const rendering::mesh::MeshGpuData& gpuData,
+  GLShaderProgram& texture3dProgram,
+  GLShaderProgram& texture2dProgram)
+{
+  const Image* image = appData.image(imagePlane.texture.imageUid);
+  if (!image) {
+    return;
+  }
+
+  const ImageSettings& imageSettings = image->settings();
+  GLShaderProgram& program =
+    shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
+  program.use();
+  for (const auto& surfaceUid : appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component)) {
+    const Isosurface* surface =
+      appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
+    if (!surface) {
+      spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
+      continue;
+    }
+    if (!rendering::mesh::imagePlaneIsocontourDrawable(
+          appData.renderSettings().m_showIsocontoursOnImagePlanesIn3D,
+          surface->visibleIn2d,
+          surface->opacity,
+          surface->fillOpacity))
+    {
+      continue;
+    }
+
+    static constexpr bool premultipliedAlpha = false;
+    const glm::vec3 color =
+      glm::vec3{getIsosurfaceColor(appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
+    setMeshImagePlaneIsoContourUniforms(
+      program,
+      view,
+      imagePlane,
+      uniforms,
+      textureLayout,
+      context,
+      appData.renderSettings().m_numCheckerboardSquares,
+      imageSettings,
+      *surface,
+      color,
+      imagePlane.opacityMultiplier);
+    drawUploadedImagePlane(gpuData);
+  }
+  GLShaderProgram::stopUse();
 }
 
 void drawImagePlaneRenderablesWithProgram(
@@ -540,6 +587,10 @@ void drawImagePlaneRenderablesWithProgram(
   const rendering::mesh::MeshDrawContext& context,
   GLShaderProgram& texture3dProgram,
   GLShaderProgram& texture2dProgram,
+  GLShaderProgram& isocontourTexture3dProgram,
+  GLShaderProgram& isocontourTexture2dProgram,
+  GLShaderProgram& borderProgram,
+  const GLVertexArrayObject& fullScreenVao,
   const bool usePreviousTextures = false,
   GLTexture* const previousDepthBounds = nullptr,
   GLTexture* const previousFrontColor = nullptr)
@@ -570,13 +621,13 @@ void drawImagePlaneRenderablesWithProgram(
     const uuids::uuid renderImageUid = multipleComponents
                                          ? imagePlane.texture.imageUid
                                          : appData.effectiveImageUidForRendering(imagePlane.texture.imageUid);
-    const auto uniformsIt = appData.renderData().m_uniforms.find(renderImageUid);
-    if (uniformsIt == std::end(appData.renderData().m_uniforms)) {
+    const auto uniformsIt = appData.renderDerivedData().imageUniforms.find(renderImageUid);
+    if (uniformsIt == std::end(appData.renderDerivedData().imageUniforms)) {
       continue;
     }
 
-    const RenderData::PlanarTextureLayout textureLayout =
-      rendering::textureLayoutOrDefault(appData.renderData().m_imageTextureLayouts, renderImageUid);
+    const rendering::PlanarTextureLayout textureLayout =
+      rendering::textureLayoutOrDefault(appData.renderResources().m_imageTextureLayouts, renderImageUid);
     GLShaderProgram& program =
       shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
     const auto boundTextures = bindDdpImagePlaneTextures(
@@ -596,7 +647,7 @@ void drawImagePlaneRenderablesWithProgram(
       program,
       view,
       imagePlane,
-      appData.renderData(),
+      appData.renderSettings(),
       uniformsIt->second,
       textureLayout,
       *image,
@@ -604,24 +655,40 @@ void drawImagePlaneRenderablesWithProgram(
       true,
       context,
       gpuData->hasNormals(),
-      appData.renderData().m_numCheckerboardSquares);
+      appData.renderSettings().m_numCheckerboardSquares);
     setMeshImagePlaneSegmentationUniforms(
       program,
       appData,
       imagePlane,
       uniformsIt->second,
       boundSegTexture.hasSegmentation && !boundSegBufferTextures.empty());
+    // The border is drawn by a full-screen analytic stroke below. Suppressing the plane-local stroke lets that pass
+    // generate coverage on both sides of the boundary, including when the plane itself becomes subpixel-thin.
+    program.setUniform("u_imagePlaneBorderColor", glm::vec4{0.0f});
     if (usePreviousTextures) {
       program.setSamplerUniform("u_previousDepthBoundsTex", sk_previousDepthBoundsSampler.index);
       program.setSamplerUniform("u_previousFrontColorTex", sk_previousFrontColorSampler.index);
     }
     drawUploadedImagePlane(*gpuData);
-    program.stopUse();
+    GLShaderProgram::stopUse();
 
-    for (std::reference_wrapper<GLTexture> texture : boundTextures) {
-      texture.get().unbind();
+    drawAnalyticImagePlaneBorder(imagePlane, context, borderProgram, fullScreenVao);
+
+    drawImagePlaneIsocontours(
+      appData,
+      view,
+      imagePlane,
+      uniformsIt->second,
+      textureLayout,
+      context,
+      *gpuData,
+      isocontourTexture3dProgram,
+      isocontourTexture2dProgram);
+
+    for (const BoundImagePlaneTexture& binding : boundTextures) {
+      binding.texture.get().unbind(binding.unit);
     }
-    boundSegTexture.texture.get().unbind();
+    boundSegTexture.texture.get().unbind(boundSegTexture.unit);
     unbindImagePlaneSegmentationLabelTableTextures(boundSegBufferTextures);
   }
 
@@ -657,13 +724,25 @@ void Rendering::drawMeshImagePlaneRenderListForView(
   }
 
   const rendering::mesh::ScopedMeshViewViewport scopedViewport{view, m_appData.windowData()};
-  const rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(m_meshGpuStore, view);
+  const OpenGLStateGuard state{
+    {0u, GL_TEXTURE_2D},
+    {0u, GL_TEXTURE_3D},
+    {1u, GL_TEXTURE_2D},
+    {1u, GL_TEXTURE_3D},
+    {2u, GL_TEXTURE_2D},
+    {2u, GL_TEXTURE_3D},
+    {3u, GL_TEXTURE_2D},
+    {3u, GL_TEXTURE_3D},
+    {4u, GL_TEXTURE_1D},
+    {5u, GL_TEXTURE_2D},
+    {5u, GL_TEXTURE_3D},
+    {6u, GL_TEXTURE_BUFFER}};
+  const rendering::mesh::MeshDrawContext context =
+    rendering::mesh::meshDrawContextForView(m_meshResources.gpuStore(), view);
   if (!context.meshLookup) {
     return;
   }
 
-  const ScopedImagePlaneDepthState scopedDepthState;
-  const ScopedImagePlaneBlendState scopedBlendState;
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glDepthMask(GL_TRUE);
@@ -691,13 +770,13 @@ void Rendering::drawMeshImagePlaneRenderListForView(
     const uuids::uuid renderImageUid = multipleComponents
                                          ? imagePlane.texture.imageUid
                                          : m_appData.effectiveImageUidForRendering(imagePlane.texture.imageUid);
-    const auto uniformsIt = m_appData.renderData().m_uniforms.find(renderImageUid);
-    if (uniformsIt == std::end(m_appData.renderData().m_uniforms)) {
+    const auto uniformsIt = m_appData.renderDerivedData().imageUniforms.find(renderImageUid);
+    if (uniformsIt == std::end(m_appData.renderDerivedData().imageUniforms)) {
       continue;
     }
 
-    const RenderData::PlanarTextureLayout textureLayout =
-      rendering::textureLayoutOrDefault(m_appData.renderData().m_imageTextureLayouts, renderImageUid);
+    const rendering::PlanarTextureLayout textureLayout =
+      rendering::textureLayoutOrDefault(m_appData.renderResources().m_imageTextureLayouts, renderImageUid);
     GLShaderProgram& program = shaderProgramForImagePlaneTextureDimension(
       m_meshImagePlaneGrayLinearProgram,
       m_meshImagePlaneGrayLinearTexture2DProgram,
@@ -717,7 +796,7 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         program,
         view,
         imagePlane,
-        m_appData.renderData(),
+        m_appData.renderSettings(),
         uniformsIt->second,
         textureLayout,
         *image,
@@ -725,83 +804,141 @@ void Rendering::drawMeshImagePlaneRenderListForView(
         false,
         context,
         gpuData->hasNormals(),
-        m_appData.renderData().m_numCheckerboardSquares);
+        m_appData.renderSettings().m_numCheckerboardSquares);
       drawUploadedImagePlane(*gpuData);
     }
-    program.stopUse();
+    GLShaderProgram::stopUse();
 
-    const ImageSettings& imageSettings = image->settings();
-    GLShaderProgram& isoProgram = shaderProgramForImagePlaneTextureDimension(
+    // The contour geometry is coincident with its image plane. Accept equal depth so the overlay remains visible in
+    // the non-DDP fallback path as well as in the pre-composited DDP path.
+    glDepthFunc(GL_LEQUAL);
+    drawImagePlaneIsocontours(
+      m_appData,
+      view,
+      imagePlane,
+      uniformsIt->second,
+      textureLayout,
+      context,
+      *gpuData,
       m_meshImagePlaneIsoContourProgram,
-      m_meshImagePlaneIsoContourTexture2DProgram,
-      textureLayout.dimension);
+      m_meshImagePlaneIsoContourTexture2DProgram);
+    glDepthFunc(GL_LESS);
 
-    isoProgram.use();
-    for (const auto& surfaceUid : m_appData.isosurfaceUids(imagePlane.texture.imageUid, imagePlane.texture.component)) {
-      const Isosurface* surface =
-        m_appData.isosurface(imagePlane.texture.imageUid, imagePlane.texture.component, surfaceUid);
-      if (!surface) {
-        spdlog::warn("Null isosurface {} for image {}", surfaceUid, imagePlane.texture.imageUid);
-        continue;
-      }
-      if (!surface->visibleIn2d) {
-        continue;
-      }
-
-      static constexpr bool premultipliedAlpha = false;
-      const glm::vec3 color = glm::vec3{
-        getIsosurfaceColor(m_appData, *surface, imageSettings, imagePlane.texture.component, premultipliedAlpha)};
-      setMeshImagePlaneIsoContourUniforms(
-        isoProgram,
-        view,
-        imagePlane,
-        uniformsIt->second,
-        textureLayout,
-        context,
-        m_appData.renderData().m_numCheckerboardSquares,
-        imageSettings,
-        *surface,
-        color,
-        imagePlane.opacityMultiplier);
-      drawUploadedImagePlane(*gpuData);
+    for (const BoundImagePlaneTexture& binding : boundTextures) {
+      binding.texture.get().unbind(binding.unit);
     }
-    isoProgram.stopUse();
-
-    unbindTextures(boundTextures);
   }
-
-  setupOpenGLState();
 }
 
 void Rendering::drawMeshImagePlaneDdpDepthBoundsForView(
+  [[maybe_unused]] const View& view,
+  [[maybe_unused]] const rendering::mesh::MeshImagePlaneRenderList& list,
+  [[maybe_unused]] const rendering::mesh::MeshDrawContext& context)
+{
+  for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
+    GLTexture& color = m_meshDdpResources.imagePlaneCompositeColorTexture(index);
+    GLTexture& depth = m_meshDdpResources.imagePlaneCompositeDepthTexture(index);
+    color.bind(sk_compositeColorSampler.index);
+    depth.bind(sk_compositeDepthSampler.index);
+    m_meshImagePlaneCompositeDdpInitProgram.use();
+    m_meshImagePlaneCompositeDdpInitProgram.setSamplerUniform(
+      "u_compositeColorTex",
+      static_cast<GLint>(sk_compositeColorSampler.index));
+    m_meshImagePlaneCompositeDdpInitProgram.setSamplerUniform(
+      "u_compositeDepthTex",
+      static_cast<GLint>(sk_compositeDepthSampler.index));
+    m_meshImagePlaneCompositeDdpInitProgram.setUniform(
+      "u_ddpDepthOrder",
+      rendering::mesh::imagePlaneCompositeDdpDepthOrder(sk_imagePlaneOrientations[index]));
+    m_meshDdpResources.fullScreenVao().bind();
+    GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+    GLVertexArrayObject::unbind();
+    GLShaderProgram::stopUse();
+    depth.unbind(sk_compositeDepthSampler.index);
+    color.unbind(sk_compositeColorSampler.index);
+  }
+}
+
+void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
+  [[maybe_unused]] const View& view,
+  [[maybe_unused]] const rendering::mesh::MeshImagePlaneRenderList& list,
+  [[maybe_unused]] const rendering::mesh::MeshDrawContext& context,
+  GLTexture& previousDepthBounds,
+  GLTexture& previousFrontColor)
+{
+  previousDepthBounds.bind(sk_previousDepthBoundsSampler.index);
+  previousFrontColor.bind(sk_previousFrontColorSampler.index);
+  for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
+    GLTexture& color = m_meshDdpResources.imagePlaneCompositeColorTexture(index);
+    GLTexture& depth = m_meshDdpResources.imagePlaneCompositeDepthTexture(index);
+    color.bind(sk_compositeColorSampler.index);
+    depth.bind(sk_compositeDepthSampler.index);
+    m_meshImagePlaneCompositeDdpPeelProgram.use();
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_compositeColorTex",
+      static_cast<GLint>(sk_compositeColorSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_compositeDepthTex",
+      static_cast<GLint>(sk_compositeDepthSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_previousDepthBoundsTex",
+      static_cast<GLint>(sk_previousDepthBoundsSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setSamplerUniform(
+      "u_previousFrontColorTex",
+      static_cast<GLint>(sk_previousFrontColorSampler.index));
+    m_meshImagePlaneCompositeDdpPeelProgram.setUniform(
+      "u_ddpDepthOrder",
+      rendering::mesh::imagePlaneCompositeDdpDepthOrder(sk_imagePlaneOrientations[index]));
+    m_meshDdpResources.fullScreenVao().bind();
+    GLVertexArrayObject::drawArrays(PrimitiveMode::Triangles, 0, 3);
+    GLVertexArrayObject::unbind();
+    GLShaderProgram::stopUse();
+    depth.unbind(sk_compositeDepthSampler.index);
+    color.unbind(sk_compositeColorSampler.index);
+  }
+  previousFrontColor.unbind(sk_previousFrontColorSampler.index);
+  previousDepthBounds.unbind(sk_previousDepthBoundsSampler.index);
+}
+
+void Rendering::prepareMeshImagePlaneDdpCompositesForView(
   const View& view,
   const rendering::mesh::MeshImagePlaneRenderList& list,
   const rendering::mesh::MeshDrawContext& context)
 {
-  drawImagePlaneRenderablesWithProgram(
-    m_appData,
-    view,
-    list,
-    context,
-    m_meshImagePlaneDdpInitProgram,
-    m_meshImagePlaneDdpInitTexture2DProgram);
-}
+  for (std::size_t index = 0; index < sk_imagePlaneOrientations.size(); ++index) {
+    const rendering::mesh::MeshImagePlaneRenderList orientationList =
+      rendering::mesh::imagePlaneRenderListForOrientation(list, sk_imagePlaneOrientations[index]);
+    m_meshDdpResources.bindImagePlaneCompositeTarget(index);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-void Rendering::drawMeshImagePlaneDdpPeelLayersForView(
-  const View& view,
-  const rendering::mesh::MeshImagePlaneRenderList& list,
-  const rendering::mesh::MeshDrawContext& context,
-  GLTexture& previousDepthBounds,
-  GLTexture& previousFrontColor)
-{
-  drawImagePlaneRenderablesWithProgram(
-    m_appData,
-    view,
-    list,
-    context,
-    m_meshImagePlaneDdpPeelProgram,
-    m_meshImagePlaneDdpPeelTexture2DProgram,
-    true,
-    &previousDepthBounds,
-    &previousFrontColor);
+    // All images for an orientation represent one geometric slice. Compose them in the same bottom-to-top order as
+    // 2D views before DDP so equal-depth image fragments never rely on an artificial depth offset.
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_ALWAYS);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    drawImagePlaneRenderablesWithProgram(
+      m_appData,
+      view,
+      orientationList,
+      context,
+      m_meshImagePlaneCompositeProgram,
+      m_meshImagePlaneCompositeTexture2DProgram,
+      m_meshImagePlaneIsoContourProgram,
+      m_meshImagePlaneIsoContourTexture2DProgram,
+      m_meshImagePlaneBorderProgram,
+      m_meshDdpResources.fullScreenVao(),
+      false,
+      nullptr,
+      nullptr);
+  }
+
+  glDisable(GL_DEPTH_TEST);
+  glDepthMask(GL_FALSE);
 }

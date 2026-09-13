@@ -1,15 +1,12 @@
 #include "rendering/Rendering.h"
 
-#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "image/Isosurface.h"
 #include "logic/SurfaceUtility.h"
 #include "logic/app/Data.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/mesh/MeshExtractionQueue.h"
 #include "rendering/mesh/MeshExtractionJobs.h"
 #include "rendering/mesh/MeshGeneration.h"
-#include "rendering/mesh/MeshGpuSync.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
@@ -28,30 +25,11 @@
 #include <optional>
 #include <ranges>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace
 {
-
-using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
-using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
-using MeshHandle = rendering::mesh::MeshHandle;
-using MeshHandleMap = std::unordered_map<MeshGeometryKey, MeshHandle, MeshGeometryKeyHash>;
-
-rendering::mesh::MeshHandle meshHandleForKey(const MeshGeometryKey& key, MeshHandleMap& handles)
-{
-  if (const auto existing = handles.find(key); existing != handles.end()) {
-    return existing->second;
-  }
-
-  rendering::mesh::MeshHandle handle{
-    .uid = generateRandomUuid(),
-    .geometryVersion = rendering::mesh::MeshGeometryKeyHash{}(key)};
-  handles.emplace(key, handle);
-  return handle;
-}
 
 std::string isosurfaceMeshDescription(const Image& image, const Isosurface& surface, const std::size_t surfaceIndex)
 {
@@ -72,7 +50,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
     return false;
   }
 
-  const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
+  const rendering::mesh::MeshOctantCutaway cutaway = meshCutawayForView(view);
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
@@ -123,9 +101,9 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
-        .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
-        .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-        .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+        .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
+        .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+        .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
       const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
         imageUid,
         image->pixelDataRevision(),
@@ -135,32 +113,27 @@ bool Rendering::renderIsosurfaceMeshesForView(
         surface->value,
         generationOptions);
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-      const rendering::mesh::MeshHandle handle = meshHandleForKey(key, m_meshHandles);
+      const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
 
-      if (!m_meshCpuCache.readyMesh(key)) {
+      const rendering::mesh::MeshData* readyMesh = m_meshExtractions.readyMesh(key);
+      if (!readyMesh) {
         allVisibleIsosurfacesHaveReadyMeshes = false;
-        const rendering::mesh::MeshCacheEntry* cacheEntry = m_meshCpuCache.find(key);
-        const bool retry = m_meshCpuCache.canRetry(key);
-        if ((!cacheEntry || retry) && m_meshExtractionQueue.canSubmit(key)) {
+        if (m_meshExtractions.canSubmit(key)) {
           if (!imageSnapshot) {
             imageSnapshot = std::make_shared<Image>(*image);
           }
 
           const std::string description = isosurfaceMeshDescription(*image, *surface, surfaceIndex);
-          if (m_meshExtractionQueue.submit(
-                key,
-                description,
-                rendering::mesh::makeIsosurfaceExtractionJob(request, generationOptions, imageSnapshot)))
-          {
-            m_meshCpuCache.markPending(key, retry ? cacheEntry->failureCount : 0);
-          }
+          m_meshExtractions.submit(
+            key,
+            description,
+            rendering::mesh::makeIsosurfaceExtractionJob(request, imageSnapshot));
         }
 
         continue;
       }
 
-      const rendering::mesh::MeshGpuSyncStatus syncStatus =
-        rendering::mesh::syncReadyMeshToGpu(key, handle, m_meshCpuCache, m_meshGpuStore);
+      const rendering::mesh::MeshGpuSyncStatus syncStatus = m_meshResources.synchronize(handle, *readyMesh);
       if (
         syncStatus != rendering::mesh::MeshGpuSyncStatus::Uploaded &&
         syncStatus != rendering::mesh::MeshGpuSyncStatus::AlreadyCurrent)
@@ -171,7 +144,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
 
       glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
       color.a = effectiveOpacity;
-      const auto& globalMaterial = m_appData.renderData().m_meshSurfaceMaterialSettings;
+      const auto& globalMaterial = m_appData.renderSettings().m_meshSurfaceMaterialSettings;
       const rendering::mesh::IsosurfaceMeshStyle style{
         .material = rendering::mesh::meshMaterialForSurface(color, globalMaterial),
         .compositingMode = rendering::mesh::compositingModeForIsosurfaceAlpha(
@@ -181,7 +154,9 @@ bool Rendering::renderIsosurfaceMeshesForView(
         .visible = surface->visibleIn3d};
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);
-      renderable.drawOptions.clipPlanes = clipPlanes;
+      if (surface->includeInCutaway) {
+        renderable.drawOptions.cutaway = cutaway;
+      }
       renderables.push_back(std::move(renderable));
     }
   }
@@ -226,8 +201,16 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
   // changing isosurface's transient raycast over it with a transparent no-hit background.
   std::vector<rendering::mesh::MeshRenderable> renderables;
   const CurrentImages imageSegPairs = meshSceneImagesForView(view);
-  const bool isosurfaceMeshesReady = renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
-  renderSegmentationMeshesForView(view, &renderables);
+  const ThreeDSceneContents& contents = view.threeDSceneContents();
+  const bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
+  const bool isosurfaceMeshesReady =
+    !renderIsosurfaces || renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
+  if (contents.contains(ThreeDSceneContent::Segmentations)) {
+    renderSegmentationMeshesForView(view, &renderables);
+  }
+  if (contents.contains(ThreeDSceneContent::ImportedMeshes)) {
+    appendImportedMeshesForView(view, imageSegPairs, renderables);
+  }
 
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables =
@@ -250,7 +233,7 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
     const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
     drawMeshRenderListForView(view, list, &imagePlaneList);
   }
-  if (!isosurfaceMeshesReady) {
+  if (renderIsosurfaces && !isosurfaceMeshesReady) {
     renderVolumeImagesForView(view, true);
   }
   else {

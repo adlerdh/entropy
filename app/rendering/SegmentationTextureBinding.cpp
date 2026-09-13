@@ -3,10 +3,11 @@
 #include "image/Image.h"
 #include "image/ImageSettings.h"
 #include "logic/app/Data.h"
-#include "rendering/RenderData.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLTexture.h"
 
 #include <uuid.h>
 
@@ -25,34 +26,34 @@ const Uniforms::SamplerIndexType msk_segLabelTableTexSampler{1};
 
 } // namespace
 
-std::list<std::reference_wrapper<GLTexture>> Rendering::bindSegTextures(const ImgSegPair& p)
+Rendering::BoundTextures Rendering::bindSegTextures(const ImgSegPair& p)
 {
   const auto& segUid = p.second;
 
-  std::list<std::reference_wrapper<GLTexture>> boundTextures;
-  auto& R = m_appData.renderData();
+  BoundTextures boundTextures;
+  auto& R = m_appData.renderResources();
 
   if (segUid) {
     // Uncomment this to render the image's distance map instead:
     // GLTexture& segTex = R.m_distanceMapTextures.at( *imageUid ).at( 0 );
     GLTexture& segTex = R.m_segTextures.at(*segUid);
     segTex.bind(msk_segTexSampler.index);
-    boundTextures.emplace_back(segTex);
+    boundTextures.emplace_back(segTex, msk_segTexSampler.index);
   }
   else {
     // No segmentation, so bind the blank one:
     GLTexture& segTex = R.m_blankSegTexture;
     segTex.bind(msk_segTexSampler.index);
-    boundTextures.emplace_back(segTex);
+    boundTextures.emplace_back(segTex, msk_segTexSampler.index);
   }
 
   return boundTextures;
 }
 
-std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextures(const ImgSegPair& p)
+Rendering::BoundBufferTextures Rendering::bindSegBufferTextures(const ImgSegPair& p)
 {
-  std::list<std::reference_wrapper<GLBufferTexture>> boundBufferTextures;
-  auto& R = m_appData.renderData();
+  BoundBufferTextures boundBufferTextures;
+  auto& R = m_appData.renderResources();
 
   const auto& segUid = p.second;
 
@@ -61,23 +62,23 @@ std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextu
 
   if (tableUid) {
     GLBufferTexture& tblTex = R.m_labelBufferTextures.at(*tableUid);
-    tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
-    boundBufferTextures.emplace_back(tblTex);
+    tblTex.bind(msk_segLabelTableTexSampler.index);
+    boundBufferTextures.emplace_back(tblTex, msk_segLabelTableTexSampler.index);
   }
   else {
     // No label table, so bind the first available one:
     auto it = std::begin(R.m_labelBufferTextures);
     GLBufferTexture& tblTex = it->second;
-    tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
-    boundBufferTextures.emplace_back(tblTex);
+    tblTex.bind(msk_segLabelTableTexSampler.index);
+    boundBufferTextures.emplace_back(tblTex, msk_segLabelTableTexSampler.index);
   }
 
   return boundBufferTextures;
 }
 
-void Rendering::unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures)
+void Rendering::unbindBufferTextures(const BoundBufferTextures& textures)
 {
-  for (const auto& T : textures) {
-    T.get().unbind();
+  for (const BoundTexture<GLBufferTexture>& binding : textures) {
+    binding.texture.get().unbind(binding.unit);
   }
 }

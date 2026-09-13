@@ -193,7 +193,11 @@ ViewType ControlFrame::viewType() const
 
 void ControlFrame::setViewType(const ViewType& viewTypeArg)
 {
+  const bool enteringThreeD = ViewType::ThreeD != m_viewType && ViewType::ThreeD == viewTypeArg;
   m_viewType = viewTypeArg;
+  if (enteringThreeD) {
+    m_imageSelection.ensureVolumeRenderedImageSelected();
+  }
 }
 
 ViewRenderMode ControlFrame::renderMode() const
@@ -201,9 +205,9 @@ ViewRenderMode ControlFrame::renderMode() const
   return m_renderMode;
 }
 
-void ControlFrame::setRenderMode(const ViewRenderMode& renderMode)
+void ControlFrame::setRenderMode(const ViewRenderMode& newRenderMode)
 {
-  m_renderMode = renderMode;
+  m_renderMode = newRenderMode;
 }
 
 const ThreeDSceneContents& ControlFrame::threeDSceneContents() const

@@ -209,6 +209,24 @@ public:
   /// @brief Set whether Entropy should check GitHub for updates automatically.
   void setAutomaticUpdateChecksEnabled(bool enabled);
 
+  /// @brief Return whether the image-export format guide should be shown before exporting.
+  bool showImageExportFormatGuide() const;
+
+  /// @brief Set whether the image-export format guide should be shown before exporting.
+  void setShowImageExportFormatGuide(bool show);
+
+  /// @brief Return whether the segmentation-export format guide should be shown before exporting.
+  bool showSegmentationExportFormatGuide() const;
+
+  /// @brief Set whether the segmentation-export format guide should be shown before exporting.
+  void setShowSegmentationExportFormatGuide(bool show);
+
+  /// @brief Return whether the mesh-export format guide should be shown before exporting.
+  bool showMeshExportFormatGuide() const;
+
+  /// @brief Set whether the mesh-export format guide should be shown before exporting.
+  void setShowMeshExportFormatGuide(bool show);
+
   const std::vector<RecentPathGroup>& recentImageGroups() const;
   const std::vector<RecentPathGroup>& recentDicomGroups() const;
   const std::vector<std::filesystem::path>& recentProjectFiles() const;
@@ -306,6 +324,9 @@ private:
   bool m_showGlobalTimeControls = true;
   bool m_synchronizeTimeSeries = true;
   bool m_automaticUpdateChecksEnabled = false;
+  bool m_showImageExportFormatGuide = true;
+  bool m_showSegmentationExportFormatGuide = true;
+  bool m_showMeshExportFormatGuide = true;
   std::vector<RecentPathGroup> m_recentImageGroups;
   std::vector<RecentPathGroup> m_recentDicomGroups;
   std::vector<std::filesystem::path> m_recentProjectFiles;

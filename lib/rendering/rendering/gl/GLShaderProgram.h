@@ -1,0 +1,155 @@
+#pragma once
+
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLUniformTypes.h"
+#include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/Uniforms.h"
+
+#include <glm/fwd.hpp>
+
+#include <glad/glad.h>
+
+#include <array>
+#include <cstdint>
+#include <initializer_list>
+#include <string>
+#include <vector>
+
+/**
+ * @brief Owns one linked OpenGL shader program and its registered uniforms.
+ *
+ * The class creates and deletes a GL program object, attaches compiled shaders, links the program, and provides typed
+ * uniform upload helpers. It is move-disabled by omission and copy-disabled because the OpenGL handle has unique
+ * ownership semantics.
+ *
+ */
+class GLShaderProgram
+{
+public:
+  GLShaderProgram();
+  explicit GLShaderProgram(std::string name);
+
+  GLShaderProgram(const GLShaderProgram&) = delete;
+  GLShaderProgram& operator=(const GLShaderProgram&) = delete;
+
+  ~GLShaderProgram();
+
+  const std::string& name() const;
+  GLuint handle() const;
+
+  /// Link all attached shaders into an executable program.
+  bool link();
+
+  bool isLinked() const;
+
+  /// Attach a compiled shader object before linking.
+  bool attachShader(const GLShader& shader);
+
+  /// Bind this linked shader program for subsequent draw calls. Throws if it is not ready.
+  void use();
+
+  /// Unbind the current shader program.
+  static void stopUse();
+
+  bool setUniform(const std::string& nameArg, bool val);
+  bool setUniform(const std::string& nameArg, GLint val);
+  bool setUniform(const std::string& nameArg, GLuint val);
+  bool setUniform(const std::string& nameArg, GLfloat val);
+  bool setUniform(const std::string& nameArg, const glm::ivec2& v);
+  bool setUniform(const std::string& nameArg, const glm::vec2& v);
+  bool setUniform(const std::string& nameArg, const glm::vec3& v);
+  bool setUniform(const std::string& nameArg, const glm::vec4& v);
+  bool setUniform(const std::string& nameArg, const glm::mat2& m);
+  bool setUniform(const std::string& nameArg, const glm::mat3& m);
+  bool setUniform(const std::string& nameArg, const glm::mat4& m);
+  bool setSamplerUniform(const std::string& nameArg, GLint sampler);
+
+  bool setSamplerUniform(const std::string& nameArg, const Uniforms::SamplerIndexVectorType& samplers);
+  bool setUniform(const std::string& nameArg, const std::vector<float>& floats);
+  bool setUniform(const std::string& nameArg, const std::vector<GLint>& integers);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::vec2>& vectors);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::vec3>& vectors);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::vec4>& vectors);
+  bool setUniform(const std::string& nameArg, const std::vector<glm::mat4>& matrices);
+
+  /**
+   * @tparam N Number of array elements
+   */
+  template<std::uint32_t N>
+  bool setUniform(const std::string& uniformName, const std::array<float, N>& a)
+  {
+    static_assert(N >= 2 && N <= 5, "Only the registered fixed-size float uniform arrays are supported");
+    constexpr UniformType type = N == 2   ? UniformType::FloatArray2
+                                 : N == 3 ? UniformType::FloatArray3
+                                 : N == 4 ? UniformType::FloatArray4
+                                          : UniformType::FloatArray5;
+    const GLint loc = getUniformLocationForTypes(uniformName, {type});
+    if (loc < 0) {
+      return false;
+    }
+
+    glUniform1fv(loc, static_cast<int>(N), a.data());
+    return true;
+  }
+
+  /// Upload every dirty uniform in the supplied registry, then mark successfully uploaded uniforms clean.
+  static void applyUniforms(Uniforms& uniforms);
+
+  /// Return registered uniform declarations and their most recently queried locations.
+  const Uniforms& getRegisteredUniforms() const;
+
+  /// Query a uniform location from the linked program.
+  GLint getUniformLocation(const std::string& nameArg);
+
+private:
+  GLint getUniformLocationForTypes(const std::string& nameArg, std::initializer_list<UniformType> acceptedTypes);
+
+  std::string m_name;
+  GLuint m_handle;
+  bool m_linked;
+  GLErrorChecker m_errorChecker;
+
+  Uniforms m_registeredUniforms;
+
+  /**
+   * @brief Variant visitor that dispatches a stored `Uniforms::ValueType` to the matching GL upload call.
+   */
+  class UniformSetter
+  {
+  public:
+    UniformSetter() = default;
+    ~UniformSetter() = default;
+
+    void setLocation(GLint loc);
+
+    void operator()(bool v) const;
+    void operator()(int v) const;
+    void operator()(unsigned int v) const;
+    void operator()(float v) const;
+    void operator()(const glm::vec2& v) const;
+    void operator()(const glm::vec3& v) const;
+    void operator()(const glm::vec4& v) const;
+    void operator()(const glm::mat2& m) const;
+    void operator()(const glm::mat3& m) const;
+    void operator()(const glm::mat4& m) const;
+
+    void operator()(const Uniforms::SamplerIndexType& v) const;
+    void operator()(const Uniforms::SamplerIndexVectorType& samplers) const;
+    void operator()(const std::vector<float>& floats) const;
+    void operator()(const std::vector<glm::vec2>& vectors) const;
+    void operator()(const std::vector<glm::vec3>& vectors) const;
+    void operator()(const std::vector<glm::vec4>& vectors) const;
+    void operator()(const std::vector<int>& integers) const;
+    void operator()(const std::vector<glm::mat4>& matrices) const;
+
+    void operator()(const std::array<float, 2>& a) const;
+    void operator()(const std::array<float, 3>& a) const;
+    void operator()(const std::array<float, 4>& a) const;
+    void operator()(const std::array<float, 5>& a) const;
+    void operator()(const std::array<uint32_t, 5>& a) const;
+    void operator()(const std::array<glm::vec3, 8>& a) const;
+
+  private:
+    GLint m_loc = -1;
+  };
+};

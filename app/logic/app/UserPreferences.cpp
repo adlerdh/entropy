@@ -66,6 +66,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "showImageBorders",
       "showOverlays",
       "crosshairs",
+      "transformationGuides",
       "synchronizeViewZooms",
       "backgrounds",
       "anatomicalLabels",
@@ -75,6 +76,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
   }
   else if (path == "rendering") {
     preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
+  }
+  else if (path == "rendering/camera") {
+    preferredKeys = {"showFrustumIn2DViews", "frustumColor", "reversePovRotation", "synchronizeThreeDCameras"};
   }
   else if (path == "rendering/mesh") {
     preferredKeys = {
@@ -87,7 +91,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "rimLighting",
       "smoothing",
       "pointPicking",
-      "clipPlane"};
+      "cutaway"};
   }
   else if (path == "rendering/mesh/smoothing") {
     preferredKeys = {"segmentations", "isosurfaces", "iterations", "passBand"};
@@ -103,6 +107,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "density",
       "toolbarScale",
       "windowBackgroundOpacity",
+      "showImageExportFormatGuide",
+      "showSegmentationExportFormatGuide",
+      "showMeshExportFormatGuide",
       "precision"};
   }
   else if (path == "rendering/raycasting") {
@@ -113,6 +120,9 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
   }
   else if (path == "system") {
     preferredKeys = {"performance", "updates", "diagnostics"};
+  }
+  else if (path == "system/diagnostics") {
+    preferredKeys = {"enabled", "logVerbosity"};
   }
 
   const auto append = [&](const std::string& key) {
@@ -448,6 +458,9 @@ json toJson(
       {"showLayoutTabs", settings.showLayoutTabs()},
       {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)},
       {"showGlobalTimeControls", settings.showGlobalTimeControls()},
+      {"showImageExportFormatGuide", settings.showImageExportFormatGuide()},
+      {"showSegmentationExportFormatGuide", settings.showSegmentationExportFormatGuide()},
+      {"showMeshExportFormatGuide", settings.showMeshExportFormatGuide()},
       {"precision",
        {{"imageValues", precisionPreferences.imageValuePrecision},
         {"coordinates", precisionPreferences.coordsPrecision},
@@ -461,6 +474,9 @@ json toJson(
        {{"show", renderPreferences.showCrosshairs},
         {"showInLightboxViews", renderPreferences.showCrosshairsInLightboxViews},
         {"color", vec4ToJson(renderPreferences.crosshairsColor)}}},
+      {"transformationGuides",
+       {{"show", renderPreferences.showTransformationGuides},
+        {"color", vec4ToJson(renderPreferences.transformationGuideColor)}}},
       {"synchronizeViewZooms", settings.synchronizeZooms()},
       {"backgrounds",
        {{"2d", vec3ToJson(renderPreferences.background2dColor)},
@@ -518,14 +534,17 @@ json toJson(
     {"rendering",
      {{"camera",
        {{"reversePovRotation", renderPreferences.reversePovRotation},
+        {"synchronizeThreeDCameras", renderPreferences.synchronizeThreeDCameras},
         {"showFrustumIn2DViews", renderPreferences.showThreeDCameraFrustumIn2DViews},
         {"frustumColor", vec4ToJson(renderPreferences.threeDCameraFrustumColor)}}},
       {"threeD",
        {{"transparentBackground", renderPreferences.transparent3DBackground},
         {"imageBoxVisible", renderPreferences.imageBoxVisible},
         {"imagePlanesVisible", renderPreferences.showImagePlanesIn3D},
-        {"imagePlaneViewAngleOpacity", renderPreferences.modulateImagePlaneOpacityWithViewAngle},
         {"imagePlaneSegmentationsVisible", renderPreferences.showSegmentationsOnImagePlanesIn3D},
+        {"imagePlaneIsocontoursVisible", renderPreferences.showIsocontoursOnImagePlanesIn3D},
+        {"imagePlaneOpacity", renderPreferences.imagePlaneOpacity},
+        {"imagePlaneViewAngleOpacity", renderPreferences.modulateImagePlaneOpacityWithViewAngle},
         {"imagePlaneShading", renderPreferences.shadeImagePlanesIn3D},
         {"lighting",
          {{"ambient", renderPreferences.lightingAmbient},
@@ -533,8 +552,8 @@ json toJson(
           {"specular", renderPreferences.lightingSpecular},
           {"specularPower", renderPreferences.lightingSpecularPower}}},
         {"showCrosshairs", renderPreferences.showCrosshairsIn3D},
-        {"crosshairsDiameterVox", renderPreferences.crosshairs3DGlyphDiameterVoxelDiagonals},
-        {"crosshairsLengthVox", renderPreferences.crosshairs3DGlyphLengthVoxelDiagonals},
+        {"crosshairsDiameterScenePercent", renderPreferences.crosshairs3DGlyphDiameterScenePercent},
+        {"crosshairsLengthScenePercent", renderPreferences.crosshairs3DGlyphLengthScenePercent},
         {"imagePlaneLighting",
          {{"ambient", renderPreferences.imagePlaneLightingAmbient},
           {"diffuse", renderPreferences.imagePlaneLightingDiffuse},
@@ -572,9 +591,7 @@ json toJson(
           {"iterations", renderPreferences.meshSmoothingIterations},
           {"passBand", renderPreferences.meshSmoothingPassBand}}},
         {"pointPicking", renderPreferences.meshPickingEnabled},
-        {"clipPlane",
-         {{"enabled", renderPreferences.meshClipPlaneEnabled},
-          {"worldPlane", vec4ToJson(renderPreferences.meshClipPlaneWorld)}}}}},
+        {"cutaway", renderPreferences.meshCutawayEnabled}}},
       {"raycasting",
        {{"samplingFactor", renderPreferences.raycastSamplingFactor},
         {"distanceMap",
@@ -603,7 +620,9 @@ json toJson(
        {{"frameRate",
          {{"limit", renderPreferences.limitFrameRate},
           {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}}}},
-      {"diagnostics", {{"logVerbosity", std::string{logging::logLevelLabel(logging::defaultLoggerSinkLevel())}}}},
+      {"diagnostics",
+       {{"enabled", logging::loggingEnabled()},
+        {"logVerbosity", std::string{logging::logLevelLabel(logging::applicationLogLevel())}}}},
       {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
 }
 
@@ -656,6 +675,21 @@ void applyJson(
     {
       settings.setShowGlobalTimeControls(showTimeControls->get<bool>());
     }
+    if (const auto showExportGuide = interface->find("showImageExportFormatGuide");
+        showExportGuide != interface->end() && showExportGuide->is_boolean())
+    {
+      settings.setShowImageExportFormatGuide(showExportGuide->get<bool>());
+    }
+    if (const auto showExportGuide = interface->find("showSegmentationExportFormatGuide");
+        showExportGuide != interface->end() && showExportGuide->is_boolean())
+    {
+      settings.setShowSegmentationExportFormatGuide(showExportGuide->get<bool>());
+    }
+    if (const auto showExportGuide = interface->find("showMeshExportFormatGuide");
+        showExportGuide != interface->end() && showExportGuide->is_boolean())
+    {
+      settings.setShowMeshExportFormatGuide(showExportGuide->get<bool>());
+    }
     if (const auto precision = interface->find("precision"); precision != interface->end() && precision->is_object()) {
       precisionPreferences.imageValuePrecision =
         precisionFromJson(*precision, "imageValues", precisionPreferences.imageValuePrecision);
@@ -679,6 +713,10 @@ void applyJson(
       setFromJson(renderPreferences.showCrosshairs, *crosshairs, "show");
       setFromJson(renderPreferences.showCrosshairsInLightboxViews, *crosshairs, "showInLightboxViews");
       setVec4FromJson(renderPreferences.crosshairsColor, *crosshairs, "color");
+    }
+    if (const auto guides = views->find("transformationGuides"); guides != views->end() && guides->is_object()) {
+      setFromJson(renderPreferences.showTransformationGuides, *guides, "show");
+      setVec4FromJson(renderPreferences.transformationGuideColor, *guides, "color");
     }
     if (const auto syncZooms = views->find("synchronizeViewZooms");
         syncZooms != views->end() && syncZooms->is_boolean())
@@ -827,6 +865,7 @@ void applyJson(
     }
     if (const auto camera = rendering->find("camera"); camera != rendering->end() && camera->is_object()) {
       setFromJson(renderPreferences.reversePovRotation, *camera, "reversePovRotation");
+      setFromJson(renderPreferences.synchronizeThreeDCameras, *camera, "synchronizeThreeDCameras");
       setFromJson(renderPreferences.showThreeDCameraFrustumIn2DViews, *camera, "showFrustumIn2DViews");
       setVec4FromJson(renderPreferences.threeDCameraFrustumColor, *camera, "frustumColor");
     }
@@ -834,8 +873,10 @@ void applyJson(
       setFromJson(renderPreferences.transparent3DBackground, *threeD, "transparentBackground");
       setFromJson(renderPreferences.imageBoxVisible, *threeD, "imageBoxVisible");
       setFromJson(renderPreferences.showImagePlanesIn3D, *threeD, "imagePlanesVisible");
-      setFromJson(renderPreferences.modulateImagePlaneOpacityWithViewAngle, *threeD, "imagePlaneViewAngleOpacity");
       setFromJson(renderPreferences.showSegmentationsOnImagePlanesIn3D, *threeD, "imagePlaneSegmentationsVisible");
+      setFromJson(renderPreferences.showIsocontoursOnImagePlanesIn3D, *threeD, "imagePlaneIsocontoursVisible");
+      setFloatFromJson(renderPreferences.imagePlaneOpacity, *threeD, "imagePlaneOpacity", 0.0f, 1.0f);
+      setFromJson(renderPreferences.modulateImagePlaneOpacityWithViewAngle, *threeD, "imagePlaneViewAngleOpacity");
       setFromJson(renderPreferences.shadeImagePlanesIn3D, *threeD, "imagePlaneShading");
       if (const auto lighting = threeD->find("lighting"); lighting != threeD->end() && lighting->is_object()) {
         setFloatFromJson(renderPreferences.lightingAmbient, *lighting, "ambient", 0.0f, 2.0f);
@@ -845,17 +886,17 @@ void applyJson(
       }
       setFromJson(renderPreferences.showCrosshairsIn3D, *threeD, "showCrosshairs");
       setFloatFromJson(
-        renderPreferences.crosshairs3DGlyphDiameterVoxelDiagonals,
+        renderPreferences.crosshairs3DGlyphDiameterScenePercent,
         *threeD,
-        "crosshairsDiameterVox",
-        0.01f,
-        100.0f);
+        "crosshairsDiameterScenePercent",
+        0.05f,
+        5.0f);
       setFloatFromJson(
-        renderPreferences.crosshairs3DGlyphLengthVoxelDiagonals,
+        renderPreferences.crosshairs3DGlyphLengthScenePercent,
         *threeD,
-        "crosshairsLengthVox",
-        0.01f,
-        1000.0f);
+        "crosshairsLengthScenePercent",
+        0.5f,
+        50.0f);
       if (const auto lighting = threeD->find("imagePlaneLighting"); lighting != threeD->end() && lighting->is_object())
       {
         setFloatFromJson(renderPreferences.imagePlaneLightingAmbient, *lighting, "ambient", 0.0f, 2.0f);
@@ -888,10 +929,7 @@ void applyJson(
         setFloatFromJson(renderPreferences.meshSmoothingPassBand, *smoothing, "passBand", 0.001f, 2.0f);
       }
       setFromJson(renderPreferences.meshPickingEnabled, *mesh, "pointPicking");
-      if (const auto clipPlane = mesh->find("clipPlane"); clipPlane != mesh->end() && clipPlane->is_object()) {
-        setFromJson(renderPreferences.meshClipPlaneEnabled, *clipPlane, "enabled");
-        setVec4FromJson(renderPreferences.meshClipPlaneWorld, *clipPlane, "worldPlane");
-      }
+      setFromJson(renderPreferences.meshCutawayEnabled, *mesh, "cutaway");
       if (const auto shadows = mesh->find("shadows"); shadows != mesh->end() && shadows->is_object()) {
         setFromJson(renderPreferences.meshShadowsEnabled, *shadows, "enabled");
         if (const auto size = shadows->find("mapSizePixels"); size != shadows->end() && size->is_number_unsigned()) {
@@ -1014,13 +1052,16 @@ void applyJson(
           }
 #if SPDLOG_ACTIVE_LEVEL > SPDLOG_LEVEL_TRACE
           if (!choice.requiresCompiledTrace) {
-            logging::setDefaultLoggerSinkLevel(choice.level);
+            logging::setApplicationLogLevel(choice.level);
           }
 #else
-          logging::setDefaultLoggerSinkLevel(choice.level);
+          logging::setApplicationLogLevel(choice.level);
 #endif
           break;
         }
+      }
+      if (const auto enabled = diagnostics->find("enabled"); enabled != diagnostics->end() && enabled->is_boolean()) {
+        logging::setLoggingEnabled(enabled->get<bool>());
       }
     }
     if (const auto updates = system->find("updates"); updates != system->end() && updates->is_object()) {
@@ -1052,6 +1093,7 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.showAnatomicalLabels = currentPreferences.showAnatomicalLabels;
   preferences.showAnatomicalLabelsInLightboxViews = currentPreferences.showAnatomicalLabelsInLightboxViews;
   preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
+  preferences.quadrupedBodyRegion = currentPreferences.quadrupedBodyRegion;
   preferences.showScaleBars = currentPreferences.showScaleBars;
   preferences.showScaleBarsInLightboxViews = currentPreferences.showScaleBarsInLightboxViews;
   preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;

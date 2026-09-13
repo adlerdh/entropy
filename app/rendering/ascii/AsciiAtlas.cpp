@@ -1,7 +1,7 @@
 #include "rendering/ascii/AsciiAtlas.h"
 #include "rendering/ascii/AsciiAtlasBaker.h"
 
-#include <glad/glad.h>
+#include "common/Exception.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -29,6 +29,21 @@ std::vector<float> AsciiAtlas::computeRenderedCoverage(glm::vec2 cellSizePx) con
   return coverage;
 }
 
+void AsciiAtlas::bind(const uint32_t textureUnit) const
+{
+  if (!m_texture) {
+    throwDebug("Cannot bind an ASCII atlas before it is built");
+  }
+  m_texture->bind(textureUnit);
+}
+
+void AsciiAtlas::unbind(const uint32_t textureUnit) const
+{
+  if (m_texture) {
+    m_texture->unbind(textureUnit);
+  }
+}
+
 std::vector<GlyphProfile> AsciiAtlas::computeRenderedSpatialProfiles(glm::vec2 cellSizePx) const
 {
   if (m_slotPixels.empty()) return {};
@@ -41,7 +56,7 @@ AsciiAtlas::~AsciiAtlas()
 }
 
 AsciiAtlas::AsciiAtlas(AsciiAtlas&& o) noexcept
-  : m_texId(o.m_texId)
+  : m_texture(std::move(o.m_texture))
   , m_glyphCount(o.m_glyphCount)
   , m_glyphPx(o.m_glyphPx)
   , m_slotPx(o.m_slotPx)
@@ -50,7 +65,6 @@ AsciiAtlas::AsciiAtlas(AsciiAtlas&& o) noexcept
   , m_glyphMeta(std::move(o.m_glyphMeta))
   , m_slotPixels(std::move(o.m_slotPixels))
 {
-  o.m_texId = 0;
   o.m_glyphCount = 0;
 }
 
@@ -58,7 +72,7 @@ AsciiAtlas& AsciiAtlas::operator=(AsciiAtlas&& o) noexcept
 {
   if (this != &o) {
     destroy();
-    m_texId = o.m_texId;
+    m_texture = std::move(o.m_texture);
     m_glyphCount = o.m_glyphCount;
     m_glyphPx = o.m_glyphPx;
     m_slotPx = o.m_slotPx;
@@ -66,7 +80,6 @@ AsciiAtlas& AsciiAtlas::operator=(AsciiAtlas&& o) noexcept
     m_fillFractions = std::move(o.m_fillFractions);
     m_glyphMeta = std::move(o.m_glyphMeta);
     m_slotPixels = std::move(o.m_slotPixels);
-    o.m_texId = 0;
     o.m_glyphCount = 0;
   }
   return *this;
@@ -74,10 +87,7 @@ AsciiAtlas& AsciiAtlas::operator=(AsciiAtlas&& o) noexcept
 
 void AsciiAtlas::destroy()
 {
-  if (m_texId) {
-    glDeleteTextures(1, &m_texId);
-    m_texId = 0;
-  }
+  m_texture.reset();
   m_characters.clear();
   m_fillFractions.clear();
   m_glyphMeta.clear();
@@ -127,15 +137,20 @@ bool AsciiAtlas::build(const unsigned char* ttfData, int ttfBytes, const std::st
   for (int i = 0; i < N; ++i)
     m_slotPixels[i] = bakedGlyphs[i].slotPixels;
 
-  // GL upload
-  glGenTextures(1, &m_texId);
-  glBindTexture(GL_TEXTURE_2D, m_texId);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, slotW * N, slotH, 0, GL_RED, GL_UNSIGNED_BYTE, atlasPixels.data());
-  glBindTexture(GL_TEXTURE_2D, 0);
+  GLTexture::PixelStoreSettings pixelStore;
+  pixelStore.m_alignment = 1;
+  m_texture.emplace(tex::Target::Texture2D, GLTexture::MultisampleSettings{}, std::nullopt, pixelStore);
+  m_texture->generate();
+  m_texture->setMinificationFilter(tex::MinificationFilter::Linear);
+  m_texture->setMagnificationFilter(tex::MagnificationFilter::Linear);
+  m_texture->setWrapMode(tex::WrapMode::ClampToEdge);
+  m_texture->setSize(glm::uvec3{static_cast<uint32_t>(slotW * N), static_cast<uint32_t>(slotH), 1u});
+  m_texture->setData(
+    0,
+    tex::SizedInternalFormat::R8_UNorm,
+    tex::BufferPixelFormat::Red,
+    tex::BufferPixelDataType::UInt8,
+    atlasPixels.data());
 
   m_glyphCount = N;
   m_glyphPx = glyphPx;

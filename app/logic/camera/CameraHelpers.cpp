@@ -6,6 +6,7 @@
 
 #include "common/CoordinateFrame.h"
 #include "common/Exception.hpp"
+#include "common/Geometry.h"
 #include "common/Viewport.h"
 
 #include <glm/glm.hpp>
@@ -43,6 +44,23 @@ bool isFinite(const glm::vec3& value)
 bool isFinite(const glm::vec2& value)
 {
   return std::isfinite(value.x) && std::isfinite(value.y);
+}
+
+glm::vec2 orthographicWorldPixelSize(const Camera& camera, const glm::vec4& clipDeltaX, const glm::vec4& clipDeltaY)
+{
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  if (!camera.isOrthographic()) {
+    return {nan, nan};
+  }
+
+  // Transform displacement vectors rather than subtracting absolute unprojected positions. This
+  // excludes camera and frame translations, avoiding catastrophic cancellation for images whose
+  // physical coordinates are far from the World origin. Rigid camera rotations preserve length.
+  const glm::mat3 world_T_cameraRotation{camera.world_T_camera()};
+  const glm::mat4 camera_T_clip = camera.camera_T_clip();
+  const glm::vec3 worldDeltaX = world_T_cameraRotation * glm::vec3{camera_T_clip * clipDeltaX};
+  const glm::vec3 worldDeltaY = world_T_cameraRotation * glm::vec3{camera_T_clip * clipDeltaY};
+  return {glm::length(worldDeltaX), glm::length(worldDeltaY)};
 }
 
 glm::vec3 safeBoxSize(const glm::vec3& size)
@@ -754,6 +772,88 @@ worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, c
   }
 }
 
+glm::vec3 defaultViewFramingSize(const glm::vec3& worldBoxSize)
+{
+  constexpr float marginPerSide = 0.05f;
+  return (1.0f + 2.0f * marginPerSide) * worldBoxSize;
+}
+
+float viewFramingScaleForOverlay(
+  const Camera& camera,
+  const AABB<float>& worldBox,
+  const glm::vec2& viewSize,
+  const glm::vec4& overlayBounds)
+{
+  if (!camera.isOrthographic()) {
+    return 1.0f;
+  }
+
+  return viewFramingScaleForOverlay(helper::clip_T_world(camera), worldBox, viewSize, overlayBounds);
+}
+
+float viewFramingScaleForOverlay(
+  const glm::mat4& worldToClip,
+  const AABB<float>& worldBox,
+  const glm::vec2& viewSize,
+  const glm::vec4& overlayBounds)
+{
+  if (
+    !isFinite(viewSize) || viewSize.x <= 0.0f || viewSize.y <= 0.0f || !std::isfinite(overlayBounds.x) ||
+    !std::isfinite(overlayBounds.y) || !std::isfinite(overlayBounds.z) || !std::isfinite(overlayBounds.w) ||
+    overlayBounds.z <= 0.0f || overlayBounds.w <= 0.0f)
+  {
+    return 1.0f;
+  }
+
+  glm::vec2 contentMin{std::numeric_limits<float>::max()};
+  glm::vec2 contentMax{std::numeric_limits<float>::lowest()};
+  for (const glm::vec3& corner : math::makeAABBoxCorners(worldBox)) {
+    const glm::vec4 clip = worldToClip * glm::vec4{corner, 1.0f};
+    if (!std::isfinite(clip.w) || std::abs(clip.w) <= std::numeric_limits<float>::epsilon()) {
+      return 1.0f;
+    }
+    const glm::vec3 ndc = glm::vec3{clip} / clip.w;
+    if (!isFinite(ndc)) {
+      return 1.0f;
+    }
+    const glm::vec2 pixel{0.5f * (ndc.x + 1.0f) * viewSize.x, 0.5f * (1.0f - ndc.y) * viewSize.y};
+    contentMin = glm::min(contentMin, pixel);
+    contentMax = glm::max(contentMax, pixel);
+  }
+
+  const glm::vec2 overlayMin{overlayBounds.x, overlayBounds.y};
+  const glm::vec2 overlayMax = overlayMin + glm::vec2{overlayBounds.z, overlayBounds.w};
+  const auto overlaps = [&](const float scale) {
+    const glm::vec2 center = 0.5f * viewSize;
+    const glm::vec2 scaledMin = center + (contentMin - center) / scale;
+    const glm::vec2 scaledMax = center + (contentMax - center) / scale;
+    return scaledMin.x < overlayMax.x && overlayMin.x < scaledMax.x && scaledMin.y < overlayMax.y &&
+           overlayMin.y < scaledMax.y;
+  };
+
+  if (!overlaps(1.0f)) {
+    return 1.0f;
+  }
+
+  constexpr float maximumScale = 4.0f;
+  if (overlaps(maximumScale)) {
+    return 1.0f;
+  }
+
+  float lower = 1.0f;
+  float upper = maximumScale;
+  for (int iteration = 0; iteration < 24; ++iteration) {
+    const float middle = 0.5f * (lower + upper);
+    if (overlaps(middle)) {
+      lower = middle;
+    }
+    else {
+      upper = middle;
+    }
+  }
+  return upper;
+}
+
 void positionCameraForWorldTargetAndFov(Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget)
 {
   if (!isFinite(worldTarget)) {
@@ -963,21 +1063,17 @@ glm::vec4 world_T_view(const Viewport& viewport, const Camera& camera, const glm
   return worldPos / worldPos.w;
 }
 
-/// @todo Make this function valid for perspective views, too!
-/// Currently not valid for perspective projection.
 glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera)
 {
-  static constexpr float nearPlaneZ = -1.0f;
+  if (viewport.width() <= 0.0f || viewport.height() <= 0.0f) {
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    return {nan, nan};
+  }
 
-  static const glm::vec2 viewO(0.0f, 0.0f);
-  static const glm::vec2 viewX(1.0f, 0.0f);
-  static const glm::vec2 viewY(0.0f, 1.0f);
-
-  const glm::vec4 worldViewO = world_T_view(viewport, camera, viewO, nearPlaneZ);
-  const glm::vec4 worldViewX = world_T_view(viewport, camera, viewX, nearPlaneZ);
-  const glm::vec4 worldViewY = world_T_view(viewport, camera, viewY, nearPlaneZ);
-
-  return glm::vec2{glm::length(worldViewX - worldViewO), glm::length(worldViewY - worldViewO)};
+  return orthographicWorldPixelSize(
+    camera,
+    glm::vec4{2.0f / viewport.width(), 0.0f, 0.0f, 0.0f},
+    glm::vec4{0.0f, 2.0f / viewport.height(), 0.0f, 0.0f});
 }
 
 // This version of the function is valid for both orthogonal and perspective projections
@@ -1043,15 +1139,17 @@ glm::vec3 world_T_miewport(
 
 glm::vec2 worldPixelSize(const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip)
 {
-  static const glm::vec2 miewO(0.0f, 0.0f);
-  static const glm::vec2 miewX(1.0f, 0.0f);
-  static const glm::vec2 miewY(0.0f, 1.0f);
+  if (windowVP.width() <= 0.0f || windowVP.height() <= 0.0f) {
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    return {nan, nan};
+  }
 
-  const glm::vec3 worldO = world_T_miewport(windowVP, camera, viewClip_T_windowClip, miewO);
-  const glm::vec3 worldX = world_T_miewport(windowVP, camera, viewClip_T_windowClip, miewX);
-  const glm::vec3 worldY = world_T_miewport(windowVP, camera, viewClip_T_windowClip, miewY);
-
-  return glm::vec2{glm::length(worldX - worldO), glm::length(worldY - worldO)};
+  const glm::vec4 windowClipDeltaX{2.0f / windowVP.width(), 0.0f, 0.0f, 0.0f};
+  const glm::vec4 windowClipDeltaY{0.0f, 2.0f / windowVP.height(), 0.0f, 0.0f};
+  return orthographicWorldPixelSize(
+    camera,
+    viewClip_T_windowClip * windowClipDeltaX,
+    viewClip_T_windowClip * windowClipDeltaY);
 }
 
 glm::quat computeCameraRotationRelativeToWorld(const Camera& camera)

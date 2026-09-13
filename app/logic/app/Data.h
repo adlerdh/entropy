@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/AnatomicalLabels.h"
 #include "common/UuidRange.h"
 #include "logic/app/ParcellationLabelTable.h"
 
@@ -7,6 +8,7 @@
 #include "image/ImageColorMap.h"
 #include "image/ImageDerivedData.h"
 #include "image/Isosurface.h"
+#include "mesh/MeshTypes.h"
 
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
@@ -16,7 +18,9 @@
 
 #include "registration/Jobs.h"
 
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderDerivedData.h"
+#include "rendering/RenderSettings.h"
 #include "windowing/WindowData.h"
 
 #include "ui/GuiData.h"
@@ -80,8 +84,14 @@ public:
   const GuiData& guiData() const;
   GuiData& guiData();
 
-  const RenderData& renderData() const;
-  RenderData& renderData();
+  const rendering::RenderSettings& renderSettings() const;
+  rendering::RenderSettings& renderSettings();
+
+  const rendering::RenderResources& renderResources() const;
+  rendering::RenderResources& renderResources();
+
+  const rendering::RenderDerivedData& renderDerivedData() const;
+  rendering::RenderDerivedData& renderDerivedData();
 
   const WindowData& windowData() const;
   WindowData& windowData();
@@ -103,6 +113,9 @@ public:
   const serialize::EntropyProject& project() const;
   serialize::EntropyProject& project();
   const std::optional<std::filesystem::path>& projectFileName() const;
+
+  /// Resolve the anatomical-label convention against the current reference image.
+  AnatomicalLabelResolution resolvedAnatomicalLabels() const;
 
   /**
    * @brief Add an image
@@ -187,6 +200,12 @@ public:
    * otherwise \c std::nullpt
    */
   std::optional<uuid> addIsosurface(const uuid& imageUidArg, ComponentIndexType comp, Isosurface isosurfaceArg);
+
+  /// Add an imported surface mesh associated with an image.
+  std::optional<uuid> addImportedMesh(const uuid& imageUidArg, mesh::MeshRecord meshArg);
+
+  /// Remove an imported surface mesh.
+  bool removeImportedMesh(const uuid& meshUidArg);
 
   bool removeImage(const uuid& imageUidArg);
   bool removeSeg(const uuid& segUidArg);
@@ -285,6 +304,10 @@ public:
   const Isosurface* isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid) const;
 
   Isosurface* isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid);
+
+  /// Return an imported surface mesh, or null when the UID is unknown.
+  const mesh::MeshRecord* importedMesh(const uuid& meshUidArg) const;
+  mesh::MeshRecord* importedMesh(const uuid& meshUidArg);
 
   const ImageColorMap* imageColorMap(const uuid& colorMapUid) const;
   ImageColorMap* imageColorMap(const uuid& colorMapUid);
@@ -453,6 +476,9 @@ public:
   /// Get all segmentations for an image
   std::vector<uuid> imageToSegUids(const uuid& imageUidArg) const;
 
+  /// Return imported meshes associated with an image in display order.
+  std::vector<uuid> imageToImportedMeshUids(const uuid& imageUidArg) const;
+
   /// Get all warp fields for an image
   std::vector<uuid> imageToDefUids(const uuid& imageUidArg) const;
 
@@ -558,16 +584,21 @@ private:
   AppSettings m_settings;
   AppState m_state; //!< Application state
 
-  GuiData m_guiData;                         //!< Data for the UI
-  RenderData m_renderData;                   //!< Data for rendering
-  WindowData m_windowData;                   //!< Data for windowing
-  registration::JobStore m_registrationJobs; //!< In-memory registration job records
+  GuiData m_guiData;                                //!< Data for the UI
+  rendering::RenderSettings m_renderSettings;       //!< Persistent rendering presentation settings
+  rendering::RenderDerivedData m_renderDerivedData; //!< Context-free transient inputs derived for rendering
+  rendering::RenderResources m_renderResources;     //!< Context-bound rendering resources and transient shader data
+  WindowData m_windowData;                          //!< Data for windowing
+  registration::JobStore m_registrationJobs;        //!< In-memory registration job records
 
   serialize::EntropyProject m_project;                    //!< Project that is used for serialization
   std::optional<std::filesystem::path> m_projectFileName; //!< File name of the currently loaded/saved project
 
   std::unordered_map<uuid, Image> m_images; //!< Images
   std::vector<uuid> m_imageUidsOrdered;     //!< Image UIDs in order
+
+  std::unordered_map<uuid, mesh::MeshRecord> m_importedMeshes;          //!< User-loaded surface meshes
+  std::unordered_map<uuid, std::vector<uuid> > m_imageToImportedMeshes; //!< Image-to-mesh associations
 
   std::unordered_map<uuid, Image> m_componentProjectionImages; //!< Hidden scalar component projections
   /// @todo This cache is time-point-aware but not memory-bounded. Replace it with an LRU cache when

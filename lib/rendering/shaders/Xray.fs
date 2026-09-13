@@ -1,0 +1,147 @@
+#version 330 core
+
+// Rendering modes:
+#define IMAGE_RENDER_MODE 0
+#define CHECKER_RENDER_MODE 1
+#define QUADRANTS_RENDER_MODE 2
+#define FLASHLIGHT_RENDER_MODE 3
+
+#define XRAY_IP_MODE 4
+
+in VS_OUT
+{
+  vec3 v_texCoord;
+  vec3 v_worldPos;
+  vec3 v_worldNormal;
+  vec2 v_checkerCoord;
+  vec2 v_clipPos;
+}
+fs_in;
+
+layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
+
+// Texture samplers:
+uniform ${IMAGE_SAMPLER_TYPE} u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex;            // image color map (non-premultiplied RGBA)
+
+// Image adjustment uniforms:
+uniform vec2 u_imgSlopeIntercept;          // slope/intercept for window-leveling the attenuation value
+uniform vec2 u_imgMinMax;                  // min/max image values (texture intenstiy units)
+uniform vec2 u_imgThresholds;              // lower/upper image thresholds (texture intensity units)
+uniform float u_imgOpacity;                // image opacity
+uniform float u_imgSlope_native_T_texture; // slope to map texture intensity to native image
+                                           // intensity (NOT accounting for window-leveling)
+
+// Image color map adjustment uniforms:
+uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
+uniform int u_cmapQuantLevels;     // number of color map quantization levels
+uniform vec3 u_cmapHsvModFactors;  // HSV modification factors for color map
+uniform bool u_applyHsvMod;        // flag that HSV modification is applied
+
+// View render mode uniforms:
+uniform int u_renderMode;      // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
+uniform vec2 u_clipCrosshairs; // crosshairs position in Clip space
+
+// Should quadrants comparison mode be done along the x, y directions?
+// If x is true, then compare along x; if y is true, then compare along y.
+// If both are true, then compare along both.
+uniform bvec2 u_quadrants;
+uniform bool u_showFix;                 // flag that the either the fixed (true) or moving image is shown
+uniform float u_aspectRatio;            // view aspect ratio (width / height)
+uniform float u_flashlightRadius;       // flashlight circle radius
+uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
+
+// Intensiy Projection mode uniforms:
+uniform int u_mipMode;            // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
+uniform int u_halfNumMipSamples;  // half number of MIP samples (0 when no projection used)
+uniform vec3 u_texSamplingDirZ;   // Z view camera direction (in texture sampling space)
+uniform vec3 u_worldSamplingDirZ; // Z view camera direction (in world space)
+
+// Sampling distance in centimeters (used for X-ray IP mode)
+uniform float u_mipSamplingDistance_cm;
+
+// Photon linear attenuation coefficients [1/cm] for liquid water and dry air near sea level.
+// Derived from NIST X-Ray Mass Attenuation Coefficients (mu/rho, cm^2/g) multiplied by density:
+// https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/water.html
+// https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/air.html
+uniform float u_waterAttenCoeff;
+uniform float u_airAttenCoeff;
+
+#include "entropy/HELPER_FUNCTIONS.glsl"
+#include "entropy/COLOR_HELPER_FUNCTIONS.glsl"
+/// float textureLookup(sampler3D texture, vec3 texCoord);
+#include "entropy/TEXTURE_LOOKUP_FUNCTION.glsl"
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+#include "entropy/SAMPLE_TEX_COORD_FUNCTION.glsl"
+/// bool doRender(vec2 clipPos, vec2 checkerCoord);
+#include "entropy/DO_RENDER_FUNCTION.glsl"
+/**
+ * @brief Convert texture intensity to Hounsfield units, then to a photon linear attenuation coefficient.
+ *
+ * The x-ray projection mode is physically meaningful for CT-like images whose native scalar
+ * intensities are Hounsfield units. The conversion uses:
+ *   HU = 1000 * (mu - mu_water) / (mu_water - mu_air)
+ * rearranged as:
+ *   mu = mu_water + (HU / 1000) * (mu_water - mu_air)
+ */
+float convertTexToAtten(float img)
+{
+  float hu = u_imgSlope_native_T_texture * img; // Hounsfield units
+  return max((hu / 1000.0) * (u_waterAttenCoeff - u_airAttenCoeff) + u_waterAttenCoeff, 0.0);
+}
+
+void main()
+{
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+    discard;
+  }
+
+  // Look up the texture values and convert to mass attenuation coefficient.
+  // Keep a running sum of attenuation for all samples.
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
+  float thresh = hardThreshold(img, u_imgThresholds);
+  float atten = thresh * convertTexToAtten(img);
+  float useXray = float(XRAY_IP_MODE == u_mipMode);
+
+  // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
+  for (int dir = -1; dir <= 1; dir += 2) // dir in {-1, 1}
+  {
+    for (int i = 1; i <= u_halfNumMipSamples; ++i) {
+      vec3 tc = fs_in.v_texCoord + dir * i * u_texSamplingDirZ;
+      vec3 worldPos = fs_in.v_worldPos + dir * i * u_worldSamplingDirZ;
+      vec3 sampleTc = sampleTexCoord(tc, worldPos);
+      if (!isInsideTexture(sampleTc)) {
+        break;
+      }
+
+      img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
+      thresh = hardThreshold(img, u_imgThresholds);
+      atten += useXray * thresh * convertTexToAtten(img);
+    }
+  }
+
+  // Inverse of the total photon attenuation, which is in range [0.0, 1):
+  float invAtten = 1.0 - exp(-atten * max(u_mipSamplingDistance_cm, 0.0));
+  float invAttenWL = clamp(u_imgSlopeIntercept[0] * invAtten + u_imgSlopeIntercept[1], 0.0, 1.0); // apply W/L
+
+  // Compute coords into the image color map, accounting for quantization levels:
+  float cmapCoord = mix(
+    floor(float(u_cmapQuantLevels) * invAttenWL) / max(float(u_cmapQuantLevels - 1), 1.0),
+    invAttenWL,
+    float(0 == u_cmapQuantLevels));
+  cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1]; // normalize coords
+
+  vec4 imgColorOrig = texture(u_cmapTex, cmapCoord); // image color (non-premult.) before HSV
+
+  // Apply HSV modification factors:
+  vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
+  imgColorHsv.x += u_cmapHsvModFactors.x;
+  imgColorHsv.yz *= u_cmapHsvModFactors.yz;
+
+  // Conditionally use HSV modified colors:
+  float mask = float(isInsideTexture(sampleTc));
+  float alpha = u_imgOpacity * mask;
+
+  o_color = alpha * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod)), 1.0);
+}

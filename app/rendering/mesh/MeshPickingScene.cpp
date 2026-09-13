@@ -18,37 +18,11 @@
 #include <glm/vec3.hpp>
 
 #include <optional>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace
 {
-
-using MeshHandleMap = std::
-  unordered_map<rendering::mesh::MeshGeometryKey, rendering::mesh::MeshHandle, rendering::mesh::MeshGeometryKeyHash>;
-
-const rendering::mesh::MeshHandle* findMeshHandle(
-  const rendering::mesh::MeshGeometryKey& key,
-  const MeshHandleMap& handles)
-{
-  const auto it = handles.find(key);
-  return it == handles.end() ? nullptr : &it->second;
-}
-
-const rendering::mesh::MeshData* meshDataForHandle(
-  const rendering::mesh::MeshHandle& handle,
-  const MeshHandleMap& handles,
-  const rendering::mesh::MeshCache& cache)
-{
-  for (const auto& [key, candidateHandle] : handles) {
-    if (candidateHandle == handle) {
-      return cache.readyMesh(key);
-    }
-  }
-
-  return nullptr;
-}
 
 glm::vec4 normalizedLabelColor(const ParcellationLabelTable& labelTable, const std::size_t labelIndex)
 {
@@ -63,7 +37,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
   if (ViewType::ThreeD != view.viewType()) {
     return std::nullopt;
   }
-  if (!m_appData.renderData().m_meshPickingEnabled) {
+  if (!m_appData.renderSettings().m_meshPickingEnabled) {
     return std::nullopt;
   }
 
@@ -72,7 +46,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
     return std::nullopt;
   }
 
-  const std::vector<rendering::mesh::MeshClipPlane> clipPlanes = meshClipPlanes();
+  const rendering::mesh::MeshOctantCutaway cutaway = meshCutawayForView(view);
   std::vector<rendering::mesh::MeshRenderable> renderables;
   if (view.threeDSceneContents().contains(ThreeDSceneContent::Isosurfaces)) {
     for (const ImgSegPair& imageSegPair : imageSegPairs) {
@@ -110,9 +84,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
         const rendering::mesh::MeshGenerationOptions generationOptions{
           .threadCount = 0,
-          .smoothSurface = m_appData.renderData().m_smoothIsosurfaceMeshes,
-          .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-          .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+          .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
+          .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
         const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
           imageUid,
           image->pixelDataRevision(),
@@ -122,14 +96,14 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           surface->value,
           generationOptions);
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-        const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
-        if (!handle || !m_meshCpuCache.readyMesh(key)) {
+        const rendering::mesh::MeshHandle* handle = m_meshResources.findHandle(key);
+        if (!handle || !m_meshExtractions.readyMesh(key)) {
           continue;
         }
 
         glm::vec4 color = getIsosurfaceColor(m_appData, *surface, settings, activeComponent, false);
         color.a = effectiveOpacity;
-        const auto& globalMaterial = m_appData.renderData().m_meshSurfaceMaterialSettings;
+        const auto& globalMaterial = m_appData.renderSettings().m_meshSurfaceMaterialSettings;
         rendering::mesh::MeshRenderable renderable = rendering::mesh::makeIsosurfaceRenderable(
           *handle,
           image->transformations().worldDef_T_subject(),
@@ -140,7 +114,9 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
               globalMaterial.rimLightingEnabled,
               globalMaterial.rimOpacityStrength),
             .visible = surface->visibleIn3d});
-        renderable.drawOptions.clipPlanes = clipPlanes;
+        if (surface->includeInCutaway) {
+          renderable.drawOptions.cutaway = cutaway;
+        }
         renderables.push_back(std::move(renderable));
       }
     }
@@ -179,24 +155,25 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
         static_cast<float>(seg->settings().opacity()),
         imageOpacity,
-        m_appData.renderData().m_modulateSegmentationOpacityWithImageOpacity3d);
+        m_appData.renderSettings().m_modulateSegmentationOpacityWithImageOpacity3d);
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
-        const rendering::mesh::SegmentationLabelMeshState labelState{
-          .showMesh = labelTable->getShowMesh(labelIndex),
-          .opacity = segmentationOpacity};
-        if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
+        const int64_t labelValue = static_cast<int64_t>(labelIndex);
+        const auto labelInfo = presentLabels->find(labelValue);
+        if (labelInfo == presentLabels->end()) {
           continue;
         }
-
-        const int64_t labelValue = static_cast<int64_t>(labelIndex);
-        if (!presentLabels->contains(labelValue)) {
+        const rendering::mesh::SegmentationLabelMeshState labelState{
+          .showMesh = labelTable->getShowMesh(labelIndex),
+          .opacity = segmentationOpacity,
+          .hasSharedBoundary = labelInfo->second.hasSharedBoundary};
+        if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
           continue;
         }
         const rendering::mesh::MeshGenerationOptions generationOptions{
           .threadCount = 0,
-          .smoothSurface = m_appData.renderData().m_smoothSegmentationMeshes,
-          .smoothingIterations = m_appData.renderData().m_meshSmoothingIterations,
-          .smoothingPassBand = m_appData.renderData().m_meshSmoothingPassBand};
+          .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
+          .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
+          .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
         const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
           segUid,
           seg->pixelDataRevision(),
@@ -205,8 +182,8 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           timePoint,
           generationOptions);
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
-        const rendering::mesh::MeshHandle* handle = findMeshHandle(key, m_meshHandles);
-        if (!handle || !m_meshCpuCache.readyMesh(key)) {
+        const rendering::mesh::MeshHandle* handle = m_meshResources.findHandle(key);
+        if (!handle || !m_meshExtractions.readyMesh(key)) {
           continue;
         }
 
@@ -217,11 +194,16 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
             labelValue,
             normalizedLabelColor(*labelTable, labelIndex),
             labelState,
-            m_appData.renderData().m_meshSurfaceMaterialSettings));
-        renderable.drawOptions.clipPlanes = clipPlanes;
+            m_appData.renderSettings().m_meshSurfaceMaterialSettings));
+        if (labelTable->getIncludeInCutaway(labelIndex)) {
+          renderable.drawOptions.cutaway = cutaway;
+        }
         renderables.push_back(std::move(renderable));
       }
     }
+  }
+  if (view.threeDSceneContents().contains(ThreeDSceneContent::ImportedMeshes)) {
+    appendImportedMeshesForView(view, imageSegPairs, renderables);
   }
   if (view.threeDSceneContents().empty()) {
     return std::nullopt;
@@ -237,8 +219,16 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
   const std::optional<rendering::mesh::MeshScenePickHit> hit = rendering::mesh::pickNearestRenderable(
     {.worldRay = {.origin = worldRayOrigin, .direction = worldRayDirection},
      .renderables = renderables,
-     .meshLookup = [this](const rendering::mesh::MeshHandle& handle) {
-       return meshDataForHandle(handle, m_meshHandles, m_meshCpuCache);
+     .meshLookup = [this](const rendering::mesh::MeshHandle& handle) -> const rendering::mesh::MeshData* {
+       const rendering::mesh::MeshGeometryKey* key = m_meshResources.findKey(handle);
+       if (!key) {
+         return static_cast<const rendering::mesh::MeshData*>(nullptr);
+       }
+       if (const rendering::mesh::MeshData* extracted = m_meshExtractions.readyMesh(*key)) {
+         return extracted;
+       }
+       const auto imported = m_importedMeshData.find(key->sourceUid);
+       return imported == m_importedMeshData.end() ? nullptr : &imported->second;
      }});
 
   return hit ? std::optional<glm::vec3>{hit->triangleHit.worldPosition} : std::nullopt;

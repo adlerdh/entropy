@@ -16,36 +16,36 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
   using namespace std::chrono_literals;
 
   Image* image = m_appData.image(imageUid);
-  const auto& renderData = m_appData.renderData();
-  if (!image || !renderData.m_useDistanceMapForRaycasting) {
+  const auto& renderSettings = m_appData.renderSettings();
+  if (!image || !renderSettings.m_useDistanceMapForRaycasting) {
     return;
   }
   if (component >= image->header().numComponentsPerPixel()) {
     return;
   }
-  const auto imageLayoutIt = m_appData.renderData().m_imageTextureLayouts.find(imageUid);
+  const auto imageLayoutIt = m_appData.renderResources().m_imageTextureLayouts.find(imageUid);
   if (
-    imageLayoutIt == m_appData.renderData().m_imageTextureLayouts.end() ||
-    imageLayoutIt->second.dimension != RenderData::TextureDimension::Texture3D)
+    imageLayoutIt == m_appData.renderResources().m_imageTextureLayouts.end() ||
+    imageLayoutIt->second.dimension != rendering::TextureDimension::Texture3D)
   {
     return;
   }
 
   const auto foregroundThresholds = rendering::texture_setup::distanceMapForegroundThresholds(
     image->settings().componentStatistics(component),
-    renderData.m_distanceMapForegroundLowerPercentile,
-    renderData.m_distanceMapForegroundUpperPercentile);
+    renderSettings.m_distanceMapForegroundLowerPercentile,
+    renderSettings.m_distanceMapForegroundUpperPercentile);
   const DistanceMapGenerationRequest currentRequest{
     .pixelDataRevision = image->pixelDataRevision(),
     .foregroundThresholds = foregroundThresholds};
 
-  auto imageTexturesIt = m_appData.renderData().m_distanceMapTextures.find(imageUid);
+  auto imageTexturesIt = m_appData.renderResources().m_distanceMapTextures.find(imageUid);
   const auto completedImageIt = m_completedDistanceMapGenerations.find(imageUid);
   const bool completedRequestMatches = completedImageIt != m_completedDistanceMapGenerations.end() &&
                                        completedImageIt->second.contains(component) &&
                                        completedImageIt->second.at(component) == currentRequest;
   if (
-    imageTexturesIt != m_appData.renderData().m_distanceMapTextures.end() &&
+    imageTexturesIt != m_appData.renderResources().m_distanceMapTextures.end() &&
     imageTexturesIt->second.contains(component) && completedRequestMatches)
   {
     return;
@@ -53,17 +53,17 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
 
   if (!completedRequestMatches) {
     m_appData.removeDistanceMaps(imageUid, component);
-    if (imageTexturesIt != m_appData.renderData().m_distanceMapTextures.end()) {
+    if (imageTexturesIt != m_appData.renderResources().m_distanceMapTextures.end()) {
       imageTexturesIt->second.erase(component);
       if (imageTexturesIt->second.empty()) {
-        m_appData.renderData().m_distanceMapTextures.erase(imageTexturesIt);
+        m_appData.renderResources().m_distanceMapTextures.erase(imageTexturesIt);
       }
     }
   }
 
   if (completedRequestMatches && !m_appData.distanceMaps(imageUid, component).empty()) {
     if (auto texture = createDistanceMapTexture(m_appData, imageUid, component)) {
-      m_appData.renderData().m_distanceMapTextures[imageUid].insert_or_assign(component, std::move(*texture));
+      m_appData.renderResources().m_distanceMapTextures[imageUid].insert_or_assign(component, std::move(*texture));
     }
     return;
   }
@@ -110,8 +110,8 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
       image->pixelDataRevision() != requested.pixelDataRevision ||
       rendering::texture_setup::distanceMapForegroundThresholds(
         image->settings().componentStatistics(component),
-        m_appData.renderData().m_distanceMapForegroundLowerPercentile,
-        m_appData.renderData().m_distanceMapForegroundUpperPercentile) != requested.foregroundThresholds)
+        m_appData.renderSettings().m_distanceMapForegroundLowerPercentile,
+        m_appData.renderSettings().m_distanceMapForegroundUpperPercentile) != requested.foregroundThresholds)
     {
       return;
     }
@@ -122,7 +122,7 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
     m_completedDistanceMapGenerations[imageUid].insert_or_assign(component, requested);
 
     if (auto texture = createDistanceMapTexture(m_appData, imageUid, component)) {
-      m_appData.renderData().m_distanceMapTextures[imageUid].insert_or_assign(component, std::move(*texture));
+      m_appData.renderResources().m_distanceMapTextures[imageUid].insert_or_assign(component, std::move(*texture));
       spdlog::debug("Distance-map acceleration is ready for component {} of image {}", component, imageUid);
     }
     else {

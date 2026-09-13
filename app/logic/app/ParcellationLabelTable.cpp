@@ -178,6 +178,18 @@ void ParcellationLabelTable::setShowMesh(std::size_t index, bool show)
   m_properties[index].m_showMesh = show;
 }
 
+bool ParcellationLabelTable::getIncludeInCutaway(std::size_t index) const
+{
+  checkLabelIndex(index);
+  return m_properties.at(index).m_includeInCutaway;
+}
+
+void ParcellationLabelTable::setIncludeInCutaway(std::size_t index, bool include)
+{
+  checkLabelIndex(index);
+  m_properties[index].m_includeInCutaway = include;
+}
+
 glm::u8vec3 ParcellationLabelTable::getColor(std::size_t index) const
 {
   checkLabelIndex(index);

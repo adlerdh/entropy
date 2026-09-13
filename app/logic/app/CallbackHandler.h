@@ -322,6 +322,8 @@ public:
   void setShowOverlays(bool show);
   bool showUserInterface() const;
   void setShowUserInterface(bool show);
+  /// Recompute default 2D framing after UI visibility or viewport geometry changes.
+  void refreshTwoDViewOverlaySafeFraming();
   void toggleCrosshairs();
   void cycleViewOverlays();
 
@@ -357,6 +359,9 @@ private:
    * @param[in] viewUid View UID to check against the active UID.
    */
   bool checkAndSetActiveView(const uuid& viewUid);
+
+  /// Copy one interacted 3D camera to every other 3D view in the current layout when synchronization is enabled.
+  void synchronizeThreeDCamerasFrom(const View& sourceView);
 
   /// Move any 3D view whose camera eye follows the global crosshairs.
   void updateThreeDViewsFollowingCrosshairs();

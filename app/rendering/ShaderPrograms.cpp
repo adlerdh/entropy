@@ -3,16 +3,18 @@
 #include "common/Exception.hpp"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/ShaderProgramSetup.h"
+#include "rendering/ShaderPreprocessor.h"
+#include "rendering/ShaderTextureDimension.h"
 #include "rendering/TextureLayout.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShader.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLShaderType.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLShaderType.h"
 
 #include <cmrc/cmrc.hpp>
 #include <spdlog/spdlog.h>
@@ -39,7 +41,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> createShaderProgram
   const Uniforms& vsUniforms,
   const Uniforms& fsUniforms)
 {
-  static const std::string shaderPath("app/rendering/shaders/");
+  static const std::string shaderPath("rendering/shaders/");
 
   spdlog::debug("Creating shader program '{}'", programName);
 
@@ -57,7 +59,7 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string> createShaderProgram
     return std::unexpected(std::format("Exception loading shader for program {}: {}", programName, e.what()));
   }
 
-  fsSource = rendering::replacePlaceholders(fsSource, fsReplacements);
+  fsSource = rendering::preprocessShaderSource(fsSource, fsReplacements);
 
   GLShader vs(vsName, ShaderType::Vertex, vsSource.c_str());
   vs.setRegisteredUniforms(vsUniforms);
@@ -100,7 +102,7 @@ void Rendering::createShaderPrograms()
       info.fsFileName,
       rendering::shaderReplacementsForTextureDimension(
         info.fsReplacements,
-        RenderData::TextureDimension::Texture3D,
+        rendering::TextureDimension::Texture3D,
         setup.lookupReplacementSources),
       info.vsUniforms,
       info.fsUniforms);
@@ -109,7 +111,7 @@ void Rendering::createShaderPrograms()
       m_shaderPrograms.emplace(shaderType, std::move(*prog));
     }
     else {
-      spdlog::error(prog.error());
+      spdlog::critical("{}; Entropy cannot start without its rendering shaders", prog.error());
       throwDebug(std::format("Failed to create shader program {}", to_string(shaderType)));
     }
 
@@ -119,7 +121,7 @@ void Rendering::createShaderPrograms()
       info.fsFileName,
       rendering::shaderReplacementsForTextureDimension(
         info.fsReplacements,
-        RenderData::TextureDimension::Texture2D,
+        rendering::TextureDimension::Texture2D,
         setup.lookupReplacementSources),
       info.vsUniforms,
       info.fsUniforms);
@@ -128,7 +130,7 @@ void Rendering::createShaderPrograms()
       m_shaderPrograms2D.emplace(shaderType, std::move(*prog2D));
     }
     else {
-      spdlog::error(prog2D.error());
+      spdlog::critical("{}; Entropy cannot start without its rendering shaders", prog2D.error());
       throwDebug(std::format("Failed to create 2D shader program {}", to_string(shaderType)));
     }
   }
@@ -181,6 +183,21 @@ void Rendering::createShaderPrograms()
   if (!createMeshImagePlaneDdpPeelTexture2DProgram(m_meshImagePlaneDdpPeelTexture2DProgram)) {
     throwDebug("Failed to create mesh image-plane DDP peel Texture2D program");
   }
+  if (!createMeshImagePlaneCompositeProgram(m_meshImagePlaneCompositeProgram)) {
+    throwDebug("Failed to create mesh image-plane composite program");
+  }
+  if (!createMeshImagePlaneCompositeTexture2DProgram(m_meshImagePlaneCompositeTexture2DProgram)) {
+    throwDebug("Failed to create mesh image-plane composite Texture2D program");
+  }
+  if (!createMeshImagePlaneBorderProgram(m_meshImagePlaneBorderProgram)) {
+    throwDebug("Failed to create mesh image-plane border program");
+  }
+  if (!createMeshImagePlaneCompositeDdpInitProgram(m_meshImagePlaneCompositeDdpInitProgram)) {
+    throwDebug("Failed to create mesh image-plane composite DDP init program");
+  }
+  if (!createMeshImagePlaneCompositeDdpPeelProgram(m_meshImagePlaneCompositeDdpPeelProgram)) {
+    throwDebug("Failed to create mesh image-plane composite DDP peel program");
+  }
   if (!createMeshDdpInitProgram(m_meshDdpInitProgram)) {
     throwDebug("Failed to create mesh DDP init program");
   }
@@ -203,6 +220,6 @@ void Rendering::createShaderPrograms()
     throwDebug("Failed to create mesh DDP resolve program");
   }
 
-  m_asciiRenderer.registerShaderPrograms(m_shaderPrograms);
-  m_pixelEdgeRenderer.registerShaderPrograms(m_shaderPrograms);
+  AsciiRenderer::registerShaderPrograms(m_shaderPrograms);
+  PixelEdgeRenderer::registerShaderPrograms(m_shaderPrograms);
 }

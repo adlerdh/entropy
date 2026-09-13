@@ -6,15 +6,16 @@
 #include "common/UuidRange.h"
 #include "logic/app/Data.h"
 #include "logic/app/ParcellationLabelTable.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/TextureLayout.h"
 #include "rendering/TextureSetup.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
-#include "rendering/utility/gl/GLBufferTexture.h"
-#include "rendering/utility/gl/GLBufferTypes.h"
-#include "rendering/utility/gl/GLTexture.h"
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLBufferTexture.h"
+#include "rendering/gl/GLBufferTypes.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <glad/glad.h>
 
@@ -39,17 +40,17 @@ using namespace uuids;
 
 void Rendering::initTextures()
 {
-  m_appData.renderData().m_labelBufferTextures = createLabelColorTableTextures(m_appData);
+  m_appData.renderResources().m_labelBufferTextures = createLabelColorTableTextures(m_appData);
 
-  if (m_appData.renderData().m_labelBufferTextures.empty()) {
-    spdlog::critical("No label buffer textures loaded");
+  if (m_appData.renderResources().m_labelBufferTextures.empty()) {
+    spdlog::critical("No label color-table textures were created; Entropy cannot render the loaded project");
     throwDebug("No label buffer textures loaded");
   }
 
-  m_appData.renderData().m_colormapTextures = createImageColorMapTextures(m_appData);
+  m_appData.renderResources().m_colormapTextures = createImageColorMapTextures(m_appData);
 
-  if (m_appData.renderData().m_colormapTextures.empty()) {
-    spdlog::critical("No image color map textures loaded");
+  if (m_appData.renderResources().m_colormapTextures.empty()) {
+    spdlog::critical("No image color-map textures were created; Entropy cannot render the loaded project");
     throwDebug("No image color map textures loaded");
   }
 
@@ -72,7 +73,8 @@ void Rendering::initTextures()
     }
     if (
       std::find(projectionUids.begin(), projectionUids.end(), effectiveImageUid) == projectionUids.end() &&
-      m_appData.renderData().m_imageTextures.find(effectiveImageUid) == m_appData.renderData().m_imageTextures.end())
+      m_appData.renderResources().m_imageTextures.find(effectiveImageUid) ==
+        m_appData.renderResources().m_imageTextures.end())
     {
       projectionUids.push_back(effectiveImageUid);
     }
@@ -88,7 +90,7 @@ void Rendering::initTextures()
   }
 
   // Distance maps are generated and uploaded lazily when raycast isosurfaces first need them.
-  m_appData.renderData().m_distanceMapTextures.clear();
+  m_appData.renderResources().m_distanceMapTextures.clear();
 
   m_isAppDoneLoadingImages = true;
 }
@@ -103,20 +105,7 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
     return false;
   }
 
-  int maxBufTexSize = 0;
-  glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
-
-  if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {
-    spdlog::error(
-      "Number of bytes ({}) in label color table {} exceeds "
-      "maximum buffer texture size of {} bytes",
-      table->numColorBytes_RGBA_U8(),
-      labelTableUid,
-      maxBufTexSize);
-    return false;
-  }
-
-  auto it = m_appData.renderData().m_labelBufferTextures.emplace(
+  auto it = m_appData.renderResources().m_labelBufferTextures.emplace(
     std::piecewise_construct,
     std::forward_as_tuple(labelTableUid),
     std::forward_as_tuple(ParcellationLabelTable::bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
@@ -141,15 +130,15 @@ bool Rendering::removeSegTexture(const uuid& segUid)
     return false;
   }
 
-  auto it = m_appData.renderData().m_segTextures.find(segUid);
+  auto it = m_appData.renderResources().m_segTextures.find(segUid);
 
-  if (std::end(m_appData.renderData().m_segTextures) == it) {
+  if (std::end(m_appData.renderResources().m_segTextures) == it) {
     spdlog::warn("Texture for segmentation {} does not exist and cannot be removed", segUid);
     return false;
   }
 
-  m_appData.renderData().m_segTextures.erase(it);
-  m_appData.renderData().m_segTextureLayouts.erase(segUid);
+  m_appData.renderResources().m_segTextures.erase(it);
+  m_appData.renderResources().m_segTextureLayouts.erase(segUid);
   return true;
 }
 
@@ -168,8 +157,8 @@ void Rendering::updateSegTexture(
     return;
   }
 
-  auto it = m_appData.renderData().m_segTextures.find(segUid);
-  if (std::end(m_appData.renderData().m_segTextures) == it) {
+  auto it = m_appData.renderResources().m_segTextures.find(segUid);
+  if (std::end(m_appData.renderResources().m_segTextures) == it) {
     spdlog::error("Cannot update segmentation {}: texture not found.", segUid);
     return;
   }
@@ -185,8 +174,8 @@ void Rendering::updateSegTexture(
     return;
   }
 
-  const RenderData::PlanarTextureLayout layout =
-    rendering::textureLayoutOrDefault(m_appData.renderData().m_segTextureLayouts, segUid);
+  const rendering::PlanarTextureLayout layout =
+    rendering::textureLayoutOrDefault(m_appData.renderResources().m_segTextureLayouts, segUid);
   const auto region = rendering::texture_setup::textureUploadRegion(
     layout,
     seg->header().pixelDimensions(),
@@ -278,7 +267,7 @@ void Rendering::updateBrushPreviewTexture(
     return;
   }
 
-  auto& preview = m_appData.renderData().m_brushPreviews[imageUid];
+  auto& preview = m_appData.renderResources().m_brushPreviews[imageUid];
   const bool fitsInCapacity = glm::all(glm::lessThanEqual(sizeInVoxels, preview.textureCapacity));
   if (!preview.texture || !fitsInCapacity) {
     preview.textureCapacity = rendering::growBrushPreviewCapacity(preview.textureCapacity, sizeInVoxels);
@@ -354,12 +343,12 @@ void Rendering::updateBrushPreviewTexture(
 
 void Rendering::clearBrushPreviewTextures()
 {
-  m_appData.renderData().m_brushPreviews.clear();
+  m_appData.renderResources().m_brushPreviews.clear();
 }
 
 void Rendering::hideBrushPreviewTextures()
 {
-  for (auto& entry : m_appData.renderData().m_brushPreviews) {
+  for (auto& entry : m_appData.renderResources().m_brushPreviews) {
     entry.second.visible = false;
   }
 }
@@ -380,8 +369,8 @@ void Rendering::updateImageTexture(
     return;
   }
 
-  auto it = m_appData.renderData().m_imageTextures.find(imageUid);
-  if (std::end(m_appData.renderData().m_imageTextures) == it) {
+  auto it = m_appData.renderResources().m_imageTextures.find(imageUid);
+  if (std::end(m_appData.renderResources().m_imageTextures) == it) {
     spdlog::error("Cannot update image {}: texture not found.", imageUid);
     return;
   }
@@ -403,8 +392,8 @@ void Rendering::updateImageTexture(
     return;
   }
 
-  const RenderData::PlanarTextureLayout layout =
-    rendering::textureLayoutOrDefault(m_appData.renderData().m_imageTextureLayouts, imageUid);
+  const rendering::PlanarTextureLayout layout =
+    rendering::textureLayoutOrDefault(m_appData.renderResources().m_imageTextureLayouts, imageUid);
   const auto region = rendering::texture_setup::textureUploadRegion(
     layout,
     img->header().pixelDimensions(),

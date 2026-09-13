@@ -168,14 +168,16 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
 TEST_CASE("layout spec JSON serializes 3D scene contents as an independent set", "[layout][serialization]")
 {
   layout::ViewSpec view;
-  view.m_threeDSceneContents = {ThreeDSceneContent::Segmentations};
+  view.m_threeDSceneContents = {ThreeDSceneContent::Segmentations, ThreeDSceneContent::ImportedMeshes};
 
   const nlohmann::json json = view;
   CHECK_FALSE(json.contains("renderMode"));
-  CHECK(json.at("threeD").at("sceneContents") == nlohmann::json::array({"segmentations"}));
+  CHECK(json.at("threeD").at("sceneContents") == nlohmann::json::array({"segmentations", "importedMeshes"}));
 
   const layout::ViewSpec restored = json.get<layout::ViewSpec>();
-  CHECK(restored.m_threeDSceneContents == ThreeDSceneContents{ThreeDSceneContent::Segmentations});
+  CHECK(
+    restored.m_threeDSceneContents ==
+    ThreeDSceneContents{ThreeDSceneContent::Segmentations, ThreeDSceneContent::ImportedMeshes});
 }
 
 TEST_CASE(
@@ -205,7 +207,7 @@ TEST_CASE("layout spec JSON rejects legacy 3D render-mode values", "[layout][ser
 
 TEST_CASE("layout spec JSON rejects unknown 3D scene-content values", "[layout][serialization]")
 {
-  const nlohmann::json json{{"threeD", {{"sceneContents", {"segmentations", "diskMeshes"}}}}};
+  const nlohmann::json json{{"threeD", {{"sceneContents", {"segmentations", "unknownContent"}}}}};
   CHECK_THROWS_AS(json.get<layout::ViewSpec>(), nlohmann::json::type_error);
 }
 

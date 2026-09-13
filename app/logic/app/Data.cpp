@@ -79,11 +79,15 @@ void AppData::clearProjectData()
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
+  m_state.transformationGuide().clear();
+
   m_project = {};
   m_projectFileName = std::nullopt;
 
   m_images.clear();
   m_imageUidsOrdered.clear();
+  m_importedMeshes.clear();
+  m_imageToImportedMeshes.clear();
   m_componentProjectionImages.clear();
   m_imageToComponentProjectionImages.clear();
   m_componentProjectionToSourceImage.clear();
@@ -97,6 +101,8 @@ void AppData::clearProjectData()
   m_landmarkGroups.clear();
   m_landmarkGroupUidsOrdered.clear();
   m_annotations.clear();
+
+  m_renderDerivedData.clear();
 
   m_refImageUid = std::nullopt;
   m_activeImageUid = std::nullopt;
@@ -134,6 +140,18 @@ serialize::EntropyProject& AppData::project()
 const std::optional<fs::path>& AppData::projectFileName() const
 {
   return m_projectFileName;
+}
+
+AnatomicalLabelResolution AppData::resolvedAnatomicalLabels() const
+{
+  std::optional<DicomAnatomyInfo> dicomAnatomy;
+  if (m_project.m_referenceImage.m_dicomSource) {
+    dicomAnatomy = m_project.m_referenceImage.m_dicomSource->m_anatomy;
+  }
+  return resolveAnatomicalLabels(
+    m_renderSettings.m_anatomicalLabelType,
+    m_renderSettings.m_quadrupedBodyRegion,
+    dicomAnatomy);
 }
 
 void AppData::loadLinearRampImageColorMaps()
@@ -409,7 +427,10 @@ void AppData::loadImageColorMapsFromDisk()
     loadMapsFromDir("res/colormaps/peter_kovesi/");
   }
   catch (const std::exception& e) {
-    spdlog::critical("Exception when loading image colormap file: {}", e.what());
+    spdlog::error(
+      "Could not load one or more bundled image color maps: {}. Entropy will continue with the color maps that "
+      "loaded successfully",
+      e.what());
   }
 }
 
@@ -464,9 +485,8 @@ bool AppData::replaceImage(const uuid& imageUidArg, Image imageArg)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_componentProjectionToSourceImage.erase(projectionUid);
-      m_renderData.m_imageTextures.erase(projectionUid);
-      m_renderData.m_imageTextureLayouts.erase(projectionUid);
-      m_renderData.m_uniforms.erase(projectionUid);
+      m_renderResources.removeImage(projectionUid);
+      m_renderDerivedData.removeImage(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
   }
@@ -488,6 +508,40 @@ std::optional<uuid> AppData::addSeg(Image segArg)
   m_segs.emplace(uid, std::move(segArg));
   m_segUidsOrdered.push_back(uid);
   return uid;
+}
+
+std::optional<uuid> AppData::addImportedMesh(const uuid& imageUidArg, mesh::MeshRecord meshArg)
+{
+  if (!image(imageUidArg) || meshArg.geometry.positions.empty() || meshArg.geometry.triangleIndices.empty()) {
+    return std::nullopt;
+  }
+
+  uuid meshUid = generateRandomUuid();
+  if (!meshArg.uid.empty()) {
+    if (const auto parsed = uuid::from_string(meshArg.uid); parsed && !m_importedMeshes.contains(*parsed)) {
+      meshUid = *parsed;
+    }
+  }
+  meshArg.uid = uuids::to_string(meshUid);
+  meshArg.associatedImageUid = uuids::to_string(imageUidArg);
+  if (meshArg.name.empty()) {
+    meshArg.name = meshArg.sourcePath.stem().string();
+  }
+  m_importedMeshes.emplace(meshUid, std::move(meshArg));
+  m_imageToImportedMeshes[imageUidArg].push_back(meshUid);
+  return meshUid;
+}
+
+bool AppData::removeImportedMesh(const uuid& meshUidArg)
+{
+  if (0 == m_importedMeshes.erase(meshUidArg)) {
+    return false;
+  }
+  for (auto& [associatedImageUid, meshUids] : m_imageToImportedMeshes) {
+    (void)associatedImageUid;
+    std::erase(meshUids, meshUidArg);
+  }
+  return true;
 }
 
 std::optional<uuid> AppData::addDef(Image defArg)
@@ -739,10 +793,15 @@ bool AppData::removeImage(const uuid& imageUidArg)
     return false;
   }
 
+  // A guide contains world-space geometry captured from the image being transformed. Clear it before removing any
+  // image because the active image can change as a consequence of this operation.
+  m_state.transformationGuide().clear();
+
   const auto imageSegs = imageToSegUids(imageUidArg);
   const auto imageDefs = imageToDefUids(imageUidArg);
   const auto imageLandmarkGroups = imageToLandmarkGroupUids(imageUidArg);
   const auto imageAnnotations = annotationsForImage(imageUidArg);
+  const auto imageMeshes = imageToImportedMeshUids(imageUidArg);
 
   m_images.erase(imageUidArg);
   m_imageUidsOrdered.erase(imageOrderIt);
@@ -759,9 +818,8 @@ bool AppData::removeImage(const uuid& imageUidArg)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_componentProjectionToSourceImage.erase(projectionUid);
-      m_renderData.m_imageTextures.erase(projectionUid);
-      m_renderData.m_imageTextureLayouts.erase(projectionUid);
-      m_renderData.m_uniforms.erase(projectionUid);
+      m_renderResources.removeImage(projectionUid);
+      m_renderDerivedData.removeImage(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
   }
@@ -787,6 +845,10 @@ bool AppData::removeImage(const uuid& imageUidArg)
   m_imageToAnnotations.erase(imageUidArg);
   m_imageToActiveAnnotation.erase(imageUidArg);
   m_imageToComponentData.erase(imageUidArg);
+  m_imageToImportedMeshes.erase(imageUidArg);
+  for (const auto& meshUid : imageMeshes) {
+    m_importedMeshes.erase(meshUid);
+  }
   m_imagesBeingSegmented.erase(imageUidArg);
 
   if (m_activeImageUid && *m_activeImageUid == imageUidArg) {
@@ -926,9 +988,8 @@ bool AppData::removeDef(const uuid& defUidArg)
     m_images.erase(defUidArg);
     m_imageUidsOrdered.erase(imageIt);
     m_imageToComponentData.erase(defUidArg);
-    m_renderData.m_imageTextures.erase(defUidArg);
-    m_renderData.m_imageTextureLayouts.erase(defUidArg);
-    m_renderData.m_uniforms.erase(defUidArg);
+    m_renderResources.removeImage(defUidArg);
+    m_renderDerivedData.removeImage(defUidArg);
   }
 
   // Remove all image warp assignments that reference this field.
@@ -1296,6 +1357,18 @@ const Isosurface* AppData::isosurface(const uuid& imageUidArg, ComponentIndexTyp
 Isosurface* AppData::isosurface(const uuid& imageUidArg, ComponentIndexType comp, const uuid& isosurfaceUid)
 {
   return const_cast<Isosurface*>(const_cast<const AppData*>(this)->isosurface(imageUidArg, comp, isosurfaceUid));
+}
+
+const mesh::MeshRecord* AppData::importedMesh(const uuid& meshUidArg) const
+{
+  const auto it = m_importedMeshes.find(meshUidArg);
+  return it == m_importedMeshes.end() ? nullptr : &it->second;
+}
+
+mesh::MeshRecord* AppData::importedMesh(const uuid& meshUidArg)
+{
+  const auto it = m_importedMeshes.find(meshUidArg);
+  return it == m_importedMeshes.end() ? nullptr : &it->second;
 }
 
 const ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid) const
@@ -1807,6 +1880,12 @@ std::vector<uuid> AppData::imageToSegUids(const uuid& imageUidArg) const
   return std::vector<uuid>{};
 }
 
+std::vector<uuid> AppData::imageToImportedMeshUids(const uuid& imageUidArg) const
+{
+  const auto it = m_imageToImportedMeshes.find(imageUidArg);
+  return it == m_imageToImportedMeshes.end() ? std::vector<uuid>{} : it->second;
+}
+
 std::vector<uuid> AppData::imageToDefUids(const uuid& imageUidArg) const
 {
   auto it = m_imageToDefs.find(imageUidArg);
@@ -2199,13 +2278,33 @@ GuiData& AppData::guiData()
   return m_guiData;
 }
 
-const RenderData& AppData::renderData() const
+const rendering::RenderSettings& AppData::renderSettings() const
 {
-  return m_renderData;
+  return m_renderSettings;
 }
-RenderData& AppData::renderData()
+rendering::RenderSettings& AppData::renderSettings()
 {
-  return m_renderData;
+  return m_renderSettings;
+}
+
+const rendering::RenderResources& AppData::renderResources() const
+{
+  return m_renderResources;
+}
+
+rendering::RenderResources& AppData::renderResources()
+{
+  return m_renderResources;
+}
+
+const rendering::RenderDerivedData& AppData::renderDerivedData() const
+{
+  return m_renderDerivedData;
+}
+
+rendering::RenderDerivedData& AppData::renderDerivedData()
+{
+  return m_renderDerivedData;
 }
 
 const WindowData& AppData::windowData() const

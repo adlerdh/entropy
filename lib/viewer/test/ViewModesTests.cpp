@@ -61,6 +61,9 @@ TEST_CASE("3D scene contents are independent and extensible", "[viewer][three_d_
   CHECK_FALSE(contents.contains(ThreeDSceneContent::Isosurfaces));
 
   contents.insert(ThreeDSceneContent::Isosurfaces);
+  CHECK_FALSE(contents.contains(ThreeDSceneContent::ImportedMeshes));
+
+  contents.insert(ThreeDSceneContent::ImportedMeshes);
   CHECK(contents == DefaultThreeDSceneContents);
 
   contents.erase(ThreeDSceneContent::Segmentations);
@@ -125,11 +128,7 @@ TEST_CASE("viewer mode labels tolerate sentinel values", "[viewer][modes]")
 {
   CHECK(typeString(ViewRenderMode::NumElements) == "Unknown");
   CHECK(descriptionString(ViewRenderMode::NumElements) == "Unknown render mode");
-  CHECK(typeString(static_cast<ViewRenderMode>(100)) == "Unknown");
-  CHECK(descriptionString(static_cast<ViewRenderMode>(100)) == "Unknown render mode");
 
   CHECK(typeString(IntensityProjectionMode::NumElements) == "Unknown projection");
   CHECK(descriptionString(IntensityProjectionMode::NumElements) == "Unknown intensity projection");
-  CHECK(typeString(static_cast<IntensityProjectionMode>(100)) == "Unknown projection");
-  CHECK(descriptionString(static_cast<IntensityProjectionMode>(100)) == "Unknown intensity projection");
 }

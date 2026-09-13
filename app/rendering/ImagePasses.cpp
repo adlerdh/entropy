@@ -1,15 +1,18 @@
 #include "rendering/Rendering.h"
+#include "rendering/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
+#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "image/ImageSettings.h"
 #include "logic/app/Data.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/gl/GLShaderProgram.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
@@ -38,30 +41,33 @@ void Rendering::renderOneImage(
   const glm::vec3& worldOffsetXhairs,
   GLShaderProgram& program,
   const CurrentImages& imageSegPairs,
-  bool showEdges)
+  bool showEdges,
+  const bool metricUsesWorldSampling)
 {
   auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image* {
     return (imageUid ? m_appData.image(*imageUid) : nullptr);
   };
 
-  auto& R = m_appData.renderData();
+  const auto& resources = m_appData.renderResources();
+  const auto& settings = m_appData.renderSettings();
 
   drawImageQuad(
     program,
     view.renderMode(),
-    R.m_quad,
+    resources.m_quad,
     view,
     m_appData.windowData().viewport(),
     worldOffsetXhairs,
-    R.m_flashlightRadius,
-    R.m_flashlightOverlays,
-    R.m_intensityProjectionSlabThickness,
-    R.m_doMaxExtentIntensityProjection,
-    R.m_xrayIntensityWindow,
-    R.m_xrayIntensityLevel,
+    settings.m_flashlightRadius,
+    settings.m_flashlightOverlays,
+    settings.m_intensityProjectionSlabThickness,
+    settings.m_doMaxExtentIntensityProjection,
+    settings.m_xrayIntensityWindow,
+    settings.m_xrayIntensityLevel,
     imageSegPairs,
     getImage,
-    showEdges);
+    showEdges,
+    metricUsesWorldSampling);
 }
 
 void Rendering::renderOneImage_overlays(
@@ -72,26 +78,26 @@ void Rendering::renderOneImage_overlays(
   bool renderLandmarkAndAnnotationOverlays,
   bool renderImageBorders)
 {
-  const auto& renderData = m_appData.renderData();
+  const auto& renderSettings = m_appData.renderSettings();
   const bool allowLandmarksAndAnnotations = renderLandmarkAndAnnotationOverlays && ViewType::ThreeD != view.viewType();
   const bool renderBordersInCurrentLayout =
-    renderImageBorders && renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
+    renderImageBorders && renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
     (!m_appData.windowData().currentLayout().isLightbox() ||
-     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
+     renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
 
-  if (allowLandmarksAndAnnotations && !renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
+  if (allowLandmarksAndAnnotations && !renderSettings.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, imageSegPairs);
-    setupOpenGLState();
+    rendering::restoreOpenGLRenderState();
   }
 
-  if (allowLandmarksAndAnnotations && !renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
+  if (allowLandmarksAndAnnotations && !renderSettings.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
     drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, imageSegPairs);
-    setupOpenGLState();
+    rendering::restoreOpenGLRenderState();
   }
 
   if (renderBordersInCurrentLayout) {
     drawImageViewIntersections(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, imageSegPairs, true);
-    setupOpenGLState();
+    rendering::restoreOpenGLRenderState();
   }
 }
 
@@ -103,7 +109,7 @@ void Rendering::renderAllImagesForView(
   bool renderImageBorders,
   bool allowScreenPixelEdgePostProcessing)
 {
-  const RenderData& R = m_appData.renderData();
+  const rendering::RenderResources& resources = m_appData.renderResources();
 
   if (ViewType::ThreeD == view.viewType()) {
     clearMeshViewBackgroundForView(view);
@@ -111,9 +117,10 @@ void Rendering::renderAllImagesForView(
     const ThreeDSceneContents& contents = view.threeDSceneContents();
     const bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
     const bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
+    const bool renderImportedMeshes = contents.contains(ThreeDSceneContent::ImportedMeshes);
     bool renderedSurface = false;
 
-    if (renderSegmentations && renderIsosurfaces) {
+    if (renderImportedMeshes || (renderSegmentations && renderIsosurfaces)) {
       renderedSurface = renderCombinedSurfaceMeshesForView(view);
     }
     else if (renderIsosurfaces) {
@@ -176,15 +183,15 @@ void Rendering::renderAllImagesForView(
         const uuid& imgUid = *imgSegPair.first;
         const Image* img = m_appData.image(imgUid);
         if (!img) {
-          spdlog::error("Null image during render");
+          spdlog::error("Cannot render image {} because it is missing from application data", imgUid);
           return;
         }
 
-        const RenderData::ImageUniforms& U = R.m_uniforms.at(imgUid);
+        const rendering::RenderDerivedData::ImageUniforms& U = m_appData.renderDerivedData().imageUniforms.at(imgUid);
         const std::optional<uuid> deformationUid = activeRenderableDeformationUid(imgUid);
         const bool renderWarped = deformationUid.has_value();
-        const RenderData::PlanarTextureLayout imageTextureLayout =
-          rendering::textureLayoutOrDefault(R.m_imageTextureLayouts, imgSegPair.first);
+        const rendering::PlanarTextureLayout imageTextureLayout =
+          rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, imgSegPair.first);
 
         if (
           ComponentRenderMode::VectorDirectionColor == img->settings().componentRenderMode() ||
@@ -270,12 +277,18 @@ void Rendering::renderAllImagesForView(
         isFixedImage = false;
       }
 
+      renderImportedMeshIntersectionsForView(view, miewportViewBounds, worldOffsetXhairs, imageSegPairs);
       renderVectorWarpedGridOverlaysForView(view, worldOffsetXhairs, displayModeUniform, sourceImages);
       break;
     }
 
     case ShaderGroup::Metric: {
       renderMetricImagesForView(view, worldOffsetXhairs);
+      renderImportedMeshIntersectionsForView(
+        view,
+        miewportViewBounds,
+        worldOffsetXhairs,
+        getImageAndSegUidsForMetricShaders(view.metricImages()));
       break;
     }
 

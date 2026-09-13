@@ -29,7 +29,8 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
     return;
   }
 
-  const RenderData& R = m_appData.renderData();
+  const auto& renderSettings = m_appData.renderSettings();
+  const auto& resources = m_appData.renderResources();
   const Viewport& windowVP = m_appData.windowData().viewport();
 
   bool isFixedImage = true;
@@ -48,14 +49,14 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
       isFixedImage = false;
       continue;
     }
-    if (R.m_imageTextures.find(imageUid) == R.m_imageTextures.end()) {
+    if (resources.m_imageTextures.find(imageUid) == resources.m_imageTextures.end()) {
       isFixedImage = false;
       continue;
     }
 
     const ImageSettings& settings = image->settings();
-    const RenderData::PlanarTextureLayout imageTextureLayout =
-      rendering::textureLayoutOrDefault(R.m_imageTextureLayouts, ImgSegPair{imageUid, std::nullopt}.first);
+    const rendering::PlanarTextureLayout imageTextureLayout =
+      rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, ImgSegPair{imageUid, std::nullopt}.first);
     GLShaderProgram* program = nullptr;
     switch (settings.colorInterpolationMode()) {
       case InterpolationMode::NearestNeighbor:
@@ -75,13 +76,13 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
         break;
     }
 
-    const RenderData::ImageUniforms& U = R.m_uniforms.at(imageUid);
+    const rendering::RenderDerivedData::ImageUniforms& U = m_appData.renderDerivedData().imageUniforms.at(imageUid);
     const auto boundTextures = bindColorImageTextures(ImgSegPair{imageUid, std::nullopt});
     program->use();
     {
       program->setSamplerUniform("u_imgTex", s_imageRgbaTexSamplers);
       rendering::setTexture2DAxesUniforms(*program, imageTextureLayout);
-      program->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+      program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
       program->setUniform("u_tex_T_world", U.imgTexture_T_world);
       program->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
       program->setUniform("u_subject_T_texture", image->transformations().subject_T_texture());
@@ -102,13 +103,13 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
       program->setUniform("u_foregroundColor", settings.vectorWarpedGridForegroundColor());
       program->setUniform("u_backgroundColor", settings.vectorWarpedGridBackgroundColor());
       program->setUniform("u_imgOpacity", U.imgOpacity);
-      program->setUniform("u_quadrants", R.m_quadrants);
+      program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage);
       program->setUniform("u_renderMode", displayModeUniform);
 
       renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{ImgSegPair{imageUid, std::nullopt}}, false);
     }
-    program->stopUse();
+    GLShaderProgram::stopUse();
     unbindTextures(boundTextures);
 
     isFixedImage = false;

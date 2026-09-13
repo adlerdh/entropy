@@ -1,9 +1,11 @@
 #include "rendering/ImageDrawing.h"
+#include "rendering/ImageShaderCapabilities.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
-#include "rendering/utility/UnderlyingEnumType.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
+#include "rendering/gl/GLShaderProgram.h"
 
 #include "image/Image.h"
+#include "common/UuidUtility.h"
 #include "logic/app/DataHelper.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
@@ -43,7 +45,7 @@ void warnLocalPatchMetricMissingImage(std::string_view message)
     spdlog::warn("{}", message);
   }
   else if (k_maxNumWarnings == previousCount) {
-    spdlog::warn("Halting warnings about local patch metric views without enough images.");
+    spdlog::debug("Suppressing further warnings about local patch metric views without enough images");
   }
 }
 
@@ -63,7 +65,7 @@ computeMipSamplingParams(const Camera& camera, const Image& image, float mipSlab
 void drawImageQuad(
   GLShaderProgram& program,
   const ViewRenderMode& renderMode,
-  RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -75,7 +77,8 @@ void drawImageQuad(
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage,
-  bool showEdges)
+  bool showEdges,
+  const bool metricUsesWorldSampling)
 {
   if (imagePairs.empty()) {
     if (isLocalPatchMetric(renderMode)) {
@@ -92,11 +95,17 @@ void drawImageQuad(
       warnLocalPatchMetricMissingImage("Null reference image when rendering local patch metric");
       return;
     }
-    spdlog::error("Null image when rendering textured quad");
+    if (imagePairs[0].first) {
+      spdlog::error("Cannot render textured plane because image {} is missing", *imagePairs[0].first);
+    }
+    else {
+      spdlog::error("Cannot render textured plane because its image selection has no UID");
+    }
     return;
   }
 
   const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
+  const bool intensityProjectionSupported = rendering::supportsIntensityProjection(program.getRegisteredUniforms());
 
   // Direction to sample direction along the camera view's Z axis for image 0:
   glm::vec3 texSamplingDirZ(0.0f);
@@ -109,7 +118,7 @@ void drawImageQuad(
   float mipSamplingDistance_cm = 0.0f;
 
   // Only compute these if doing a MIP:
-  if (IntensityProjectionMode::None != view.intensityProjectionMode()) {
+  if (intensityProjectionSupported && IntensityProjectionMode::None != view.intensityProjectionMode()) {
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     texSamplingDirZ = image_drawing::computeTextureSamplingDirectionForViewAxis(
@@ -160,7 +169,7 @@ void drawImageQuad(
     if (showEdges) {
       program.setUniform("u_texelDirs", texSamplingDirsForEdges);
     }
-    else {
+    else if (intensityProjectionSupported) {
       // Only render with intensity projection when edges are not visible:
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
@@ -181,7 +190,12 @@ void drawImageQuad(
   else if (ViewRenderMode::Difference == renderMode) {
     program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
-    program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    if (metricUsesWorldSampling) {
+      program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
+    }
+    else {
+      program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    }
   }
   else if (isLocalPatchMetric(renderMode)) {
     if (imagePairs.size() < 2) {
@@ -212,29 +226,32 @@ void drawImageQuad(
       view.viewClip_T_windowClip(),
       image0->transformations().invPixelDimensions(),
       posInfo[1].viewClipDir);
-    const glm::mat4 world_T_tex0 = glm::inverse(image0->transformations().texture_T_worldDef());
-    const glm::vec3 worldSamplingDirX = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirX, 0.0f}};
-    const glm::vec3 worldSamplingDirY = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirY, 0.0f}};
-
-    program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
-    program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
-    program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
-    program.setUniform("u_worldSamplingDirX", worldSamplingDirX);
-    program.setUniform("u_worldSamplingDirY", worldSamplingDirY);
-    program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
+    if (metricUsesWorldSampling) {
+      const glm::mat4 world_T_tex0 = glm::inverse(image0->transformations().texture_T_worldDef());
+      const glm::vec3 worldSamplingDirX = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirX, 0.0f}};
+      const glm::vec3 worldSamplingDirY = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirY, 0.0f}};
+      program.setUniform("u_worldSamplingDirX", worldSamplingDirX);
+      program.setUniform("u_worldSamplingDirY", worldSamplingDirY);
+      program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
+    }
+    else {
+      program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
+      program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
+      program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    }
   }
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  GLVertexArrayObject::unbind();
 }
 
 /// @todo We're going to have to put back std::vector<Image*>
 /// as the input to this function, since the metric shaders render more than one seg.
 void drawSegQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const Image& seg,
   const Image& geometryImage,
   const View& view,
@@ -321,14 +338,14 @@ void drawSegQuad(
 
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  GLVertexArrayObject::unbind();
 }
 
 void drawSegPreviewQuad(
   GLShaderProgram& program,
-  const RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const glm::mat4& texture_T_world,
   const glm::mat4& voxel_T_world,
   const glm::uvec3& textureSize,
@@ -392,8 +409,6 @@ void drawSegPreviewQuad(
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", world_T_viewClip);
   program.setUniform("u_clipDepth", view.clipPlaneDepth());
-  program.setUniform("u_tex_T_world", texture_T_world);
-
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_flashlightRadius", flashlightRadius);
   program.setUniform("u_flashlightMovingOnFixed", flashlightOverlays);
@@ -405,14 +420,14 @@ void drawSegPreviewQuad(
 
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  GLVertexArrayObject::unbind();
 }
 
 void drawRaycastQuad(
   GLShaderProgram& program,
-  RenderData::Quad& quad,
+  const rendering::RenderResources::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
@@ -425,7 +440,12 @@ void drawRaycastQuad(
 
   const Image* image0 = getImage(imagePairs[0].first);
   if (!image0) {
-    spdlog::error("Null image when raycasting");
+    if (imagePairs[0].first) {
+      spdlog::error("Cannot raycast image {} because it is missing", *imagePairs[0].first);
+    }
+    else {
+      spdlog::error("Cannot raycast because the image selection has no UID");
+    }
     return;
   }
 
@@ -435,7 +455,9 @@ void drawRaycastQuad(
 
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", world_T_clip);
-  program.setUniform("u_clip_T_world", clip_T_world);
+  // RaycastIso is a screen-space pass. Its vertex shader reconstructs world-space rays from
+  // u_world_T_clip, while its fragment shader transforms texture-space hits directly to clip
+  // space with u_clip_T_imgTex. It does not declare the mesh-only u_clip_T_world uniform.
   program.setUniform("u_clip_T_imgTex", clip_T_world * glm::inverse(texture_T_world));
 
   // Raycasting is a screen-space pass. Draw the full viewport quad on the near clip plane and
@@ -449,7 +471,7 @@ void drawRaycastQuad(
 
   quad.m_vao.bind();
   {
-    quad.m_vao.drawElements(quad.m_vaoParams);
+    GLVertexArrayObject::drawElements(quad.m_vaoParams);
   }
-  quad.m_vao.release();
+  GLVertexArrayObject::unbind();
 }

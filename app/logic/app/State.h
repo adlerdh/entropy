@@ -6,6 +6,7 @@
 #include "logic/app/CrosshairsState.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/interaction/events/ButtonState.h"
+#include "logic/interaction/TransformationGuide.h"
 
 #include <glm/vec3.hpp>
 #include <uuid.h>
@@ -74,6 +75,10 @@ public:
   void setQuitApp(bool quit);
   bool quitApp() const;
 
+  /// Transient guide shown while a manual image transformation is being applied.
+  const interaction::TransformationGuideState& transformationGuide() const;
+  interaction::TransformationGuideState& transformationGuide();
+
 private:
   // void broadcastCrosshairsPosition();
   // IPCHandler m_ipcHandler;
@@ -97,4 +102,6 @@ private:
   std::optional<Annotation> m_copiedAnnotation{std::nullopt};
 
   std::atomic<bool> m_quitApp{false}; //!< Flag to quit the application
+
+  interaction::TransformationGuideState m_transformationGuide;
 };

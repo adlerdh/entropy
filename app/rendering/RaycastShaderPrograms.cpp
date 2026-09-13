@@ -1,8 +1,9 @@
 #include "rendering/Rendering.h"
 
 #include "common/Exception.hpp"
+#include "rendering/ShaderPreprocessor.h"
 #include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/gl/GLShader.h"
+#include "rendering/gl/GLShader.h"
 
 #include <cmrc/cmrc.hpp>
 #include <glm/mat3x3.hpp>
@@ -22,7 +23,7 @@ namespace
 using FloatVector = std::vector<float>;
 using Vec3Vector = std::vector<glm::vec3>;
 
-const glm::mat4 sk_identMat3{1.0f};
+const glm::mat3 sk_identMat3{1.0f};
 const glm::mat4 sk_identMat4{1.0f};
 const glm::vec3 sk_zeroVec3{0.0f, 0.0f, 0.0f};
 const glm::vec4 sk_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
@@ -42,8 +43,8 @@ std::string loadFile(const std::string& path)
 
 bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 {
-  static const std::string vsFileName{"app/rendering/shaders/RaycastIso.vs"};
-  static const std::string fsFileName{"app/rendering/shaders/RaycastIso.fs"};
+  static const std::string vsFileName{"rendering/shaders/RaycastIso.vs"};
+  static const std::string fsFileName{"rendering/shaders/RaycastIso.fs"};
 
   auto filesystem = cmrc::shaders::get_filesystem();
   std::string vsSource;
@@ -57,40 +58,22 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
     fsSource = std::string(fsData.begin(), fsData.end());
   }
   catch (const std::exception& e) {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
+    spdlog::critical("Could not load a raycasting shader: {}. Entropy cannot start", e.what());
     throwDebug("Unable to load shader");
   }
 
-  const std::string shaderPath("app/rendering/shaders/functions/");
+  const std::string shaderPath("rendering/shaders/functions/");
   const std::string sampleTexCoordIdentityRep = loadFile(shaderPath + "SampleTexCoord_Identity.glsl");
   const std::string sampleTexCoordDeformationRep = loadFile(shaderPath + "SampleTexCoord_Deformation.glsl");
-  const std::string sampleImageValueIdentityRep =
-    "float sampleImageValue(vec3 texCoord)\n"
-    "{\n"
-    "  return getImageValue(u_imgTex, texCoord);\n"
-    "}\n";
-  const std::string sampleImageValueDeformationRep =
-    "float sampleImageValue(vec3 texCoord)\n"
-    "{\n"
-    "  vec3 worldPos = vec3(u_world_T_tex * vec4(texCoord, 1.0));\n"
-    "  vec3 sampleTc = sampleTexCoord(texCoord, worldPos);\n"
-    "  return isInsideTexture(sampleTc) ? getImageValue(u_imgTex, sampleTc) : 0.0;\n"
-    "}\n";
-  const std::string jumpTextureRep =
-    "float raycastJumpDistance(vec3 texCoord)\n"
-    "{\n"
-    "  return float(texture(u_jumpTex, texCoord).r);\n"
-    "}\n";
-  const std::string jumpDisabledRep =
-    "float raycastJumpDistance(vec3 texCoord)\n"
-    "{\n"
-    "  return 0.0;\n"
-    "}\n";
-  fsSource = rendering::replacePlaceholders(
+  const std::string sampleImageValueIdentityRep = loadFile(shaderPath + "SampleImageValue_Identity.glsl");
+  const std::string sampleImageValueDeformationRep = loadFile(shaderPath + "SampleImageValue_Deformation.glsl");
+  const std::string jumpTextureRep = loadFile(shaderPath + "RaycastJumpDistance_Texture.glsl");
+  const std::string jumpDisabledRep = loadFile(shaderPath + "RaycastJumpDistance_Disabled.glsl");
+  fsSource = rendering::preprocessShaderSource(
     fsSource,
-    {{"$$SAMPLE_TEX_COORD_FUNCTION$$", warped ? sampleTexCoordDeformationRep : sampleTexCoordIdentityRep},
-     {"$$SAMPLE_IMAGE_VALUE_FUNCTION$$", warped ? sampleImageValueDeformationRep : sampleImageValueIdentityRep},
-     {"$$RAYCAST_JUMP_DISTANCE_FUNCTION$$", warped ? jumpDisabledRep : jumpTextureRep}});
+    {{"SAMPLE_TEX_COORD_FUNCTION", warped ? sampleTexCoordDeformationRep : sampleTexCoordIdentityRep},
+     {"SAMPLE_IMAGE_VALUE_FUNCTION", warped ? sampleImageValueDeformationRep : sampleImageValueIdentityRep},
+     {"RAYCAST_JUMP_DISTANCE_FUNCTION", warped ? jumpDisabledRep : jumpTextureRep}});
 
   {
     Uniforms vsUniforms;
@@ -100,7 +83,9 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 
     GLShader vs("vsRaycast", ShaderType::Vertex, vsSource.c_str());
     vs.setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+    if (!program.attachShader(vs)) {
+      return false;
+    }
 
     spdlog::debug("Compiled vertex shader {}", vsFileName);
   }
@@ -151,13 +136,15 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 
     GLShader fs("fsRaycast", ShaderType::Fragment, fsSource.c_str());
     fs.setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
+    if (!program.attachShader(fs)) {
+      return false;
+    }
 
     spdlog::debug("Compiled fragment shader {}", fsFileName);
   }
 
   if (!program.link()) {
-    spdlog::critical("Failed to link shader program {}", program.name());
+    spdlog::critical("Failed to link raycasting shader program {}; Entropy cannot start", program.name());
     return false;
   }
 

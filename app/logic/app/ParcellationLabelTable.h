@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/utility/gl/GLTextureTypes.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <glm/gtc/type_precision.hpp>
 
@@ -65,6 +65,12 @@ public:
   /// Set label mesh visibility (in 3D views)
   void setShowMesh(std::size_t index, bool show);
 
+  /// Get whether the global cutaway applies to this label's mesh
+  bool getIncludeInCutaway(std::size_t index) const;
+
+  /// Set whether the global cutaway applies to this label's mesh
+  void setIncludeInCutaway(std::size_t index, bool include);
+
   /// Get label color (non-premultiplied RGB)
   glm::u8vec3 getColor(std::size_t index) const;
 
@@ -125,8 +131,9 @@ private:
     glm::u8vec3 m_color;   //!< RGB color (NON-premultiplied)
     uint8_t m_alpha = 255; //!< Alpha channel opacity
 
-    bool m_visible = true;   //!< Global visibility of label in all view types
-    bool m_showMesh = false; //!< Mesh visibility in 3D views
+    bool m_visible = true;          //!< Global visibility of label in all view types
+    bool m_showMesh = false;        //!< Mesh visibility in 3D views
+    bool m_includeInCutaway = true; //!< Apply the global cutaway to this label's mesh
   };
 
   /// Vector of label properties (size matching \c m_colors_RGBA_U8 )

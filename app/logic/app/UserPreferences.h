@@ -13,7 +13,10 @@
 #include <filesystem>
 #include <string>
 
-struct RenderData;
+namespace rendering
+{
+struct RenderSettings;
+}
 struct GuiData;
 
 namespace user_preferences
@@ -22,7 +25,7 @@ namespace user_preferences
 /**
  * @brief Plain rendering preference values used while reading and writing user settings.
  *
- * This type mirrors RenderData without requiring OpenGL resources, which keeps preference parsing
+ * This type mirrors rendering::RenderSettings without requiring OpenGL resources, which keeps preference parsing
  * and schema tests headless. Not every field is persisted to the application settings file:
  * project-owned presentation fields are intentionally omitted from user settings JSON and are
  * preserved when application defaults are restored.
@@ -63,12 +66,15 @@ struct RenderPreferences
   glm::vec4 crosshairsColor{0.05f, 0.6f, 1.0f, 1.0f};
   bool showCrosshairs = true;
   bool showCrosshairsInLightboxViews = true;
+  bool showTransformationGuides = true;
+  glm::vec4 transformationGuideColor{1.0f, 0.72f, 0.16f, 1.0f};
   glm::vec3 background2dColor{0.1f, 0.1f, 0.1f};
   glm::vec4 background3dColor{0.1f, 0.1f, 0.1f, 1.0f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
   bool showAnatomicalLabels = true;
   bool showAnatomicalLabelsInLightboxViews = true;
-  AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Human;
+  AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Automatic;
+  QuadrupedBodyRegion quadrupedBodyRegion = QuadrupedBodyRegion::Automatic;
   float anatomicalLabelScale = 1.0f;
 
   bool showScaleBars = true;
@@ -85,7 +91,7 @@ struct RenderPreferences
 
   FloatingPointLinearInterpolationPolicy floatingPointLinearInterpolationPolicy =
     FloatingPointLinearInterpolationPolicy::FixedFunction;
-  bool useMaximumIntensityProjectionExtent = false;
+  bool useMaximumIntensityProjectionExtent = true;
   float intensityProjectionSlabThicknessMm = 10.0f;
   float xrayEnergyKeV = 80.0f;
   float xrayWindow = 1.0f;
@@ -95,7 +101,7 @@ struct RenderPreferences
     FloatingPointLinearInterpolationPolicy::Automatic;
   bool modulateSegmentationOpacityWithImageOpacity2d = true;
   bool modulateSegmentationOpacityWithImageOpacity3d = true;
-  SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::Disabled;
+  SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::ViewPixel;
   float segmentationInteriorOpacity = 0.2f;
   float segmentationErosionFactor = 0.5f;
 
@@ -130,8 +136,10 @@ struct RenderPreferences
   bool transparent3DBackground = true;
   bool imageBoxVisible = false;
   bool showImagePlanesIn3D = true;
-  bool modulateImagePlaneOpacityWithViewAngle = true;
   bool showSegmentationsOnImagePlanesIn3D = true;
+  bool showIsocontoursOnImagePlanesIn3D = true;
+  float imagePlaneOpacity = 1.0f;
+  bool modulateImagePlaneOpacityWithViewAngle = true;
   bool shadeImagePlanesIn3D = true;
   float imagePlaneLightingAmbient = 0.30f;
   float imagePlaneLightingDiffuse = 0.50f;
@@ -151,9 +159,10 @@ struct RenderPreferences
   bool renderFrontFaces = true;
   bool renderBackFaces = true;
   bool reversePovRotation = false;
+  bool synchronizeThreeDCameras = false;
   bool showCrosshairsIn3D = true;
-  float crosshairs3DGlyphDiameterVoxelDiagonals = 1.0f;
-  float crosshairs3DGlyphLengthVoxelDiagonals = 16.0f;
+  float crosshairs3DGlyphDiameterScenePercent = 0.25f;
+  float crosshairs3DGlyphLengthScenePercent = 4.0f;
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
   bool smoothSegmentationMeshes = true;
@@ -161,8 +170,7 @@ struct RenderPreferences
   uint32_t meshSmoothingIterations = 25;
   float meshSmoothingPassBand = 0.1f;
   bool meshPickingEnabled = true;
-  bool meshClipPlaneEnabled = false;
-  glm::vec4 meshClipPlaneWorld{1.0f, 0.0f, 0.0f, 0.0f};
+  bool meshCutawayEnabled = false;
   bool meshShadowsEnabled = false;
   uint32_t meshShadowMapSizePixels = 1024;
   float meshShadowStrength = 0.35f;
@@ -271,7 +279,7 @@ bool applyJsonString(
   std::string* error = nullptr);
 
 /**
- * @brief Save user preferences to disk without requiring RenderData.
+ * @brief Save user preferences to disk without requiring rendering::RenderSettings.
  * @param settings Application settings to serialize.
  * @param renderPreferences Rendering preferences to serialize.
  * @param fileName Destination JSON file.
@@ -286,7 +294,7 @@ bool save(
   std::string* error = nullptr);
 
 /**
- * @brief Save user preferences to disk without requiring RenderData or precision state.
+ * @brief Save user preferences to disk without requiring rendering::RenderSettings or precision state.
  * @param settings Application settings to serialize.
  * @param renderPreferences Rendering preferences to serialize.
  * @param fileName Destination JSON file.
@@ -300,7 +308,7 @@ bool save(
   std::string* error = nullptr);
 
 /**
- * @brief Load user preferences from disk without requiring RenderData.
+ * @brief Load user preferences from disk without requiring rendering::RenderSettings.
  * @param settings Application settings to update.
  * @param renderPreferences Rendering preferences to update.
  * @param fileName Source JSON file.
@@ -315,7 +323,7 @@ bool load(
   std::string* error = nullptr);
 
 /**
- * @brief Load user preferences from disk without requiring RenderData or precision state.
+ * @brief Load user preferences from disk without requiring rendering::RenderSettings or precision state.
  * @param settings Application settings to update.
  * @param renderPreferences Rendering preferences to update.
  * @param fileName Source JSON file.
@@ -331,32 +339,39 @@ bool load(
 /**
  * @brief Return the current user preferences as versioned JSON text.
  * @param settings Application settings to serialize.
- * @param renderData Rendering defaults to serialize.
+ * @param renderSettings Rendering defaults to serialize.
  * @return Human-readable JSON representation of the user preferences.
  */
-std::string toJsonString(const AppSettings& settings, const RenderData& renderData, const GuiData& guiData);
+std::string
+toJsonString(const AppSettings& settings, const rendering::RenderSettings& renderSettings, const GuiData& guiData);
 
 /**
  *  Store the current user preference JSON as the last saved application settings state.
  */
-void markSavedAppSettingsState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData);
+void markSavedAppSettingsState(
+  const AppSettings& settings,
+  const rendering::RenderSettings& renderSettings,
+  GuiData& guiData);
 
 /**
  *  Refresh whether current user preferences differ from the last saved state.
  */
-void updateAppSettingsDirtyState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData);
+void updateAppSettingsDirtyState(
+  const AppSettings& settings,
+  const rendering::RenderSettings& renderSettings,
+  GuiData& guiData);
 
 /**
  * @brief Apply user preferences from versioned JSON text.
  * @param settings Application settings to update.
- * @param renderData Rendering defaults to update.
+ * @param renderSettings Rendering defaults to update.
  * @param text JSON text to parse.
  * @param error Optional destination for a parse or validation error.
  * @return True iff the text was parsed and applied successfully.
  */
 bool applyJsonString(
   AppSettings& settings,
-  RenderData& renderData,
+  rendering::RenderSettings& renderSettings,
   GuiData& guiData,
   const std::string& text,
   std::string* error = nullptr);
@@ -364,14 +379,14 @@ bool applyJsonString(
 /**
  * @brief Save user preferences to disk.
  * @param settings Application settings to serialize.
- * @param renderData Rendering defaults to serialize.
+ * @param renderSettings Rendering defaults to serialize.
  * @param fileName Destination JSON file.
  * @param error Optional destination for an I/O or serialization error.
  * @return True iff the preferences were written successfully.
  */
 bool save(
   const AppSettings& settings,
-  const RenderData& renderData,
+  const rendering::RenderSettings& renderSettings,
   const GuiData& guiData,
   const std::filesystem::path& fileName,
   std::string* error = nullptr);
@@ -379,14 +394,14 @@ bool save(
 /**
  * @brief Load user preferences from disk.
  * @param settings Application settings to update.
- * @param renderData Rendering defaults to update.
+ * @param renderSettings Rendering defaults to update.
  * @param fileName Source JSON file.
  * @param error Optional destination for an I/O or parse error.
  * @return True iff the file was absent or was loaded successfully.
  */
 bool load(
   AppSettings& settings,
-  RenderData& renderData,
+  rendering::RenderSettings& renderSettings,
   GuiData& guiData,
   const std::filesystem::path& fileName,
   std::string* error = nullptr);
@@ -394,8 +409,8 @@ bool load(
 /**
  * @brief Restore the built-in application preference defaults.
  * @param settings Application settings to reset.
- * @param renderData Rendering defaults to reset.
+ * @param renderSettings Rendering defaults to reset.
  */
-void applyDefaults(AppSettings& settings, RenderData& renderData, GuiData& guiData);
+void applyDefaults(AppSettings& settings, rendering::RenderSettings& renderSettings, GuiData& guiData);
 
 } // namespace user_preferences

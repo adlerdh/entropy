@@ -5,17 +5,21 @@ target_sources(entropy PRIVATE
   app/DataHelper.cpp
   app/ImageScaleInteraction.cpp
   app/ImageSelectionPolicy.cpp
+  app/LargeImagePolicy.cpp
   app/Logging.cpp
   app/LoadingStatusItems.cpp
+  app/MeshExport.cpp
   app/ParcellationLabelTable.cpp
   app/ProjectLayoutDelta.cpp
+  app/ProjectImageSequence.cpp
   app/ProjectSnapshotComparison.cpp
   app/ProjectSnapshotSettings.cpp
+  app/RecentDataLoad.cpp
   app/Settings.cpp
   app/StackTrace.cpp
   app/State.cpp
   app/UserPreferences.cpp
-  app/UserPreferencesRenderData.cpp
+  app/UserPreferencesRendering.cpp
   app/WindowTitleStatus.cpp
 
   annotation/Annotation.cpp
@@ -37,6 +41,7 @@ target_sources(entropy PRIVATE
   camera/RaycastIsoSurfacePicker.cpp
 
   interaction/ViewHit.cpp
+  interaction/TransformationGuide.cpp
   interaction/events/ButtonState.cpp
 
   segmentation/AnnotationSegmentation.cpp

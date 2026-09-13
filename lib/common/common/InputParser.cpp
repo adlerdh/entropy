@@ -1,0 +1,283 @@
+#include "common/InputParser.h"
+#include "common/LoggingDefaults.h"
+#include <spdlog/fmt/std.h>
+#include "BuildStamp.h"
+
+#undef max
+
+#include <CLI/CLI.hpp>
+
+// clang-format off
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
+// clang-format on
+
+#include <algorithm> // std::equal
+#include <cctype>    // std::tolower
+#include <filesystem>
+#include <functional>
+#include <iostream>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace
+{
+
+/**
+ * @brief Check string case-insensitive equality
+ * @param[in] str1 First string
+ * @param[in] str2 Second string
+ * @return True iff the strings are equal (case-insensitive)
+ */
+bool iequals(const std::string& str1, const std::string& str2)
+{
+  auto ichar_equals = [](char a, char b) -> bool {
+    return (std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)));
+  };
+
+  return std::equal(str1.begin(), str1.end(), str2.begin(), str2.end(), ichar_equals);
+}
+
+/**
+ * @brief Validate the input parameters
+ * @param[in,out] params Input parameters
+ * @return True iff parameters are valid
+ */
+bool validateParams(InputParams& params)
+{
+  if (params.projectFile && (!params.imageFiles.empty() || !params.dicomPaths.empty())) {
+    spdlog::critical(
+      "--project/-p cannot be combined with image, segmentation, or DICOM inputs; Entropy will not start");
+    return false;
+  }
+
+  if (!params.projectFile && params.imageFiles.empty() && params.dicomPaths.empty()) {
+    spdlog::info("No image, DICOM, or project file provided; starting with an empty workspace");
+    params.set = false;
+    return true;
+  }
+
+  params.set = true;
+  return true;
+}
+
+void assignLogLevel(const std::string& logLevel, InputParams& params)
+{
+  using enum spdlog::level::level_enum;
+
+  if (iequals(logLevel, "trace")) {
+    params.logLevel = trace;
+#if SPDLOG_ACTIVE_LEVEL > SPDLOG_LEVEL_TRACE
+    spdlog::warn(
+      "Trace logging was requested, but this Entropy binary was compiled with trace logging disabled. "
+      "Reconfigure with -DEntropy_ENABLE_TRACE_LOGGING=ON to include trace log calls.");
+#endif
+  }
+  else if (iequals(logLevel, "debug")) {
+    params.logLevel = debug;
+  }
+  else if (iequals(logLevel, "info")) {
+    params.logLevel = info;
+  }
+  else if (iequals(logLevel, "warn") || iequals(logLevel, "warning")) {
+    params.logLevel = warn;
+  }
+  else if (iequals(logLevel, "err") || iequals(logLevel, "error")) {
+    params.logLevel = err;
+  }
+  else if (iequals(logLevel, "critical")) {
+    params.logLevel = critical;
+  }
+  else if (iequals(logLevel, "off")) {
+    params.logLevel = off;
+  }
+  else {
+    spdlog::warn("Invalid application log level '{}'; using Info verbosity", logLevel);
+    params.logLevel = info;
+  }
+}
+
+void logInputs(const InputParams& params)
+{
+  if (!params.imageFiles.empty()) {
+    spdlog::info("{} image(s) provided:", params.imageFiles.size());
+
+    for (size_t i = 0; i < params.imageFiles.size(); ++i) {
+      if (0 == i) {
+        spdlog::info("\tImage[{}] (reference): {}", i, params.imageFiles[i].image);
+      }
+      else {
+        spdlog::info("\tImage[{}]: {}", i, params.imageFiles[i].image);
+      }
+
+      if (params.imageFiles[i].segmentations.empty()) {
+        spdlog::info("\tSegmentations for image[{}]: <none>", i);
+      }
+      else {
+        for (size_t j = 0; j < params.imageFiles[i].segmentations.size(); ++j) {
+          spdlog::info("\tSegmentation[{}][{}]: {}", i, j, params.imageFiles[i].segmentations[j]);
+        }
+      }
+    }
+  }
+  else if (params.projectFile) {
+    spdlog::info("Project file provided: {}", *params.projectFile);
+  }
+  else if (!params.dicomPaths.empty()) {
+    spdlog::info("{} DICOM input path(s) provided:", params.dicomPaths.size());
+    for (size_t i = 0; i < params.dicomPaths.size(); ++i) {
+      spdlog::info("\tDICOM[{}]: {}", i, params.dicomPaths[i]);
+    }
+  }
+  else {
+    spdlog::info("No image arguments, DICOM inputs, or project file were provided");
+  }
+
+  if (params.layoutsFile) {
+    spdlog::info("Layouts file provided: {}", *params.layoutsFile);
+  }
+}
+
+std::vector<char*> filterPlatformArguments(const int argc, char* argv[])
+{
+  std::vector<char*> filteredArgs;
+  filteredArgs.reserve(static_cast<size_t>(argc));
+
+  for (int i = 0; i < argc; ++i) {
+    const std::string_view arg{argv[i]};
+    if (arg.starts_with("-psn_")) {
+      continue;
+    }
+
+    filteredArgs.push_back(argv[i]);
+  }
+
+  return filteredArgs;
+}
+
+} // namespace
+
+bool parseCommandLine(const int argc, char* argv[], InputParams& params, bool* exitRequested)
+{
+  if (exitRequested) {
+    *exitRequested = false;
+  }
+  params.set = false;
+  params.imageFiles.clear();
+  params.dicomPaths.clear();
+  params.projectFile = std::nullopt;
+  params.layoutsFile = std::nullopt;
+
+  std::ostringstream desc;
+  desc << APP_DESCRIPTION;
+
+  CLI::App program{desc.str(), APP_NAME};
+  program.set_version_flag("--version", VERSION_FULL);
+
+  std::string logLevel = logging::defaultLogLevelName();
+  program
+    .add_option(
+      "-l,--log-level",
+      logLevel,
+      "console and file log level: {trace, debug, info, warn, err, critical, off}")
+    ->default_val(logLevel);
+
+  std::string projectFile;
+  auto* projectOption = program.add_option("-p,--project", projectFile, "JSON project file");
+  std::string layoutsFile;
+  program.add_option("--layouts", layoutsFile, "standalone JSON layout file");
+  std::vector<std::string> positionalImageFiles;
+  auto* positionalImageOption =
+    program.add_option("positional-images", positionalImageFiles, "image paths; first image is reference")
+      ->expected(0, -1);
+
+  auto* imageOption = program
+                        .add_option_function<std::string>(
+                          "-i,--image",
+                          [&params](const std::string& imageFile) { params.imageFiles.push_back({imageFile, {}}); },
+                          "image path; repeat for multiple images")
+                        ->trigger_on_parse();
+
+  auto* segOption = program
+                      .add_option_function<std::vector<std::string> >(
+                        "-s,--seg",
+                        [&params](const std::vector<std::string>& segFiles) {
+                          if (params.imageFiles.empty()) {
+                            throw CLI::ValidationError("--seg/-s must follow an --image/-i option");
+                          }
+
+                          auto& lastImage = params.imageFiles.back();
+                          for (const std::string& segFile : segFiles) {
+                            lastImage.segmentations.emplace_back(segFile);
+                          }
+                        },
+                        "segmentation path for the preceding --image; repeat for multiple segmentations")
+                      ->expected(1, -1)
+                      ->trigger_on_parse();
+
+  auto* dicomOption = program
+                        .add_option_function<std::vector<std::string> >(
+                          "-d,--dicom",
+                          [&params](const std::vector<std::string>& dicomPaths) {
+                            for (const std::string& dicomPath : dicomPaths) {
+                              params.dicomPaths.emplace_back(dicomPath);
+                            }
+                          },
+                          "DICOM folder or file path to scan; repeat for multiple inputs")
+                        ->expected(1, -1)
+                        ->trigger_on_parse();
+
+  projectOption->excludes(imageOption)->excludes(segOption)->excludes(dicomOption)->excludes(positionalImageOption);
+  imageOption->excludes(projectOption)->excludes(dicomOption)->excludes(positionalImageOption);
+  segOption->excludes(projectOption)->excludes(dicomOption)->excludes(positionalImageOption);
+  dicomOption->excludes(projectOption)->excludes(imageOption)->excludes(segOption)->excludes(positionalImageOption);
+  positionalImageOption->excludes(projectOption)->excludes(imageOption)->excludes(segOption)->excludes(dicomOption);
+
+  try {
+    auto filteredArgs = filterPlatformArguments(argc, argv);
+    program.parse(static_cast<int>(filteredArgs.size()), filteredArgs.data());
+  }
+  catch (const CLI::CallForHelp&) {
+    std::cout << program.help();
+    if (exitRequested) {
+      *exitRequested = true;
+    }
+    return true;
+  }
+  catch (const CLI::CallForVersion&) {
+    std::cout << VERSION_FULL << '\n';
+    if (exitRequested) {
+      *exitRequested = true;
+    }
+    return true;
+  }
+  catch (const CLI::ParseError& e) {
+    spdlog::critical("Could not parse command-line arguments; Entropy will not start: {}", e.what());
+    std::cout << program.help();
+    return false;
+  }
+
+  if (!projectFile.empty()) {
+    params.projectFile = projectFile;
+  }
+  if (!layoutsFile.empty()) {
+    params.layoutsFile = layoutsFile;
+  }
+  for (const std::string& imageFile : positionalImageFiles) {
+    params.imageFiles.push_back({imageFile, {}});
+  }
+
+  assignLogLevel(logLevel, params);
+  logInputs(params);
+
+  // Final validation of parameters:
+  if (validateParams(params)) {
+    return true;
+  }
+
+  std::cout << program.help();
+  return false;
+}

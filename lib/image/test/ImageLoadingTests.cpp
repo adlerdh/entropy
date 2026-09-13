@@ -1,6 +1,6 @@
 #include "image/Image.h"
 #include "image/ImageUtility.h"
-#include "image/internal/ImageUtilityItk.h"
+#include "../image/internal/ImageUtilityItk.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>

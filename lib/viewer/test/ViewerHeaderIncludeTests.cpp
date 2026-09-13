@@ -21,6 +21,8 @@ TEST_CASE("viewer public headers are self-contained")
   CHECK(LayoutKind::Custom == LayoutKind::Custom);
   CHECK(ViewType::Axial == ViewType::Axial);
   CHECK(ViewRenderMode::Image == ViewRenderMode::Image);
+  CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Segmentations));
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Isosurfaces));
+  CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::ImportedMeshes));
   CHECK(IntensityProjectionMode::None == IntensityProjectionMode::None);
 }

@@ -1,7 +1,10 @@
 #include "EntropyApp.h"
 
 #include "logic/app/DataHelper.h"
+#include "logic/app/MeshExport.h"
 #include "rendering/TextureSetup.h"
+
+#include <spdlog/spdlog.h>
 
 #include <utility>
 
@@ -11,18 +14,26 @@ void EntropyApp::setCallbacks()
 {
   m_glfw.setCallbacks(
     [this](std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime) {
-      m_rendering.framerateLimiter(lastFrameTime);
+      const rendering::RenderSettings& renderSettings = m_data.renderSettings();
+      m_framePacer.wait(
+        {.enabled = renderSettings.m_manualFramerateLimiter,
+         .targetFrameTime = std::chrono::duration<double>{renderSettings.m_targetFrameTimeSeconds}},
+        lastFrameTime);
     },
     [this]() { m_rendering.render(); },
     [this]() { m_imgui.render(); },
     [this]() {
+      showNextInputLoadFailure();
       pollDicomSeriesScan();
       m_itkSnapSync.update();
       m_entropyInstanceSync.update();
       const bool syncEnabled = m_data.settings().cursorSyncEnabled() || m_data.settings().entropyInstanceSyncEnabled();
-      if (syncEnabled && !m_data.state().animating()) {
+      const auto transformationGuide = m_data.state().transformationGuide().guide();
+      const bool transformationGuideFading = m_data.renderSettings().m_showTransformationGuides &&
+                                             transformationGuide && !interaction::guideIsDragging(*transformationGuide);
+      if ((syncEnabled || transformationGuideFading) && !m_data.state().animating()) {
         m_glfw.setEventProcessingMode(EventProcessingMode::WaitTimeout);
-        m_glfw.setWaitTimeout(1.0 / 30.0);
+        m_glfw.setWaitTimeout(transformationGuideFading ? 1.0 / 60.0 : 1.0 / 30.0);
       }
       else if (!m_data.state().animating()) {
         m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
@@ -31,8 +42,8 @@ void EntropyApp::setCallbacks()
 
   ImGuiWrapperCallbacks imguiCallbacks;
 
-  imguiCallbacks.platform.postEmptyGlfwEvent = [this]() {
-    m_glfw.postEmptyEvent();
+  imguiCallbacks.platform.postEmptyGlfwEvent = []() {
+    GlfwWrapper::postEmptyEvent();
   };
   imguiCallbacks.platform.readjustViewport = [this]() {
     resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y);
@@ -53,12 +64,33 @@ void EntropyApp::setCallbacks()
   imguiCallbacks.project.addSegmentationFileToImage = [this](const uuids::uuid& imageUid, const fs::path& fileName) {
     addSegmentationFileToImage(fileName, imageUid);
   };
+  imguiCallbacks.project.importSurfaceMeshes = [this](const uuids::uuid& imageUid) {
+    importSurfaceMeshesForImage(imageUid);
+  };
+  imguiCallbacks.project.exportIsosurfaceMesh =
+    [this](const uuids::uuid& imageUid, const uint32_t component, const uuids::uuid& surfaceUid) {
+      mesh_export::exportIsosurface(m_data, imageUid, component, surfaceUid);
+    };
+  imguiCallbacks.project.exportSegmentationLabelMesh =
+    [this](const uuids::uuid& imageUid, const uuids::uuid& segmentationUid, const std::size_t labelIndex) {
+      mesh_export::exportSegmentationLabel(m_data, imageUid, segmentationUid, labelIndex);
+    };
+  imguiCallbacks.project.exportAllSegmentationLabelMeshes =
+    [this](const uuids::uuid& imageUid, const uuids::uuid& segmentationUid) {
+      mesh_export::exportAllSegmentationLabels(m_data, imageUid, segmentationUid);
+    };
   imguiCallbacks.project.loadDeformationField = [this](const fs::path& fileName) -> std::optional<uuids::uuid> {
-    const auto [defUid, loaded] = loadDeformationField(fileName);
-    if (defUid && loaded) {
-      createImageTextures(m_data, std::vector<uuids::uuid>{*defUid});
+    try {
+      const auto [defUid, loaded] = loadDeformationField(fileName);
+      if (defUid && loaded) {
+        createImageTextures(m_data, std::vector<uuids::uuid>{*defUid});
+      }
+      return defUid;
     }
-    return defUid;
+    catch (const std::exception& e) {
+      reportInputLoadFailure("deformation field", fileName, e.what());
+      return std::nullopt;
+    }
   };
   imguiCallbacks.project.loadAndAssignDeformationField = [this](
                                                            const uuids::uuid& imageUid,
@@ -328,6 +360,12 @@ void EntropyApp::setCallbacks()
     bool success = false;
     success |= m_data.removeSeg(segUid);
     success |= m_rendering.removeSegTexture(segUid);
+    if (success) {
+      spdlog::info("Removed segmentation {} and its rendering resources", segUid);
+    }
+    else {
+      spdlog::warn("Could not remove segmentation {} because neither data nor rendering resources were found", segUid);
+    }
     return success;
   };
 

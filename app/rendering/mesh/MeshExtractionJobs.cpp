@@ -1,6 +1,7 @@
 #include "rendering/mesh/MeshExtractionJobs.h"
 
 #include "image/Image.h"
+#include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 
 #include <algorithm>
@@ -11,13 +12,10 @@
 namespace rendering::mesh
 {
 
-MeshExtractionJob makeIsosurfaceExtractionJob(
-  IsosurfaceMeshRequest request,
-  const MeshGenerationOptions& options,
-  std::shared_ptr<const Image> imageSnapshot)
+MeshExtractionJob makeIsosurfaceExtractionJob(IsosurfaceMeshRequest request, std::shared_ptr<const Image> imageSnapshot)
 {
   const MeshGeometryKey key = geometryKeyForRequest(request);
-  return [request = std::move(request), key, options, imageSnapshot = std::move(imageSnapshot)]() mutable {
+  return [request = std::move(request), key, imageSnapshot = std::move(imageSnapshot)]() mutable {
     if (!imageSnapshot) {
       return MeshExtractionJobResult{
         .key = key,
@@ -45,7 +43,7 @@ MeshExtractionJob makeIsosurfaceExtractionJob(
         .diagnostics = {"The requested isovalue does not intersect the scalar range"}};
     }
 
-    std::optional<MeshData> mesh = generateIsoSurfaceMesh(*grid, request.isoValue, options);
+    std::optional<MeshData> mesh = generateIsoSurfaceMesh(*grid, request.isoValue, request.generationOptions);
     if (!mesh) {
       return MeshExtractionJobResult{
         .key = key,
@@ -62,24 +60,39 @@ MeshExtractionJob makeIsosurfaceExtractionJob(
 
 MeshExtractionJob makeSegmentationExtractionJob(
   SegmentationMeshRequest request,
-  std::shared_ptr<SegmentationExtractionBatch> batch)
+  SegmentationLabelBounds bounds,
+  std::shared_ptr<const Image> segmentationSnapshot)
 {
   const MeshGeometryKey key = geometryKeyForRequest(request);
-  return [request = std::move(request), key, batch = std::move(batch)]() mutable {
-    if (!batch) {
+  return [request = std::move(request), key, bounds, segmentationSnapshot = std::move(segmentationSnapshot)]() mutable {
+    if (!segmentationSnapshot) {
       return MeshExtractionJobResult{
         .key = key,
         .result = std::nullopt,
-        .diagnostics = {"The shared segmentation extraction batch is unavailable"}};
+        .diagnostics = {"The segmentation snapshot is unavailable"}};
     }
 
-    std::optional<MeshData> mesh = batch->takeLabelMesh(request.labelValue);
+    std::optional<ScalarGrid3D> grid = labelMaskGridFromImageComponent(
+      *segmentationSnapshot,
+      0,
+      request.labelValue,
+      bounds,
+      request.timePoint,
+      MeshCoordinateSpace::ImageSubject);
+    if (!grid) {
+      return MeshExtractionJobResult{
+        .key = key,
+        .result = std::nullopt,
+        .diagnostics = {"No segmentation label grid could be created"}};
+    }
+
+    std::optional<MeshData> mesh = generateBinaryMaskSurface(*grid, request.generationOptions);
     if (!mesh) {
       return MeshExtractionJobResult{
         .key = key,
         .result = std::nullopt,
-        .empty = batch->generationSucceeded(),
-        .diagnostics = {batch->diagnostic()}};
+        .empty = true,
+        .diagnostics = {"The segmentation label produced no surface triangles"}};
     }
     return MeshExtractionJobResult{
       .key = key,

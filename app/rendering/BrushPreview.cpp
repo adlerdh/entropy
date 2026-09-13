@@ -6,11 +6,12 @@
 #include "logic/app/Settings.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
 #include "viewer/ViewModes.h"
 #include "windowing/View.h"
 #include "windowing/WindowData.h"
@@ -41,13 +42,14 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
     return;
   }
 
-  auto& R = m_appData.renderData();
-  const auto previewIt = R.m_brushPreviews.find(*imageUid);
-  if (previewIt == R.m_brushPreviews.end()) {
+  auto& resources = m_appData.renderResources();
+  const auto& settings = m_appData.renderSettings();
+  const auto previewIt = resources.m_brushPreviews.find(*imageUid);
+  if (previewIt == resources.m_brushPreviews.end()) {
     return;
   }
 
-  RenderData::BrushPreview& preview = previewIt->second;
+  rendering::RenderResources::BrushPreview& preview = previewIt->second;
   if (!preview.visible || preview.imageUid != *imageUid || preview.segUid != *segUid || !preview.texture) {
     return;
   }
@@ -61,25 +63,26 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
     renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest);
   preview.texture->bind(s_segTexSampler.index);
   const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
-  const auto boundDeformationTextures =
-    renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+  const auto boundDeformationTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
 
   program.use();
   {
     program.setSamplerUniform("u_segTex", s_segTexSampler.index);
     program.setSamplerUniform("u_segLabelCmapTex", s_segLabelTableTexSampler.index);
 
-    program.setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+    program.setUniform("u_numCheckers", static_cast<float>(settings.m_numCheckerboardSquares));
     program.setUniform("u_segOpacity", 1.0f);
     program.setUniform("u_useSegColorOverride", true);
     program.setUniform("u_segColorOverride", preview.color);
-    program.setUniform("u_quadrants", R.m_quadrants);
+    program.setUniform("u_quadrants", settings.m_quadrants);
     program.setUniform("u_showFix", false);
     program.setUniform("u_renderMode", static_cast<int>(ViewRenderMode::Image));
 
-    if (renderWarped) {
-      setDeformationUniforms(program, *imageUid, *deformationUid, preview.texture_T_world);
-    }
+    setImageSamplingTransformUniforms(
+      program,
+      *imageUid,
+      renderWarped ? deformationUid : std::nullopt,
+      preview.texture_T_world);
 
     const float fillOpacity =
       (preview.allowFill && BrushPreviewStyle::OutlineAndFill == m_appData.settings().brushPreviewStyle())
@@ -88,7 +91,7 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
 
     drawSegPreviewQuad(
       program,
-      R.m_quad,
+      resources.m_quad,
       preview.texture_T_world,
       preview.voxel_T_world,
       preview.textureCapacity,
@@ -96,12 +99,12 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
       view,
       m_appData.windowData().viewport(),
       worldOffsetXhairs,
-      R.m_flashlightRadius,
-      R.m_flashlightOverlays,
+      settings.m_flashlightRadius,
+      settings.m_flashlightOverlays,
       m_appData.settings().brushPreviewOutlineStyle(),
       fillOpacity);
   }
-  program.stopUse();
+  GLShaderProgram::stopUse();
 
   unbindTextures(boundDeformationTextures);
   unbindBufferTextures(boundBufferTextures);

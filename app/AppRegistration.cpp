@@ -1,6 +1,7 @@
 #include "EntropyApp.h"
 
 #include "logic/app/DataHelper.h"
+#include "logic/app/LoadingStatusItems.h"
 
 #include "registration/AffineTransformIO.h"
 #include "registration/Artifacts.h"
@@ -84,35 +85,6 @@ bool applyRegistrationAffineToImage(
   return true;
 }
 
-std::vector<GuiData::LoadingStatusItem> registrationLoadingItems(const registration::ImportPlan& plan)
-{
-  std::vector<GuiData::LoadingStatusItem> items;
-  for (const registration::ImportStep& step : plan.steps) {
-    GuiData::LoadingStatusItem::Kind kind = GuiData::LoadingStatusItem::Kind::Image;
-    switch (step.action) {
-      case registration::ImportAction::LoadWarpedImage:
-      case registration::ImportAction::LoadInverseWarp:
-      case registration::ImportAction::LoadForwardWarp:
-        kind = GuiData::LoadingStatusItem::Kind::Image;
-        break;
-      case registration::ImportAction::LoadWarpedSegmentation:
-        kind = GuiData::LoadingStatusItem::Kind::Segmentation;
-        break;
-      case registration::ImportAction::ApplyAffineTransform:
-      case registration::ImportAction::AssignWarpsToMovingImage:
-      case registration::ImportAction::TransformLandmarksAndAnnotations:
-      case registration::ImportAction::LoadTransformedSurface:
-      case registration::ImportAction::MakeWarpedImageActive:
-        continue;
-    }
-
-    std::error_code error;
-    const std::uintmax_t bytes = fs::file_size(step.path, error);
-    items.push_back(GuiData::LoadingStatusItem{kind, step.path, error ? std::nullopt : std::optional{bytes}, false});
-  }
-  return items;
-}
-
 registration::ProgressEvent makeRegistrationProgressEvent(registration::ProgressEventKind kind, std::string message)
 {
   registration::ProgressEvent event;
@@ -127,7 +99,12 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
 {
   registration::JobStore& jobs = m_data.registrationJobs();
   const registration::JobRecord* job = jobs.find(jobId);
-  if (!job || !job->manifest) {
+  if (!job) {
+    spdlog::warn("Cannot import registration outputs because job '{}' was not found", jobId);
+    return;
+  }
+  if (!job->manifest) {
+    spdlog::warn("Cannot import registration outputs for job '{}' because it has no result manifest", jobId);
     return;
   }
 
@@ -164,6 +141,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
   }
 
   const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest);
+  spdlog::info("Beginning import of {} output step(s) for registration job '{}'", plan.steps.size(), jobId);
   m_preserveLayoutsOnImagesReady = true;
   m_pendingAddedImageUids.clear();
   appendEvent(registration::ProgressEventKind::Progress, "Importing registration outputs.");
@@ -255,6 +233,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
             appendAsyncEvent(
               registration::ProgressEventKind::Warning,
               "Registration output does not exist and was not imported: " + step.path.string());
+            reportInputLoadFailure("registration output", step.path, "The expected output file does not exist.");
             continue;
           }
 
@@ -273,6 +252,10 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to parse or apply affine transform: " + step.path.string());
+                reportInputLoadFailure(
+                  "affine transformation",
+                  step.path,
+                  "The registration transform could not be parsed or applied.");
               }
               break;
             }
@@ -297,6 +280,12 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to import inverse warp: " + step.path.string());
+                if (warpUid) {
+                  reportInputLoadFailure(
+                    "inverse deformation field",
+                    step.path,
+                    "The deformation field loaded, but could not be assigned to the target image.");
+                }
               }
               break;
             }
@@ -321,6 +310,12 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to import forward warp: " + step.path.string());
+                if (warpUid) {
+                  reportInputLoadFailure(
+                    "forward deformation field",
+                    step.path,
+                    "The deformation field loaded, but could not be assigned to the target image.");
+                }
               }
               break;
             }
@@ -360,6 +355,10 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 appendAsyncEvent(
                   registration::ProgressEventKind::Warning,
                   "Unable to import warped segmentation: " + step.path.string());
+                reportInputLoadFailure(
+                  "segmentation",
+                  step.path,
+                  "The warped segmentation could not be loaded or assigned to its target image.");
               }
               break;
             }
@@ -389,6 +388,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
           hadError = true;
           appendAsyncEvent(registration::ProgressEventKind::Warning, e.what());
           spdlog::error("Exception while importing registration output for job {}: {}", jobId, e.what());
+          reportInputLoadFailure("registration output", step.path, e.what());
           break;
         }
       }
@@ -403,6 +403,11 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
       m_data.setRainbowColorsForAllLandmarkGroups();
       m_data.setProject(createProjectSnapshot());
       appendAsyncEvent(registration::ProgressEventKind::Completed, "Registration outputs imported.");
+      spdlog::info(
+        "Imported registration outputs for job '{}': {} step(s), {} image resource(s) added",
+        jobId,
+        plan.steps.size(),
+        m_pendingAddedImageUids.size());
       asyncJobs.setStatus(jobId, statusBeforeImport);
       return true;
     },
@@ -417,6 +422,6 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     },
     false,
-    registrationLoadingItems(plan),
+    loading_status::registrationItems(plan),
     "Importing registration outputs");
 }

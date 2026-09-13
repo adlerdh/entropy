@@ -157,7 +157,8 @@ bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
 {
   return a.name == b.name && a.value == b.value && a.color == b.color &&
          surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
-         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visibleIn2d == b.visibleIn2d && a.visibleIn3d == b.visibleIn3d;
+         a.fillAboveIsovalue == b.fillAboveIsovalue && a.visibleIn2d == b.visibleIn2d &&
+         a.visibleIn3d == b.visibleIn3d && a.includeInCutaway == b.includeInCutaway;
 }
 
 bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)
@@ -179,7 +180,7 @@ bool dicomSourcesEqual(const std::optional<serialize::DicomSource>& a, const std
     return true;
   }
   return a->m_rootPath == b->m_rootPath && a->m_studyInstanceUid == b->m_studyInstanceUid &&
-         a->m_seriesInstanceUid == b->m_seriesInstanceUid && a->m_files == b->m_files;
+         a->m_seriesInstanceUid == b->m_seriesInstanceUid && a->m_anatomy == b->m_anatomy && a->m_files == b->m_files;
 }
 
 bool spatialMetadataEqual(const std::optional<ImageSpatialMetadata>& a, const std::optional<ImageSpatialMetadata>& b)
@@ -235,7 +236,8 @@ bool projectViewSettingsEqual(const serialize::ProjectViewSettings& a, const ser
          a.m_showScaleBarsInLightboxViews == b.m_showScaleBarsInLightboxViews &&
          a.m_annotationsOnTop == b.m_annotationsOnTop && a.m_landmarksOnTop == b.m_landmarksOnTop &&
          a.m_hideAnnotationVertices == b.m_hideAnnotationVertices &&
-         a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
+         a.m_anatomicalLabelType == b.m_anatomicalLabelType && a.m_quadrupedBodyRegion == b.m_quadrupedBodyRegion &&
+         a.m_viewConvention == b.m_viewConvention &&
          a.m_lockAnatomicalDirectionsToReferenceImage == b.m_lockAnatomicalDirectionsToReferenceImage &&
          a.m_crosshairsSnapping == b.m_crosshairsSnapping;
 }
@@ -278,9 +280,10 @@ bool threeDRenderingSettingsEqual(
   const serialize::ProjectThreeDRenderingSettings& b)
 {
   return a.m_transparentBackground == b.m_transparentBackground && a.m_imageBoxVisible == b.m_imageBoxVisible &&
-         a.m_imagePlanesVisible == b.m_imagePlanesVisible &&
+         a.m_imagePlanesVisible == b.m_imagePlanesVisible && a.m_imagePlaneOpacity == b.m_imagePlaneOpacity &&
          a.m_imagePlaneViewAngleOpacity == b.m_imagePlaneViewAngleOpacity &&
          a.m_imagePlaneSegmentationsVisible == b.m_imagePlaneSegmentationsVisible &&
+         a.m_imagePlaneIsocontoursVisible == b.m_imagePlaneIsocontoursVisible &&
          a.m_imagePlaneShading == b.m_imagePlaneShading &&
          a.m_imagePlaneLightingAmbient == b.m_imagePlaneLightingAmbient &&
          a.m_imagePlaneLightingDiffuse == b.m_imagePlaneLightingDiffuse &&
@@ -289,8 +292,8 @@ bool threeDRenderingSettingsEqual(
          a.m_lightingAmbient == b.m_lightingAmbient && a.m_lightingDiffuse == b.m_lightingDiffuse &&
          a.m_lightingSpecular == b.m_lightingSpecular && a.m_lightingSpecularPower == b.m_lightingSpecularPower &&
          a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
-         a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
-         a.m_crosshairs3DGlyphLengthVoxelDiagonals == b.m_crosshairs3DGlyphLengthVoxelDiagonals &&
+         a.m_crosshairs3DGlyphDiameterScenePercent == b.m_crosshairs3DGlyphDiameterScenePercent &&
+         a.m_crosshairs3DGlyphLengthScenePercent == b.m_crosshairs3DGlyphLengthScenePercent &&
          a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
          a.m_reverseThreeDRotateAboutEye == b.m_reverseThreeDRotateAboutEye &&
          a.m_threeDCameraFrustumColor == b.m_threeDCameraFrustumColor;
@@ -319,10 +322,10 @@ bool meshRenderingSettingsEqual(
          a.m_smoothIsosurfaceMeshes == b.m_smoothIsosurfaceMeshes &&
          a.m_meshSmoothingIterations == b.m_meshSmoothingIterations &&
          a.m_meshSmoothingPassBand == b.m_meshSmoothingPassBand && a.m_ddpMaxPeelPasses == b.m_ddpMaxPeelPasses &&
-         a.m_pickingEnabled == b.m_pickingEnabled && a.m_clipPlaneEnabled == b.m_clipPlaneEnabled &&
-         a.m_clipPlaneWorld == b.m_clipPlaneWorld && a.m_shadowsEnabled == b.m_shadowsEnabled &&
-         a.m_shadowMapSizePixels == b.m_shadowMapSizePixels && a.m_shadowStrength == b.m_shadowStrength &&
-         a.m_shadowDepthBias == b.m_shadowDepthBias && a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
+         a.m_pickingEnabled == b.m_pickingEnabled && a.m_cutawayEnabled == b.m_cutawayEnabled &&
+         a.m_shadowsEnabled == b.m_shadowsEnabled && a.m_shadowMapSizePixels == b.m_shadowMapSizePixels &&
+         a.m_shadowStrength == b.m_shadowStrength && a.m_shadowDepthBias == b.m_shadowDepthBias &&
+         a.m_ambientOcclusionEnabled == b.m_ambientOcclusionEnabled &&
          a.m_ambientOcclusionRadiusMm == b.m_ambientOcclusionRadiusMm &&
          a.m_ambientOcclusionStrength == b.m_ambientOcclusionStrength &&
          a.m_ambientOcclusionPower == b.m_ambientOcclusionPower &&

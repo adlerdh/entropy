@@ -99,6 +99,7 @@ jobs:
             ccache \
             gcc-13 \
             g++-13 \
+            glslang-tools \
             libdbus-1-dev \
             libssl-dev \
             libgl1-mesa-dev \
@@ -116,6 +117,7 @@ jobs:
           cmake --version
           git --version
           ccache --version
+          glslangValidator --version
           "${CC}" --version
           "${CXX}" --version
 

@@ -89,9 +89,9 @@ void Layout::setViewType(const ViewType& viewType)
   updateAllViewsInLayout();
 }
 
-void Layout::setRenderMode(const ViewRenderMode& renderMode)
+void Layout::setRenderMode(const ViewRenderMode& newRenderMode)
 {
-  ControlFrame::setRenderMode(renderMode);
+  ControlFrame::setRenderMode(newRenderMode);
   updateAllViewsInLayout();
 }
 

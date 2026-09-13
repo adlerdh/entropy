@@ -1,0 +1,133 @@
+#pragma once
+
+#include "common/LoggingDefaults.h"
+
+#include <spdlog/common.h>
+
+#include <algorithm>
+#include <array>
+#include <span>
+#include <string_view>
+
+namespace logging
+{
+
+/**
+ * @brief User-facing log verbosity choice.
+ */
+struct LogLevelChoice
+{
+  std::string_view label;                                       //!< Display label for UI and diagnostics
+  spdlog::level::level_enum level = logging::defaultLogLevel(); //!< Runtime level represented by this choice
+  bool requiresCompiledTrace = false; //!< True when the choice only works if trace calls were compiled in
+};
+
+inline constexpr std::array<LogLevelChoice, 6> sk_logLevelChoices{{
+  {"Critical", spdlog::level::critical, false},
+  {"Error", spdlog::level::err, false},
+  {"Warning", spdlog::level::warn, false},
+  {"Info", spdlog::level::info, false},
+  {"Debug", spdlog::level::debug, false},
+  {"Trace", spdlog::level::trace, true},
+}};
+
+/**
+ * @brief Return true when trace log call sites are compiled into this binary.
+ * @return True for Debug builds or builds configured with Entropy_ENABLE_TRACE_LOGGING=ON.
+ */
+constexpr bool traceLoggingAvailable()
+{
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  return true;
+#else
+  return false;
+#endif
+}
+
+/**
+ * @brief Return all log verbosity choices in most-severe to most-verbose order.
+ * @return Static list containing critical through trace.
+ */
+constexpr std::span<const LogLevelChoice> allLogLevelChoices()
+{
+  return sk_logLevelChoices;
+}
+
+/**
+ * @brief Return the display label for a log level.
+ * @param[in] level spdlog runtime level.
+ * @return User-facing label, or "Info" for unrecognized levels.
+ */
+constexpr std::string_view logLevelLabel(spdlog::level::level_enum level)
+{
+  const auto choices = allLogLevelChoices();
+  const auto choice = std::find_if(choices.begin(), choices.end(), [level](const LogLevelChoice& candidate) {
+    return candidate.level == level;
+  });
+  if (choice != choices.end()) {
+    return choice->label;
+  }
+
+  return "Info";
+}
+
+/**
+ * @brief Return true when a log level can be selected in this build.
+ * @param[in] choice Candidate log level choice.
+ * @return False for trace in builds where trace calls are compiled out.
+ */
+constexpr bool isLogLevelChoiceAvailable(const LogLevelChoice& choice)
+{
+  return !choice.requiresCompiledTrace || traceLoggingAvailable();
+}
+
+/**
+ * @brief Return the log levels that can be selected in this build.
+ * @return All choices when trace logging is compiled in, otherwise critical through debug.
+ */
+constexpr std::span<const LogLevelChoice> availableLogLevelChoices()
+{
+  const auto choices = allLogLevelChoices();
+  if constexpr (traceLoggingAvailable()) {
+    return choices;
+  }
+  return choices.first(choices.size() - 1u);
+}
+
+/**
+ * @brief Return the selectable replacement for an unavailable log level.
+ * @param[in] level Requested or current spdlog runtime level.
+ * @return @p level when available, otherwise debug for unavailable trace.
+ */
+constexpr spdlog::level::level_enum selectableLogLevel(spdlog::level::level_enum level)
+{
+  if (spdlog::level::trace == level && !traceLoggingAvailable()) {
+    return spdlog::level::debug;
+  }
+
+  return level;
+}
+
+/**
+ * @brief Return whether Entropy's spdlog output is enabled.
+ */
+bool loggingEnabled();
+
+/**
+ * @brief Enable or disable all Entropy spdlog sinks without forgetting the configured verbosity.
+ */
+void setLoggingEnabled(bool enabled);
+
+/**
+ * @brief Set Entropy's configured runtime verbosity and apply it while logging is enabled.
+ * @param[in] level Desired application log level. Off disables logging without replacing the saved verbosity.
+ */
+void setApplicationLogLevel(spdlog::level::level_enum level);
+
+/**
+ * @brief Return Entropy's configured runtime verbosity.
+ * @return Configured log level, even while physical sinks are disabled.
+ */
+spdlog::level::level_enum applicationLogLevel();
+
+} // namespace logging

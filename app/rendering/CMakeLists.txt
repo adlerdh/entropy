@@ -1,19 +1,9 @@
 target_sources(entropy PRIVATE
   ascii/AsciiAtlas.cpp
   ascii/AsciiAtlasBaker.cpp
-  ascii/AsciiClipboard.cpp
   ascii/AsciiRenderer.cpp
   ImageDrawing.cpp
-  geometry/PixelEdgeGeometry.cpp
-  geometry/ScaleBarGeometry.cpp
-  helpers/ImageDrawingHelpers.cpp
-  helpers/LightboxOffsetLabelFormat.cpp
-  helpers/PipelineHelpers.cpp
-  helpers/TextureSetupHelpers.cpp
   helpers/VectorDrawingHelpers.cpp
-  metrics/LocalLinearResidualMetric.cpp
-  metrics/LocalNccMetric.cpp
-  physics/XrayAttenuation.cpp
   PixelEdgeRenderer.cpp
   BrushPreview.cpp
   ColorImagePass.cpp
@@ -34,11 +24,7 @@ target_sources(entropy PRIVATE
   RaycastShaderPrograms.cpp
   RaycastUniforms.cpp
   SegmentationPass.cpp
-  ShaderInfoSetup.cpp
-  ShaderProgramSetup.cpp
   ShaderPrograms.cpp
-  ShaderSourceSetup.cpp
-  ShaderUniformSetup.cpp
   SegmentationTextureBinding.cpp
   TextureBinding.cpp
   TextureParameterUpdates.cpp
@@ -46,32 +32,18 @@ target_sources(entropy PRIVATE
   VectorImagePass.cpp
   VectorFieldOverlays.cpp
   ViewOverlays.cpp
-  RenderData.cpp
   vector/FrustumOverlayDrawing.cpp
+  vector/ImageLabelOverlayDrawing.cpp
   vector/LightboxOverlayDrawing.cpp
   vector/ScaleBarDrawing.cpp
+  vector/TransformationGuideDrawing.cpp
   vector/VectorFieldOverlayDrawing.cpp
   vector/ViewOverlayDrawing.cpp
   TextureSetup.cpp
   vector/VectorDrawing.cpp
-  common/ShaderType.cpp
-  utility/containers/VertexAttributeInfo.cpp
-  utility/containers/VertexIndicesInfo.cpp
-  utility/containers/Uniforms.cpp
-  utility/gl/GLBufferObject.cpp
-  utility/gl/GLBufferTexture.cpp
-  utility/gl/GLErrorChecker.cpp
-  utility/gl/GLFrameBufferObject.cpp
-  utility/gl/GLShader.cpp
-  utility/gl/GLShaderProgram.cpp
-  utility/gl/GLTexture.cpp
-  utility/gl/GLVersionChecker.cpp
-  utility/gl/GLVertexArrayObject.cpp
-  utility/math/SliceIntersector.cpp
 )
 
 add_subdirectory(mesh)
-add_subdirectory(shaders)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

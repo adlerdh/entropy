@@ -7,6 +7,7 @@
 #include "logic/app/Settings.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/sync/ItkSnapSyncProtocol.h"
+#include "viewer/ViewTypes.h"
 #include "windowing/View.h"
 #include "windowing/WindowData.h"
 
@@ -334,7 +335,13 @@ void ItkSnapSync::logOptionChanges()
     settings.receivePanSync()};
 
   if (!m_lastLoggedOptions || *m_lastLoggedOptions != options) {
-    SPDLOG_TRACE(
+    if (m_lastLoggedOptions || options[0]) {
+      spdlog::info("ITK-SNAP synchronization {}", options[0] ? "enabled" : "disabled");
+    }
+    else {
+      spdlog::debug("ITK-SNAP synchronization is disabled");
+    }
+    SPDLOG_DEBUG(
       "ITK-SNAP sync options: enabled={} sendCursor={} receiveCursor={} sendZoom={} receiveZoom={} sendPan={} "
       "receivePan={}",
       options[0],
@@ -486,7 +493,7 @@ bool ItkSnapSync::ensureAttached()
 void ItkSnapSync::detach()
 {
   if (m_crosshairsSnappingBeforeCursorSend) {
-    m_appData.renderData().m_snapCrosshairs = *m_crosshairsSnappingBeforeCursorSend;
+    m_appData.renderSettings().m_snapCrosshairs = *m_crosshairsSnappingBeforeCursorSend;
     SPDLOG_TRACE(
       "Restored crosshairs snapping after ITK-SNAP cursor send disabled: mode={}",
       static_cast<int>(*m_crosshairsSnappingBeforeCursorSend));
@@ -512,7 +519,7 @@ void ItkSnapSync::updateCrosshairsSnappingForCursorSend()
 {
   const AppSettings& settings = m_appData.settings();
   const bool forceReferenceVoxelSnapping = settings.cursorSyncEnabled() && settings.sendCursorSync();
-  CrosshairsSnapping& snapMode = m_appData.renderData().m_snapCrosshairs;
+  CrosshairsSnapping& snapMode = m_appData.renderSettings().m_snapCrosshairs;
 
   if (forceReferenceVoxelSnapping) {
     if (CrosshairsSnapping::ReferenceImage != snapMode) {
@@ -821,7 +828,7 @@ void ItkSnapSync::applyIncomingViewState(const ItkSnapIpcMessage& message, bool 
         view->camera().setZoom(static_cast<float>(zoomFactor * view->camera().getZoom()));
         SPDLOG_TRACE(
           "Applied ITK-SNAP zoom: view={} dir={} targetPixelsPerMm={} previousPixelsPerMm={} cameraZoom={}",
-          to_string(view->viewType(), false),
+          viewTypeDisplayName(view->viewType(), AnatomicalLabelType::Human, false),
           *dir,
           targetPixelsPerMm,
           *currentPixelsPerMm,
@@ -847,7 +854,7 @@ void ItkSnapSync::applyIncomingViewState(const ItkSnapIpcMessage& message, bool 
           "Applied ITK-SNAP pan: view={} dir={} targetOffset=({}, {}) previousCursorCamera=({}, {}) "
           "newCursorCamera=({}, "
           "{})",
-          to_string(view->viewType(), false),
+          viewTypeDisplayName(view->viewType(), AnatomicalLabelType::Human, false),
           *dir,
           message.viewPositionRelative[*dir][0],
           message.viewPositionRelative[*dir][1],
@@ -894,7 +901,7 @@ void ItkSnapSync::claimDirectorySlot()
       entry.pid = toItkSnapIpcLong(m_processId);
       std::fill(std::begin(entry.title), std::end(entry.title), '\0');
       constexpr std::string_view title{"Entropy"};
-      std::copy_n(title.data(), std::min(title.size(), sizeof(entry.title) - 1), entry.title);
+      std::ranges::copy(title, std::begin(entry.title));
       entry.pendingDropId = 0;
       entry.pendingDrop[0] = '\0';
       m_claimedDirectorySlot = true;
@@ -924,7 +931,7 @@ void ItkSnapSync::releaseDirectorySlot()
     reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
 
   {
-    const auto entry =
+    auto* const entry =
       std::find_if(std::begin(directory->entries), std::end(directory->entries), [this](const auto& candidate) {
         return candidate.pid == m_processId;
       });

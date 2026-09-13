@@ -77,9 +77,14 @@ Checks: >
   readability-simplify-subscript-expr,
   readability-static-accessed-through-instance,
   readability-use-anyofallof
-# Catch2 models combinable bit flags as an enum. EnumCastOutOfRange reports those valid
-# third-party flag combinations, so keep the checker enabled without promoting that diagnostic.
-WarningsAsErrors: '*,-clang-analyzer-optin.core.EnumCastOutOfRange'
+# Catch2 models combinable bit flags as an enum. ITK deliberately initializes an image iterator's
+# region through a virtual method in its base constructor, and CLI11 stores version callbacks in an
+# owning std::function. Keep the analyzers enabled without promoting these dependency diagnostics.
+WarningsAsErrors: >
+  *,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
+  -clang-analyzer-optin.cplusplus.VirtualCall,
+  -clang-analyzer-cplusplus.NewDeleteLeaks
 HeaderFilterRegex: '^(app|lib)/'
 ExcludeHeaderFilterRegex: '(^|/)(external|build-[^/]+)/'
 SystemHeaders: false

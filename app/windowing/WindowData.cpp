@@ -1,4 +1,5 @@
 #include "windowing/WindowData.h"
+#include "windowing/ViewCameraDefaults.h"
 
 #include "common/CoordinateFrame.h"
 #include "common/DirectionMaps.h"
@@ -873,7 +874,7 @@ std::optional<Layout> createLightboxLayoutForImage(
   if (0 == numSlices) {
     spdlog::warn(
       "Skipping {} lightbox layout for image {} because it has no slices",
-      to_string(viewType, false),
+      viewTypeDisplayName(viewType, AnatomicalLabelType::Human, false),
       imageUid);
     return std::nullopt;
   }
@@ -907,7 +908,7 @@ std::vector<Layout> createGeneratedManagedLayouts(
   std::vector<Layout> generatedLayouts;
   generatedLayouts.reserve(5 + 3 * appData.numImages());
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const uuid_range_t& orderedImageUids = appData.imageUidsOrdered();
   const std::vector<ViewType> managedViewTypes =
     managedSliceViewTypes(appData.numImages(), dicomNativeViewTypesByImage);
 
@@ -1159,7 +1160,6 @@ CameraRestoreSummary restoreManagedLayoutCameraSnapshots(
 }
 
 void initializeUnmatchedManagedLayoutCameras(
-  WindowData& windowData,
   std::vector<Layout>& layouts,
   const std::vector<ViewCameraSnapshot>& snapshots,
   const CameraSnapshotIndex& snapshotIndex,
@@ -1177,7 +1177,7 @@ void initializeUnmatchedManagedLayoutCameras(
 
       if (snapshotIt == snapshotIndex.end()) {
         if (layout.isLightbox() || !initializeFromSyncedRestoredCamera(layout, *view, snapshots, snapshotIndex)) {
-          windowData.recenterView(*view, worldCenter, worldFov, false, true);
+          WindowData::recenterView(*view, worldCenter, worldFov, false, true);
         }
       }
 
@@ -1250,7 +1250,7 @@ void WindowData::addLightboxLayoutForImage(
   if (0 == numSlices) {
     spdlog::warn(
       "Skipping {} lightbox layout for image {} because it has no slices",
-      to_string(viewType, false),
+      viewTypeDisplayName(viewType, AnatomicalLabelType::Human, false),
       imageUid);
     return;
   }
@@ -1297,7 +1297,9 @@ void WindowData::setCurrentLayoutViewType(const AppData& appData, const ViewType
   auto rebuiltLayout =
     createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, *imageUid);
   if (!rebuiltLayout) {
-    spdlog::warn("Cannot rebuild managed lightbox layout for unsupported view type {}", to_string(viewType, false));
+    spdlog::warn(
+      "Cannot rebuild managed lightbox layout for unsupported view type {}",
+      viewTypeDisplayName(viewType, AnatomicalLabelType::Human, false));
     return;
   }
 
@@ -1336,15 +1338,13 @@ void WindowData::reconcileImageDependentLayouts(
   const CameraRestoreSummary restoreSummary =
     restoreManagedLayoutCameraSnapshots(generatedLayouts, cameraSnapshots, cameraSnapshotIndex);
   if (!cameraSnapshots.empty() && restoreSummary.m_unmatched > 0) {
-    constexpr float viewAABBoxScaleFactor = 1.10f;
     const auto worldBox = data::computeWorldAABBoxEnclosingImages(appData, ImageSelection::AllLoadedImages);
     initializeUnmatchedManagedLayoutCameras(
-      *this,
       generatedLayouts,
       cameraSnapshots,
       cameraSnapshotIndex,
       m_crosshairs.worldCrosshairs.worldOrigin(),
-      viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox));
+      helper::defaultViewFramingSize(math::computeAABBoxSize(worldBox)));
   }
 
   const std::size_t fixedPrefixLength = fixedManagedLayoutPrefixLength(m_layouts);
@@ -1534,6 +1534,9 @@ void WindowData::clearLayouts()
   m_layouts.clear();
   m_currentLayout = 0;
   m_activeViewUid = std::nullopt;
+  m_twoDViewBaseDefaultFovs.clear();
+  m_twoDViewFramingWorldBoxes.clear();
+  m_twoDViewFramingCameraTransforms.clear();
 }
 
 void WindowData::resetDefaultLayouts()
@@ -1561,7 +1564,7 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layoutArg, const AppD
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const uuid_range_t& orderedImageUids = appData.imageUidsOrdered();
   const std::list<uuid> renderedImages{orderedImageUids.begin(), orderedImageUids.end()};
 
   const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
@@ -1589,7 +1592,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const uuid_range_t& orderedImageUids = appData.imageUidsOrdered();
   const std::list<uuid> renderedImages{orderedImageUids.begin(), orderedImageUids.end()};
 
   const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
@@ -1696,7 +1699,110 @@ void WindowData::recenterAllViews(
       }
 
       if (view) {
+        if (resetZoom) {
+          m_twoDViewBaseDefaultFovs.erase(viewUid);
+          m_twoDViewFramingWorldBoxes.erase(viewUid);
+          m_twoDViewFramingCameraTransforms.erase(viewUid);
+        }
         recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
+      }
+    }
+  }
+}
+
+void WindowData::applyTwoDViewOverlaySafeFraming(
+  const AABB<float>& worldBox,
+  const std::unordered_map<uuid, glm::vec2>& controlExtents,
+  const glm::vec2& fallbackExtent,
+  const float clearance,
+  const bool avoidControls,
+  const bool rememberWorldBox,
+  const std::set<uuid>& excludedViews)
+{
+  struct FramingCandidate
+  {
+    View* view = nullptr;
+    std::optional<uuid> zoomGroupUid;
+    float scale = 1.0f;
+  };
+
+  const auto hasControls = [](const UiControls& controls) {
+    return controls.m_hasImageComboBox || controls.m_hasViewTypeComboBox || controls.m_hasShaderTypeComboBox ||
+           controls.m_hasMipTypeComboBox;
+  };
+
+  for (Layout& layoutLocal : m_layouts) {
+    // Lightboxes have one shared control row over only a few cells. Shrinking every synchronized
+    // cell to clear that row makes large grids needlessly small.
+    if (!windowing::defaultFramingAvoidsControls(layoutLocal.isLightbox())) {
+      continue;
+    }
+
+    std::vector<FramingCandidate> candidates;
+    std::unordered_map<uuid, float> groupScales;
+
+    for (View* view : layoutLocal.orderedViews()) {
+      if (
+        !view || ViewType::ThreeD == view->viewType() || excludedViews.contains(view->uid()) ||
+        !hasControls(view->uiControls()))
+      {
+        continue;
+      }
+
+      constexpr float defaultZoomTolerance = 1.0e-5f;
+      if (std::abs(view->camera().getZoom() - 1.0f) > defaultZoomTolerance) {
+        continue;
+      }
+
+      if (rememberWorldBox || !m_twoDViewFramingWorldBoxes.contains(view->uid())) {
+        m_twoDViewFramingWorldBoxes.insert_or_assign(view->uid(), worldBox);
+      }
+
+      if (rememberWorldBox || !m_twoDViewBaseDefaultFovs.contains(view->uid())) {
+        m_twoDViewBaseDefaultFovs.insert_or_assign(view->uid(), view->camera().projection()->defaultFov());
+      }
+      view->camera().setDefaultFov(m_twoDViewBaseDefaultFovs.at(view->uid()));
+
+      if (rememberWorldBox || !m_twoDViewFramingCameraTransforms.contains(view->uid())) {
+        m_twoDViewFramingCameraTransforms.insert_or_assign(view->uid(), view->camera().camera_T_world());
+      }
+
+      if (!avoidControls) {
+        continue;
+      }
+
+      const glm::vec4& clipViewport = view->windowClipViewport();
+      const glm::vec2 viewSize{
+        0.5f * std::abs(clipViewport.z) * m_viewport.width(),
+        0.5f * std::abs(clipViewport.w) * m_viewport.height()};
+      const auto extentIt = controlExtents.find(view->uid());
+      const glm::vec2 extent = extentIt != controlExtents.end() ? extentIt->second : fallbackExtent;
+      constexpr float imageControlGapFraction = 0.01f;
+      const float imageControlGap = clearance + imageControlGapFraction * std::min(viewSize.x, viewSize.y);
+      const glm::vec4 overlayBounds{
+        0.0f,
+        0.0f,
+        std::min(viewSize.x, std::max(0.0f, extent.x + imageControlGap)),
+        std::min(viewSize.y, std::max(0.0f, extent.y + imageControlGap))};
+      const float scale = helper::viewFramingScaleForOverlay(
+        view->camera().clip_T_camera() * m_twoDViewFramingCameraTransforms.at(view->uid()),
+        m_twoDViewFramingWorldBoxes.at(view->uid()),
+        viewSize,
+        overlayBounds);
+      const auto groupUid = view->cameraZoomSyncGroupUid();
+      candidates.push_back({view, groupUid, scale});
+      if (groupUid) {
+        auto [it, inserted] = groupScales.try_emplace(*groupUid, scale);
+        if (!inserted) {
+          it->second = std::max(it->second, scale);
+        }
+      }
+    }
+
+    for (const FramingCandidate& candidate : candidates) {
+      const float scale = candidate.zoomGroupUid ? groupScales.at(*candidate.zoomGroupUid) : candidate.scale;
+      if (scale > 1.0f) {
+        candidate.view->camera().setDefaultFov(candidate.view->camera().projection()->defaultFov() * scale);
       }
     }
   }
@@ -1849,6 +1955,53 @@ std::optional<uuid> WindowData::activeViewUid() const
 void WindowData::setActiveViewUid(const std::optional<uuid>& uid)
 {
   m_activeViewUid = uid;
+}
+
+bool WindowData::synchronizeCurrentLayoutThreeDCameras(std::optional<uuid> preferredSourceUid)
+{
+  auto validSource = [this](const std::optional<uuid>& uid) -> View* {
+    View* view = uid ? getCurrentView(*uid) : nullptr;
+    return view && ViewType::ThreeD == view->viewType() ? view : nullptr;
+  };
+
+  View* source = validSource(preferredSourceUid);
+  if (!source) {
+    source = validSource(m_activeViewUid);
+  }
+  if (!source) {
+    for (const auto& viewUid : currentViewUids()) {
+      View* candidate = getCurrentView(viewUid);
+      if (candidate && ViewType::ThreeD == candidate->viewType() && candidate->isThreeDCameraInitialized()) {
+        source = candidate;
+        break;
+      }
+    }
+  }
+  if (!source) {
+    for (const auto& viewUid : currentViewUids()) {
+      View* candidate = getCurrentView(viewUid);
+      if (candidate && ViewType::ThreeD == candidate->viewType()) {
+        source = candidate;
+        break;
+      }
+    }
+  }
+  if (!source) {
+    return false;
+  }
+
+  for (const auto& viewUid : currentViewUids()) {
+    View* target = getCurrentView(viewUid);
+    if (!target || target == source || ViewType::ThreeD != target->viewType()) {
+      continue;
+    }
+
+    Camera synchronizedCamera = target->threeDCamera();
+    camera3d::State synchronizedState = target->threeDState();
+    camera3d::synchronizeCamera(synchronizedCamera, synchronizedState, source->threeDCamera(), source->threeDState());
+    target->restoreThreeDCamera(synchronizedCamera, synchronizedState, source->isThreeDCameraInitialized());
+  }
+  return true;
 }
 
 std::size_t WindowData::numLayouts() const

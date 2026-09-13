@@ -729,4 +729,23 @@ void Controller::followCrosshairs(const glm::vec3& crosshairs)
     worldCameraBack(m_camera));
 }
 
+void synchronizeCamera(Camera& targetCamera, State& targetState, const Camera& sourceCamera, const State& sourceState)
+{
+  const float targetAspectRatio = targetCamera.aspectRatio();
+  const bool targetShowsImagePlanes = targetState.m_showImagePlanes;
+  const float targetMinPanDistance = targetState.m_minPanDistance;
+  const float targetScrollDistance = targetState.m_scrollDistance;
+
+  targetCamera = sourceCamera;
+  targetCamera.setAspectRatio(targetAspectRatio);
+
+  targetState = sourceState;
+  targetState.m_showImagePlanes = targetShowsImagePlanes;
+  targetState.m_minPanDistance = targetMinPanDistance;
+  targetState.m_scrollDistance = targetScrollDistance;
+  targetState.m_panDragStartNdc = std::nullopt;
+  targetState.m_panPlanePoint = std::nullopt;
+  targetState.m_panPlaneNormal = std::nullopt;
+}
+
 } // namespace camera3d

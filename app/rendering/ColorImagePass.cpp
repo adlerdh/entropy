@@ -9,14 +9,15 @@
 #include "rendering/ImageDrawing.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/PrivateMethods.h"
-#include "rendering/RenderData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/RenderSettings.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/geometry/PixelEdgeGeometry.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/helpers/PipelineHelpers.h"
-#include "rendering/utility/containers/Uniforms.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/GLTexture.h"
 #include "windowing/View.h"
 #include "windowing/WindowData.h"
 
@@ -46,15 +47,15 @@ void Rendering::renderColorImageForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   const bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   const int displayModeUniform,
   const bool isFixedImage,
   const bool allowScreenPixelEdgePostProcessing)
 {
-  const RenderData& renderData = m_appData.renderData();
+  const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   const std::optional<uuids::uuid> referenceImageUid =
     renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
   const CurrentImages renderGeometryImages{
@@ -90,19 +91,21 @@ void Rendering::renderColorImageForImage(
     }
 
     const auto boundTextures = bindColorImageTextures(imgSegPair);
-    const auto boundDefTextures =
-      renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+    const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
 
     program->use();
     {
       program->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
-      program->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
       setTexture2DAxesUniforms(*program, imageTextureLayout);
       program->setUniform("u_tex2DAxes[2]", textureAxesForProgramSlot(imageTextureLayout));
       program->setUniform("u_tex2DAxes[3]", textureAxesForProgramSlot(imageTextureLayout));
 
-      program->setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
-      program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
+      program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
+      setImageSamplingTransformUniforms(
+        *program,
+        imageUid,
+        renderWarped ? deformationUid : std::nullopt,
+        uniforms.imgTexture_T_world);
       program->setUniform("u_imgSlopeIntercept", uniforms.slopeInterceptRgba_normalized_T_texture);
       program->setUniform("u_imgThresholds", uniforms.thresholdsRgba);
       program->setUniform("u_imgMinMax", uniforms.minMaxRgba);
@@ -110,16 +113,12 @@ void Rendering::renderColorImageForImage(
       const bool forceAlphaToOne = image.settings().ignoreAlpha() || 3 == image.header().numComponentsPerPixel();
       program->setUniform("u_alphaIsOne", forceAlphaToOne);
       program->setUniform("u_imgOpacity", uniforms.imgOpacityRgba);
-      program->setUniform("u_quadrants", renderData.m_quadrants);
+      program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
       program->setUniform("u_renderMode", displayModeUniform);
-      if (renderWarped) {
-        setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
-      }
-
       renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, disableIntensityProjectionForEdges);
     }
-    program->stopUse();
+    GLShaderProgram::stopUse();
 
     unbindTextures(boundDefTextures);
     unbindTextures(boundTextures);
@@ -136,13 +135,13 @@ void Rendering::renderColorImageForImage(
       rendering::pixel_edge::computeViewRect(view.windowClipViewport(), deviceViewport);
 
     auto bindPixelEdgeColormap = [&]() {
-      auto& mutableRenderData = m_appData.renderData();
+      auto& resources = m_appData.renderResources();
       const auto cmapUid = m_appData.imageColorMapUid(image.settings().colorMapIndex());
       if (cmapUid) {
-        mutableRenderData.m_colormapTextures.at(*cmapUid).bind(msk_imgCmapTexSampler.index);
+        resources.m_colormapTextures.at(*cmapUid).bind(msk_imgCmapTexSampler.index);
       }
-      else if (!mutableRenderData.m_colormapTextures.empty()) {
-        mutableRenderData.m_colormapTextures.begin()->second.bind(msk_imgCmapTexSampler.index);
+      else if (!resources.m_colormapTextures.empty()) {
+        resources.m_colormapTextures.begin()->second.bind(msk_imgCmapTexSampler.index);
       }
     };
 
@@ -181,8 +180,7 @@ void Rendering::renderColorImageForImage(
     }
 
     const auto boundTextures = bindScalarImageTextures(imgSegPair);
-    const auto boundDefTextures =
-      renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
+    const auto boundDefTextures = renderWarped ? bindDeformationTextures(*deformationUid) : BoundTextures{};
 
     program->use();
     {
@@ -190,14 +188,18 @@ void Rendering::renderColorImageForImage(
       program->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
       setTexture2DAxesUniforms(*program, imageTextureLayout);
 
-      program->setUniform("u_numCheckers", static_cast<float>(renderData.m_numCheckerboardSquares));
-      program->setUniform("u_tex_T_world", uniforms.imgTexture_T_world);
+      program->setUniform("u_numCheckers", static_cast<float>(renderSettings.m_numCheckerboardSquares));
+      setImageSamplingTransformUniforms(
+        *program,
+        imageUid,
+        renderWarped ? deformationUid : std::nullopt,
+        uniforms.imgTexture_T_world);
       program->setUniform("u_imgSlopeIntercept", uniforms.largestSlopeIntercept);
       program->setUniform("u_imgThresholds", uniforms.thresholds);
       program->setUniform("u_imgMinMax", uniforms.minMax);
       program->setUniform("u_imgOpacity", uniforms.imgOpacity);
       program->setUniform("u_cmapSlopeIntercept", uniforms.cmapSlopeIntercept);
-      program->setUniform("u_quadrants", renderData.m_quadrants);
+      program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage);
       program->setUniform("u_renderMode", displayModeUniform);
       program->setUniform("u_hardEdges", uniforms.hardEdges);
@@ -205,13 +207,9 @@ void Rendering::renderColorImageForImage(
       program->setUniform("u_edgeThreshold", uniforms.voxelEdgeThreshold);
       program->setUniform("u_colormapEdges", uniforms.colormapEdges);
       program->setUniform("u_edgeColor", uniforms.edgeColor);
-      if (renderWarped) {
-        setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
-      }
-
       renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, true);
     }
-    program->stopUse();
+    GLShaderProgram::stopUse();
 
     unbindTextures(boundDefTextures);
     unbindTextures(boundTextures);

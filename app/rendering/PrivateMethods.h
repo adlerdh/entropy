@@ -7,11 +7,6 @@
 /// @{
 
 /**
- * @brief Restore the OpenGL state expected by Entropy after third-party drawing calls.
- */
-static void setupOpenGLState();
-
-/**
  * @brief Compile and link all shader programs used by the renderer.
  */
 void createShaderPrograms();
@@ -126,6 +121,21 @@ static bool createMeshImagePlaneDdpPeelProgram(GLShaderProgram& program);
  * @return True when the program compiled and linked successfully.
  */
 static bool createMeshImagePlaneDdpPeelTexture2DProgram(GLShaderProgram& program);
+
+/** Compile the shader that alpha-composes one orientation's 3D-texture image stack. */
+static bool createMeshImagePlaneCompositeProgram(GLShaderProgram& program);
+
+/** Compile the shader that alpha-composes one orientation's planar-texture image stack. */
+static bool createMeshImagePlaneCompositeTexture2DProgram(GLShaderProgram& program);
+
+/** Create the full-screen analytic image-plane border program. */
+static bool createMeshImagePlaneBorderProgram(GLShaderProgram& program);
+
+/** Compile the full-screen shader that contributes pre-composed image planes to DDP initialization. */
+static bool createMeshImagePlaneCompositeDdpInitProgram(GLShaderProgram& program);
+
+/** Compile the full-screen shader that contributes pre-composed image planes to DDP peeling. */
+static bool createMeshImagePlaneCompositeDdpPeelProgram(GLShaderProgram& program);
 
 /**
  * @brief Compile and link the mesh DDP initialization shader program.
@@ -250,13 +260,15 @@ void renderVectorWarpedGridOverlaysForView(
  * @param program Linked shader program for the selected image render mode.
  * @param imageSegPairs Image/segmentation ids to render.
  * @param showEdges True when edge overlays should be included in this image pass.
+ * @param metricUsesWorldSampling Whether a warped metric program samples offsets in world space.
  */
 void renderOneImage(
   const View& view,
   const glm::vec3& worldOffsetXhairs,
   GLShaderProgram& program,
   const CurrentImages& imageSegPairs,
-  bool showEdges);
+  bool showEdges,
+  bool metricUsesWorldSampling = false);
 
 /**
  * @brief Render NanoVG overlays associated with one rendered image pass.
@@ -284,6 +296,24 @@ void renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXha
  * @return True when any isosurface scene content was rendered.
  */
 bool renderVolumeImagesForView(const View& view, bool interactiveOverlay = false);
+
+/** Append visible user-imported meshes for the images rendered by a 3D view. */
+void appendImportedMeshesForView(
+  const View& view,
+  const CurrentImages& imageSegPairs,
+  std::vector<rendering::mesh::MeshRenderable>& renderables);
+
+/** Prepare immutable imported-mesh geometry and its current world placement. */
+std::optional<PreparedImportedMeshGeometry> prepareImportedMeshGeometry(
+  const uuids::uuid& imageUid,
+  const uuids::uuid& meshUid);
+
+/** Draw cached imported-mesh intersections with the current 2D slice plane. */
+void renderImportedMeshIntersectionsForView(
+  const View& view,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldOffsetXhairs,
+  const CurrentImages& imageSegPairs);
 
 /**
  * @brief Apply completed background mesh extraction jobs to the CPU mesh cache.
@@ -352,6 +382,12 @@ void drawMeshImagePlaneDdpPeelLayersForView(
   GLTexture& previousDepthBounds,
   GLTexture& previousFrontColor);
 
+/** Alpha-compose each orientation's coincident image stack before it participates in DDP. */
+void prepareMeshImagePlaneDdpCompositesForView(
+  const View& view,
+  const rendering::mesh::MeshImagePlaneRenderList& list,
+  const rendering::mesh::MeshDrawContext& context);
+
 /**
  * @brief Build enabled 3D image-plane renderables without drawing them.
  *
@@ -372,11 +408,12 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> collectMeshImagePlaneRend
 bool renderMeshImagePlanesAndCrosshairsForView(const View& view);
 
 /**
- * @brief Return project-wide world-space mesh clipping planes enabled for the current renderer state.
+ * @brief Build the viewer-facing octant cutaway for one 3D view.
  *
- * @return Enabled mesh clipping planes, or an empty vector when clipping is disabled.
+ * @return Enabled cutaway based on the view camera and crosshairs, or a disabled cutaway when the global setting is
+ * off.
  */
-std::vector<rendering::mesh::MeshClipPlane> meshClipPlanes() const;
+rendering::mesh::MeshOctantCutaway meshCutawayForView(const View& view) const;
 
 /**
  * @brief Render committed isosurfaces through the mesh path when they no longer require raycasting.
@@ -465,7 +502,7 @@ void renderSegmentationForImage(
   const glm::vec3& worldOffsetXhairs,
   const ImgSegPair& imgSegPair,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -477,8 +514,8 @@ void renderColorImageForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -491,8 +528,8 @@ void renderGrayImageForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -505,8 +542,8 @@ void renderIsoContoursForImage(
   const ImgSegPair& imgSegPair,
   const Image& image,
   const uuids::uuid& imageUid,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid,
   int displayModeUniform,
@@ -517,8 +554,8 @@ void renderVectorImageForImage(
   const glm::vec3& worldOffsetXhairs,
   const ImgSegPair& imgSegPair,
   const Image& image,
-  const RenderData::ImageUniforms& uniforms,
-  const RenderData::PlanarTextureLayout& imageTextureLayout,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
+  const rendering::PlanarTextureLayout& imageTextureLayout,
   int displayModeUniform,
   bool isFixedImage);
 
@@ -542,7 +579,7 @@ void setRaycastIsoUniforms(
   GLShaderProgram& program,
   const ImgSegPair& imgSegPair,
   const Image& image,
-  const RenderData::ImageUniforms& uniforms,
+  const rendering::RenderDerivedData::ImageUniforms& uniforms,
   bool renderWarped,
   const std::optional<uuids::uuid>& deformationUid);
 
@@ -550,37 +587,47 @@ void setRaycastIsoUniforms(
 /// @name Texture binding and deformation uniforms
 /// @{
 
+template<typename Texture>
+struct BoundTexture
+{
+  BoundTexture(Texture& textureArg, uint32_t unitArg) : texture(textureArg), unit(unitArg) {}
+
+  std::reference_wrapper<Texture> texture;
+  uint32_t unit;
+};
+
+using BoundTextures = std::list<BoundTexture<GLTexture>>;
+using BoundBufferTextures = std::list<BoundTexture<GLBufferTexture>>;
+
 /**
  * @brief Bind scalar image textures and associated color-map textures for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& p);
+BoundTextures bindScalarImageTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind multi-component color image textures for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& p);
+BoundTextures bindColorImageTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind the segmentation texture for one image/segmentation pair.
  */
-std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& p);
+BoundTextures bindSegTextures(const ImgSegPair& p);
 
 /**
  * @brief Bind a deformation field with the default deformation shader sampler slots.
  */
-std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(const uuids::uuid& defUid);
+BoundTextures bindDeformationTextures(const uuids::uuid& defUid);
 
 /**
  * @brief Bind a deformation field with explicit sampler slots.
  */
-std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(
-  const uuids::uuid& defUid,
-  const Uniforms::SamplerIndexVectorType& samplers);
+BoundTextures bindDeformationTextures(const uuids::uuid& defUid, const Uniforms::SamplerIndexVectorType& samplers);
 
 /**
  * @brief Unbind every texture returned by one of the texture binding helpers.
  */
-static void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
+static void unbindTextures(const BoundTextures& textures);
 
 /**
  * @brief Ensure that a deformation field has a GPU texture available for rendering.
@@ -607,6 +654,15 @@ void setDeformationUniforms(
   const glm::mat4& sampleTex_T_world) const;
 
 /**
+ * @brief Upload either a direct world-to-texture transform or the mutually exclusive deformation-sampling inputs.
+ */
+void setImageSamplingTransformUniforms(
+  GLShaderProgram& program,
+  const uuids::uuid& imageUid,
+  const std::optional<uuids::uuid>& deformationUid,
+  const glm::mat4& sampleTex_T_world) const;
+
+/**
  * @brief Set deformation uniforms for one input slot of a metric/comparison shader.
  */
 void setMetricDeformationUniforms(
@@ -619,19 +675,17 @@ void setMetricDeformationUniforms(
 /**
  * @brief Bind textures needed by metric and comparison shaders.
  */
-std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(
-  const CurrentImages& imageSegPairs,
-  const ViewRenderMode& metricType);
+BoundTextures bindMetricImageTextures(const CurrentImages& imageSegPairs, const ViewRenderMode& metricType);
 
 /**
  * @brief Bind buffer textures such as segmentation label color tables.
  */
-std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& p);
+BoundBufferTextures bindSegBufferTextures(const ImgSegPair& p);
 
 /**
  * @brief Unbind every buffer texture returned by a buffer texture binding helper.
  */
-static void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures);
+static void unbindBufferTextures(const BoundBufferTextures& textures);
 
 /// @}
 /// @name Image selection helpers

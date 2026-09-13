@@ -39,7 +39,7 @@ TEST_CASE("macOS LaunchServices process serial number argument is ignored", "[co
   CHECK_FALSE(params.projectFile);
 }
 
-TEST_CASE("console log level defaults to the build configuration level", "[common][input]")
+TEST_CASE("application log level defaults to the build configuration level", "[common][input]")
 {
   char app[] = "Entropy";
 
@@ -48,10 +48,10 @@ TEST_CASE("console log level defaults to the build configuration level", "[commo
   InputParams params;
   REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
 
-  CHECK(params.consoleLogLevel == logging::defaultLogLevel());
+  CHECK(params.logLevel == logging::defaultLogLevel());
 }
 
-TEST_CASE("console log level option accepts all documented spellings", "[common][input]")
+TEST_CASE("application log level option accepts all documented spellings", "[common][input]")
 {
   const std::vector<std::pair<std::string, spdlog::level::level_enum> > cases{
     {"trace", spdlog::level::trace},
@@ -73,7 +73,7 @@ TEST_CASE("console log level option accepts all documented spellings", "[common]
 
     InputParams params;
     REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
-    CHECK(params.consoleLogLevel == expectedLevel);
+    CHECK(params.logLevel == expectedLevel);
   }
 }
 

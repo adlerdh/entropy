@@ -5,24 +5,27 @@
 #include "image/ImageDerivedData.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/PixelEdgeRenderer.h"
+#include "rendering/RenderDerivedData.h"
+#include "rendering/RenderResources.h"
+#include "rendering/ViewOverlayVisibility.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
-#include "rendering/mesh/MeshCache.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
-#include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtractionService.h"
 #include "rendering/mesh/MeshDdpResources.h"
-#include "rendering/mesh/MeshGpuStore.h"
+#include "rendering/mesh/MeshResourceStore.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshPlaneIntersection.h"
 #include "rendering/mesh/MeshRenderer.h"
-#include "rendering/mesh/MeshResourceLifecycle.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
-#include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <glm/fwd.hpp>
+#include <glm/mat4x4.hpp>
 #include <uuid.h>
 
 #include <chrono>
@@ -48,9 +51,9 @@ struct NVGcontext;
  *
  * Rendering is the integration point between application state and the lower-level drawing helpers. It owns the
  * OpenGL shader programs, texture objects, NanoVG context, ASCII renderer, and pixel-edge renderer. Most persistent
- * render settings live in AppData/RenderData; this class translates those settings into current GPU state and issues
- * the draw calls for image slices, metrics, raycast isosurfaces, overlays, segmentations, annotations, landmarks, and
- * brush previews.
+ * render settings live in `AppData::renderSettings()`. This adapter translates application models into library scene
+ * and pass inputs, then issues draw calls for image slices, metrics, raycast isosurfaces, overlays, segmentations,
+ * annotations, landmarks, and brush previews.
  *
  * The class is intentionally non-copyable through its OpenGL ownership. It should be initialized after an OpenGL
  * context exists and destroyed before the context is torn down.
@@ -58,13 +61,15 @@ struct NVGcontext;
 class Rendering
 {
 public:
+  using VectorOverlayVisibility = rendering::view_overlay::Visibility;
+
   /**
    * @brief Construct the renderer and create process-local rendering helpers.
    *
    * The OpenGL context must already be current. The constructor creates the NanoVG context, logs OpenGL texture limits,
    * and compiles shader programs.
    *
-   * @param appData Shared application state used to read images, views, settings, and render data.
+   * @param appData Shared application state used to read images, views, and settings.
    */
   explicit Rendering(AppData& appData);
 
@@ -91,17 +96,6 @@ public:
    */
   void initTextures();
 
-  using Clock = std::chrono::steady_clock;
-
-  /**
-   * @brief Sleep until the requested application frame interval has elapsed.
-   *
-   * Manual frame limiting is used when the application is configured for a target frame rate below the display rate.
-   *
-   * @param[in,out] lastFrameTime Time point of the last presented frame. Updated to the current frame time.
-   */
-  void framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime);
-
   /**
    * @brief Draw the current application layout.
    */
@@ -117,7 +111,7 @@ public:
   /**
    * @brief Update sampler interpolation for one image color map texture.
    *
-   * @param colorMapIndex Index into RenderData::m_imageColorMapTextures.
+   * @param colorMapIndex Index into the application image color-map collection.
    */
   void updateImageColorMapInterpolation(std::size_t colorMapIndex);
 
@@ -279,6 +273,12 @@ public:
    */
   void setShowVectorOverlays(bool show);
 
+  /// Return the transient vector-overlay filter used by the overlay cycling action.
+  VectorOverlayVisibility vectorOverlayVisibility() const;
+
+  /// Set the transient vector-overlay filter without changing persistent overlay settings.
+  void setVectorOverlayVisibility(VectorOverlayVisibility visibility);
+
 private:
   /// Number of image slots rendered by metric and comparison shaders.
   static constexpr std::size_t NUM_METRIC_IMAGES = 2;
@@ -298,9 +298,7 @@ private:
 
   /// Logical mesh handles keyed by their geometry-producing inputs.
   using MeshGeometryKey = rendering::mesh::MeshGeometryKey;
-  using MeshGeometryKeyHash = rendering::mesh::MeshGeometryKeyHash;
   using MeshHandle = rendering::mesh::MeshHandle;
-  using MeshHandleMap = rendering::mesh::MeshHandleMap;
 
   struct MeshImagePlaneHandleKey
   {
@@ -320,15 +318,15 @@ private:
 
   struct SegmentationLabelInventory
   {
-    uint64_t pixelDataRevision = 0;                     //!< Pixel revision represented by this inventory
-    uint32_t timePoint = 0;                             //!< Time point represented by this inventory
-    rendering::mesh::SegmentationLabelInventory labels; //!< Exact labels and their occupied voxel bounds
+    rendering::mesh::SegmentationSourceIdentity identity; //!< Revisions and time represented by labels/snapshot
+    rendering::mesh::SegmentationLabelInventory labels;   //!< Exact labels and their occupied voxel bounds
+    std::shared_ptr<const Image> snapshot; //!< Temporary immutable pixels reused by pending label extractions
   };
 
   struct PendingSegmentationLabelInventory
   {
-    uint64_t pixelDataRevision = 0;
-    uint32_t timePoint = 0;
+    rendering::mesh::SegmentationSourceIdentity identity;
+    std::shared_ptr<const Image> snapshot;
     std::future<std::optional<rendering::mesh::SegmentationLabelInventory>> future;
   };
 
@@ -343,6 +341,29 @@ private:
   {
     DistanceMapGenerationRequest request;
     std::future<std::optional<DistanceMapImageResult>> future;
+  };
+
+  /// CPU geometry and placement prepared for rendering an imported mesh.
+  struct PreparedImportedMeshGeometry
+  {
+    const rendering::mesh::MeshData* geometry = nullptr;
+    glm::mat4 world_T_mesh{1.0f};
+    uint64_t geometryVersion = 0;
+  };
+
+  struct ImportedMeshPlaneIntersectorCache
+  {
+    uint64_t geometryVersion = 0;
+    std::unique_ptr<rendering::mesh::MeshPlaneIntersector> intersector;
+  };
+
+  struct ImportedMeshSliceIntersectionCache
+  {
+    uint64_t geometryVersion = 0;
+    glm::vec3 meshPlaneOrigin{0.0f};
+    glm::vec3 meshPlaneNormal{0.0f};
+    glm::mat4 world_T_mesh{1.0f};
+    std::vector<rendering::mesh::MeshPlaneIntersectionSegment> worldSegments;
   };
 
 #include "rendering/PrivateMethods.h"
@@ -398,6 +419,16 @@ private:
 
   GLShaderProgram m_meshImagePlaneDdpPeelTexture2DProgram; //!< Mesh image-plane DDP peeling shader for 2D textures
 
+  GLShaderProgram m_meshImagePlaneCompositeProgram; //!< Alpha-composes an orientation's 3D-texture image layers
+
+  GLShaderProgram m_meshImagePlaneCompositeTexture2DProgram; //!< Alpha-composes planar 2D-texture image layers
+
+  GLShaderProgram m_meshImagePlaneBorderProgram; //!< Full-screen analytic image-plane boundary stroke
+
+  GLShaderProgram m_meshImagePlaneCompositeDdpInitProgram; //!< Adds composite plane depth to DDP initialization
+
+  GLShaderProgram m_meshImagePlaneCompositeDdpPeelProgram; //!< Adds composite plane color to a DDP peel pass
+
   GLShaderProgram m_meshDdpInitProgram; //!< Mesh DDP attachment initialization shader
 
   GLShaderProgram m_meshDdpInitEdgesProgram; //!< Mesh DDP initialization shader matching the topology-edges pipeline
@@ -420,13 +451,16 @@ private:
 
   rendering::mesh::MeshAmbientOcclusionResources m_meshAmbientOcclusionResources; //!< OpenGL attachments for mesh AO
 
-  rendering::mesh::MeshCache m_meshCpuCache; //!< CPU-side extracted mesh cache
+  rendering::mesh::MeshExtractionService m_meshExtractions; //!< CPU extraction scheduler and cache
 
-  rendering::mesh::MeshExtractionQueue m_meshExtractionQueue; //!< Background CPU mesh extraction queue
+  rendering::mesh::MeshResourceStore m_meshResources; //!< Context-owned mesh handles and GPU uploads
 
-  rendering::mesh::MeshGpuStore m_meshGpuStore; //!< Uploaded mesh buffers for the current OpenGL context
-
-  MeshHandleMap m_meshHandles; //!< Stable logical mesh handles keyed by geometry-producing inputs
+  /// CPU geometry for imported meshes, retained for bounds, shadows, ambient occlusion, and picking.
+  std::unordered_map<uuids::uuid, rendering::mesh::MeshData> m_importedMeshData;
+  std::unordered_map<uuids::uuid, uint64_t> m_importedMeshVersions; //!< Cached transformed-geometry versions
+  std::unordered_map<uuids::uuid, ImportedMeshPlaneIntersectorCache> m_importedMeshPlaneIntersectors;
+  std::unordered_map<uuids::uuid, std::unordered_map<uuids::uuid, ImportedMeshSliceIntersectionCache>>
+    m_importedMeshSliceIntersections;
 
   std::unordered_map<uuids::uuid, SegmentationLabelInventory> m_segmentationLabelInventories;
   std::unordered_map<uuids::uuid, PendingSegmentationLabelInventory> m_pendingSegmentationLabelInventories;
@@ -445,7 +479,7 @@ private:
 
   bool m_isAppDoneLoadingImages; //!< True once the application has finished the startup/image-loading phase
 
-  bool m_showOverlays; //!< Global runtime overlay switch used by the view overlay cycling actions
+  VectorOverlayVisibility m_vectorOverlayVisibility; //!< Transient filter used by view-overlay cycling actions
 
   /// Refresh the CPU-side isosurface arrays consumed by the 3D raycast shader for one image.
   void updateIsosurfaceDataFor3d(
