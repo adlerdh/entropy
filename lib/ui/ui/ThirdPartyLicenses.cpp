@@ -213,7 +213,7 @@ static const LicenseEntry sk_entries[] = {
   {"nlohmann::json", "v3.12.0", "https://github.com/nlohmann/json", "MIT", "", sk_jsonDocs, count(sk_jsonDocs)},
   {"Peter Kovesi color maps",
    "2014-2018 copy",
-   "https://peterkovesi.com/projects/colourmaps",
+   "https://colorcet.holoviz.org/",
    "Creative Commons Attribution 4.0",
    "Attribution text is included in the embedded notice.",
    sk_peterKovesiDocs,

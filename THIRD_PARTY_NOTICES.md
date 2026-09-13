@@ -65,7 +65,7 @@ The following external resources have been committed directly to the Entropy rep
 | [Source Sans 3 font](https://github.com/adobe-fonts/source-sans) | None | https://github.com/adobe-fonts/source-sans | SIL Open Font License 1.1 |
 | [Space Grotesk font](https://github.com/floriankarsten/space-grotesk) | None | https://github.com/floriankarsten/space-grotesk | SIL Open Font License 1.1 |
 | Supreme font | None | https://www.fontshare.com/fonts/supreme | Fontshare Free Font License |
-| Peter Kovesi Library of Perceptually Uniform Color Maps | 2014-2018 copy | https://peterkovesi.com/projects/colourmaps | Creative Commons Attribution 4.0 |
+| Peter Kovesi Library of Perceptually Uniform Color Maps | 2014-2018 copy | https://colorcet.holoviz.org/ | Creative Commons Attribution 4.0 |
 | Matplotlib viridis, plasma, inferno, and magma color maps | None | https://bids.github.io/colormap/ | CC0-1.0 |
 | Cividis color map | None | https://www.ncl.ucar.edu/Document/Graphics/ColorTables/cividis.shtml | BSD-3-Clause |
 

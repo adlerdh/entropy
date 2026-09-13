@@ -6,7 +6,7 @@ arXiv:1509.03700 [cs.GR] 2015
 https://arxiv.org/abs/1509.03700
 
 See also:
-https://peterkovesi.com/projects/colourmaps
+https://colorcet.holoviz.org/
 
 Copyright (c) 2014-2018 Peter Kovesi
 Centre for Exploration Targeting
@@ -18,7 +18,7 @@ A summary of the conditions can be found at
 https://creativecommons.org/licenses/by/4.0/
 
 The following text is copied verbatim from Matlab code posted by Peter Kovesi at
-https://peterkovesi.com/projects/colourmaps
+https://colorcet.holoviz.org/
 
 
 Colour Map naming convention:
