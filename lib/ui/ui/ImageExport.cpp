@@ -266,7 +266,7 @@ bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid)
     segmentationUid,
     "segmentation",
     segmentation->header().fileName().parent_path(),
-    {.component = 0u},
+    {.useCompression = true, .component = 0u, .timePoint = std::nullopt, .progressCallback = {}},
     false);
 }
 } // namespace image_export

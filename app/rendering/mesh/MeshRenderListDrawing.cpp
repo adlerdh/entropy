@@ -77,6 +77,10 @@ void Rendering::reconcileExtractedMeshResources()
         .sourceUid = meshUid,
         .sourceDataVersion = 1,
         .sourceGeometryVersion = versionIt == m_importedMeshVersions.end() ? 1 : versionIt->second,
+        .component = std::nullopt,
+        .labelValue = std::nullopt,
+        .timePoint = 0,
+        .isoValue = 0.0,
         .extractionAlgorithm = "imported-surface",
         .extractionAlgorithmVersion = 1});
     }

@@ -169,6 +169,7 @@ std::optional<std::string> writeMesh(
   const auto result = io.write(mesh::MeshWriteRequest{
     .path = path,
     .mesh = &record,
+    .format = std::nullopt,
     .coordinateSpace = space,
     .imagePhysicalToWorld = transform.imagePhysicalToWorld,
     .deformation = space == mesh::MeshExportSpace::CurrentWorld && transform.forwardWarp ? &deformation : nullptr,

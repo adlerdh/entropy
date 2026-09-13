@@ -107,7 +107,8 @@ RegionStatisticsDocument statisticsDocument(
     .timePoint = image.timeAxis().clamp(image.settings().activeTimePoint()),
     .segmentationName = segmentation.settings().displayName(),
     .isVolume = volume,
-    .includesQuartiles = state.computeQuartiles};
+    .includesQuartiles = state.computeQuartiles,
+    .regions = {}};
   for (const auto& region : state.sortedRegions) {
     if (!state.includeBackground && 0 == region.label) continue;
     document.regions.push_back({.statistic = region, .name = labelName(table, region.label)});
@@ -442,7 +443,8 @@ void renderRegionStatisticsWindow(AppData& appData, RegionStatisticsController& 
     const RegionStatisticsDocument document =
       statisticsDocument(state, *image, *segmentation, table, state.result->isVolume);
     if (ImGui::Button("Copy")) {
-      ui::setClipboardPayload({.plainText = regionStatisticsDelimitedText(document, '\t')});
+      ui::setClipboardPayload(
+        {.plainText = regionStatisticsDelimitedText(document, '\t'), .html = std::nullopt, .rtf = std::nullopt});
       state.status = "Copied table to clipboard";
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Copy the displayed statistics as tab-separated text");
@@ -489,7 +491,9 @@ void renderRegionStatisticsWindow(AppData& appData, RegionStatisticsController& 
         ImGui::TextDisabled("Select a table row to display its histogram.");
       }
       else {
-        RegionHistogramOptions histogramOptions{.binCount = static_cast<std::size_t>(state.histogramBins)};
+        RegionHistogramOptions histogramOptions{
+          .binCount = static_cast<std::size_t>(state.histogramBins),
+          .valueRange = std::nullopt};
         if (state.histogramUseCustomRange) histogramOptions.valueRange = state.histogramValueRange;
         state.updateHistogram(key, *image, *segmentation, histogramLabel, histogramOptions);
         if (state.histogram && !state.histogram->binCenters.empty()) {

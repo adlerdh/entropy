@@ -70,7 +70,7 @@ public:
   TemporaryShaderDirectory(const TemporaryShaderDirectory&) = delete;
   TemporaryShaderDirectory& operator=(const TemporaryShaderDirectory&) = delete;
 
-  const std::filesystem::path& path() const noexcept
+  [[nodiscard]] const std::filesystem::path& path() const noexcept
   {
     return m_path;
   }

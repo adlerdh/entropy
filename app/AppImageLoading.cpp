@@ -1128,7 +1128,10 @@ bool EntropyApp::loadSerializedImage(
     const auto loaded = meshIo.load(mesh::MeshLoadRequest{
       .path = serializedMesh.m_path,
       .meshUid = serializedMesh.m_uid,
-      .associatedImageUid = uuids::to_string(*imageUid)});
+      .associatedImageUid = uuids::to_string(*imageUid),
+      .imagePhysicalSystem = mesh::AnatomicalCoordinateSystem::LPS,
+      .sourceToImagePhysical = std::nullopt,
+      .freeSurferCoordinates = mesh::FreeSurferCoordinatePolicy::UseEmbeddedVolumeGeometry});
     if (!loaded) {
       reportInputLoadFailure("surface mesh", serializedMesh.m_path, loaded.error().message);
       continue;
@@ -2081,7 +2084,9 @@ void EntropyApp::importSurfaceMeshesForImage(const uuids::uuid& imageUid)
        "Mesh vertices are interpreted in the image's physical subject-space coordinates. The meshes will follow "
        "the image's affine and deformation transformations.",
      .firstButton = "Choose Files",
-     .secondButton = "Cancel"});
+     .secondButton = "Cancel",
+     .thirdButton = {},
+     .severity = native_dialog::MessageDialogSeverity::Warning});
   if (confirmation && *confirmation != native_dialog::MessageDialogResult::FirstButton) {
     return;
   }
@@ -2091,7 +2096,10 @@ void EntropyApp::importSurfaceMeshesForImage(const uuids::uuid& imageUid)
     const auto loaded = meshIo.load(mesh::MeshLoadRequest{
       .path = path,
       .meshUid = uuids::to_string(generateRandomUuid()),
-      .associatedImageUid = uuids::to_string(imageUid)});
+      .associatedImageUid = uuids::to_string(imageUid),
+      .imagePhysicalSystem = mesh::AnatomicalCoordinateSystem::LPS,
+      .sourceToImagePhysical = std::nullopt,
+      .freeSurferCoordinates = mesh::FreeSurferCoordinatePolicy::UseEmbeddedVolumeGeometry});
     if (!loaded) {
       reportInputLoadFailure("surface mesh", path, loaded.error().message);
       continue;

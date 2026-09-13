@@ -404,9 +404,9 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
     CHECK(texture2d.target() == tex::Target::Texture3D);
     CHECK(texture2d.id() == texture3dId);
     // cppcheck-suppress accessMoved -- move assignment specifies that the source wrapper is reset
-    CHECK(texture3d.id() == 0u);
+    CHECK(texture3d.id() == 0u); // NOLINT(bugprone-use-after-move)
     // cppcheck-suppress accessMoved -- querying the specified reset state is intentional
-    CHECK_FALSE(texture3d.isBound());
+    CHECK_FALSE(texture3d.isBound()); // NOLINT(bugprone-use-after-move)
   }
 
   {

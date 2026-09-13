@@ -1629,7 +1629,10 @@ TEST_CASE("Image writer can select one component without changing source identit
   const fs::path sourceFileName = image.header().fileName();
   const fs::path fileName = testDirectory() / "exported-component.nrrd";
 
-  REQUIRE(image_io::writeImage(image, fileName, {.component = 1u}));
+  REQUIRE(image_io::writeImage(
+    image,
+    fileName,
+    {.useCompression = true, .component = 1u, .timePoint = std::nullopt, .progressCallback = {}}));
   CHECK(image.header().fileName() == sourceFileName);
 
   Image reloaded(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
@@ -1645,11 +1648,17 @@ TEST_CASE("Image writer reports invalid requests without throwing", "[image][exp
 
   CHECK(image_io::writeImage(image, {}).error == image_io::WriteError::EmptyPath);
   CHECK(
-    image_io::writeImage(image, testDirectory() / "invalid-component.nrrd", {.component = 2u}).error ==
-    image_io::WriteError::InvalidComponent);
+    image_io::writeImage(
+      image,
+      testDirectory() / "invalid-component.nrrd",
+      {.useCompression = true, .component = 2u, .timePoint = std::nullopt, .progressCallback = {}})
+      .error == image_io::WriteError::InvalidComponent);
   CHECK(
-    image_io::writeImage(image, testDirectory() / "invalid-time.nrrd", {.timePoint = 1u}).error ==
-    image_io::WriteError::InvalidTimePoint);
+    image_io::writeImage(
+      image,
+      testDirectory() / "invalid-time.nrrd",
+      {.useCompression = true, .component = std::nullopt, .timePoint = 1u, .progressCallback = {}})
+      .error == image_io::WriteError::InvalidTimePoint);
   CHECK(
     image_io::writeImage(image, testDirectory() / "unsupported.entropy-image").error ==
     image_io::WriteError::UnsupportedFormat);
@@ -1693,10 +1702,13 @@ TEST_CASE("Image writer reports progress and cooperatively cancels before codec 
   const image_io::WriteResult result = image_io::writeImage(
     image,
     fileName,
-    {.progressCallback = [&phases](const std::string_view phase, const std::optional<float>) {
-      phases.emplace_back(phase);
-      return phase != "Writing image file";
-    }});
+    {.useCompression = true,
+     .component = std::nullopt,
+     .timePoint = std::nullopt,
+     .progressCallback = [&phases](const std::string_view phase, const std::optional<float>) {
+       phases.emplace_back(phase);
+       return phase != "Writing image file";
+     }});
 
   CHECK(result.error == image_io::WriteError::Cancelled);
   CHECK_FALSE(phases.empty());

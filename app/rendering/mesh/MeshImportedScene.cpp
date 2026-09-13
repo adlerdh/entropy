@@ -142,6 +142,10 @@ void Rendering::appendImportedMeshesForView(
         .sourceUid = meshUid,
         .sourceDataVersion = 1,
         .sourceGeometryVersion = prepared->geometryVersion,
+        .component = std::nullopt,
+        .labelValue = std::nullopt,
+        .timePoint = 0,
+        .isoValue = 0.0,
         .extractionAlgorithm = "imported-surface",
         .extractionAlgorithmVersion = 1};
       const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
@@ -158,6 +162,7 @@ void Rendering::appendImportedMeshesForView(
         .compositingMode = rendering::mesh::compositingModeForSurfaceAlpha(
           imported->display.opacity,
           surfaceSettings.rimLightingEnabled && surfaceSettings.rimOpacityStrength > 0.0f),
+        .drawOptions = {},
         .visible = true,
         .castsShadow = true};
       renderable.drawOptions.cutaway = cutaway;
