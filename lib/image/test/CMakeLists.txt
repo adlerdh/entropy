@@ -22,8 +22,14 @@ if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
     ImageCoreTests.cpp
     SegmentationDerivedDataTests.cpp
     WarpInversionTests.cpp
+    RegionStatisticsTests.cpp
     PROPERTIES SKIP_LINTING ON
   )
+endif()
+
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
+  set_source_files_properties(ImagePublicHeaderTests.cpp PROPERTIES SKIP_LINTING ON)
 endif()
 
 target_link_libraries(TestImage PRIVATE

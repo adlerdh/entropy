@@ -4,6 +4,15 @@ add_executable(TestMeshIO
   MeshTransformTests.cpp
 )
 
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
+  set_source_files_properties(
+    MeshIOTests.cpp
+    MeshTransformTests.cpp
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_link_libraries(TestMeshIO PRIVATE
   Catch2::Catch2WithMain
   Entropy::Mesh

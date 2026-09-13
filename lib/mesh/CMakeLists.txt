@@ -59,6 +59,18 @@ set_target_properties(EntropyMesh PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
+  set_source_files_properties(
+    mesh/MeshIO.cpp
+    mesh/MeshTransform.cpp
+    mesh/private/FreeSurferCoordinates.cpp
+    mesh/private/ItkMeshCodec.cpp
+    mesh/private/VtkMeshCodec.cpp
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 entropy_enable_coverage_for_target(EntropyMesh)
 
 if(BUILD_TESTING)

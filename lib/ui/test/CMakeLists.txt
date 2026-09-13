@@ -29,6 +29,17 @@ if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   )
 endif()
 
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
+  set_source_files_properties(
+    RegionStatisticsExportTests.cpp
+    RegionStatisticsControllerTests.cpp
+    "${entropy_UI_DIR}/ui/RegionStatisticsExport.cpp"
+    "${entropy_UI_DIR}/ui/windows/RegionStatisticsController.cpp"
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_sources(TestUi PRIVATE
   "${entropy_UI_DIR}/ui/GuiData.cpp"
   "${entropy_UI_DIR}/ui/ExportJobService.cpp"

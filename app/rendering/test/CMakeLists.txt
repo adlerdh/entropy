@@ -6,6 +6,11 @@ add_executable(TestRendering
   VectorDrawingHelpersTests.cpp
 )
 
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
+  set_source_files_properties(MeshPlaneIntersectionTests.cpp PROPERTIES SKIP_LINTING ON)
+endif()
+
 target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/helpers/VectorDrawingHelpers.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionJobs.cpp"

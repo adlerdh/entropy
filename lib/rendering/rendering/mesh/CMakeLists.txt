@@ -48,6 +48,11 @@ add_library(EntropyRenderingMeshProcessing STATIC
   MeshPlaneIntersection.cpp
   PolyDataGenerator.cpp
 )
+
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
+  set_source_files_properties(MeshPlaneIntersection.cpp PROPERTIES SKIP_LINTING ON)
+endif()
 add_library(Entropy::RenderingMeshProcessing ALIAS EntropyRenderingMeshProcessing)
 
 target_link_libraries(EntropyRenderingMeshProcessing
