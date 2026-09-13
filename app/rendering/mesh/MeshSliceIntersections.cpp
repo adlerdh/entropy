@@ -78,7 +78,9 @@ void Rendering::renderImportedMeshIntersectionsForView(
     if (!pair.first) {
       continue;
     }
+
     const uuids::uuid& imageUid = *pair.first;
+
     for (const uuids::uuid& meshUid : m_appData.imageToImportedMeshUids(imageUid)) {
       const mesh::MeshRecord* imported = m_appData.importedMesh(meshUid);
       if (!imported || !imported->display.visibleIn2d || imported->display.opacity <= 0.0f) {
@@ -106,6 +108,7 @@ void Rendering::renderImportedMeshIntersectionsForView(
         }
         intersectorCache.intersector = std::make_unique<rendering::mesh::MeshPlaneIntersector>(std::move(*created));
       }
+
       if (!intersectorCache.intersector) {
         continue;
       }
@@ -115,6 +118,7 @@ void Rendering::renderImportedMeshIntersectionsForView(
                                      !sameVector(sliceCache.meshPlaneOrigin, meshPlaneOrigin) ||
                                      !sameVector(sliceCache.meshPlaneNormal, meshPlaneNormal) ||
                                      !sameMatrix(sliceCache.world_T_mesh, prepared->world_T_mesh);
+
       if (needsIntersection) {
         const auto intersections = intersectorCache.intersector->intersect(meshPlaneOrigin, meshPlaneNormal);
         if (!intersections) {
@@ -124,12 +128,14 @@ void Rendering::renderImportedMeshIntersectionsForView(
             intersections.error());
           continue;
         }
+
         sliceCache.geometryVersion = prepared->geometryVersion;
         sliceCache.meshPlaneOrigin = meshPlaneOrigin;
         sliceCache.meshPlaneNormal = meshPlaneNormal;
         sliceCache.world_T_mesh = prepared->world_T_mesh;
         sliceCache.worldSegments.clear();
         sliceCache.worldSegments.reserve(intersections->size());
+
         for (const auto& segment : *intersections) {
           sliceCache.worldSegments.push_back(
             {.first = transformPoint(prepared->world_T_mesh, segment.first),
@@ -140,6 +146,7 @@ void Rendering::renderImportedMeshIntersectionsForView(
       if (sliceCache.worldSegments.empty()) {
         continue;
       }
+
       if (!beganNvgFrame) {
         startNvgFrame(m_nvg, m_appData.windowData().viewport());
         nvgScissor(
@@ -162,17 +169,20 @@ void Rendering::renderImportedMeshIntersectionsForView(
           imported->display.opacity));
       nvgStrokeWidth(m_nvg, 1.5f);
       nvgBeginPath(m_nvg);
+
       for (const auto& segment : sliceCache.worldSegments) {
         const glm::vec2 first = helper::miewport_T_world(
           m_appData.windowData().viewport(),
           view.camera(),
           view.windowClip_T_viewClip(),
           segment.first);
+
         const glm::vec2 second = helper::miewport_T_world(
           m_appData.windowData().viewport(),
           view.camera(),
           view.windowClip_T_viewClip(),
           segment.second);
+
         nvgMoveTo(m_nvg, first.x, first.y);
         nvgLineTo(m_nvg, second.x, second.y);
       }

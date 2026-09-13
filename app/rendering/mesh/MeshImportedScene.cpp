@@ -47,12 +47,15 @@ uint64_t warpedGeometryVersion(const AppData& appData, const uuids::uuid& imageU
 {
   uint64_t version = 1;
   const glm::mat4& transform = image.transformations().worldDef_T_subject();
+
   for (glm::length_t column = 0; column < 4; ++column) {
     for (glm::length_t row = 0; row < 4; ++row) {
       hashCombine(version, std::bit_cast<uint32_t>(transform[column][row]));
     }
   }
+
   hashCombine(version, std::bit_cast<uint32_t>(image.settings().warpStrength()));
+
   if (const auto warpUid = appData.imageToActiveForwardWarpUid(imageUid)) {
     if (const Image* warp = appData.warpField(*warpUid)) {
       hashCombine(version, warp->pixelDataRevision());
@@ -78,6 +81,7 @@ std::optional<Rendering::PreparedImportedMeshGeometry> Rendering::prepareImporte
                                 m_appData.imageToActiveForwardWarpUid(imageUid).has_value();
   const uint64_t geometryVersion = applyForwardWarp ? warpedGeometryVersion(m_appData, imageUid, *image) : 1;
   auto [cpuIt, inserted] = m_importedMeshData.try_emplace(meshUid);
+
   if (inserted || m_importedMeshVersions[meshUid] != geometryVersion) {
     if (applyForwardWarp) {
       const ForwardWarpTransform deformation{m_appData, imageUid};
@@ -85,6 +89,7 @@ std::optional<Rendering::PreparedImportedMeshGeometry> Rendering::prepareImporte
         imported->geometry,
         glm::dmat4{image->transformations().worldDef_T_subject()},
         &deformation);
+
       if (!transformed) {
         spdlog::error(
           "Could not apply the image deformation to imported mesh {}: {}",
@@ -124,10 +129,12 @@ void Rendering::appendImportedMeshesForView(
     if (!pair.first) {
       continue;
     }
+
     const uuids::uuid& imageUid = *pair.first;
     if (!m_appData.image(imageUid)) {
       continue;
     }
+
     for (const uuids::uuid& meshUid : m_appData.imageToImportedMeshUids(imageUid)) {
       const mesh::MeshRecord* imported = m_appData.importedMesh(meshUid);
       if (!imported || !imported->display.visibleIn3d || imported->display.opacity <= 0.0f) {
@@ -138,6 +145,7 @@ void Rendering::appendImportedMeshesForView(
       if (!prepared || !prepared->geometry) {
         continue;
       }
+
       const rendering::mesh::MeshGeometryKey key{
         .sourceUid = meshUid,
         .sourceDataVersion = 1,
@@ -150,6 +158,7 @@ void Rendering::appendImportedMeshesForView(
         .extractionAlgorithmVersion = 1};
       const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
       const auto syncStatus = m_meshResources.synchronize(handle, *prepared->geometry);
+
       if (syncStatus == rendering::mesh::MeshGpuSyncStatus::UploadFailed) {
         continue;
       }

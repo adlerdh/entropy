@@ -1,8 +1,5 @@
 #pragma once
 
-// This header is intentionally included inside Rendering's private section. It keeps private implementation method
-// declarations out of Rendering.h's public API narrative while preserving ordinary C++ member declarations.
-
 /// @name Renderer lifecycle and shader setup
 /// @{
 

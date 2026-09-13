@@ -50,6 +50,7 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
     .diameterScenePercent = renderSettings.m_crosshairs3DGlyphDiameterScenePercent,
     .lengthScenePercent = renderSettings.m_crosshairs3DGlyphLengthScenePercent,
     .sceneDiagonalWorld = sceneDiagonalWorld};
+
   if (!rendering::mesh::shouldRenderMeshCrosshairsGlyph(inputs)) {
     return false;
   }
@@ -69,6 +70,7 @@ bool Rendering::appendMeshCrosshairsRenderableForView(
     glm::vec4{1.0f, 0.0f, 0.0f, 1.0f},
     glm::vec4{0.0f, 1.0f, 0.0f, 1.0f},
     glm::vec4{0.0f, 0.0f, 1.0f, 1.0f}};
+
   for (std::size_t axis = 0u; axis < transforms.size(); ++axis) {
     rendering::mesh::MeshMaterial material;
     material.baseColor = colors[axis];

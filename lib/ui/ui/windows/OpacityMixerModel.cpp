@@ -26,4 +26,9 @@ double blendedOpacity(std::size_t imageIndex, double mix)
   return 0.0;
 }
 
+bool shouldOpenForImageCountTransition(std::size_t previousImageCount, std::size_t currentImageCount)
+{
+  return previousImageCount <= 1 && currentImageCount > 1;
+}
+
 } // namespace ui::opacity_mixer

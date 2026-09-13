@@ -63,6 +63,7 @@ void Rendering::renderSegmentationForImage(
       : (renderWarped ? ShaderProgramType::SegmentationLinearWarped : ShaderProgramType::SegmentationLinear);
   const rendering::PlanarTextureLayout segTextureLayout =
     rendering::textureLayoutOrDefault(resources.m_segTextureLayouts, segUid);
+
   GLShaderProgram& program =
     shaderProgramForTextureDimension(m_shaderPrograms, m_shaderPrograms2D, segShaderType, segTextureLayout.dimension);
 

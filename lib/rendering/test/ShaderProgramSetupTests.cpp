@@ -436,6 +436,14 @@ TEST_CASE("mesh PBR shading uses independent neutral lighting in opaque and DDP 
   }
 }
 
+TEST_CASE("raycast gradients account for texture dimensions before transforming normals", "[rendering][shaders]")
+{
+  const std::string raycast = shader_setup::loadEmbeddedShaderSource("rendering/shaders/RaycastIso.fs");
+
+  CHECK(raycast.find("vec3 textureGradient = voxelGradient / max(u_imgInvDims") != std::string::npos);
+  CHECK(raycast.find("transpose(mat3(u_tex_T_world)) * texNormal") != std::string::npos);
+}
+
 TEST_CASE("mesh rim lighting uses the same silhouette equation in opaque and DDP shaders", "[rendering][shaders][mesh]")
 {
   const std::array shaderPaths{"rendering/shaders/mesh/Mesh.fs", "rendering/shaders/mesh/MeshDdpPeel.fs"};

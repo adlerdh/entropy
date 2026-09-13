@@ -61,6 +61,7 @@ void drawDashedLine(
   const float dashLength = 5.0f * scale;
   const float period = 9.0f * scale;
   const auto dashCount = static_cast<std::size_t>(std::ceil(length / period));
+
   for (std::size_t dashIndex = 0; dashIndex < dashCount; ++dashIndex) {
     const float offset = static_cast<float>(dashIndex) * period;
     strokeLine(
@@ -235,6 +236,7 @@ void drawLabels(
   const float totalHeight = labels[1].empty() ? lineHeight : 2.0f * lineHeight;
   const glm::vec2 position = clampedTextPosition(nvg, frameBounds, desiredPosition, labels, totalHeight, margin);
   drawShadowedText(nvg, position, labels[0], color, shadowOpacity);
+
   if (!labels[1].empty()) {
     drawShadowedText(nvg, position + glm::vec2{0.0f, lineHeight}, labels[1], color, shadowOpacity);
   }
@@ -365,6 +367,7 @@ void drawRotationGuide(
   strokeLine(nvg, center, arc.front(), guideColor, 2.0f * scale);
   strokeLine(nvg, center, arc.back(), guideColor, 2.0f * scale);
   strokePolyline(nvg, arc, guideColor, 2.25f * scale);
+
   if (arc.size() >= 2) {
     const std::size_t arrowStart = arc.size() > 7 ? arc.size() - 7 : 0;
     drawArrow(nvg, arc[arrowStart], arc.back(), shadow, 4.5f * scale, scale);
@@ -427,6 +430,7 @@ void drawScaleGuide(
     drawDashedLine(nvg, initialOutline[i], initialOutline[next], initialShadow, 2.5f * scale, scale);
     drawDashedLine(nvg, initialOutline[i], initialOutline[next], initialColor, 1.0f * scale, scale);
   }
+
   if (currentOutline.size() >= 3) {
     strokePolyline(nvg, currentOutline, shadow, 4.0f * scale, true);
     strokePolyline(nvg, currentOutline, guideColor, 1.75f * scale, true);
@@ -436,6 +440,7 @@ void drawScaleGuide(
     drawArrow(nvg, pointerStart, pointerCurrent, shadow, 5.0f * scale, scale);
     drawArrow(nvg, pointerStart, pointerCurrent, guideColor, 2.5f * scale, scale);
   }
+
   drawCenterMarker(nvg, center, shadow, guideColor, scale);
 
   if (showParameters) {

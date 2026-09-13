@@ -3312,7 +3312,7 @@ void renderImageHeader(
 
   renderDeformableTransformationsHeader();
 
-  if (ImGui::TreeNode("Imported meshes")) {
+  if (ImGui::TreeNode("Imported Meshes")) {
     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
     ImGui::TextDisabled("Surface meshes use this image's physical coordinate space and follow its transformations.");
     ImGui::PopTextWrapPos();

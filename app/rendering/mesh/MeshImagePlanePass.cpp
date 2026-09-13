@@ -87,10 +87,12 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
 
   for (std::size_t slot = 0; slot < sk_imgRgbaTexSamplers.indices.size(); ++slot) {
     GLTexture* texture = &blankTexture;
+
     if (textureImage && textureIt != renderSettings.m_imageTextures.end() && !textureIt->second.empty()) {
       const std::size_t requestedComponent = bindMultipleComponents ? slot : component;
       const bool componentExists =
         !bindMultipleComponents || requestedComponent < textureImage->header().numComponentsPerPixel();
+
       if (componentExists) {
         const std::size_t textureIndex =
           Image::MultiComponentBufferType::InterleavedImage == textureImage->bufferType() &&
@@ -100,6 +102,7 @@ std::list<BoundImagePlaneTexture> bindDdpImagePlaneTextures(
         texture = &textureIt->second.at(textureIndex);
       }
     }
+
     texture->bind(sk_imgRgbaTexSamplers.indices[slot]);
     boundTextures.push_back({*texture, static_cast<uint32_t>(sk_imgRgbaTexSamplers.indices[slot])});
   }
@@ -162,6 +165,7 @@ std::list<BoundImagePlaneBufferTexture> bindImagePlaneSegmentationLabelTableText
     segmentation ? appData.labelTableUid(segmentation->settings().labelTableIndex()) : std::nullopt;
   auto tableIt = tableUid ? appData.renderResources().m_labelBufferTextures.find(*tableUid)
                           : appData.renderResources().m_labelBufferTextures.end();
+
   if (std::end(appData.renderResources().m_labelBufferTextures) == tableIt) {
     tableIt = std::begin(appData.renderResources().m_labelBufferTextures);
   }
@@ -253,6 +257,7 @@ ImagePlaneSubjectDirections imagePlaneSubjectDirections(
   glm::vec3 rightWorld{1.0f, 0.0f, 0.0f};
   glm::vec3 upWorld{0.0f, -1.0f, 0.0f};
   const bool neurological = ViewConvention::Neurological == viewConvention;
+
   switch (orientation) {
     case rendering::mesh::MeshImagePlaneOrientation::Axial:
       normalWorld = neurological ? glm::vec3{0.0f, 0.0f, 1.0f} : glm::vec3{0.0f, 0.0f, -1.0f};
@@ -284,6 +289,7 @@ std::vector<glm::vec3> computeMeshImagePlaneSegmentationVoxelSamplingDirs(
 {
   std::vector<glm::vec3> samplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
   const std::array<glm::vec3, 2> worldAxes = imagePlaneWorldAxes(orientation);
+
   for (int i = 0; i < 2; ++i) {
     samplingDirs[i] = textureSamplingDirectionForImageVoxelOffset(geometryImage, worldAxes[i]);
   }
@@ -630,6 +636,7 @@ void drawImagePlaneRenderablesWithProgram(
       rendering::textureLayoutOrDefault(appData.renderResources().m_imageTextureLayouts, renderImageUid);
     GLShaderProgram& program =
       shaderProgramForImagePlaneTextureDimension(texture3dProgram, texture2dProgram, textureLayout.dimension);
+
     const auto boundTextures = bindDdpImagePlaneTextures(
       appData,
       imagePlane.texture.imageUid,
@@ -656,12 +663,14 @@ void drawImagePlaneRenderablesWithProgram(
       context,
       gpuData->hasNormals(),
       appData.renderSettings().m_numCheckerboardSquares);
+
     setMeshImagePlaneSegmentationUniforms(
       program,
       appData,
       imagePlane,
       uniformsIt->second,
       boundSegTexture.hasSegmentation && !boundSegBufferTextures.empty());
+
     // The border is drawn by a full-screen analytic stroke below. Suppressing the plane-local stroke lets that pass
     // generate coverage on both sides of the boundary, including when the plane itself becomes subpixel-thin.
     program.setUniform("u_imagePlaneBorderColor", glm::vec4{0.0f});
@@ -909,6 +918,7 @@ void Rendering::prepareMeshImagePlaneDdpCompositesForView(
     const rendering::mesh::MeshImagePlaneRenderList orientationList =
       rendering::mesh::imagePlaneRenderListForOrientation(list, sk_imagePlaneOrientations[index]);
     m_meshDdpResources.bindImagePlaneCompositeTarget(index);
+
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -923,6 +933,7 @@ void Rendering::prepareMeshImagePlaneDdpCompositesForView(
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
     drawImagePlaneRenderablesWithProgram(
       m_appData,
       view,

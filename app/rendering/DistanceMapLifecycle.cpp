@@ -17,12 +17,15 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
 
   Image* image = m_appData.image(imageUid);
   const auto& renderSettings = m_appData.renderSettings();
+
   if (!image || !renderSettings.m_useDistanceMapForRaycasting) {
     return;
   }
+
   if (component >= image->header().numComponentsPerPixel()) {
     return;
   }
+
   const auto imageLayoutIt = m_appData.renderResources().m_imageTextureLayouts.find(imageUid);
   if (
     imageLayoutIt == m_appData.renderResources().m_imageTextureLayouts.end() ||
@@ -35,15 +38,18 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
     image->settings().componentStatistics(component),
     renderSettings.m_distanceMapForegroundLowerPercentile,
     renderSettings.m_distanceMapForegroundUpperPercentile);
+
   const DistanceMapGenerationRequest currentRequest{
     .pixelDataRevision = image->pixelDataRevision(),
     .foregroundThresholds = foregroundThresholds};
 
   auto imageTexturesIt = m_appData.renderResources().m_distanceMapTextures.find(imageUid);
   const auto completedImageIt = m_completedDistanceMapGenerations.find(imageUid);
+
   const bool completedRequestMatches = completedImageIt != m_completedDistanceMapGenerations.end() &&
                                        completedImageIt->second.contains(component) &&
                                        completedImageIt->second.at(component) == currentRequest;
+
   if (
     imageTexturesIt != m_appData.renderResources().m_distanceMapTextures.end() &&
     imageTexturesIt->second.contains(component) && completedRequestMatches)
@@ -91,12 +97,14 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
 
     const DistanceMapGenerationRequest requested = jobIt->second.request;
     std::optional<DistanceMapImageResult> result;
+
     try {
       result = jobIt->second.future.get();
     }
     catch (const std::exception& e) {
       spdlog::warn("Distance-map generation failed for component {} of image {}: {}", component, imageUid, e.what());
     }
+
     componentJobs.erase(jobIt);
     if (componentJobs.empty()) {
       m_pendingDistanceMapGenerations.erase(imageUid);
@@ -106,6 +114,7 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
     if (!image) {
       return;
     }
+
     if (
       image->pixelDataRevision() != requested.pixelDataRevision ||
       rendering::texture_setup::distanceMapForegroundThresholds(
@@ -115,6 +124,7 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
     {
       return;
     }
+
     if (!result || !m_appData.addDistanceMap(imageUid, component, std::move(result->image), result->boundaryIsoValue)) {
       m_failedDistanceMapGenerations[imageUid].insert_or_assign(component, requested);
       return;

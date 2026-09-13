@@ -37,6 +37,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
   if (ViewType::ThreeD != view.viewType()) {
     return std::nullopt;
   }
+
   if (!m_appData.renderSettings().m_meshPickingEnabled) {
     return std::nullopt;
   }
@@ -48,6 +49,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
   const rendering::mesh::MeshOctantCutaway cutaway = meshCutawayForView(view);
   std::vector<rendering::mesh::MeshRenderable> renderables;
+
   if (view.threeDSceneContents().contains(ThreeDSceneContent::Isosurfaces)) {
     for (const ImgSegPair& imageSegPair : imageSegPairs) {
       if (!imageSegPair.first) {
@@ -95,6 +97,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           activeTimePoint,
           surface->value,
           generationOptions);
+
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
         const rendering::mesh::MeshHandle* handle = m_meshResources.findHandle(key);
         if (!handle || !m_meshExtractions.readyMesh(key)) {
@@ -121,6 +124,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
     }
   }
+
   if (view.threeDSceneContents().contains(ThreeDSceneContent::Segmentations)) {
     for (const ImgSegPair& imageSegPair : imageSegPairs) {
       if (!imageSegPair.second) {
@@ -152,16 +156,19 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           imageOpacity = static_cast<float>(image->settings().opacity());
         }
       }
+
       const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
         static_cast<float>(seg->settings().opacity()),
         imageOpacity,
         m_appData.renderSettings().m_modulateSegmentationOpacityWithImageOpacity3d);
+
       for (std::size_t labelIndex = 1; labelIndex < labelTable->numLabels(); ++labelIndex) {
         const int64_t labelValue = static_cast<int64_t>(labelIndex);
         const auto labelInfo = presentLabels->find(labelValue);
         if (labelInfo == presentLabels->end()) {
           continue;
         }
+
         const rendering::mesh::SegmentationLabelMeshState labelState{
           .showMesh = labelTable->getShowMesh(labelIndex),
           .opacity = segmentationOpacity,
@@ -169,11 +176,13 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
         if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
           continue;
         }
+
         const rendering::mesh::MeshGenerationOptions generationOptions{
           .threadCount = 0,
           .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
           .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
           .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
+
         const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
           segUid,
           seg->pixelDataRevision(),
@@ -181,8 +190,10 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
           labelValue,
           timePoint,
           generationOptions);
+
         const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
         const rendering::mesh::MeshHandle* handle = m_meshResources.findHandle(key);
+
         if (!handle || !m_meshExtractions.readyMesh(key)) {
           continue;
         }
@@ -195,6 +206,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
             normalizedLabelColor(*labelTable, labelIndex),
             labelState,
             m_appData.renderSettings().m_meshSurfaceMaterialSettings));
+
         if (labelTable->getIncludeInCutaway(labelIndex)) {
           renderable.drawOptions.cutaway = cutaway;
         }
@@ -202,9 +214,11 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
       }
     }
   }
+
   if (view.threeDSceneContents().contains(ThreeDSceneContent::ImportedMeshes)) {
     appendImportedMeshesForView(view, imageSegPairs, renderables);
   }
+
   if (view.threeDSceneContents().empty()) {
     return std::nullopt;
   }
@@ -216,6 +230,7 @@ std::optional<glm::vec3> Rendering::pickNearestMeshWorldPositionForView(const Vi
 
   const glm::vec3 worldRayOrigin = helper::world_T_ndc(view.threeDCamera(), glm::vec3{viewClipPos, -1.0f});
   const glm::vec3 worldRayDirection = helper::worldRayDirection(view.threeDCamera(), viewClipPos);
+
   const std::optional<rendering::mesh::MeshScenePickHit> hit = rendering::mesh::pickNearestRenderable(
     {.worldRay = {.origin = worldRayOrigin, .direction = worldRayDirection},
      .renderables = renderables,

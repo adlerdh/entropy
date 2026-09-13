@@ -394,15 +394,18 @@ void Rendering::updateImageTexture(
 
   const rendering::PlanarTextureLayout layout =
     rendering::textureLayoutOrDefault(m_appData.renderResources().m_imageTextureLayouts, imageUid);
+
   const auto region = rendering::texture_setup::textureUploadRegion(
     layout,
     img->header().pixelDimensions(),
     startOffsetVoxel,
     sizeInVoxels);
+
   if (!region) {
     spdlog::error("Cannot map image {} update region into its texture", imageUid);
     return;
   }
+
   T.at(component).setSubData(
     sk_mipmapLevel,
     region->offset,

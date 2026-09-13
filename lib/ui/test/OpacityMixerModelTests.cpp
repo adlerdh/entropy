@@ -21,3 +21,14 @@ TEST_CASE("opacity mixer blends between adjacent image indices", "[ui][opacity]"
   CHECK(opacity_mixer::blendedOpacity(2, 1.75) == 0.75);
   CHECK(opacity_mixer::blendedOpacity(3, 1.75) == 0.0);
 }
+
+TEST_CASE("opacity mixer opens when a load creates a multi-image comparison", "[ui][opacity]")
+{
+  CHECK(opacity_mixer::shouldOpenForImageCountTransition(0, 2));
+  CHECK(opacity_mixer::shouldOpenForImageCountTransition(1, 2));
+  CHECK(opacity_mixer::shouldOpenForImageCountTransition(1, 3));
+
+  CHECK_FALSE(opacity_mixer::shouldOpenForImageCountTransition(0, 1));
+  CHECK_FALSE(opacity_mixer::shouldOpenForImageCountTransition(2, 3));
+  CHECK_FALSE(opacity_mixer::shouldOpenForImageCountTransition(3, 1));
+}

@@ -51,6 +51,7 @@ MeshExtractionJob makeIsosurfaceExtractionJob(IsosurfaceMeshRequest request, std
         .empty = true,
         .diagnostics = {"The requested isovalue produced no surface triangles"}};
     }
+
     return MeshExtractionJobResult{
       .key = key,
       .result = MeshExtractionResult{.key = key, .mesh = std::move(*mesh), .diagnostics = {}},
@@ -64,6 +65,7 @@ MeshExtractionJob makeSegmentationExtractionJob(
   std::shared_ptr<const Image> segmentationSnapshot)
 {
   const MeshGeometryKey key = geometryKeyForRequest(request);
+
   return [request = std::move(request), key, bounds, segmentationSnapshot = std::move(segmentationSnapshot)]() mutable {
     if (!segmentationSnapshot) {
       return MeshExtractionJobResult{
@@ -79,6 +81,7 @@ MeshExtractionJob makeSegmentationExtractionJob(
       bounds,
       request.timePoint,
       MeshCoordinateSpace::ImageSubject);
+
     if (!grid) {
       return MeshExtractionJobResult{
         .key = key,
@@ -94,6 +97,7 @@ MeshExtractionJob makeSegmentationExtractionJob(
         .empty = true,
         .diagnostics = {"The segmentation label produced no surface triangles"}};
     }
+
     return MeshExtractionJobResult{
       .key = key,
       .result = MeshExtractionResult{.key = key, .mesh = std::move(*mesh), .diagnostics = {}},

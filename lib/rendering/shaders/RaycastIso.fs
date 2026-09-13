@@ -169,12 +169,17 @@ vec2 slabs(vec3 texRayPos, vec3 texRayDir)
 
 vec3 gradient(vec3 texPos)
 {
-  vec3 valueGradient = vec3(
+  vec3 voxelGradient = vec3(
     sampleImageValue(texPos + u_texGrads[0]) - sampleImageValue(texPos - u_texGrads[0]),
     sampleImageValue(texPos + u_texGrads[1]) - sampleImageValue(texPos - u_texGrads[1]),
     sampleImageValue(texPos + u_texGrads[2]) - sampleImageValue(texPos - u_texGrads[2]));
-  float magnitude2 = dot(valueGradient, valueGradient);
-  return magnitude2 > 1.0e-12 ? valueGradient * inversesqrt(magnitude2) : vec3(0.0, 0.0, 1.0);
+
+  // The finite differences above are derivatives with respect to voxel indices. Convert them to derivatives with
+  // respect to normalized texture coordinates before applying the texture-to-world covector transform. Omitting this
+  // conversion biases normals whenever the image dimensions differ between axes.
+  vec3 textureGradient = voxelGradient / max(u_imgInvDims, vec3(1.0e-12));
+  float magnitude2 = dot(textureGradient, textureGradient);
+  return magnitude2 > 1.0e-12 ? textureGradient * inversesqrt(magnitude2) : vec3(0.0, 0.0, 1.0);
 }
 
 vec3 worldNormalFromTextureGradient(vec3 texNormal)

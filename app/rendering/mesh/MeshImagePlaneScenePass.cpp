@@ -174,6 +174,7 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
       .pixelBoxCorners = image->header().pixelBBoxCorners(),
       .orientations = sk_orientations,
       .borderWidthWorld = 0.0f};
+
     const std::vector<rendering::mesh::MeshImagePlaneSceneMesh> meshes =
       rendering::mesh::buildOrthogonalImagePlaneSceneMeshes(inputs);
 
@@ -237,9 +238,11 @@ std::vector<rendering::mesh::MeshImagePlaneRenderable> Rendering::collectMeshIma
           mesh.orientation);
         renderable.boundaryVertexCount = static_cast<uint32_t>(
           std::min<std::size_t>(renderable.boundaryWorld.size(), mesh.mesh.positions.size() - 1u));
+
         for (uint32_t i = 0u; i < renderable.boundaryVertexCount; ++i) {
           renderable.boundaryWorld[i] = mesh.mesh.positions[i + 1u];
         }
+
         const float viewModulatedBorderOpacity = rendering::mesh::imagePlaneBorderOpacity(
           showImagePlaneBorders,
           uniformsIt->second.imgOpacity,

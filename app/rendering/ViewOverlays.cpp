@@ -80,6 +80,7 @@ const View* activeThreeDFrustumSource(const AppData& appData)
 {
   const WindowData& windowData = appData.windowData();
   const std::optional<uuid>& lastInteractedViewUid = appData.renderSettings().m_lastInteractedThreeDViewUid;
+
   if (lastInteractedViewUid) {
     const View* view = windowData.getCurrentView(*lastInteractedViewUid);
     if (view && canDrawFrustumForThreeDView(*view)) {
@@ -111,6 +112,7 @@ float lightboxOffsetUnitReferenceMm(const AppData& appData, const WindowData& wi
       view->offsetSetting(),
       helper::worldDirection(view->camera(), Directions::View::Front));
     const float absOffsetMm = std::abs(offsetMm);
+
     if (absOffsetMm > std::numeric_limits<float>::epsilon()) {
       minNonzeroOffsetMm = std::min(minNonzeroOffsetMm, absOffsetMm);
     }
@@ -148,6 +150,7 @@ std::vector<rendering::vector_overlay::ImageLabelEntry> imageLabelEntries(
        .isVisible = visible,
        .effectiveOpacity = visible ? effectiveOpacity : 0.0f});
   }
+
   return entries;
 }
 
@@ -178,17 +181,6 @@ void Rendering::renderVectorOverlays()
     drawLoadingOverlay(m_nvg, windowVP);
     endNvgFrame(m_nvg);
     return;
-
-    /*
-    nvgFontSize( m_nvg, 64.0f );
-    const char* txt = "Text me up.";
-    float bounds[4];
-    nvgTextBounds( m_nvg, 10, 10, txt, NULL, bounds );
-    nvgBeginPath( m_nvg );
-    // nvgRoundedRect( m_nvg, bounds[0],bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1], 0 );
-    nvgText( m_nvg, vp.width() / 2, vp.height() / 2, "Loading images...", NULL );
-    nvgFill( m_nvg );
-    */
   }
 
   if (ProjectLoadState::Loaded != m_appData.state().projectLoadState() || 0 == windowData.numLayouts()) {
@@ -312,6 +304,7 @@ void Rendering::renderVectorOverlays()
       const bool allowAnatomicalLabelsInCurrentLayout =
         !windowData.currentLayout().isLightbox() || R.m_showAnatomicalLabelsInLightboxViews;
       const AnatomicalLabelResolution anatomicalLabels = m_appData.resolvedAnatomicalLabels();
+
       if (
         showConfiguredOverlays && R.m_showAnatomicalLabels && allowAnatomicalLabelsInCurrentLayout &&
         AnatomicalLabelType::Disabled != anatomicalLabels.type)
@@ -330,6 +323,7 @@ void Rendering::renderVectorOverlays()
 
       const bool allowScaleBarsInCurrentLayout =
         !windowData.currentLayout().isLightbox() || R.m_showScaleBarsInLightboxViews;
+
       if (
         showConfiguredOverlays && R.m_showScaleBars && allowScaleBarsInCurrentLayout &&
         !suppressTwoDVectorOverlays(*view))

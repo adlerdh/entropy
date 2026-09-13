@@ -21,6 +21,7 @@
 #include "ui/toolbars/Toolbars.h"
 #include "ui/windows/Windows.h"
 #include "ui/windows/LoadingStatusModel.h"
+#include "ui/windows/OpacityMixerModel.h"
 #include "ui/windows/OpacityMixerWindow.h"
 #include "ui/windows/ExportStatusWindow.h"
 #ifdef _WIN32
@@ -435,7 +436,7 @@ struct DefaultDockLayoutFractions
   float opacityMixer = 1.0f / 3.0f;
 };
 
-DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSize)
+DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSize, std::size_t imageCount)
 {
   const float aspectRatio = dockspaceSize.y > 1.0f ? dockspaceSize.x / dockspaceSize.y : 1.0f;
   const bool wideWorkspace = aspectRatio >= 2.10f;
@@ -449,20 +450,26 @@ DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSiz
   const float rightMinSize = narrowWorkspace ? 200.0f : 240.0f;
   const float rightMaxSize = wideWorkspace ? 560.0f : 440.0f;
 
+  const std::size_t opacityMixerRows = std::max<std::size_t>(imageCount, 2) + 2;
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float opacityMixerHeight = ImGui::GetFrameHeight() + (2.0f * style.WindowPadding.y) +
+                                   (static_cast<float>(opacityMixerRows) * ImGui::GetFrameHeightWithSpacing());
+  const float opacityMixerFraction = std::clamp(opacityMixerHeight / std::max(dockspaceSize.y, 1.0f), 0.20f, 0.65f);
+
   return DefaultDockLayoutFractions{
     .leftPanel = clampedDockSplitFraction(dockspaceSize.x, leftTargetFraction, leftMinSize, leftMaxSize),
     .rightPanel = clampedDockSplitFraction(dockspaceSize.x, rightTargetFraction, rightMinSize, rightMaxSize),
     .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.10f, 120.0f, 190.0f),
-    .opacityMixer = 1.0f / 3.0f};
+    .opacityMixer = opacityMixerFraction};
 }
 
-void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
+void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const AppData& appData)
 {
   if (0 == dockspaceId) {
     return;
   }
 
-  const DockspaceGeometry geometry = mainDockspaceGeometry(guiData);
+  const DockspaceGeometry geometry = mainDockspaceGeometry(appData.guiData());
 
   ImGui::DockBuilderRemoveNode(dockspaceId);
   constexpr ImGuiDockNodeFlags k_dockspaceFlags = static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_DockSpace) |
@@ -474,18 +481,18 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
 
   ImGuiID centerNode = dockspaceId;
   ImGuiID leftNode = 0;
+  ImGuiID leftBottomNode = 0;
   ImGuiID rightNode = 0;
   ImGuiID rightMiddleNode = 0;
   ImGuiID rightBottomNode = 0;
   ImGuiID bottomNode = 0;
-  ImGuiID bottomRightNode = 0;
 
-  const DefaultDockLayoutFractions fractions = defaultDockLayoutFractions(geometry.size);
+  const DefaultDockLayoutFractions fractions = defaultDockLayoutFractions(geometry.size, appData.numImages());
 
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Left, fractions.leftPanel, &leftNode, &centerNode);
+  ImGui::DockBuilderSplitNode(leftNode, ImGuiDir_Down, fractions.opacityMixer, &leftBottomNode, &leftNode);
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Right, fractions.rightPanel, &rightNode, &centerNode);
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Down, fractions.inspector, &bottomNode, &centerNode);
-  ImGui::DockBuilderSplitNode(bottomNode, ImGuiDir_Right, fractions.opacityMixer, &bottomRightNode, &bottomNode);
   ImGui::DockBuilderSplitNode(rightNode, ImGuiDir_Down, 1.0f / 3.0f, &rightBottomNode, &rightNode);
   ImGui::DockBuilderSplitNode(rightNode, ImGuiDir_Down, 0.5f, &rightMiddleNode, &rightNode);
 
@@ -498,7 +505,7 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
   ImGui::DockBuilderDockWindow("Isosurfaces", rightBottomNode);
 
   ImGui::DockBuilderDockWindow("Voxel Inspector##InspectionWindow", bottomNode);
-  ImGui::DockBuilderDockWindow("Image Opacity Mixer", bottomRightNode);
+  ImGui::DockBuilderDockWindow("Image Opacity Mixer", leftBottomNode);
 
   ImGui::DockBuilderFinish(dockspaceId);
 }
@@ -3921,6 +3928,8 @@ void ImGuiWrapper::render()
         break;
       case MainMenuAction::ResetPanelLayout:
         ImGui::ClearIniSettings();
+        m_appData.guiData().m_showImagePropertiesWindow = true;
+        m_appData.guiData().m_showSegmentationsWindow = true;
         m_applyDefaultPanelLayout = true;
         break;
       case MainMenuAction::ToggleImGuiDemoWindow:
@@ -4292,6 +4301,12 @@ void ImGuiWrapper::render()
 
   ImGui::NewFrame();
 
+  const std::size_t imageCount = m_appData.numImages();
+  if (ui::opacity_mixer::shouldOpenForImageCountTransition(m_previousImageCount, imageCount)) {
+    m_appData.guiData().m_showOpacityBlenderWindow = true;
+  }
+  m_previousImageCount = imageCount;
+
   requestAutomaticUpdateCheckIfNeeded();
   processUpdateCheckFuture();
 
@@ -4303,7 +4318,7 @@ void ImGuiWrapper::render()
   if (hasLoadedProject) {
     const ImGuiID dockspaceId = renderMainDockspace(m_appData.guiData());
     if (m_applyDefaultPanelLayout) {
-      applyDefaultPanelDockLayout(dockspaceId, m_appData.guiData());
+      applyDefaultPanelDockLayout(dockspaceId, m_appData);
       ImGui::SaveIniSettingsToDisk(m_iniFileName.c_str());
       m_applyDefaultPanelLayout = false;
     }
@@ -4673,6 +4688,8 @@ void ImGuiWrapper::render()
           [this]() {
             ImGui::ClearIniSettings();
             ImGui::SaveIniSettingsToDisk(m_iniFileName.c_str());
+            m_appData.guiData().m_showImagePropertiesWindow = true;
+            m_appData.guiData().m_showSegmentationsWindow = true;
             m_applyDefaultPanelLayout = true;
             if (m_readjustViewport) {
               m_readjustViewport();

@@ -1,5 +1,6 @@
 #include "ui/windows/OpacityMixerWindow.h"
 
+#include "common/UuidUtility.h"
 #include "image/Image.h"
 #include "logic/app/Data.h"
 #include "rendering/RenderSettings.h"
@@ -60,8 +61,6 @@ void renderOpacityBlenderWindow(
     return;
   }
 
-  int imageIndex = 0;
-
   for (const auto& imageUid : appData.imageUidsOrdered()) {
     Image* image = appData.image(imageUid);
     if (!image) {
@@ -82,7 +81,7 @@ void renderOpacityBlenderWindow(
     const glm::vec3 frameBgHoveredColor = glm::rgbColor(glm::vec3{hue, 0.6f * sat, 0.5f * val});
     const glm::vec3 sliderGrabColor = glm::rgbColor(glm::vec3{hue, sat, val});
 
-    ImGui::PushID(imageIndex);
+    ImGui::PushID(uuids::to_string(imageUid).c_str());
 
     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(frameBgColor.r, frameBgColor.g, frameBgColor.b, 1.0f));
     ImGui::PushStyleColor(
@@ -93,7 +92,7 @@ void renderOpacityBlenderWindow(
       ImVec4(frameBgHoveredColor.r, frameBgHoveredColor.g, frameBgHoveredColor.b, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(sliderGrabColor.r, sliderGrabColor.g, sliderGrabColor.b, 1.0f));
 
-    const std::string name = imgSettings.displayName() + "##" + std::to_string(imageIndex);
+    const std::string name = imgSettings.displayName() + "##opacity";
 
     if (imgSettings.displayImageAsColor()) {
       double opacity = imgSettings.globalOpacity();

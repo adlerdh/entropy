@@ -65,6 +65,7 @@ void drawScaleBar(
     targetFraction,
     marginPx,
     lengthPrecision);
+
   if (!layout) {
     return;
   }

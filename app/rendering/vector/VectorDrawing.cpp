@@ -215,16 +215,6 @@ void drawWindowOutline(NVGcontext* nvg, const Viewport& windowViewport)
     3.0f);
   nvgClosePath(nvg);
   nvgStroke(nvg);
-
-  //        nvgStrokeWidth( nvg, 2.0f );
-  //        nvgStrokeColor( nvg, s_grey50 );
-  //        nvgRect( nvg, pad, pad, windowViewport.width() - pad, windowViewport.height() - pad );
-  //        nvgStroke( nvg );
-
-  //        nvgStrokeWidth( nvg, 1.0f );
-  //        nvgStrokeColor( nvg, s_grey60 );
-  //        nvgRect( nvg, pad, pad, windowViewport.width() - pad, windowViewport.height() - pad );
-  //        nvgStroke( nvg );
 }
 
 void drawViewOutline(NVGcontext* nvg, const FrameBounds& miewportViewBounds, const ViewOutlineMode& outlineMode)
@@ -1087,6 +1077,7 @@ void drawVectorFieldArrows(
       const glm::vec2 viewClipPos =
         vector_drawing::viewClipFromMiewport(windowViewport, view.viewClip_T_windowClip(), samplePos);
       const glm::vec2 checkerCoord = vector_drawing::checkerCoordForViewClip(viewClipPos, numCheckers, aspectRatio);
+
       if (!vector_drawing::shouldRenderFixedComparisonSample(
             view.renderMode(),
             viewClipPos,
@@ -1183,8 +1174,10 @@ void drawVectorFieldArrows(
 
       const auto sampleCountA = static_cast<std::size_t>(std::ceil(static_cast<float>(dims[axis0]) / voxelStep));
       const auto sampleCountB = static_cast<std::size_t>(std::ceil(static_cast<float>(dims[axis1]) / voxelStep));
+
       for (std::size_t sampleB = 0; sampleB < sampleCountB; ++sampleB) {
         const float b = static_cast<float>(sampleB) * voxelStep;
+
         for (std::size_t sampleA = 0; sampleA < sampleCountA; ++sampleA) {
           const float a = static_cast<float>(sampleA) * voxelStep;
           glm::vec3 pixelPos{0.0f};
@@ -1192,6 +1185,7 @@ void drawVectorFieldArrows(
           pixelPos[axis1] = b;
           pixelPos[sliceAxis] =
             (planeDistance - pixelPlaneNormal[axis0] * a - pixelPlaneNormal[axis1] * b) / pixelPlaneNormal[sliceAxis];
+
           if (
             pixelPos.x < -0.5f || pixelPos.y < -0.5f || pixelPos.z < -0.5f ||
             pixelPos.x > static_cast<float>(dims.x) - 0.5f || pixelPos.y > static_cast<float>(dims.y) - 0.5f ||
@@ -1204,6 +1198,7 @@ void drawVectorFieldArrows(
           const glm::vec3 worldPos{world_T_subject * glm::vec4{subjectPos, 1.0f}};
           const glm::vec2 samplePos =
             helper::miewport_T_world(windowViewport, view.camera(), view.windowClip_T_viewClip(), worldPos);
+
           if (!vector_drawing::isFiniteVec2(samplePos) || !vector_drawing::isInsideRect(samplePos, viewMin, viewSize)) {
             continue;
           }
@@ -1219,8 +1214,10 @@ void drawVectorFieldArrows(
         static_cast<std::size_t>(std::ceil(std::max(0.0f, viewSize.x - 0.5f * spacingPx) / spacingPx));
       const auto rowCount =
         static_cast<std::size_t>(std::ceil(std::max(0.0f, viewSize.y - 0.5f * spacingPx) / spacingPx));
+
       for (std::size_t row = 0; row < rowCount; ++row) {
         const float y = startY + static_cast<float>(row) * spacingPx;
+
         for (std::size_t column = 0; column < columnCount; ++column) {
           const float x = startX + static_cast<float>(column) * spacingPx;
           const glm::vec2 samplePos{x, y};
@@ -1323,18 +1320,3 @@ void drawCrosshairs(
 
   nvgResetScissor(nvg);
 }
-
-/// @see https://community.vcvrack.com/t/advanced-nanovg-custom-label/6769/21
-// void draw (const DrawArgs &args) override {
-//   // draw the text
-//   float bounds[4];
-//   const char* txt = "DEMO";
-//   nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE);
-//       nvgTextBounds(args.vg, 0, 0, txt, NULL, bounds);
-//       nvgBeginPath(args.vg);
-//   nvgFillColor(args.vg, nvgRGBA(0xff, 0xff, 0xff, 0xff));
-//       nvgRect(args.vg, bounds[0], bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1]);
-//       nvgFill(args.vg);
-//   nvgFillColor(args.vg, nvgRGBA(0x00, 0xff, 0x00, 0xff));
-//   nvgText(args.vg, 0, 0, txt, NULL);
-// }

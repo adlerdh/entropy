@@ -89,10 +89,12 @@ const rendering::mesh::SegmentationLabelInventory* Rendering::presentSegmentatio
       m_pendingSegmentationLabelInventories.erase(pending);
       return nullptr;
     }
+
     const rendering::mesh::SegmentationSourceIdentity snapshotIdentity = pending->second.identity;
     const bool isCurrent = rendering::mesh::sameSegmentationValues(snapshotIdentity, currentIdentity);
     std::shared_ptr<const Image> snapshot = std::move(pending->second.snapshot);
     m_pendingSegmentationLabelInventories.erase(pending);
+
     if (isCurrent && labels) {
       auto [inventory, inserted] = m_segmentationLabelInventories.insert_or_assign(
         segmentationUid,
@@ -132,6 +134,7 @@ bool Rendering::renderSegmentationMeshesForView(
   std::vector<rendering::mesh::MeshRenderable> renderables;
   std::vector<rendering::mesh::MeshRenderable> imagePlaneBorderRenderables;
   std::vector<rendering::mesh::MeshImagePlaneRenderable> imagePlaneRenderables;
+
   if (!accumulatedRenderables) {
     imagePlaneRenderables = collectMeshImagePlaneRenderablesForView(view, imagePlaneBorderRenderables);
   }
@@ -160,21 +163,25 @@ bool Rendering::renderSegmentationMeshesForView(
     if (!presentLabels) {
       continue;
     }
+
     float imageOpacity = 1.0f;
     if (imgSegPair.first) {
       if (const Image* image = m_appData.image(*imgSegPair.first)) {
         imageOpacity = static_cast<float>(image->settings().opacity());
       }
     }
+
     const float segmentationOpacity = rendering::mesh::segmentationMeshOpacity(
       static_cast<float>(seg->settings().opacity()),
       imageOpacity,
       m_appData.renderSettings().m_modulateSegmentationOpacityWithImageOpacity3d);
+
     const rendering::mesh::MeshGenerationOptions generationOptions{
       .threadCount = 0,
       .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
       .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
       .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
+
     renderables.reserve(renderables.size() + labelTable->numLabels());
     std::shared_ptr<const Image> segmentationSnapshot;
     bool snapshotNeededForFutureSubmission = false;
@@ -185,6 +192,7 @@ bool Rendering::renderSegmentationMeshesForView(
       if (labelInfo == presentLabels->end()) {
         continue;
       }
+
       const rendering::mesh::SegmentationLabelMeshState labelState{
         .showMesh = labelTable->getShowMesh(labelIndex),
         .opacity = segmentationOpacity,
@@ -192,6 +200,7 @@ bool Rendering::renderSegmentationMeshesForView(
       if (!rendering::mesh::shouldRenderSegmentationLabelMesh(labelState)) {
         continue;
       }
+
       const rendering::mesh::SegmentationMeshRequest request = rendering::mesh::makeScalarGridSegmentationRequest(
         segUid,
         seg->pixelDataRevision(),
@@ -199,6 +208,7 @@ bool Rendering::renderSegmentationMeshesForView(
         labelValue,
         timePoint,
         generationOptions);
+
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
       const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
 

@@ -259,6 +259,7 @@ bool createMeshImagePlaneDdpProgram(
     loadShaderFile("rendering/shaders/mesh/MeshImagePlaneDisplay.glsl");
   dimensionReplacements["DDP_DEPTH_FUNCTIONS"] = loadShaderFile("rendering/shaders/mesh/MeshDdpDepth.glsl");
   std::string fsTemplate = loadShaderFile(fragmentShaderPath);
+
   if (compositeShader) {
     const std::size_t versionLineEnd = fsTemplate.find('\n');
     if (versionLineEnd == std::string::npos) {
@@ -266,6 +267,7 @@ bool createMeshImagePlaneDdpProgram(
     }
     fsTemplate.insert(versionLineEnd + 1u, "#define IMAGE_PLANE_COMPOSITE_PASS\n");
   }
+
   const std::string fsSource = rendering::preprocessShaderSource(fsTemplate, dimensionReplacements);
 
   Uniforms fsUniforms = imageShaderInfo.fsUniforms;
@@ -275,6 +277,7 @@ bool createMeshImagePlaneDdpProgram(
     fsUniforms.setRequired("u_cmapHsvModFactors", false);
     fsUniforms.setRequired("u_applyHsvMod", false);
   }
+
   fsUniforms.insertUniform("u_imgRgbaTex", UniformType::SamplerVector, Uniforms::SamplerIndexVectorType{{0, 1, 2, 3}});
   fsUniforms.insertUniform("u_componentRenderMode", UniformType::Int, 0);
   fsUniforms.insertUniform("u_imgSlopeInterceptRgba", UniformType::Vec2Vector, std::vector<glm::vec2>(4));
@@ -306,6 +309,7 @@ bool createMeshImagePlaneDdpProgram(
   fsUniforms.insertUniform("u_viewportOrigin", UniformType::Vec2, glm::vec2{0.0f});
   fsUniforms.insertUniform("u_viewportSize", UniformType::Vec2, glm::vec2{1.0f});
   fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, glm::mat4{1.0f});
+
   if (peelShader && !compositeShader) {
     fsUniforms.insertUniform(
       "u_previousDepthBoundsTex",
@@ -380,6 +384,7 @@ bool Rendering::createMeshAmbientOcclusionResolveProgram(GLShaderProgram& progra
   fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
   fsUniforms.insertUniform("u_strength", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_sampleCount", UniformType::Int, 24);
+
   return createFullscreenMeshProgram(
     program,
     "rendering/shaders/mesh/AmbientOcclusionResolve.fs",
@@ -397,6 +402,7 @@ bool Rendering::createMeshAmbientOcclusionFilterProgram(GLShaderProgram& program
   fsUniforms.insertUniform("u_radiusMm", UniformType::Float, 5.0f);
   fsUniforms.insertUniform("u_power", UniformType::Float, 1.5f);
   fsUniforms.insertUniform("u_contrast", UniformType::Float, 1.0f);
+
   return createFullscreenMeshProgram(
     program,
     "rendering/shaders/mesh/AmbientOcclusionFilter.fs",
@@ -510,6 +516,7 @@ bool Rendering::createMeshImagePlaneCompositeDdpInitProgram(GLShaderProgram& pro
   uniforms.insertUniform("u_compositeColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{9});
   uniforms.insertUniform("u_compositeDepthTex", UniformType::Sampler, Uniforms::SamplerIndexType{10});
   uniforms.insertUniform("u_ddpDepthOrder", UniformType::UInt, 0u);
+
   return createFullscreenMeshDdpProgram(
     program,
     "rendering/shaders/mesh/MeshImagePlaneCompositeDdpInit.fs",
@@ -524,6 +531,7 @@ bool Rendering::createMeshImagePlaneCompositeDdpPeelProgram(GLShaderProgram& pro
   uniforms.insertUniform("u_previousDepthBoundsTex", UniformType::Sampler, Uniforms::SamplerIndexType{7});
   uniforms.insertUniform("u_previousFrontColorTex", UniformType::Sampler, Uniforms::SamplerIndexType{8});
   uniforms.insertUniform("u_ddpDepthOrder", UniformType::UInt, 0u);
+
   return createFullscreenMeshDdpProgram(
     program,
     "rendering/shaders/mesh/MeshImagePlaneCompositeDdpPeel.fs",
@@ -560,6 +568,7 @@ bool Rendering::createMeshDdpPeelProgram(GLShaderProgram& program)
     "rendering/shaders/mesh/MeshDdpPeel.fs",
     loadMeshDdpShaderFile("rendering/shaders/mesh/MeshDdpPeel.fs"),
     std::move(fsUniforms));
+
   return linkMeshProgram(program);
 }
 
@@ -579,6 +588,7 @@ bool Rendering::createMeshDdpPeelEdgesProgram(GLShaderProgram& program)
     "rendering/shaders/mesh/MeshDdpPeel.fs",
     loadMeshDdpShaderFile("rendering/shaders/mesh/MeshDdpPeel.fs"),
     std::move(fsUniforms));
+
   return linkMeshProgram(program);
 }
 

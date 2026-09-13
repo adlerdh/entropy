@@ -62,11 +62,13 @@ void Rendering::renderVectorImageForImage(
                ? ShaderProgramType::VectorSignedNormalProjectionCubic
                : ShaderProgramType::VectorSignedNormalProjectionLinear;
     }
+
     if (planarProjection) {
       return InterpolationMode::CubicBsplineConvolution == interpolationMode
                ? ShaderProgramType::VectorPlanarProjectionColorCubic
                : ShaderProgramType::VectorPlanarProjectionColorLinear;
     }
+
     return InterpolationMode::CubicBsplineConvolution == interpolationMode
              ? ShaderProgramType::VectorDirectionColorCubic
              : ShaderProgramType::VectorDirectionColorLinear;

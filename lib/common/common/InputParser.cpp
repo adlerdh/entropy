@@ -1,19 +1,18 @@
 #include "common/InputParser.h"
 #include "common/LoggingDefaults.h"
-#include <spdlog/fmt/std.h>
 #include "BuildStamp.h"
 
 #undef max
 
 #include <CLI/CLI.hpp>
 
-// clang-format off
+#include <spdlog/common.h>
+#include <spdlog/fmt/std.h> // IWYU pragma: keep -- formats std::filesystem::path
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
-// clang-format on
 
 #include <algorithm> // std::equal
-#include <cctype>    // std::tolower
+#include <cstddef>
+#include <cctype> // std::tolower
 #include <filesystem>
 #include <functional>
 #include <iostream>

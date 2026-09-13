@@ -104,6 +104,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
         .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
         .smoothingIterations = m_appData.renderSettings().m_meshSmoothingIterations,
         .smoothingPassBand = m_appData.renderSettings().m_meshSmoothingPassBand};
+
       const rendering::mesh::IsosurfaceMeshRequest request = rendering::mesh::makeScalarGridIsosurfaceRequest(
         imageUid,
         image->pixelDataRevision(),
@@ -112,6 +113,7 @@ bool Rendering::renderIsosurfaceMeshesForView(
         activeTimePoint,
         surface->value,
         generationOptions);
+
       const rendering::mesh::MeshGeometryKey key = rendering::mesh::geometryKeyForRequest(request);
       const rendering::mesh::MeshHandle handle = m_meshResources.handleFor(key);
 
@@ -152,8 +154,10 @@ bool Rendering::renderIsosurfaceMeshesForView(
           globalMaterial.rimLightingEnabled,
           globalMaterial.rimOpacityStrength),
         .visible = surface->visibleIn3d};
+
       rendering::mesh::MeshRenderable renderable =
         rendering::mesh::makeIsosurfaceRenderable(handle, image->transformations().worldDef_T_subject(), style);
+
       if (surface->includeInCutaway) {
         renderable.drawOptions.cutaway = cutaway;
       }
@@ -205,6 +209,7 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
   const bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
   const bool isosurfaceMeshesReady =
     !renderIsosurfaces || renderIsosurfaceMeshesForView(view, imageSegPairs, &renderables);
+
   if (contents.contains(ThreeDSceneContent::Segmentations)) {
     renderSegmentationMeshesForView(view, &renderables);
   }
@@ -233,6 +238,7 @@ bool Rendering::renderCombinedSurfaceMeshesForView(const View& view)
     const rendering::mesh::MeshRenderList list = rendering::mesh::buildRenderList(scene.renderables());
     drawMeshRenderListForView(view, list, &imagePlaneList);
   }
+
   if (renderIsosurfaces && !isosurfaceMeshesReady) {
     renderVolumeImagesForView(view, true);
   }

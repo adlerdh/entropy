@@ -145,10 +145,8 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
         if ( const Image* refImg = m_appData.refImage() )
         {
             /// @note \c img->transformations().subject_T_worldDef() is the contactenation of
-            /// both the initial loaded affine tx and the manually applied affine tx for the given
-    image.
-            /// It used here, since when the given image is locked to the reference image, the tx
-    from
+            /// both the initial loaded affine tx and the manually applied affine tx for the given image.
+            /// It used here, since when the given image is locked to the reference image, the tx from
             /// World space to image Subject space (\c img->transformations().subject_T_worldDef() )
             /// is repurposed as the tx from reference image Subject space to image Subject space.
             const glm::mat4& imgSubject_T_refSubject = img->transformations().subject_T_worldDef();

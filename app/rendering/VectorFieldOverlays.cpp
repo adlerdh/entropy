@@ -42,6 +42,7 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
 
     const uuid& imageUid = *imgSegPair.first;
     const Image* image = m_appData.image(imageUid);
+
     if (
       !image || image->header().numComponentsPerPixel() != 3u || !image->settings().globalVisibility() ||
       !image->settings().vectorWarpedGridVisible() || activeRenderableDeformationUid(imageUid).has_value())
@@ -49,6 +50,7 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
       isFixedImage = false;
       continue;
     }
+
     if (resources.m_imageTextures.find(imageUid) == resources.m_imageTextures.end()) {
       isFixedImage = false;
       continue;
@@ -58,6 +60,7 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
     const rendering::PlanarTextureLayout imageTextureLayout =
       rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, ImgSegPair{imageUid, std::nullopt}.first);
     GLShaderProgram* program = nullptr;
+
     switch (settings.colorInterpolationMode()) {
       case InterpolationMode::NearestNeighbor:
       case InterpolationMode::Linear:

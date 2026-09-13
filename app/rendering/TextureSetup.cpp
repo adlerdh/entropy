@@ -880,6 +880,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
 
     const ComponentType compType = seg->header().memoryComponentType();
     const glm::uvec3 textureSize = seg->header().pixelDimensions();
+
     if (seg->header().numComponentsPerPixel() != 1u || !isValidSegmentationComponentType(compType)) {
       const std::string reason = seg->header().numComponentsPerPixel() != 1u
                                    ? "Segmentations must contain exactly one component per voxel"
@@ -895,8 +896,10 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
         reason));
       continue;
     }
+
     const std::optional<texture_setup::TextureUploadLayout> uploadLayout =
       texture_setup::textureUploadLayoutForImage(textureSize, textureLimits);
+
     if (!uploadLayout) {
       spdlog::error(
         "Segmentation {} ('{}') has dimensions {} and cannot be uploaded as an OpenGL texture. {}",
@@ -914,6 +917,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
         texture_setup::textureLimitReason(textureSize, textureLimits)));
       continue;
     }
+
     if (rendering::TextureDimension::Texture2D == uploadLayout->layout.dimension && shouldLogPlanarSegUpload(segUid)) {
       spdlog::info(
         "Segmentation {} ('{}') exceeds GL_MAX_3D_TEXTURE_SIZE but is planar; uploading as GL_TEXTURE_2D with axes "
@@ -955,6 +959,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_r
       appData.renderResources().m_segTextures.insert_or_assign(segUid, std::move(texture));
       appData.renderResources().m_segTextureLayouts[segUid] = uploadLayout->layout;
     }
+
     catch (const std::exception& e) {
       spdlog::error(
         "Segmentation {} ('{}') texture upload failed: {}",

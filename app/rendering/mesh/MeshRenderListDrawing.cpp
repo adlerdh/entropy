@@ -71,6 +71,7 @@ void Rendering::reconcileExtractedMeshResources()
     if (!image) {
       continue;
     }
+
     for (const uuids::uuid& meshUid : m_appData.imageToImportedMeshUids(imageUid)) {
       const auto versionIt = m_importedMeshVersions.find(meshUid);
       liveKeys.insert(rendering::mesh::MeshGeometryKey{
@@ -84,13 +85,16 @@ void Rendering::reconcileExtractedMeshResources()
         .extractionAlgorithm = "imported-surface",
         .extractionAlgorithmVersion = 1});
     }
+
     const uint32_t component = image->settings().activeComponent();
     const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
+
     for (const uuids::uuid& surfaceUid : m_appData.isosurfaceUids(imageUid, component)) {
       const Isosurface* surface = m_appData.isosurface(imageUid, component, surfaceUid);
       if (!surface) {
         continue;
       }
+
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
         .smoothSurface = m_appData.renderSettings().m_smoothIsosurfaceMeshes,
@@ -112,11 +116,13 @@ void Rendering::reconcileExtractedMeshResources()
     if (!segmentation) {
       continue;
     }
+
     const auto tableUid = m_appData.labelTableUid(segmentation->settings().labelTableIndex());
     const ParcellationLabelTable* labelTable = tableUid ? m_appData.labelTable(*tableUid) : nullptr;
     if (!labelTable) {
       continue;
     }
+
     const uint32_t timePoint = segmentation->timeAxis().clamp(segmentation->settings().activeTimePoint());
     const auto inventory = m_segmentationLabelInventories.find(segmentationUid);
     const bool inventoryIsCurrent =
@@ -130,6 +136,7 @@ void Rendering::reconcileExtractedMeshResources()
       if (inventoryIsCurrent && !inventory->second.labels.contains(static_cast<int64_t>(labelIndex))) {
         continue;
       }
+
       const rendering::mesh::MeshGenerationOptions generationOptions{
         .threadCount = 0,
         .smoothSurface = m_appData.renderSettings().m_smoothSegmentationMeshes,
@@ -147,11 +154,13 @@ void Rendering::reconcileExtractedMeshResources()
 
   m_meshExtractions.retainOnly(liveKeys);
   m_meshResources.retainOnly(liveKeys);
+
   std::erase_if(m_importedMeshData, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
   std::erase_if(m_importedMeshVersions, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
   std::erase_if(m_importedMeshPlaneIntersectors, [this](const auto& entry) {
     return !m_appData.importedMesh(entry.first);
   });
+
   for (auto& viewIntersections : m_importedMeshSliceIntersections) {
     std::erase_if(viewIntersections.second, [this](const auto& entry) { return !m_appData.importedMesh(entry.first); });
   }
@@ -216,6 +225,7 @@ void Rendering::drawMeshRenderListForView(
   glGetIntegerv(GL_VIEWPORT, viewViewport.data());
 
   const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
+
   rendering::mesh::MeshDrawContext context = rendering::mesh::meshDrawContextForView(
     m_meshResources.gpuStore(),
     view,
@@ -224,10 +234,12 @@ void Rendering::drawMeshRenderListForView(
       renderSettings.m_lightingDiffuse,
       renderSettings.m_lightingSpecular,
       renderSettings.m_lightingSpecularPower});
+
   context.viewportOrigin = glm::ivec2{viewViewport[0], viewViewport[1]};
   context.triangleEdgesEnabled = renderSettings.m_meshSurfaceMaterialSettings.triangleEdgesEnabled;
   const bool useTriangleGeometryProgram =
     rendering::mesh::requiresMeshGeometryShader(renderSettings.m_meshSurfaceMaterialSettings);
+
   context.advancedLighting = rendering::mesh::meshAdvancedLightingPlan(
     renderSettings.m_meshAdvancedLightingSettings,
     rendering::mesh::MeshAdvancedLightingCapabilities{
@@ -236,18 +248,22 @@ void Rendering::drawMeshRenderListForView(
 
   const auto cpuMeshLookup = [this](const rendering::mesh::MeshHandle& handle) -> const rendering::mesh::MeshData* {
     const rendering::mesh::MeshGeometryKey* key = m_meshResources.findKey(handle);
+
     if (!key) {
       return nullptr;
     }
+
     if (const rendering::mesh::MeshData* extracted = m_meshExtractions.readyMesh(*key)) {
       return extracted;
     }
+
     const auto imported = m_importedMeshData.find(key->sourceUid);
     return imported == m_importedMeshData.end() ? nullptr : &imported->second;
   };
 
   const std::optional<rendering::mesh::MeshBounds> sceneBounds =
     rendering::mesh::computeWorldBounds(list, cpuMeshLookup);
+
   if (
     context.advancedLighting.shadows.state == rendering::mesh::MeshAdvancedLightingFeatureState::Enabled && sceneBounds)
   {
@@ -257,6 +273,7 @@ void Rendering::drawMeshRenderListForView(
       rendering::mesh::shadowCastingRenderables(list);
 
     rendering::mesh::MeshDrawContext shadowContext = context;
+
     if (projection) {
       shadowContext.clip_T_world = projection->lightClip_T_world;
       shadowContext.lightDirectionWorld = projection->lightDirectionWorld;
@@ -286,6 +303,7 @@ void Rendering::drawMeshRenderListForView(
     aoContext.shadowDepthTexture = nullptr;
     aoContext.advancedLighting.ambientOcclusion.state = rendering::mesh::MeshAdvancedLightingFeatureState::Disabled;
     aoContext.ambientOcclusionTexture = nullptr;
+
     if (rendering::mesh::renderMeshAmbientOcclusion(rendering::mesh::MeshAmbientOcclusionRenderRequest{
           .resources = m_meshAmbientOcclusionResources,
           .renderables = aoRenderables,
@@ -308,9 +326,11 @@ void Rendering::drawMeshRenderListForView(
       ddpSettings,
       static_cast<uint32_t>(rendering::mesh::visibleImagePlaneOrientationCount(*imagePlaneList)));
   }
+
   for (const std::string& diagnostic : rendering::mesh::meshDdpDiagnostics(ddpPlan, ddpSettings)) {
     spdlog::debug("{}", diagnostic);
   }
+
   if (ddpPlan.active) {
     const std::vector<std::reference_wrapper<const rendering::mesh::MeshRenderable>> ddpRenderables =
       ddpSurfaceRenderables(list);

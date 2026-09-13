@@ -13,4 +13,14 @@ namespace ui::opacity_mixer
  */
 double blendedOpacity(std::size_t imageIndex, double mix);
 
+/**
+ * @brief Return whether loading images should automatically open the opacity mixer.
+ *
+ * The mixer opens when the number of loaded images crosses from at most one to
+ * more than one. This leaves users free to close it while working with the
+ * current set of images, while reopening it when a later load again creates a
+ * multi-image comparison.
+ */
+bool shouldOpenForImageCountTransition(std::size_t previousImageCount, std::size_t currentImageCount);
+
 } // namespace ui::opacity_mixer

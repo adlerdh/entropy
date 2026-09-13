@@ -67,6 +67,7 @@ componentBufferView(const Image& image, const uint32_t component, const uint32_t
   if (!values) {
     return std::nullopt;
   }
+
   return ComponentBufferView{
     .values = values,
     .pixelStride = interleaved ? image.header().numComponentsPerPixel() : 1u,
@@ -80,6 +81,7 @@ scanSparseLabels(const T* const values, const ComponentBufferView& view, const g
   SegmentationLabelInventory labels;
   const std::size_t width = dims.x;
   const std::size_t sliceSize = width * dims.y;
+
   for (uint32_t z = 0; z < dims.z; ++z) {
     for (uint32_t y = 0; y < dims.y; ++y) {
       for (uint32_t x = 0; x < dims.x; ++x) {
@@ -89,6 +91,7 @@ scanSparseLabels(const T* const values, const ComponentBufferView& view, const g
         // NOLINTBEGIN(bugprone-signed-char-misuse,cert-str34-c)
         const int64_t label = static_cast<int64_t>(values[index * view.pixelStride + view.componentOffset]);
         // NOLINTEND(bugprone-signed-char-misuse,cert-str34-c)
+
         const glm::uvec3 voxel{x, y, z};
         auto [labelIt, inserted] =
           labels.try_emplace(label, SegmentationLabelBounds{.minVoxel = voxel, .maxVoxel = voxel});
@@ -96,6 +99,7 @@ scanSparseLabels(const T* const values, const ComponentBufferView& view, const g
           labelIt->second.minVoxel = glm::min(labelIt->second.minVoxel, voxel);
           labelIt->second.maxVoxel = glm::max(labelIt->second.maxVoxel, voxel);
         }
+
         const auto recordSharedBoundary = [&labels, label](const int64_t neighbor) {
           if (label == 0 || neighbor == 0 || label == neighbor) {
             return;
@@ -103,6 +107,7 @@ scanSparseLabels(const T* const values, const ComponentBufferView& view, const g
           labels.at(label).hasSharedBoundary = true;
           labels.at(neighbor).hasSharedBoundary = true;
         };
+
         if (x > 0u) {
           recordSharedBoundary(static_cast<int64_t>(values[(index - 1u) * view.pixelStride + view.componentOffset]));
         }
@@ -129,12 +134,14 @@ scanDenseLabels(const T* const values, const ComponentBufferView& view, const gl
   std::vector<bool> present(labelCapacity, false);
   const std::size_t width = dims.x;
   const std::size_t sliceSize = width * dims.y;
+
   for (uint32_t z = 0; z < dims.z; ++z) {
     for (uint32_t y = 0; y < dims.y; ++y) {
       for (uint32_t x = 0; x < dims.x; ++x) {
         const std::size_t index = static_cast<std::size_t>(z) * sliceSize + static_cast<std::size_t>(y) * width + x;
         const std::size_t label = values[index * view.pixelStride + view.componentOffset];
         const glm::uvec3 voxel{x, y, z};
+
         if (!present[label]) {
           present[label] = true;
           bounds[label] = SegmentationLabelBounds{.minVoxel = voxel, .maxVoxel = voxel};
@@ -143,6 +150,7 @@ scanDenseLabels(const T* const values, const ComponentBufferView& view, const gl
           bounds[label].minVoxel = glm::min(bounds[label].minVoxel, voxel);
           bounds[label].maxVoxel = glm::max(bounds[label].maxVoxel, voxel);
         }
+
         const auto recordSharedBoundary = [&bounds, label](const std::size_t neighbor) {
           if (label == 0u || neighbor == 0u || label == neighbor) {
             return;
@@ -150,6 +158,7 @@ scanDenseLabels(const T* const values, const ComponentBufferView& view, const gl
           bounds[label].hasSharedBoundary = true;
           bounds[neighbor].hasSharedBoundary = true;
         };
+
         if (x > 0u) {
           recordSharedBoundary(values[(index - 1u) * view.pixelStride + view.componentOffset]);
         }
@@ -185,6 +194,7 @@ void fillBinaryLabelMask(
 {
   const std::size_t sourceWidth = sourceDimensions.x;
   const std::size_t sourceSliceSize = sourceWidth * sourceDimensions.y;
+
   for (uint32_t z = 0; z < occupiedSize.z; ++z) {
     for (uint32_t y = 0; y < occupiedSize.y; ++y) {
       for (uint32_t x = 0; x < occupiedSize.x; ++x) {
@@ -196,6 +206,7 @@ void fillBinaryLabelMask(
         const int64_t value = static_cast<int64_t>(values[sourceIndex * view.pixelStride + view.componentOffset]);
         // NOLINTEND(bugprone-signed-char-misuse,cert-str34-c)
         const glm::uvec3 croppedVoxel = glm::uvec3{x, y, z} + glm::uvec3{1u};
+
         grid.values[scalarGridValueIndex(grid.dimensions, croppedVoxel.x, croppedVoxel.y, croppedVoxel.z)] =
           value == labelValue ? 1.0f : 0.0f;
       }
@@ -209,13 +220,16 @@ std::optional<std::size_t> voxelCount(const glm::uvec3 dimensions)
   const std::size_t x = dimensions.x;
   const std::size_t y = dimensions.y;
   const std::size_t z = dimensions.z;
+
   if (x != 0u && y > maximum / x) {
     return std::nullopt;
   }
+
   const std::size_t xy = x * y;
   if (xy != 0u && z > maximum / xy) {
     return std::nullopt;
   }
+
   return xy * z;
 }
 
@@ -232,10 +246,12 @@ segmentationLabelInventory(const Image& image, const uint32_t component, const u
   if (glm::any(glm::greaterThan(dimensions, glm::uvec3{std::numeric_limits<int>::max()}))) {
     return std::nullopt;
   }
+
   const std::optional<ComponentBufferView> buffer = componentBufferView(image, component, timePoint);
   if (!buffer) {
     return std::nullopt;
   }
+
   switch (image.header().memoryComponentType()) {
     case ComponentType::Int8:
       return scanSparseLabels(static_cast<const int8_t*>(buffer->values), *buffer, dimensions);
@@ -262,12 +278,14 @@ segmentationLabelInventory(const Image& image, const uint32_t component, const u
         if (!value) {
           return std::nullopt;
         }
+
         const glm::uvec3 voxel{i, j, k};
         auto [it, inserted] = labels.try_emplace(*value, SegmentationLabelBounds{.minVoxel = voxel, .maxVoxel = voxel});
         if (!inserted) {
           it->second.minVoxel = glm::min(it->second.minVoxel, voxel);
           it->second.maxVoxel = glm::max(it->second.maxVoxel, voxel);
         }
+
         const auto recordSharedBoundary =
           [&image, component, timePoint, &labels, value](const int x, const int y, const int z) {
             const std::optional<int64_t> neighbor = image.value<int64_t>(component, x, y, z, timePoint);
@@ -277,6 +295,7 @@ segmentationLabelInventory(const Image& image, const uint32_t component, const u
             labels.at(*value).hasSharedBoundary = true;
             labels.at(*neighbor).hasSharedBoundary = true;
           };
+
         if (i > 0u) {
           recordSharedBoundary(static_cast<int>(i - 1u), static_cast<int>(j), static_cast<int>(k));
         }
@@ -350,6 +369,7 @@ std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
   if (!numVoxels) {
     return std::nullopt;
   }
+
   grid.values.assign(*numVoxels, 0.0f);
   grid.grid_T_voxelIndex = (MeshCoordinateSpace::World == coordinateSpace ? image.transformations().worldDef_T_pixel()
                                                                           : image.transformations().subject_T_pixel()) *
@@ -359,6 +379,7 @@ std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
   if (!buffer) {
     return std::nullopt;
   }
+
   switch (image.header().memoryComponentType()) {
     case ComponentType::Int8:
       fillBinaryLabelMask(
@@ -437,6 +458,7 @@ std::optional<ScalarGrid3D> labelMaskGridFromImageComponent(
         if (!value) {
           return std::nullopt;
         }
+
         const glm::uvec3 croppedVoxel = glm::uvec3{x, y, z} + glm::uvec3{1u};
         grid.values[scalarGridValueIndex(grid.dimensions, croppedVoxel.x, croppedVoxel.y, croppedVoxel.z)] =
           *value == labelValue ? 1.0f : 0.0f;

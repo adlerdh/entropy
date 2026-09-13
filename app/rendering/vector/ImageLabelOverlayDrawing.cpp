@@ -78,6 +78,7 @@ float entryWidth(NVGcontext* nvg, const ImageLabelEntry& entry, const Metrics& m
   nvgFontSize(nvg, m.fontSize);
   const float initialWidth = m.swatchSize + m.gap + textWidth(nvg, entry.displayName);
   const auto badges = imageRoleBadgeLabels(entry);
+
   return std::accumulate(badges.begin(), badges.end(), initialWidth, [nvg, &m](float width, std::string_view badge) {
     return badge.empty() ? width : width + m.gap + badgeWidth(nvg, badge, m);
   });
@@ -88,6 +89,7 @@ void drawShadowedText(NVGcontext* nvg, float x, float y, std::string_view text, 
   nvgFontSize(nvg, m.fontSize);
   nvgFontBlur(nvg, m.shadowBlur);
   nvgFillColor(nvg, nvgRGBA(0, 0, 0, 250));
+
   for (const std::array<float, 2>& offset : std::array{
          std::array{-m.shadowOffset, -m.shadowOffset},
          std::array{m.shadowOffset, -m.shadowOffset},
@@ -121,6 +123,7 @@ float drawBadge(NVGcontext* nvg, float x, float lineTop, std::string_view text, 
   nvgFillColor(nvg, nvgRGBA(230, 230, 230, 255));
   nvgText(nvg, x + 0.5f * width, y + 0.5f * m.badgeHeight, text.data(), text.data() + text.size());
   nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+
   return width;
 }
 
@@ -145,6 +148,7 @@ void drawEntry(NVGcontext* nvg, float x, float lineTop, const ImageLabelEntry& e
   else {
     const float half = 0.5f * m.swatchSize;
     const std::array<NVGcolor, 2> checkerColors{nvgRGBA(210, 210, 210, 255), nvgRGBA(115, 115, 115, 255)};
+
     for (int row = 0; row < 2; ++row) {
       for (int column = 0; column < 2; ++column) {
         nvgBeginPath(nvg);
@@ -242,6 +246,7 @@ void drawImageLabelOverlay(
       x = left;
       y += m.lineHeight;
     }
+
     if (y + m.lineHeight > frameBounds.bounds.yoffset + frameBounds.bounds.height) {
       break;
     }
