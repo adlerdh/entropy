@@ -1,11 +1,18 @@
 #include "image/DicomSeries.h"
 
+#include <itkGDCMImageIO.h>
+#include <itkImage.h>
+#include <itkImageFileWriter.h>
+#include <itkMetaDataObject.h>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <random>
+#include <stdexcept>
 
 TEST_CASE("DICOM metadata filtering excludes PHI tags", "[image][dicom]")
 {
@@ -163,6 +170,82 @@ TEST_CASE("DICOM middle-slice preview returns empty for series without files", "
 
   dicom::SlicePreview preview;
   CHECK(preview.empty());
+}
+
+namespace
+{
+class ScopedTestDirectory
+{
+public:
+  ScopedTestDirectory()
+  {
+    std::random_device random;
+    const auto temporaryRoot = std::filesystem::temp_directory_path();
+    for (int attempt = 0; attempt < 100; ++attempt) {
+      m_path = temporaryRoot / ("entropy-dicom-discovery-" + std::to_string(random()));
+      std::error_code error;
+      if (std::filesystem::create_directory(m_path, error)) {
+        return;
+      }
+    }
+    throw std::runtime_error("Could not create temporary DICOM test directory");
+  }
+
+  ~ScopedTestDirectory()
+  {
+    std::error_code error;
+    std::filesystem::remove_all(m_path, error);
+  }
+
+  ScopedTestDirectory(const ScopedTestDirectory&) = delete;
+  ScopedTestDirectory& operator=(const ScopedTestDirectory&) = delete;
+
+  [[nodiscard]] const std::filesystem::path& path() const
+  {
+    return m_path;
+  }
+
+private:
+  std::filesystem::path m_path;
+};
+
+void writeMinimalDicomFile(const std::filesystem::path& fileName)
+{
+  using ImageType = itk::Image<unsigned short, 2>;
+  auto image = ImageType::New();
+
+  ImageType::RegionType region;
+  ImageType::SizeType size;
+  size.Fill(2);
+  region.SetSize(size);
+  image->SetRegions(region);
+  image->Allocate();
+  image->FillBuffer(42);
+
+  auto& dictionary = image->GetMetaDataDictionary();
+  itk::EncapsulateMetaData<std::string>(dictionary, "0008|0060", "MR");
+  itk::EncapsulateMetaData<std::string>(dictionary, "0008|103e", "Discovery regression fixture");
+  itk::EncapsulateMetaData<std::string>(dictionary, "0028|0004", "MONOCHROME2");
+  itk::EncapsulateMetaData<std::string>(dictionary, "0020|0013", "1");
+
+  auto writer = itk::ImageFileWriter<ImageType>::New();
+  writer->SetImageIO(itk::GDCMImageIO::New());
+  writer->SetFileName(fileName.string());
+  writer->SetInput(image);
+  writer->Update();
+}
+} // namespace
+
+TEST_CASE("DICOM discovery reads a generated series", "[image][dicom][discovery]")
+{
+  const ScopedTestDirectory fixture;
+  writeMinimalDicomFile(fixture.path() / "slice.dcm");
+
+  const auto result = dicom::discoverSeries({fixture.path()});
+
+  REQUIRE(result.series.size() == 1);
+  CHECK(result.series.front().files.size() == 1);
+  CHECK(result.series.front().metadata.modality == "MR");
 }
 
 TEST_CASE("DICOM discovery reports missing and non-DICOM inputs without throwing", "[image][dicom][discovery]")

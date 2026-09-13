@@ -41,7 +41,7 @@ namespace
 {
 using MetadataDictionary = itk::MetaDataDictionary;
 
-constexpr std::array<const char*, 9> sk_phiTags{
+constexpr std::array sk_phiTags{
   "0010|0010", // PatientName
   "0010|0020", // PatientID
   "0010|0030", // PatientBirthDate
@@ -53,7 +53,7 @@ constexpr std::array<const char*, 9> sk_phiTags{
   "0008|1050"  // PerformingPhysicianName
 };
 
-constexpr std::array<const char*, 25> sk_summaryTags{
+constexpr std::array sk_summaryTags{
   "0008|0020", // StudyDate
   "0008|0030", // StudyTime
   "0008|0060", // Modality
