@@ -2,8 +2,8 @@
 
 #include "common/MathFuncs.h"
 
-#include "image/internal/ImageUtility.tpp"
-#include "image/internal/ImageUtilityItk.h"
+#include "internal/ImageUtility.tpp"
+#include "internal/ImageUtilityItk.h"
 
 #include <itkGDCMImageIO.h>
 #include <itkGDCMSeriesFileNames.h>

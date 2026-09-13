@@ -47,6 +47,7 @@ public:
    * @throw Propagates exceptions from member copies
    */
   ControlFrame(const ControlFrame& other) = default;
+
   /**
    * @brief Copy-assign a control frame
    * @param other Frame to copy
@@ -54,17 +55,20 @@ public:
    * @throw Propagates exceptions from member assignment
    */
   ControlFrame& operator=(const ControlFrame& other) = default;
+
   /**
    * @brief Move a control frame
    * @param other Frame to move from
    */
   ControlFrame(ControlFrame&&) noexcept = default;
+
   /**
    * @brief Move-assign a control frame
    * @param other Frame to move from
    * @return Reference to this frame
    */
   ControlFrame& operator=(ControlFrame&&) noexcept = default;
+
   /**
    * @brief Destroy the control frame
    */
@@ -99,6 +103,7 @@ public:
    * @return Current view type
    */
   ViewType viewType() const;
+
   /**
    * @brief Set the frame view type
    * @param viewType New view type
@@ -113,6 +118,7 @@ public:
    * @return Current 2D render mode
    */
   ViewRenderMode renderMode() const;
+
   /**
    * @brief Set the frame's 2D image render mode
    * @param newRenderMode New 2D render mode
@@ -133,6 +139,7 @@ public:
    * @return Current intensity projection mode
    */
   IntensityProjectionMode intensityProjectionMode() const;
+
   /**
    * @brief Set the frame intensity projection mode
    * @param ipMode New intensity projection mode
@@ -309,19 +316,24 @@ public:
   const UiControls& uiControls() const;
 
 protected:
-  /** @brief Viewport and clip-space transforms */
+  /// Viewport and clip-space transforms
   viewer::FrameViewport m_viewport;
-  /** @brief Rendered, volume-rendered, metric, and visible image selections */
+
+  /// Rendered, volume-rendered, metric, and visible image selections
   viewer::FrameImageSelection m_imageSelection;
 
-  /** @brief View type */
+  /// View type
   ViewType m_viewType;
-  /** @brief Mutually exclusive 2D image render mode */
+
+  /// Mutually exclusive 2D image render mode
   ViewRenderMode m_renderMode;
-  /** @brief Independently enabled 3D scene-content categories */
+
+  /// Independently enabled 3D scene-content categories
   ThreeDSceneContents m_threeDSceneContents = DefaultThreeDSceneContents;
-  /** @brief Intensity projection mode */
+
+  /// Intensity projection mode
   IntensityProjectionMode m_intensityProjectionMode;
-  /** @brief UI controls shown in the frame */
+
+  /// UI controls shown in the frame
   UiControls m_uiControls;
 };

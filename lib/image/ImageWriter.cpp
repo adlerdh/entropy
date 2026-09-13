@@ -4,7 +4,7 @@
 #include "image/ImageHeader.h"
 #include "image/ImageTimeAxis.h"
 #include "image/ImageUtility.h"
-#include "image/internal/ImageUtilityItk.h"
+#include "internal/ImageUtilityItk.h"
 
 #include <itkImageIOBase.h>
 #include <itkImageIOFactory.h>

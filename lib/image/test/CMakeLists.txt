@@ -10,6 +10,7 @@ add_executable(TestImage
   WarpInversionTests.cpp
   ComprehensiveImageLoadingTests.cpp
   ImageLoadingTests.cpp
+  ImagePublicHeaderTests.cpp
   RegionStatisticsTests.cpp
   SegmentationDerivedDataTests.cpp
   ImageWindowDefaultsTests.cpp

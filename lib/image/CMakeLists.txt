@@ -1,34 +1,63 @@
 # Insight Toolkit (ITK) is an implementation detail of EntropyImage
 find_package(ITK ${itk_VERSION} REQUIRED
   COMPONENTS ${entropy_ITK_COMPONENTS}
-  HINTS "${itk_PREFIX}/build")
+  HINTS "${itk_PREFIX}/build"
+)
 message(STATUS "Found ITK in ${ITK_DIR}")
 entropy_configure_itk_directory()
 
 add_library(EntropyImage STATIC)
 add_library(Entropy::Image ALIAS EntropyImage)
 
-target_sources(EntropyImage PRIVATE
-  CtWindowing.cpp
-  DicomSeries.cpp
-  ImageComponentBuffers.cpp
-  Image.cpp
-  ImageColorMap.cpp
-  ImageDerivedData.cpp
-  ImageHeader.cpp
-  ImageQuantiles.cpp
-  ImageIoInfo.cpp
-  ImageSettings.cpp
-  ImageSpatialMetadata.cpp
-  ImageTimeAxis.cpp
-  ImageTransformations.cpp
-  ImageUtility.cpp
-  ImageWindowDefaults.cpp
-  ImageWriter.cpp
-  RegionStatistics.cpp
-  SegUtil.cpp
-  TimePlaybackController.cpp
-  WarpInversion.cpp
+target_sources(EntropyImage
+  PRIVATE
+    CtWindowing.cpp
+    DicomSeries.cpp
+    ImageComponentBuffers.cpp
+    Image.cpp
+    ImageColorMap.cpp
+    ImageDerivedData.cpp
+    ImageHeader.cpp
+    ImageQuantiles.cpp
+    ImageIoInfo.cpp
+    ImageSettings.cpp
+    ImageSpatialMetadata.cpp
+    ImageTimeAxis.cpp
+    ImageTransformations.cpp
+    ImageUtility.cpp
+    ImageWindowDefaults.cpp
+    ImageWriter.cpp
+    RegionStatistics.cpp
+    SegUtil.cpp
+    TimePlaybackController.cpp
+    WarpInversion.cpp
+  PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    FILES
+      include/image/CtWindowing.h
+      include/image/DicomSeries.h
+      include/image/Image.h
+      include/image/ImageColorMap.h
+      include/image/ImageDerivedData.h
+      include/image/ImageHeader.h
+      include/image/ImageHeaderOverrides.h
+      include/image/ImageIoInfo.h
+      include/image/ImageSettings.h
+      include/image/ImageSpatialMetadata.h
+      include/image/ImageTimeAxis.h
+      include/image/ImageTransformations.h
+      include/image/ImageTypes.h
+      include/image/ImageUtility.h
+      include/image/ImageWindowDefaults.h
+      include/image/ImageWriter.h
+      include/image/Isosurface.h
+      include/image/RegionStatistics.h
+      include/image/SegUtil.h
+      include/image/TimePlaybackController.h
+      include/image/WarpInversion.h
+      include/image/external/TDigest.h
 )
 
 if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
@@ -46,7 +75,10 @@ set_source_files_properties(WarpInversion.cpp PROPERTIES
 
 target_include_directories(EntropyImage
   PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/.."
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_include_directories(EntropyImage SYSTEM PRIVATE ${ITK_INCLUDE_DIRS})
 target_include_directories(EntropyImage SYSTEM PRIVATE

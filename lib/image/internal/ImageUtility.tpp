@@ -10,9 +10,8 @@
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
-#include "../Image.h"
-
-#include "../external/TDigest.h"
+#include "image/Image.h"
+#include "image/external/TDigest.h"
 
 #include <itkBinaryThresholdImageFilter.h>
 #include <itkCastImageFilter.h>

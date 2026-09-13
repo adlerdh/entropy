@@ -242,11 +242,9 @@ private:
    * @param windowTitleStatus Temporary status text for the window title.
    * @param loadTask Background task that returns true on success.
    * @param onLoadFailed Main-thread callback when loading fails.
-   * @param showLoadingOverlay True to show a loading
-   * overlay while the task runs.
+   * @param showLoadingOverlay True to show a loading overlay while the task runs.
    * @param loadingItems Items to show in the loading-status popup.
-   * @param
-   * loadingStatusTitle Title for the loading-status popup.
+   * @param loadingStatusTitle Title for the loading-status popup.
    */
   void startAsyncImageLoad(
     const std::string& windowTitleStatusArg,

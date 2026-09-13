@@ -29,12 +29,14 @@ public:
    * @throw Propagates exceptions from base-frame construction or UID generation
    */
   explicit Layout(bool isLightbox);
+
   /**
    * @brief Copying layouts is disabled because they own views by unique pointer
    * @param other Layout that would be copied
    * @throw Not applicable
    */
   Layout(const Layout& other) = delete;
+
   /**
    * @brief Copy-assignment is disabled because layouts own views by unique pointer
    * @param other Layout that would be copied
@@ -42,17 +44,20 @@ public:
    * @throw Not applicable
    */
   Layout& operator=(const Layout& other) = delete;
+
   /**
    * @brief Move a layout and its owned views
    * @param other Layout to move from
    */
   Layout(Layout&& other) noexcept = default;
+
   /**
    * @brief Move-assign a layout and its owned views
    * @param other Layout to move from
    * @return Reference to this layout
    */
   Layout& operator=(Layout&& other) noexcept = default;
+
   /**
    * @brief Destroy the layout and owned views
    */
@@ -266,21 +271,24 @@ private:
    */
   void updateAllViewsInLayout();
 
-  /** @brief Stable layout UID */
+  /// Stable layout UID
   uuid m_uid;
 
-  /** @brief True when layout-level controls affect all child views */
+  /// True when layout-level controls affect all child views
   bool m_isLightbox;
-  /** @brief Layout kind used for display and serialization */
+
+  /// Layout kind used for display and serialization
   LayoutKind m_kind = LayoutKind::Custom;
-  /** @brief User-facing name for custom non-lightbox layouts */
+
+  /// User-facing name for custom non-lightbox layouts
   std::string m_displayName = "Custom";
 
-  /** @brief Owned views keyed by UID */
+  /// Owned views keyed by UID
   std::unordered_map<uuid, std::unique_ptr<View>> m_views;
-  /** @brief View UIDs in stable display order */
+
+  /// View UIDs in stable display order
   std::vector<uuid> m_orderedViewUids;
 
-  /** @brief Camera synchronization groups organized by synchronized property */
+  /// Camera synchronization groups organized by synchronized property
   viewer::CameraSyncGroups m_cameraSyncGroups;
 };

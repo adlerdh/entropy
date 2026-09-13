@@ -127,7 +127,7 @@ public:
    */
   camera3d::State& threeDState();
 
-  /** @brief Return whether the dedicated 3D camera has been framed for a scene. */
+  /// Return whether the dedicated 3D camera has been framed for a scene.
   bool isThreeDCameraInitialized() const;
 
   /**
@@ -247,46 +247,57 @@ private:
    */
   bool updateImageSliceIntersection(const AppData& appData, const glm::vec3& worldCrosshairs);
 
-  /** @brief Stable view UID */
+  /// Stable view UID
   const uuid m_uid;
 
-  /** @brief Slice offset behavior */
+  /// Slice offset behavior
   ViewOffsetSetting m_offset;
 
-  /** @brief Projection type used by the 2D slice camera */
+  /// Projection type used by the 2D slice camera
   ProjectionType m_projectionType;
-  /** @brief Dedicated camera for 2D slice views */
+
+  /// Dedicated camera for 2D slice views
   Camera m_camera;
-  /** @brief Dedicated camera for the 3D view type */
+
+  /// Dedicated camera for the 3D view type
   Camera m_threeDCamera;
-  /** @brief Interaction state for the dedicated 3D camera */
+
+  /// Interaction state for the dedicated 3D camera
   camera3d::State m_threeDState;
-  /** @brief True after the 3D camera has been initialized for a scene */
+
+  /// True after the 3D camera has been initialized for a scene
   bool m_threeDCameraInitialized = false;
-  /** @brief True after the dedicated 2D camera has been used as the active view camera */
+
+  /// True after the dedicated 2D camera has been used as the active view camera
   bool m_sliceCameraActivated = false;
-  /** @brief Last default recenter target for the dedicated 2D camera */
+
+  /// Last default recenter target for the dedicated 2D camera
   std::optional<glm::vec3> m_sliceCameraDefaultWorldCenter = std::nullopt;
-  /** @brief Last default field of view for the dedicated 2D camera */
+
+  /// Last default field of view for the dedicated 2D camera
   std::optional<glm::vec3> m_sliceCameraDefaultWorldFov = std::nullopt;
 
-  /** @brief Referenced application-level view convention */
+  /// Referenced application-level view convention
   const ViewConvention& m_viewConvention;
-  /** @brief Referenced crosshairs state used to position view slices */
+
+  /// Referenced crosshairs state used to position view slices
   const CrosshairsState& m_crosshairs;
-  /** @brief Referenced application-level view alignment mode */
+
+  /// Referenced application-level view alignment mode
   const ViewAlignmentMode& m_viewAlignment;
 
-  /** @brief Rotation sync group UID, when any */
+  /// Rotation sync group UID, when any
   std::optional<uuid> m_cameraRotationSyncGroupUid;
-  /** @brief Translation sync group UID, when any */
+
+  /// Translation sync group UID, when any
   std::optional<uuid> m_cameraTranslationSyncGroupUid;
-  /** @brief Zoom sync group UID, when any */
+
+  /// Zoom sync group UID, when any
   std::optional<uuid> m_cameraZoomSyncGroupUid;
 
-  /** @brief Current image-plane depth in clip coordinates */
+  /// Current image-plane depth in clip coordinates
   float m_clipPlaneDepth;
 
-  /** @brief Cached anatomical start frame used by 2D view cameras */
+  /// Cached anatomical start frame used by 2D view cameras
   CoordinateFrame m_anatomy_T_start;
 };

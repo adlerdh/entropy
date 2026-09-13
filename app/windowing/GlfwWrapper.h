@@ -107,26 +107,26 @@ private:
   // Process user interaction input between render calls.
   static void processInput();
 
-  // Returns the "current monitor" of the window. This is evaluated
-  // as the monitor with the largest overlap with the window.
+  /// @brief Returns the "current monitor" of the window. This is evaluated as the monitor with the largest overlap
+  /// with the window.
   GLFWmonitor* currentMonitor() const;
 
   double m_lastContentScalePollSeconds = -1.0; //!< Last fallback content-scale poll time
   int m_platform;                              //!< GLFW platform selected during initialization
 
-  // Application owning this wrapper. GLFW also stores this as the window user pointer.
+  /// Application owning this wrapper. GLFW also stores this as the window user pointer.
   EntropyApp* m_app = nullptr;
 
-  // GLFW window that is owned by this class:
+  /// GLFW window that is owned by this class:
   GLFWwindow* m_window;
 
-  // Map from mouse mode to cursor
+  /// Map from mouse mode to cursor
   std::unordered_map<MouseMode, GLFWcursor*> m_mouseModeToCursor;
 
-  // Allows this class to change how window events are processed:
+  /// Allows this class to change how window events are processed:
   EventProcessingMode m_eventProcessingMode = EventProcessingMode::Wait;
 
-  // For EventProcessingMode::WaitTimeout, this is the timeout in seconds:
+  /// For EventProcessingMode::WaitTimeout, this is the timeout in seconds:
   double m_waitTimoutSeconds = 1.0 / 3.0;
 
   // Rendering callbacks:
@@ -135,8 +135,7 @@ private:
   std::function<void()> m_renderGui = nullptr;
   std::function<void()> m_processBackground = nullptr;
 
-  // Backups of window position and size, which are restored when changing from full-screen to
-  // windowed mode
+  // Backups of window position and size, which are restored when changing from full-screen to windowed mode
   int m_backupWindowPosX = 0;
   int m_backupWindowPosY = 0;
 
