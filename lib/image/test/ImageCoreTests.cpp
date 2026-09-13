@@ -3,8 +3,8 @@
 #include "image/Isosurface.h"
 #include "image/ImageUtility.h"
 #include "image/ImageWriter.h"
-#include "../internal/ImageCastHelper.tpp"
-#include "../internal/ImageUtilityItk.h"
+#include "../image/internal/ImageCastHelper.tpp"
+#include "../image/internal/ImageUtilityItk.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>

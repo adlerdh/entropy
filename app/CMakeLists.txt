@@ -84,7 +84,6 @@ endif()
 target_include_directories(entropy PRIVATE
   "${CMAKE_BINARY_DIR}"
   "${entropy_APP_DIR}"
-  "${entropy_LIB_DIR}"
   "${entropy_RES_DIR}"
   "${glad_INCLUDE_DIR}"
   "${iconfont_INCLUDE_DIR}"

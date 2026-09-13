@@ -12,6 +12,7 @@ target_link_libraries(TestWindowing PRIVATE
   Entropy::Common
   Entropy::Image
   Entropy::Layout
+  Entropy::Rendering
   Entropy::Viewer
   spdlog::spdlog
   nlohmann_json::nlohmann_json
@@ -23,6 +24,7 @@ entropy_register_coverage_test_target(TestWindowing)
 
 target_include_directories(TestWindowing PRIVATE
   "${entropy_APP_DIR}"
+  "${entropy_UI_DIR}"
 )
 
 set_target_properties(TestWindowing PROPERTIES

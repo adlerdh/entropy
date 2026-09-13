@@ -5,21 +5,38 @@ find_package(ITK ${itk_VERSION} REQUIRED
     ITKIOMeshFreeSurfer
     ITKIOMeshGifti
     ITKIOMeshOFF
-  HINTS "${itk_PREFIX}/build")
+  HINTS "${itk_PREFIX}/build"
+)
 entropy_configure_itk_directory()
 
 add_library(EntropyMesh STATIC
-  MeshFormat.cpp
-  MeshIO.cpp
-  MeshTransform.cpp
-  private/FreeSurferCoordinates.cpp
-  private/ItkMeshCodec.cpp
-  private/VtkMeshCodec.cpp
+  mesh/MeshFormat.cpp
+  mesh/MeshIO.cpp
+  mesh/MeshTransform.cpp
+  mesh/private/FreeSurferCoordinates.cpp
+  mesh/private/ItkMeshCodec.cpp
+  mesh/private/VtkMeshCodec.cpp
 )
 add_library(Entropy::Mesh ALIAS EntropyMesh)
 
+target_sources(EntropyMesh
+  PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES
+      mesh/MeshFormat.h
+      mesh/MeshIO.h
+      mesh/MeshTransform.h
+      mesh/MeshTypes.h
+)
+
 target_include_directories(EntropyMesh
-  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/.."
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh"
   SYSTEM PRIVATE ${ITK_INCLUDE_DIRS}
 )
 

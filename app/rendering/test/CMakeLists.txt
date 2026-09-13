@@ -16,8 +16,10 @@ target_link_libraries(TestRendering PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   Entropy::Image
+  Entropy::Mesh
   Entropy::Rendering
   Entropy::RenderingMeshProcessing
+  Entropy::Viewer
   entropy::colormaps
   entropy::fonts
   glad

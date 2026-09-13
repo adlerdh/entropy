@@ -50,10 +50,6 @@ add_library(EntropyRenderingMeshProcessing STATIC
 )
 add_library(Entropy::RenderingMeshProcessing ALIAS EntropyRenderingMeshProcessing)
 
-target_include_directories(EntropyRenderingMeshProcessing PUBLIC
-  "${entropy_LIB_DIR}"
-)
-
 target_link_libraries(EntropyRenderingMeshProcessing
   PUBLIC
     Entropy::Rendering

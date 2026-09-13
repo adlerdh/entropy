@@ -14,6 +14,7 @@ target_sources(TestSerialization PRIVATE
 
 target_link_libraries(TestSerialization PRIVATE
   Catch2::Catch2WithMain
+  Entropy::Image
   Entropy::Layout
   nlohmann_json::nlohmann_json
   entropy_warnings

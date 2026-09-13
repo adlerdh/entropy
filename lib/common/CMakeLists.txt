@@ -3,48 +3,48 @@ add_library(Entropy::Common ALIAS EntropyCommon)
 
 target_sources(EntropyCommon
   PRIVATE
-    AnatomicalLabels.cpp
-    ClipboardFormats.cpp
-    CoordinateFrame.cpp
-    DirectionMaps.cpp
+    common/AnatomicalLabels.cpp
+    common/ClipboardFormats.cpp
+    common/CoordinateFrame.cpp
+    common/DirectionMaps.cpp
     "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
-    InputParams.cpp
-    InputParser.cpp
-    LoggingSettings.cpp
-    MathFuncs.cpp
-    Types.cpp
-    UuidUtility.cpp
-    Viewport.cpp
+    common/InputParams.cpp
+    common/InputParser.cpp
+    common/LoggingSettings.cpp
+    common/MathFuncs.cpp
+    common/Types.cpp
+    common/UuidUtility.cpp
+    common/Viewport.cpp
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES
-      include/common/AABB.h
-      include/common/AnatomicalLabels.h
-      include/common/AsyncTasks.h
-      include/common/ClipboardFormats.h
-      include/common/ClipboardPayload.h
-      include/common/CoordinateFrame.h
-      include/common/DirectionMaps.h
-      include/common/Exception.hpp
-      include/common/Geometry.h
-      include/common/HistogramSettings.h
-      include/common/InputParams.h
-      include/common/InputParser.h
-      include/common/IntersectionTypes.h
-      include/common/LoggingDefaults.h
-      include/common/LoggingSettings.h
-      include/common/MathFuncs.h
-      include/common/ObjectCounter.hpp
-      include/common/PublicTypes.h
-      include/common/SegmentationTypes.h
-      include/common/Types.h
-      include/common/Utility.hpp
-      include/common/UuidRange.h
-      include/common/UuidUtility.h
-      include/common/Viewport.h
-      include/common/VnlMath.h
+      common/AABB.h
+      common/AnatomicalLabels.h
+      common/AsyncTasks.h
+      common/ClipboardFormats.h
+      common/ClipboardPayload.h
+      common/CoordinateFrame.h
+      common/DirectionMaps.h
+      common/Exception.hpp
+      common/Geometry.h
+      common/HistogramSettings.h
+      common/InputParams.h
+      common/InputParser.h
+      common/IntersectionTypes.h
+      common/LoggingDefaults.h
+      common/LoggingSettings.h
+      common/MathFuncs.h
+      common/ObjectCounter.hpp
+      common/PublicTypes.h
+      common/SegmentationTypes.h
+      common/Types.h
+      common/Utility.hpp
+      common/UuidRange.h
+      common/UuidUtility.h
+      common/Viewport.h
+      common/VnlMath.h
 )
 
 if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
@@ -56,10 +56,9 @@ endif()
 
 target_include_directories(EntropyCommon
   PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_BINARY_DIR}" # for BuildStamp.h
     "${entropy_EXT_DIR}"
     "${iconfont_INCLUDE_DIR}"

@@ -42,8 +42,11 @@ endif()
 
 target_link_libraries(TestAppSettings PRIVATE
   Catch2::Catch2WithMain
+  Entropy::Image
   Entropy::Layout
+  Entropy::Mesh
   Entropy::Registration
+  Entropy::Rendering
   Entropy::Viewer
   nlohmann_json::nlohmann_json
   entropy_warnings
@@ -60,6 +63,7 @@ entropy_register_coverage_test_target(TestAppSettings)
 
 target_include_directories(TestAppSettings PRIVATE
   "${entropy_APP_DIR}"
+  "${entropy_UI_DIR}"
   "${entropy_EXT_DIR}"
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
   "${imgui_SRC_DIR}"
