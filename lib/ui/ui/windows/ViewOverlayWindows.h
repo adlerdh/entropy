@@ -63,6 +63,9 @@ struct ViewOverlayImageCallbacks
   std::function<bool(std::size_t imageIndex)> getImageIsReference;       //!< Reference-image predicate
   std::function<bool(std::size_t imageIndex)>
     canImageBeVolumeRendered; //!< Whether this image can be selected for 3D volume rendering
+  std::function<glm::vec3(std::size_t imageIndex)> getImageIdentificationColor; //!< Identification color
+  std::function<std::optional<std::size_t>(std::size_t imageIndex)>
+    getComparisonImagePosition; //!< Position in the fixed/moving comparison pair
 };
 
 /**

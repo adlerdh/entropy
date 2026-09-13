@@ -14,6 +14,13 @@ struct NVGcontext;
 namespace rendering::vector_overlay
 {
 
+enum class ImageComparisonRole
+{
+  None,  //!< Image is not serving a comparison-specific role
+  Fixed, //!< First image sampled by the comparison shader
+  Moving //!< Second image sampled by the comparison shader
+};
+
 /**
  * @brief Presentation data for one image named in a view overlay.
  *
@@ -28,6 +35,7 @@ struct ImageLabelEntry
   bool isActive = false;           //!< Whether this is the active image
   bool isVisible = true;           //!< Whether image and active-component visibility are both enabled
   float effectiveOpacity = 1.0f;   //!< Product of image-wide and active-component opacity
+  ImageComparisonRole comparisonRole = ImageComparisonRole::None; //!< Per-view comparison role
 };
 
 enum class ImageSwatchMode
@@ -47,13 +55,21 @@ constexpr ImageSwatchMode imageSwatchMode(const ImageLabelEntry& entry)
 }
 
 /**
- * @brief Return the ordered compact badges shown for an image's project roles.
+ * @brief Return the ordered compact role badges shown for an image.
  *
- * Empty elements represent absent roles. Reference is intentionally shown before active when both apply.
+ * Comparison roles replace project roles because fixed and moving describe the
+ * image's actual meaning to comparison shaders. Otherwise, reference is shown
+ * before active when both apply. Empty elements represent absent roles.
  */
 constexpr std::array<std::string_view, 2> imageRoleBadgeLabels(const ImageLabelEntry& entry)
 {
-  return {entry.isReference ? "REF" : "", entry.isActive ? "ACTIVE" : ""};
+  if (ImageComparisonRole::Fixed == entry.comparisonRole) {
+    return {"FIX", ""};
+  }
+  if (ImageComparisonRole::Moving == entry.comparisonRole) {
+    return {"MOV", ""};
+  }
+  return {entry.isReference ? "REF" : "", entry.isActive ? "ACT" : ""};
 }
 
 /**

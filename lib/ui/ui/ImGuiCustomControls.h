@@ -10,6 +10,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 /**
@@ -29,6 +30,20 @@ namespace ImGui
  * @return True when the button is pressed.
  */
 bool IconButton(const char* label, const ImVec2& size);
+
+/**
+ * @brief Return the horizontal space occupied by a compact image-role badge.
+ * @param text Visible badge text.
+ * @return Badge width in current ImGui coordinates.
+ */
+float ImageRoleBadgeWidth(std::string_view text);
+
+/**
+ * @brief Render a compact, non-interactive image-role badge on the current line.
+ *
+ * @param text Visible badge text, such as REF, ACT, FIX, or MOV.
+ */
+void ImageRoleBadge(std::string_view text);
 
 /**
  * @brief Render a button that opens a native file dialog and returns the selected file path.

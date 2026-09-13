@@ -54,17 +54,15 @@ inline const char* nonActiveImageMessage = "This is not the active image";
 
 inline std::string imageRoleSuffix(bool isReferenceImage, bool isActiveImage, std::size_t numImages)
 {
-  if (numImages <= 1) {
-    return isActiveImage ? " (active)" : std::string{};
-  }
+  (void)numImages;
   if (isReferenceImage && isActiveImage) {
-    return " (reference + active)";
+    return " (reference and active image)";
   }
   if (isReferenceImage) {
-    return " (reference)";
+    return " (reference image)";
   }
   if (isActiveImage) {
-    return " (active)";
+    return " (active image)";
   }
   return {};
 }

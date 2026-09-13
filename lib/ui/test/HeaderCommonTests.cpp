@@ -4,9 +4,9 @@
 
 TEST_CASE("Image role suffixes show active state for a single image", "[ui][headers]")
 {
-  CHECK(ui::headers::imageRoleSuffix(true, true, 1) == " (active)");
-  CHECK(ui::headers::imageRoleSuffix(false, true, 1) == " (active)");
-  CHECK(ui::headers::imageRoleSuffix(true, false, 1).empty());
+  CHECK(ui::headers::imageRoleSuffix(true, true, 1) == " (reference and active image)");
+  CHECK(ui::headers::imageRoleSuffix(false, true, 1) == " (active image)");
+  CHECK(ui::headers::imageRoleSuffix(true, false, 1) == " (reference image)");
 
   CHECK(ui::headers::imageRoleSuffixShortReference(true, true, 1) == "(active)");
   CHECK(ui::headers::imageRoleSuffixShortReference(false, true, 1) == "(active)");
@@ -15,9 +15,9 @@ TEST_CASE("Image role suffixes show active state for a single image", "[ui][head
 
 TEST_CASE("Image role suffixes show reference and active state for multiple images", "[ui][headers]")
 {
-  CHECK(ui::headers::imageRoleSuffix(true, true, 2) == " (reference + active)");
-  CHECK(ui::headers::imageRoleSuffix(true, false, 2) == " (reference)");
-  CHECK(ui::headers::imageRoleSuffix(false, true, 2) == " (active)");
+  CHECK(ui::headers::imageRoleSuffix(true, true, 2) == " (reference and active image)");
+  CHECK(ui::headers::imageRoleSuffix(true, false, 2) == " (reference image)");
+  CHECK(ui::headers::imageRoleSuffix(false, true, 2) == " (active image)");
   CHECK(ui::headers::imageRoleSuffix(false, false, 2).empty());
 
   CHECK(ui::headers::imageRoleSuffixShortReference(true, true, 2) == "(ref + active)");

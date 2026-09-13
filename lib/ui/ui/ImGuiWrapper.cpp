@@ -3150,6 +3150,15 @@ void ImGuiWrapper::render()
     return false;
   };
 
+  auto getImageIdentificationColor = [this](std::size_t imageIndex) -> glm::vec3 {
+    if (const auto imageUid = m_appData.imageUid(imageIndex)) {
+      if (const Image* image = m_appData.image(*imageUid)) {
+        return image->settings().borderColor();
+      }
+    }
+    return glm::vec3{0.5f};
+  };
+
   auto moveImageBackward = [this](const uuids::uuid& imageUid) -> bool {
     if (m_appData.moveImageBackwards(imageUid)) {
       m_appData.windowData().updateImageOrdering(m_appData.imageUidsOrdered());
@@ -5012,7 +5021,19 @@ void ImGuiWrapper::render()
       getImageIsVisibleSetting,
       getImageIsActive,
       getImageIsReference,
-      canImageBeVolumeRendered};
+      canImageBeVolumeRendered,
+      getImageIdentificationColor,
+      [this, &currentLayout](std::size_t index) -> std::optional<std::size_t> {
+        const auto imageUid = m_appData.imageUid(index);
+        if (!imageUid) {
+          return std::nullopt;
+        }
+        const auto& metricImages = currentLayout.metricImages();
+        const auto it = std::find(metricImages.begin(), metricImages.end(), *imageUid);
+        return it == metricImages.end()
+                 ? std::nullopt
+                 : std::optional{static_cast<std::size_t>(std::distance(metricImages.begin(), it))};
+      }};
 
     const AnatomicalLabelResolution anatomicalLabels = m_appData.resolvedAnatomicalLabels();
     const ViewOverlayModeCallbacks modeCallbacks{
@@ -5207,7 +5228,19 @@ void ImGuiWrapper::render()
         getImageIsVisibleSetting,
         getImageIsActive,
         getImageIsReference,
-        canImageBeVolumeRendered};
+        canImageBeVolumeRendered,
+        getImageIdentificationColor,
+        [this, view](std::size_t index) -> std::optional<std::size_t> {
+          const auto imageUid = m_appData.imageUid(index);
+          if (!imageUid) {
+            return std::nullopt;
+          }
+          const auto& metricImages = view->metricImages();
+          const auto it = std::find(metricImages.begin(), metricImages.end(), *imageUid);
+          return it == metricImages.end()
+                   ? std::nullopt
+                   : std::optional{static_cast<std::size_t>(std::distance(metricImages.begin(), it))};
+        }};
 
       const AnatomicalLabelResolution anatomicalLabels = m_appData.resolvedAnatomicalLabels();
       const ViewOverlayModeCallbacks modeCallbacks{

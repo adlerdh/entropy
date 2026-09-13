@@ -24,6 +24,7 @@ TEST_CASE("view overlay cycling preserves configured feature settings", "[render
 
 TEST_CASE("image label role badges are compact and consistently ordered", "[rendering][vector_overlay]")
 {
+  using rendering::vector_overlay::ImageComparisonRole;
   using rendering::vector_overlay::ImageLabelEntry;
   using rendering::vector_overlay::imageRoleBadgeLabels;
 
@@ -43,7 +44,7 @@ TEST_CASE("image label role badges are compact and consistently ordered", "[rend
        .isReference = false,
        .isActive = true,
        .isVisible = true,
-       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"", "ACTIVE"}));
+       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"", "ACT"}));
   CHECK(
     (imageRoleBadgeLabels(ImageLabelEntry{
        .displayName = {},
@@ -51,7 +52,25 @@ TEST_CASE("image label role badges are compact and consistently ordered", "[rend
        .isReference = true,
        .isActive = true,
        .isVisible = true,
-       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"REF", "ACTIVE"}));
+       .effectiveOpacity = 1.0f}) == std::array<std::string_view, 2>{"REF", "ACT"}));
+  CHECK(
+    (imageRoleBadgeLabels(ImageLabelEntry{
+       .displayName = {},
+       .identificationColor = {},
+       .isReference = true,
+       .isActive = true,
+       .isVisible = true,
+       .effectiveOpacity = 1.0f,
+       .comparisonRole = ImageComparisonRole::Fixed}) == std::array<std::string_view, 2>{"FIX", ""}));
+  CHECK(
+    (imageRoleBadgeLabels(ImageLabelEntry{
+       .displayName = {},
+       .identificationColor = {},
+       .isReference = true,
+       .isActive = true,
+       .isVisible = true,
+       .effectiveOpacity = 1.0f,
+       .comparisonRole = ImageComparisonRole::Moving}) == std::array<std::string_view, 2>{"MOV", ""}));
 }
 
 TEST_CASE("image label swatches communicate opacity and visibility", "[rendering][vector_overlay]")

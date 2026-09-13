@@ -3,6 +3,8 @@
 
 #include <imgui/imgui_internal.h>
 
+#include <algorithm>
+
 namespace
 {
 
@@ -57,6 +59,33 @@ bool IconButton(const char* label, const ImVec2& size)
   GetWindowDrawList()->AddText(textPosition, GetColorU32(ImGuiCol_Text), label, visibleTextEnd);
 
   return pressed;
+}
+
+float ImageRoleBadgeWidth(const std::string_view text)
+{
+  return CalcTextSize(text.data(), text.data() + text.size()).x + 0.45f * GetTextLineHeight();
+}
+
+void ImageRoleBadge(const std::string_view text)
+{
+  const float frameHeight = GetFrameHeight();
+  const ImVec2 textSize = CalcTextSize(text.data(), text.data() + text.size());
+  const float height = std::min(frameHeight, textSize.y + 0.15f * GetTextLineHeight());
+  const float width = ImageRoleBadgeWidth(text);
+  const ImVec2 cursor = GetCursorScreenPos();
+  const ImVec2 topLeft{cursor.x, cursor.y + 0.5f * (frameHeight - height)};
+  const ImVec2 bottomRight{topLeft.x + width, topLeft.y + height};
+  const float rounding = 0.2f * height;
+
+  Dummy(ImVec2{width, frameHeight});
+  ImDrawList* const drawList = GetWindowDrawList();
+  drawList->AddRectFilled(topLeft, bottomRight, GetColorU32(ImGuiCol_FrameBg), rounding);
+  drawList->AddRect(topLeft, bottomRight, GetColorU32(ImGuiCol_Border), rounding);
+  drawList->AddText(
+    ImVec2{topLeft.x + 0.5f * (width - textSize.x), topLeft.y + 0.5f * (height - textSize.y)},
+    GetColorU32(ImGuiCol_Text),
+    text.data(),
+    text.data() + text.size());
 }
 
 std::optional<std::string> renderFileButtonDialogAndWindow(

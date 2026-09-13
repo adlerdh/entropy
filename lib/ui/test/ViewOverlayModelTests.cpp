@@ -29,3 +29,14 @@ TEST_CASE("view overlay labels image choices with visibility and active state", 
   CHECK(view_overlay::imageChoiceLabel({"T1", true, false, true}) == "T1 (ref)");
   CHECK(view_overlay::imageChoiceLabel({"Seg", false, true, true}) == "Seg (hidden) (ref + active)");
 }
+
+TEST_CASE("image choice role badges are compact and consistently ordered", "[ui][view_overlay]")
+{
+  using view_overlay::ImageChoice;
+  using view_overlay::imageChoiceRoleBadges;
+
+  CHECK((imageChoiceRoleBadges(ImageChoice{}) == std::array<std::string_view, 2>{"", ""}));
+  CHECK((imageChoiceRoleBadges(ImageChoice{"", true, false, true}) == std::array<std::string_view, 2>{"REF", ""}));
+  CHECK((imageChoiceRoleBadges(ImageChoice{"", true, true, false}) == std::array<std::string_view, 2>{"", "ACT"}));
+  CHECK((imageChoiceRoleBadges(ImageChoice{"", true, true, true}) == std::array<std::string_view, 2>{"REF", "ACT"}));
+}

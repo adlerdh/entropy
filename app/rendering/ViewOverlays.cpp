@@ -129,9 +129,13 @@ std::vector<rendering::vector_overlay::ImageLabelEntry> imageLabelEntries(
 
   const std::optional<uuid> referenceUid = appData.refImageUid();
   const std::optional<uuid> activeUid = appData.activeImageUid();
-  const bool showActiveRole = ViewType::ThreeD == frame.viewType() || ViewRenderMode::Image == frame.renderMode();
+  const bool comparisonMode = isComparisonRenderMode(frame.renderMode());
+  const bool showProjectRoles =
+    !comparisonMode && (ViewType::ThreeD == frame.viewType() || ViewRenderMode::Image == frame.renderMode());
 
+  std::size_t imagePosition = 0;
   for (const uuid& imageUid : frame.visibleImages()) {
+    const std::size_t currentPosition = imagePosition++;
     const Image* image = appData.image(imageUid);
     if (!image) {
       continue;
@@ -142,13 +146,18 @@ std::vector<rendering::vector_overlay::ImageLabelEntry> imageLabelEntries(
     const float effectiveOpacity =
       static_cast<float>(std::clamp(settings.globalOpacity() * settings.opacity(), 0.0, 1.0));
 
+    const auto comparisonRole = !comparisonMode        ? rendering::vector_overlay::ImageComparisonRole::None
+                                : 0 == currentPosition ? rendering::vector_overlay::ImageComparisonRole::Fixed
+                                                       : rendering::vector_overlay::ImageComparisonRole::Moving;
+
     entries.push_back(
       {.displayName = settings.displayName(),
        .identificationColor = settings.borderColor(),
-       .isReference = referenceUid && *referenceUid == imageUid,
-       .isActive = showActiveRole && activeUid && *activeUid == imageUid,
+       .isReference = showProjectRoles && referenceUid && *referenceUid == imageUid,
+       .isActive = showProjectRoles && activeUid && *activeUid == imageUid,
        .isVisible = visible,
-       .effectiveOpacity = visible ? effectiveOpacity : 0.0f});
+       .effectiveOpacity = visible ? effectiveOpacity : 0.0f,
+       .comparisonRole = comparisonRole});
   }
 
   return entries;

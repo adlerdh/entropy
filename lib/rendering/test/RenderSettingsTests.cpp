@@ -8,7 +8,7 @@ TEST_CASE("intensity projections use the full volume extent by default", "[rende
 
   CHECK(settings.m_doMaxExtentIntensityProjection);
   CHECK(settings.m_intensityProjectionSlabThickness == 10.0f);
-  CHECK(settings.m_opacityMixMode);
+  CHECK_FALSE(settings.m_opacityMixMode);
 }
 
 TEST_CASE("3D image planes show segmentation and isocontour overlays by default", "[rendering][image-plane]")

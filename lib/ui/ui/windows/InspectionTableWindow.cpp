@@ -1,9 +1,10 @@
 #include "ui/windows/InspectionWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/ImGuiCustomControls.h"
 #include "ui/Scaling.h"
-#include "ui/headers/HeaderCommon.h"
 #include "ui/windows/InspectionWindowSizing.h"
+#include "ui/windows/ViewOverlayModel.h"
 #include "logic/app/Data.h"
 
 #include "image/Image.h"
@@ -26,6 +27,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <unordered_map>
@@ -646,14 +648,24 @@ float inspectionColumnWidthForText(const char* text)
   return ImGui::CalcTextSize(text).x + 2.0f * (style.CellPadding.x + style.FramePadding.x);
 }
 
-float imageColumnWidthForCellText(const char* displayName, const char* roleSuffix)
+float imageRoleBadgesWidth(const std::array<std::string_view, 2>& badges)
+{
+  float width = 0.0f;
+  for (const std::string_view badge : badges) {
+    if (!badge.empty()) {
+      width += ImGui::GetStyle().ItemSpacing.x + ImGui::ImageRoleBadgeWidth(badge);
+    }
+  }
+  return width;
+}
+
+float imageColumnWidthForCellText(const char* displayName, const std::array<std::string_view, 2>& roleBadges)
 {
   const ImGuiStyle& style = ImGui::GetStyle();
   const float visibilityButtonWidth = ImGui::GetFrameHeight();
   const float nameWidth = ImGui::CalcTextSize(displayName).x + 2.0f * style.FramePadding.x;
-  const float suffixWidth =
-    roleSuffix && roleSuffix[0] != '\0' ? ImGui::CalcTextSize(roleSuffix).x + style.ItemSpacing.x : 0.0f;
-  return visibilityButtonWidth + style.ItemSpacing.x + nameWidth + suffixWidth + 2.0f * style.CellPadding.x;
+  return visibilityButtonWidth + style.ItemSpacing.x + nameWidth + imageRoleBadgesWidth(roleBadges) +
+         2.0f * style.CellPadding.x;
 }
 
 void submitAutosizeWidthMarker(float width)
@@ -989,12 +1001,12 @@ void renderInspectionWindowWithTable(
 
       const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
       const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
-      const std::string roleSuffix =
-        ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
+      const auto roleBadges = ui::view_overlay::imageChoiceRoleBadges(
+        {.displayName = {}, .visible = true, .active = isActiveImage, .reference = isRef});
       const std::size_t imageColumnIndex = columnIndex(InspectorColumn::Image);
       widths[imageColumnIndex] = std::max(
         widths[imageColumnIndex],
-        imageColumnWidthForCellText(image->settings().displayName().c_str(), roleSuffix.c_str()));
+        imageColumnWidthForCellText(image->settings().displayName().c_str(), roleBadges));
 
       if (image->isTimeSeries()) {
         expandWidth(InspectorColumn::TimeFrame, "000");
@@ -1305,10 +1317,9 @@ void renderInspectionWindowWithTable(
 
         const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
         const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
-        const std::string roleSuffix =
-          ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
-        const float suffixWidth =
-          roleSuffix.empty() ? 0.0f : ImGui::CalcTextSize(roleSuffix.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
+        const auto roleBadges = ui::view_overlay::imageChoiceRoleBadges(
+          {.displayName = {}, .visible = true, .active = isActiveImage, .reference = isRef});
+        const float badgesWidth = imageRoleBadgesWidth(roleBadges);
 
         const bool imageVisible = imageVisibleInAllViews(*image);
         const std::string visibilityButton =
@@ -1329,7 +1340,7 @@ void renderInspectionWindowWithTable(
         }
 
         ImGui::SameLine();
-        const float nameWidth = std::max(1.0f, ImGui::GetContentRegionAvail().x - suffixWidth);
+        const float nameWidth = std::max(1.0f, ImGui::GetContentRegionAvail().x - badgesWidth);
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, inputTextBgColor);
         ImGui::PushStyleColor(ImGuiCol_Text, inputTextFgColor);
@@ -1345,10 +1356,12 @@ void renderInspectionWindowWithTable(
         ImGui::PopItemWidth();
         ImGui::PopStyleColor(2); // ImGuiCol_FrameBg, ImGuiCol_Text
 
-        if (!roleSuffix.empty()) {
-          ImGui::SameLine();
-          ImGui::TextUnformatted(roleSuffix.c_str());
-          nameHovered = nameHovered || ImGui::IsItemHovered();
+        for (const std::string_view badge : roleBadges) {
+          if (!badge.empty()) {
+            ImGui::SameLine();
+            ImGui::ImageRoleBadge(badge);
+            nameHovered = nameHovered || ImGui::IsItemHovered();
+          }
         }
 
         if (nameHovered) {

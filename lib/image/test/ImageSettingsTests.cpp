@@ -63,6 +63,18 @@ TEST_CASE("ImageSettings rejects invalid construction arguments", "[image][setti
   CHECK_THROWS(ImageSettings("bad-components", 4, 2, ComponentType::UInt16, {makeStats(0.0, 0.0, 0.0, 0.0, 0.0)}));
 }
 
+TEST_CASE("ImageSettings initializes every image component at maximum opacity", "[image][settings]")
+{
+  const ImageSettings settings = makeSettings();
+
+  CHECK(settings.globalOpacity() == Catch::Approx(1.0));
+  REQUIRE(settings.numComponents() == 2);
+  for (uint32_t component = 0; component < settings.numComponents(); ++component) {
+    CHECK(settings.opacity(component) == Catch::Approx(1.0));
+    CHECK(settings.visibility(component));
+  }
+}
+
 TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and opacity", "[image][settings]")
 {
   ImageSettings settings = makeSettings();

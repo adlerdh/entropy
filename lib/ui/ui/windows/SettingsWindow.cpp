@@ -2963,8 +2963,8 @@ void requestRestoreDefaults(const SettingsPersistenceCallbacks& persistenceCallb
     {"Restore default settings?",
      "Restore all application settings to their built-in defaults?",
      "This changes UI, tool, synchronization, logging, and other application preferences. Project settings, loaded "
-     "data, layouts, transformations, and warp assignments are not reset. Use Save to write the restored application "
-     "settings to disk.",
+     "data, layouts, transformations, and warp assignments are not reset. The restored application settings will be "
+     "saved to disk immediately.",
      "Restore Defaults",
      "Cancel",
      ""});
@@ -2972,6 +2972,9 @@ void requestRestoreDefaults(const SettingsPersistenceCallbacks& persistenceCallb
   if (result && native_dialog::MessageDialogResult::FirstButton == *result) {
     if (persistenceCallbacks.restoreDefaults) {
       persistenceCallbacks.restoreDefaults();
+      if (persistenceCallbacks.saveSettings) {
+        persistenceCallbacks.saveSettings();
+      }
     }
     return;
   }
@@ -2992,13 +2995,16 @@ void renderRestoreDefaultsPopup(const SettingsPersistenceCallbacks& persistenceC
     ImGui::Spacing();
     ImGui::TextWrapped(
       "This changes UI, tool, synchronization, logging, and other application preferences. Project settings, loaded "
-      "data, layouts, transformations, and warp assignments are not reset. Use Save to write the restored application "
-      "settings to disk.");
+      "data, layouts, transformations, and warp assignments are not reset. The restored application settings will be "
+      "saved to disk immediately.");
     ImGui::Spacing();
 
     if (ImGui::Button("Restore Defaults")) {
       if (persistenceCallbacks.restoreDefaults) {
         persistenceCallbacks.restoreDefaults();
+        if (persistenceCallbacks.saveSettings) {
+          persistenceCallbacks.saveSettings();
+        }
       }
       ImGui::CloseCurrentPopup();
     }

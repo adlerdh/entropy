@@ -20,6 +20,7 @@
 #include <cfloat>
 #include <cmath>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -63,6 +64,66 @@ void renderPopupHeading(ImFont* font, const char* text)
   if (font) {
     ImGui::PopFont();
   }
+}
+
+struct ImageMenuRowResult
+{
+  bool changed = false;
+  bool hovered = false;
+};
+
+void renderImageColorSwatch(const glm::vec3& color, const float uiScale)
+{
+  const float frameHeight = ImGui::GetFrameHeight();
+  const float size = std::min(frameHeight, 8.0f * std::clamp(uiScale, 1.0f, 4.0f));
+  const ImVec2 cursor = ImGui::GetCursorScreenPos();
+  const ImVec2 topLeft{cursor.x, cursor.y + 0.5f * (frameHeight - size)};
+  const ImVec2 bottomRight{topLeft.x + size, topLeft.y + size};
+  const float alpha = ImGui::GetStyle().Alpha;
+  const ImU32 fill = ImGui::ColorConvertFloat4ToU32(
+    ImVec4{std::clamp(color.r, 0.0f, 1.0f), std::clamp(color.g, 0.0f, 1.0f), std::clamp(color.b, 0.0f, 1.0f), alpha});
+
+  ImGui::Dummy(ImVec2{size, frameHeight});
+  ImDrawList* const drawList = ImGui::GetWindowDrawList();
+  drawList->AddRectFilled(topLeft, bottomRight, fill, 1.5f * uiScale);
+  drawList->AddRect(topLeft, bottomRight, ImGui::GetColorU32(ImGuiCol_Border), 1.5f * uiScale);
+}
+
+ImageMenuRowResult renderImageMenuRow(
+  const std::string& label,
+  const glm::vec3& identificationColor,
+  const std::array<std::string_view, 2>& badges,
+  bool& selected,
+  const float uiScale)
+{
+  ImageMenuRowResult result;
+  result.changed = ImGui::Checkbox("##selected", &selected);
+  result.hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+
+  ImGui::SameLine();
+  renderImageColorSwatch(identificationColor, uiScale);
+  result.hovered = result.hovered || ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+
+  ImGui::SameLine();
+  if (ImGui::Selectable(
+        label.c_str(),
+        false,
+        ImGuiSelectableFlags_DontClosePopups,
+        ImVec2{ImGui::CalcTextSize(label.c_str()).x, ImGui::GetFrameHeight()}))
+  {
+    selected = !selected;
+    result.changed = true;
+  }
+  result.hovered = result.hovered || ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+
+  for (const std::string_view badge : badges) {
+    if (!badge.empty()) {
+      ImGui::SameLine();
+      ImGui::ImageRoleBadge(badge);
+      result.hovered = result.hovered || ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+    }
+  }
+  return result;
 }
 
 std::string orthogonalDirectionButtonLabel(
@@ -376,6 +437,12 @@ void renderViewSettingsComboWindow(
   const auto getImageIsReference = [&images](std::size_t imageIndex) {
     return images.getImageIsReference ? images.getImageIsReference(imageIndex) : false;
   };
+  const auto getImageIdentificationColor = [&images](std::size_t imageIndex) {
+    return images.getImageIdentificationColor ? images.getImageIdentificationColor(imageIndex) : glm::vec3{0.5f};
+  };
+  const auto getComparisonImagePosition = [&images](std::size_t imageIndex) {
+    return images.getComparisonImagePosition ? images.getComparisonImagePosition(imageIndex) : std::nullopt;
+  };
   const auto canImageBeVolumeRendered = [&images](std::size_t imageIndex) {
     return images.canImageBeVolumeRendered ? images.canImageBeVolumeRendered(imageIndex) : true;
   };
@@ -484,36 +551,36 @@ void renderViewSettingsComboWindow(
 
             for (std::size_t i = 0; i < numImages; ++i) {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
-              auto displayAndFileName = getImageDisplayAndFileName(i);
-              const std::string displayName = view_overlay::imageChoiceLabel(
-                {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), getImageIsReference(i)});
+              const auto displayAndFileName = getImageDisplayAndFileName(i);
+              const view_overlay::ImageChoice choice{
+                displayAndFileName.first,
+                getImageVisibilitySetting(i),
+                getImageIsActive(i),
+                getImageIsReference(i)};
+              const std::string displayName =
+                view_overlay::imageChoiceLabel({choice.displayName, choice.visible, false, false});
 
               bool rendered = isImageRendered(i);
-              const bool oldRendered = rendered;
-
-              if (usesThreeDImageSelection) {
-                const bool canVolumeRender = canImageBeVolumeRendered(i);
-                if (!canVolumeRender) {
-                  ImGui::BeginDisabled();
-                }
-                ImGui::Checkbox(displayName.c_str(), &rendered);
-                if (oldRendered != rendered && canVolumeRender) {
-                  setImageRendered(i, rendered);
-                }
-                if (!canVolumeRender) {
-                  ImGui::EndDisabled();
-                }
+              const bool canVolumeRender = !usesThreeDImageSelection || canImageBeVolumeRendered(i);
+              if (!canVolumeRender) {
+                ImGui::BeginDisabled();
               }
-              else {
-                ImGui::Checkbox(displayName.c_str(), &rendered);
-
-                if (oldRendered != rendered) {
-                  setImageRendered(i, rendered);
-                }
+              const ImageMenuRowResult row = renderImageMenuRow(
+                displayName,
+                getImageIdentificationColor(i),
+                view_overlay::imageChoiceRoleBadges(choice),
+                rendered,
+                uiScale);
+              if (!canVolumeRender) {
+                ImGui::EndDisabled();
               }
 
-              if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                if (usesThreeDImageSelection && !canImageBeVolumeRendered(i)) {
+              if (row.changed && canVolumeRender) {
+                setImageRendered(i, rendered);
+              }
+
+              if (row.hovered) {
+                if (!canVolumeRender) {
                   ImGui::SetTooltip(
                     "%s",
                     "This image is uploaded as a 2D texture. It can be shown in 2D views but cannot be volume "
@@ -576,19 +643,27 @@ void renderViewSettingsComboWindow(
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
 
               const auto displayAndFileName = getImageDisplayAndFileName(i);
-              const std::string displayName = view_overlay::imageChoiceLabel(
-                {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), getImageIsReference(i)});
+              const std::string displayName =
+                view_overlay::imageChoiceLabel({displayAndFileName.first, getImageVisibilitySetting(i), false, false});
 
               bool rendered = isImageUsedForMetric(i);
-              const bool oldRendered = rendered;
+              std::array<std::string_view, 2> badges{};
+              if (const auto position = getComparisonImagePosition(i)) {
+                if (0 == *position) {
+                  badges[0] = "FIX";
+                }
+                else if (1 == *position) {
+                  badges[0] = "MOV";
+                }
+              }
 
-              ImGui::Checkbox(displayName.c_str(), &rendered);
-
-              if (oldRendered != rendered) {
+              const ImageMenuRowResult row =
+                renderImageMenuRow(displayName, getImageIdentificationColor(i), badges, rendered, uiScale);
+              if (row.changed) {
                 setImageUsedForMetric(i, rendered);
               }
 
-              if (ImGui::IsItemHovered()) {
+              if (row.hovered) {
                 ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
               }
 

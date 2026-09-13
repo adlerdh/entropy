@@ -2,8 +2,10 @@
 
 #include "viewer/ViewModes.h"
 
+#include <array>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 namespace ui::view_overlay
 {
@@ -46,5 +48,15 @@ bool usesDisabledVisibilityIcon(ViewRenderMode renderMode);
  * @return Display label with hidden/active qualifiers appended.
  */
 std::string imageChoiceLabel(const ImageChoice& choice);
+
+/**
+ * @brief Return the ordered compact badges shown for an image's project roles.
+ * @param choice Image metadata and state.
+ * @return Reference and active badges, with empty elements for absent roles.
+ */
+constexpr std::array<std::string_view, 2> imageChoiceRoleBadges(const ImageChoice& choice)
+{
+  return {choice.reference ? "REF" : "", choice.active ? "ACT" : ""};
+}
 
 } // namespace ui::view_overlay
