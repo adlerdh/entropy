@@ -39,6 +39,7 @@ struct Result
 
 class JobContext;
 using Task = std::function<Result(JobContext&)>;
+using Completion = std::function<void(const Result&)>;
 
 /// Description and executable work for one export request.
 struct Request
@@ -46,6 +47,7 @@ struct Request
   std::string description;           //!< Short name displayed in the progress window
   std::filesystem::path destination; //!< Primary destination displayed to the user
   Task task;                         //!< Worker-thread operation
+  Completion completion;             //!< Optional completion dispatched later on the caller thread
 };
 
 /// Thread-safe snapshot used to render export status.
@@ -110,6 +112,9 @@ public:
 
   /// Return a coherent snapshot of the current export state.
   [[nodiscard]] Snapshot snapshot() const;
+
+  /// Invoke a completed job's callback once on the calling thread.
+  void dispatchCompletion();
 
   /// Wait for an active task to finish. Primarily useful to deterministic clients and tests.
   [[nodiscard]] bool waitForFinished(std::chrono::milliseconds timeout) const;

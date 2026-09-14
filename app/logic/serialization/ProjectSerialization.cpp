@@ -409,6 +409,9 @@ void to_json(json& j, const ProjectComparisonSettings& settings)
   json difference = settings.m_difference;
   addIfNotEmpty(j, "difference", std::move(difference));
 
+  json jointHistogram = settings.m_jointHistogram;
+  addIfNotEmpty(j, "jointHistogram", std::move(jointHistogram));
+
   json localNcc = settings.m_localNcc;
   addIfNotEmpty(j, "localNormalizedCrossCorrelation", std::move(localNcc));
 
@@ -442,6 +445,9 @@ void from_json(const json& j, ProjectComparisonSettings& settings)
 {
   if (const auto difference = j.find("difference"); difference != j.end() && difference->is_object()) {
     difference->get_to(settings.m_difference);
+  }
+  if (const auto jointHistogram = j.find("jointHistogram"); jointHistogram != j.end() && jointHistogram->is_object()) {
+    jointHistogram->get_to(settings.m_jointHistogram);
   }
   if (const auto localNcc = j.find("localNormalizedCrossCorrelation"); localNcc != j.end() && localNcc->is_object()) {
     localNcc->get_to(settings.m_localNcc);

@@ -22,12 +22,26 @@ std::filesystem::path testPath(const std::string& name)
 TEST_CASE("Export jobs publish progress and completion", "[ui][export][threading]")
 {
   ui::export_jobs::Service service;
+  bool completionCalled = false;
   REQUIRE(service.submit(
-    {.description = "Test export", .destination = "output.vtp", .task = [](ui::export_jobs::JobContext& context) {
-       context.update("Writing", 0.5f);
-       return ui::export_jobs::Result::success({"output.vtp"}, "Done");
-     }}));
+    {.description = "Test export",
+     .destination = "output.vtp",
+     .task =
+       [](ui::export_jobs::JobContext& context) {
+         context.update("Writing", 0.5f);
+         return ui::export_jobs::Result::success({"output.vtp"}, "Done");
+       },
+     .completion =
+       [&completionCalled](const ui::export_jobs::Result& result) {
+         completionCalled = result.outcome == ui::export_jobs::Outcome::Succeeded && result.message == "Done";
+       }}));
   REQUIRE(service.waitForFinished(2s));
+  CHECK_FALSE(completionCalled);
+  service.dispatchCompletion();
+  CHECK(completionCalled);
+  completionCalled = false;
+  service.dispatchCompletion();
+  CHECK_FALSE(completionCalled);
 
   const auto snapshot = service.snapshot();
   CHECK(snapshot.hasJob);

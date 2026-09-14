@@ -18,6 +18,7 @@
 #include "mesh/MeshTypes.h"
 #include "registration/Artifacts.h"
 #include "ui/NativeFileDialogs.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
@@ -231,52 +232,43 @@ serialize::Image EntropyApp::createImageSnapshot(
     serializedImage.m_dicomSource = sourceIt->second;
   }
   const auto& transformations = image->transformations();
+  const bool isReferenceImage = m_data.refImageUid() && *m_data.refImageUid() == imageUid;
+  serializedImage.m_initialAffineEnabled = isReferenceImage || transformations.get_enable_affine_T_subject();
+  serializedImage.m_manualAffineEnabled = isReferenceImage || transformations.get_enable_worldDef_T_affine();
   if (
-    transformations.get_affine_T_subject_fileName() ||
-    (transformations.get_enable_affine_T_subject() && !isApproximatelyIdentity(transformations.get_affine_T_subject())))
+    transformations.get_affine_T_subject_fileName() || !isApproximatelyIdentity(transformations.get_affine_T_subject()))
   {
     serializedImage.m_initialAffineMatrix = transformations.get_affine_T_subject();
   }
 
-  if (
-    transformations.get_enable_worldDef_T_affine() && !isApproximatelyIdentity(transformations.get_worldDef_T_affine()))
-  {
+  if (!isApproximatelyIdentity(transformations.get_worldDef_T_affine())) {
     serializedImage.m_manualAffineMatrix = transformations.get_worldDef_T_affine();
   }
   serializedImage.m_settings = project_snapshot::imageSettings(*image, defaultBorderColor);
 
   const auto defUids = m_data.imageToDefUids(imageUid);
-  if (!defUids.empty()) {
-    const auto activeInverseWarpUid = m_data.imageToActiveInverseWarpUid(imageUid);
-    const Image* inverseWarp =
-      activeInverseWarpUid ? m_data.warpField(*activeInverseWarpUid) : m_data.warpField(defUids.front());
-    if (inverseWarp && inverseWarp->header().existsOnDisk() && !inverseWarp->header().fileName().empty()) {
-      serializedImage.m_inverseWarpFieldPath = inverseWarp->header().fileName();
+  const auto activeInverseWarpUid = m_data.imageToActiveInverseWarpUid(imageUid);
+  const auto activeForwardWarpUid = m_data.imageToActiveForwardWarpUid(imageUid);
+  for (const auto& defUid : defUids) {
+    const Image* warp = m_data.warpField(defUid);
+    if (!warp || !warp->header().existsOnDisk() || warp->header().fileName().empty()) {
+      spdlog::warn("Cannot serialize missing or pathless warp field {} for image {}", defUid, imageUid);
+      continue;
     }
 
-    if (const auto inverseWarpReferenceUid = m_data.imageToActiveInverseWarpReferenceImageUid(imageUid)) {
-      const Image* inverseWarpReferenceImage = m_data.image(*inverseWarpReferenceUid);
-      if (
-        inverseWarpReferenceImage && inverseWarpReferenceImage->header().existsOnDisk() &&
-        !inverseWarpReferenceImage->header().fileName().empty())
-      {
-        serializedImage.m_inverseWarpReferenceImagePath = inverseWarpReferenceImage->header().fileName();
+    serialize::ImageWarpField serializedWarp{
+      .m_path = warp->header().fileName(),
+      .m_activeInverse = activeInverseWarpUid && *activeInverseWarpUid == defUid,
+      .m_activeForward = activeForwardWarpUid && *activeForwardWarpUid == defUid};
+    if (serializedWarp.m_activeInverse) {
+      if (const auto referenceUid = m_data.imageToActiveInverseWarpReferenceImageUid(imageUid)) {
+        const Image* referenceImage = m_data.image(*referenceUid);
+        if (referenceImage && referenceImage->header().existsOnDisk() && !referenceImage->header().fileName().empty()) {
+          serializedWarp.m_inverseReferenceImagePath = referenceImage->header().fileName();
+        }
       }
     }
-
-    if (const auto activeForwardWarpUid = m_data.imageToActiveForwardWarpUid(imageUid)) {
-      const Image* forwardWarp = m_data.warpField(*activeForwardWarpUid);
-      if (forwardWarp && forwardWarp->header().existsOnDisk() && !forwardWarp->header().fileName().empty()) {
-        serializedImage.m_forwardWarpFieldPath = forwardWarp->header().fileName();
-      }
-    }
-
-    if (defUids.size() > 1) {
-      spdlog::warn(
-        "Image {} has {} warp fields, but project files currently save only the active inverse and forward ones",
-        imageUid,
-        defUids.size());
-    }
+    serializedImage.m_warpFields.push_back(std::move(serializedWarp));
   }
 
   for (const auto& segUid : m_data.imageToSegUids(imageUid)) {
@@ -286,13 +278,14 @@ serialize::Image EntropyApp::createImageSnapshot(
       continue;
     }
 
-    if (!seg->header().existsOnDisk() || seg->header().fileName().empty()) {
-      spdlog::debug("Skipping unsaved segmentation {} for image {}; it has no file-backed path", segUid, imageUid);
+    const auto segmentationPath = m_data.segmentationPersistencePath(segUid);
+    if (!segmentationPath) {
+      spdlog::debug("Skipping untouched in-memory segmentation {} for image {}", segUid, imageUid);
       continue;
     }
 
     serialize::Segmentation serializedSeg;
-    serializedSeg.m_segFileName = seg->header().fileName();
+    serializedSeg.m_segFileName = *segmentationPath;
     serializedSeg.m_settings = project_snapshot::segmentationSettings(m_data, *seg);
     serializedImage.m_segmentations.emplace_back(std::move(serializedSeg));
   }
@@ -398,13 +391,25 @@ bool EntropyApp::hasUnsavedAnnotations() const
   return false;
 }
 
+bool EntropyApp::hasUnsavedSegmentations() const
+{
+  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+    for (const auto& segmentationUid : m_data.imageToSegUids(imageUid)) {
+      if (m_data.segmentationHasUnsavedVoxelChanges(segmentationUid)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool EntropyApp::projectHasUnsavedChanges() const
 {
   if (ProjectLoadState::Loaded != m_data.state().projectLoadState() || 0 == m_data.numImages()) {
     return false;
   }
 
-  if (hasUnsavedAnnotations()) {
+  if (hasUnsavedAnnotations() || hasUnsavedSegmentations()) {
     return true;
   }
 
@@ -536,11 +541,20 @@ void EntropyApp::saveAppSettingsQuietly()
 
   std::string error;
   const fs::path settingsFile = app_paths::userSettingsFile();
-  if (!user_preferences::save(m_data.settings(), m_data.renderSettings(), m_data.guiData(), settingsFile, &error)) {
+  if (!user_preferences::save(
+        m_data.settings(),
+        m_data.applicationRenderPreferences(),
+        user_preferences::precisionPreferencesFrom(m_data.guiData()),
+        settingsFile,
+        &error))
+  {
     spdlog::warn("Could not save recent file history to {}: {}", settingsFile, error);
     return;
   }
-  user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
+  user_preferences::markSavedAppSettingsState(
+    m_data.settings(),
+    m_data.applicationRenderPreferences(),
+    m_data.guiData());
 }
 
 void EntropyApp::recordRecentImageGroup(const std::vector<fs::path>& fileNames)
@@ -603,6 +617,18 @@ bool EntropyApp::saveProject()
 
 bool EntropyApp::saveProjectAs(const fs::path& fileName)
 {
+  if (hasUnsavedSegmentations()) {
+    spdlog::error("Cannot save project while it contains segmentation voxel edits newer than their saved files");
+    native_dialog::showMessageDialog(
+      {"Unsaved Segmentation Edits",
+       "The project cannot be saved yet.",
+       "Export each edited segmentation, wait for its export to finish, then save the project again.",
+       "OK",
+       "",
+       ""});
+    return false;
+  }
+
   const fs::path normalizedFileName = projectSavePath(fileName);
   serialize::EntropyProject project = createProjectSnapshot();
 
@@ -923,7 +949,10 @@ void EntropyApp::requestCloseProject()
 
 void EntropyApp::requestQuitApp()
 {
-  user_preferences::updateAppSettingsDirtyState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
+  user_preferences::updateAppSettingsDirtyState(
+    m_data.settings(),
+    m_data.applicationRenderPreferences(),
+    m_data.guiData());
 
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;

@@ -327,6 +327,8 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   project.m_comparison.m_difference.m_metric.m_invertColormap = true;
   project.m_comparison.m_difference.m_metric.m_continuousColormap = false;
   project.m_comparison.m_difference.m_metric.m_colormapLevels = 11;
+  project.m_comparison.m_jointHistogram.m_colorMapIndex = 5;
+  project.m_comparison.m_jointHistogram.m_invertColormap = true;
   project.m_comparison.m_localNcc.m_presentation = serialize::ProjectLocalNccPresentation::Correlation;
   project.m_comparison.m_localNcc.m_negativeCorrelationAsMismatch = false;
   project.m_comparison.m_localNcc.m_patchRadius = 5;
@@ -355,6 +357,8 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(comparison.at("difference").at("squared") == false);
   CHECK(comparison.at("difference").at("metric").at("colormapIndex") == 9);
   CHECK(comparison.at("difference").at("metric").at("windowSlopeIntercept").at(0) == 2.0f);
+  CHECK(comparison.at("jointHistogram").at("colormapIndex") == 5);
+  CHECK(comparison.at("jointHistogram").at("invertColormap") == true);
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
   CHECK(comparison.at("localLinearResidual").at("patchRadius") == 4);
@@ -368,6 +372,8 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(parsed.m_comparison.m_difference.m_squared == false);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_colorMapIndex == 9);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_slopeIntercept == glm::vec2{2.0f, -1.0f});
+  CHECK(parsed.m_comparison.m_jointHistogram.m_colorMapIndex == 5);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_invertColormap);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_invertColormap == true);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_continuousColormap == false);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_colormapLevels == 11);
@@ -1102,7 +1108,9 @@ TEST_CASE(
   serialize::Image image;
   image.m_imageFileName = "moving.nii.gz";
   image.m_initialAffineMatrix = testManualTransformation();
+  image.m_initialAffineEnabled = false;
   image.m_manualAffineMatrix = testManualTransformation();
+  image.m_manualAffineEnabled = false;
   image.m_manualAffineMatrix->operator[](3).x = 7.0f;
   project.m_additionalImages.push_back(image);
 
@@ -1115,11 +1123,13 @@ TEST_CASE(
   CHECK_FALSE(serializedImage.contains("image"));
   REQUIRE(serializedImage.at("initialAffine").is_object());
   REQUIRE(serializedImage.at("initialAffine").contains("matrix"));
+  CHECK(serializedImage.at("initialAffine").at("enabled") == false);
   CHECK_FALSE(serializedImage.at("initialAffine").contains("file"));
   CHECK_FALSE(serializedImage.at("initialAffine").contains("path"));
   REQUIRE(serializedImage.contains("manualAffine"));
   REQUIRE(serializedImage.at("manualAffine").is_object());
   REQUIRE(serializedImage.at("manualAffine").contains("matrix"));
+  CHECK(serializedImage.at("manualAffine").at("enabled") == false);
   CHECK_FALSE(serializedImage.at("manualAffine").contains("file"));
   CHECK_FALSE(serializedImage.at("manualAffine").contains("path"));
   CHECK_FALSE(serializedImage.contains("affine"));
@@ -1129,9 +1139,11 @@ TEST_CASE(
   REQUIRE(parsed.m_additionalImages.size() == 1);
   CHECK_FALSE(parsed.m_additionalImages.at(0).m_initialAffineFileName.has_value());
   REQUIRE(parsed.m_additionalImages.at(0).m_initialAffineMatrix.has_value());
+  CHECK_FALSE(parsed.m_additionalImages.at(0).m_initialAffineEnabled);
   checkMat4(*parsed.m_additionalImages.at(0).m_initialAffineMatrix, *image.m_initialAffineMatrix);
   CHECK_FALSE(parsed.m_additionalImages.at(0).m_manualAffineFileName.has_value());
   REQUIRE(parsed.m_additionalImages.at(0).m_manualAffineMatrix.has_value());
+  CHECK_FALSE(parsed.m_additionalImages.at(0).m_manualAffineEnabled);
   checkMat4(*parsed.m_additionalImages.at(0).m_manualAffineMatrix, *image.m_manualAffineMatrix);
 }
 
@@ -1658,37 +1670,41 @@ TEST_CASE("Project serialization preserves inverse and forward warp paths", "[pr
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = imageFile;
-  project.m_referenceImage.m_inverseWarpFieldPath = inverseFile;
-  project.m_referenceImage.m_inverseWarpReferenceImagePath = referenceImageFile;
-  project.m_referenceImage.m_forwardWarpFieldPath = forwardFile;
+  project.m_referenceImage.m_warpFields = {
+    serialize::ImageWarpField{
+      .m_path = inverseFile,
+      .m_activeInverse = true,
+      .m_inverseReferenceImagePath = referenceImageFile},
+    serialize::ImageWarpField{.m_path = forwardFile, .m_activeForward = true}};
 
   const json inlineJson = project;
-  CHECK(inlineJson.at("images").at(0).at("inverseWarpField").at("path") == inverseFile.generic_string());
-  CHECK_FALSE(inlineJson.at("images").at(0).contains("inverseWarp"));
-  CHECK_FALSE(inlineJson.at("images").at(0).contains("inverseWarpReferenceImagePath"));
+  REQUIRE(inlineJson.at("images").at(0).at("warpFields").size() == 2);
+  CHECK(inlineJson.at("images").at(0).at("warpFields").at(0).at("path") == inverseFile.generic_string());
+  CHECK(inlineJson.at("images").at(0).at("warpFields").at(0).at("activeInverse") == true);
   CHECK(
-    inlineJson.at("images").at(0).at("inverseWarpReferenceImage").at("path") == referenceImageFile.generic_string());
-  CHECK(inlineJson.at("images").at(0).at("forwardWarpField").at("path") == forwardFile.generic_string());
-  CHECK_FALSE(inlineJson.at("images").at(0).contains("forwardWarp"));
+    inlineJson.at("images").at(0).at("warpFields").at(0).at("inverseReferenceImage").at("path") ==
+    referenceImageFile.generic_string());
+  CHECK(inlineJson.at("images").at(0).at("warpFields").at(1).at("path") == forwardFile.generic_string());
+  CHECK(inlineJson.at("images").at(0).at("warpFields").at(1).at("activeForward") == true);
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
-  CHECK(savedJson.at("images").at(0).at("inverseWarpField").at("path") == "inverse.nrrd");
-  CHECK_FALSE(savedJson.at("images").at(0).contains("inverseWarp"));
-  CHECK_FALSE(savedJson.at("images").at(0).contains("inverseWarpReferenceImagePath"));
-  CHECK(savedJson.at("images").at(0).at("inverseWarpReferenceImage").at("path") == "fixed.nii.gz");
-  CHECK(savedJson.at("images").at(0).at("forwardWarpField").at("path") == "forward.nrrd");
-  CHECK_FALSE(savedJson.at("images").at(0).contains("forwardWarp"));
+  CHECK(savedJson.at("images").at(0).at("warpFields").at(0).at("path") == "inverse.nrrd");
+  CHECK(savedJson.at("images").at(0).at("warpFields").at(0).at("inverseReferenceImage").at("path") == "fixed.nii.gz");
+  CHECK(savedJson.at("images").at(0).at("warpFields").at(1).at("path") == "forward.nrrd");
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
-  REQUIRE(loaded.m_referenceImage.m_inverseWarpFieldPath);
-  REQUIRE(loaded.m_referenceImage.m_inverseWarpReferenceImagePath);
-  REQUIRE(loaded.m_referenceImage.m_forwardWarpFieldPath);
-  CHECK(*loaded.m_referenceImage.m_inverseWarpFieldPath == fs::canonical(inverseFile));
-  CHECK(*loaded.m_referenceImage.m_inverseWarpReferenceImagePath == fs::canonical(referenceImageFile));
-  CHECK(*loaded.m_referenceImage.m_forwardWarpFieldPath == fs::canonical(forwardFile));
+  REQUIRE(loaded.m_referenceImage.m_warpFields.size() == 2);
+  CHECK(loaded.m_referenceImage.m_warpFields[0].m_path == fs::canonical(inverseFile));
+  CHECK(loaded.m_referenceImage.m_warpFields[0].m_activeInverse);
+  CHECK_FALSE(loaded.m_referenceImage.m_warpFields[0].m_activeForward);
+  REQUIRE(loaded.m_referenceImage.m_warpFields[0].m_inverseReferenceImagePath);
+  CHECK(*loaded.m_referenceImage.m_warpFields[0].m_inverseReferenceImagePath == fs::canonical(referenceImageFile));
+  CHECK(loaded.m_referenceImage.m_warpFields[1].m_path == fs::canonical(forwardFile));
+  CHECK_FALSE(loaded.m_referenceImage.m_warpFields[1].m_activeInverse);
+  CHECK(loaded.m_referenceImage.m_warpFields[1].m_activeForward);
 }
 
 TEST_CASE("Project serialization preserves registration result artifacts", "[project][serialization]")
@@ -1987,4 +2003,69 @@ TEST_CASE("Project serialization preserves sparse image component threshold indi
   CHECK(settings.m_componentWindows.at(2) == 12.0);
   CHECK(settings.m_componentThresholdLows.at(2) == 5.0);
   CHECK(settings.m_componentThresholdHighs.at(2) == 99.0);
+}
+
+TEST_CASE("Project serialization preserves changed histogram controls", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  serialize::ImageSettings settings;
+  HistogramSettings histogram;
+  histogram.m_numBinsMethod = NumBinsComputationMethod::Scott;
+  histogram.m_numBins = 73;
+  histogram.m_binWidth = 2.5;
+  histogram.m_isCumulative = true;
+  histogram.m_isDensity = true;
+  histogram.m_isHorizontal = true;
+  histogram.m_isLogScale = false;
+  histogram.m_intensityRange = {-4.0, 12.0};
+  histogram.m_useCustomIntensityRange = true;
+  settings.m_histograms.push_back({.m_component = 2, .m_settings = histogram});
+  project.m_referenceImage.m_settings = settings;
+
+  const json root = project;
+  const json& serialized = root.at("images").at(0).at("settings").at("histograms").at(0);
+  CHECK(serialized.at("component") == 2);
+  CHECK(serialized.at("binMethod") == "scott");
+  CHECK(serialized.at("numBins") == 73);
+  CHECK(serialized.at("useCustomIntensityRange") == true);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_settings);
+  REQUIRE(parsed.m_referenceImage.m_settings->m_histograms.size() == 1);
+  CHECK(parsed.m_referenceImage.m_settings->m_histograms.front().m_settings == histogram);
+}
+
+TEST_CASE("Failed project open preserves output and working directory", "[project][serialization][failure]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path projectFile = root / "broken.json";
+  {
+    std::ofstream out(projectFile);
+    out << R"({"version":{"major":1,"minor":0},"images":[{"path":"missing.nii.gz"}]})";
+  }
+
+  serialize::EntropyProject output;
+  output.m_referenceImage.m_imageFileName = "unchanged.nii.gz";
+  const fs::path originalWorkingDirectory = fs::current_path();
+  REQUIRE_FALSE(serialize::open(output, projectFile));
+  CHECK(output.m_referenceImage.m_imageFileName == fs::path{"unchanged.nii.gz"});
+  CHECK(fs::current_path() == originalWorkingDirectory);
+}
+
+TEST_CASE("Project save reports replacement failures and cleans temporary files", "[project][serialization][failure]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path imageFile = root / "image.nii.gz";
+  touchFile(imageFile);
+  const fs::path destination = root / "project.json";
+  fs::create_directory(destination);
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = imageFile;
+  REQUIRE_FALSE(serialize::save(project, destination));
+  CHECK(fs::is_directory(destination));
+  for (const auto& entry : fs::directory_iterator(root)) {
+    CHECK(entry.path().filename().string().find(".project.json.tmp-") == std::string::npos);
+  }
 }

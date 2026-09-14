@@ -24,6 +24,8 @@ struct SharedState
   mutable std::mutex mutex;
   mutable std::condition_variable finished;
   Snapshot snapshot;
+  Completion completion;
+  std::optional<Result> completedResult;
 };
 } // namespace detail
 
@@ -137,6 +139,7 @@ Service::~Service()
 
 bool Service::submit(Request request)
 {
+  dispatchCompletion();
   if (!request.task || request.destination.empty()) {
     return false;
   }
@@ -166,6 +169,8 @@ bool Service::submit(Request request)
       .indeterminate = false,
       .message = {},
       .outputFileNames = {}};
+    m_state->completion = std::move(request.completion);
+    m_state->completedResult.reset();
   }
 
   Task task = std::move(request.task);
@@ -191,6 +196,7 @@ bool Service::submit(Request request)
 
     {
       std::scoped_lock lock(state->mutex);
+      state->completedResult = result;
       state->snapshot.outcome = result.outcome;
       state->snapshot.progress = Outcome::Succeeded == result.outcome ? std::optional{1.0f} : std::nullopt;
       state->snapshot.indeterminate = false;
@@ -223,6 +229,7 @@ void Service::setCompact(const bool compact)
 
 void Service::dismiss()
 {
+  dispatchCompletion();
   std::scoped_lock lock(m_state->mutex);
   if (!running(*m_state)) {
     m_state->snapshot = {};
@@ -233,6 +240,24 @@ Snapshot Service::snapshot() const
 {
   std::scoped_lock lock(m_state->mutex);
   return m_state->snapshot;
+}
+
+void Service::dispatchCompletion()
+{
+  Completion completion;
+  std::optional<Result> result;
+  {
+    std::scoped_lock lock(m_state->mutex);
+    if (!m_state->completedResult) {
+      return;
+    }
+    completion = std::move(m_state->completion);
+    result = std::move(m_state->completedResult);
+    m_state->completedResult.reset();
+  }
+  if (completion) {
+    completion(*result);
+  }
 }
 
 bool Service::waitForFinished(const std::chrono::milliseconds timeout) const

@@ -2,6 +2,8 @@
 #include "ui/ImGuiWrapper.h"
 
 #include "common/MathFuncs.h"
+#include "common/LoggingDefaults.h"
+#include "common/LoggingSettings.h"
 
 #include "ui/Helpers.h"
 #include "ui/AboutIcon.h"
@@ -3008,6 +3010,9 @@ void ImGuiWrapper::render()
   processWarpInversionFutures();
   processRegistrationJobFutures();
   requestQueuedRegistrationJobs();
+  if (m_appData.guiData().m_exportJobs) {
+    m_appData.guiData().m_exportJobs->dispatchCompletion();
+  }
 
   if (m_pendingUserScaleOverride) {
     m_uiScaleManager.setUserScaleOverride(*m_pendingUserScaleOverride);
@@ -4396,14 +4401,14 @@ void ImGuiWrapper::render()
     std::string error;
     if (user_preferences::save(
           m_appData.settings(),
-          m_appData.renderSettings(),
-          m_appData.guiData(),
+          m_appData.applicationRenderPreferences(),
+          user_preferences::precisionPreferencesFrom(m_appData.guiData()),
           settingsFile,
           &error))
     {
       user_preferences::markSavedAppSettingsState(
         m_appData.settings(),
-        m_appData.renderSettings(),
+        m_appData.applicationRenderPreferences(),
         m_appData.guiData());
       s_settingsPersistenceStatus = "Saved";
       return true;
@@ -4412,7 +4417,10 @@ void ImGuiWrapper::render()
     s_settingsPersistenceStatus = "Save failed: " + error;
     return false;
   };
-  user_preferences::updateAppSettingsDirtyState(m_appData.settings(), m_appData.renderSettings(), m_appData.guiData());
+  user_preferences::updateAppSettingsDirtyState(
+    m_appData.settings(),
+    m_appData.applicationRenderPreferences(),
+    m_appData.guiData());
 
   renderConfirmCloseAppPopup(m_appData, m_quitAppWithoutPrompt);
   renderUnsavedAppSettingsPopup(m_appData, saveUserSettingsToDefault, m_quitAppWithoutPrompt);
@@ -4652,8 +4660,8 @@ void ImGuiWrapper::render()
             std::string error;
             if (user_preferences::save(
                   m_appData.settings(),
-                  m_appData.renderSettings(),
-                  m_appData.guiData(),
+                  m_appData.applicationRenderPreferences(),
+                  user_preferences::precisionPreferencesFrom(m_appData.guiData()),
                   fileName,
                   &error))
             {
@@ -4665,12 +4673,31 @@ void ImGuiWrapper::render()
           },
         .restoreDefaults =
           [this, applyActivePreferences]() {
-            user_preferences::applyDefaults(m_appData.settings(), m_appData.renderSettings(), m_appData.guiData());
+            auto currentProjectPresentation = user_preferences::renderPreferencesFrom(m_appData.renderSettings());
+            const bool projectLoaded = ProjectLoadState::Loaded == m_appData.state().projectLoadState();
+            const bool synchronizeTimeSeries = m_appData.settings().synchronizeTimeSeries();
+            const bool lockAnatomicalDirections = m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage();
+            m_appData.applicationRenderPreferences() = user_preferences::defaultRenderPreferences();
+            auto liveDefaults = m_appData.applicationRenderPreferences();
+            if (projectLoaded) {
+              user_preferences::preserveProjectPresentation(liveDefaults, currentProjectPresentation);
+            }
+            m_appData.settings() = AppSettings{};
+            if (projectLoaded) {
+              m_appData.settings().setSynchronizeTimeSeries(synchronizeTimeSeries);
+              m_appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(lockAnatomicalDirections);
+            }
+            user_preferences::applyRenderPreferencesTo(m_appData.renderSettings(), liveDefaults);
+            user_preferences::applyPrecisionPreferencesTo(
+              m_appData.guiData(),
+              user_preferences::PrecisionPreferences{});
+            logging::setApplicationLogLevel(logging::defaultLogLevel());
+            logging::setLoggingEnabled(true);
             applyActivePreferences();
             syncLayoutTabGuiDataFromSettings(m_appData);
             user_preferences::updateAppSettingsDirtyState(
               m_appData.settings(),
-              m_appData.renderSettings(),
+              m_appData.applicationRenderPreferences(),
               m_appData.guiData());
             s_settingsPersistenceStatus = "Defaults restored";
           },

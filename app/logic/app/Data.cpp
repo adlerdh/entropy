@@ -93,6 +93,7 @@ void AppData::clearProjectData()
   m_componentProjectionToSourceImage.clear();
   m_segs.clear();
   m_segUidsOrdered.clear();
+  m_segmentationPersistence.clear();
   m_defs.clear();
   m_defUidsOrdered.clear();
 
@@ -504,10 +505,44 @@ std::optional<uuid> AppData::addSeg(Image segArg)
     return std::nullopt;
   }
 
+  const auto& header = segArg.header();
+  const std::optional<fs::path> persistencePath =
+    header.existsOnDisk() && !header.fileName().empty() ? std::optional<fs::path>{header.fileName()} : std::nullopt;
+  const std::uint64_t savedPixelRevision = segArg.pixelDataRevision();
+
   auto uid = generateRandomUuid();
   m_segs.emplace(uid, std::move(segArg));
   m_segUidsOrdered.push_back(uid);
+  m_segmentationPersistence.emplace(
+    uid,
+    SegmentationPersistence{.fileName = persistencePath, .savedPixelRevision = savedPixelRevision});
   return uid;
+}
+
+std::optional<fs::path> AppData::segmentationPersistencePath(const uuid& segUidArg) const
+{
+  const auto it = m_segmentationPersistence.find(segUidArg);
+  return it == m_segmentationPersistence.end() ? std::nullopt : it->second.fileName;
+}
+
+bool AppData::segmentationHasUnsavedVoxelChanges(const uuid& segUidArg) const
+{
+  const Image* segmentation = seg(segUidArg);
+  const auto persistence = m_segmentationPersistence.find(segUidArg);
+  return segmentation && persistence != m_segmentationPersistence.end() &&
+         segmentation->pixelDataRevision() != persistence->second.savedPixelRevision;
+}
+
+bool AppData::recordSegmentationExport(
+  const uuid& segUidArg,
+  fs::path fileName,
+  const std::uint64_t exportedPixelRevision)
+{
+  if (!seg(segUidArg) || fileName.empty()) {
+    return false;
+  }
+  m_segmentationPersistence[segUidArg] = {.fileName = std::move(fileName), .savedPixelRevision = exportedPixelRevision};
+  return true;
 }
 
 std::optional<uuid> AppData::addImportedMesh(const uuid& imageUidArg, mesh::MeshRecord meshArg)
@@ -933,6 +968,7 @@ bool AppData::removeSeg(const uuid& segUidArg)
   auto segVecIt = std::find(std::begin(m_segUidsOrdered), std::end(m_segUidsOrdered), segUidArg);
   if (std::end(m_segUidsOrdered) != segVecIt) {
     m_segUidsOrdered.erase(segVecIt);
+    m_segmentationPersistence.erase(segUidArg);
   }
   else {
     return false;
@@ -2285,6 +2321,16 @@ const rendering::RenderSettings& AppData::renderSettings() const
 rendering::RenderSettings& AppData::renderSettings()
 {
   return m_renderSettings;
+}
+
+const user_preferences::RenderPreferences& AppData::applicationRenderPreferences() const
+{
+  return m_applicationRenderPreferences;
+}
+
+user_preferences::RenderPreferences& AppData::applicationRenderPreferences()
+{
+  return m_applicationRenderPreferences;
 }
 
 const rendering::RenderResources& AppData::renderResources() const

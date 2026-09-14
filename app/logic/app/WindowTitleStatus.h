@@ -9,7 +9,7 @@ namespace window_title
 /**
  * @brief Return the project name used in the window title.
  * @param projectFileName Project file path.
- * @return Project filename with a trailing ".json" suffix removed case-insensitively.
+ * @return Project filename without its parent path.
  */
 std::string projectDisplayName(const std::filesystem::path& projectFileName);
 
@@ -18,7 +18,7 @@ std::string projectDisplayName(const std::filesystem::path& projectFileName);
  * @param projectFileName Optional project file path.
  * @param imageDisplayNames Comma-separated image display names.
  * @param dirty True when the loaded project has unsaved changes.
- * @return Status text shown inside the Entropy title brackets.
+ * @return Saved project filename, or image display names when the project has no file.
  */
 std::string
 status(const std::optional<std::filesystem::path>& projectFileName, const std::string& imageDisplayNames, bool dirty);

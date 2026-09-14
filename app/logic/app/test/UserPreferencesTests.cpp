@@ -629,6 +629,26 @@ TEST_CASE("user preferences save creates parent directories and load restores th
   requirePrecisionPreferencesEqual(actualPrecisionPreferences, expectedPrecisionPreferences);
 }
 
+TEST_CASE("user preferences save reports replacement failures and removes its temporary file", "[app][settings]")
+{
+  const std::filesystem::path destination = tempSettingsFile("blocked-settings.json");
+  std::filesystem::remove_all(destination);
+  std::filesystem::create_directory(destination);
+
+  std::string error;
+  REQUIRE_FALSE(user_preferences::save(
+    AppSettings{},
+    user_preferences::RenderPreferences{},
+    user_preferences::PrecisionPreferences{},
+    destination,
+    &error));
+  CHECK_FALSE(error.empty());
+  CHECK(std::filesystem::is_directory(destination));
+  for (const auto& entry : std::filesystem::directory_iterator(destination.parent_path())) {
+    CHECK(entry.path().filename().string().find(".blocked-settings.json.tmp-") == std::string::npos);
+  }
+}
+
 TEST_CASE("application render preferences retain rendering controls but ignore view presentation", "[app][settings]")
 {
   user_preferences::RenderPreferences preferences;
@@ -658,6 +678,23 @@ TEST_CASE("application render preferences retain rendering controls but ignore v
   CHECK(appPreferences.reversePovRotation == true);
   CHECK(appPreferences.synchronizeThreeDCameras == true);
   CHECK(appPreferences.ddpMaxPeelPasses == 12u);
+}
+
+TEST_CASE("editing live rendering merges only application-owned values into application defaults", "[app][settings]")
+{
+  user_preferences::RenderPreferences applicationPreferences;
+  applicationPreferences.transformationGuideColor = {0.2f, 0.3f, 0.4f, 1.0f};
+
+  const user_preferences::RenderPreferences before;
+  auto after = before;
+  after.raycastSamplingFactor = 0.45f;
+  after.showCrosshairs = false;
+
+  user_preferences::mergeEditedRenderPreferences(applicationPreferences, before, after);
+
+  CHECK(applicationPreferences.raycastSamplingFactor == Catch::Approx(0.45f));
+  CHECK(applicationPreferences.transformationGuideColor == (glm::vec4{0.2f, 0.3f, 0.4f, 1.0f}));
+  CHECK(applicationPreferences.showCrosshairs == user_preferences::RenderPreferences{}.showCrosshairs);
 }
 
 TEST_CASE("DDP changes modify the application settings fingerprint", "[app][settings][ddp]")
@@ -697,6 +734,31 @@ TEST_CASE("user preferences reject invalid JSON without mutating existing values
   std::string error;
   REQUIRE_FALSE(
     user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, "{ not json", &error));
+  CHECK_FALSE(error.empty());
+  requireSettingsEqual(settings, expectedSettings);
+  requireRenderPreferencesEqual(renderPreferences, expectedRenderPreferences);
+  requirePrecisionPreferencesEqual(precisionPreferences, expectedPrecisionPreferences);
+}
+
+TEST_CASE("user preference application is transactional after a semantic error", "[app][settings]")
+{
+  AppSettings settings;
+  setNonDefaultSettings(settings);
+  user_preferences::RenderPreferences renderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::PrecisionPreferences precisionPreferences = makeNonDefaultPrecisionPreferences();
+  const AppSettings expectedSettings = settings;
+  const auto expectedRenderPreferences = renderPreferences;
+  const auto expectedPrecisionPreferences = precisionPreferences;
+
+  const std::string text = R"({
+    "format": "entropy.userSettings",
+    "version": {"major": 1, "minor": 0},
+    "views": {"recenterOn": "referenceImage"},
+    "registration": {"greedyExecutable": {}}
+  })";
+
+  std::string error;
+  REQUIRE_FALSE(user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, text, &error));
   CHECK_FALSE(error.empty());
   requireSettingsEqual(settings, expectedSettings);
   requireRenderPreferencesEqual(renderPreferences, expectedRenderPreferences);

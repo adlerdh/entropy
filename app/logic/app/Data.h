@@ -14,6 +14,7 @@
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/app/Settings.h"
 #include "logic/app/State.h"
+#include "logic/app/UserPreferences.h"
 #include "logic/serialization/ProjectSerialization.h"
 
 #include "registration/Jobs.h"
@@ -87,6 +88,9 @@ public:
   const rendering::RenderSettings& renderSettings() const;
   rendering::RenderSettings& renderSettings();
 
+  const user_preferences::RenderPreferences& applicationRenderPreferences() const;
+  user_preferences::RenderPreferences& applicationRenderPreferences();
+
   const rendering::RenderResources& renderResources() const;
   rendering::RenderResources& renderResources();
 
@@ -131,6 +135,16 @@ public:
    * @return If added, the segmentation image's newly generated unique identifier; else nullopt.
    */
   std::optional<uuid> addSeg(Image segArg);
+
+  /** @brief Return the file that currently represents a segmentation's saved voxel data. */
+  std::optional<std::filesystem::path> segmentationPersistencePath(const uuid& segUidArg) const;
+
+  /** @brief Return whether segmentation voxels changed after their last load or successful export. */
+  bool segmentationHasUnsavedVoxelChanges(const uuid& segUidArg) const;
+
+  /** @brief Record a successfully exported segmentation snapshot. */
+  bool
+  recordSegmentationExport(const uuid& segUidArg, std::filesystem::path fileName, std::uint64_t exportedPixelRevision);
 
   /**
    * @brief Add an image warp field.
@@ -584,8 +598,9 @@ private:
   AppSettings m_settings;
   AppState m_state; //!< Application state
 
-  GuiData m_guiData;                                //!< Data for the UI
-  rendering::RenderSettings m_renderSettings;       //!< Persistent rendering presentation settings
+  GuiData m_guiData;                                                  //!< Data for the UI
+  rendering::RenderSettings m_renderSettings;                         //!< Persistent rendering presentation settings
+  user_preferences::RenderPreferences m_applicationRenderPreferences; //!< Reusable application rendering defaults
   rendering::RenderDerivedData m_renderDerivedData; //!< Context-free transient inputs derived for rendering
   rendering::RenderResources m_renderResources;     //!< Context-bound rendering resources and transient shader data
   WindowData m_windowData;                          //!< Data for windowing
@@ -608,6 +623,13 @@ private:
 
   std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
   std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order
+
+  struct SegmentationPersistence
+  {
+    std::optional<std::filesystem::path> fileName;
+    std::uint64_t savedPixelRevision = 0;
+  };
+  std::unordered_map<uuid, SegmentationPersistence> m_segmentationPersistence;
 
   std::unordered_map<uuid, Image> m_defs; //!< Warp fields, also stored as images
   std::vector<uuid> m_defUidsOrdered;     //!< Warp-field UIDs in order

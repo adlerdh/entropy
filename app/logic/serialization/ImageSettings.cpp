@@ -4,6 +4,35 @@
 namespace serialize
 {
 
+namespace
+{
+const char* histogramMethodName(NumBinsComputationMethod method)
+{
+  switch (method) {
+    case NumBinsComputationMethod::SquareRoot:
+      return "squareRoot";
+    case NumBinsComputationMethod::Sturges:
+      return "sturges";
+    case NumBinsComputationMethod::Rice:
+      return "rice";
+    case NumBinsComputationMethod::Scott:
+      return "scott";
+    case NumBinsComputationMethod::FreedmanDiaconis:
+      return "freedmanDiaconis";
+  }
+  return "freedmanDiaconis";
+}
+
+NumBinsComputationMethod histogramMethod(const std::string& name)
+{
+  if (name == "squareRoot") return NumBinsComputationMethod::SquareRoot;
+  if (name == "sturges") return NumBinsComputationMethod::Sturges;
+  if (name == "rice") return NumBinsComputationMethod::Rice;
+  if (name == "scott") return NumBinsComputationMethod::Scott;
+  return NumBinsComputationMethod::FreedmanDiaconis;
+}
+} // namespace
+
 void to_json(json& j, const serialize::ImageSettings& settings)
 {
   const serialize::ImageSettings defaults;
@@ -225,6 +254,24 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     settings.m_isosurfaceOpacityModulator,
     defaults.m_isosurfaceOpacityModulator);
   addIfNotEmpty(j, "isosurfaces", std::move(isosurfaces));
+
+  if (!settings.m_histograms.empty()) {
+    j["histograms"] = json::array();
+    for (const auto& histogram : settings.m_histograms) {
+      const auto& value = histogram.m_settings;
+      j["histograms"].push_back(
+        {{"component", histogram.m_component},
+         {"binMethod", histogramMethodName(value.m_numBinsMethod)},
+         {"numBins", value.m_numBins},
+         {"binWidth", value.m_binWidth},
+         {"cumulative", value.m_isCumulative},
+         {"density", value.m_isDensity},
+         {"horizontal", value.m_isHorizontal},
+         {"logScale", value.m_isLogScale},
+         {"intensityRange", {value.m_intensityRange[0], value.m_intensityRange[1]}},
+         {"useCustomIntensityRange", value.m_useCustomIntensityRange}});
+    }
+  }
 }
 
 void from_json(const json& j, serialize::ImageSettings& settings)
@@ -650,6 +697,32 @@ void from_json(const json& j, serialize::ImageSettings& settings)
         opacity != isosurfaces->end() && opacity->is_number())
     {
       settings.m_isosurfaceOpacityModulator = opacity->get<float>();
+    }
+  }
+
+  if (const auto histograms = j.find("histograms"); histograms != j.end() && histograms->is_array()) {
+    for (const auto& value : *histograms) {
+      const auto component = unsignedIntFromJson(value.value("component", json{}));
+      if (!component) {
+        continue;
+      }
+      ImageSettings::Histogram histogram;
+      histogram.m_component = *component;
+      auto& target = histogram.m_settings;
+      target.m_numBinsMethod = histogramMethod(value.value("binMethod", "freedmanDiaconis"));
+      target.m_numBins = value.value("numBins", target.m_numBins);
+      target.m_binWidth = value.value("binWidth", target.m_binWidth);
+      target.m_isCumulative = value.value("cumulative", target.m_isCumulative);
+      target.m_isDensity = value.value("density", target.m_isDensity);
+      target.m_isHorizontal = value.value("horizontal", target.m_isHorizontal);
+      target.m_isLogScale = value.value("logScale", target.m_isLogScale);
+      if (const auto range = value.find("intensityRange");
+          range != value.end() && range->is_array() && range->size() == 2)
+      {
+        target.m_intensityRange = {range->at(0).get<double>(), range->at(1).get<double>()};
+      }
+      target.m_useCustomIntensityRange = value.value("useCustomIntensityRange", target.m_useCustomIntensityRange);
+      settings.m_histograms.push_back(std::move(histogram));
     }
   }
 }

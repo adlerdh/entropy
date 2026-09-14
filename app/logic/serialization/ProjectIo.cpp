@@ -8,7 +8,9 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
+#include <chrono>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -24,6 +26,13 @@
 #include <utility>
 #include <vector>
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
+
 #if !defined(_MSC_VER)
 #define HAS_IOS_BASE_FAILURE_DERIVED_FROM_SYSTEM_ERROR 1
 #else
@@ -37,6 +46,30 @@ namespace fs = std::filesystem;
 
 namespace
 {
+fs::path temporarySiblingPath(const fs::path& destination)
+{
+  static std::atomic_uint64_t sequence{0};
+  const auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+  fs::path temporaryName{"."};
+  temporaryName += destination.filename().native();
+  temporaryName += ".tmp-";
+  temporaryName += std::to_string(timestamp);
+  temporaryName += "-";
+  temporaryName += std::to_string(++sequence);
+  return destination.parent_path() / temporaryName;
+}
+
+void replaceFileAtomically(const fs::path& temporary, const fs::path& destination)
+{
+#if defined(_WIN32)
+  if (!MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+    throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "Failed to replace project file");
+  }
+#else
+  fs::rename(temporary, destination);
+#endif
+}
+
 ordered_json orderedProjectJson(const json& value, const std::string_view path = {})
 {
   if (value.is_array()) {
@@ -84,6 +117,17 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
       "crosshairsGlyphLengthScenePercent",
       "lighting",
       "imagePlanes"};
+  }
+  else if (path == "settings/rendering/comparison") {
+    preferredKeys = {
+      "difference",
+      "jointHistogram",
+      "localNormalizedCrossCorrelation",
+      "localLinearResidual",
+      "overlay",
+      "quadrants",
+      "checkerboard",
+      "flashlight"};
   }
   else if (path == "settings/rendering/threeD/lighting" || path == "settings/rendering/threeD/imagePlanes/lighting") {
     preferredKeys = {"ambient", "diffuse", "specular", "specularPower"};
@@ -336,17 +380,18 @@ bool open(EntropyProject& project, const fs::path& fileName)
 
   // Make all paths in the image absolute:
   auto makeCanonicalAbsolute = [](serialize::Image& image, const fs::path& projectBasePath) {
-    const fs::path saveCurrentPath = fs::current_path(); // save current path
-    fs::current_path(projectBasePath);                   // set current path to project path
+    const auto canonicalFromBase = [&projectBasePath](const fs::path& path) {
+      return fs::canonical(path.is_absolute() ? path : (projectBasePath / path).lexically_normal());
+    };
 
-    image.m_imageFileName = fs::canonical(image.m_imageFileName);
+    image.m_imageFileName = canonicalFromBase(image.m_imageFileName);
 
     if (image.m_dicomSource) {
       if (!image.m_dicomSource->m_rootPath.empty()) {
-        image.m_dicomSource->m_rootPath = fs::canonical(image.m_dicomSource->m_rootPath);
+        image.m_dicomSource->m_rootPath = canonicalFromBase(image.m_dicomSource->m_rootPath);
       }
       for (auto& file : image.m_dicomSource->m_files) {
-        file = fs::canonical(file);
+        file = canonicalFromBase(file);
       }
     }
 
@@ -356,7 +401,7 @@ bool open(EntropyProject& project, const fs::path& fileName)
         image.m_initialAffineFileName = std::nullopt;
       }
       else {
-        image.m_initialAffineFileName = fs::canonical(*image.m_initialAffineFileName);
+        image.m_initialAffineFileName = canonicalFromBase(*image.m_initialAffineFileName);
       }
     }
 
@@ -366,38 +411,26 @@ bool open(EntropyProject& project, const fs::path& fileName)
         image.m_manualAffineFileName = std::nullopt;
       }
       else {
-        image.m_manualAffineFileName = fs::canonical(*image.m_manualAffineFileName);
+        image.m_manualAffineFileName = canonicalFromBase(*image.m_manualAffineFileName);
       }
     }
 
-    if (image.m_inverseWarpFieldPath) {
-      if (image.m_inverseWarpFieldPath->empty()) {
-        spdlog::warn("Ignoring empty inverse warp path for image {}", image.m_imageFileName);
-        image.m_inverseWarpFieldPath = std::nullopt;
+    for (auto warpIt = image.m_warpFields.begin(); warpIt != image.m_warpFields.end();) {
+      if (warpIt->m_path.empty()) {
+        spdlog::warn("Ignoring empty warp path for image {}", image.m_imageFileName);
+        warpIt = image.m_warpFields.erase(warpIt);
+        continue;
       }
-      else {
-        image.m_inverseWarpFieldPath = fs::canonical(*image.m_inverseWarpFieldPath);
+      warpIt->m_path = canonicalFromBase(warpIt->m_path);
+      if (warpIt->m_inverseReferenceImagePath) {
+        if (warpIt->m_inverseReferenceImagePath->empty()) {
+          warpIt->m_inverseReferenceImagePath = std::nullopt;
+        }
+        else {
+          warpIt->m_inverseReferenceImagePath = canonicalFromBase(*warpIt->m_inverseReferenceImagePath);
+        }
       }
-    }
-
-    if (image.m_forwardWarpFieldPath) {
-      if (image.m_forwardWarpFieldPath->empty()) {
-        spdlog::warn("Ignoring empty forward warp path for image {}", image.m_imageFileName);
-        image.m_forwardWarpFieldPath = std::nullopt;
-      }
-      else {
-        image.m_forwardWarpFieldPath = fs::canonical(*image.m_forwardWarpFieldPath);
-      }
-    }
-
-    if (image.m_inverseWarpReferenceImagePath) {
-      if (image.m_inverseWarpReferenceImagePath->empty()) {
-        spdlog::warn("Ignoring empty inverse warp reference image path for image {}", image.m_imageFileName);
-        image.m_inverseWarpReferenceImagePath = std::nullopt;
-      }
-      else {
-        image.m_inverseWarpReferenceImagePath = fs::canonical(*image.m_inverseWarpReferenceImagePath);
-      }
+      ++warpIt;
     }
 
     if (image.m_annotationsFileName) {
@@ -406,7 +439,7 @@ bool open(EntropyProject& project, const fs::path& fileName)
         image.m_annotationsFileName = std::nullopt;
       }
       else {
-        image.m_annotationsFileName = fs::canonical(*image.m_annotationsFileName);
+        image.m_annotationsFileName = canonicalFromBase(*image.m_annotationsFileName);
       }
     }
 
@@ -416,22 +449,20 @@ bool open(EntropyProject& project, const fs::path& fileName)
         segIt = image.m_segmentations.erase(segIt);
       }
       else {
-        segIt->m_segFileName = fs::canonical(segIt->m_segFileName);
+        segIt->m_segFileName = canonicalFromBase(segIt->m_segFileName);
         ++segIt;
       }
     }
 
     for (serialize::LandmarkGroup& landmarks : image.m_landmarkGroups) {
       if (landmarks.m_csvFileName && !landmarks.m_csvFileName->empty()) {
-        landmarks.m_csvFileName = fs::canonical(*landmarks.m_csvFileName);
+        landmarks.m_csvFileName = canonicalFromBase(*landmarks.m_csvFileName);
       }
     }
 
     for (serialize::ImportedMesh& mesh : image.m_importedMeshes) {
-      mesh.m_path = fs::absolute(mesh.m_path).lexically_normal();
+      mesh.m_path = (mesh.m_path.is_absolute() ? mesh.m_path : projectBasePath / mesh.m_path).lexically_normal();
     }
-
-    fs::current_path(saveCurrentPath); // restore current path
   };
 
   std::ifstream inFile;
@@ -449,7 +480,7 @@ bool open(EntropyProject& project, const fs::path& fileName)
 
     // Image paths in the project file can be specified relative to the project location,
     // so we need to make all image paths absolute.
-    project = j.get<EntropyProject>();
+    EntropyProject loadedProject = j.get<EntropyProject>();
     spdlog::debug("Parsed project JSON:\n{}", j.dump(2));
 
     fs::path projectBasePath(fileName);
@@ -463,15 +494,16 @@ bool open(EntropyProject& project, const fs::path& fileName)
     projectBasePath = fs::canonical(projectBasePath);
     spdlog::debug("Base path for the project file is {}", projectBasePath);
 
-    applyToImagePaths(project, projectBasePath, makeCanonicalAbsolute);
-    makeOptionalPathCanonicalAbsolute(project.m_layoutsFileName, projectBasePath, "layouts file");
-    for (serialize::RegistrationResult& result : project.m_registrationResults) {
+    applyToImagePaths(loadedProject, projectBasePath, makeCanonicalAbsolute);
+    makeOptionalPathCanonicalAbsolute(loadedProject.m_layoutsFileName, projectBasePath, "layouts file");
+    for (serialize::RegistrationResult& result : loadedProject.m_registrationResults) {
       makeRegistrationResultPathsCanonicalAbsolute(result, projectBasePath);
     }
 
-    const json jAbs = project;
+    const json jAbs = loadedProject;
     spdlog::debug("Parsed project JSON (with absolute paths):\n{}", jAbs.dump(2));
     spdlog::info("Loaded project from file {}", fileName);
+    project = std::move(loadedProject);
     return true;
   }
   catch (const std::ios_base::failure& e) {
@@ -522,16 +554,11 @@ bool save(const EntropyProject& project, const fs::path& fileName)
       image.m_manualAffineFileName = fs::relative(*image.m_manualAffineFileName, projectBasePath);
     }
 
-    if (image.m_inverseWarpFieldPath) {
-      image.m_inverseWarpFieldPath = fs::relative(*image.m_inverseWarpFieldPath, projectBasePath);
-    }
-
-    if (image.m_forwardWarpFieldPath) {
-      image.m_forwardWarpFieldPath = fs::relative(*image.m_forwardWarpFieldPath, projectBasePath);
-    }
-
-    if (image.m_inverseWarpReferenceImagePath) {
-      image.m_inverseWarpReferenceImagePath = fs::relative(*image.m_inverseWarpReferenceImagePath, projectBasePath);
+    for (auto& warp : image.m_warpFields) {
+      warp.m_path = fs::relative(warp.m_path, projectBasePath);
+      if (warp.m_inverseReferenceImagePath) {
+        warp.m_inverseReferenceImagePath = fs::relative(*warp.m_inverseReferenceImagePath, projectBasePath);
+      }
     }
 
     if (image.m_annotationsFileName) {
@@ -606,8 +633,20 @@ bool save(const EntropyProject& project, const fs::path& fileName)
     const json j = projectRelative;
     const ordered_json ordered = orderedProjectJson(j);
 
-    std::ofstream outFile(fileName);
-    outFile << ordered.dump(2) << '\n';
+    const fs::path temporaryFile = temporarySiblingPath(fileName);
+    try {
+      std::ofstream outFile(temporaryFile, std::ios::out | std::ios::trunc);
+      outFile.exceptions(std::ios::badbit | std::ios::failbit);
+      outFile << ordered.dump(2) << '\n';
+      outFile.flush();
+      outFile.close();
+      replaceFileAtomically(temporaryFile, fileName);
+    }
+    catch (...) {
+      std::error_code ignored;
+      fs::remove(temporaryFile, ignored);
+      throw;
+    }
 
     spdlog::debug("Saved JSON for project (with relative image paths):\n{}", ordered.dump(2));
     spdlog::info("Saved project to file {}", fileName);

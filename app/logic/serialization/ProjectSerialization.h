@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/InputParams.h"
+#include "common/HistogramSettings.h"
 #include "common/Types.h"
 #include "image/ImageSpatialMetadata.h"
 #include "image/Isosurface.h"
@@ -182,6 +183,7 @@ struct ProjectLocalLinearResidualMetricSettings
 struct ProjectComparisonSettings
 {
   ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings
+  ProjectMetricSettings m_jointHistogram;                         //!< Joint-histogram colormap/window settings
   ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings
   ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings
   bool m_overlayMagentaCyan = false;                              //!< Overlay color convention
@@ -333,6 +335,14 @@ struct RegistrationResult
  */
 struct ImageSettings
 {
+  struct Histogram
+  {
+    bool operator==(const Histogram&) const = default;
+
+    uint32_t m_component = 0;
+    HistogramSettings m_settings;
+  };
+
   std::string m_displayName;
   bool m_globalVisibility = true;            //!< Global image visibility
   double m_globalOpacity = 1.0;              //!< Global opacity multiplier
@@ -439,6 +449,7 @@ struct ImageSettings
   bool m_modulateIsosurfaceOpacityWithImageOpacity = false; //!< Scale isosurface opacity by image opacity
   double m_isocontourLineWidthIn2D = 2.0;                   //!< 2D isocontour line width
   float m_isosurfaceOpacityModulator = 1.0f;                //!< Isosurface opacity multiplier
+  std::vector<Histogram> m_histograms;                      //!< Component histograms changed from image defaults
 };
 
 /**
@@ -558,6 +569,17 @@ struct DicomSource
   std::vector<std::filesystem::path> m_files; //!< Slice paths in series order
 };
 
+/** One deformation field assigned to an image, including its active role(s). */
+struct ImageWarpField
+{
+  std::filesystem::path m_path;
+  bool m_activeInverse = false;
+  bool m_activeForward = false;
+  std::optional<std::filesystem::path> m_inverseReferenceImagePath = std::nullopt;
+
+  bool operator==(const ImageWarpField&) const = default;
+};
+
 /**
  * @brief Serialized data for an image in Entropy
  */
@@ -582,27 +604,9 @@ struct Image
    * Optional initial/imported affine matrix embedded in the project JSON.
    */
   std::optional<glm::mat4> m_initialAffineMatrix = std::nullopt;
+  bool m_initialAffineEnabled = true; //!< Apply the imported affine for non-reference images
 
-  /**
-   * Optional inverse warp field path.
-   *
-   * The inverse warp field is used for moving-image sampling in reference/fixed space.
-   */
-  std::optional<std::filesystem::path> m_inverseWarpFieldPath = std::nullopt;
-
-  /**
-   * Optional inverse-warp reference-space image path.
-   *
-   * The inverse warp field is sampled on this image domain before sampling the moving image.
-   */
-  std::optional<std::filesystem::path> m_inverseWarpReferenceImagePath = std::nullopt;
-
-  /**
-   * Optional forward warp field path.
-   *
-   * The forward warp field maps moving-image positions back to reference/fixed space.
-   */
-  std::optional<std::filesystem::path> m_forwardWarpFieldPath = std::nullopt;
+  std::vector<ImageWarpField> m_warpFields; //!< All assigned warp fields and their active roles
 
   /**
    * Optional manual affine transformation text path.
@@ -613,6 +617,7 @@ struct Image
    * Optional manual affine matrix from affine-registered subject space to world space.
    */
   std::optional<glm::mat4> m_manualAffineMatrix = std::nullopt;
+  bool m_manualAffineEnabled = true; //!< Apply the manual affine for non-reference images
 
   /**
    * Optional external annotations JSON path saved under the image annotations object.

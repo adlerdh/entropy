@@ -27,7 +27,9 @@ target_sources(TestAppSettings PRIVATE
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/StackTrace.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
+  "${entropy_APP_DIR}/logic/app/UserPreferencesRendering.cpp"
   "${entropy_APP_DIR}/logic/app/WindowTitleStatus.cpp"
+  "${entropy_UI_DIR}/ui/GuiData.cpp"
 )
 
 if(APPLE)

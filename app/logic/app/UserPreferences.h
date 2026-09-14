@@ -27,8 +27,8 @@ namespace user_preferences
  *
  * This type mirrors rendering::RenderSettings without requiring OpenGL resources, which keeps preference parsing
  * and schema tests headless. Not every field is persisted to the application settings file:
- * project-owned presentation fields are intentionally omitted from user settings JSON and are
- * preserved when application defaults are restored.
+ * project-exclusive presentation fields are omitted, while settings that also act as defaults
+ * are kept in a separate application profile at runtime.
  */
 struct RenderPreferences
 {
@@ -41,6 +41,8 @@ struct RenderPreferences
 
   struct MetricParams
   {
+    bool operator==(const MetricParams&) const = default;
+
     std::size_t colorMapIndex = 0;
     glm::vec2 slopeIntercept{1.0f, 0.0f};
     bool invertColormap = false;
@@ -220,23 +222,23 @@ struct PrecisionPreferences
  */
 RenderPreferences defaultRenderPreferences();
 
-/**
- * @brief Preserve project-owned rendering values while applying application preferences.
- * @param preferences Preferences being applied from user settings.
- * @param currentPreferences Current rendering preferences from the open project.
- *
- * Application settings are allowed to change user-interface preferences, but project-owned
- * presentation settings must remain controlled by the loaded project.
- */
-void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const RenderPreferences& currentPreferences);
-
-/**
- * @brief Return the subset of render preferences that belongs in application settings.
- *
- * Project-owned presentation fields are normalized to built-in defaults so that opening or
- * editing a project does not make the application settings appear modified.
- */
+/** Normalize project-exclusive presentation values out of an application-default profile. */
 RenderPreferences applicationRenderPreferences(RenderPreferences preferences);
+
+/** Convert between the headless preference model and live rendering state. */
+RenderPreferences renderPreferencesFrom(const rendering::RenderSettings& renderSettings);
+void applyRenderPreferencesTo(rendering::RenderSettings& renderSettings, const RenderPreferences& preferences);
+PrecisionPreferences precisionPreferencesFrom(const GuiData& guiData);
+void applyPrecisionPreferencesTo(GuiData& guiData, const PrecisionPreferences& preferences);
+
+/** Preserve every rendering value represented by a project snapshot. */
+void preserveProjectPresentation(RenderPreferences& preferences, const RenderPreferences& currentPreferences);
+
+/** Merge only values actually edited between two live snapshots into the application-default profile. */
+void mergeEditedRenderPreferences(
+  RenderPreferences& applicationPreferences,
+  const RenderPreferences& before,
+  const RenderPreferences& after);
 
 /**
  * @brief Return the current user preferences as versioned JSON text.
@@ -337,20 +339,11 @@ bool load(
   std::string* error = nullptr);
 
 /**
- * @brief Return the current user preferences as versioned JSON text.
- * @param settings Application settings to serialize.
- * @param renderSettings Rendering defaults to serialize.
- * @return Human-readable JSON representation of the user preferences.
- */
-std::string
-toJsonString(const AppSettings& settings, const rendering::RenderSettings& renderSettings, const GuiData& guiData);
-
-/**
  *  Store the current user preference JSON as the last saved application settings state.
  */
 void markSavedAppSettingsState(
   const AppSettings& settings,
-  const rendering::RenderSettings& renderSettings,
+  const RenderPreferences& renderPreferences,
   GuiData& guiData);
 
 /**
@@ -358,59 +351,7 @@ void markSavedAppSettingsState(
  */
 void updateAppSettingsDirtyState(
   const AppSettings& settings,
-  const rendering::RenderSettings& renderSettings,
+  const RenderPreferences& renderPreferences,
   GuiData& guiData);
-
-/**
- * @brief Apply user preferences from versioned JSON text.
- * @param settings Application settings to update.
- * @param renderSettings Rendering defaults to update.
- * @param text JSON text to parse.
- * @param error Optional destination for a parse or validation error.
- * @return True iff the text was parsed and applied successfully.
- */
-bool applyJsonString(
-  AppSettings& settings,
-  rendering::RenderSettings& renderSettings,
-  GuiData& guiData,
-  const std::string& text,
-  std::string* error = nullptr);
-
-/**
- * @brief Save user preferences to disk.
- * @param settings Application settings to serialize.
- * @param renderSettings Rendering defaults to serialize.
- * @param fileName Destination JSON file.
- * @param error Optional destination for an I/O or serialization error.
- * @return True iff the preferences were written successfully.
- */
-bool save(
-  const AppSettings& settings,
-  const rendering::RenderSettings& renderSettings,
-  const GuiData& guiData,
-  const std::filesystem::path& fileName,
-  std::string* error = nullptr);
-
-/**
- * @brief Load user preferences from disk.
- * @param settings Application settings to update.
- * @param renderSettings Rendering defaults to update.
- * @param fileName Source JSON file.
- * @param error Optional destination for an I/O or parse error.
- * @return True iff the file was absent or was loaded successfully.
- */
-bool load(
-  AppSettings& settings,
-  rendering::RenderSettings& renderSettings,
-  GuiData& guiData,
-  const std::filesystem::path& fileName,
-  std::string* error = nullptr);
-
-/**
- * @brief Restore the built-in application preference defaults.
- * @param settings Application settings to reset.
- * @param renderSettings Rendering defaults to reset.
- */
-void applyDefaults(AppSettings& settings, rendering::RenderSettings& renderSettings, GuiData& guiData);
 
 } // namespace user_preferences

@@ -17,6 +17,7 @@
 #include <cctype>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -142,7 +143,8 @@ bool exportImageData(
   const std::string& objectName,
   const fs::path& defaultDirectory,
   const image_io::WriteOptions& options,
-  bool allowStandardRasterFormats)
+  bool allowStandardRasterFormats,
+  ui::export_jobs::Completion completion = {})
 {
   const std::string defaultName = sanitizedFileStem(image.settings().displayName()) + ".nii.gz";
   const auto filters =
@@ -165,32 +167,35 @@ bool exportImageData(
   const bool submitted = service->submit(
     {.description = std::format("Exporting {} '{}'", objectName, imageName),
      .destination = destination,
-     .task = [imageSnapshot, options, destination, objectName, uid](ui::export_jobs::JobContext& context) mutable {
-       ui::export_jobs::StagedOutput staged{destination};
-       image_io::WriteOptions writeOptions = options;
-       writeOptions.progressCallback = [&context](const std::string_view phase, const std::optional<float> progress) {
-         context.update(std::string{phase}, progress);
-         return !context.cancellationRequested();
-       };
+     .task =
+       [imageSnapshot, options, destination, objectName, uid](ui::export_jobs::JobContext& context) mutable {
+         ui::export_jobs::StagedOutput staged{destination};
+         image_io::WriteOptions writeOptions = options;
+         writeOptions.progressCallback = [&context](const std::string_view phase, const std::optional<float> progress) {
+           context.update(std::string{phase}, progress);
+           return !context.cancellationRequested();
+         };
 
-       const image_io::WriteResult result = image_io::writeImage(*imageSnapshot, staged.temporaryPath(), writeOptions);
-       if (image_io::WriteError::Cancelled == result.error || context.cancellationRequested()) {
-         spdlog::info("Cancelled export of {} {} to '{}'", objectName, uid, destination);
-         return ui::export_jobs::Result::cancelled();
-       }
-       if (!result) {
-         spdlog::error("Failed to export {} {} to '{}': {}", objectName, uid, destination, result.message);
-         return ui::export_jobs::Result::failure(result.message);
-       }
+         const image_io::WriteResult result =
+           image_io::writeImage(*imageSnapshot, staged.temporaryPath(), writeOptions);
+         if (image_io::WriteError::Cancelled == result.error || context.cancellationRequested()) {
+           spdlog::info("Cancelled export of {} {} to '{}'", objectName, uid, destination);
+           return ui::export_jobs::Result::cancelled();
+         }
+         if (!result) {
+           spdlog::error("Failed to export {} {} to '{}': {}", objectName, uid, destination, result.message);
+           return ui::export_jobs::Result::failure(result.message);
+         }
 
-       context.update("Committing image file", 0.98f);
-       if (const auto error = staged.commit()) {
-         spdlog::error("Failed to commit {} export {} to '{}': {}", objectName, uid, destination, *error);
-         return ui::export_jobs::Result::failure("The completed export could not replace the destination: " + *error);
-       }
-       spdlog::info("Exported {} {} to '{}'", objectName, uid, destination);
-       return ui::export_jobs::Result::success({destination});
-     }});
+         context.update("Committing image file", 0.98f);
+         if (const auto error = staged.commit()) {
+           spdlog::error("Failed to commit {} export {} to '{}': {}", objectName, uid, destination, *error);
+           return ui::export_jobs::Result::failure("The completed export could not replace the destination: " + *error);
+         }
+         spdlog::info("Exported {} {} to '{}'", objectName, uid, destination);
+         return ui::export_jobs::Result::success({destination});
+       },
+     .completion = std::move(completion)});
   if (!submitted) {
     native_dialog::showErrorMessageDialog(
       "Export Already in Progress",
@@ -259,6 +264,7 @@ bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid)
   }
 
   showSegmentationExportFormatGuide(appData.settings());
+  const std::uint64_t exportedPixelRevision = segmentation->pixelDataRevision();
 
   return exportImageData(
     appData,
@@ -267,6 +273,12 @@ bool exportSegmentation(AppData& appData, const uuids::uuid& segmentationUid)
     "segmentation",
     segmentation->header().fileName().parent_path(),
     {.useCompression = true, .component = 0u, .timePoint = std::nullopt, .progressCallback = {}},
-    false);
+    false,
+    [&appData, segmentationUid, exportedPixelRevision](const ui::export_jobs::Result& result) {
+      if (ui::export_jobs::Outcome::Succeeded != result.outcome || result.outputFileNames.empty()) {
+        return;
+      }
+      appData.recordSegmentationExport(segmentationUid, result.outputFileNames.front(), exportedPixelRevision);
+    });
 }
 } // namespace image_export

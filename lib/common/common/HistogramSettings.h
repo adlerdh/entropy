@@ -21,6 +21,8 @@ enum class NumBinsComputationMethod
  */
 struct HistogramSettings
 {
+  bool operator==(const HistogramSettings&) const = default;
+
   /// Method used for compute initial value for number of histogram bins
   NumBinsComputationMethod m_numBinsMethod{NumBinsComputationMethod::FreedmanDiaconis};
 

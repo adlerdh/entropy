@@ -54,8 +54,9 @@ void applySegmentationSettings(AppData& appData, Image& seg, const serialize::Se
 /**
  * @name Project-wide settings
  *
- * These helpers are the ownership boundary for values stored live in `AppData`/`RenderSettings` but
- * persisted with the project. Application preferences must not write these values.
+ * These helpers snapshot the live presentation of the current project. Some values also have a separate
+ * application-default value for newly opened data; loading a project changes only the live value and never
+ * promotes it into the application-default profile.
  */
 /// @{
 

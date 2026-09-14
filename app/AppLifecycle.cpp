@@ -71,22 +71,30 @@ void EntropyApp::init()
   {
     std::string preferencesError;
     const fs::path settingsFile = app_paths::userSettingsFile();
+    auto renderPreferences = user_preferences::defaultRenderPreferences();
+    auto precisionPreferences = user_preferences::precisionPreferencesFrom(m_data.guiData());
     if (!user_preferences::load(
           m_data.settings(),
-          m_data.renderSettings(),
-          m_data.guiData(),
+          renderPreferences,
+          precisionPreferences,
           settingsFile,
           &preferencesError))
     {
       spdlog::warn("Using built-in settings after failing to load {}: {}", settingsFile, preferencesError);
     }
+    m_data.applicationRenderPreferences() = user_preferences::applicationRenderPreferences(renderPreferences);
+    user_preferences::applyRenderPreferencesTo(m_data.renderSettings(), m_data.applicationRenderPreferences());
+    user_preferences::applyPrecisionPreferencesTo(m_data.guiData(), precisionPreferences);
     m_imgui.setUserScaleOverride(m_data.settings().uiScaleOverride());
     m_imgui.requestFontReload();
     m_imgui.applyUiColorPreset(m_data.settings().uiColorPreset());
     m_imgui.applyUiDensityPreset(m_data.settings().uiDensityPreset());
     m_imgui.applyUiWindowBgOpacity(m_data.settings().uiWindowBgOpacity());
     project_snapshot::syncLayoutTabGuiData(m_data);
-    user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderSettings(), m_data.guiData());
+    user_preferences::markSavedAppSettingsState(
+      m_data.settings(),
+      m_data.applicationRenderPreferences(),
+      m_data.guiData());
   }
 
   m_rendering.init();

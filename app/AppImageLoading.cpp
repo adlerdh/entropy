@@ -784,11 +784,15 @@ bool EntropyApp::loadSerializedImage(
       }
 
       image->transformations().set_affine_T_subject(glm::mat4{affine_T_subject});
+      image->transformations().set_enable_affine_T_subject(serializedImage.m_initialAffineEnabled);
     }
   }
   else {
     // No affine transformation provided:
     image->transformations().set_affine_T_subject_fileName(std::nullopt);
+  }
+  if (!isReferenceImage) {
+    image->transformations().set_enable_affine_T_subject(serializedImage.m_initialAffineEnabled);
   }
 
   if (serializedImage.m_manualAffineMatrix || serializedImage.m_manualAffineFileName) {
@@ -820,134 +824,70 @@ bool EntropyApp::loadSerializedImage(
 
       if (manualAffineAvailable) {
         image->transformations().set_worldDef_T_affine_locked(false);
-        image->transformations().set_enable_worldDef_T_affine(true);
+        image->transformations().set_enable_worldDef_T_affine(serializedImage.m_manualAffineEnabled);
         image->transformations().set_worldDef_T_affine(glm::mat4{worldDef_T_affine});
         image->transformations().set_worldDef_T_affine_locked(true);
       }
     }
   }
-
-  if (serializedImage.m_inverseWarpFieldPath) {
-    std::optional<uuids::uuid> inverseWarpUid;
-    bool isInverseWarpNewImage = false;
-
-    try {
-      spdlog::info("Attempting to load inverse warp image from {}", *serializedImage.m_inverseWarpFieldPath);
-      std::tie(inverseWarpUid, isInverseWarpNewImage) = loadDeformationField(*serializedImage.m_inverseWarpFieldPath);
-    }
-    catch (const std::exception& e) {
-      spdlog::error("Exception loading inverse warp from {}: {}", *serializedImage.m_inverseWarpFieldPath, e.what());
-      reportInputLoadFailure("inverse deformation field", serializedImage.m_inverseWarpFieldPath, e.what());
-    }
-
-    do {
-      if (!inverseWarpUid) {
-        spdlog::error(
-          "Unable to load inverse warp from {} for image {}",
-          *serializedImage.m_inverseWarpFieldPath,
-          *imageUid);
-        break;
-      }
-
-      if (!isInverseWarpNewImage) {
-        spdlog::info(
-          "Inverse warp from {} already exists in this project as image {}",
-          *serializedImage.m_inverseWarpFieldPath,
-          *inverseWarpUid);
-      }
-
-      Image* inverseWarp = m_data.def(*inverseWarpUid);
-
-      if (!inverseWarp) {
-        spdlog::error("Null inverse warp image {}", *inverseWarpUid);
-        break;
-      }
-
-      if (isInverseWarpNewImage) {
-        inverseWarp->settings().setDisplayName(inverseWarp->settings().displayName() + " (deformation)");
-      }
-
-      const std::optional<uuids::uuid> inverseWarpReferenceImageUid = imageUid;
-
-      if (m_data.assignInverseWarpUidToImage(*imageUid, *inverseWarpUid, inverseWarpReferenceImageUid)) {
-        spdlog::info("Assigned inverse warp {} to image {}", *inverseWarpUid, *imageUid);
-        if (serializedImage.m_inverseWarpReferenceImagePath) {
-          m_pendingInverseWarpReferences.push_back(
-            PendingInverseWarpReference{*imageUid, *serializedImage.m_inverseWarpReferenceImagePath});
-        }
-      }
-      else {
-        spdlog::error("Unable to assign inverse warp {} to image {}", *inverseWarpUid, *imageUid);
-        if (isInverseWarpNewImage) {
-          m_data.removeDef(*inverseWarpUid);
-        }
-        break;
-      }
-
-      break;
-    } while (true);
-
-    // TODO: Warp field images are special:
-    // 1) no segmentation is created
-    // 2) no affine transformation can be applied: it copies the affine tx of its image
-    // 3) need warning when header tx doesn't match that of reference
-    // 4) even if all components are loaded as RGB texture, we should be able to view each component
-    // separately in a shader that takes in as a uniform the active component
+  if (!isReferenceImage) {
+    image->transformations().set_worldDef_T_affine_locked(false);
+    image->transformations().set_enable_worldDef_T_affine(serializedImage.m_manualAffineEnabled);
+    image->transformations().set_worldDef_T_affine_locked(true);
   }
 
-  if (serializedImage.m_forwardWarpFieldPath) {
-    std::optional<uuids::uuid> forwardWarpUid;
-    bool isForwardWarpNewImage = false;
-
+  std::optional<uuids::uuid> activeInverseWarpUid;
+  std::optional<uuids::uuid> activeForwardWarpUid;
+  std::optional<fs::path> activeInverseReferencePath;
+  for (const auto& serializedWarp : serializedImage.m_warpFields) {
+    std::optional<uuids::uuid> warpUid;
+    bool isNewWarpImage = false;
     try {
-      spdlog::info("Attempting to load forward warp image from {}", *serializedImage.m_forwardWarpFieldPath);
-      std::tie(forwardWarpUid, isForwardWarpNewImage) = loadDeformationField(*serializedImage.m_forwardWarpFieldPath);
+      spdlog::info("Attempting to load warp image from {}", serializedWarp.m_path);
+      std::tie(warpUid, isNewWarpImage) = loadDeformationField(serializedWarp.m_path);
     }
     catch (const std::exception& e) {
-      spdlog::error("Exception loading forward warp from {}: {}", *serializedImage.m_forwardWarpFieldPath, e.what());
-      reportInputLoadFailure("forward deformation field", serializedImage.m_forwardWarpFieldPath, e.what());
+      spdlog::error("Exception loading warp from {}: {}", serializedWarp.m_path, e.what());
+      reportInputLoadFailure("deformation field", serializedWarp.m_path, e.what());
+      continue;
     }
 
-    do {
-      if (!forwardWarpUid) {
-        spdlog::error(
-          "Unable to load forward warp from {} for image {}",
-          *serializedImage.m_forwardWarpFieldPath,
-          *imageUid);
-        break;
-      }
+    Image* warp = warpUid ? m_data.def(*warpUid) : nullptr;
+    if (!warpUid || !warp) {
+      spdlog::error("Unable to load warp from {} for image {}", serializedWarp.m_path, *imageUid);
+      continue;
+    }
+    if (isNewWarpImage) {
+      warp->settings().setDisplayName(warp->settings().displayName() + " (deformation)");
+    }
 
-      if (!isForwardWarpNewImage) {
-        spdlog::info(
-          "Forward warp from {} already exists in this project as image {}",
-          *serializedImage.m_forwardWarpFieldPath,
-          *forwardWarpUid);
+    if (!m_data.assignInverseWarpUidToImage(*imageUid, *warpUid, imageUid)) {
+      spdlog::error("Unable to assign warp {} to image {}", *warpUid, *imageUid);
+      if (isNewWarpImage) {
+        m_data.removeDef(*warpUid);
       }
+      continue;
+    }
 
-      Image* forwardWarp = m_data.def(*forwardWarpUid);
+    if (serializedWarp.m_activeInverse) {
+      activeInverseWarpUid = warpUid;
+      activeInverseReferencePath = serializedWarp.m_inverseReferenceImagePath;
+    }
+    if (serializedWarp.m_activeForward) {
+      activeForwardWarpUid = warpUid;
+    }
+  }
 
-      if (!forwardWarp) {
-        spdlog::error("Null forward warp image {}", *forwardWarpUid);
-        break;
-      }
-
-      if (isForwardWarpNewImage) {
-        forwardWarp->settings().setDisplayName(forwardWarp->settings().displayName() + " (deformation)");
-      }
-
-      if (m_data.assignForwardWarpUidToImage(*imageUid, *forwardWarpUid)) {
-        spdlog::info("Assigned forward warp {} to image {}", *forwardWarpUid, *imageUid);
-      }
-      else {
-        spdlog::error("Unable to assign forward warp {} to image {}", *forwardWarpUid, *imageUid);
-        if (isForwardWarpNewImage) {
-          m_data.removeDef(*forwardWarpUid);
-        }
-        break;
-      }
-
-      break;
-    } while (true);
+  m_data.clearActiveInverseWarpUidForImage(*imageUid);
+  m_data.clearActiveForwardWarpUidForImage(*imageUid);
+  if (activeInverseWarpUid) {
+    m_data.assignActiveInverseWarpUidToImage(*imageUid, *activeInverseWarpUid, imageUid);
+    if (activeInverseReferencePath) {
+      m_pendingInverseWarpReferences.push_back(PendingInverseWarpReference{*imageUid, *activeInverseReferencePath});
+    }
+  }
+  if (activeForwardWarpUid) {
+    m_data.assignActiveForwardWarpUidToImage(*imageUid, *activeForwardWarpUid);
   }
 
   auto addAnnotationsToImage = [this,

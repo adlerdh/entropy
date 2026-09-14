@@ -92,7 +92,7 @@ bool imageSettingsEqual(
          a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
          a->m_modulateIsosurfaceOpacityWithImageOpacity == b->m_modulateIsosurfaceOpacityWithImageOpacity &&
          a->m_isocontourLineWidthIn2D == b->m_isocontourLineWidthIn2D &&
-         a->m_isosurfaceOpacityModulator == b->m_isosurfaceOpacityModulator;
+         a->m_isosurfaceOpacityModulator == b->m_isosurfaceOpacityModulator && a->m_histograms == b->m_histograms;
 }
 
 bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std::optional<serialize::SegSettings>& b)
@@ -205,10 +205,9 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
   return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
          spatialMetadataEqual(a.m_spatialMetadata, b.m_spatialMetadata) &&
          a.m_initialAffineFileName == b.m_initialAffineFileName &&
-         matricesEqual(a.m_initialAffineMatrix, b.m_initialAffineMatrix) &&
-         a.m_inverseWarpFieldPath == b.m_inverseWarpFieldPath &&
-         a.m_inverseWarpReferenceImagePath == b.m_inverseWarpReferenceImagePath &&
-         a.m_forwardWarpFieldPath == b.m_forwardWarpFieldPath && a.m_manualAffineFileName == b.m_manualAffineFileName &&
+         a.m_initialAffineEnabled == b.m_initialAffineEnabled &&
+         matricesEqual(a.m_initialAffineMatrix, b.m_initialAffineMatrix) && a.m_warpFields == b.m_warpFields &&
+         a.m_manualAffineFileName == b.m_manualAffineFileName && a.m_manualAffineEnabled == b.m_manualAffineEnabled &&
          matricesEqual(a.m_manualAffineMatrix, b.m_manualAffineMatrix) &&
          a.m_annotationsFileName == b.m_annotationsFileName && annotationsEqual(a.m_annotations, b.m_annotations) &&
          imageSettingsEqual(a.m_settings, b.m_settings) &&
@@ -255,6 +254,7 @@ bool comparisonSettingsEqual(
 {
   return a.m_difference.m_squared == b.m_difference.m_squared &&
          metricSettingsEqual(a.m_difference.m_metric, b.m_difference.m_metric) &&
+         metricSettingsEqual(a.m_jointHistogram, b.m_jointHistogram) &&
          metricSettingsEqual(a.m_localNcc.m_metric, b.m_localNcc.m_metric) &&
          a.m_localNcc.m_presentation == b.m_localNcc.m_presentation &&
          a.m_localNcc.m_negativeCorrelationAsMismatch == b.m_localNcc.m_negativeCorrelationAsMismatch &&

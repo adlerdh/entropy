@@ -408,24 +408,29 @@ void to_json(json& j, const serialize::Image& image)
     addIfNotEmpty(j, "dicomSource", std::move(dicomSource));
   }
 
-  if (image.m_initialAffineFileName || image.m_initialAffineMatrix) {
-    j["initialAffine"] = affineToJson(image.m_initialAffineFileName, image.m_initialAffineMatrix);
+  if (image.m_initialAffineFileName || image.m_initialAffineMatrix || !image.m_initialAffineEnabled) {
+    json affine = affineToJson(image.m_initialAffineFileName, image.m_initialAffineMatrix);
+    addIfChanged(affine, "enabled", image.m_initialAffineEnabled, true);
+    j["initialAffine"] = std::move(affine);
   }
 
-  if (image.m_inverseWarpFieldPath) {
-    j["inverseWarpField"] = pathObjectToJson(*image.m_inverseWarpFieldPath);
+  if (!image.m_warpFields.empty()) {
+    j["warpFields"] = json::array();
+    for (const auto& warp : image.m_warpFields) {
+      json value = pathObjectToJson(warp.m_path);
+      addIfChanged(value, "activeInverse", warp.m_activeInverse, false);
+      addIfChanged(value, "activeForward", warp.m_activeForward, false);
+      if (warp.m_inverseReferenceImagePath) {
+        value["inverseReferenceImage"] = pathObjectToJson(*warp.m_inverseReferenceImagePath);
+      }
+      j["warpFields"].push_back(std::move(value));
+    }
   }
 
-  if (image.m_inverseWarpReferenceImagePath) {
-    j["inverseWarpReferenceImage"] = pathObjectToJson(*image.m_inverseWarpReferenceImagePath);
-  }
-
-  if (image.m_forwardWarpFieldPath) {
-    j["forwardWarpField"] = pathObjectToJson(*image.m_forwardWarpFieldPath);
-  }
-
-  if (image.m_manualAffineFileName || image.m_manualAffineMatrix) {
-    j["manualAffine"] = affineToJson(image.m_manualAffineFileName, image.m_manualAffineMatrix);
+  if (image.m_manualAffineFileName || image.m_manualAffineMatrix || !image.m_manualAffineEnabled) {
+    json affine = affineToJson(image.m_manualAffineFileName, image.m_manualAffineMatrix);
+    addIfChanged(affine, "enabled", image.m_manualAffineEnabled, true);
+    j["manualAffine"] = std::move(affine);
   }
 
   if (image.m_annotationsFileName || !image.m_annotations.empty()) {
@@ -481,23 +486,25 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("initialAffine")) {
     affineFromJson(j.at("initialAffine"), image.m_initialAffineFileName, image.m_initialAffineMatrix);
+    image.m_initialAffineEnabled = j.at("initialAffine").value("enabled", true);
   }
 
-  if (j.count("inverseWarpField")) {
-    image.m_inverseWarpFieldPath = pathObjectFromJson(j.at("inverseWarpField"), "inverseWarpField");
-  }
-
-  if (j.count("inverseWarpReferenceImage")) {
-    image.m_inverseWarpReferenceImagePath =
-      pathObjectFromJson(j.at("inverseWarpReferenceImage"), "inverseWarpReferenceImage");
-  }
-
-  if (j.count("forwardWarpField")) {
-    image.m_forwardWarpFieldPath = pathObjectFromJson(j.at("forwardWarpField"), "forwardWarpField");
+  if (const auto warps = j.find("warpFields"); warps != j.end() && warps->is_array()) {
+    for (const auto& value : *warps) {
+      serialize::ImageWarpField warp;
+      warp.m_path = pathObjectFromJson(value, "warpFields");
+      warp.m_activeInverse = value.value("activeInverse", false);
+      warp.m_activeForward = value.value("activeForward", false);
+      if (const auto reference = value.find("inverseReferenceImage"); reference != value.end()) {
+        warp.m_inverseReferenceImagePath = pathObjectFromJson(*reference, "inverseReferenceImage");
+      }
+      image.m_warpFields.push_back(std::move(warp));
+    }
   }
 
   if (j.count("manualAffine")) {
     affineFromJson(j.at("manualAffine"), image.m_manualAffineFileName, image.m_manualAffineMatrix);
+    image.m_manualAffineEnabled = j.at("manualAffine").value("enabled", true);
   }
 
   if (const auto annotations = j.find("annotations"); annotations != j.end()) {

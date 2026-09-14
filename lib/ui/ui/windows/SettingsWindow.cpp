@@ -210,10 +210,12 @@ void renderResponsivePathSetting(
   const char* label,
   std::filesystem::path& path,
   const char* tooltip,
-  bool browseForFile = false)
+  bool browseForFile = false,
+  float alignedControlWidth = 0.0f)
 {
   std::string value = path.string();
-  const float controlWidth = fillWidthForLabeledControlWithHelp(label);
+  const float controlWidth =
+    alignedControlWidth > 0.0f ? alignedControlWidth : fillWidthForLabeledControlWithHelp(label);
 
   if (!browseForFile) {
     ImGui::PushItemWidth(controlWidth);
@@ -255,9 +257,13 @@ void renderResponsivePathSetting(
   helpMarker(tooltip);
 }
 
-void renderResponsiveTextSetting(const char* label, std::string& value, const char* tooltip)
+void renderResponsiveTextSetting(
+  const char* label,
+  std::string& value,
+  const char* tooltip,
+  float alignedControlWidth = 0.0f)
 {
-  ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp(label));
+  ImGui::PushItemWidth(alignedControlWidth > 0.0f ? alignedControlWidth : fillWidthForLabeledControlWithHelp(label));
   ImGui::InputText(label, &value);
   ImGui::PopItemWidth();
   ImGui::SameLine();
@@ -422,18 +428,6 @@ void renderMetricSettingsPanel(
     return;
   }
 
-  /*
-  // Metric masking:
-  bool doMasking = metricParams.m_doMasking;
-  if (ImGui::Checkbox("Masking", &doMasking))
-  {
-    metricParams.m_doMasking = doMasking;
-    updateMetricUniforms();
-  }
-  ImGui::SameLine();
-  helpMarker("Only compute the metric within masked regions");
-  */
-
   // Metric colormap dialog:
   bool* showImageColormapWindow = &showColormapWindow;
   *showImageColormapWindow |= ImGui::Button("Set colormap");
@@ -544,6 +538,7 @@ bool renderLocalNccSettings(
 
   const bool showWindowAsSignedCorrelation =
     rendering::RenderSettings::LocalNccPresentation::Correlation == renderData.m_localNccPresentation;
+
   renderMetricSettingsPanel(
     renderData.m_localNccParams,
     appData.guiData().m_showLocalNccColormapWindow,
@@ -574,8 +569,10 @@ bool renderLocalNccSettings(
     std::find_if(k_patchSizes.begin(), k_patchSizes.end(), [&renderData](const auto& option) {
       return renderData.m_localNccPatchRadius == option.first;
     });
+
   int patchIndex =
     selectedPatch == k_patchSizes.end() ? 2 : static_cast<int>(std::distance(k_patchSizes.begin(), selectedPatch));
+
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
     for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
       const bool selected = static_cast<int>(i) == patchIndex;
@@ -780,21 +777,6 @@ void renderViewsTab(
     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = false;
   }
 
-  /// @note strokeWidth seems to not work with NanoVG across all platforms
-  /*
-          if ( renderData.m_globalSliceIntersectionParams.renderImageViewIntersections )
-          {
-              constexpr float k_minWidth = 1.0f;
-              constexpr float k_maxWidth = 5.0f;
-
-              ImGui::SliderScalar( "Border width", ImGuiDataType_Float,
-                                   &renderData.m_globalSliceIntersectionParams.strokeWidth,
-                                   &k_minWidth, &k_maxWidth, "%.1f" );
-
-              ImGui::SameLine(); helpMarker( "Border width" );
-          }
-          */
-
   // Anatomical coordinate directions (including crosshairs) rotation locking
   bool lockDirectionsToReference = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage();
   if (ImGui::Checkbox("Lock anatomical directions to reference image", &(lockDirectionsToReference))) {
@@ -897,49 +879,6 @@ void renderViewsTab(
     }
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on the reference and active images");
-
-    /// @todo These don't work yet
-    /*
-              if ( ImGui::RadioButton( "All visible images",
-       ImageSelection::VisibleImagesInView == appData.state().recenteringMode() ) )
-              {
-                  appData.state().setRecenteringMode( ImageSelection::VisibleImagesInView );
-                  recenterAllViews( k_recenterCrosshairs,
-       k_doNotRecenterOnCurrentCrosshairsPosition );
-              }
-              ImGui::SameLine(); helpMarker( "Recenter views and crosshairs on the visible
-       images in each view" );
-
-              if ( ImGui::RadioButton( "Fixed image", ImageSelection::FixedImageInView ==
-       appData.state().recenteringMode() ) )
-              {
-                  appData.state().setRecenteringMode( ImageSelection::FixedImageInView );
-                  recenterAllViews( k_recenterCrosshairs,
-       k_doNotRecenterOnCurrentCrosshairsPosition );
-              }
-              ImGui::SameLine(); helpMarker( "Recenter views on the fixed image in each view"
-       );
-
-              if ( ImGui::RadioButton( "Moving image", ImageSelection::MovingImageInView ==
-       appData.state().recenteringMode() ) )
-              {
-                  appData.state().setRecenteringMode( ImageSelection::MovingImageInView );
-                  recenterAllViews( k_recenterCrosshairs,
-       k_doNotRecenterOnCurrentCrosshairsPosition );
-              }
-              ImGui::SameLine(); helpMarker( "Recenter views on the moving image in each view"
-       );
-
-              if ( ImGui::RadioButton( "Fixed and moving images",
-       ImageSelection::FixedAndMovingImagesInView == appData.state().recenteringMode() ) )
-              {
-                  appData.state().setRecenteringMode(
-       ImageSelection::FixedAndMovingImagesInView ); recenterAllViews( k_recenterCrosshairs,
-       k_doNotRecenterOnCurrentCrosshairsPosition );
-              }
-              ImGui::SameLine(); helpMarker( "Recenter views on the fixed and moving images in
-       each view" );
-              */
 
     if (ImGui::RadioButton(
           "All loaded images",
@@ -1681,6 +1620,7 @@ void renderRegistrationBackendInfo(const RegistrationBackendInfo& info, bool add
 void renderRegistrationTab(AppData& appData)
 {
   registration::BackendConfig& config = appData.settings().registrationBackendConfig();
+  const float alignedControlWidth = fillWidthForLabeledControlWithHelp("ANTs convert transform executable");
 
   disabledTextWrapped(
     "Registration backends are external software packages that align images. Entropy prepares their inputs, launches "
@@ -1693,7 +1633,7 @@ void renderRegistrationTab(AppData& appData)
       "installed.");
 
     const std::string preview{registration::label(config.defaultBackend)};
-    ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp("Default registration backend"));
+    ImGui::PushItemWidth(alignedControlWidth);
     if (ImGui::BeginCombo("Default registration backend", preview.c_str())) {
       for (const registration::Backend backend : k_registrationBackends) {
         const bool selected = backend == config.defaultBackend;
@@ -1720,27 +1660,32 @@ void renderRegistrationTab(AppData& appData)
       "Greedy executable",
       config.greedyExecutable,
       "Command or executable path used to launch Greedy",
-      true);
+      true,
+      alignedControlWidth);
     renderResponsivePathSetting(
       "ANTs registration executable",
       config.antsRegistrationExecutable,
       "Command or executable path used to launch antsRegistration",
-      true);
+      true,
+      alignedControlWidth);
     renderResponsivePathSetting(
       "ANTs apply transforms executable",
       config.antsApplyTransformsExecutable,
       "Command or executable path used to launch antsApplyTransforms for warped outputs",
-      true);
+      true,
+      alignedControlWidth);
     renderResponsivePathSetting(
       "ANTs convert transform executable",
       config.antsConvertTransformFileExecutable,
       "Command or executable path used to convert ANTs affine output into Entropy's importable matrix artifact",
-      true);
+      true,
+      alignedControlWidth);
     renderResponsivePathSetting(
       "FireANTs Python executable",
       config.fireAntsPythonExecutable,
       "Python executable used to run Entropy's FireANTs bridge",
-      true);
+      true,
+      alignedControlWidth);
   }
   finishSettingsSection(backendDefaultsOpen);
 
@@ -1753,8 +1698,7 @@ void renderRegistrationTab(AppData& appData)
     std::string outputDirectory = config.defaultOutputDirectory.string();
     const ImGuiStyle& style = ImGui::GetStyle();
     const float buttonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
-    const float outputControlWidth = fillWidthForLabeledControlWithHelp("Output directory");
-    const float inputWidth = std::max(1.0f, outputControlWidth - buttonWidth - style.ItemSpacing.x);
+    const float inputWidth = std::max(1.0f, alignedControlWidth - buttonWidth - style.ItemSpacing.x);
     ImGui::PushID("RegistrationOutputDirectory");
     ImGui::PushItemWidth(inputWidth);
     if (ImGui::InputText("##path", &outputDirectory)) {
@@ -1782,7 +1726,7 @@ void renderRegistrationTab(AppData& appData)
       "directory");
 
     int maxConcurrentJobs = config.maxConcurrentJobs;
-    ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp("Max concurrent registration jobs"));
+    ImGui::PushItemWidth(alignedControlWidth);
     if (ImGui::InputInt("Max concurrent registration jobs", &maxConcurrentJobs)) {
       config.maxConcurrentJobs = std::max(1, maxConcurrentJobs);
     }
@@ -1791,7 +1735,7 @@ void renderRegistrationTab(AppData& appData)
     helpMarker("Maximum number of registration jobs Entropy should run at the same time");
 
     int cpuThreads = config.defaultCpuThreadCount;
-    ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp("Default CPU threads"));
+    ImGui::PushItemWidth(alignedControlWidth);
     if (ImGui::InputInt("Default CPU threads", &cpuThreads)) {
       config.defaultCpuThreadCount = std::max(0, cpuThreads);
     }
@@ -1799,7 +1743,11 @@ void renderRegistrationTab(AppData& appData)
     ImGui::SameLine();
     helpMarker("Default CPU thread count. Zero lets the backend choose");
 
-    renderResponsiveTextSetting("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs");
+    renderResponsiveTextSetting(
+      "FireANTs device",
+      config.defaultFireAntsDevice,
+      "PyTorch device passed to FireANTs",
+      alignedControlWidth);
 
     ImGui::Checkbox("Keep temporary files", &config.keepTemporaryFiles);
     ImGui::SameLine();
@@ -2275,6 +2223,7 @@ bool renderComparisonModesTab(rendering::RenderSettings& renderData)
   if (ImGui::RadioButton("Red, green, yellow", !renderData.m_overlayMagentaCyan)) {
     renderData.m_overlayMagentaCyan = false;
   }
+
   if (ImGui::RadioButton("Cyan, magenta, white", renderData.m_overlayMagentaCyan)) {
     renderData.m_overlayMagentaCyan = true;
   }
@@ -2721,6 +2670,7 @@ void renderSurfaceLightingEffectsSettings(rendering::RenderSettings& renderData)
   ImGui::Checkbox("Enable shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
   ImGui::SameLine();
   helpMarker("Cast simple directional shadows from mesh-rendered surfaces");
+
   if (renderData.m_meshAdvancedLightingSettings.shadows.enabled) {
     int mapSizePixels = static_cast<int>(renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels);
     if (ImGui::DragInt("Shadow map size", &mapSizePixels, 64.0f, 128, 8192, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
@@ -2760,6 +2710,7 @@ void renderSurfaceLightingEffectsSettings(rendering::RenderSettings& renderData)
   ImGui::Checkbox("Enable rim lighting", &material.rimLightingEnabled);
   ImGui::SameLine();
   helpMarker("Emphasize silhouettes on surfaces");
+
   if (material.rimLightingEnabled) {
     if (mySliderF32("Rim opacity", &material.rimOpacityStrength, 0.0f, 1.0f, "%0.2f")) {
       material.rimOpacityStrength = std::clamp(material.rimOpacityStrength, 0.0f, 1.0f);
@@ -2787,6 +2738,7 @@ void renderSurfaceLightingEffectsSettings(rendering::RenderSettings& renderData)
       .ambientOcclusionPassAvailable = true});
   const std::vector<std::string> meshLightingDiagnostics =
     rendering::mesh::advancedLightingDiagnostics(meshLightingPlan);
+
   for (const std::string& diagnostic : meshLightingDiagnostics) {
     disabledTextWrapped(diagnostic.c_str());
   }
@@ -2922,16 +2874,19 @@ void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
   disabledTextWrapped(
     "A distance map is generated lazily from a foreground intensity range. It accelerates transient isosurface "
     "raycasting without affecting the final surface meshes.");
+
   if (renderData.m_useDistanceMapForRaycasting) {
     int lowerPercentile =
       static_cast<int>(std::lround(std::clamp(renderData.m_distanceMapForegroundLowerPercentile, 0.0f, 1.0f) * 100.0f));
     int upperPercentile =
       static_cast<int>(std::lround(std::clamp(renderData.m_distanceMapForegroundUpperPercentile, 0.0f, 1.0f) * 100.0f));
+
     if (ImGui::SliderInt("Foreground lower percentile", &lowerPercentile, 0, upperPercentile, "%d%%")) {
       renderData.m_distanceMapForegroundLowerPercentile = static_cast<float>(lowerPercentile) / 100.0f;
     }
     ImGui::SameLine();
     helpMarker("Lower percentile of each image component included in the distance-map foreground mask");
+
     if (ImGui::SliderInt("Foreground upper percentile", &upperPercentile, lowerPercentile, 100, "%d%%")) {
       renderData.m_distanceMapForegroundUpperPercentile = static_cast<float>(upperPercentile) / 100.0f;
     }
@@ -3305,6 +3260,7 @@ void renderComparisonModeQuickSettings(
       int radiusPercent = static_cast<int>(100.0f * renderData.m_flashlightRadius);
       constexpr int k_minRadiusPercent = 1;
       constexpr int k_maxRadiusPercent = 100;
+
       if (ImGui::SliderScalar(
             "Circle size",
             ImGuiDataType_S32,
@@ -3315,6 +3271,7 @@ void renderComparisonModeQuickSettings(
       {
         renderData.m_flashlightRadius = static_cast<float>(radiusPercent) / 100.0f;
       }
+
       ImGui::SameLine();
       helpMarker("Diameter of the comparison circle as a percentage of the view size");
 
@@ -3351,10 +3308,12 @@ void renderComparisonModeQuickSettings(
       if (ImGui::RadioButton("Absolute", !renderData.m_useSquare)) {
         renderData.m_useSquare = false;
       }
+
       ImGui::SameLine();
       if (ImGui::RadioButton("Squared", renderData.m_useSquare)) {
         renderData.m_useSquare = true;
       }
+
       ImGui::SameLine();
       helpMarker("Compute absolute or squared intensity difference");
       renderMetricSettingsPanel(
@@ -3457,6 +3416,7 @@ static void renderSettingsPage(
       if (ImGui::CollapsingHeader("Precision", ImGuiTreeNodeFlags_DefaultOpen)) {
         renderPrecisionTab(appData);
       }
+
       ImGui::Spacing();
       ImGui::Separator();
       ImGui::Spacing();
@@ -3518,13 +3478,16 @@ void renderSettingsWindow(
 
   const bool settingsDirty = appData.guiData().m_appSettingsDirty;
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
+
   if (appData.guiData().m_suppressSettingsFocusOnNextAppearance) {
     windowFlags |= ImGuiWindowFlags_NoFocusOnAppearing;
     appData.guiData().m_suppressSettingsFocusOnNextAppearance = false;
   }
+
   if (settingsDirty) {
     windowFlags |= ImGuiWindowFlags_UnsavedDocument;
   }
+
   if (ImGui::Begin("Application Settings", &(appData.guiData().m_showSettingsWindow), windowFlags)) {
     rendering::RenderSettings& renderData = appData.renderSettings();
 
@@ -3537,12 +3500,14 @@ void renderSettingsWindow(
       const float navigationWidth = std::max(k_navigationWidth, settingsNavigationAutoWidth());
       constexpr ImGuiTableFlags tableFlags =
         ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings;
+
       if (ImGui::BeginTable("##SettingsLayout", 2, tableFlags, ImVec2{0.0f, 0.0f})) {
         ImGui::TableSetupColumn("##SettingsNavigationColumn", ImGuiTableColumnFlags_WidthFixed, navigationWidth);
         ImGui::TableSetupColumn("##SettingsPageColumn", ImGuiTableColumnFlags_WidthStretch);
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
+
         if (ImGui::BeginChild("##SettingsNavigation", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
           renderSettingsNavigation(s_selectedPage);
         }
@@ -3552,6 +3517,7 @@ void renderSettingsWindow(
         if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
           const ImGuiContext& imguiContext = *ImGui::GetCurrentContext();
           const bool settingsEditedBeforePage = imguiContext.ActiveIdHasBeenEditedThisFrame;
+          const auto renderPreferencesBeforePage = user_preferences::renderPreferencesFrom(renderData);
           ImGui::PushItemWidth(settingsControlWidth());
           renderSettingsPage(
             s_selectedPage,
@@ -3569,7 +3535,12 @@ void renderSettingsWindow(
             persistenceCallbacks,
             recenterAllViews);
           ImGui::PopItemWidth();
+
           if (!settingsEditedBeforePage && imguiContext.ActiveIdHasBeenEditedThisFrame) {
+            user_preferences::mergeEditedRenderPreferences(
+              appData.applicationRenderPreferences(),
+              renderPreferencesBeforePage,
+              user_preferences::renderPreferencesFrom(renderData));
             appData.guiData().m_appSettingsDirty = true;
           }
         }
@@ -3594,21 +3565,25 @@ void renderSettingsWindow(
 
       const float buttonY = std::max(ImGui::GetCursorPosY(), ImGui::GetContentRegionMax().y - ImGui::GetFrameHeight());
       ImGui::SetCursorPosY(buttonY);
+
       if (ImGui::Button("Restore Defaults")) {
         requestRestoreDefaults(persistenceCallbacks);
       }
+
       ImGui::SameLine();
       if (ImGui::Button("Save")) {
         if (persistenceCallbacks.saveSettings) {
           persistenceCallbacks.saveSettings();
         }
       }
+
       ImGui::SameLine();
       if (ImGui::Button("Save As...")) {
         const std::filesystem::path defaultDirectory = persistenceCallbacks.settingsFile.parent_path();
         const std::string defaultName = persistenceCallbacks.settingsFile.filename().empty()
                                           ? std::string{"entropy-settings.json"}
                                           : persistenceCallbacks.settingsFile.filename().string();
+
         if (
           const auto selectedFile =
             native_dialog::saveFile({native_dialog::Filter{"Entropy settings", "json"}}, defaultDirectory, defaultName))
@@ -3618,6 +3593,7 @@ void renderSettingsWindow(
           }
         }
       }
+
       ImGui::SameLine();
       if (ImGui::Button("Close")) {
         appData.guiData().m_showSettingsWindow = false;
@@ -3631,12 +3607,3 @@ void renderSettingsWindow(
 
   ImGui::End();
 }
-
-// enum class PopupWindowPosition
-//{
-//     Custom,
-//     TopLeft,
-//     TopRight,
-//     BottomLeft,
-//     BottomRight
-// };

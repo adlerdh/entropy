@@ -11,7 +11,9 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <atomic>
 #include <array>
+#include <chrono>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -25,11 +27,45 @@
 #include <utility>
 #include <vector>
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
+
 namespace
 {
 
 using json = nlohmann::json;
 using ordered_json = nlohmann::ordered_json;
+
+std::filesystem::path temporarySiblingPath(const std::filesystem::path& destination)
+{
+  static std::atomic_uint64_t sequence{0};
+  const auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+  std::filesystem::path temporaryName{"."};
+  temporaryName += destination.filename().native();
+  temporaryName += ".tmp-";
+  temporaryName += std::to_string(timestamp);
+  temporaryName += "-";
+  temporaryName += std::to_string(++sequence);
+  return destination.parent_path() / temporaryName;
+}
+
+void replaceFileAtomically(const std::filesystem::path& temporary, const std::filesystem::path& destination)
+{
+#if defined(_WIN32)
+  if (!MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+    throw std::system_error(
+      static_cast<int>(GetLastError()),
+      std::system_category(),
+      "Failed to replace user settings file");
+  }
+#else
+  std::filesystem::rename(temporary, destination);
+#endif
+}
 
 ordered_json orderedUserPreferencesJson(const json& value, const std::string_view path = {})
 {
@@ -1149,9 +1185,11 @@ RenderPreferences defaultRenderPreferences()
   return {};
 }
 
+namespace
+{
+
 void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const RenderPreferences& currentPreferences)
 {
-  // Application defaults must not reset presentation state that belongs to the open project.
   preferences.showImageBorders = currentPreferences.showImageBorders;
   preferences.showImageBordersInLightboxViews = currentPreferences.showImageBordersInLightboxViews;
   preferences.showCrosshairs = currentPreferences.showCrosshairs;
@@ -1204,6 +1242,8 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.hideAnnotationVertices = currentPreferences.hideAnnotationVertices;
 }
 
+} // namespace
+
 RenderPreferences applicationRenderPreferences(RenderPreferences preferences)
 {
   preserveProjectOwnedRenderPreferences(preferences, RenderPreferences{});
@@ -1226,14 +1266,34 @@ bool applyJsonString(
   const std::string& text,
   std::string* error)
 {
+  const AppSettings originalSettings = settings;
+  const RenderPreferences originalRenderPreferences = renderPreferences;
+  const PrecisionPreferences originalPrecisionPreferences = precisionPreferences;
+  const auto originalLogLevel = logging::applicationLogLevel();
+  const bool originalLoggingEnabled = logging::loggingEnabled();
   try {
+    AppSettings candidateSettings = settings;
+    RenderPreferences candidateRenderPreferences = renderPreferences;
+    PrecisionPreferences candidatePrecisionPreferences = precisionPreferences;
     const json root = json::parse(text);
     validateUserPreferencesSchema(root);
-    applyJson(settings, renderPreferences, precisionPreferences, defaultUserPreferencesJson());
-    applyJson(settings, renderPreferences, precisionPreferences, root);
+    applyJson(
+      candidateSettings,
+      candidateRenderPreferences,
+      candidatePrecisionPreferences,
+      defaultUserPreferencesJson());
+    applyJson(candidateSettings, candidateRenderPreferences, candidatePrecisionPreferences, root);
+    settings = std::move(candidateSettings);
+    renderPreferences = std::move(candidateRenderPreferences);
+    precisionPreferences = candidatePrecisionPreferences;
     return true;
   }
   catch (const std::exception& e) {
+    settings = originalSettings;
+    renderPreferences = originalRenderPreferences;
+    precisionPreferences = originalPrecisionPreferences;
+    logging::setApplicationLogLevel(originalLogLevel);
+    logging::setLoggingEnabled(originalLoggingEnabled);
     if (error != nullptr) {
       *error = e.what();
     }
@@ -1262,9 +1322,20 @@ bool save(
     if (!fileName.parent_path().empty()) {
       std::filesystem::create_directories(fileName.parent_path());
     }
-    std::ofstream out(fileName, std::ios::out | std::ios::trunc);
-    out.exceptions(std::ios::badbit | std::ios::failbit);
-    out << toJsonString(settings, renderPreferences, precisionPreferences) << '\n';
+    const std::filesystem::path temporaryFile = temporarySiblingPath(fileName);
+    try {
+      std::ofstream out(temporaryFile, std::ios::out | std::ios::trunc);
+      out.exceptions(std::ios::badbit | std::ios::failbit);
+      out << toJsonString(settings, renderPreferences, precisionPreferences) << '\n';
+      out.flush();
+      out.close();
+      replaceFileAtomically(temporaryFile, fileName);
+    }
+    catch (...) {
+      std::error_code ignored;
+      std::filesystem::remove(temporaryFile, ignored);
+      throw;
+    }
     spdlog::info("Saved user settings to {}", fileName);
     return true;
   }

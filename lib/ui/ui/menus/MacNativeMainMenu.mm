@@ -72,6 +72,30 @@ bool representedRecentPathsExist(id representedObject) {
 
   return false;
 }
+
+void updateRepresentedProjectFile() {
+  NSWindow* window = [NSApp mainWindow];
+  if (!window) {
+    window = [NSApp keyWindow];
+  }
+  if (!window) {
+    return;
+  }
+
+  const auto projectFileName = g_callbacks.projectFileName ? g_callbacks.projectFileName() : std::nullopt;
+  if (!projectFileName) {
+    [window setRepresentedURL:nil];
+    return;
+  }
+
+  std::error_code error;
+  std::filesystem::path absolutePath = std::filesystem::absolute(*projectFileName, error);
+  if (error) {
+    absolutePath = *projectFileName;
+  }
+  NSString* path = [NSString stringWithUTF8String:absolutePath.string().c_str()];
+  [window setRepresentedURL:[NSURL fileURLWithPath:path]];
+}
 }  // namespace
 
 @interface EntropyMacMenuTarget : NSObject
@@ -829,15 +853,6 @@ void addViewsMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Cycle View Overlays", MainMenuAction::CycleViewOverlays, @"square.2.layers.3d", @"o");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"ASCII Rendering", MainMenuAction::ToggleAsciiRendering, @"textformat");
-  [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(
-    menu,
-    @"Enter Full Screen",
-    MainMenuAction::ToggleFullScreen,
-    @"arrow.up.left.and.arrow.down.right",
-    @"f",
-    NSEventModifierFlagCommand | NSEventModifierFlagControl);
-  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     menu,
     @"Synchronize Entropy Instances",
@@ -864,6 +879,8 @@ void addViewsMenu(NSMenu* mainMenu) {
     @"Synchronize 3D Cameras",
     MainMenuAction::ToggleSynchronizeThreeDCameras,
     @"camera.on.rectangle");
+  // macOS appends its standard Enter Full Screen item to the View menu.
+  [menu addItem:[NSMenuItem separatorItem]];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -1087,6 +1104,7 @@ void rebuildActiveImagesMenu() {
 void updateMacOSNativeMainMenu(const MainMenuBarCallbacks& callbacks) {
   g_callbacks = callbacks;
   installMacOSNativeMainMenu();
+  updateRepresentedProjectFile();
   rebuildOpenRecentMenu();
   rebuildLayoutsMenu();
   rebuildActiveImagesMenu();

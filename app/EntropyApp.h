@@ -334,6 +334,8 @@ private:
 
   /** @brief Return true when any annotation is dirty or lacks a save path. */
   bool hasUnsavedAnnotations() const;
+  /** @brief Return true when segmentation voxels are newer than their last load or successful export. */
+  bool hasUnsavedSegmentations() const;
 
   /** @brief Save dirty annotations, prompting for paths as needed. */
   bool saveDirtyAnnotationsWithDialogs();

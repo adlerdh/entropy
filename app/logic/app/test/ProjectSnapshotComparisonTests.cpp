@@ -87,8 +87,13 @@ TEST_CASE("Project snapshot comparison detects image state changes", "[ProjectSn
   changedTransform.m_additionalImages.front().m_manualAffineMatrix->operator[](3).x = 3.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedTransform));
 
+  changedTransform = project;
+  changedTransform.m_additionalImages.front().m_manualAffineEnabled = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedTransform));
+
   auto changedForwardWarp = project;
-  changedForwardWarp.m_additionalImages.front().m_forwardWarpFieldPath = "forward-warp.nrrd";
+  changedForwardWarp.m_additionalImages.front().m_warpFields.push_back(
+    serialize::ImageWarpField{.m_path = "forward-warp.nrrd", .m_activeForward = true});
   CHECK_FALSE(project_snapshot::equivalent(project, changedForwardWarp));
 }
 
@@ -132,6 +137,12 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   auto changedIsosurfaceVisibility3d = project;
   changedIsosurfaceVisibility3d.m_referenceImage.m_isosurfaces.front().m_surface.visibleIn3d = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurfaceVisibility3d));
+
+  auto changedHistogram = project;
+  changedHistogram.m_referenceImage.m_settings->m_histograms.push_back(
+    serialize::ImageSettings::Histogram{.m_component = 0});
+  changedHistogram.m_referenceImage.m_settings->m_histograms.front().m_settings.m_numBins = 42;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedHistogram));
 }
 
 TEST_CASE("Project snapshot comparison detects layout and interface changes", "[ProjectSnapshotComparison]")
@@ -213,6 +224,10 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
 
   changedComparison = project;
   changedComparison.m_comparison.m_localNcc.m_patchRadius = 5;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
+
+  changedComparison = project;
+  changedComparison.m_comparison.m_jointHistogram.m_colorMapIndex = 3;
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
 
   auto changedRaycasting = project;

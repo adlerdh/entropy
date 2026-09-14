@@ -1,29 +1,10 @@
 #include "logic/app/WindowTitleStatus.h"
 
-#include <algorithm>
-#include <cctype>
-
-namespace
-{
-bool hasJsonExtension(const std::filesystem::path& fileName)
-{
-  std::string extension = fileName.extension().string();
-  std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char ch) {
-    return static_cast<char>(std::tolower(ch));
-  });
-  return extension == ".json";
-}
-} // namespace
-
 namespace window_title
 {
 std::string projectDisplayName(const std::filesystem::path& projectFileName)
 {
-  const std::filesystem::path fileName = projectFileName.filename();
-  if (hasJsonExtension(fileName)) {
-    return fileName.stem().string();
-  }
-  return fileName.string();
+  return projectFileName.filename().string();
 }
 
 std::string
@@ -38,10 +19,6 @@ status(const std::optional<std::filesystem::path>& projectFileName, const std::s
     projectName += "*";
   }
 
-  if (imageDisplayNames.empty()) {
-    return projectName;
-  }
-
-  return projectName + ": " + imageDisplayNames;
+  return projectName;
 }
 } // namespace window_title

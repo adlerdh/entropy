@@ -1,7 +1,5 @@
 #include "logic/app/UserPreferences.h"
 
-#include "common/LoggingDefaults.h"
-#include "common/LoggingSettings.h"
 #include "logic/app/Settings.h"
 #include "rendering/RenderSettings.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
@@ -10,9 +8,7 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <filesystem>
 #include <string>
-#include <system_error>
 
 namespace
 {
@@ -399,128 +395,234 @@ void applyRenderPreferences(
   renderSettings.m_globalAnnotationParams.hidePolygonVertices = preferences.hideAnnotationVertices;
 }
 
-void preserveProjectRenderPreferences(
-  user_preferences::RenderPreferences& preferences,
-  const user_preferences::RenderPreferences& currentPreferences)
-{
-  user_preferences::preserveProjectOwnedRenderPreferences(preferences, currentPreferences);
-}
-
-user_preferences::RenderPreferences applicationRenderPreferencesFromRenderSettings(
-  const rendering::RenderSettings& renderSettings)
-{
-  return user_preferences::applicationRenderPreferences(renderPreferencesFromRenderSettings(renderSettings));
-}
-
 } // namespace
 
 namespace user_preferences
 {
 
-std::string
-toJsonString(const AppSettings& settings, const rendering::RenderSettings& renderSettings, const GuiData& guiData)
+RenderPreferences renderPreferencesFrom(const rendering::RenderSettings& renderSettings)
 {
-  return toJsonString(
-    settings,
-    applicationRenderPreferencesFromRenderSettings(renderSettings),
-    precisionPreferencesFromGuiData(guiData));
+  return renderPreferencesFromRenderSettings(renderSettings);
+}
+
+void applyRenderPreferencesTo(rendering::RenderSettings& renderSettings, const RenderPreferences& preferences)
+{
+  applyRenderPreferences(renderSettings, preferences);
+}
+
+PrecisionPreferences precisionPreferencesFrom(const GuiData& guiData)
+{
+  return precisionPreferencesFromGuiData(guiData);
+}
+
+void applyPrecisionPreferencesTo(GuiData& guiData, const PrecisionPreferences& preferences)
+{
+  applyPrecisionPreferences(guiData, preferences);
+}
+
+void preserveProjectPresentation(RenderPreferences& preferences, const RenderPreferences& currentPreferences)
+{
+  const RenderPreferences applicationValues = preferences;
+  preferences = currentPreferences;
+
+  // These controls are application behavior or visual defaults, rather than part of a reproducible project view.
+  preferences.crosshairsColor = applicationValues.crosshairsColor;
+  preferences.showTransformationGuides = applicationValues.showTransformationGuides;
+  preferences.transformationGuideColor = applicationValues.transformationGuideColor;
+  preferences.background2dColor = applicationValues.background2dColor;
+  preferences.background3dColor = applicationValues.background3dColor;
+  preferences.anatomicalLabelColor = applicationValues.anatomicalLabelColor;
+  preferences.anatomicalLabelScale = applicationValues.anatomicalLabelScale;
+  preferences.scaleBarColor = applicationValues.scaleBarColor;
+  preferences.scaleBarPosition = applicationValues.scaleBarPosition;
+  preferences.scaleBarOrientation = applicationValues.scaleBarOrientation;
+  preferences.scaleBarTicks = applicationValues.scaleBarTicks;
+  preferences.scaleBarTargetFraction = applicationValues.scaleBarTargetFraction;
+  preferences.scaleBarMarginPx = applicationValues.scaleBarMarginPx;
+  preferences.showLightboxOffsetLabels = applicationValues.showLightboxOffsetLabels;
+  preferences.lightboxOffsetLabelColor = applicationValues.lightboxOffsetLabelColor;
+  preferences.floatingPointLinearInterpolationPolicy = applicationValues.floatingPointLinearInterpolationPolicy;
+  preferences.isocontourFloatingPointInterpolationPolicy = applicationValues.isocontourFloatingPointInterpolationPolicy;
+  preferences.limitFrameRate = applicationValues.limitFrameRate;
+  preferences.targetFrameTimeSeconds = applicationValues.targetFrameTimeSeconds;
+  preferences.synchronizeThreeDCameras = applicationValues.synchronizeThreeDCameras;
+  preferences.asciiEnabled = applicationValues.asciiEnabled;
+  preferences.asciiCellHeightPx = applicationValues.asciiCellHeightPx;
+  preferences.asciiCharsetIndex = applicationValues.asciiCharsetIndex;
+  preferences.asciiForegroundColor = applicationValues.asciiForegroundColor;
+  preferences.asciiBackgroundColor = applicationValues.asciiBackgroundColor;
+  preferences.asciiBackgroundAlpha = applicationValues.asciiBackgroundAlpha;
+  preferences.asciiUseColormapAsForeground = applicationValues.asciiUseColormapAsForeground;
+  preferences.asciiSpatialMatching = applicationValues.asciiSpatialMatching;
+  preferences.asciiSpatialExponent = applicationValues.asciiSpatialExponent;
+}
+
+void mergeEditedRenderPreferences(
+  RenderPreferences& applicationPreferences,
+  const RenderPreferences& before,
+  const RenderPreferences& after)
+{
+#define MERGE_EDITED(field)                     \
+  if (before.field != after.field) {            \
+    applicationPreferences.field = after.field; \
+  }
+  MERGE_EDITED(showImageBorders)
+  MERGE_EDITED(showImageBordersInLightboxViews)
+  MERGE_EDITED(crosshairsSnapping)
+  MERGE_EDITED(crosshairsColor)
+  MERGE_EDITED(showCrosshairs)
+  MERGE_EDITED(showCrosshairsInLightboxViews)
+  MERGE_EDITED(showTransformationGuides)
+  MERGE_EDITED(transformationGuideColor)
+  MERGE_EDITED(background2dColor)
+  MERGE_EDITED(background3dColor)
+  MERGE_EDITED(anatomicalLabelColor)
+  MERGE_EDITED(showAnatomicalLabels)
+  MERGE_EDITED(showAnatomicalLabelsInLightboxViews)
+  MERGE_EDITED(anatomicalLabelType)
+  MERGE_EDITED(quadrupedBodyRegion)
+  MERGE_EDITED(anatomicalLabelScale)
+  MERGE_EDITED(showScaleBars)
+  MERGE_EDITED(showScaleBarsInLightboxViews)
+  MERGE_EDITED(scaleBarColor)
+  MERGE_EDITED(scaleBarPosition)
+  MERGE_EDITED(scaleBarOrientation)
+  MERGE_EDITED(scaleBarTicks)
+  MERGE_EDITED(scaleBarTargetFraction)
+  MERGE_EDITED(scaleBarMarginPx)
+  MERGE_EDITED(showLightboxOffsetLabels)
+  MERGE_EDITED(lightboxOffsetLabelColor)
+  MERGE_EDITED(floatingPointLinearInterpolationPolicy)
+  MERGE_EDITED(useMaximumIntensityProjectionExtent)
+  MERGE_EDITED(intensityProjectionSlabThicknessMm)
+  MERGE_EDITED(xrayEnergyKeV)
+  MERGE_EDITED(xrayWindow)
+  MERGE_EDITED(xrayLevel)
+  MERGE_EDITED(isocontourFloatingPointInterpolationPolicy)
+  MERGE_EDITED(modulateSegmentationOpacityWithImageOpacity2d)
+  MERGE_EDITED(modulateSegmentationOpacityWithImageOpacity3d)
+  MERGE_EDITED(segmentationOutlineStyle)
+  MERGE_EDITED(segmentationInteriorOpacity)
+  MERGE_EDITED(segmentationErosionFactor)
+  MERGE_EDITED(squaredDifference)
+  MERGE_EDITED(squaredDifferenceMetric)
+  MERGE_EDITED(localNccMetric)
+  MERGE_EDITED(localLinearResidualMetric)
+  MERGE_EDITED(localNccPatchRadius)
+  MERGE_EDITED(localNccSampleSpacing)
+  MERGE_EDITED(localNccMinValidFraction)
+  MERGE_EDITED(localNccVarianceEpsilon)
+  MERGE_EDITED(localNccIgnoreNegativeCorrelation)
+  MERGE_EDITED(localNccPresentation)
+  MERGE_EDITED(localNccInvalidStyle)
+  MERGE_EDITED(localLinearResidualPatchRadius)
+  MERGE_EDITED(localLinearResidualSampleSpacing)
+  MERGE_EDITED(localLinearResidualMinValidFraction)
+  MERGE_EDITED(localLinearResidualVarianceEpsilon)
+  MERGE_EDITED(localLinearResidualInvalidStyle)
+  MERGE_EDITED(overlayMagentaCyan)
+  MERGE_EDITED(quadrants)
+  MERGE_EDITED(checkerboardSquares)
+  MERGE_EDITED(flashlightRadiusFraction)
+  MERGE_EDITED(flashlightOverlayMovingImage)
+  MERGE_EDITED(limitFrameRate)
+  MERGE_EDITED(targetFrameTimeSeconds)
+  MERGE_EDITED(raycastSamplingFactor)
+  MERGE_EDITED(useDistanceMapForRaycasting)
+  MERGE_EDITED(distanceMapForegroundLowerPercentile)
+  MERGE_EDITED(distanceMapForegroundUpperPercentile)
+  MERGE_EDITED(transparent3DBackground)
+  MERGE_EDITED(imageBoxVisible)
+  MERGE_EDITED(showImagePlanesIn3D)
+  MERGE_EDITED(showSegmentationsOnImagePlanesIn3D)
+  MERGE_EDITED(showIsocontoursOnImagePlanesIn3D)
+  MERGE_EDITED(imagePlaneOpacity)
+  MERGE_EDITED(modulateImagePlaneOpacityWithViewAngle)
+  MERGE_EDITED(shadeImagePlanesIn3D)
+  MERGE_EDITED(imagePlaneLightingAmbient)
+  MERGE_EDITED(imagePlaneLightingDiffuse)
+  MERGE_EDITED(imagePlaneLightingSpecular)
+  MERGE_EDITED(imagePlaneLightingSpecularPower)
+  MERGE_EDITED(lightingAmbient)
+  MERGE_EDITED(lightingDiffuse)
+  MERGE_EDITED(lightingSpecular)
+  MERGE_EDITED(lightingSpecularPower)
+  MERGE_EDITED(meshFlatShadingEnabled)
+  MERGE_EDITED(meshTriangleEdgesEnabled)
+  MERGE_EDITED(meshTriangleEdgeColor)
+  MERGE_EDITED(meshPbrShadingEnabled)
+  MERGE_EDITED(meshPbrMetallic)
+  MERGE_EDITED(meshPbrRoughness)
+  MERGE_EDITED(meshPbrAmbientOcclusion)
+  MERGE_EDITED(renderFrontFaces)
+  MERGE_EDITED(renderBackFaces)
+  MERGE_EDITED(reversePovRotation)
+  MERGE_EDITED(synchronizeThreeDCameras)
+  MERGE_EDITED(showCrosshairsIn3D)
+  MERGE_EDITED(crosshairs3DGlyphDiameterScenePercent)
+  MERGE_EDITED(crosshairs3DGlyphLengthScenePercent)
+  MERGE_EDITED(showThreeDCameraFrustumIn2DViews)
+  MERGE_EDITED(threeDCameraFrustumColor)
+  MERGE_EDITED(smoothSegmentationMeshes)
+  MERGE_EDITED(smoothIsosurfaceMeshes)
+  MERGE_EDITED(meshSmoothingIterations)
+  MERGE_EDITED(meshSmoothingPassBand)
+  MERGE_EDITED(meshPickingEnabled)
+  MERGE_EDITED(meshCutawayEnabled)
+  MERGE_EDITED(meshShadowsEnabled)
+  MERGE_EDITED(meshShadowMapSizePixels)
+  MERGE_EDITED(meshShadowStrength)
+  MERGE_EDITED(meshShadowDepthBias)
+  MERGE_EDITED(meshAmbientOcclusionEnabled)
+  MERGE_EDITED(meshAmbientOcclusionRadiusMm)
+  MERGE_EDITED(meshAmbientOcclusionStrength)
+  MERGE_EDITED(meshAmbientOcclusionPower)
+  MERGE_EDITED(meshAmbientOcclusionContrast)
+  MERGE_EDITED(meshAmbientOcclusionSampleCount)
+  MERGE_EDITED(meshRimLightingEnabled)
+  MERGE_EDITED(meshRimOpacityStrength)
+  MERGE_EDITED(meshRimEmissionStrength)
+  MERGE_EDITED(meshRimPower)
+  MERGE_EDITED(ddpMaxPeelPasses)
+  MERGE_EDITED(segmentationMasking)
+  MERGE_EDITED(asciiEnabled)
+  MERGE_EDITED(asciiCellHeightPx)
+  MERGE_EDITED(asciiCharsetIndex)
+  MERGE_EDITED(asciiForegroundColor)
+  MERGE_EDITED(asciiBackgroundColor)
+  MERGE_EDITED(asciiBackgroundAlpha)
+  MERGE_EDITED(asciiUseColormapAsForeground)
+  MERGE_EDITED(asciiSpatialMatching)
+  MERGE_EDITED(asciiSpatialExponent)
+  MERGE_EDITED(annotationsOnTop)
+  MERGE_EDITED(landmarksOnTop)
+  MERGE_EDITED(hideAnnotationVertices)
+#undef MERGE_EDITED
+
+  applicationPreferences = applicationRenderPreferences(applicationPreferences);
 }
 
 void markSavedAppSettingsState(
   const AppSettings& settings,
-  const rendering::RenderSettings& renderSettings,
+  const RenderPreferences& renderPreferences,
   GuiData& guiData)
 {
-  guiData.m_savedAppSettingsJson = toJsonString(settings, renderSettings, guiData);
+  guiData.m_savedAppSettingsJson = toJsonString(settings, renderPreferences, precisionPreferencesFromGuiData(guiData));
   guiData.m_appSettingsDirty = false;
 }
 
 void updateAppSettingsDirtyState(
   const AppSettings& settings,
-  const rendering::RenderSettings& renderSettings,
+  const RenderPreferences& renderPreferences,
   GuiData& guiData)
 {
   if (guiData.m_savedAppSettingsJson.empty()) {
-    markSavedAppSettingsState(settings, renderSettings, guiData);
+    markSavedAppSettingsState(settings, renderPreferences, guiData);
     return;
   }
 
-  guiData.m_appSettingsDirty = toJsonString(settings, renderSettings, guiData) != guiData.m_savedAppSettingsJson;
-}
-
-bool applyJsonString(
-  AppSettings& settings,
-  rendering::RenderSettings& renderSettings,
-  GuiData& guiData,
-  const std::string& text,
-  std::string* error)
-{
-  RenderPreferences renderPreferences = renderPreferencesFromRenderSettings(renderSettings);
-  PrecisionPreferences precisionPreferences = precisionPreferencesFromGuiData(guiData);
-  if (!applyJsonString(settings, renderPreferences, precisionPreferences, text, error)) {
-    return false;
-  }
-
-  preserveProjectRenderPreferences(renderPreferences, renderPreferencesFromRenderSettings(renderSettings));
-  applyRenderPreferences(renderSettings, renderPreferences);
-  applyPrecisionPreferences(guiData, precisionPreferences);
-  return true;
-}
-
-bool save(
-  const AppSettings& settings,
-  const rendering::RenderSettings& renderSettings,
-  const GuiData& guiData,
-  const std::filesystem::path& fileName,
-  std::string* error)
-{
-  return save(
-    settings,
-    applicationRenderPreferencesFromRenderSettings(renderSettings),
-    precisionPreferencesFromGuiData(guiData),
-    fileName,
-    error);
-}
-
-bool load(
-  AppSettings& settings,
-  rendering::RenderSettings& renderSettings,
-  GuiData& guiData,
-  const std::filesystem::path& fileName,
-  std::string* error)
-{
-  std::error_code ec;
-  if (!std::filesystem::exists(fileName, ec)) {
-    return true;
-  }
-
-  RenderPreferences renderPreferences = renderPreferencesFromRenderSettings(renderSettings);
-  PrecisionPreferences precisionPreferences = precisionPreferencesFromGuiData(guiData);
-  const bool loaded = load(settings, renderPreferences, precisionPreferences, fileName, error);
-  if (loaded) {
-    preserveProjectRenderPreferences(renderPreferences, renderPreferencesFromRenderSettings(renderSettings));
-    applyRenderPreferences(renderSettings, renderPreferences);
-    applyPrecisionPreferences(guiData, precisionPreferences);
-  }
-  return loaded;
-}
-
-void applyDefaults(AppSettings& settings, rendering::RenderSettings& renderSettings, GuiData& guiData)
-{
-  const bool synchronizeTimeSeries = settings.synchronizeTimeSeries();
-  const bool lockAnatomicalDirections = settings.lockAnatomicalCoordinateAxesWithReferenceImage();
-  const user_preferences::RenderPreferences currentRenderPreferences =
-    renderPreferencesFromRenderSettings(renderSettings);
-  user_preferences::RenderPreferences defaultPreferences = defaultRenderPreferences();
-  preserveProjectRenderPreferences(defaultPreferences, currentRenderPreferences);
-
-  settings = AppSettings{};
-  settings.setSynchronizeTimeSeries(synchronizeTimeSeries);
-  settings.setLockAnatomicalCoordinateAxesWithReferenceImage(lockAnatomicalDirections);
-  applyRenderPreferences(renderSettings, defaultPreferences);
-  applyPrecisionPreferences(guiData, PrecisionPreferences{});
-  logging::setApplicationLogLevel(logging::defaultLogLevel());
-  logging::setLoggingEnabled(true);
+  guiData.m_appSettingsDirty = toJsonString(settings, renderPreferences, precisionPreferencesFromGuiData(guiData)) !=
+                               guiData.m_savedAppSettingsJson;
 }
 
 } // namespace user_preferences

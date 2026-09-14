@@ -333,6 +333,7 @@ serialize::ProjectComparisonSettings comparisonSettings(const AppData& appData)
       serialize::ProjectDifferenceMetricSettings{
         .m_squared = renderSettings.m_useSquare,
         .m_metric = metricSettings(renderSettings.m_squaredDifferenceParams)},
+    .m_jointHistogram = metricSettings(renderSettings.m_jointHistogramParams),
     .m_localNcc =
       serialize::ProjectLocalNccMetricSettings{
         .m_metric = metricSettings(renderSettings.m_localNccParams),
@@ -363,6 +364,7 @@ void applyComparisonSettings(AppData& appData, const serialize::ProjectCompariso
   auto& renderSettings = appData.renderSettings();
   renderSettings.m_useSquare = settings.m_difference.m_squared;
   applyMetricSettings(renderSettings.m_squaredDifferenceParams, settings.m_difference.m_metric);
+  applyMetricSettings(renderSettings.m_jointHistogramParams, settings.m_jointHistogram);
 
   applyMetricSettings(renderSettings.m_localNccParams, settings.m_localNcc.m_metric);
   renderSettings.m_localNccPresentation = localNccPresentation(settings.m_localNcc.m_presentation);
@@ -811,6 +813,22 @@ serialize::ImageSettings imageSettings(const Image& image, std::optional<glm::ve
       imageSettings.interpolationMode(component),
       defaultSettings.interpolationMode(component),
       InterpolationMode::Linear);
+
+    const auto& histogram = imageSettings.histogramSettings(component);
+    const auto& defaultHistogram = defaultSettings.histogramSettings(component);
+    if (
+      histogram.m_numBinsMethod != defaultHistogram.m_numBinsMethod ||
+      histogram.m_numBins != defaultHistogram.m_numBins || histogram.m_binWidth != defaultHistogram.m_binWidth ||
+      histogram.m_isCumulative != defaultHistogram.m_isCumulative ||
+      histogram.m_isDensity != defaultHistogram.m_isDensity ||
+      histogram.m_isHorizontal != defaultHistogram.m_isHorizontal ||
+      histogram.m_isLogScale != defaultHistogram.m_isLogScale ||
+      histogram.m_intensityRange != defaultHistogram.m_intensityRange ||
+      histogram.m_useCustomIntensityRange != defaultHistogram.m_useCustomIntensityRange)
+    {
+      settings.m_histograms.push_back(
+        serialize::ImageSettings::Histogram{.m_component = component, .m_settings = histogram});
+    }
   }
   settings.m_edgeDetectionMethod = EdgeDetectionMethod::ScreenPixel == imageSettings.edgeDetectionMethod()
                                      ? serialize::ProjectEdgeDetectionMethod::ScreenPixel
@@ -1056,6 +1074,11 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettingsLocal.setModulateIsosurfaceOpacityWithImageOpacity(settings.m_modulateIsosurfaceOpacityWithImageOpacity);
   imageSettingsLocal.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);
   imageSettingsLocal.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
+  for (const auto& histogram : settings.m_histograms) {
+    if (histogram.m_component < imageSettingsLocal.numComponents()) {
+      imageSettingsLocal.histogramSettings(histogram.m_component) = histogram.m_settings;
+    }
+  }
 }
 
 void applySegmentationSettings(AppData& appData, Image& seg, const serialize::SegSettings& settings)
