@@ -36,6 +36,8 @@ using namespace ui::popups;
 
 namespace
 {
+constexpr const char* k_boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
+
 std::string formatVec3(const glm::vec3& value)
 {
   std::ostringstream ss;
@@ -365,7 +367,69 @@ void renderSlicePreview(const dicom::SlicePreview& preview, float maxHeight, flo
   ImGui::InvisibleButton("##dicomPreviewImage", imageSize);
 }
 
-void renderDicomPreviewPanel(GuiData::DicomSeriesSelectionPrompt& prompt, float panelHeight)
+float dicomPreviewImageHeight(const GuiData::DicomSeriesSelectionPrompt& prompt)
+{
+  constexpr float k_defaultPreviewImageHeight = 128.0f;
+  constexpr float k_minPreviewImageHeight = 48.0f;
+
+  if (!prompt.previewSeriesIndex || *prompt.previewSeriesIndex >= prompt.previewCache.size()) {
+    return k_defaultPreviewImageHeight;
+  }
+
+  const auto& previews = prompt.previewCache.at(*prompt.previewSeriesIndex);
+  const auto tallestPreview = std::max_element(
+    previews.begin(),
+    previews.end(),
+    [](const dicom::SlicePreview& left, const dicom::SlicePreview& right) { return left.height < right.height; });
+  return tallestPreview == previews.end()
+           ? k_defaultPreviewImageHeight
+           : std::max(k_minPreviewImageHeight, static_cast<float>(tallestPreview->height));
+}
+
+float dicomPreviewStripContentWidth(const GuiData::DicomSeriesSelectionPrompt& prompt, float imageHeight)
+{
+  if (
+    !prompt.previewSeriesIndex || *prompt.previewSeriesIndex >= prompt.previewCache.size() ||
+    *prompt.previewSeriesIndex >= prompt.series.size())
+  {
+    return 0.0f;
+  }
+
+  const auto& previews = prompt.previewCache.at(*prompt.previewSeriesIndex);
+  const auto& series = prompt.series.at(*prompt.previewSeriesIndex);
+  float contentWidth = 0.0f;
+  for (const auto& preview : previews) {
+    const float imageWidth = imageHeight * static_cast<float>(preview.width) / static_cast<float>(preview.height);
+    const std::string label = std::to_string(preview.sliceIndex + 1) + "/" + std::to_string(series.files.size());
+    contentWidth += std::max(imageWidth, ImGui::CalcTextSize(label.c_str()).x);
+  }
+  if (previews.size() > 1) {
+    contentWidth += static_cast<float>(previews.size() - 1) * ImGui::GetStyle().ItemSpacing.x;
+  }
+  return contentWidth;
+}
+
+float dicomPreviewScrollbarHeight(
+  const GuiData::DicomSeriesSelectionPrompt& prompt,
+  float imageHeight,
+  float availableWidth)
+{
+  return dicomPreviewStripContentWidth(prompt, imageHeight) > availableWidth ? ImGui::GetStyle().ScrollbarSize : 0.0f;
+}
+
+float dicomPreviewPanelHeight(
+  const GuiData::DicomSeriesSelectionPrompt& prompt,
+  float imageHeight,
+  float availableWidth)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float stripAvailableWidth = std::max(0.0f, availableWidth - (2.0f * style.WindowPadding.x));
+  const float stripHeight = ImGui::GetTextLineHeightWithSpacing() + imageHeight + style.ItemSpacing.y +
+                            dicomPreviewScrollbarHeight(prompt, imageHeight, stripAvailableWidth);
+  return ImGui::GetFrameHeightWithSpacing() + stripHeight + (2.0f * style.WindowPadding.y);
+}
+
+void renderDicomPreviewPanel(GuiData::DicomSeriesSelectionPrompt& prompt, float imageMaxHeight)
 {
   if (!prompt.previewSeriesIndex || *prompt.previewSeriesIndex >= prompt.series.size()) {
     ImGui::TextDisabled("Select a series row to preview its slices.");
@@ -394,7 +458,8 @@ void renderDicomPreviewPanel(GuiData::DicomSeriesSelectionPrompt& prompt, float 
   ImGui::SameLine();
   ImGui::SetNextItemWidth(220.0f);
   previewCountChanged =
-    ImGui::SliderInt("Slices", &prompt.previewSliceCount, 1, std::max(1, maxPreviewSlices)) || previewCountChanged;
+    ImGui::SliderInt("Preview slices", &prompt.previewSliceCount, 1, std::max(1, maxPreviewSlices)) ||
+    previewCountChanged;
 
   if (prompt.previewCache.size() != prompt.series.size()) {
     prompt.previewCache.resize(prompt.series.size());
@@ -418,16 +483,10 @@ void renderDicomPreviewPanel(GuiData::DicomSeriesSelectionPrompt& prompt, float 
 
   if (!prompt.previewCache.at(index).empty()) {
     const ImGuiStyle& style = ImGui::GetStyle();
-    const float headerHeight = ImGui::GetFrameHeightWithSpacing() + style.ItemSpacing.y;
-    const float availableStripHeight = std::max(80.0f, panelHeight - headerHeight - style.ItemSpacing.y);
     const float labelHeight = ImGui::GetTextLineHeightWithSpacing();
-    const float childPaddingY = 2.0f * style.WindowPadding.y;
-    const float horizontalScrollbarHeight = style.ScrollbarSize;
-    const float imageMaxHeight = std::max(
-      48.0f,
-      availableStripHeight - labelHeight - childPaddingY - horizontalScrollbarHeight - style.ItemSpacing.y);
-    const float stripHeight =
-      labelHeight + imageMaxHeight + childPaddingY + horizontalScrollbarHeight + style.ItemSpacing.y;
+    const float horizontalScrollbarHeight =
+      dicomPreviewScrollbarHeight(prompt, imageMaxHeight, ImGui::GetContentRegionAvail().x);
+    const float stripHeight = labelHeight + imageMaxHeight + horizontalScrollbarHeight + style.ItemSpacing.y;
     ImGui::BeginChild("##dicomPreviewSlices", ImVec2(0.0f, stripHeight), false, ImGuiWindowFlags_HorizontalScrollbar);
     for (std::size_t i = 0; i < prompt.previewCache.at(index).size(); ++i) {
       if (i > 0) {
@@ -582,7 +641,8 @@ void renderDicomSeriesSelectionPopup(
       ImGui::EndPopup();
     }
     const float controlsHeight = 2.0f * ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
-    const float previewHeight = std::max(230.0f, ImGui::GetContentRegionAvail().y * 0.36f);
+    const float previewImageHeight = dicomPreviewImageHeight(prompt);
+    const float previewHeight = dicomPreviewPanelHeight(prompt, previewImageHeight, ImGui::GetContentRegionAvail().x);
     const float footerHeight = controlsHeight + previewHeight + 3.0f * ImGui::GetStyle().ItemSpacing.y;
     const float tableHeight = std::max(240.0f, ImGui::GetContentRegionAvail().y - footerHeight);
 
@@ -723,7 +783,7 @@ void renderDicomSeriesSelectionPopup(
     }
 
     ImGui::BeginChild("##dicomPreviewPanel", ImVec2(0.0f, previewHeight), true);
-    renderDicomPreviewPanel(prompt, previewHeight);
+    renderDicomPreviewPanel(prompt, previewImageHeight);
     ImGui::EndChild();
 
     if (prompt.metadataSeriesIndex && *prompt.metadataSeriesIndex < prompt.series.size()) {
@@ -735,17 +795,21 @@ void renderDicomSeriesSelectionPopup(
     bool dicomMetadataDialogOpen = true;
     if (ImGui::BeginPopupModal("DICOM Metadata", &dicomMetadataDialogOpen, ImGuiWindowFlags_Modal)) {
       if (!dicomMetadataDialogOpen) {
-        prompt.metadataSeriesIndex = std::nullopt;
         ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
-        return;
       }
-      if (!prompt.metadataSeriesIndex || *prompt.metadataSeriesIndex >= prompt.series.size()) {
+      else if (!prompt.metadataSeriesIndex || *prompt.metadataSeriesIndex >= prompt.series.size()) {
         ImGui::CloseCurrentPopup();
       }
       else {
         const auto& series = prompt.series.at(*prompt.metadataSeriesIndex);
+        const auto boldFont = guiData.m_fonts.find(k_boldFontPath);
+        if (boldFont != std::end(guiData.m_fonts)) {
+          ImGui::PushFont(boldFont->second);
+        }
         ImGui::TextWrapped("%s", series.displayName.c_str());
+        if (boldFont != std::end(guiData.m_fonts)) {
+          ImGui::PopFont();
+        }
         ImGui::TextWrapped("Study UID: %s", series.metadata.studyInstanceUid.c_str());
         ImGui::TextWrapped("Series UID: %s", series.seriesInstanceUid.c_str());
         ImGui::Text("Slices: %zu", series.files.size());
@@ -758,7 +822,7 @@ void renderDicomSeriesSelectionPopup(
         }
         ImGui::Separator();
 
-        const float metadataFooterHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
+        const float metadataFooterHeight = ImGui::GetFrameHeightWithSpacing();
         const ImVec2 metadataTableSize(
           ImGui::GetContentRegionAvail().x,
           std::max(220.0f, ImGui::GetContentRegionAvail().y - metadataFooterHeight));
@@ -772,6 +836,9 @@ void renderDicomSeriesSelectionPopup(
       }
       ImGui::EndPopup();
     }
+    if (!dicomMetadataDialogOpen) {
+      prompt.metadataSeriesIndex = std::nullopt;
+    }
 
     const float footerPadding = ImGui::GetContentRegionAvail().y - controlsHeight;
     if (footerPadding > 0.0f) {
@@ -781,7 +848,7 @@ void renderDicomSeriesSelectionPopup(
     const std::size_t selectedCount =
       static_cast<std::size_t>(std::count(prompt.selected.begin(), prompt.selected.end(), true));
 
-    if (ImGui::Button("Select All Loadable")) {
+    if (ImGui::Button("Select All Loadable Series")) {
       for (std::size_t i = 0; i < prompt.series.size() && i < prompt.selected.size(); ++i) {
         prompt.selected.at(i) = prompt.series.at(i).loadable();
       }

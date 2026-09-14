@@ -562,7 +562,7 @@ void addImageMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Export Active Image...", MainMenuAction::ExportActiveImage, @"square.and.arrow.up");
   addSymbolActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage, @"xmark");
   [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference, @"scope");
+  addSymbolActionMenuItem(menu, @"Set Active Image as Reference", MainMenuAction::SetActiveImageAsReference, @"scope");
   addSymbolActionMenuItem(
     menu,
     @"Lock Manual Affine Transformation",
@@ -701,7 +701,7 @@ void addSegmentationMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Segmentations" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Segmentations"];
   addSymbolActionMenuItem(menu, @"Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow, @"star");
-  addSymbolActionMenuItem(menu, @"Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow, @"chart.bar");
+  addSymbolActionMenuItem(menu, @"Label Region Statistics", MainMenuAction::ToggleRegionStatisticsWindow, @"chart.bar");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Segmentation...", @selector(addSegmentation:), @"", @"folder.badge.plus");
   addSymbolActionMenuItem(menu, @"Create Blank Segmentation", MainMenuAction::CreateSegmentation, @"doc");
@@ -715,6 +715,7 @@ void addSegmentationMenu(NSMenu* mainMenu) {
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Previous Foreground Label", MainMenuAction::PreviousForegroundLabel, @",");
   addActionMenuItem(menu, @"Next Foreground Label", MainMenuAction::NextForegroundLabel, @".");
+  [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Previous Background Label", MainMenuAction::PreviousBackgroundLabel, @"<");
   addActionMenuItem(menu, @"Next Background Label", MainMenuAction::NextBackgroundLabel, @">");
   [menu addItem:[NSMenuItem separatorItem]];
@@ -831,6 +832,14 @@ void addViewsMenu(NSMenu* mainMenu) {
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     menu,
+    @"Enter Full Screen",
+    MainMenuAction::ToggleFullScreen,
+    @"arrow.up.left.and.arrow.down.right",
+    @"f",
+    NSEventModifierFlagCommand | NSEventModifierFlagControl);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addSymbolActionMenuItem(
+    menu,
     @"Synchronize Entropy Instances",
     MainMenuAction::ToggleEntropyInstanceSync,
     @"dot.radiowaves.left.and.right");
@@ -855,7 +864,6 @@ void addViewsMenu(NSMenu* mainMenu) {
     @"Synchronize 3D Cameras",
     MainMenuAction::ToggleSynchronizeThreeDCameras,
     @"camera.on.rectangle");
-  [menu addItem:[NSMenuItem separatorItem]];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -877,16 +885,16 @@ void addWindowsMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
   addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
   addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
+  addSymbolActionMenuItem(menu, @"Reset Panel Layout", MainMenuAction::ResetPanelLayout, @"rectangle.3.group");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Voxel Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle", @"i");
-  addSymbolActionMenuItem(menu, @"Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow, @"chart.bar");
+  addSymbolActionMenuItem(menu, @"Label Region Statistics", MainMenuAction::ToggleRegionStatisticsWindow, @"chart.bar");
   addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
   addSymbolActionMenuItem(
     menu,
     @"Registration Jobs",
     MainMenuAction::ToggleRegistrationJobsWindow,
     @"list.bullet.rectangle");
-  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     menu,
     @"Application Settings",
@@ -894,8 +902,6 @@ void addWindowsMenu(NSMenu* mainMenu) {
     @"gearshape",
     @",",
     NSEventModifierFlagCommand);
-  [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(menu, @"Reset Panel Layout", MainMenuAction::ResetPanelLayout, @"rectangle.3.group");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Toolbar", MainMenuAction::ToggleToolbar, @"wrench.and.screwdriver");
 #ifndef NDEBUG
@@ -934,7 +940,7 @@ void installMacOSNativeMainMenu() {
   addSymbolMenuItem(appMenu, @"About Entropy", @selector(showAbout:), @"", @"info.circle");
   addSymbolActionMenuItem(
     appMenu,
-    @"Application Settings...",
+    @"Application Settings",
     MainMenuAction::ToggleSettingsWindow,
     @"gearshape",
     @",",
@@ -1030,14 +1036,18 @@ void rebuildLayoutsMenu() {
   addSymbolMenuItem(g_layoutsMenu, @"Next Layout", @selector(nextLayout:), @"]", @"arrow.right.square", 0);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
 
+  NSMenuItem* currentLayoutItem = [[NSMenuItem alloc] initWithTitle:@"Current Layout" action:nil keyEquivalent:@""];
+  NSMenu* currentLayoutMenu = [[NSMenu alloc] initWithTitle:@"Current Layout"];
   const auto names = g_callbacks.layoutNames ? g_callbacks.layoutNames() : std::vector<std::string>{};
   const std::size_t currentIndex = g_callbacks.currentLayoutIndex ? g_callbacks.currentLayoutIndex() : 0;
   for (std::size_t i = 0; i < names.size(); ++i) {
     NSString* title = [NSString stringWithUTF8String:names.at(i).c_str()];
-    NSMenuItem* item = addTargetedMenuItem(g_layoutsMenu, title, @selector(selectLayout:), @"", 0);
+    NSMenuItem* item = addTargetedMenuItem(currentLayoutMenu, title, @selector(selectLayout:), @"", 0);
     [item setTag:static_cast<NSInteger>(i)];
     [item setState:(i == currentIndex) ? NSControlStateValueOn : NSControlStateValueOff];
   }
+  [currentLayoutItem setSubmenu:currentLayoutMenu];
+  [g_layoutsMenu addItem:currentLayoutItem];
 }
 
 void rebuildActiveImagesMenu() {

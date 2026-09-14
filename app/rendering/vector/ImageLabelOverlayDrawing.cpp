@@ -119,9 +119,14 @@ float drawBadge(NVGcontext* nvg, float x, float lineTop, std::string_view text, 
 
   nvgFontSize(nvg, m.badgeFontSize);
   nvgFontBlur(nvg, 0.0f);
-  nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+  nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+  std::array<float, 4> textBounds{};
+  nvgTextBounds(nvg, 0.0f, 0.0f, text.data(), text.data() + text.size(), textBounds.data());
+  const float textBaseline = y + 0.5f * m.badgeHeight - 0.5f * (textBounds[1] + textBounds[3]) + 0.5f * m.scale;
+
+  nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
   nvgFillColor(nvg, nvgRGBA(230, 230, 230, 255));
-  nvgText(nvg, x + 0.5f * width, y + 0.5f * m.badgeHeight, text.data(), text.data() + text.size());
+  nvgText(nvg, x + 0.5f * width, textBaseline, text.data(), text.data() + text.size());
   nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 
   return width;

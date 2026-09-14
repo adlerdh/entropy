@@ -821,7 +821,11 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertActionMenuItem(menu, position++, MainMenuAction::ExportActiveImage, L"&Export Active Image...") &&
     insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
     insertSeparator(menu, position++) &&
-    insertActionMenuItem(menu, position++, MainMenuAction::SetActiveImageAsReference, L"Set Image as &Reference") &&
+    insertActionMenuItem(
+      menu,
+      position++,
+      MainMenuAction::SetActiveImageAsReference,
+      L"Set Active Image as &Reference") &&
     insertActionMenuItem(
       menu,
       position++,
@@ -856,7 +860,7 @@ bool populateSegmentationMenu(HMENU menu)
            menu,
            position++,
            MainMenuAction::ToggleRegionStatisticsWindow,
-           L"Segmentation &Statistics") &&
+           L"Label Region &Statistics") &&
          insertSeparator(menu, position++) &&
          insertMenuItem(menu, position++, k_addSegmentationCommand, L"&Add Segmentation...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::CreateSegmentation, L"&Create Blank Segmentation") &&
@@ -874,6 +878,7 @@ bool populateSegmentationMenu(HMENU menu)
            MainMenuAction::PreviousForegroundLabel,
            L"Previous Foreground Label\t,") &&
          insertActionMenuItem(menu, position++, MainMenuAction::NextForegroundLabel, L"Next Foreground Label\t.") &&
+         insertSeparator(menu, position++) &&
          insertActionMenuItem(
            menu,
            position++,
@@ -1022,7 +1027,7 @@ bool populateWindowsMenu(HMENU menu)
     insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector\tI") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegionStatisticsWindow, L"Segmentation &Statistics") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegionStatisticsWindow, L"Label Region &Statistics") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Registration &Jobs") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings\tCtrl+,") &&
@@ -1051,6 +1056,11 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
     return false;
   }
 
+  HMENU currentLayoutMenu = CreatePopupMenu();
+  if (!currentLayoutMenu) {
+    return false;
+  }
+
   UINT position = 0;
   if (
     !insertMenuItem(layoutsMenu, position++, k_loadLayoutsCommand, L"&Load Layouts...") ||
@@ -1064,6 +1074,7 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
     !insertMenuItem(layoutsMenu, position++, k_nextLayoutCommand, L"&Next Layout\t]") ||
     !insertSeparator(layoutsMenu, position++))
   {
+    DestroyMenu(currentLayoutMenu);
     return false;
   }
 
@@ -1072,10 +1083,16 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
   for (std::size_t i = 0; i < layoutNames.size(); ++i) {
     const std::wstring title = widenUtf8(layoutNames.at(i));
     const UINT command = k_selectLayoutCommandBase + static_cast<UINT>(i);
-    if (!insertMenuItem(layoutsMenu, position++, command, title.c_str())) {
+    if (!insertMenuItem(currentLayoutMenu, static_cast<UINT>(i), command, title.c_str())) {
+      DestroyMenu(currentLayoutMenu);
       return false;
     }
-    CheckMenuItem(layoutsMenu, command, MF_BYCOMMAND | (i == currentIndex ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(currentLayoutMenu, command, MF_BYCOMMAND | (i == currentIndex ? MF_CHECKED : MF_UNCHECKED));
+  }
+
+  if (!insertSubmenu(layoutsMenu, position++, currentLayoutMenu, L"&Current Layout")) {
+    DestroyMenu(currentLayoutMenu);
+    return false;
   }
 
   return true;

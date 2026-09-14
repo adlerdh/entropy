@@ -436,6 +436,10 @@ void renderImageDicomMetadata(const AppData& appData, const uuids::uuid& imageUi
     const ImVec2 tableSize(ImGui::GetContentRegionAvail().x, 360.0f);
     renderDicomMetadataTable("ImageHeaderDicomMetadataTable", metadata.entries, tableSize);
   }
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
   ImGui::TreePop();
 }
 
@@ -3396,12 +3400,12 @@ void renderImageHeader(
     ImGui::EndDisabled();
     ImGui::SameLine();
     helpMarker("Load VTP, VTK, STL, PLY, OBJ, OFF, GIFTI, or FreeSurfer surface meshes and attach them to this image");
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::TreePop();
   }
-
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");

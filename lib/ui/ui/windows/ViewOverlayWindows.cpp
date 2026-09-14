@@ -428,7 +428,7 @@ void renderViewSettingsComboWindow(
   const std::size_t numImages = images.numImages;
   const auto& isImageRendered = images.isImageRendered;
   const auto& setImageRendered = images.setImageRendered;
-  const auto& applyImageVisibilityToAllViews = images.applyImageVisibilityToAllViews;
+  const auto& applyVisibleImageSelectionToMatchingViews = images.applyVisibleImageSelectionToMatchingViews;
   const auto& isImageUsedForMetric = images.isImageUsedForMetric;
   const auto& setImageUsedForMetric = images.setImageUsedForMetric;
   const auto& getImageDisplayAndFileName = images.getImageDisplayAndFileName;
@@ -456,7 +456,7 @@ void renderViewSettingsComboWindow(
   const auto& setThreeDSceneContents = modes.setThreeDSceneContents;
   const auto& setIntensityProjectionMode = modes.setIntensityProjectionMode;
   const auto& renderComparisonModeSettings = modes.renderComparisonModeSettings;
-  const auto& applyImageSelectionAndRenderingToAllViews = modes.applyImageSelectionAndRenderingToAllViews;
+  const auto& applyPresentationToMatchingViews = modes.applyPresentationToMatchingViews;
 
   const auto& getIntensityProjectionSlabThickness = projection.getIntensityProjectionSlabThickness;
   const auto& setIntensityProjectionSlabThickness = projection.setIntensityProjectionSlabThickness;
@@ -608,10 +608,13 @@ void renderViewSettingsComboWindow(
                 setImageRendered(i, false);
               }
             }
-            if (applyImageVisibilityToAllViews) {
+            if (applyVisibleImageSelectionToMatchingViews) {
               ImGui::SameLine();
-              if (iconButtonWithTooltip(ICON_FK_RSS, "Apply this image visibility to all views in the layout")) {
-                applyImageVisibilityToAllViews(viewOrLayoutUid);
+              const char* tooltip = usesThreeDImageSelection
+                                      ? "Apply this 3D image selection to all 3D views in the layout"
+                                      : "Apply these visible images to all 2D views in the layout";
+              if (iconButtonWithTooltip(ICON_FK_RSS, tooltip)) {
+                applyVisibleImageSelectionToMatchingViews(viewOrLayoutUid);
               }
             }
 
@@ -794,10 +797,6 @@ void renderViewSettingsComboWindow(
             }
             ImGui::SameLine();
             helpMarker("Compute intensity projection over the full image extent");
-
-            if (IntensityProjectionMode::Xray != intensityProjMode) {
-              ImGui::Dummy(ImVec2(0.0f, ImGui::GetStyle().FramePadding.y));
-            }
           }
 
           if (IntensityProjectionMode::Xray == intensityProjMode) {
@@ -848,8 +847,6 @@ void renderViewSettingsComboWindow(
             }
             ImGui::SameLine();
             helpMarker("Window level (center)");
-
-            ImGui::Dummy(ImVec2(0.0f, ImGui::GetStyle().FramePadding.y));
           }
 
           ImGui::EndCombo();
@@ -865,14 +862,15 @@ void renderViewSettingsComboWindow(
       if (showApplyToAllButton) {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FK_RSS)) {
-          // Apply image and shader settings to all views in this layout
-          applyImageSelectionAndRenderingToAllViews(viewOrLayoutUid);
+          applyPresentationToMatchingViews(viewOrLayoutUid);
         }
         if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip(
-            "%s",
-            "Apply this view's image selection, 2D render mode, 3D scene contents, and projection mode to all views in "
-            "the layout");
+          const char* tooltip = ViewType::ThreeD == viewType
+                                  ? "Apply this view's 3D image selection and scene contents to all 3D views in the "
+                                    "layout"
+                                  : "Apply this view's image selection, render mode, and intensity-projection mode to "
+                                    "all 2D views in the layout";
+          ImGui::SetTooltip("%s", tooltip);
         }
       }
 

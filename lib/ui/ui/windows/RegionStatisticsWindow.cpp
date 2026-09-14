@@ -14,6 +14,7 @@
 #include "logic/app/Data.h"
 #include "logic/app/ParcellationLabelTable.h"
 
+#include <IconsForkAwesome.h>
 #include <imgui/imgui.h>
 #include <implot/implot.h>
 #include <spdlog/fmt/std.h>
@@ -442,21 +443,21 @@ void renderRegionStatisticsWindow(AppData& appData, RegionStatisticsController& 
 
     const RegionStatisticsDocument document =
       statisticsDocument(state, *image, *segmentation, table, state.result->isVolume);
-    if (ImGui::Button("Copy")) {
+    if (ImGui::Button(ICON_FK_CLIPBOARD " Copy to Clipboard")) {
       ui::setClipboardPayload(
         {.plainText = regionStatisticsDelimitedText(document, '\t'), .html = std::nullopt, .rtf = std::nullopt});
       state.status = "Copied table to clipboard";
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Copy the displayed statistics as tab-separated text");
     ImGui::SameLine();
-    if (ImGui::Button("Save CSV...")) {
+    if (ImGui::Button(ICON_FK_FLOPPY_O " Save as CSV...")) {
       if (const auto path = native_dialog::saveFile({{"CSV", "csv"}}, {}, "region-statistics.csv")) {
         writeFile(*path, regionStatisticsDelimitedText(document, ','), state.status);
       }
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Save the displayed statistics as comma-separated values");
     ImGui::SameLine();
-    if (ImGui::Button("Save JSON...")) {
+    if (ImGui::Button(ICON_FK_FLOPPY_O " Save as JSON...")) {
       if (const auto path = native_dialog::saveFile({{"JSON", "json"}}, {}, "region-statistics.json")) {
         writeFile(*path, regionStatisticsJson(document), state.status);
       }

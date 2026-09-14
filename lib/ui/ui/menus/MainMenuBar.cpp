@@ -399,7 +399,6 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, "A");
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
-  ImGui::Separator();
   actionMenuItem(callbacks, "Show Crosshairs", MainMenuAction::ToggleCrosshairs, "X");
   actionMenuItem(callbacks, "Snap Crosshairs to Voxels", MainMenuAction::ToggleCrosshairsVoxelSnapping);
   actionMenuItem(callbacks, "Show Scale Bars", MainMenuAction::ToggleScaleBars);
@@ -457,7 +456,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Export Active Image...", MainMenuAction::ExportActiveImage);
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
   ImGui::Separator();
-  actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
+  actionMenuItem(callbacks, "Set Active Image as Reference", MainMenuAction::SetActiveImageAsReference);
   actionMenuItem(callbacks, "Lock Manual Affine Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
   ImGui::Separator();
   actionMenuItem(callbacks, "Move Image Backward", MainMenuAction::MoveActiveImageBackward);
@@ -520,7 +519,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
 {
   actionMenuItem(callbacks, "Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow);
-  actionMenuItem(callbacks, "Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow);
+  actionMenuItem(callbacks, "Label Region Statistics", MainMenuAction::ToggleRegionStatisticsWindow);
   ImGui::Separator();
   if (ImGui::MenuItem("Add Segmentation...", nullptr, false, callbacks.canAddSegmentation)) {
     addSegmentation(callbacks);
@@ -532,6 +531,7 @@ void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
   ImGui::Separator();
   actionMenuItem(callbacks, "Previous Foreground Label", MainMenuAction::PreviousForegroundLabel, ",");
   actionMenuItem(callbacks, "Next Foreground Label", MainMenuAction::NextForegroundLabel, ".");
+  ImGui::Separator();
   actionMenuItem(callbacks, "Previous Background Label", MainMenuAction::PreviousBackgroundLabel, "<");
   actionMenuItem(callbacks, "Next Background Label", MainMenuAction::NextBackgroundLabel, ">");
   ImGui::Separator();
@@ -741,7 +741,7 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow, "I");
-      main_menu::actionMenuItem(callbacks, "Segmentation Statistics", MainMenuAction::ToggleRegionStatisticsWindow);
+      main_menu::actionMenuItem(callbacks, "Label Region Statistics", MainMenuAction::ToggleRegionStatisticsWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       main_menu::actionMenuItem(callbacks, "Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
       main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow, "Ctrl+,");

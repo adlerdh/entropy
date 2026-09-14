@@ -1,5 +1,6 @@
 add_executable(TestWindowing
   ViewCameraDefaultsTests.cpp
+  ViewPropagationTests.cpp
   WindowingHeaderIncludeTests.cpp
 )
 

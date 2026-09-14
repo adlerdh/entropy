@@ -3605,7 +3605,7 @@ void ImGuiWrapper::render()
         m_appData.settings().setReceivePanSync(!m_appData.settings().receivePanSync());
         break;
       case MainMenuAction::SetActiveImageAsReference:
-        if (const auto imageUid = activeImageUid()) {
+        if (const auto imageUid = activeImageUid(); imageUid && imageUid != m_appData.refImageUid()) {
           m_appData.guiData().m_pendingReferenceImageUid = *imageUid;
           m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
         }
@@ -4074,6 +4074,7 @@ void ImGuiWrapper::render()
           if (const Image* image = m_appData.image(*activeImageUid())) return image->hasPixelData();
           return false;
         case MainMenuAction::SetActiveImageAsReference:
+          return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid();
         case MainMenuAction::RemoveActiveImage:
         case MainMenuAction::MoveActiveImageBackward:
         case MainMenuAction::MoveActiveImageForward:
@@ -4258,13 +4259,12 @@ void ImGuiWrapper::render()
     }
   };
 
-  auto applyImageSelectionAndRenderingToAllViews = [this](const uuids::uuid& viewUid) {
-    m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
-    m_appData.windowData().applyViewRenderingAndProjectionToAllCurrentViews(viewUid);
+  auto applyPresentationToMatchingViews = [this](const uuids::uuid& viewUid) {
+    m_appData.windowData().applyPresentationToMatchingCurrentViews(viewUid);
   };
 
-  auto applyImageSelectionToAllViews = [this](const uuids::uuid& viewUid) {
-    m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
+  auto applyVisibleImageSelectionToMatchingViews = [this](const uuids::uuid& viewUid) {
+    m_appData.windowData().applyVisibleImageSelectionToMatchingCurrentViews(viewUid);
   };
 
   auto getViewCameraRotation = [this](const uuids::uuid& viewUid) -> glm::quat {
@@ -5054,7 +5054,7 @@ void ImGuiWrapper::render()
           return currentLayout.setIntensityProjectionMode(ipMode);
         },
       .renderComparisonModeSettings = renderComparisonModeSettings,
-      .applyImageSelectionAndRenderingToAllViews = nullptr,
+      .applyPresentationToMatchingViews = nullptr,
       .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
       .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
       .hideIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = false; },
@@ -5221,7 +5221,7 @@ void ImGuiWrapper::render()
             view->setImageRendered(m_appData, index, visible);
           }
         },
-        applyImageSelectionToAllViews,
+        applyVisibleImageSelectionToMatchingViews,
         [this, view](std::size_t index) { return view->isImageUsedForMetric(m_appData, index); },
         [this, view](std::size_t index, bool visible) { view->setImageUsedForMetric(m_appData, index, visible); },
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
@@ -5256,7 +5256,7 @@ void ImGuiWrapper::render()
           [view](ThreeDSceneContents contents) { view->setThreeDSceneContents(std::move(contents)); },
         .setIntensityProjectionMode = setIntensityProjectionMode,
         .renderComparisonModeSettings = renderComparisonModeSettings,
-        .applyImageSelectionAndRenderingToAllViews = applyImageSelectionAndRenderingToAllViews,
+        .applyPresentationToMatchingViews = applyPresentationToMatchingViews,
         .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
         .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
         .hideIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = false; },

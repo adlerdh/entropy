@@ -1,4 +1,5 @@
 #include "windowing/WindowData.h"
+#include "windowing/ViewPropagation.h"
 #include "windowing/ViewCameraDefaults.h"
 
 #include "common/CoordinateFrame.h"
@@ -2221,7 +2222,7 @@ uuid_range_t WindowData::cameraSyncGroupViewUids(CameraSyncMode mode, const uuid
   return {};
 }
 
-void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewUid)
+void WindowData::applyVisibleImageSelectionToMatchingCurrentViews(const uuid& referenceViewUid)
 {
   static constexpr bool s_filterAgainstDefaults = false;
 
@@ -2230,42 +2231,58 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewU
     return;
   }
 
-  const auto renderedImages = referenceView->renderedImages();
-  const auto volumeRenderedImages = referenceView->volumeRenderedImages();
-  const auto metricImages = referenceView->metricImages();
+  const auto policy = windowing::visibleImagePropagationPolicy(referenceView->viewType());
 
   for (const auto& viewUid : currentViewUids()) {
     View* view = getCurrentView(viewUid);
-    if (!view) {
+    if (!view || !windowing::viewTypesHaveMatchingDimensions(referenceView->viewType(), view->viewType())) {
       continue;
     }
 
-    view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
-    view->setVolumeRenderedImages(volumeRenderedImages);
-    view->setMetricImages(metricImages);
+    if (policy.renderedImages) {
+      view->setRenderedImages(referenceView->renderedImages(), s_filterAgainstDefaults);
+    }
+    if (policy.threeDImages) {
+      view->setVolumeRenderedImages(referenceView->volumeRenderedImages());
+    }
   }
 }
 
-void WindowData::applyViewRenderingAndProjectionToAllCurrentViews(const uuid& referenceViewUid)
+void WindowData::applyPresentationToMatchingCurrentViews(const uuid& referenceViewUid)
 {
+  static constexpr bool s_filterAgainstDefaults = false;
+
   const View* referenceView = getCurrentView(referenceViewUid);
   if (!referenceView) {
     return;
   }
 
-  const auto renderMode = referenceView->renderMode();
-  const auto threeDSceneContents = referenceView->threeDSceneContents();
-  const auto ipMode = referenceView->intensityProjectionMode();
+  const auto policy = windowing::presentationPropagationPolicy(referenceView->viewType(), referenceView->renderMode());
 
   for (const auto& viewUid : currentViewUids()) {
     View* view = getCurrentView(viewUid);
-    if (!view) {
+    if (!view || !windowing::viewTypesHaveMatchingDimensions(referenceView->viewType(), view->viewType())) {
       continue;
     }
 
-    view->setRenderMode(renderMode);
-    view->setThreeDSceneContents(threeDSceneContents);
-    view->setIntensityProjectionMode(ipMode);
+    if (policy.renderedImages) {
+      view->setRenderedImages(referenceView->renderedImages(), s_filterAgainstDefaults);
+    }
+    if (policy.threeDImages) {
+      view->setVolumeRenderedImages(referenceView->volumeRenderedImages());
+    }
+    if (policy.metricImages) {
+      view->setMetricImages(referenceView->metricImages());
+    }
+    if (policy.renderMode) {
+      view->setRenderMode(referenceView->renderMode());
+    }
+    if (policy.threeDSceneContents) {
+      view->setThreeDSceneContents(referenceView->threeDSceneContents());
+    }
+    if (policy.intensityProjectionMode) {
+      view->setIntensityProjectionMode(referenceView->intensityProjectionMode());
+    }
   }
 }
 

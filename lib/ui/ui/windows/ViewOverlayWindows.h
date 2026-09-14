@@ -51,7 +51,7 @@ struct ViewOverlayImageCallbacks
   std::function<bool(std::size_t index)> isImageRendered;                //!< Is image visible in this view
   std::function<void(std::size_t index, bool visible)> setImageRendered; //!< Set image visibility in this view
   std::function<void(const uuids::uuid& viewUid)>
-    applyImageVisibilityToAllViews; //!< Copy this view's image visibility to all views
+    applyVisibleImageSelectionToMatchingViews; //!< Copy this view's image selection to matching views
 
   std::function<bool(std::size_t index)> isImageUsedForMetric; //!< Is image used in comparison/metric mode
   std::function<void(std::size_t index, bool visible)> setImageUsedForMetric; //!< Set metric image participation
@@ -86,7 +86,7 @@ struct ViewOverlayModeCallbacks
   std::function<void(const IntensityProjectionMode& projMode)> setIntensityProjectionMode{}; //!< Change projection
   std::function<void(ViewRenderMode)> renderComparisonModeSettings{}; //!< Draw settings for the active comparison mode
 
-  std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndRenderingToAllViews{}; //!< Apply to all views
+  std::function<void(const uuids::uuid& viewUid)> applyPresentationToMatchingViews{}; //!< Apply to matching views
   std::function<bool()> isIsosurfacesPanelVisible{};                  //!< Is the isosurfaces panel currently visible
   std::function<void()> showIsosurfacesPanel{};                       //!< Open the isosurfaces panel
   std::function<void()> hideIsosurfacesPanel{};                       //!< Close the isosurfaces panel
