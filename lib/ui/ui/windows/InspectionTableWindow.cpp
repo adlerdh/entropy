@@ -105,6 +105,7 @@ enum class InspectorColumn : int
   SampleSubject,
   TimeFrame,
   TimeValue,
+  Opacity,
   Count
 };
 
@@ -117,23 +118,23 @@ constexpr std::array<const char*, k_inspectorColumnCount> k_inspectorColumnNames
   "Image",      "Value", "Value (interp.)", "Percentile", "Real",          "Imaginary",         "Phase",
   "Minimum",    "Mean",  "Maximum",         "Magnitude",  "Jacobian Det.", "Log-Jacobian Det.", "Curl Mag.",
   "Divergence", "Label", "Region",          "Voxel",      "Subject (mm)",  "Sampled voxel",     "Sampled subject (mm)",
-  "Time frame", "Time"};
+  "Time frame", "Time",  "Opacity"};
 
 constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnMinWidths{
   120.0f, 64.0f, 72.0f, 78.0f, 64.0f, 82.0f, 72.0f,  78.0f,  64.0f,  78.0f, 88.0f, 108.0f,
-  132.0f, 90.0f, 94.0f, 48.0f, 72.0f, 96.0f, 148.0f, 125.0f, 160.0f, 82.0f, 64.0f};
+  132.0f, 90.0f, 94.0f, 48.0f, 72.0f, 96.0f, 148.0f, 125.0f, 160.0f, 82.0f, 64.0f, 110.0f};
 
 constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnDefaultWidths{
   150.0f, 82.0f,  122.0f, 100.0f, 82.0f,  112.0f, 96.0f,  96.0f,  82.0f,  96.0f, 108.0f, 122.0f,
-  150.0f, 104.0f, 112.0f, 62.0f,  140.0f, 125.0f, 210.0f, 150.0f, 210.0f, 96.0f, 82.0f};
+  150.0f, 104.0f, 112.0f, 62.0f,  140.0f, 125.0f, 210.0f, 150.0f, 210.0f, 96.0f, 82.0f,  140.0f};
 
 constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnMaxWidths{
   640.0f, 110.0f, 130.0f, 115.0f, 110.0f, 130.0f, 120.0f, 115.0f, 110.0f, 115.0f, 125.0f, 140.0f,
-  170.0f, 120.0f, 130.0f, 72.0f,  180.0f, 150.0f, 230.0f, 170.0f, 230.0f, 120.0f, 110.0f};
+  170.0f, 120.0f, 130.0f, 72.0f,  180.0f, 150.0f, 230.0f, 170.0f, 230.0f, 120.0f, 110.0f, 180.0f};
 
 constexpr std::array<bool, k_inspectorColumnCount> k_inspectorColumnCanHide{
   false, true, true, true, true, true, true, true, true, true, true, true,
-  true,  true, true, true, true, true, true, true, true, true, true};
+  true,  true, true, true, true, true, true, true, true, true, true, true};
 
 constexpr int columnIndex(InspectorColumn column)
 {
@@ -298,6 +299,21 @@ void setImageVisibleInAllViews(Image& image, bool visible)
   }
 }
 
+double imageOpacity(const Image& image)
+{
+  return image.settings().displayImageAsColor() ? image.settings().globalOpacity() : image.settings().opacity();
+}
+
+void setImageOpacity(Image& image, double opacity)
+{
+  if (image.settings().displayImageAsColor()) {
+    image.settings().setGlobalOpacity(opacity);
+  }
+  else {
+    image.settings().setOpacity(opacity);
+  }
+}
+
 bool isComponentProjectionColumn(InspectorColumn column)
 {
   switch (column) {
@@ -325,6 +341,7 @@ bool isComponentProjectionColumn(InspectorColumn column)
     case InspectorColumn::Subject:
     case InspectorColumn::SampleVoxel:
     case InspectorColumn::SampleSubject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       return false;
   }
@@ -359,6 +376,7 @@ bool isVectorDerivativeColumn(InspectorColumn column)
     case InspectorColumn::Subject:
     case InspectorColumn::SampleVoxel:
     case InspectorColumn::SampleSubject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       return false;
   }
@@ -393,6 +411,7 @@ bool isComplexColumn(InspectorColumn column)
     case InspectorColumn::Subject:
     case InspectorColumn::SampleVoxel:
     case InspectorColumn::SampleSubject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       return false;
   }
@@ -427,6 +446,7 @@ bool isWarpedCoordinateColumn(InspectorColumn column)
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
     case InspectorColumn::Subject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       return false;
   }
@@ -513,6 +533,7 @@ std::optional<double> complexColumnValue(InspectorColumn column, const Image& im
     case InspectorColumn::Subject:
     case InspectorColumn::SampleVoxel:
     case InspectorColumn::SampleSubject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       break;
   }
@@ -576,6 +597,7 @@ std::optional<double> componentProjectionValue(InspectorColumn column, const std
     case InspectorColumn::Subject:
     case InspectorColumn::SampleVoxel:
     case InspectorColumn::SampleSubject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       break;
   }
@@ -635,6 +657,7 @@ vectorDerivativeColumnValue(InspectorColumn column, const Image& image, const st
     case InspectorColumn::Subject:
     case InspectorColumn::SampleVoxel:
     case InspectorColumn::SampleSubject:
+    case InspectorColumn::Opacity:
     case InspectorColumn::Count:
       break;
   }
@@ -732,6 +755,8 @@ const char* inspectionColumnTooltip(InspectorColumn column)
       return "Moving-image voxel coordinate sampled after applying the inverse warp";
     case InspectorColumn::SampleSubject:
       return "Moving-image subject coordinate sampled after applying the inverse warp";
+    case InspectorColumn::Opacity:
+      return "Image opacity";
     case InspectorColumn::Image:
     case InspectorColumn::Count:
       break;
@@ -1230,6 +1255,10 @@ void renderInspectionWindowWithTable(
         timeValueHeader.c_str(),
         timeFrameColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::TimeValue)));
+      ImGui::TableSetupColumn(
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Opacity)),
+        ImGuiTableColumnFlags_WidthFixed,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Opacity)));
 
       for (std::size_t column = 0; column < k_inspectorColumnNames.size(); ++column) {
         ImGui::TableSetColumnEnabled(
@@ -1807,6 +1836,17 @@ void renderInspectionWindowWithTable(
         else {
           ImGui::TextUnformatted("N/A");
         }
+
+        ImGui::TableNextColumn(); // "Opacity"
+        double opacity = imageOpacity(*image);
+        ImGui::PushItemWidth(-1.0f);
+        if (mySliderF64("##opacity", &opacity, 0.0, 1.0)) {
+          setImageOpacity(*image, opacity);
+          if (updateImageUniforms) {
+            updateImageUniforms(*imageUid);
+          }
+        }
+        ImGui::PopItemWidth();
 
         ImGui::PopID(); /** PopID: imageIndex **/
       }

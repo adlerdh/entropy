@@ -67,7 +67,7 @@ struct RenderPreferences
   bool showCrosshairs = true;
   bool showCrosshairsInLightboxViews = true;
   bool showTransformationGuides = true;
-  glm::vec4 transformationGuideColor{1.0f, 0.72f, 0.16f, 1.0f};
+  glm::vec4 transformationGuideColor{1.0f, 0.772549f, 0.313725f, 1.0f};
   glm::vec3 background2dColor{0.1f, 0.1f, 0.1f};
   glm::vec4 background3dColor{0.1f, 0.1f, 0.1f, 1.0f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
@@ -79,7 +79,7 @@ struct RenderPreferences
 
   bool showScaleBars = true;
   bool showScaleBarsInLightboxViews = false;
-  glm::vec4 scaleBarColor{0.380392f, 0.858824f, 0.250980f, 1.0f};
+  glm::vec4 scaleBarColor{0.509804f, 0.819608f, 0.427451f, 1.0f};
   ScaleBarPosition scaleBarPosition = ScaleBarPosition::BottomRight;
   ScaleBarOrientation scaleBarOrientation = ScaleBarOrientation::Horizontal;
   ScaleBarTicks scaleBarTicks = ScaleBarTicks::Automatic;
@@ -189,7 +189,7 @@ struct RenderPreferences
   SegMaskingForRaycasting segmentationMasking = SegMaskingForRaycasting::Disabled;
 
   bool asciiEnabled = false;
-  glm::vec2 asciiCellSizePx{8.0f, 16.0f};
+  float asciiCellHeightPx = 16.0f;
   int asciiCharsetIndex = 0;
   glm::vec3 asciiForegroundColor{1.0f, 1.0f, 1.0f};
   glm::vec3 asciiBackgroundColor{0.0f, 0.0f, 0.0f};

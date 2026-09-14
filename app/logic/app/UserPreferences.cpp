@@ -19,6 +19,7 @@
 #include <optional>
 #include <span>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -58,19 +59,19 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "comparison",
       "synchronization",
       "system",
-      "annotations",
       "recent"};
   }
   else if (path == "views") {
     preferredKeys = {
+      "backgroundColor",
       "showImageBorders",
       "showOverlays",
       "crosshairs",
-      "transformationGuides",
-      "synchronizeViewZooms",
-      "backgrounds",
+      "recenterOn",
       "anatomicalLabels",
       "scaleBars",
+      "annotations",
+      "transformationGuides",
       "lightbox",
       "asciiShading"};
   }
@@ -79,6 +80,23 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
   }
   else if (path == "rendering/camera") {
     preferredKeys = {"showFrustumIn2DViews", "frustumColor", "reversePovRotation", "synchronizeThreeDCameras"};
+  }
+  else if (path == "rendering/threeD") {
+    preferredKeys = {
+      "backgroundColor",
+      "transparentBackground",
+      "imageBoxVisible",
+      "showCrosshairs",
+      "crosshairsDiameterScenePercent",
+      "crosshairsLengthScenePercent",
+      "lighting",
+      "imagePlanesVisible",
+      "imagePlaneSegmentationsVisible",
+      "imagePlaneIsocontoursVisible",
+      "imagePlaneOpacity",
+      "imagePlaneViewAngleOpacity",
+      "imagePlaneShading",
+      "imagePlaneLighting"};
   }
   else if (path == "rendering/mesh") {
     preferredKeys = {
@@ -141,6 +159,29 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
     }
   }
   return result;
+}
+
+std::optional<json> changedJson(const json& value, const json& defaults)
+{
+  if (value == defaults) {
+    return std::nullopt;
+  }
+  if (!value.is_object() || !defaults.is_object()) {
+    return value;
+  }
+
+  json changed = json::object();
+  for (const auto& [key, child] : value.items()) {
+    const auto defaultChild = defaults.find(key);
+    if (defaultChild == defaults.end()) {
+      changed[key] = child;
+      continue;
+    }
+    if (auto difference = changedJson(child, *defaultChild)) {
+      changed[key] = std::move(*difference);
+    }
+  }
+  return changed.empty() ? std::nullopt : std::optional<json>{std::move(changed)};
 }
 
 template<typename Enum>
@@ -216,11 +257,6 @@ void setDoubleFromJson(double& value, const json& object, const char* key, doubl
   }
 
   value = std::clamp(it->get<double>(), minValue, maxValue);
-}
-
-json vec2ToJson(const glm::vec2& value)
-{
-  return json::array({value.x, value.y});
 }
 
 json vec3ToJson(const glm::vec3& value)
@@ -308,21 +344,6 @@ std::vector<std::filesystem::path> pathsFromJson(const json& value)
     }
   }
   return paths;
-}
-
-void setVec2FromJson(glm::vec2& value, const json& object, const char* key)
-{
-  const auto it = object.find(key);
-  if (it == object.end() || !it->is_array() || it->size() != 2) {
-    return;
-  }
-
-  try {
-    value = glm::vec2{it->at(0).get<float>(), it->at(1).get<float>()};
-  }
-  catch (const json::exception& e) {
-    spdlog::debug("Ignoring invalid vec2 user preference '{}': {}", key, e.what());
-  }
 }
 
 void setVec3FromJson(glm::vec3& value, const json& object, const char* key)
@@ -435,6 +456,12 @@ constexpr std::array sk_brushPreviewStyleNames{
   EnumName{BrushPreviewStyle::Outline, "outline"},
   EnumName{BrushPreviewStyle::OutlineAndFill, "outlineAndFill"}};
 
+constexpr std::array sk_recenteringModeNames{
+  EnumName{ImageSelection::ReferenceImage, "referenceImage"},
+  EnumName{ImageSelection::ActiveImage, "activeImage"},
+  EnumName{ImageSelection::ReferenceAndActiveImages, "referenceAndActiveImages"},
+  EnumName{ImageSelection::AllLoadedImages, "allLoadedImages"}};
+
 json toJson(
   const AppSettings& settings,
   const user_preferences::RenderPreferences& renderPreferences,
@@ -468,19 +495,17 @@ json toJson(
         {"percentiles", precisionPreferences.percentilePrecision},
         {"timeValues", precisionPreferences.timeValuePrecision}}}}},
     {"views",
-     {{"showImageBorders", renderPreferences.showImageBorders},
+     {{"backgroundColor", vec3ToJson(renderPreferences.background2dColor)},
+      {"showImageBorders", renderPreferences.showImageBorders},
       {"showOverlays", settings.overlays()},
       {"crosshairs",
        {{"show", renderPreferences.showCrosshairs},
         {"showInLightboxViews", renderPreferences.showCrosshairsInLightboxViews},
         {"color", vec4ToJson(renderPreferences.crosshairsColor)}}},
+      {"recenterOn", enumToName(settings.recenteringMode(), sk_recenteringModeNames)},
       {"transformationGuides",
        {{"show", renderPreferences.showTransformationGuides},
         {"color", vec4ToJson(renderPreferences.transformationGuideColor)}}},
-      {"synchronizeViewZooms", settings.synchronizeZooms()},
-      {"backgrounds",
-       {{"2d", vec3ToJson(renderPreferences.background2dColor)},
-        {"3d", vec4ToJson(renderPreferences.background3dColor)}}},
       {"anatomicalLabels",
        {{"color", vec4ToJson(renderPreferences.anatomicalLabelColor)},
         {"scale", renderPreferences.anatomicalLabelScale}}},
@@ -493,13 +518,14 @@ json toJson(
         {"targetLengthFraction", renderPreferences.scaleBarTargetFraction},
         {"marginPixels", renderPreferences.scaleBarMarginPx},
         {"ticks", enumToName(renderPreferences.scaleBarTicks, sk_scaleBarTicksNames)}}},
+      {"annotations", {{"moveCrosshairsWhileDrawing", settings.crosshairsMoveWhileAnnotating()}}},
       {"lightbox",
        {{"showImageBorders", renderPreferences.showImageBordersInLightboxViews},
         {"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
         {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
-        {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
+        {"cellHeightPixels", renderPreferences.asciiCellHeightPx},
         {"charsetIndex", renderPreferences.asciiCharsetIndex},
         {"foregroundColor", vec3ToJson(renderPreferences.asciiForegroundColor)},
         {"backgroundColor", vec3ToJson(renderPreferences.asciiBackgroundColor)},
@@ -538,7 +564,8 @@ json toJson(
         {"showFrustumIn2DViews", renderPreferences.showThreeDCameraFrustumIn2DViews},
         {"frustumColor", vec4ToJson(renderPreferences.threeDCameraFrustumColor)}}},
       {"threeD",
-       {{"transparentBackground", renderPreferences.transparent3DBackground},
+       {{"backgroundColor", vec4ToJson(renderPreferences.background3dColor)},
+        {"transparentBackground", renderPreferences.transparent3DBackground},
         {"imageBoxVisible", renderPreferences.imageBoxVisible},
         {"imagePlanesVisible", renderPreferences.showImagePlanesIn3D},
         {"imagePlaneSegmentationsVisible", renderPreferences.showSegmentationsOnImagePlanesIn3D},
@@ -599,7 +626,6 @@ json toJson(
           {"lowerPercentile", renderPreferences.distanceMapForegroundLowerPercentile},
           {"upperPercentile", renderPreferences.distanceMapForegroundUpperPercentile}}}}},
       {"dualDepthPeeling", {{"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
-    {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"registration", settings.registrationBackendConfig()},
     {"recent",
      {{"images", pathGroupsToJson(settings.recentImageGroups())},
@@ -624,6 +650,52 @@ json toJson(
        {{"enabled", logging::loggingEnabled()},
         {"logVerbosity", std::string{logging::logLevelLabel(logging::applicationLogLevel())}}}},
       {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
+}
+
+json defaultUserPreferencesJson()
+{
+  json defaults =
+    toJson(AppSettings{}, user_preferences::RenderPreferences{}, user_preferences::PrecisionPreferences{});
+  defaults["system"]["diagnostics"]["enabled"] = true;
+  defaults["system"]["diagnostics"]["logVerbosity"] = std::string{logging::logLevelLabel(logging::defaultLogLevel())};
+  return defaults;
+}
+
+json sparseUserPreferencesJson(
+  const AppSettings& settings,
+  const user_preferences::RenderPreferences& renderPreferences,
+  const user_preferences::PrecisionPreferences& precisionPreferences)
+{
+  const json complete = toJson(settings, renderPreferences, precisionPreferences);
+  const json defaults = defaultUserPreferencesJson();
+  json sparse = {{"format", complete.at("format")}, {"version", complete.at("version")}};
+
+  for (const auto& [key, value] : complete.items()) {
+    if (key == "format" || key == "version") {
+      continue;
+    }
+    if (auto difference = changedJson(value, defaults.at(key))) {
+      sparse[key] = std::move(*difference);
+    }
+  }
+  return sparse;
+}
+
+void validateUserPreferencesSchema(const json& root)
+{
+  if (!root.is_object()) {
+    throw std::runtime_error{"Entropy application settings JSON must be an object"};
+  }
+  if (root.value("format", "") != "entropy.userSettings") {
+    throw std::runtime_error{"Unsupported Entropy application settings JSON format"};
+  }
+  const auto version = root.find("version");
+  if (
+    version == root.end() || !version->is_object() || version->value("major", -1) != 1 ||
+    version->value("minor", -1) != 0)
+  {
+    throw std::runtime_error{"Unsupported Entropy application settings JSON version"};
+  }
 }
 
 void applyJson(
@@ -714,19 +786,14 @@ void applyJson(
       setFromJson(renderPreferences.showCrosshairsInLightboxViews, *crosshairs, "showInLightboxViews");
       setVec4FromJson(renderPreferences.crosshairsColor, *crosshairs, "color");
     }
+    if (const auto parsed = enumFromName<ImageSelection>(views->value("recenterOn", ""), sk_recenteringModeNames)) {
+      settings.setRecenteringMode(*parsed);
+    }
     if (const auto guides = views->find("transformationGuides"); guides != views->end() && guides->is_object()) {
       setFromJson(renderPreferences.showTransformationGuides, *guides, "show");
       setVec4FromJson(renderPreferences.transformationGuideColor, *guides, "color");
     }
-    if (const auto syncZooms = views->find("synchronizeViewZooms");
-        syncZooms != views->end() && syncZooms->is_boolean())
-    {
-      settings.setSynchronizeZooms(syncZooms->get<bool>());
-    }
-    if (const auto backgrounds = views->find("backgrounds"); backgrounds != views->end() && backgrounds->is_object()) {
-      setVec3FromJson(renderPreferences.background2dColor, *backgrounds, "2d");
-      setVec4FromJson(renderPreferences.background3dColor, *backgrounds, "3d");
-    }
+    setVec3FromJson(renderPreferences.background2dColor, *views, "backgroundColor");
     if (const auto labels = views->find("anatomicalLabels"); labels != views->end() && labels->is_object()) {
       setVec4FromJson(renderPreferences.anatomicalLabelColor, *labels, "color");
       setFloatFromJson(renderPreferences.anatomicalLabelScale, *labels, "scale", 0.5f, 2.0f);
@@ -741,6 +808,13 @@ void applyJson(
       setFloatFromJson(renderPreferences.scaleBarMarginPx, *scaleBars, "marginPixels", 12.0f, 96.0f);
       setEnumFromJson(renderPreferences.scaleBarTicks, *scaleBars, "ticks", sk_scaleBarTicksNames);
     }
+    if (const auto annotations = views->find("annotations"); annotations != views->end() && annotations->is_object()) {
+      if (const auto value = annotations->find("moveCrosshairsWhileDrawing");
+          value != annotations->end() && value->is_boolean())
+      {
+        settings.setCrosshairsMoveWhileAnnotating(value->get<bool>());
+      }
+    }
     if (const auto lightbox = views->find("lightbox"); lightbox != views->end() && lightbox->is_object()) {
       setFromJson(renderPreferences.showImageBordersInLightboxViews, *lightbox, "showImageBorders");
       setFromJson(renderPreferences.showLightboxOffsetLabels, *lightbox, "showOffsetLabels");
@@ -748,7 +822,7 @@ void applyJson(
     }
     if (const auto ascii = views->find("asciiShading"); ascii != views->end() && ascii->is_object()) {
       setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");
-      setVec2FromJson(renderPreferences.asciiCellSizePx, *ascii, "cellSizePx");
+      setFloatFromJson(renderPreferences.asciiCellHeightPx, *ascii, "cellHeightPixels", 4.0f, 64.0f);
       setFromJson(renderPreferences.asciiCharsetIndex, *ascii, "charsetIndex");
       renderPreferences.asciiCharsetIndex = std::clamp(renderPreferences.asciiCharsetIndex, 0, 2);
       setVec3FromJson(renderPreferences.asciiForegroundColor, *ascii, "foregroundColor");
@@ -870,6 +944,7 @@ void applyJson(
       setVec4FromJson(renderPreferences.threeDCameraFrustumColor, *camera, "frustumColor");
     }
     if (const auto threeD = rendering->find("threeD"); threeD != rendering->end() && threeD->is_object()) {
+      setVec4FromJson(renderPreferences.background3dColor, *threeD, "backgroundColor");
       setFromJson(renderPreferences.transparent3DBackground, *threeD, "transparentBackground");
       setFromJson(renderPreferences.imageBoxVisible, *threeD, "imageBoxVisible");
       setFromJson(renderPreferences.showImagePlanesIn3D, *threeD, "imagePlanesVisible");
@@ -959,14 +1034,6 @@ void applyJson(
       if (const auto passes = ddp->find("maxPeelPasses"); passes != ddp->end() && passes->is_number_unsigned()) {
         renderPreferences.ddpMaxPeelPasses = std::clamp<uint32_t>(passes->get<uint32_t>(), 1u, 32u);
       }
-    }
-  }
-
-  if (const auto annotations = root.find("annotations"); annotations != root.end() && annotations->is_object()) {
-    if (const auto value = annotations->find("crosshairsMoveWhileAnnotating");
-        value != annotations->end() && value->is_boolean())
-    {
-      settings.setCrosshairsMoveWhileAnnotating(value->get<bool>());
     }
   }
 
@@ -1148,7 +1215,8 @@ std::string toJsonString(
   const RenderPreferences& renderPreferences,
   const PrecisionPreferences& precisionPreferences)
 {
-  return orderedUserPreferencesJson(toJson(settings, renderPreferences, precisionPreferences)).dump(2);
+  return orderedUserPreferencesJson(sparseUserPreferencesJson(settings, renderPreferences, precisionPreferences))
+    .dump(2);
 }
 
 bool applyJsonString(
@@ -1160,6 +1228,8 @@ bool applyJsonString(
 {
   try {
     const json root = json::parse(text);
+    validateUserPreferencesSchema(root);
+    applyJson(settings, renderPreferences, precisionPreferences, defaultUserPreferencesJson());
     applyJson(settings, renderPreferences, precisionPreferences, root);
     return true;
   }

@@ -217,7 +217,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.segmentationMasking =
     static_cast<user_preferences::RenderPreferences::SegMaskingForRaycasting>(renderSettings.m_segMasking);
   preferences.asciiEnabled = renderSettings.m_asciiEnabled;
-  preferences.asciiCellSizePx = renderSettings.m_asciiCellSizePx;
+  preferences.asciiCellHeightPx = renderSettings.m_asciiCellSizePx.y;
   preferences.asciiCharsetIndex = renderSettings.m_asciiCharsetIndex;
   preferences.asciiForegroundColor = renderSettings.m_asciiFgColor;
   preferences.asciiBackgroundColor = renderSettings.m_asciiBgColor;
@@ -385,7 +385,7 @@ void applyRenderPreferences(
   renderSettings.m_segMasking =
     static_cast<rendering::RenderSettings::SegMaskingForRaycasting>(preferences.segmentationMasking);
   renderSettings.m_asciiEnabled = preferences.asciiEnabled;
-  renderSettings.m_asciiCellSizePx = preferences.asciiCellSizePx;
+  renderSettings.m_asciiCellSizePx.y = preferences.asciiCellHeightPx;
   renderSettings.m_asciiCharsetIndex = preferences.asciiCharsetIndex;
   renderSettings.m_asciiFgColor = preferences.asciiForegroundColor;
   renderSettings.m_asciiBgColor = preferences.asciiBackgroundColor;

@@ -52,16 +52,22 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
 
   ordered_json result = ordered_json::object();
   std::vector<std::string_view> preferredKeys;
-  if (path == "settings/rendering") {
+  if (path.empty()) {
+    preferredKeys = {"version", "images", "layouts", "settings", "registrationResults"};
+  }
+  else if (path == "settings") {
+    preferredKeys = {"view", "rendering", "synchronization"};
+  }
+  else if (path == "settings/rendering") {
     preferredKeys = {
       "threeD",
       "mesh",
       "dualDepthPeeling",
       "raycasting",
       "isocontours",
-      "comparison",
       "intensityProjection",
-      "segmentations"};
+      "segmentations",
+      "comparison"};
   }
   else if (path == "settings/rendering/dualDepthPeeling") {
     preferredKeys = {"maxPeelPasses"};

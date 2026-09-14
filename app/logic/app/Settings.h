@@ -80,8 +80,8 @@ public:
   AppSettings() = default;
   ~AppSettings() = default;
 
-  bool synchronizeZooms() const;
-  void setSynchronizeZooms(bool sync);
+  ImageSelection recenteringMode() const;
+  void setRecenteringMode(ImageSelection mode);
 
   bool cursorSyncEnabled() const;
   void setCursorSyncEnabled(bool set);
@@ -311,8 +311,8 @@ public:
 private:
   void bumpBrushPreviewRevision();
 
-  bool m_synchronizeZoom = true; //!< Synchronize zoom between views
-  bool m_overlays = true;        //!< Render UI and vector overlays
+  ImageSelection m_recenteringMode = ImageSelection::AllLoadedImages; //!< Images used when recentering views
+  bool m_overlays = true;                                             //!< Render UI and vector overlays
   std::optional<float> m_uiScaleOverride = std::nullopt;
   UiFontFamily m_uiFontFamily = UiFontFamily::Inter;
   UiColorPreset m_uiColorPreset = UiColorPreset::EntropyDark;
@@ -323,7 +323,7 @@ private:
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
   bool m_showGlobalTimeControls = true;
   bool m_synchronizeTimeSeries = true;
-  bool m_automaticUpdateChecksEnabled = false;
+  bool m_automaticUpdateChecksEnabled = true;
   bool m_showImageExportFormatGuide = true;
   bool m_showSegmentationExportFormatGuide = true;
   bool m_showMeshExportFormatGuide = true;

@@ -101,8 +101,7 @@ constexpr std::array k_anatomicalLabelNames{
   EnumName{AnatomicalLabelType::Human, "human"},
   EnumName{AnatomicalLabelType::Cartesian, "cartesian"},
   EnumName{AnatomicalLabelType::Rodent, "rodent"},
-  EnumName{AnatomicalLabelType::Quadruped, "quadruped"},
-  EnumName{AnatomicalLabelType::Disabled, "disabled"}};
+  EnumName{AnatomicalLabelType::Quadruped, "quadruped"}};
 
 constexpr std::array k_quadrupedBodyRegionNames{
   EnumName{QuadrupedBodyRegion::Automatic, "automatic"},

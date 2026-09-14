@@ -190,10 +190,6 @@ void from_json(const json& j, ProjectViewSettings& settings)
         enumFromName<AnatomicalLabelType>(anatomicalLabels->value("type", ""), k_anatomicalLabelNames))
     {
       settings.m_anatomicalLabelType = *parsed;
-      if (AnatomicalLabelType::Disabled == settings.m_anatomicalLabelType) {
-        settings.m_showAnatomicalLabels = false;
-        settings.m_anatomicalLabelType = AnatomicalLabelType::Human;
-      }
     }
     if (
       const auto parsed = enumFromName<QuadrupedBodyRegion>(
@@ -1110,13 +1106,15 @@ void to_json(json& j, const EntropyProject& project)
 
 void from_json(const json& j, EntropyProject& project)
 {
-  if (const auto versionValue = j.find("version"); versionValue != j.end()) {
-    const JsonVersion version = versionFromJson(*versionValue);
-    if (version.major != k_projectFormatMajorVersion || version.minor != k_projectFormatMinorVersion) {
-      throwDebug(
-        "Unsupported Entropy project JSON version " + std::to_string(version.major) + "." +
-        std::to_string(version.minor));
-    }
+  const auto versionValue = j.find("version");
+  if (versionValue == j.end()) {
+    throwDebug("Entropy project JSON version is required");
+  }
+  const JsonVersion version = versionFromJson(*versionValue);
+  if (version.major != k_projectFormatMajorVersion || version.minor != k_projectFormatMinorVersion) {
+    throwDebug(
+      "Unsupported Entropy project JSON version " + std::to_string(version.major) + "." +
+      std::to_string(version.minor));
   }
 
   std::vector<Image> images = j.at("images").get<std::vector<Image>>();

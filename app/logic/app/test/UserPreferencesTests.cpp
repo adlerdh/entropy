@@ -22,7 +22,6 @@ std::filesystem::path tempSettingsFile(const char* name)
 
 void setNonDefaultSettings(AppSettings& settings)
 {
-  settings.setSynchronizeZooms(false);
   settings.setCursorSyncEnabled(true);
   settings.setSendCursorSync(false);
   settings.setReceiveCursorSync(false);
@@ -33,6 +32,7 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setEntropyInstanceSyncEnabled(true);
   settings.setOverlays(false);
   settings.setUiScaleOverride(1.75f);
+  settings.setRecenteringMode(ImageSelection::ReferenceImage);
   settings.setToolbarScale(1.25f);
   settings.setUiFontFamily(UiFontFamily::Cousine);
   settings.setUiColorPreset(UiColorPreset::SoftLight);
@@ -42,7 +42,7 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
   settings.setShowGlobalTimeControls(false);
   settings.setSynchronizeTimeSeries(false);
-  settings.setAutomaticUpdateChecksEnabled(true);
+  settings.setAutomaticUpdateChecksEnabled(false);
   settings.setShowImageExportFormatGuide(false);
   settings.setShowSegmentationExportFormatGuide(false);
   settings.setShowMeshExportFormatGuide(false);
@@ -216,7 +216,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.ddpMaxPeelPasses = 12;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
   preferences.asciiEnabled = true;
-  preferences.asciiCellSizePx = {10.0f, 20.0f};
+  preferences.asciiCellHeightPx = 20.0f;
   preferences.asciiCharsetIndex = 2;
   preferences.asciiForegroundColor = {0.9f, 0.8f, 0.7f};
   preferences.asciiBackgroundColor = {0.1f, 0.2f, 0.3f};
@@ -242,7 +242,7 @@ user_preferences::PrecisionPreferences makeNonDefaultPrecisionPreferences()
 
 void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected)
 {
-  CHECK(actual.synchronizeZooms() == expected.synchronizeZooms());
+  CHECK(actual.recenteringMode() == expected.recenteringMode());
   CHECK(actual.cursorSyncEnabled() == expected.cursorSyncEnabled());
   CHECK(actual.sendCursorSync() == expected.sendCursorSync());
   CHECK(actual.receiveCursorSync() == expected.receiveCursorSync());
@@ -447,7 +447,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.ddpMaxPeelPasses == expected.ddpMaxPeelPasses);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
   CHECK(actual.asciiEnabled == expected.asciiEnabled);
-  CHECK(actual.asciiCellSizePx == expected.asciiCellSizePx);
+  CHECK(actual.asciiCellHeightPx == expected.asciiCellHeightPx);
   CHECK(actual.asciiCharsetIndex == expected.asciiCharsetIndex);
   CHECK(actual.asciiForegroundColor == expected.asciiForegroundColor);
   CHECK(actual.asciiBackgroundColor == expected.asciiBackgroundColor);
@@ -586,7 +586,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("recent").at("projects").at(0) == "/data/project.entropy.json");
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
-  CHECK(root.at("system").at("updates").at("automaticChecks") == true);
+  CHECK(root.at("system").at("updates").at("automaticChecks") == false);
 }
 
 TEST_CASE("user preferences file load treats a missing file as defaults-preserving success", "[app][settings]")
@@ -703,6 +703,50 @@ TEST_CASE("user preferences reject invalid JSON without mutating existing values
   requirePrecisionPreferencesEqual(precisionPreferences, expectedPrecisionPreferences);
 }
 
+TEST_CASE("user preferences require the current format and version", "[app][settings]")
+{
+  AppSettings settings;
+  user_preferences::RenderPreferences renderPreferences;
+  user_preferences::PrecisionPreferences precisionPreferences;
+
+  CHECK_FALSE(user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, R"({})"));
+  CHECK_FALSE(user_preferences::applyJsonString(
+    settings,
+    renderPreferences,
+    precisionPreferences,
+    R"({"format":"entropy.userSettings","version":{"major":0,"minor":9}})"));
+  CHECK_FALSE(user_preferences::applyJsonString(
+    settings,
+    renderPreferences,
+    precisionPreferences,
+    R"({"format":"entropy.preferences","version":{"major":1,"minor":0}})"));
+}
+
+TEST_CASE("minimal user preferences restore current defaults", "[app][settings]")
+{
+  AppSettings settings;
+  setNonDefaultSettings(settings);
+  user_preferences::RenderPreferences renderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::PrecisionPreferences precisionPreferences = makeNonDefaultPrecisionPreferences();
+
+  const std::string minimal = R"({
+    "format": "entropy.userSettings",
+    "version": {"major": 1, "minor": 0}
+  })";
+  REQUIRE(user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, minimal));
+
+  CHECK(settings.uiFontFamily() == AppSettings{}.uiFontFamily());
+  CHECK(settings.recenteringMode() == AppSettings{}.recenteringMode());
+  CHECK(settings.automaticUpdateChecksEnabled() == AppSettings{}.automaticUpdateChecksEnabled());
+  CHECK(renderPreferences.raycastSamplingFactor == user_preferences::RenderPreferences{}.raycastSamplingFactor);
+  CHECK(renderPreferences.asciiCellHeightPx == user_preferences::RenderPreferences{}.asciiCellHeightPx);
+  CHECK(precisionPreferences.imageValuePrecision == user_preferences::PrecisionPreferences{}.imageValuePrecision);
+
+  // These values belong to the open project and are not application preferences.
+  CHECK_FALSE(settings.synchronizeTimeSeries());
+  CHECK(settings.lockAnatomicalCoordinateAxesWithReferenceImage());
+}
+
 TEST_CASE("user preferences preserve defaults for missing and invalid fields", "[app][settings]")
 {
   AppSettings settings;
@@ -710,6 +754,8 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
   user_preferences::PrecisionPreferences precisionPreferences;
 
   const std::string text = R"({
+    "format": "entropy.userSettings",
+    "version": {"major": 1, "minor": 0},
     "interface": {
       "uiScale": 99,
       "toolbarScale": 99,
@@ -772,17 +818,9 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
       }
     },
     "rendering": {
-      "threeD": {
-        "crosshairsDiameterVox": 3,
-        "crosshairsLengthVox": 30
-      },
       "raycasting": {
         "samplingFactor": 0
       }
-    },
-    "synchronization": {
-      "enabled": true,
-      "sendCursor": false
     },
     "system": {
       "performance": {
@@ -855,7 +893,7 @@ TEST_CASE("user preferences preserve defaults for missing and invalid fields", "
   CHECK(settings.sendCursorSync());
 }
 
-TEST_CASE("default user preference JSON documents built-in defaults", "[app][settings]")
+TEST_CASE("default user preference JSON contains only schema metadata", "[app][settings]")
 {
   const AppSettings settings;
   const user_preferences::RenderPreferences renderPreferences = user_preferences::defaultRenderPreferences();
@@ -863,76 +901,20 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(renderPreferences.segmentationOutlineStyle == SegmentationOutlineStyle::ViewPixel);
 
   const json root = json::parse(user_preferences::toJsonString(settings, renderPreferences));
+  CHECK(root == json{{"format", "entropy.userSettings"}, {"version", {{"major", 1}, {"minor", 0}}}});
+}
 
-  CHECK(root.at("interface").at("uiScale") == "auto");
-  CHECK(root.at("interface").at("toolbarScale") == 1.0f);
-  CHECK(root.at("interface").at("font") == "inter");
-  CHECK(root.at("interface").at("colorScheme") == "entropyDark");
-  CHECK(root.at("interface").at("showLayoutTabs") == true);
-  CHECK(root.at("interface").at("layoutTabsPosition") == "top");
-  CHECK(root.at("interface").at("showGlobalTimeControls") == true);
-  CHECK(root.at("interface").at("showImageExportFormatGuide") == true);
-  CHECK(root.at("interface").at("showSegmentationExportFormatGuide") == true);
-  CHECK(root.at("interface").at("showMeshExportFormatGuide") == true);
-  CHECK(root.at("interface").at("precision").at("imageValues") == 3);
-  CHECK(root.at("interface").at("precision").at("coordinates") == 3);
-  CHECK(root.at("interface").at("precision").at("transformations") == 3);
-  CHECK(root.at("interface").at("precision").at("percentiles") == 2);
-  CHECK(root.at("interface").at("precision").at("timeValues") == 2);
-  CHECK(root.at("views").at("showOverlays") == true);
-  CHECK(root.at("views").at("showImageBorders") == true);
-  CHECK(root.at("views").at("lightbox").at("showImageBorders") == false);
-  CHECK(root.at("views").at("crosshairs").at("show") == true);
-  CHECK(root.at("views").at("crosshairs").at("showInLightboxViews") == true);
-  CHECK(root.at("views").at("transformationGuides").at("show") == true);
-  CHECK(
-    root.at("views").at("transformationGuides").at("color") == json::array(
-                                                                 {renderPreferences.transformationGuideColor.x,
-                                                                  renderPreferences.transformationGuideColor.y,
-                                                                  renderPreferences.transformationGuideColor.z,
-                                                                  renderPreferences.transformationGuideColor.w}));
-  CHECK_FALSE(root.at("views").at("crosshairs").contains("snapping"));
-  CHECK_FALSE(root.at("views").contains("lockAnatomicalDirectionsToReferenceImage"));
-  CHECK_FALSE(root.at("views").at("anatomicalLabels").contains("type"));
-  CHECK(root.at("views").at("anatomicalLabels").at("scale").get<float>() == Catch::Approx(1.0f));
-  CHECK(root.at("views").at("scaleBars").at("show") == true);
-  CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
-  CHECK(root.at("views").at("asciiShading").at("enabled") == false);
-  CHECK(root.at("segmentations").at("brush").at("sizeVoxels") == 3);
-  CHECK_FALSE(root.contains("comparison"));
-  CHECK_FALSE(root.at("images").contains("intensityProjectionDefaults"));
-  CHECK_FALSE(root.at("segmentations").contains("display"));
-  CHECK(
-    root.at("rendering").at("raycasting").at("samplingFactor").get<float>() ==
-    Catch::Approx(renderPreferences.raycastSamplingFactor));
-  CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
-  CHECK_FALSE(root.at("rendering").contains("asciiShading"));
-  CHECK_FALSE(root.at("rendering").contains("frameRate"));
-  CHECK(root.at("rendering").at("camera").at("synchronizeThreeDCameras") == false);
-  CHECK(root.at("rendering").at("threeD").at("crosshairsDiameterScenePercent").get<float>() == Catch::Approx(0.25f));
-  CHECK(root.at("rendering").at("threeD").at("crosshairsLengthScenePercent").get<float>() == Catch::Approx(4.0f));
-  CHECK_FALSE(root.at("rendering").at("threeD").contains("crosshairsDiameterVox"));
-  CHECK_FALSE(root.at("rendering").at("threeD").contains("crosshairsLengthVox"));
-  CHECK(root.at("rendering").at("dualDepthPeeling").at("maxPeelPasses") == 5u);
-  CHECK(
-    root.at("rendering").at("mesh").at("triangleEdgeColor") == json::array(
-                                                                 {renderPreferences.meshTriangleEdgeColor.x,
-                                                                  renderPreferences.meshTriangleEdgeColor.y,
-                                                                  renderPreferences.meshTriangleEdgeColor.z}));
-  CHECK(root.at("rendering").at("mesh").at("cutaway") == false);
-  CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
-  CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
-  CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));
-  CHECK(root.at("segmentations").at("brushPreview").at("mode") == "hover");
-  CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
-  CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
-  CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
-  CHECK(root.at("system").at("updates").at("automaticChecks") == false);
-  CHECK(root.at("system").at("performance").at("frameRate").at("limit") == false);
-  CHECK(root.at("system").at("diagnostics").at("enabled") == true);
-  CHECK(
-    root.at("system").at("diagnostics").at("logVerbosity") ==
-    std::string{logging::logLevelLabel(logging::defaultLogLevel())});
+TEST_CASE("user preference JSON writes only changed leaves", "[app][settings]")
+{
+  AppSettings settings;
+  settings.setRecenteringMode(ImageSelection::ReferenceImage);
+  user_preferences::RenderPreferences renderPreferences;
+  renderPreferences.meshPbrRoughness = 0.6f;
+
+  const json root = json::parse(user_preferences::toJsonString(settings, renderPreferences));
+  CHECK(root.size() == 4);
+  CHECK(root.at("views") == json{{"recenterOn", "referenceImage"}});
+  CHECK(root.at("rendering") == json{{"mesh", {{"pbr", {{"roughness", 0.6f}}}}}});
 }
 
 TEST_CASE("user preferences preserve logging verbosity while logging is disabled", "[app][settings][logging]")
@@ -944,6 +926,8 @@ TEST_CASE("user preferences preserve logging verbosity while logging is disabled
   user_preferences::RenderPreferences renderPreferences = user_preferences::defaultRenderPreferences();
   user_preferences::PrecisionPreferences precisionPreferences;
   const std::string text = R"({
+    "format": "entropy.userSettings",
+    "version": {"major": 1, "minor": 0},
     "system": {
       "diagnostics": {
         "enabled": false,
@@ -970,15 +954,23 @@ TEST_CASE("user preferences preserve logging verbosity while logging is disabled
 
 TEST_CASE("user preference JSON follows the settings-window order", "[app][settings]")
 {
-  const std::string text = user_preferences::toJsonString(
-    AppSettings{},
-    user_preferences::defaultRenderPreferences(),
-    user_preferences::PrecisionPreferences{});
+  const bool previousLoggingEnabled = logging::loggingEnabled();
+  const auto previousLogLevel = logging::applicationLogLevel();
+  logging::setApplicationLogLevel(spdlog::level::warn);
+  logging::setLoggingEnabled(false);
+
+  AppSettings settings;
+  setNonDefaultSettings(settings);
+  const std::string text =
+    user_preferences::toJsonString(settings, makeNonDefaultRenderPreferences(), makeNonDefaultPrecisionPreferences());
+
+  logging::setApplicationLogLevel(previousLogLevel);
+  logging::setLoggingEnabled(previousLoggingEnabled);
 
   const auto views = text.find("\"views\"");
   const auto crosshairs = text.find("\"crosshairs\"", views);
+  const auto recenterOn = text.find("\"recenterOn\"", views);
   const auto transformationGuides = text.find("\"transformationGuides\"", views);
-  const auto synchronizeViewZooms = text.find("\"synchronizeViewZooms\"", views);
   const auto rendering = text.find("\"rendering\"");
   const auto interface = text.find("\"interface\"");
   const auto surfaces = text.find("\"mesh\"");
@@ -995,8 +987,8 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
 
   REQUIRE(views != std::string::npos);
   REQUIRE(crosshairs != std::string::npos);
+  REQUIRE(recenterOn != std::string::npos);
   REQUIRE(transformationGuides != std::string::npos);
-  REQUIRE(synchronizeViewZooms != std::string::npos);
   REQUIRE(rendering != std::string::npos);
   REQUIRE(interface != std::string::npos);
   REQUIRE(surfaces != std::string::npos);
@@ -1011,8 +1003,8 @@ TEST_CASE("user preference JSON follows the settings-window order", "[app][setti
   REQUIRE(loggingEnabled != std::string::npos);
   REQUIRE(logVerbosity != std::string::npos);
   CHECK(views < rendering);
-  CHECK(crosshairs < transformationGuides);
-  CHECK(transformationGuides < synchronizeViewZooms);
+  CHECK(crosshairs < recenterOn);
+  CHECK(recenterOn < transformationGuides);
   CHECK(rendering < interface);
   CHECK(surfaces < ddp);
   CHECK(ddp < raycasting);

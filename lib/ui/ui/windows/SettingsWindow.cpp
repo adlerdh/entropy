@@ -52,7 +52,7 @@ namespace
 static constexpr bool k_recenterCrosshairs = true;
 static constexpr bool k_realignCrosshairs = true;
 static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
-static constexpr float k_viewOptionControlWidth = 180.0f;
+static constexpr float k_settingsControlWidth = 280.0f;
 static constexpr const char* k_boldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
 
 void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persistenceCallbacks);
@@ -167,9 +167,15 @@ float fillWidthForLabeledControl(const char* label, float extraTrailingWidth = 0
   return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing - extraTrailingWidth);
 }
 
+float fillWidthForLabeledControlWithHelp(const char* label)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  return fillWidthForLabeledControl(label, style.ItemSpacing.x + ImGui::GetFontSize());
+}
+
 float settingsControlWidth()
 {
-  return ImGui::CalcItemWidth();
+  return std::max(1.0f, std::min(ui::scaledPixel(k_settingsControlWidth), ImGui::GetContentRegionAvail().x));
 }
 
 void finishSettingsSection(bool sectionOpen)
@@ -200,16 +206,17 @@ void renderReadOnlyPathField(const char* label, const std::filesystem::path& pat
   ImGui::PopItemWidth();
 }
 
-void renderPathSettingFixedWidth(
+void renderResponsivePathSetting(
   const char* label,
   std::filesystem::path& path,
   const char* tooltip,
   bool browseForFile = false)
 {
   std::string value = path.string();
+  const float controlWidth = fillWidthForLabeledControlWithHelp(label);
 
   if (!browseForFile) {
-    ImGui::PushItemWidth(settingsControlWidth());
+    ImGui::PushItemWidth(controlWidth);
     if (ImGui::InputText(label, &value)) {
       path = value;
     }
@@ -221,7 +228,7 @@ void renderPathSettingFixedWidth(
 
   const ImGuiStyle& style = ImGui::GetStyle();
   const float buttonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
-  const float inputWidth = std::max(1.0f, settingsControlWidth() - buttonWidth - style.ItemSpacing.x);
+  const float inputWidth = std::max(1.0f, controlWidth - buttonWidth - style.ItemSpacing.x);
 
   ImGui::PushID(label);
   ImGui::PushItemWidth(inputWidth);
@@ -248,9 +255,9 @@ void renderPathSettingFixedWidth(
   helpMarker(tooltip);
 }
 
-void renderTextSettingFixedWidth(const char* label, std::string& value, const char* tooltip)
+void renderResponsiveTextSetting(const char* label, std::string& value, const char* tooltip)
 {
-  ImGui::PushItemWidth(settingsControlWidth());
+  ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp(label));
   ImGui::InputText(label, &value);
   ImGui::PopItemWidth();
   ImGui::SameLine();
@@ -266,10 +273,7 @@ void renderUiSettingsFileSection(const SettingsPersistenceCallbacks& persistence
   disabledTextWrapped(
     "This file stores UI state such as window positions, docking layout, panel sizes, table columns, and similar "
     "interface settings.");
-  renderReadOnlyPathField(
-    "UI settings file",
-    app_paths::userDataDirectory() / "entropy_ui.ini",
-    ImGui::CalcItemWidth());
+  renderReadOnlyPathField("UI settings file", app_paths::userDataDirectory() / "entropy_ui.ini");
 
   if (ImGui::Button("Reset UI Settings")) {
     requestResetInterfaceSettings(persistenceCallbacks);
@@ -314,7 +318,7 @@ void renderDiagnosticsSettings()
   helpMarker("Set console and application log file verbosity immediately");
   ImGui::EndDisabled();
 
-  const float logFieldWidth = ImGui::CalcItemWidth();
+  const float logFieldWidth = fillWidthForLabeledControl("Application log");
   renderReadOnlyPathField("Application log", app_paths::logDirectory() / "entropy.txt", logFieldWidth);
   renderReadOnlyPathField("ImGui log", app_paths::logDirectory() / "entropy_ui.log", logFieldWidth);
 }
@@ -797,7 +801,9 @@ void renderViewsTab(
     appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(lockDirectionsToReference);
   }
   ImGui::SameLine();
-  helpMarker("Lock anatomical directions and crosshairs to reference image orientation");
+  helpMarker(
+    "Orient anatomical direction labels to the reference image axes rather than the fixed world axes. This matters "
+    "when the reference image has been rotated");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -812,7 +818,7 @@ void renderViewsTab(
       }
     }
     ImGui::SameLine();
-    helpMarker("Show crosshairs in anatomical views");
+    helpMarker("Show crosshairs in 2D anatomical views");
 
     ImGui::ColorEdit4("Crosshairs line color", glm::value_ptr(renderData.m_crosshairsColor), k_colorAlphaEditFlags);
 
@@ -842,21 +848,6 @@ void renderViewsTab(
   }
   finishSettingsSection(crosshairsOpen);
 
-  const bool transformationGuidesOpen =
-    ImGui::CollapsingHeader("Transformation Guides", ImGuiTreeNodeFlags_DefaultOpen);
-  if (transformationGuidesOpen) {
-    ImGui::Checkbox("Show transformation guides", &renderData.m_showTransformationGuides);
-    ImGui::SameLine();
-    helpMarker(
-      "Show live visual and numerical measurements in 2D views while manually translating, rotating, or scaling an "
-      "image");
-
-    if (renderData.m_showTransformationGuides) {
-      ImGui::ColorEdit4("Guide color", glm::value_ptr(renderData.m_transformationGuideColor), k_colorAlphaEditFlags);
-    }
-  }
-  finishSettingsSection(transformationGuidesOpen);
-
   // View centering:
   const bool viewRecenteringOpen = ImGui::CollapsingHeader("Recentering", ImGuiTreeNodeFlags_DefaultOpen);
   if (viewRecenteringOpen) {
@@ -865,8 +856,8 @@ void renderViewsTab(
     ImGui::SameLine();
     helpMarker("Default view and crosshairs centering behavior");
 
-    if (ImGui::RadioButton("Reference image", ImageSelection::ReferenceImage == appData.state().recenteringMode())) {
-      appData.state().setRecenteringMode(ImageSelection::ReferenceImage);
+    if (ImGui::RadioButton("Reference image", ImageSelection::ReferenceImage == appData.settings().recenteringMode())) {
+      appData.settings().setRecenteringMode(ImageSelection::ReferenceImage);
 
       recenterAllViews(
         k_recenterCrosshairs,
@@ -878,8 +869,8 @@ void renderViewsTab(
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on the reference image");
 
-    if (ImGui::RadioButton("Active image", ImageSelection::ActiveImage == appData.state().recenteringMode())) {
-      appData.state().setRecenteringMode(ImageSelection::ActiveImage);
+    if (ImGui::RadioButton("Active image", ImageSelection::ActiveImage == appData.settings().recenteringMode())) {
+      appData.settings().setRecenteringMode(ImageSelection::ActiveImage);
 
       recenterAllViews(
         k_recenterCrosshairs,
@@ -893,9 +884,9 @@ void renderViewsTab(
 
     if (ImGui::RadioButton(
           "Reference and active images",
-          ImageSelection::ReferenceAndActiveImages == appData.state().recenteringMode()))
+          ImageSelection::ReferenceAndActiveImages == appData.settings().recenteringMode()))
     {
-      appData.state().setRecenteringMode(ImageSelection::ReferenceAndActiveImages);
+      appData.settings().setRecenteringMode(ImageSelection::ReferenceAndActiveImages);
 
       recenterAllViews(
         k_recenterCrosshairs,
@@ -950,8 +941,11 @@ void renderViewsTab(
        each view" );
               */
 
-    if (ImGui::RadioButton("All loaded images", ImageSelection::AllLoadedImages == appData.state().recenteringMode())) {
-      appData.state().setRecenteringMode(ImageSelection::AllLoadedImages);
+    if (ImGui::RadioButton(
+          "All loaded images",
+          ImageSelection::AllLoadedImages == appData.settings().recenteringMode()))
+    {
+      appData.settings().setRecenteringMode(ImageSelection::AllLoadedImages);
 
       recenterAllViews(
         k_recenterCrosshairs,
@@ -968,6 +962,7 @@ void renderViewsTab(
   // Anatomical labels:
   const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
   if (anatomicalLabelsOpen) {
+    disabledTextWrapped("Anatomical labels identify patient directions and orientation around image views.");
     bool showAnatomicalLabels = renderData.m_showAnatomicalLabels;
     if (ImGui::Checkbox("Show anatomical labels", &showAnatomicalLabels)) {
       renderData.m_showAnatomicalLabels = showAnatomicalLabels;
@@ -978,7 +973,7 @@ void renderViewsTab(
 
     ImGui::ColorEdit4("Label text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
     float labelScale = renderData.m_anatomicalLabelScale;
-    ImGui::PushItemWidth(k_viewOptionControlWidth);
+    ImGui::PushItemWidth(settingsControlWidth());
     if (mySliderF32("Scale", &labelScale, 0.5f, 2.0f, "%.1fx")) {
       renderData.m_anatomicalLabelScale = std::clamp(labelScale, 0.5f, 2.0f);
     }
@@ -1023,7 +1018,7 @@ void renderViewsTab(
                                           updatedResolution.quadrupedBodyRegionRequired
                                         ? "Automatic (unresolved)"
                                         : quadrupedBodyRegionName(renderData.m_quadrupedBodyRegion);
-      ImGui::SetNextItemWidth(k_viewOptionControlWidth);
+      ImGui::SetNextItemWidth(settingsControlWidth());
       if (ImGui::BeginCombo("Body region", bodyRegionPreview)) {
         for (const QuadrupedBodyRegion region :
              {QuadrupedBodyRegion::Automatic,
@@ -1103,6 +1098,7 @@ void renderViewsTab(
 
   const bool scaleBarsOpen = ImGui::CollapsingHeader("Scale Bars", ImGuiTreeNodeFlags_DefaultOpen);
   if (scaleBarsOpen) {
+    disabledTextWrapped("Scale bars indicate physical distance in 2D anatomical views and adjust to the current zoom.");
     bool showScaleBars = renderData.m_showScaleBars;
     if (ImGui::Checkbox("Show scale bars", &showScaleBars)) {
       renderData.m_showScaleBars = showScaleBars;
@@ -1120,7 +1116,7 @@ void renderViewsTab(
       };
 
       ImGui::Spacing();
-      ImGui::PushItemWidth(k_viewOptionControlWidth);
+      ImGui::PushItemWidth(settingsControlWidth());
       if (ImGui::BeginCombo("Position", ui_settings::scaleBarPositionName(renderData.m_scaleBarPosition))) {
         for (const auto position : ui_settings::orderedScaleBarPositions()) {
           const bool selected = position == renderData.m_scaleBarPosition;
@@ -1198,7 +1194,7 @@ void renderViewsTab(
 
       ImGui::Spacing();
       int targetLengthPercent = ui_settings::targetLengthPercentFromFraction(renderData.m_scaleBarTargetFraction);
-      ImGui::PushItemWidth(k_viewOptionControlWidth);
+      ImGui::PushItemWidth(settingsControlWidth());
       if (ImGui::SliderInt("Length", &targetLengthPercent, 5, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp)) {
         renderData.m_scaleBarTargetFraction = ui_settings::targetLengthFractionFromPercent(targetLengthPercent);
       }
@@ -1208,7 +1204,7 @@ void renderViewsTab(
         "Approximate fraction of the view occupied by the scale bar before rounding to a clean physical length");
 
       int scaleBarMarginPx = ui_settings::marginPixelsFromFloat(renderData.m_scaleBarMarginPx);
-      ImGui::PushItemWidth(k_viewOptionControlWidth);
+      ImGui::PushItemWidth(settingsControlWidth());
       if (ImGui::SliderInt("Margin", &scaleBarMarginPx, 12, 96, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
         renderData.m_scaleBarMarginPx = ui_settings::marginFloatFromPixels(scaleBarMarginPx);
       }
@@ -1217,14 +1213,13 @@ void renderViewsTab(
       helpMarker("Offset scale bars away from view edges and corners");
 
       ImGui::Spacing();
-      ImGui::Text("Ticks:");
+      ImGui::Text("Tick marks:");
       if (ImGui::RadioButton(
             "Automatic extra ticks##scaleBarTicks",
             ScaleBarTicks::Automatic == renderData.m_scaleBarTicks))
       {
         renderData.m_scaleBarTicks = ScaleBarTicks::Automatic;
       }
-      ImGui::SameLine();
       if (ImGui::RadioButton("Endpoints only##scaleBarTicks", ScaleBarTicks::Endpoints == renderData.m_scaleBarTicks)) {
         renderData.m_scaleBarTicks = ScaleBarTicks::Endpoints;
       }
@@ -1236,12 +1231,43 @@ void renderViewsTab(
 
   const bool annotationsOpen = ImGui::CollapsingHeader("Annotations", ImGuiTreeNodeFlags_DefaultOpen);
   if (annotationsOpen) {
+    disabledTextWrapped(
+      "Annotations and landmarks mark regions or features in image views. These settings control how they are "
+      "layered and displayed.");
     renderAnnotationViewSettings(renderData);
+
+    bool moveCrosshairs = appData.settings().crosshairsMoveWhileAnnotating();
+    if (ImGui::Checkbox("Move crosshairs while annotating", &moveCrosshairs)) {
+      appData.settings().setCrosshairsMoveWhileAnnotating(moveCrosshairs);
+    }
+    ImGui::SameLine();
+    helpMarker("Move the crosshairs to each point as it is added to an annotation");
   }
   finishSettingsSection(annotationsOpen);
 
+  const bool transformationGuidesOpen =
+    ImGui::CollapsingHeader("Transformation Guides", ImGuiTreeNodeFlags_DefaultOpen);
+  if (transformationGuidesOpen) {
+    disabledTextWrapped(
+      "Transformation guides provide visual and numerical feedback during manual image translation, rotation, and "
+      "scaling.");
+    ImGui::Checkbox("Show transformation guides", &renderData.m_showTransformationGuides);
+    ImGui::SameLine();
+    helpMarker(
+      "Show live visual and numerical measurements in 2D views while manually translating, rotating, or scaling an "
+      "image");
+
+    if (renderData.m_showTransformationGuides) {
+      ImGui::ColorEdit4("Guide color", glm::value_ptr(renderData.m_transformationGuideColor), k_colorAlphaEditFlags);
+    }
+  }
+  finishSettingsSection(transformationGuidesOpen);
+
   const bool lightboxViewsOpen = ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen);
   if (lightboxViewsOpen) {
+    disabledTextWrapped(
+      "Lightbox views arrange parallel image slices in a tiled grid. These settings control which guides and labels "
+      "appear in each tile.");
     const bool globalImageBordersShown =
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
     if (!globalImageBordersShown) {
@@ -1313,6 +1339,9 @@ void renderViewsTab(
 
   const bool asciiOpen = ImGui::CollapsingHeader("ASCII Shading", ImGuiTreeNodeFlags_DefaultOpen);
   if (asciiOpen) {
+    disabledTextWrapped(
+      "ASCII shading renders grayscale images with text characters whose shapes and brightness represent image "
+      "intensity.");
     renderAsciiShadingSettings(renderData);
   }
 }
@@ -1340,7 +1369,7 @@ void renderInterfaceTab(
 
   if (showLayoutTabs) {
     const bool layoutTabsTop = UiLayoutTabPlacement::Top == appData.settings().layoutTabPlacement();
-    ImGui::Text("Position:");
+    ImGui::Text("Layout tab bar position:");
     if (ImGui::RadioButton("Top##layoutTabBarPosition", layoutTabsTop)) {
       appData.settings().setLayoutTabPlacement(UiLayoutTabPlacement::Top);
       appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
@@ -1348,7 +1377,6 @@ void renderInterfaceTab(
         readjustViewport();
       }
     }
-    ImGui::SameLine();
     if (ImGui::RadioButton("Bottom##layoutTabBarPosition", !layoutTabsTop)) {
       appData.settings().setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
       appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
@@ -1524,7 +1552,7 @@ void renderSystemTab(AppData& appData)
   }
   finishSettingsSection(diagnosticsOpen);
 
-  if (ImGui::CollapsingHeader("Developer Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (ImGui::CollapsingHeader("Developer & Test Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
     ImGui::SameLine();
     helpMarker("Open Dear ImGui's built-in demo and diagnostics window");
@@ -1654,10 +1682,18 @@ void renderRegistrationTab(AppData& appData)
 {
   registration::BackendConfig& config = appData.settings().registrationBackendConfig();
 
+  disabledTextWrapped(
+    "Registration backends are external software packages that align images. Entropy prepares their inputs, launches "
+    "their tools, and imports the resulting transformations and images.");
+
   const bool backendDefaultsOpen = ImGui::CollapsingHeader("Backend Defaults", ImGuiTreeNodeFlags_DefaultOpen);
   if (backendDefaultsOpen) {
+    disabledTextWrapped(
+      "Choose the backend used for new registration jobs and tell Entropy where each backend's required tools are "
+      "installed.");
+
     const std::string preview{registration::label(config.defaultBackend)};
-    ImGui::PushItemWidth(settingsControlWidth());
+    ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp("Default registration backend"));
     if (ImGui::BeginCombo("Default registration backend", preview.c_str())) {
       for (const registration::Backend backend : k_registrationBackends) {
         const bool selected = backend == config.defaultBackend;
@@ -1680,27 +1716,27 @@ void renderRegistrationTab(AppData& appData)
       "Backend registration executable fields can be command names when the tools are on the system PATH, or full "
       "paths to the executable files.");
 
-    renderPathSettingFixedWidth(
+    renderResponsivePathSetting(
       "Greedy executable",
       config.greedyExecutable,
       "Command or executable path used to launch Greedy",
       true);
-    renderPathSettingFixedWidth(
+    renderResponsivePathSetting(
       "ANTs registration executable",
       config.antsRegistrationExecutable,
       "Command or executable path used to launch antsRegistration",
       true);
-    renderPathSettingFixedWidth(
+    renderResponsivePathSetting(
       "ANTs apply transforms executable",
       config.antsApplyTransformsExecutable,
       "Command or executable path used to launch antsApplyTransforms for warped outputs",
       true);
-    renderPathSettingFixedWidth(
+    renderResponsivePathSetting(
       "ANTs convert transform executable",
       config.antsConvertTransformFileExecutable,
       "Command or executable path used to convert ANTs affine output into Entropy's importable matrix artifact",
       true);
-    renderPathSettingFixedWidth(
+    renderResponsivePathSetting(
       "FireANTs Python executable",
       config.fireAntsPythonExecutable,
       "Python executable used to run Entropy's FireANTs bridge",
@@ -1710,10 +1746,15 @@ void renderRegistrationTab(AppData& appData)
 
   const bool executionOpen = ImGui::CollapsingHeader("Execution", ImGuiTreeNodeFlags_DefaultOpen);
   if (executionOpen) {
+    disabledTextWrapped(
+      "Control where registration results are stored, how many jobs may run at once, and the computing resources "
+      "available to each backend.");
+
     std::string outputDirectory = config.defaultOutputDirectory.string();
     const ImGuiStyle& style = ImGui::GetStyle();
     const float buttonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
-    const float inputWidth = std::max(1.0f, settingsControlWidth() - buttonWidth - style.ItemSpacing.x);
+    const float outputControlWidth = fillWidthForLabeledControlWithHelp("Output directory");
+    const float inputWidth = std::max(1.0f, outputControlWidth - buttonWidth - style.ItemSpacing.x);
     ImGui::PushID("RegistrationOutputDirectory");
     ImGui::PushItemWidth(inputWidth);
     if (ImGui::InputText("##path", &outputDirectory)) {
@@ -1741,7 +1782,7 @@ void renderRegistrationTab(AppData& appData)
       "directory");
 
     int maxConcurrentJobs = config.maxConcurrentJobs;
-    ImGui::PushItemWidth(settingsControlWidth());
+    ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp("Max concurrent registration jobs"));
     if (ImGui::InputInt("Max concurrent registration jobs", &maxConcurrentJobs)) {
       config.maxConcurrentJobs = std::max(1, maxConcurrentJobs);
     }
@@ -1750,7 +1791,7 @@ void renderRegistrationTab(AppData& appData)
     helpMarker("Maximum number of registration jobs Entropy should run at the same time");
 
     int cpuThreads = config.defaultCpuThreadCount;
-    ImGui::PushItemWidth(settingsControlWidth());
+    ImGui::PushItemWidth(fillWidthForLabeledControlWithHelp("Default CPU threads"));
     if (ImGui::InputInt("Default CPU threads", &cpuThreads)) {
       config.defaultCpuThreadCount = std::max(0, cpuThreads);
     }
@@ -1758,7 +1799,7 @@ void renderRegistrationTab(AppData& appData)
     ImGui::SameLine();
     helpMarker("Default CPU thread count. Zero lets the backend choose");
 
-    renderTextSettingFixedWidth("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs");
+    renderResponsiveTextSetting("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs");
 
     ImGui::Checkbox("Keep temporary files", &config.keepTemporaryFiles);
     ImGui::SameLine();
@@ -1768,9 +1809,9 @@ void renderRegistrationTab(AppData& appData)
 
   const bool backendInfoOpen = ImGui::CollapsingHeader("Backend Information");
   if (backendInfoOpen) {
-    ImGui::TextWrapped(
-      "Entropy launches external registration tools and imports their outputs. These summaries identify the upstream "
-      "projects that Entropy can call; use the links for authoritative licensing, citation, and version details.");
+    disabledTextWrapped(
+      "These summaries identify the upstream registration projects that Entropy can call; use the links for "
+      "authoritative licensing, citation, and version details.");
     for (std::size_t i = 0; i < k_registrationBackendInfo.size(); ++i) {
       renderRegistrationBackendInfo(k_registrationBackendInfo[i], i > 0);
     }
@@ -1886,6 +1927,9 @@ void renderSynchronizeTab(AppData& appData)
 
   const bool itkSnapOpen = ImGui::CollapsingHeader("ITK-SNAP", ImGuiTreeNodeFlags_DefaultOpen);
   if (itkSnapOpen) {
+    disabledTextWrapped(
+      "ITK-SNAP synchronization shares crosshair position, view zoom, and view pan with a running ITK-SNAP session. "
+      "Choose independently which updates Entropy sends and receives.");
     bool snapSyncEnabled = appData.settings().cursorSyncEnabled();
     if (ImGui::Checkbox("Synchronize with ITK-SNAP", &snapSyncEnabled)) {
       appData.settings().setCursorSyncEnabled(snapSyncEnabled);
@@ -1930,7 +1974,7 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
 {
   const bool displayOpen = ImGui::CollapsingHeader("Display", ImGuiTreeNodeFlags_DefaultOpen);
   if (displayOpen) {
-    ImGui::Text("Modulate segmentation opacity with image opacity:");
+    ImGui::Text("Modulate segmentation opacity with image opacity in:");
     ImGui::Checkbox("2D views", &renderData.m_modulateSegmentationOpacityWithImageOpacity2d);
     ImGui::SameLine();
     helpMarker("Multiply segmentation overlay opacity in 2D views by the corresponding image opacity");
@@ -1940,7 +1984,7 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-    ImGui::Text("Boundary outline:");
+    ImGui::Text("Segmentation boundary display:");
     if (ImGui::RadioButton("Outline view pixels", SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle))
     {
       renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
@@ -1974,9 +2018,6 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
       helpMarker("Modulate opacity of interior of segmentation");
     }
 
-    ImGui::Spacing();
-    ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
     float interpCutoff = renderData.m_segInterpCutoff;
     if (mySliderF32("Erosion factor", &interpCutoff, 0.5f, 1.0f)) {
       renderData.m_segInterpCutoff = interpCutoff;
@@ -1986,10 +2027,13 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
   }
   finishSettingsSection(displayOpen);
 
-  const bool brushOpen = ImGui::CollapsingHeader("Brush", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool brushOpen = ImGui::CollapsingHeader("Paint Brush", ImGuiTreeNodeFlags_DefaultOpen);
   if (brushOpen) {
+    disabledTextWrapped("The paint brush edits segmentation labels in 2D or 3D around the cursor.");
     AppSettings& settings = appData.settings();
 
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Brush shape:");
     bool useRound = settings.useRoundBrush();
     if (ImGui::RadioButton("Round", useRound)) {
       settings.setUseRoundBrush(true);
@@ -2023,6 +2067,8 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
     ImGui::SameLine();
     helpMarker("Use equal physical brush radius in all image directions");
 
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Brush behavior:");
     bool replaceBgWithFg = settings.replaceBackgroundWithForeground();
     if (ImGui::Checkbox("Replace background with foreground", &replaceBgWithFg)) {
       settings.setReplaceBackgroundWithForeground(replaceBgWithFg);
@@ -2040,16 +2086,20 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
   finishSettingsSection(brushOpen);
 
   if (ImGui::CollapsingHeader("Brush Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
+    disabledTextWrapped(
+      "The brush preview shows which segmentation voxels a paint stroke will affect before or while painting.");
     AppSettings& settings = appData.settings();
     BrushPreviewMode previewMode = settings.brushPreviewMode();
 
-    if (ImGui::RadioButton("Hover##brushPreview", BrushPreviewMode::Hover == previewMode)) {
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Visibility:");
+    if (ImGui::RadioButton("Show on hover##brushPreview", BrushPreviewMode::Hover == previewMode)) {
       settings.setBrushPreviewMode(BrushPreviewMode::Hover);
     }
     ImGui::SameLine();
     helpMarker("Preview the affected voxels while hovering before painting");
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Off##brushPreview", BrushPreviewMode::Disabled == previewMode)) {
+
+    if (ImGui::RadioButton("Do not show##brushPreview", BrushPreviewMode::Disabled == previewMode)) {
       settings.setBrushPreviewMode(BrushPreviewMode::Disabled);
     }
     ImGui::SameLine();
@@ -2057,45 +2107,60 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
 
     if (BrushPreviewMode::Disabled != settings.brushPreviewMode()) {
       BrushPreviewVoxels previewVoxels = settings.brushPreviewVoxels();
-      if (ImGui::RadioButton("Changed voxels##brushPreviewVoxels", BrushPreviewVoxels::Changed == previewVoxels)) {
+
+      ImGui::Spacing();
+      ImGui::TextUnformatted("Previewed voxels:");
+      if (ImGui::RadioButton(
+            "Only voxels that would change##brushPreviewVoxels",
+            BrushPreviewVoxels::Changed == previewVoxels))
+      {
         settings.setBrushPreviewVoxels(BrushPreviewVoxels::Changed);
       }
       ImGui::SameLine();
       helpMarker("Preview only voxels whose label would change");
-      ImGui::SameLine();
-      if (ImGui::RadioButton("All voxels##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
+
+      if (ImGui::RadioButton("All voxels in brush##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
         settings.setBrushPreviewVoxels(BrushPreviewVoxels::All);
       }
       ImGui::SameLine();
       helpMarker("Preview every voxel inside the brush footprint");
 
       SegmentationOutlineStyle previewOutlineStyle = settings.brushPreviewOutlineStyle();
+
+      ImGui::Spacing();
+      ImGui::TextUnformatted("Boundary style:");
       if (ImGui::RadioButton(
-            "Pixel outline##brushPreviewOutlineStyle",
+            "Screen-pixel outline##brushPreviewOutlineStyle",
             SegmentationOutlineStyle::ViewPixel == previewOutlineStyle))
       {
         settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ViewPixel);
       }
       ImGui::SameLine();
-      helpMarker("Draw preview boundaries in screen pixels");
-      ImGui::SameLine();
+      helpMarker("Draw a display-space outline that stays the same thickness on screen as you zoom");
+
       if (ImGui::RadioButton(
-            "Voxel outline##brushPreviewOutlineStyle",
+            "Image-voxel outline##brushPreviewOutlineStyle",
             SegmentationOutlineStyle::ImageVoxel == previewOutlineStyle))
       {
         settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ImageVoxel);
       }
       ImGui::SameLine();
-      helpMarker("Draw preview boundaries around image voxels");
+      helpMarker("Outline boundary voxels in image space, so the displayed thickness changes with zoom");
 
       BrushPreviewStyle previewStyle = settings.brushPreviewStyle();
-      if (ImGui::RadioButton("Outline##brushPreviewStyle", BrushPreviewStyle::Outline == previewStyle)) {
+
+      ImGui::Spacing();
+      ImGui::TextUnformatted("Appearance:");
+      if (ImGui::RadioButton("Outline only##brushPreviewStyle", BrushPreviewStyle::Outline == previewStyle)) {
         settings.setBrushPreviewStyle(BrushPreviewStyle::Outline);
       }
       ImGui::SameLine();
       helpMarker("Draw only the preview outline");
       ImGui::SameLine();
-      if (ImGui::RadioButton("Outline + fill##brushPreviewStyle", BrushPreviewStyle::OutlineAndFill == previewStyle)) {
+      if (ImGui::RadioButton(
+            "Outline and translucent fill##brushPreviewStyle",
+            BrushPreviewStyle::OutlineAndFill == previewStyle))
+      {
         settings.setBrushPreviewStyle(BrushPreviewStyle::OutlineAndFill);
       }
       ImGui::SameLine();
@@ -2111,6 +2176,8 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
       }
 
       bool previewWhilePainting = settings.brushPreviewWhilePainting();
+
+      ImGui::Spacing();
       if (ImGui::Checkbox("Show while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
         settings.setBrushPreviewWhilePainting(previewWhilePainting);
       }
@@ -2198,9 +2265,11 @@ bool renderComparisonModesTab(rendering::RenderSettings& renderData)
     return false;
   }
 
-  //                if ( ImGui::TreeNode( "Comparison comparison" ) )
-  //                {
-  // Overlap style:
+  disabledTextWrapped(
+    "Comparison modes display two images together using color overlap, quadrants, checkerboard tiles, or a movable "
+    "flashlight region.");
+
+  ImGui::Spacing();
   ImGui::Text("Overlap color scheme:");
 
   if (ImGui::RadioButton("Red, green, yellow", !renderData.m_overlayMagentaCyan)) {
@@ -2391,10 +2460,8 @@ void renderSceneAndCameraTab(AppData& appData, rendering::RenderSettings& render
   }
   ImGui::SameLine();
   helpMarker("Keep all 3D view cameras in the current layout synchronized");
-  disabledTextWrapped(
-    "Changes to camera position, orientation, projection, orbit target, and zoom in one 3D view are applied to every "
-    "other 3D view in the same layout.");
 
+  ImGui::Spacing();
   ImGui::Checkbox("Show crosshairs glyphs in 3D", &renderData.m_showCrosshairsIn3D);
   ImGui::SameLine();
   helpMarker("Render red, green, and blue axis meshes at the crosshairs position in mesh-rendered 3D views");
@@ -2426,12 +2493,25 @@ void renderSceneAndCameraTab(AppData& appData, rendering::RenderSettings& render
       "visible in the 3D view");
   }
 
+  ImGui::Spacing();
+  ImGui::SeparatorText("Interaction");
+
+  ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);
+  ImGui::SameLine();
+  helpMarker(
+    "Double-click a visible surface in a 3D view to move the crosshairs to the selected point on that surface");
+
+  ImGui::Checkbox("Viewer-facing cutaway", &renderData.m_meshCutawayEnabled);
+  ImGui::SameLine();
+  helpMarker(
+    "Cut away the viewer-facing octant of segmentation and isosurface meshes, with the crosshairs as its origin");
+
   ImGui::PopID(); /*** PopID 3d_rendering ***/
 }
 
-void renderSurfaceLightingSettings(rendering::RenderSettings& renderData)
+void renderSurfaceShadingSettings(rendering::RenderSettings& renderData)
 {
-  ImGui::SeparatorText("Lighting");
+  ImGui::PushID("surface_shading");
   disabledTextWrapped(
     "When PBR is off, 3D surfaces use Blinn-Phong shading. These controls set the ambient, diffuse, and specular "
     "lighting contributions and the sharpness of specular highlights.");
@@ -2454,6 +2534,8 @@ void renderSurfaceLightingSettings(rendering::RenderSettings& renderData)
     helpMarker("Color of the triangle topology lines drawn over flat-shaded surfaces");
   }
 
+  ImGui::Spacing();
+  ImGui::TextUnformatted("Lighting coefficients:");
   ImGui::BeginDisabled(material.pbrShadingEnabled);
   const float lightingWidth = ImGui::CalcItemWidth();
   ImGui::PushItemWidth(lightingWidth);
@@ -2509,6 +2591,7 @@ void renderSurfaceLightingSettings(rendering::RenderSettings& renderData)
     ImGui::SameLine();
     helpMarker("Scales indirect lighting for all surface materials; separate from screen-space ambient occlusion");
   }
+  ImGui::PopID();
 }
 
 void renderImagePlanesTab(rendering::RenderSettings& renderData)
@@ -2539,6 +2622,7 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
   ImGui::SameLine();
   helpMarker("Make image planes more transparent as their plane becomes parallel to the camera direction");
 
+  ImGui::Spacing();
   ImGui::Checkbox("Image plane shading", &renderData.m_shadeImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker(
@@ -2547,6 +2631,8 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
 
   if (renderData.m_shadeImagePlanesIn3D) {
     ImGui::PushID("image_plane_lighting");
+    ImGui::Spacing();
+    ImGui::TextUnformatted("Lighting coefficients:");
     if (mySliderF32("Ambient", &renderData.m_imagePlaneLightingAmbient, 0.0f, 2.0f, "%0.2f")) {
       renderData.m_imagePlaneLightingAmbient = std::clamp(renderData.m_imagePlaneLightingAmbient, 0.0f, 2.0f);
     }
@@ -2566,61 +2652,16 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
   ImGui::PopID();
 }
 
-/**
- * @brief Render the Surfaces settings section contents.
- */
-void renderMeshRenderingTab(rendering::RenderSettings& renderData)
+void renderSurfaceLightingEffectsSettings(rendering::RenderSettings& renderData)
 {
-  ImGui::PushID("mesh_rendering"); /*** PushID mesh_rendering ***/
+  ImGui::PushID("surface_lighting_effects");
 
-  disabledTextWrapped(
-    "Isosurfaces are rendered using raycasting while their values are being edited. Once editing is complete and "
-    "the surface mesh is ready, rendering automatically switches to the mesh.");
-
-  renderSurfaceLightingSettings(renderData);
-
-  ImGui::Spacing();
-  ImGui::SeparatorText("Lighting Effects");
-
-  ImGui::Checkbox("Shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
-  ImGui::SameLine();
-  helpMarker("Cast simple directional shadows from mesh-rendered surfaces");
-  if (renderData.m_meshAdvancedLightingSettings.shadows.enabled) {
-    int mapSizePixels = static_cast<int>(renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels);
-    if (ImGui::DragInt("Shadow map size", &mapSizePixels, 64.0f, 128, 8192, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
-      renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = static_cast<uint32_t>(mapSizePixels);
-    }
-    ImGui::SameLine();
-    helpMarker("Square depth texture size used for mesh shadows");
-
-    ImGui::DragFloat(
-      "Shadow strength",
-      &renderData.m_meshAdvancedLightingSettings.shadows.strength,
-      0.01f,
-      0.0f,
-      1.0f,
-      "%0.2f",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Fraction of direct light removed in shadowed regions");
-
-    ImGui::DragFloat(
-      "Shadow depth bias",
-      &renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
-      0.0001f,
-      0.0f,
-      0.02f,
-      "%0.4f",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Depth offset used to reduce self-shadowing artifacts; excessive values detach or remove shadows");
-  }
-
-  ImGui::Checkbox("Ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
-  ImGui::SameLine();
-  helpMarker("Darken small screen-space creases and nearby mesh depth discontinuities");
+  ImGui::SeparatorText("Ambient Occlusion");
   disabledTextWrapped(
     "Ambient occlusion adds contact shading in creases and where nearby surfaces obscure indirect light.");
+  ImGui::Checkbox("Enable ambient occlusion", &renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled);
+  ImGui::SameLine();
+  helpMarker("Darken small screen-space creases and nearby mesh depth discontinuities");
   if (renderData.m_meshAdvancedLightingSettings.ambientOcclusion.enabled) {
     ImGui::DragFloat(
       "AO radius",
@@ -2674,13 +2715,51 @@ void renderMeshRenderingTab(rendering::RenderSettings& renderData)
     helpMarker("Hemisphere samples per pixel. Higher values reduce noise but increase rendering cost");
   }
 
+  ImGui::Spacing();
+  ImGui::SeparatorText("Shadows");
+  disabledTextWrapped("Shadows add directional depth cues where one surface blocks light from another.");
+  ImGui::Checkbox("Enable shadows", &renderData.m_meshAdvancedLightingSettings.shadows.enabled);
+  ImGui::SameLine();
+  helpMarker("Cast simple directional shadows from mesh-rendered surfaces");
+  if (renderData.m_meshAdvancedLightingSettings.shadows.enabled) {
+    int mapSizePixels = static_cast<int>(renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels);
+    if (ImGui::DragInt("Shadow map size", &mapSizePixels, 64.0f, 128, 8192, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
+      renderData.m_meshAdvancedLightingSettings.shadows.mapSizePixels = static_cast<uint32_t>(mapSizePixels);
+    }
+    ImGui::SameLine();
+    helpMarker("Square depth texture size used for mesh shadows");
+
+    ImGui::DragFloat(
+      "Shadow strength",
+      &renderData.m_meshAdvancedLightingSettings.shadows.strength,
+      0.01f,
+      0.0f,
+      1.0f,
+      "%0.2f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Fraction of direct light removed in shadowed regions");
+
+    ImGui::DragFloat(
+      "Shadow depth bias",
+      &renderData.m_meshAdvancedLightingSettings.shadows.depthBias,
+      0.0001f,
+      0.0f,
+      0.02f,
+      "%0.4f",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Depth offset used to reduce self-shadowing artifacts; excessive values detach or remove shadows");
+  }
+
   auto& material = renderData.m_meshSurfaceMaterialSettings;
   ImGui::Spacing();
-  ImGui::Checkbox("Rim lighting", &material.rimLightingEnabled);
-  ImGui::SameLine();
-  helpMarker("Emphasize silhouettes on surfaces");
+  ImGui::SeparatorText("Rim Lighting");
   disabledTextWrapped(
     "Rim lighting emphasizes silhouettes by increasing opacity and adding a glow near surface edges.");
+  ImGui::Checkbox("Enable rim lighting", &material.rimLightingEnabled);
+  ImGui::SameLine();
+  helpMarker("Emphasize silhouettes on surfaces");
   if (material.rimLightingEnabled) {
     if (mySliderF32("Rim opacity", &material.rimOpacityStrength, 0.0f, 1.0f, "%0.2f")) {
       material.rimOpacityStrength = std::clamp(material.rimOpacityStrength, 0.0f, 1.0f);
@@ -2711,9 +2790,12 @@ void renderMeshRenderingTab(rendering::RenderSettings& renderData)
   for (const std::string& diagnostic : meshLightingDiagnostics) {
     disabledTextWrapped(diagnostic.c_str());
   }
+  ImGui::PopID();
+}
 
-  ImGui::Spacing();
-  ImGui::SeparatorText("Smoothing");
+void renderSurfaceSmoothingSettings(rendering::RenderSettings& renderData)
+{
+  ImGui::PushID("surface_smoothing");
   disabledTextWrapped(
     "Mesh surfaces are extracted from the original image or label voxels, then optionally smoothed with a "
     "boundary-preserving windowed-sinc surface filter. The image and segmentation data are not modified.");
@@ -2747,21 +2829,7 @@ void renderMeshRenderingTab(rendering::RenderSettings& renderData)
       "Controls how much surface detail passes through the smoothing filter. Lower values suppress more detail and "
       "produce stronger smoothing; higher values preserve more detail and approach the unsmoothed surface");
   }
-
-  ImGui::Spacing();
-  ImGui::SeparatorText("Interaction");
-
-  ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);
-  ImGui::SameLine();
-  helpMarker(
-    "Double-click a visible surface in a 3D view to move the crosshairs to the selected point on that surface");
-
-  ImGui::Checkbox("Viewer-facing cutaway", &renderData.m_meshCutawayEnabled);
-  ImGui::SameLine();
-  helpMarker(
-    "Cut away the viewer-facing octant of segmentation and isosurface meshes, with the crosshairs as its origin");
-
-  ImGui::PopID(); /*** PopID mesh_rendering ***/
+  ImGui::PopID();
 }
 
 void renderFrameRateSettings(rendering::RenderSettings& renderData)
@@ -2828,6 +2896,9 @@ void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
 
   ImGui::Spacing();
   ImGui::SeparatorText("Raycasting");
+  disabledTextWrapped(
+    "Isosurfaces are rendered using raycasting while their values are being edited. Once editing is complete and "
+    "the surface mesh is ready, rendering automatically switches to the mesh.");
   static constexpr float k_factorStep = 0.1f;
   static constexpr float k_minFactor = 0.5f;
   static constexpr float k_maxFactor = 2.0f;
@@ -2844,6 +2915,7 @@ void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
   ImGui::SameLine();
   helpMarker("Fallback ray-marching step as a fraction of voxel size. Smaller values improve fidelity but cost more");
 
+  ImGui::Spacing();
   ImGui::Checkbox("Raycast using distance map", &renderData.m_useDistanceMapForRaycasting);
   ImGui::SameLine();
   helpMarker("Skip empty regions while transient isosurfaces are rendered by raycasting");
@@ -2934,11 +3006,24 @@ void renderRenderingTab(AppData& appData, rendering::RenderSettings& renderData)
   }
   finishSettingsSection(sceneAndCameraOpen);
 
-  const bool surfacesOpen = ImGui::CollapsingHeader("Surfaces", ImGuiTreeNodeFlags_DefaultOpen);
-  if (surfacesOpen) {
-    renderMeshRenderingTab(renderData);
+  const bool surfaceShadingOpen = ImGui::CollapsingHeader("Surface Shading", ImGuiTreeNodeFlags_DefaultOpen);
+  if (surfaceShadingOpen) {
+    renderSurfaceShadingSettings(renderData);
   }
-  finishSettingsSection(surfacesOpen);
+  finishSettingsSection(surfaceShadingOpen);
+
+  const bool surfaceLightingEffectsOpen =
+    ImGui::CollapsingHeader("Surface Lighting Effects", ImGuiTreeNodeFlags_DefaultOpen);
+  if (surfaceLightingEffectsOpen) {
+    renderSurfaceLightingEffectsSettings(renderData);
+  }
+  finishSettingsSection(surfaceLightingEffectsOpen);
+
+  const bool surfaceSmoothingOpen = ImGui::CollapsingHeader("Surface Smoothing", ImGuiTreeNodeFlags_DefaultOpen);
+  if (surfaceSmoothingOpen) {
+    renderSurfaceSmoothingSettings(renderData);
+  }
+  finishSettingsSection(surfaceSmoothingOpen);
 
   const bool imagePlanesOpen = ImGui::CollapsingHeader("Image Planes", ImGuiTreeNodeFlags_DefaultOpen);
   if (imagePlanesOpen) {
@@ -3467,6 +3552,7 @@ void renderSettingsWindow(
         if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
           const ImGuiContext& imguiContext = *ImGui::GetCurrentContext();
           const bool settingsEditedBeforePage = imguiContext.ActiveIdHasBeenEditedThisFrame;
+          ImGui::PushItemWidth(settingsControlWidth());
           renderSettingsPage(
             s_selectedPage,
             appData,
@@ -3482,6 +3568,7 @@ void renderSettingsWindow(
             readjustViewport,
             persistenceCallbacks,
             recenterAllViews);
+          ImGui::PopItemWidth();
           if (!settingsEditedBeforePage && imguiContext.ActiveIdHasBeenEditedThisFrame) {
             appData.guiData().m_appSettingsDirty = true;
           }

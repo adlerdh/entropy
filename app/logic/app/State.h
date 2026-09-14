@@ -59,9 +59,6 @@ public:
   void setButtonState(ButtonState state);
   ButtonState buttonState() const;
 
-  void setRecenteringMode(ImageSelection mode);
-  ImageSelection recenteringMode() const;
-
   void setAnimating(bool set);
   bool animating() const;
 
@@ -85,9 +82,6 @@ private:
 
   MouseMode m_mouseMode{MouseMode::Pointer}; //!< Current mouse interaction mode
   ButtonState m_buttonState;                 //!< Global mouse button and keyboard modifier state
-
-  /// Image selection to use when recentering views and crosshairs
-  ImageSelection m_recenteringMode{ImageSelection::AllLoadedImages};
 
   bool m_animating{false}; //!< Is the application currently animating something?
 

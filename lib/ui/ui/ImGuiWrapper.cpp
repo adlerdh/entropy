@@ -21,7 +21,6 @@
 #include "ui/toolbars/Toolbars.h"
 #include "ui/windows/Windows.h"
 #include "ui/windows/LoadingStatusModel.h"
-#include "ui/windows/OpacityMixerModel.h"
 #include "ui/windows/OpacityMixerWindow.h"
 #include "ui/windows/ExportStatusWindow.h"
 #ifdef _WIN32
@@ -433,10 +432,9 @@ struct DefaultDockLayoutFractions
   float leftPanel = 0.20f;
   float rightPanel = 0.20f;
   float inspector = 0.10f;
-  float opacityMixer = 1.0f / 3.0f;
 };
 
-DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSize, std::size_t imageCount)
+DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSize)
 {
   const float aspectRatio = dockspaceSize.y > 1.0f ? dockspaceSize.x / dockspaceSize.y : 1.0f;
   const bool wideWorkspace = aspectRatio >= 2.10f;
@@ -450,17 +448,10 @@ DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSiz
   const float rightMinSize = narrowWorkspace ? 200.0f : 240.0f;
   const float rightMaxSize = wideWorkspace ? 560.0f : 440.0f;
 
-  const std::size_t opacityMixerRows = std::max<std::size_t>(imageCount, 2) + 2;
-  const ImGuiStyle& style = ImGui::GetStyle();
-  const float opacityMixerHeight = ImGui::GetFrameHeight() + (2.0f * style.WindowPadding.y) +
-                                   (static_cast<float>(opacityMixerRows) * ImGui::GetFrameHeightWithSpacing());
-  const float opacityMixerFraction = std::clamp(opacityMixerHeight / std::max(dockspaceSize.y, 1.0f), 0.20f, 0.65f);
-
   return DefaultDockLayoutFractions{
     .leftPanel = clampedDockSplitFraction(dockspaceSize.x, leftTargetFraction, leftMinSize, leftMaxSize),
     .rightPanel = clampedDockSplitFraction(dockspaceSize.x, rightTargetFraction, rightMinSize, rightMaxSize),
-    .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.10f, 120.0f, 190.0f),
-    .opacityMixer = opacityMixerFraction};
+    .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.10f, 120.0f, 190.0f)};
 }
 
 void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const AppData& appData)
@@ -481,16 +472,14 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const AppData& appData)
 
   ImGuiID centerNode = dockspaceId;
   ImGuiID leftNode = 0;
-  ImGuiID leftBottomNode = 0;
   ImGuiID rightNode = 0;
   ImGuiID rightMiddleNode = 0;
   ImGuiID rightBottomNode = 0;
   ImGuiID bottomNode = 0;
 
-  const DefaultDockLayoutFractions fractions = defaultDockLayoutFractions(geometry.size, appData.numImages());
+  const DefaultDockLayoutFractions fractions = defaultDockLayoutFractions(geometry.size);
 
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Left, fractions.leftPanel, &leftNode, &centerNode);
-  ImGui::DockBuilderSplitNode(leftNode, ImGuiDir_Down, fractions.opacityMixer, &leftBottomNode, &leftNode);
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Right, fractions.rightPanel, &rightNode, &centerNode);
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Down, fractions.inspector, &bottomNode, &centerNode);
   ImGui::DockBuilderSplitNode(rightNode, ImGuiDir_Down, 1.0f / 3.0f, &rightBottomNode, &rightNode);
@@ -505,8 +494,6 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const AppData& appData)
   ImGui::DockBuilderDockWindow("Isosurfaces", rightBottomNode);
 
   ImGui::DockBuilderDockWindow("Voxel Inspector##InspectionWindow", bottomNode);
-  ImGui::DockBuilderDockWindow("Image Opacity Mixer", leftBottomNode);
-
   ImGui::DockBuilderFinish(dockspaceId);
 }
 
@@ -4309,12 +4296,6 @@ void ImGuiWrapper::render()
   };
 
   ImGui::NewFrame();
-
-  const std::size_t imageCount = m_appData.numImages();
-  if (ui::opacity_mixer::shouldOpenForImageCountTransition(m_previousImageCount, imageCount)) {
-    m_appData.guiData().m_showOpacityBlenderWindow = true;
-  }
-  m_previousImageCount = imageCount;
 
   requestAutomaticUpdateCheckIfNeeded();
   processUpdateCheckFuture();

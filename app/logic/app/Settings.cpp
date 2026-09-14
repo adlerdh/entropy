@@ -104,13 +104,14 @@ void AppSettings::swapForegroundAndBackgroundLabels(const ParcellationLabelTable
   setBackgroundLabel(fg, activeLabelTable);
 }
 
-bool AppSettings::synchronizeZooms() const
+ImageSelection AppSettings::recenteringMode() const
 {
-  return m_synchronizeZoom;
+  return m_recenteringMode;
 }
-void AppSettings::setSynchronizeZooms(bool sync)
+
+void AppSettings::setRecenteringMode(ImageSelection mode)
 {
-  m_synchronizeZoom = sync;
+  m_recenteringMode = mode;
 }
 
 bool AppSettings::cursorSyncEnabled() const
@@ -657,6 +658,7 @@ bool AppSettings::crosshairsMoveWhileAnnotating() const
 {
   return m_crosshairsMoveWhileAnnotating;
 }
+
 void AppSettings::setCrosshairsMoveWhileAnnotating(bool set)
 {
   m_crosshairsMoveWhileAnnotating = set;

@@ -75,16 +75,6 @@ ButtonState AppState::buttonState() const
   return m_buttonState;
 }
 
-void AppState::setRecenteringMode(ImageSelection mode)
-{
-  m_recenteringMode = mode;
-}
-
-ImageSelection AppState::recenteringMode() const
-{
-  return m_recenteringMode;
-}
-
 void AppState::setAnimating(bool set)
 {
   m_animating = set;

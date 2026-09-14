@@ -416,7 +416,6 @@ private:
   std::optional<std::optional<float>> m_pendingUserScaleOverride;
   bool m_pendingFontReload = false;
   bool m_applyDefaultPanelLayout = false;
-  std::size_t m_previousImageCount = 0;
 
   /// Futures created by running tasks asynchronously from the UI.
   /// These are created during the lifetime of the application.

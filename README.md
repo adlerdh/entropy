@@ -17,7 +17,7 @@ inspecting medical images.
 It is designed for projects containing multiple images in a common reference space. Flexible layouts, interactive 2D
 and 3D views, and several comparison modes make it easier to inspect images and evaluate their spatial alignment.
 
-Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor
+Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with past support from Professor
 [James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656), Director of the Penn Image
 Computing and Science Lab (PICSL).
 
@@ -96,14 +96,14 @@ Entropy has advanced support for image transformations:
 
 ### Registration Backends
 
-Entropy does not implement its own full registration engine. Instead, it can launch external registration tools, monitor
+Entropy does not implement its own image registration engine. Instead, it can launch external registration tools, monitor
 them, and import their results into the project where the images are already loaded. Current registration backends are:
 
 - [ANTs](https://github.com/ANTsX/ANTs)
 - [FireANTs](https://fireants.readthedocs.io/en/latest/)
 - [Greedy](https://greedy.readthedocs.io/en/latest/)
 
-The Image Registration workflow lets users select fixed and moving images, choose parameters for each backend, inspect
+The image registration workflow lets users select fixed and moving images, choose parameters for each backend, inspect
 the command preview, monitor progress and logs, and import generated outputs. Imported outputs can include transformed
 moving images, affine matrices, inverse warp fields, and forward warp fields. Backend executables are configured in
 Application Settings.
@@ -177,9 +177,8 @@ Detailed compiler versions, operating system versions, development packages, and
 
 ### Continuous Integration
 
-GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu 22.04 and 24.04, and Fedora. It also checks formatting,
-spelling, include hygiene, and static-analysis findings. See [BUILDING.md](BUILDING.md) for the current CI matrix and
-tooling.
+GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu, and Fedora. It also checks formatting, spelling,
+include hygiene, and static-analysis findings. See [BUILDING.md](BUILDING.md) for the current CI matrix and tooling.
 
 ## Core Concepts
 

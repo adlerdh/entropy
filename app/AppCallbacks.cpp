@@ -147,7 +147,7 @@ void EntropyApp::setCallbacks()
   };
 
   imguiCallbacks.view.recenterView = [this](const uuids::uuid& viewUid) {
-    m_callbackHandler.recenterView(m_data.state().recenteringMode(), viewUid);
+    m_callbackHandler.recenterView(m_data.settings().recenteringMode(), viewUid);
   };
 
   imguiCallbacks.view.recenterCurrentViews = [this](
@@ -157,7 +157,7 @@ void EntropyApp::setCallbacks()
                                                bool resetObliqueOrientation,
                                                bool resetZoom) {
     m_callbackHandler.recenterViews(
-      m_data.state().recenteringMode(),
+      m_data.settings().recenteringMode(),
       recenterCrosshairs,
       realignCrosshairs,
       recenterOnCurrentCrosshairsPosition,

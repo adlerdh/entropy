@@ -291,7 +291,7 @@ void EntropyApp::onImagesReady()
     }
 
     m_callbackHandler.recenterViews(
-      m_data.state().recenteringMode(),
+      m_data.settings().recenteringMode(),
       recenterCrosshairs,
       realignCrosshairs,
       recenterOnCurrentCrosshairsPos,

@@ -938,7 +938,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       const bool resetZoom = hardReset; // ? true : recenterOnCurrentCrosshairsPosition;
 
       H.recenterViews(
-        app->appData().state().recenteringMode(),
+        app->appData().settings().recenteringMode(),
         recenterCrosshairs,
         realignCrosshairs,
         recenterOnCurrentCrosshairsPosition,

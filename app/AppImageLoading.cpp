@@ -2183,7 +2183,7 @@ bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
   m_data.setRainbowColorsForAllLandmarkGroups();
   m_data.setProject(createProjectSnapshot());
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
-  m_callbackHandler.recenterViews(m_data.state().recenteringMode(), true, true, true, true, true);
+  m_callbackHandler.recenterViews(m_data.settings().recenteringMode(), true, true, true, true, true);
   GlfwWrapper::postEmptyEvent();
 
   spdlog::info("Set {} as the reference image", imageUid);

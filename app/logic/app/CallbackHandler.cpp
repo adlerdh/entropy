@@ -2416,7 +2416,7 @@ void CallbackHandler::setShowUserInterface(bool show)
 
 void CallbackHandler::refreshTwoDViewOverlaySafeFraming()
 {
-  const auto worldBox = data::computeWorldAABBoxEnclosingImages(m_appData, m_appData.state().recenteringMode());
+  const auto worldBox = data::computeWorldAABBoxEnclosingImages(m_appData, m_appData.settings().recenteringMode());
   const float uiScale = std::max(1.0f, m_appData.guiData().m_effectiveUiScale);
   constexpr glm::vec2 defaultControlExtent{240.0f, 26.0f};
   constexpr float controlClearance = 4.0f;
@@ -2531,7 +2531,7 @@ void CallbackHandler::doCrosshairsRotate2D(
   }
 
   // Recenter all views on the crosshairs except the current view in which crosshairs are rotating
-  recenterViews(m_appData.state().recenteringMode(), false, false, true, false, false, {startHit.viewUid});
+  recenterViews(m_appData.settings().recenteringMode(), false, false, true, false, false, {startHit.viewUid});
 }
 
 void CallbackHandler::endCrosshairsRotate2D()
@@ -2539,7 +2539,7 @@ void CallbackHandler::endCrosshairsRotate2D()
   AppState& state = m_appData.state();
   if (state.viewWithRotatingCrosshairs()) {
     state.setViewWithRotatingCrosshairs(std::nullopt);
-    recenterViews(state.recenteringMode(), false, false, true, false, false);
+    recenterViews(m_appData.settings().recenteringMode(), false, false, true, false, false);
   }
 }
 

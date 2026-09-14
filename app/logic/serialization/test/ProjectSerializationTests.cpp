@@ -141,6 +141,12 @@ TEST_CASE("Saving an all-default project writes only required entries", "[projec
   std::ifstream input{projectFile};
   const nlohmann::ordered_json saved = nlohmann::ordered_json::parse(input);
   CHECK(saved.size() == 2);
+  std::vector<std::string> rootKeys;
+  for (const auto& [key, value] : saved.items()) {
+    (void)value;
+    rootKeys.push_back(key);
+  }
+  CHECK(rootKeys == std::vector<std::string>{"version", "images"});
   CHECK(saved.contains("version"));
   REQUIRE(saved.contains("images"));
   CHECK_FALSE(saved.contains("settings"));
@@ -153,13 +159,11 @@ TEST_CASE("Saving an all-default project writes only required entries", "[projec
   CHECK(image.at("path") == "image.nii.gz");
 }
 
-TEST_CASE("Project serialization accepts missing version as current format", "[project][serialization]")
+TEST_CASE("Project serialization rejects a missing version", "[project][serialization]")
 {
   const json root = {{"images", json::array({{{"path", "image.nii.gz"}}})}};
 
-  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK(parsed.m_referenceImage.m_imageFileName == fs::path{"image.nii.gz"});
-  CHECK(parsed.m_additionalImages.empty());
+  CHECK_THROWS(root.get<serialize::EntropyProject>());
 }
 
 TEST_CASE("Project serialization preserves DICOM source metadata", "[project][dicom][serialization]")
@@ -671,15 +675,6 @@ TEST_CASE("Independent image-plane defaults are not serialized", "[project][seri
   CHECK(parsed.m_imagePlaneLightingSpecularPower == 16.0f);
 }
 
-TEST_CASE("Legacy voxel-relative crosshairs glyph settings are ignored", "[project][serialization]")
-{
-  const json legacyThreeD{{"crosshairsGlyphDiameterVox", 3.0f}, {"crosshairsGlyphLengthVox", 30.0f}};
-
-  const auto parsed = legacyThreeD.get<serialize::ProjectThreeDRenderingSettings>();
-  CHECK(parsed.m_crosshairs3DGlyphDiameterScenePercent == 0.25f);
-  CHECK(parsed.m_crosshairs3DGlyphLengthScenePercent == 4.0f);
-}
-
 TEST_CASE("Saved project rendering settings follow the application settings order", "[project][serialization]")
 {
   const fs::path root = uniqueTempProjectDirectory();
@@ -687,6 +682,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_synchronization.m_synchronizeTimeSeries = false;
   project.m_view.m_showAnatomicalLabels = false;
   project.m_view.m_showAnatomicalLabelsInLightboxViews = false;
   project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Quadruped;
@@ -734,6 +730,8 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d = false;
   project.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ImageVoxel;
   project.m_isocontours.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
+  project.m_intensityProjection.m_useMaximumImageExtent = false;
+  project.m_comparison.m_overlayMagentaCyan = true;
 
   REQUIRE(serialize::save(project, projectFile));
 
@@ -765,6 +763,7 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
     return keys;
   };
   const auto& orderedRendering = ordered.at("settings").at("rendering");
+  CHECK(objectKeys(ordered.at("settings")) == std::vector<std::string>{"view", "rendering", "synchronization"});
   CHECK(
     objectKeys(ordered.at("settings").at("view").at("anatomicalLabels")) == std::vector<std::string>{
                                                                               "visible",
@@ -774,8 +773,15 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
                                                                               "leftRightDisplayConvention",
                                                                               "lockDirectionsToReferenceImage"});
   CHECK(
-    objectKeys(orderedRendering) ==
-    std::vector<std::string>{"threeD", "mesh", "dualDepthPeeling", "raycasting", "isocontours", "segmentations"});
+    objectKeys(orderedRendering) == std::vector<std::string>{
+                                      "threeD",
+                                      "mesh",
+                                      "dualDepthPeeling",
+                                      "raycasting",
+                                      "isocontours",
+                                      "intensityProjection",
+                                      "segmentations",
+                                      "comparison"});
   CHECK(objectKeys(orderedRendering.at("dualDepthPeeling")) == std::vector<std::string>{"maxPeelPasses"});
   CHECK(
     objectKeys(orderedRendering.at("threeD")) == std::vector<std::string>{
@@ -830,86 +836,6 @@ TEST_CASE("Saved project rendering settings follow the application settings orde
   CHECK(
     objectKeys(orderedRendering.at("segmentations").at("imageOpacityModulation")) ==
     std::vector<std::string>{"twoD", "threeD"});
-}
-
-TEST_CASE("Project serialization ignores obsolete DDP settings nested under mesh", "[project][serialization]")
-{
-  const json root = {
-    {"images", json::array({{{"path", "image.nii.gz"}}})},
-    {"settings",
-     {{"rendering", {{"mesh", {{"dualDepthPeeling", {{"untilComplete", false}, {"maxPeelPasses", 12u}}}}}}}}}};
-
-  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK(parsed.m_meshRendering.m_ddpMaxPeelPasses == 5);
-}
-
-TEST_CASE("Project serialization ignores the obsolete global mesh clip plane", "[project][serialization][cutaway]")
-{
-  const json root = {
-    {"images", json::array({{{"path", "image.nii.gz"}}})},
-    {"settings",
-     {{"rendering",
-       {{"mesh", {{"clipPlane", {{"enabled", true}, {"worldPlane", json::array({1.0, 0.0, 0.0, -2.0})}}}}}}}}}};
-
-  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK_FALSE(parsed.m_meshRendering.m_cutawayEnabled);
-  const json rewritten = parsed;
-  const json mesh =
-    rewritten.value("settings", json::object()).value("rendering", json::object()).value("mesh", json::object());
-  CHECK_FALSE(mesh.contains("clipPlane"));
-  CHECK_FALSE(mesh.contains("cutaway"));
-}
-
-TEST_CASE("Project serialization ignores the obsolete singular segmentation settings key", "[project][serialization]")
-{
-  const json root = {
-    {"images", json::array({{{"path", "image.nii.gz"}}})},
-    {"settings",
-     {{"rendering", {{"segmentation", {{"modulateOpacityWithImageOpacity", false}, {"outlineStyle", "voxel"}}}}}}}};
-  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity2d);
-  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity3d);
-  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ViewPixel);
-  const json saved = parsed;
-  const json rendering = saved.value("settings", json::object()).value("rendering", json::object());
-  CHECK_FALSE(rendering.contains("segmentation"));
-}
-
-TEST_CASE("Project serialization ignores obsolete translucent mesh compositing", "[project][serialization]")
-{
-  const json root = {
-    {"images", json::array({{{"path", "image.nii.gz"}}})},
-    {"settings", {{"rendering", {{"mesh", {{"enabled", false}, {"translucentCompositing", "additive"}}}}}}}};
-
-  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK_FALSE(parsed.m_meshRendering.m_renderingEnabled);
-
-  const json rewritten = parsed;
-  const json& mesh = rewritten.at("settings").at("rendering").at("mesh");
-  CHECK(mesh.at("enabled") == false);
-  CHECK_FALSE(mesh.contains("translucentCompositing"));
-}
-
-TEST_CASE("Project serialization ignores obsolete pixel AO radius", "[project][serialization][ssao]")
-{
-  const json root = {
-    {"images", json::array({{{"path", "image.nii.gz"}}})},
-    {"settings",
-     {{"rendering",
-       {{"mesh", {{"ambientOcclusion", {{"enabled", true}, {"radiusPixels", 12.0f}, {"strength", 0.7f}}}}}}}}}};
-
-  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionEnabled);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionRadiusMm == 5.0f);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionStrength == 0.7f);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionPower == 1.5f);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionContrast == 1.0f);
-  CHECK(parsed.m_meshRendering.m_ambientOcclusionSampleCount == 24);
-
-  const json rewritten = parsed;
-  const json& ao = rewritten.at("settings").at("rendering").at("mesh").at("ambientOcclusion");
-  CHECK_FALSE(ao.contains("radiusMm"));
-  CHECK_FALSE(ao.contains("radiusPixels"));
 }
 
 TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")
@@ -1654,39 +1580,6 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_modulateIsosurfaceOpacityWithImageOpacity);
   CHECK(parsedSettings.m_isocontourLineWidthIn2D == 3.5);
   CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
-}
-
-TEST_CASE("Isosurface serialization ignores legacy material effects", "[project][serialization][isosurface]")
-{
-  const json legacy = {
-    {"material", {{"pbr", {{"enabled", true}, {"metallic", 0.9f}}}}},
-    {"rimLighting", {{"enabled", true}, {"glow", 2.0f}}}};
-  const Isosurface parsed = legacy.get<Isosurface>();
-  const json saved = parsed;
-  CHECK_FALSE(saved.contains("rimLighting"));
-  CHECK_FALSE(saved.value("material", json::object()).contains("pbr"));
-}
-
-TEST_CASE("Image serialization ignores legacy per-image distance-map settings", "[project][serialization][image]")
-{
-  const json legacy = {
-    {"images",
-     json::array(
-       {{{"path", "image.nii.gz"},
-         {"settings",
-          {{"raycasting", {{"useDistanceMap", false}}},
-           {"components",
-            {{"values", json::array({{{"foregroundThresholdLow", 10.0}, {"foregroundThresholdHigh", 90.0}}})}}}}}}})}};
-  const serialize::EntropyProject parsed = legacy.get<serialize::EntropyProject>();
-  const json saved = parsed;
-  const json& savedSettings = saved.at("images").at(0).value("settings", json::object());
-  CHECK_FALSE(savedSettings.contains("raycasting"));
-  if (const auto components = savedSettings.find("components"); components != savedSettings.end()) {
-    for (const auto& component : components->value("values", json::array())) {
-      CHECK_FALSE(component.contains("foregroundThresholdLow"));
-      CHECK_FALSE(component.contains("foregroundThresholdHigh"));
-    }
-  }
 }
 
 TEST_CASE("Project serialization preserves image isosurfaces", "[project][serialization][isosurface]")
