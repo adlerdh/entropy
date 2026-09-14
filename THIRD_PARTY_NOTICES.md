@@ -67,7 +67,7 @@ The following external resources have been committed directly to the Entropy rep
 | Supreme font | None | https://www.fontshare.com/fonts/supreme | Fontshare Free Font License |
 | Peter Kovesi Library of Perceptually Uniform Color Maps | 2014-2018 copy | https://colorcet.holoviz.org/ | Creative Commons Attribution 4.0 |
 | Matplotlib viridis, plasma, inferno, and magma color maps | None | https://bids.github.io/colormap/ | CC0-1.0 |
-| Cividis color map | None | https://www.ncl.ucar.edu/Document/Graphics/ColorTables/cividis.shtml | BSD-3-Clause |
+| Cividis color map | None | https://cmap-docs.readthedocs.io/en/latest/catalog/sequential/cividis:cividis/ | BSD-3-Clause |
 
 ## Other attributions
 
