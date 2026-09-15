@@ -3,8 +3,7 @@
 This guide covers local release packaging and GitHub release behavior. For compiler requirements, dependency builds,
 tests, and general source build instructions, see [BUILDING.md](BUILDING.md).
 
-Entropy packages are created with [CPack](https://cmake.org/cmake/help/latest/module/CPack.html) from the Release
-application build and written to `build-release/packages/`.
+Entropy packages are created with CPack from the Release application build and written to `build-release/packages/`.
 
 Run all commands in this guide from the repository root unless stated otherwise.
 
