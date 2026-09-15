@@ -902,6 +902,8 @@ void renderViewsTab(
   const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
   if (anatomicalLabelsOpen) {
     disabledTextWrapped("Anatomical labels identify patient directions and orientation around image views.");
+
+    ImGui::Spacing();
     bool showAnatomicalLabels = renderData.m_showAnatomicalLabels;
     if (ImGui::Checkbox("Show anatomical labels", &showAnatomicalLabels)) {
       renderData.m_showAnatomicalLabels = showAnatomicalLabels;
@@ -1029,8 +1031,8 @@ void renderViewsTab(
     helpMarker("Anatomical left is on view left; anatomical right is on view right");
     ImGui::PushTextWrapPos(0.0f);
     ImGui::TextDisabled(
-      "Radiological places anatomical left (+x in Cartesian mode) on the right side of the view. Neurological "
-      "places anatomical left (+x in Cartesian mode) on the left side of the view.");
+      "Radiological places anatomical left (+x axis) on the right side of the view. Neurological places anatomical "
+      "left on the left side of the view.");
     ImGui::PopTextWrapPos();
   }
   finishSettingsSection(anatomicalLabelsOpen);
@@ -1038,6 +1040,8 @@ void renderViewsTab(
   const bool scaleBarsOpen = ImGui::CollapsingHeader("Scale Bars", ImGuiTreeNodeFlags_DefaultOpen);
   if (scaleBarsOpen) {
     disabledTextWrapped("Scale bars indicate physical distance in 2D anatomical views and adjust to the current zoom.");
+    ImGui::Spacing();
+
     bool showScaleBars = renderData.m_showScaleBars;
     if (ImGui::Checkbox("Show scale bars", &showScaleBars)) {
       renderData.m_showScaleBars = showScaleBars;
@@ -1173,6 +1177,8 @@ void renderViewsTab(
     disabledTextWrapped(
       "Annotations and landmarks mark regions or features in image views. These settings control how they are "
       "layered and displayed.");
+
+    ImGui::Spacing();
     renderAnnotationViewSettings(renderData);
 
     bool moveCrosshairs = appData.settings().crosshairsMoveWhileAnnotating();
@@ -1190,6 +1196,8 @@ void renderViewsTab(
     disabledTextWrapped(
       "Transformation guides provide visual and numerical feedback during manual image translation, rotation, and "
       "scaling.");
+
+    ImGui::Spacing();
     ImGui::Checkbox("Show transformation guides", &renderData.m_showTransformationGuides);
     ImGui::SameLine();
     helpMarker(
@@ -1207,15 +1215,19 @@ void renderViewsTab(
     disabledTextWrapped(
       "Lightbox views arrange parallel image slices in a tiled grid. These settings control which guides and labels "
       "appear in each tile.");
+
+    ImGui::Spacing();
     const bool globalImageBordersShown =
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
     if (!globalImageBordersShown) {
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = false;
     }
+
     ImGui::BeginDisabled(!globalImageBordersShown);
     bool showImageBordersInLightboxViews =
       globalImageBordersShown &&
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews;
+
     if (ImGui::Checkbox("Show image borders##lightboxViews", &showImageBordersInLightboxViews)) {
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
         showImageBordersInLightboxViews;
@@ -1281,6 +1293,8 @@ void renderViewsTab(
     disabledTextWrapped(
       "ASCII shading renders grayscale images with text characters whose shapes and brightness represent image "
       "intensity.");
+
+    ImGui::Spacing();
     renderAsciiShadingSettings(renderData);
   }
 }
@@ -1307,8 +1321,10 @@ void renderInterfaceTab(
   }
 
   if (showLayoutTabs) {
+    ImGui::Spacing();
     const bool layoutTabsTop = UiLayoutTabPlacement::Top == appData.settings().layoutTabPlacement();
     ImGui::Text("Layout tab bar position:");
+
     if (ImGui::RadioButton("Top##layoutTabBarPosition", layoutTabsTop)) {
       appData.settings().setLayoutTabPlacement(UiLayoutTabPlacement::Top);
       appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
@@ -1327,11 +1343,11 @@ void renderInterfaceTab(
 
   ImGui::Spacing();
   bool showGlobalTimeControls = appData.settings().showGlobalTimeControls();
-  if (ImGui::Checkbox("Show global time controls", &showGlobalTimeControls)) {
+  if (ImGui::Checkbox("Show global time controls for time series", &showGlobalTimeControls)) {
     appData.settings().setShowGlobalTimeControls(showGlobalTimeControls);
   }
   ImGui::SameLine();
-  helpMarker("Show the floating time-series playback controls shared by loaded time-series images");
+  helpMarker("Show the floating time series playback controls shared by loaded time-series images");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -1515,10 +1531,11 @@ void renderImagesTab(AppData& appData)
     ImGui::CollapsingHeader("Image Display Defaults", ImGuiTreeNodeFlags_DefaultOpen);
   if (imageDisplayDefaultsOpen) {
     disabledTextWrapped(
-      "Linear interpolation can use the GPU texture sampler, always use higher-precision shader interpolation, "
-      "or switch automatically when magnification is high enough for fixed-function interpolation artifacts to "
-      "become visible.");
+      "Linear interpolation of images can use either the GPU texture sampler (fixed-function / fixed-point) "
+      "interpolation, higher precision shader (floating-point) interpolation, or switch automatically between the two "
+      "when magnification is high enough for fixed-function interpolation artifacts to become visible.");
 
+    ImGui::Spacing();
     renderFloatingPointInterpolationPolicyCombo(
       "Grayscale images",
       appData.renderSettings().m_imageGrayFloatingPointInterpolationPolicy,
@@ -1626,12 +1643,14 @@ void renderRegistrationTab(AppData& appData)
     "Registration backends are external software packages that align images. Entropy prepares their inputs, launches "
     "their tools, and imports the resulting transformations and images.");
 
+  ImGui::Spacing();
   const bool backendDefaultsOpen = ImGui::CollapsingHeader("Backend Defaults", ImGuiTreeNodeFlags_DefaultOpen);
   if (backendDefaultsOpen) {
     disabledTextWrapped(
       "Choose the backend used for new registration jobs and tell Entropy where each backend's required tools are "
       "installed.");
 
+    ImGui::Spacing();
     const std::string preview{registration::label(config.defaultBackend)};
     ImGui::PushItemWidth(alignedControlWidth);
     if (ImGui::BeginCombo("Default registration backend", preview.c_str())) {
@@ -1695,6 +1714,7 @@ void renderRegistrationTab(AppData& appData)
       "Control where registration results are stored, how many jobs may run at once, and the computing resources "
       "available to each backend.");
 
+    ImGui::Spacing();
     std::string outputDirectory = config.defaultOutputDirectory.string();
     const ImGuiStyle& style = ImGui::GetStyle();
     const float buttonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
@@ -1760,6 +1780,8 @@ void renderRegistrationTab(AppData& appData)
     disabledTextWrapped(
       "These summaries identify the upstream registration projects that Entropy can call; use the links for "
       "authoritative licensing, citation, and version details.");
+
+    ImGui::Spacing();
     for (std::size_t i = 0; i < k_registrationBackendInfo.size(); ++i) {
       renderRegistrationBackendInfo(k_registrationBackendInfo[i], i > 0);
     }
@@ -1878,6 +1900,8 @@ void renderSynchronizeTab(AppData& appData)
     disabledTextWrapped(
       "ITK-SNAP synchronization shares crosshair position, view zoom, and view pan with a running ITK-SNAP session. "
       "Choose independently which updates Entropy sends and receives.");
+    ImGui::Spacing();
+
     bool snapSyncEnabled = appData.settings().cursorSyncEnabled();
     if (ImGui::Checkbox("Synchronize with ITK-SNAP", &snapSyncEnabled)) {
       appData.settings().setCursorSyncEnabled(snapSyncEnabled);
@@ -2104,7 +2128,7 @@ void renderSegmentationTab(AppData& appData, rendering::RenderSettings& renderDa
       }
       ImGui::SameLine();
       helpMarker("Draw only the preview outline");
-      ImGui::SameLine();
+
       if (ImGui::RadioButton(
             "Outline and translucent fill##brushPreviewStyle",
             BrushPreviewStyle::OutlineAndFill == previewStyle))
@@ -2234,6 +2258,8 @@ bool renderComparisonModesTab(rendering::RenderSettings& renderData)
 
   // Quadrants style:
   ImGui::Text("Quadrants:");
+  ImGui::SameLine();
+  helpMarker("Comparison directions in 'quadrant' views");
 
   const glm::ivec2 Q = renderData.m_quadrants;
 
@@ -2241,18 +2267,14 @@ bool renderComparisonModesTab(rendering::RenderSettings& renderData)
     renderData.m_quadrants = glm::ivec2{true, false};
   }
 
-  ImGui::SameLine();
   if (ImGui::RadioButton("Y", !Q.x && Q.y)) {
     renderData.m_quadrants = glm::ivec2{false, true};
   }
 
-  ImGui::SameLine();
   if (ImGui::RadioButton("X and Y comparison", Q.x && Q.y)) {
     renderData.m_quadrants = glm::ivec2{true, true};
   }
 
-  ImGui::SameLine();
-  helpMarker("Comparison directions in 'quadrant' views");
   ImGui::Spacing();
 
   // Checkerboard squares
@@ -2464,6 +2486,7 @@ void renderSurfaceShadingSettings(rendering::RenderSettings& renderData)
   disabledTextWrapped(
     "When PBR is off, 3D surfaces use Blinn-Phong shading. These controls set the ambient, diffuse, and specular "
     "lighting contributions and the sharpness of specular highlights.");
+  ImGui::Spacing();
 
   auto& material = renderData.m_meshSurfaceMaterialSettings;
   int surfaceShading = material.triangleEdgesEnabled ? 2 : (material.flatShadingEnabled ? 1 : 0);
@@ -2548,6 +2571,7 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
   ImGui::PushID("image_planes");
   disabledTextWrapped("Image planes show the current orthogonal image slices at the 3D crosshairs position");
 
+  ImGui::Spacing();
   ImGui::Checkbox("Show image planes", &renderData.m_showImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker("Show orthogonal image planes through the current crosshairs in 3D views");
@@ -2571,7 +2595,6 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
   ImGui::SameLine();
   helpMarker("Make image planes more transparent as their plane becomes parallel to the camera direction");
 
-  ImGui::Spacing();
   ImGui::Checkbox("Image plane shading", &renderData.m_shadeImagePlanesIn3D);
   ImGui::SameLine();
   helpMarker(
@@ -2581,7 +2604,7 @@ void renderImagePlanesTab(rendering::RenderSettings& renderData)
   if (renderData.m_shadeImagePlanesIn3D) {
     ImGui::PushID("image_plane_lighting");
     ImGui::Spacing();
-    ImGui::TextUnformatted("Lighting coefficients:");
+    ImGui::TextUnformatted("Image plane lighting coefficients:");
     if (mySliderF32("Ambient", &renderData.m_imagePlaneLightingAmbient, 0.0f, 2.0f, "%0.2f")) {
       renderData.m_imagePlaneLightingAmbient = std::clamp(renderData.m_imagePlaneLightingAmbient, 0.0f, 2.0f);
     }
@@ -2752,6 +2775,7 @@ void renderSurfaceSmoothingSettings(rendering::RenderSettings& renderData)
     "Mesh surfaces are extracted from the original image or label voxels, then optionally smoothed with a "
     "boundary-preserving windowed-sinc surface filter. The image and segmentation data are not modified.");
 
+  ImGui::Spacing();
   ImGui::Checkbox("Smooth segmentation meshes", &renderData.m_smoothSegmentationMeshes);
   ImGui::SameLine();
   helpMarker("Apply boundary-preserving windowed-sinc smoothing to extracted segmentation surfaces");
@@ -2838,6 +2862,7 @@ void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
     "Dual depth peeling renders overlapping transparent surfaces in the correct order. Each iteration resolves the "
     "nearest and farthest remaining transparency layers. Rendering stops automatically when all transparency layers "
     "are resolved, up to the maximum iteration limit.");
+  ImGui::Spacing();
 
   int maxPeelPasses = static_cast<int>(renderData.m_meshDdpSettings.maxPeelPasses);
   if (ImGui::InputInt("Maximum dual-peel iterations", &maxPeelPasses)) {
@@ -2849,8 +2874,10 @@ void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
   ImGui::Spacing();
   ImGui::SeparatorText("Raycasting");
   disabledTextWrapped(
-    "Isosurfaces are rendered using raycasting while their values are being edited. Once editing is complete and "
+    "Isosurfaces are rendered using raycasting while their iso-values are being edited. Once editing is complete and "
     "the surface mesh is ready, rendering automatically switches to the mesh.");
+  ImGui::Spacing();
+
   static constexpr float k_factorStep = 0.1f;
   static constexpr float k_minFactor = 0.5f;
   static constexpr float k_maxFactor = 2.0f;
@@ -2872,8 +2899,8 @@ void renderPerformanceAndQualityTab(rendering::RenderSettings& renderData)
   ImGui::SameLine();
   helpMarker("Skip empty regions while transient isosurfaces are rendered by raycasting");
   disabledTextWrapped(
-    "A distance map is generated lazily from a foreground intensity range. It accelerates transient isosurface "
-    "raycasting without affecting the final surface meshes.");
+    "A distance map is generated lazily from a foreground intensity range. It accelerates isosurface raycasting "
+    "by skipping empty space, without affecting the final surface meshes.");
 
   if (renderData.m_useDistanceMapForRaycasting) {
     int lowerPercentile =
