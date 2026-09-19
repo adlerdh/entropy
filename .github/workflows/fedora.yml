@@ -29,7 +29,7 @@ env:
   CCACHE_MAXSIZE: 2G
   DEPS_CACHE_VERSION: v1
   FEDORA_VERSION: "43"
-  FEDORA_PACKAGE_LABEL: Fedora-43
+  FEDORA_PACKAGE_LABEL: Fedora
 
 jobs:
   format:
@@ -301,10 +301,10 @@ jobs:
       - name: Upload Fedora packages
         uses: actions/upload-artifact@v7
         with:
-          name: fedora-43-x86_64-packages
+          name: fedora-x86_64-packages
           path: |
-            build-release/packages/Entropy-*-Fedora-43-*.rpm
-            build-release/packages/Entropy-*-Fedora-43-*-portable.tar.gz
+            build-release/packages/Entropy-*-Fedora-*.rpm
+            build-release/packages/Entropy-*-Fedora-*-portable.tar.gz
           if-no-files-found: error
 
       - name: Show Release ccache stats

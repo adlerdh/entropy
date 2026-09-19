@@ -49,7 +49,7 @@ jobs:
 
           version="$major.$minor.$feature.$patch"
           if [[ "$tag" != "v$version" ]]; then
-            echo "Release tag '$tag' does not match CMakeLists.txt VERSION_FULL '$version'" >&2
+            echo "Release tag '$tag' does not match cmake/ProjectMetadata.cmake VERSION_FULL '$version'" >&2
             exit 1
           fi
 
@@ -182,6 +182,7 @@ jobs:
       CCACHE_COMPILERCHECK: content
       CCACHE_MAXSIZE: 2G
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
+      LINUX_PACKAGE_LABEL: Ubuntu
 
     steps:
       - name: Check out source
@@ -267,12 +268,13 @@ jobs:
         run: >
           cmake --preset deps-release
           -DEntropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
+          -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${LINUX_PACKAGE_LABEL}"
 
       - name: Build Release Dependencies
         run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
-        run: cmake --preset app-release
+        run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${LINUX_PACKAGE_LABEL}"
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -285,8 +287,8 @@ jobs:
 
       - name: Inspect DEB package
         run: |
-          dpkg-deb --info build-release/packages/Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*.deb
-          dpkg-deb --contents build-release/packages/Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*.deb
+          dpkg-deb --info build-release/packages/Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*.deb
+          dpkg-deb --contents build-release/packages/Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*.deb
 
       - name: Smoke-test staged install
         run: |
@@ -296,8 +298,8 @@ jobs:
       - name: Locate release assets
         run: |
           package_dir="build-release/packages"
-          deb=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*.deb" | head -n 1)
-          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*-portable.tar.gz" | head -n 1)
+          deb=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*.deb" | head -n 1)
+          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*-portable.tar.gz" | head -n 1)
 
           if [[ -z "$deb" ]]; then
             echo "DEB package was not found in $package_dir" >&2
@@ -316,10 +318,10 @@ jobs:
       - name: Upload Linux packages as workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: entropy-${{ env.ENTROPY_VERSION }}-ubuntu-22.04-x86_64
+          name: entropy-${{ env.ENTROPY_VERSION }}-ubuntu-x86_64
           path: |
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Ubuntu-22.04-*.deb
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Ubuntu-22.04-*-portable.tar.gz
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Ubuntu-*.deb
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Ubuntu-*-portable.tar.gz
           if-no-files-found: error
 
       - name: Show Release ccache stats
@@ -620,7 +622,7 @@ jobs:
       CCACHE_COMPILERCHECK: content
       CCACHE_MAXSIZE: 2G
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
-      FEDORA_PACKAGE_LABEL: Fedora-43
+      FEDORA_PACKAGE_LABEL: Fedora
 
     steps:
       - name: Install build and packaging dependencies
@@ -765,10 +767,10 @@ jobs:
       - name: Upload Fedora packages as workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: entropy-${{ env.ENTROPY_VERSION }}-fedora-43-x86_64
+          name: entropy-${{ env.ENTROPY_VERSION }}-fedora-x86_64
           path: |
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Fedora-43-*.rpm
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Fedora-43-*-portable.tar.gz
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Fedora-*.rpm
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Fedora-*-portable.tar.gz
           if-no-files-found: error
 
       - name: Show Release ccache stats
@@ -832,17 +834,23 @@ jobs:
           - macOS Apple Silicon (arm64): \`Entropy-${ENTROPY_VERSION}-macOS-arm64.dmg\`
           - macOS Intel (x86_64): \`Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg\`
           - Windows x86_64: \`Entropy-${ENTROPY_VERSION}-Windows-x86_64.msi\`
-          - Ubuntu 22.04 x86_64: \`Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-x86_64.deb\`
-          - Fedora 43 x86_64: \`Entropy-${ENTROPY_VERSION}-Fedora-43-x86_64.rpm\`
+          - Ubuntu x86_64: \`Entropy-${ENTROPY_VERSION}-Ubuntu-x86_64.deb\`
+          - Fedora x86_64: \`Entropy-${ENTROPY_VERSION}-Fedora-x86_64.rpm\`
           - Portable archives are also attached for macOS, Windows, Ubuntu, and Fedora.
           - Source archives are attached as \`zip\` and \`tar.gz\`.
 
+          ## System requirements
+
+          - Windows 10 version 1809 or later (x86_64)
+          - macOS 13.3 or later (Apple Silicon or Intel)
+          - Ubuntu 22.04 or later (x86_64)
+          - Fedora 43 or later (x86_64)
+
           ## Notes
 
-          - macOS builds are architecture-specific, not universal binaries.
-          - On Ubuntu, install the \`.deb\` with \`sudo apt install ./Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-x86_64.deb\`, not \`dpkg -i\`, so package dependencies are resolved automatically.
-          - Registration backends such as ANTs, FireANTs, and Greedy must be installed separately.
-          - Prefer the platform installer/package for normal use; portable archives are intended for manual installs and testing.
+          - On Ubuntu, install the \`.deb\` with \`sudo apt install ./Entropy-${ENTROPY_VERSION}-Ubuntu-x86_64.deb\`, so that package dependencies get resolved automatically. Do not use \`dpkg -i\`.
+          - The platform installer/package is intended for normal use, whereas the portable archives are for manual installs and testing.
+          - The registration backends (ANTs, FireANTs, and Greedy) must be installed separately.
 
           EOF
           cat "$generated_notes" >> release-notes.md

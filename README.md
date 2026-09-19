@@ -28,20 +28,30 @@ Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Trustees of The University of
 Download the latest packages for macOS, Windows, Ubuntu, and Fedora from
 [GitHub Releases](https://github.com/adlerdh/entropy/releases).
 
+| Package | Minimum system |
+| --- | --- |
+| Windows x86_64 | Windows 10 version 1809 |
+| macOS arm64 or x86_64 | macOS 13.3 |
+| Ubuntu x86_64 | Ubuntu 22.04 |
+| Fedora x86_64 | Fedora 43 |
+
+See [PACKAGING.md](PACKAGING.md) for details on installation and release procedures.
+
 ### Build from Source
 
-Entropy uses CMake and C++23. A two-stage build first compiles the pinned dependencies and then the application:
+Entropy uses CMake and C++23. The build is in two stages: first compile the dependencies and then the application:
 
 ```sh
 cmake --preset deps-release
 cmake --build --preset deps-release --parallel
 cmake --preset app-release
 cmake --build --preset app-release --parallel
-ctest --test-dir build-release --parallel --output-on-failure
+ctest --test-dir build-release -C Release --parallel --output-on-failure
 ```
 
-Start with [BUILDING.md](BUILDING.md) for prerequisites, platform-specific commands, tests, static analysis, and
-troubleshooting. See [PACKAGING.md](PACKAGING.md) to create release packages for macOS, Windows, Ubuntu, or Fedora.
+See [BUILDING.md](BUILDING.md) for more information on prerequisites, tests, and
+static analysis.
+
 
 ## Overview
 
@@ -79,6 +89,11 @@ space, plus any number of additional images.
 - View and crosshairs synchronization
   - Across linked views and layouts
   - With other Entropy sessions or [ITK-SNAP](https://www.itksnap.org/)
+- 3D views render
+  - Image planes
+  - Segmentation labels
+  - Isosurfaces
+  - Imported surface meshes
 
 ### Transformations and Warps
 
@@ -122,7 +137,10 @@ place point landmarks:
   - Fill annotations to create segmentations
 - Create and save groups of point landmarks in physical or voxel coordinates
 
+
 ## Supported Formats
+
+### Image Formats
 
 Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image formats:
 
@@ -134,7 +152,24 @@ Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image
 
 Entropy also displays complete image header information, DICOM metadata, and editable spatial geometry for standard 2D
 raster images that do not carry medical image headers. It loads the supporting files needed to make a review complete:
-segmentations, landmarks, annotations, affine transforms, deformation warp fields, layouts, and project files.
+segmentations, surface meshes, landmarks, annotations, affine transforms, deformation warp fields, layouts, and
+project files.
+
+### Mesh Formats
+
+Entropy uses [VTK](https://vtk.org/) and [ITK](https://itk.org/) for surface mesh I/O in these formats:
+
+- [VTK XML PolyData](https://docs.vtk.org/en/latest/vtk_file_formats/vtkxml_file_format.html) (`.vtp`)
+- [VTK legacy PolyData](https://docs.vtk.org/en/latest/vtk_file_formats/vtk_legacy_file_format.html) (`.vtk`)
+- [Stereolithography (STL)](https://www.loc.gov/preservation/digital/formats/fdd/fdd000504.shtml) (`.stl`)
+- [Polygon File Format (PLY)](https://paulbourke.net/dataformats/ply/) (`.ply`)
+- [Wavefront Object (OBJ)](https://www.loc.gov/preservation/digital/formats/fdd/fdd000507.shtml) (`.obj`)
+- [Object File Format (OFF)](https://geomview.sourceforge.io/docs/geomview.pdf) (`.off`)
+- [Geometry format under the NIfTI (GIFTI)](https://www.nitrc.org/projects/gifti/) (`.gii`, `.surf.gii`)
+- [FreeSurfer binary surface](https://surfer.nmr.mgh.harvard.edu/fswiki/FileFormats) (`.fsb`, `.fcv`, `.surf`, `.pial`, `.white`, `.inflated`, `.sphere`, `.orig`, `.smoothwm`)
+- [FreeSurfer ASCII surface](https://surfer.nmr.mgh.harvard.edu/fswiki/FileFormats) (`.fsa`, `.asc`)
+
+Entropy can export image isosurfaces and surfaces of segmentation labels.
 
 ### Multi-Component and Time Series Images
 
@@ -155,6 +190,7 @@ Images with multiple components can be viewed by individual component, magnitude
 maps (divergence, curl, and Jacobian determinant). Time series images can be reviewed with per-image and global time
 controls.
 
+
 ## Technical Notes
 
 Entropy is a native C++ application built for interactive desktop performance across multiple platforms. Third-party
@@ -162,7 +198,7 @@ dependencies are pinned from source.
 
 |  |  |
 | --- | --- |
-| Platforms | macOS, Windows, Ubuntu, and Fedora |
+| Published packages | Windows x86_64; macOS arm64 and x86_64; Ubuntu and Fedora x86_64 |
 | Language | C++23 |
 | Build system | CMake presets with separate dependency and app stages |
 | Toolchains | Apple Clang, MSVC/Visual Studio, and GCC in CI |
@@ -177,8 +213,10 @@ Detailed compiler versions, operating system versions, development packages, and
 
 ### Continuous Integration
 
-GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu, and Fedora. It also checks formatting, spelling,
-include hygiene, and static-analysis findings. See [BUILDING.md](BUILDING.md) for the current CI matrix and tooling.
+GitHub Actions builds and tests Entropy on macOS, Windows, and Ubuntu. Fedora builds and tests can be started manually,
+and Fedora packages are also built for tagged releases. CI also checks formatting, spelling, include hygiene, and
+static-analysis findings. See [BUILDING.md](BUILDING.md) for the current CI matrix and tooling.
+
 
 ## Core Concepts
 
@@ -215,6 +253,7 @@ reference space.
 Application settings store personal UI preferences and backend configuration. Project settings store presentation and
 review state that is packaged with a project, such as layouts, comparison settings, 3D rendering settings, segmentation
 display defaults, and transformation assignments.
+
 
 ## Quick Start
 
@@ -300,9 +339,10 @@ The complete, current list is available in **Help > Keyboard Shortcuts**.
 | `I` | Toggle voxel inspector |
 | `O` | Cycle view overlays |
 
+
 ## Runtime Files
 
-Entropy writes a small number of user-level runtime files outside project files.
+Entropy writes several user-level runtime files outside project files.
 
 ### Settings
 
@@ -322,6 +362,7 @@ in Application Settings. Log verbosity can be changed there or with `--log-level
 - macOS: `~/Library/Logs/Entropy/`
 - Windows: `%APPDATA%\Entropy\Logs\`
 - Linux: `${XDG_STATE_HOME:-~/.local/state}/entropy/logs/`
+
 
 ## License
 
