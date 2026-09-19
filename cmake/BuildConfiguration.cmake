@@ -27,12 +27,10 @@ endif()
 
 set(entropy_LINUX_PACKAGE_PLATFORM_LABEL_DEFAULT "Linux")
 if(UNIX AND NOT APPLE AND EXISTS "/etc/os-release")
-  file(STRINGS "/etc/os-release" entropy_OS_RELEASE_LINES REGEX "^(ID|VERSION_ID)=")
+  file(STRINGS "/etc/os-release" entropy_OS_RELEASE_LINES REGEX "^ID=")
   foreach(entropy_OS_RELEASE_LINE IN LISTS entropy_OS_RELEASE_LINES)
     if(entropy_OS_RELEASE_LINE MATCHES "^ID=\"?([A-Za-z0-9._-]+)\"?$")
       set(entropy_LINUX_OS_ID "${CMAKE_MATCH_1}")
-    elseif(entropy_OS_RELEASE_LINE MATCHES "^VERSION_ID=\"?([A-Za-z0-9._-]+)\"?$")
-      set(entropy_LINUX_OS_VERSION_ID "${CMAKE_MATCH_1}")
     endif()
   endforeach()
 
@@ -50,12 +48,7 @@ if(UNIX AND NOT APPLE AND EXISTS "/etc/os-release")
       set(entropy_LINUX_OS_LABEL "${entropy_LINUX_OS_ID_FIRST}${entropy_LINUX_OS_ID_REST}")
     endif()
 
-    if(entropy_LINUX_OS_VERSION_ID)
-      set(entropy_LINUX_PACKAGE_PLATFORM_LABEL_DEFAULT
-        "${entropy_LINUX_OS_LABEL}-${entropy_LINUX_OS_VERSION_ID}")
-    else()
-      set(entropy_LINUX_PACKAGE_PLATFORM_LABEL_DEFAULT "${entropy_LINUX_OS_LABEL}")
-    endif()
+    set(entropy_LINUX_PACKAGE_PLATFORM_LABEL_DEFAULT "${entropy_LINUX_OS_LABEL}")
   endif()
 endif()
 

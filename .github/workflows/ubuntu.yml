@@ -446,13 +446,14 @@ jobs:
         run: >
           cmake --preset deps-release
           -DEntropy_SUPERBUILD_PARALLEL="${CMAKE_BUILD_PARALLEL_LEVEL}"
+          -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Ubuntu
 
       - name: Build Release Dependencies
         timeout-minutes: 90
         run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
-        run: cmake --preset app-release
+        run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Ubuntu
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -465,8 +466,8 @@ jobs:
 
       - name: Inspect DEB package
         run: |
-          dpkg-deb --info build-release/packages/Entropy-*-Ubuntu-22.04-*.deb
-          dpkg-deb --contents build-release/packages/Entropy-*-Ubuntu-22.04-*.deb
+          dpkg-deb --info build-release/packages/Entropy-*-Ubuntu-*.deb
+          dpkg-deb --contents build-release/packages/Entropy-*-Ubuntu-*.deb
 
       - name: Smoke-test staged install
         run: |
@@ -476,10 +477,10 @@ jobs:
       - name: Upload Ubuntu packages
         uses: actions/upload-artifact@v7
         with:
-          name: ubuntu-22.04-x86_64-packages
+          name: ubuntu-x86_64-packages
           path: |
-            build-release/packages/Entropy-*-Ubuntu-22.04-*.deb
-            build-release/packages/Entropy-*-Ubuntu-22.04-*-portable.tar.gz
+            build-release/packages/Entropy-*-Ubuntu-*.deb
+            build-release/packages/Entropy-*-Ubuntu-*-portable.tar.gz
           if-no-files-found: error
 
       - name: Show Release ccache stats

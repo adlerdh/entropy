@@ -1,20 +1,35 @@
 # Packaging Entropy
 
-This guide covers local release packaging and GitHub release behavior. For compiler requirements, dependency builds,
-tests, and general source build instructions, see [BUILDING.md](BUILDING.md).
+This explains how to build release packages locally and how Entropy publishes GitHub Releases.
+See [BUILDING.md](BUILDING.md) for compiler requirements, dependency builds, tests, and ordinary build instructions.
 
-Entropy packages are created with CPack from the Release application build and written to `build-release/packages/`.
+Entropy packages are created with CPack from the Release application build. With the default build directory, CPack
+writes them to `build-release/packages/`.
 
 Run all commands in this guide from the repository root unless stated otherwise.
 
-All packages include the runtime application plus `README.md`, `LICENSE.txt`, `NOTICE.txt`, and
-`THIRD_PARTY_NOTICES.md`.
+Every package contains the app along with `README.md`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_NOTICES.md`.
 
 Release package builds link bundled third-party libraries statically where practical. Qt and platform system libraries
 remain dynamic and are bundled or referenced according to the platform package format.
 
-Portable ZIP and TAR.GZ archives contain the same runtime application as installable packages without installer
-metadata or shortcuts.
+Portable ZIP and TAR.GZ archives contain the app and supporting files without running an installer or registering menu
+shortcuts. Each archive has a top-level directory named after the package.
+
+
+## Supported Systems
+
+Published packages support these minimum OS versions:
+
+| Package | Minimum system |
+| --- | --- |
+| Windows x86_64 | Windows 10 version 1809 |
+| macOS arm64 or x86_64 | macOS 13.3 |
+| Ubuntu x86_64 | Ubuntu 22.04 |
+| Fedora x86_64 | Fedora 43 |
+
+Keep this table and the generated release notes in sync whenever a deployment target or Linux build baseline changes.
+
 
 ## Build Packages Locally
 
@@ -45,13 +60,14 @@ cpack --config build-release/CPackConfig.cmake
 cpack -C Release --config build-release/CPackConfig.cmake
 ```
 
+
 ## Linux Packages
 
 Linux packages should be built on the oldest supported target distribution. A binary built on a newer Linux host may
 require newer `glibc`, `libstdc++`, or compiler runtime packages than older distributions provide.
 
-Official Linux CI release builds currently produce Ubuntu 22.04 DEB/TAR.GZ packages and Fedora 43 RPM/TAR.GZ packages.
-CI sets explicit labels for release artifacts so public download names stay stable.
+CI builds DEB and TAR.GZ packages on Ubuntu 22.04, and RPM and TAR.GZ packages on Fedora 43. Filenames use `Ubuntu`
+or `Fedora` without a version number. The supported systems table above and CI job names identify the build baseline.
 
 Required tools:
 
@@ -70,15 +86,17 @@ sudo dnf install -y binutils rpm-build file
 
 The packaging configuration requires `readelf`, which is provided by `binutils`.
 
-By default, CMake derives the Linux platform label from `/etc/os-release`, such as `Ubuntu-22.04` or `Fedora-43`.
-Override `Entropy_LINUX_PACKAGE_PLATFORM_LABEL` when a specific release label is needed.
+By default, CMake derives the Linux platform label from `/etc/os-release`, such as `Ubuntu` or `Fedora`. Set
+`Entropy_LINUX_PACKAGE_PLATFORM_LABEL` to use a different label.
 
 The default Linux generators are DEB and TGZ. On an Ubuntu 22.04 x86_64 build, the default package names are:
 
 ```text
-Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-Entropy-x.y.z.w-Ubuntu-22.04-x86_64-portable.tar.gz
+Entropy-x.y.z.w-Ubuntu-x86_64.deb
+Entropy-x.y.z.w-Ubuntu-x86_64-portable.tar.gz
 ```
+
+In the commands below, replace `x.y.z.w` with the version in the generated filename.
 
 On Fedora, select RPM and TGZ output while configuring the application stage:
 
@@ -90,18 +108,18 @@ cmake --build --preset package-release --parallel
 On a Fedora 43 x86_64 build, the package names are:
 
 ```text
-Entropy-x.y.z.w-Fedora-43-x86_64.rpm
-Entropy-x.y.z.w-Fedora-43-x86_64-portable.tar.gz
+Entropy-x.y.z.w-Fedora-x86_64.rpm
+Entropy-x.y.z.w-Fedora-x86_64-portable.tar.gz
 ```
 
-The DEB and RPM install under `/usr`. The portable tarball contains the corresponding `bin`, `lib`, and `share`
-directory tree for extraction at a user-selected location.
+The DEB and RPM install under `/usr`. Extract the portable tarball wherever you want to keep the app. Its top-level
+directory contains `bin`, `lib`, and `share`.
 
-[Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) uses the Linux desktop portal backend,
-so native file dialogs need a working `xdg-desktop-portal` service. This service lets applications ask the user's
-desktop environment to show file picker dialogs.
+[Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) uses the Linux desktop portal, so
+native file dialogs need a working `xdg-desktop-portal` service.
 
-To create a specific Linux package type:
+To create a specific Linux package type, run the appropriate command on the matching distribution (DEB on Ubuntu, RPM
+on Fedora):
 
 ```sh
 cpack -G DEB --config build-release/CPackConfig.cmake
@@ -112,9 +130,9 @@ cpack -G TGZ --config build-release/CPackConfig.cmake
 Test a Linux package:
 
 ```sh
-dpkg-deb --info build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-dpkg-deb --contents build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-sudo apt install ./build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
+dpkg-deb --info build-release/packages/Entropy-x.y.z.w-Ubuntu-x86_64.deb
+dpkg-deb --contents build-release/packages/Entropy-x.y.z.w-Ubuntu-x86_64.deb
+sudo apt install ./build-release/packages/Entropy-x.y.z.w-Ubuntu-x86_64.deb
 entropy
 ```
 
@@ -123,9 +141,9 @@ Use `apt install ./<package>`, not `dpkg -i`, so dependencies are resolved autom
 Inspect and test an RPM with:
 
 ```sh
-rpm -qpi build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64.rpm
-rpm -qpl build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64.rpm
-sudo dnf install ./build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64.rpm
+rpm -qpi build-release/packages/Entropy-x.y.z.w-Fedora-x86_64.rpm
+rpm -qpl build-release/packages/Entropy-x.y.z.w-Fedora-x86_64.rpm
+sudo dnf install ./build-release/packages/Entropy-x.y.z.w-Fedora-x86_64.rpm
 entropy
 ```
 
@@ -136,18 +154,15 @@ cmake --install build-release --prefix build-release/linux-package-install
 build-release/linux-package-install/bin/entropy --help
 ```
 
-Also extract the portable tarball into an empty directory and run `bin/entropy --help` from the extracted tree. Test
-the graphical application from a desktop session to verify rendering and native file dialogs.
+Also extract the portable tarball into an empty directory and run `bin/entropy --help` from its top-level directory.
+Test the graphical application from a desktop session to verify rendering and native file dialogs.
+
 
 ## macOS Packages
 
-On macOS, Entropy is built as an `.app` bundle.
-
-Required tools:
-
-- Xcode or Xcode Command Line Tools, which provide `codesign`
-
-Future notarized packages will also use `xcrun notarytool` and `xcrun stapler`.
+On macOS, Entropy is built as an `.app` bundle. Xcode is required, including its command-line tools. The build also
+uses `xcrun actool` for the app icon and `codesign` for signing. Notarizing a package also requires `xcrun notarytool`
+and `xcrun stapler`.
 
 CPack creates a drag-and-drop DMG and a portable ZIP:
 
@@ -167,25 +182,32 @@ directory for each architecture. For example, an x86_64 build on an Intel Mac us
 cmake --preset deps-release -B build-release-x86_64 \
   -D CMAKE_OSX_ARCHITECTURES=x86_64 \
   -D CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+
 cmake --build build-release-x86_64 --parallel
+
 cmake --preset app-release -B build-release-x86_64 \
   -D CMAKE_OSX_ARCHITECTURES=x86_64 \
   -D CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+
 cmake --build build-release-x86_64 --parallel
-ctest --test-dir build-release-x86_64 --parallel --output-on-failure
+
+ctest --test-dir build-release-x86_64 -C Release --parallel --output-on-failure
+
 cmake --build build-release-x86_64 --target package --parallel
 ```
 
-Replace `x86_64` with `arm64` for an Apple Silicon build. Setting `Entropy_PACKAGE_ARCHITECTURE` alone only changes the
-filename label. It does not change the compiled architecture. Official CI packages target macOS 13.3.
+Replace `x86_64` with `arm64` for an Apple Silicon build. These packages go to `build-release-x86_64/packages/` or
+`build-release-arm64/packages/`, respectively. Setting `Entropy_PACKAGE_ARCHITECTURE` alone only changes the filename
+label, but it does not change the compiled architecture. Official CI packages target macOS 13.3.
 
 Set `CMAKE_OSX_DEPLOYMENT_TARGET` during both stages to control compiled binary compatibility. Do not use
-`Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION` as a substitute because it changes Info.plist metadata only.
+`Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION` as a substitute: it sets Info.plist metadata and the icon compilation
+target, but does not set the target for the app and its dependencies.
 
 To force the DMG generator:
 
 ```sh
-cpack -G DragNDrop --config build-release/CPackConfig.cmake
+cpack -G DragNDrop -C Release --config build-release/CPackConfig.cmake
 ```
 
 By default, local and CI macOS packages use ad-hoc signing. This validates bundle integrity but does not establish a
@@ -203,8 +225,8 @@ cmake --preset app-release -DEntropy_MACOS_CODESIGN_IDENTITY="Developer ID Appli
 cmake --build --preset package-release --parallel
 ```
 
-A future trusted release must also use the required hardened-runtime options and entitlements, submit the final
-artifact to Apple, and staple the notarization ticket.
+For a trusted macOS release, enable the hardened runtime and any required entitlements, submit the finished package to
+Apple, and staple the notarization ticket.
 
 Test a macOS package:
 
@@ -216,7 +238,9 @@ open build-release/macos-package-install/Entropy.app
 ```
 
 Also open the DMG, drag `Entropy.app` to `/Applications`, and launch it from Finder. Extract the ZIP into an empty
-directory and launch that copy as well. Ad-hoc signed builds are expected to lack a successful Gatekeeper assessment.
+directory, then launch the app inside its top-level directory. Gatekeeper does not accept an ad-hoc signature as a
+trusted developer signature.
+
 
 ## Windows Packages
 
@@ -274,13 +298,14 @@ cmake --install build-release --config Release --prefix build-release\windows-pa
 & .\build-release\windows-package-install\entropy.exe --help
 ```
 
-Also install the MSI on a clean Windows system, launch Entropy from the Start Menu, verify open/save dialogs, uninstall
-it, and test the portable ZIP from an empty extracted folder. Run `entropy.exe --help` from the extracted ZIP before
-testing the graphical application.
+Also install the MSI on a clean Windows system, launch Entropy from the Start Menu, verify open/save dialogs, and
+uninstall it. Extract the portable ZIP into an empty folder. Run `entropy.exe --help` from its top-level directory
+before testing the graphical application.
 
-The current MSI and portable executable are unsigned. Public distribution without SmartScreen warnings will require
-signing the executable before packaging and signing the final MSI with a trusted code-signing certificate. Verify
-future signatures with `Get-AuthenticodeSignature` or `signtool verify`.
+The current MSI and portable executable are unsigned. To reduce SmartScreen warnings, sign the executable before
+packaging and sign the finished MSI with a trusted code-signing certificate. Check signatures with
+`Get-AuthenticodeSignature` or `signtool verify`.
+
 
 ## Optional Package Settings
 
@@ -293,7 +318,7 @@ General settings:
 | --- | --- | --- |
 | `Entropy_PACKAGE_OUTPUT_DIR` | `build-release/packages` | Selects the package output directory |
 | `Entropy_PACKAGE_ARCHITECTURE` | target architecture | Changes the filename label only. It does not configure cross-compilation |
-| `Entropy_STATIC_BUNDLED_DEPENDENCIES` | `ON` | Links bundled dependencies statically where practical |
+| `Entropy_STATIC_BUNDLED_DEPENDENCIES` | `ON` in the release presets | Links bundled dependencies statically where practical |
 
 Linux settings:
 
@@ -308,7 +333,7 @@ macOS settings:
 | --- | --- | --- |
 | `Entropy_MACOS_CODESIGN_IDENTITY` | `-` | Selects the signing identity. `-` uses ad-hoc signing. An empty value skips signing |
 | `Entropy_MACOSX_BUNDLE_IDENTIFIER` | `io.github.adlerdh.entropy` | Sets the application bundle identifier |
-| `Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION` | deployment target or `13.0` | Sets the minimum system version in Info.plist only |
+| `Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION` | deployment target or `13.0` | Sets the Info.plist minimum version and icon compilation target, not the compiled app's deployment target |
 | `Entropy_MACOSX_BUNDLE_VERSION` | `major.minor.feature` | Sets `CFBundleVersion` |
 | `Entropy_STRIP_PACKAGED_APP` | `ON` | Removes local symbols before signing the packaged application |
 
@@ -320,6 +345,7 @@ Windows setting:
 
 Changing `Entropy_STATIC_BUNDLED_DEPENDENCIES` requires a fresh dependency build. Do not reuse dependencies built with
 a different value.
+
 
 ## GitHub Releases
 
@@ -339,9 +365,8 @@ The tag-driven release workflow uses this matrix:
 | macOS x86_64 | `macos-15-intel` | DMG and ZIP | Release tests and staged-install smoke test |
 | Fedora 43 x86_64 | Fedora container on `ubuntu-24.04` | RPM and portable TAR.GZ | Release tests, RPM dependency checks, and staged-install smoke test |
 
-Before tagging, make sure `main` is clean and current and all required CI checks pass.
-
-Before tagging a release, update the versions in `CMakeLists.txt`:
+Before tagging, make sure `main` is clean and current, all required CI checks pass, and the version in
+`cmake/ProjectMetadata.cmake` is up to date:
 
 ```cmake
 set(VERSION_MAJOR x)
@@ -359,12 +384,11 @@ git tag -a vx.y.z.w -m "Entropy x.y.z.w"
 git push origin vx.y.z.w
 ```
 
-If the tag and CMake version disagree, the release workflow fails before building packages.
+If the tag and project version disagree, the release workflow stops before building packages.
 
-Each platform job builds the Release configuration, runs tests, creates its packages, and tests a staged install. The
-final job downloads the packages and creates source archives from files tracked by Git. It checks for all 12 expected
-files, generates release notes, and creates the GitHub Release. It will not replace an existing release for the same
-tag.
+Each platform job builds the Release configuration, runs tests, creates packages, and smoke-tests a staged install. The
+publish job then gathers the packages, creates source archives from Git-tracked files, checks for all 12 files, and
+creates the GitHub Release. It stops if that tag already has a release.
 
 The release also includes source archives in ZIP and TAR.GZ formats. They contain the tagged files tracked by Git and
 do not include downloaded dependencies or build products. Release notes contain a short download guide followed by
