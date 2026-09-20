@@ -858,6 +858,8 @@ void renderLayoutTabs(AppData& appData)
         if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
           requestedLayoutIndex = index;
         }
+        // ImGui::BeginTabItem can set tabOpen to false when its close button is clicked.
+        // cppcheck-suppress knownConditionTrueFalse
         if (!tabOpen) {
           pendingRemoveLayoutIndex = index;
         }

@@ -166,8 +166,8 @@ Entropy uses [VTK](https://vtk.org/) and [ITK](https://itk.org/) for surface mes
 - [Wavefront Object (OBJ)](https://www.loc.gov/preservation/digital/formats/fdd/fdd000507.shtml) (`.obj`)
 - [Object File Format (OFF)](https://geomview.sourceforge.io/docs/geomview.pdf) (`.off`)
 - [Geometry format under the NIfTI (GIFTI)](https://www.nitrc.org/projects/gifti/) (`.gii`, `.surf.gii`)
-- [FreeSurfer binary surface](https://surfer.nmr.mgh.harvard.edu/fswiki/FileFormats) (`.fsb`, `.fcv`, `.surf`, `.pial`, `.white`, `.inflated`, `.sphere`, `.orig`, `.smoothwm`)
-- [FreeSurfer ASCII surface](https://surfer.nmr.mgh.harvard.edu/fswiki/FileFormats) (`.fsa`, `.asc`)
+- [FreeSurfer binary surface](https://docs.itk.org/projects/doxygen/en/stable/classitk_1_1FreeSurferBinaryMeshIO.html) (`.fsb`, `.fcv`, `.surf`, `.pial`, `.white`, `.inflated`, `.sphere`, `.orig`, `.smoothwm`)
+- [FreeSurfer ASCII surface](https://docs.itk.org/projects/doxygen/en/stable/classitk_1_1FreeSurferAsciiMeshIO.html) (`.fsa`, `.asc`)
 
 Entropy can export image isosurfaces and surfaces of segmentation labels.
 

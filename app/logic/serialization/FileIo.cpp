@@ -43,6 +43,8 @@ namespace
 {
 fs::path temporaryJsonSiblingPath(const fs::path& destination)
 {
+  // The local atomic is safe and keeps the collision counter private to this operation.
+  // cppcheck-suppress threadsafety-threadsafety
   static std::atomic_uint64_t sequence{0};
   const auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
   fs::path name{"."};

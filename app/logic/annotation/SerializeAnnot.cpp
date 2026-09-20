@@ -70,10 +70,8 @@ std::vector<glm::vec2> boundaryFromJson(const json& boundaryJson)
 json boundariesToJson(const Annotation& annot)
 {
   json boundaries = json::array();
-
-  for (const auto& boundary : annot.getAllVertices()) {
-    boundaries.emplace_back(boundaryToJson(boundary));
-  }
+  const auto& vertices = annot.getAllVertices();
+  std::transform(vertices.begin(), vertices.end(), std::back_inserter(boundaries), boundaryToJson);
 
   return boundaries;
 }
@@ -86,9 +84,7 @@ std::vector<std::vector<glm::vec2>> boundariesFromJson(const json& boundariesJso
 
   std::vector<std::vector<glm::vec2>> boundaries;
   boundaries.reserve(boundariesJson.size());
-  for (const auto& boundary : boundariesJson) {
-    boundaries.push_back(boundaryFromJson(boundary));
-  }
+  std::transform(boundariesJson.begin(), boundariesJson.end(), std::back_inserter(boundaries), boundaryFromJson);
   if (boundaries.size() > 1 && boundaries.front().empty()) {
     throwDebug("Annotation holes require a nonempty outer boundary");
   }

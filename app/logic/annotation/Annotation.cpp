@@ -6,10 +6,10 @@
 
 #include <glm/glm.hpp>
 
-#include <cmath>
-
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
+
+#include <cmath>
 
 namespace fs = std::filesystem;
 

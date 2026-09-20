@@ -963,12 +963,15 @@ bool EntropyApp::loadSerializedImage(
       loadedLandmarks = true;
       spdlog::info("Loaded {} embedded landmarks for image {}", landmarks.size(), *imageUid);
     }
-    else if (lm.m_csvFileName && serialize::openLandmarkGroupCsvFile(landmarks, *lm.m_csvFileName)) {
-      loadedLandmarks = true;
-      spdlog::info("Loaded landmarks from CSV file {} for image {}", *lm.m_csvFileName, *imageUid);
-    }
-    else if (lm.m_csvFileName) {
-      reportInputLoadFailure("landmarks", lm.m_csvFileName, "The landmark CSV file could not be read or parsed.");
+    else {
+      const auto& csvFileName = *lm.m_csvFileName;
+      if (serialize::openLandmarkGroupCsvFile(landmarks, csvFileName)) {
+        loadedLandmarks = true;
+        spdlog::info("Loaded landmarks from CSV file {} for image {}", csvFileName, *imageUid);
+      }
+      else {
+        reportInputLoadFailure("landmarks", lm.m_csvFileName, "The landmark CSV file could not be read or parsed.");
+      }
     }
 
     if (loadedLandmarks) {
