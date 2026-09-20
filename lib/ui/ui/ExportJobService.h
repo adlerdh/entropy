@@ -47,7 +47,7 @@ struct Request
   std::string description;           //!< Short name displayed in the progress window
   std::filesystem::path destination; //!< Primary destination displayed to the user
   Task task;                         //!< Worker-thread operation
-  Completion completion;             //!< Optional completion dispatched later on the caller thread
+  Completion completion{};           //!< Optional completion dispatched later on the caller thread
 };
 
 /// Thread-safe snapshot used to render export status.

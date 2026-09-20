@@ -55,9 +55,9 @@ GuiData::LoadingStatusItem segmentationItem(const fs::path& fileName)
 void appendSerializedImageItems(std::vector<GuiData::LoadingStatusItem>& items, const serialize::Image& image)
 {
   items.push_back(imageItem(image.m_imageFileName));
-  for (const auto& warp : image.m_warpFields) {
-    items.push_back(imageItem(warp.m_path));
-  }
+  std::transform(image.m_warpFields.begin(), image.m_warpFields.end(), std::back_inserter(items), [](const auto& warp) {
+    return imageItem(warp.m_path);
+  });
   std::transform(
     image.m_segmentations.begin(),
     image.m_segmentations.end(),

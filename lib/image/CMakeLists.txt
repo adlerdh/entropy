@@ -68,6 +68,11 @@ if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   )
 endif()
 
+if(Entropy_ENABLE_IWYU)
+  # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that cannot parse GCC 13 std::expected
+  set_source_files_properties(image/RegionStatistics.cpp PROPERTIES SKIP_LINTING ON)
+endif()
+
 set_source_files_properties(image/WarpInversion.cpp PROPERTIES
   COMPILE_OPTIONS "$<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wno-extra-semi>"
 )

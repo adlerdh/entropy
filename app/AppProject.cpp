@@ -397,14 +397,13 @@ bool EntropyApp::hasUnsavedAnnotations() const
 
 bool EntropyApp::hasUnsavedSegmentations() const
 {
-  for (const auto& imageUid : m_data.imageUidsOrdered()) {
-    for (const auto& segmentationUid : m_data.imageToSegUids(imageUid)) {
-      if (m_data.segmentationHasUnsavedVoxelChanges(segmentationUid)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  const auto& imageUids = m_data.imageUidsOrdered();
+  return std::any_of(imageUids.begin(), imageUids.end(), [this](const auto& imageUid) {
+    const auto& segmentationUids = m_data.imageToSegUids(imageUid);
+    return std::any_of(segmentationUids.begin(), segmentationUids.end(), [this](const auto& segmentationUid) {
+      return m_data.segmentationHasUnsavedVoxelChanges(segmentationUid);
+    });
+  });
 }
 
 bool EntropyApp::projectHasUnsavedChanges() const

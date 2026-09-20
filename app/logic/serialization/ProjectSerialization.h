@@ -340,7 +340,7 @@ struct ImageSettings
     bool operator==(const Histogram&) const = default;
 
     uint32_t m_component = 0;
-    HistogramSettings m_settings;
+    HistogramSettings m_settings{};
   };
 
   std::string m_displayName;
@@ -449,7 +449,7 @@ struct ImageSettings
   bool m_modulateIsosurfaceOpacityWithImageOpacity = false; //!< Scale isosurface opacity by image opacity
   double m_isocontourLineWidthIn2D = 2.0;                   //!< 2D isocontour line width
   float m_isosurfaceOpacityModulator = 1.0f;                //!< Isosurface opacity multiplier
-  std::vector<Histogram> m_histograms;                      //!< Component histograms changed from image defaults
+  std::vector<Histogram> m_histograms{};                    //!< Component histograms changed from image defaults
 };
 
 /**
