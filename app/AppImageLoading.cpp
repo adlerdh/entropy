@@ -909,7 +909,7 @@ bool EntropyApp::loadSerializedImage(
 
   if (!serializedImage.m_annotations.empty()) {
     if (serializedImage.m_annotationsFileName) {
-      spdlog::warn(
+      spdlog::debug(
         "Image {} has embedded annotations and annotations.path {}; using embedded annotations",
         *imageUid,
         *serializedImage.m_annotationsFileName);
@@ -950,9 +950,15 @@ bool EntropyApp::loadSerializedImage(
     std::map<size_t, PointRecord<glm::vec3> > landmarks;
 
     bool loadedLandmarks = false;
-    if (!lm.m_points.empty()) {
+    if (lm.m_pointsEmbedded || !lm.m_points.empty() || !lm.m_csvFileName) {
       for (const auto& point : lm.m_points) {
-        landmarks.try_emplace(point.m_index, point.m_position, point.m_name);
+        auto [it, inserted] = landmarks.try_emplace(point.m_index, point.m_position, point.m_name);
+        if (!inserted) {
+          spdlog::warn("Duplicate landmark index {} for image {}; keeping the first point", point.m_index, *imageUid);
+          continue;
+        }
+        it->second.setDescription(point.m_description);
+        it->second.setVisibility(point.m_visible);
       }
       loadedLandmarks = true;
       spdlog::info("Loaded {} embedded landmarks for image {}", landmarks.size(), *imageUid);
@@ -975,6 +981,14 @@ bool EntropyApp::loadSerializedImage(
 
         if (!colors.empty()) {
           p.second.setColor(glm::rgbColor(colors[0]));
+        }
+      }
+
+      for (const auto& point : lm.m_points) {
+        if (point.m_color) {
+          if (auto it = landmarks.find(point.m_index); it != landmarks.end()) {
+            it->second.setColor(*point.m_color);
+          }
         }
       }
 

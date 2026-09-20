@@ -492,7 +492,8 @@ private:
   /// Only applies to 2D polygons.
   void computeBezier()
   {
-    if (2 == Dim && !m_vertices.empty() && m_smoothed) {
+    m_bezierCommands.clear();
+    if (2 == Dim && !m_vertices.empty() && !m_vertices[0].empty() && m_smoothed) {
       m_bezierCommands = computeBezierCommands(m_vertices[0], m_smoothingFactor, m_closed);
     }
   }

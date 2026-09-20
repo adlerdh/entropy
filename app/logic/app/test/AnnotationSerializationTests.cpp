@@ -25,4 +25,5 @@ TEST_CASE("annotation JSON color helpers read normalized RGBA arrays", "[annotat
 TEST_CASE("annotation JSON color helpers reject legacy RGBA objects", "[annotation][serialization]")
 {
   CHECK_THROWS(annotation_json::colorFromJson(json{{"r", 0.5f}, {"g", 0.6f}, {"b", 0.7f}, {"a", 0.8f}}));
+  CHECK_THROWS(annotation_json::colorFromJson(json::array({1.5f, 0.0f, 0.0f, 1.0f})));
 }

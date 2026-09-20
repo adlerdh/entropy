@@ -439,7 +439,10 @@ bool open(EntropyProject& project, const fs::path& fileName)
         image.m_annotationsFileName = std::nullopt;
       }
       else {
-        image.m_annotationsFileName = canonicalFromBase(*image.m_annotationsFileName);
+        const fs::path path = image.m_annotationsFileName->is_absolute()
+                                ? *image.m_annotationsFileName
+                                : projectBasePath / *image.m_annotationsFileName;
+        image.m_annotationsFileName = fs::weakly_canonical(path);
       }
     }
 
@@ -456,7 +459,9 @@ bool open(EntropyProject& project, const fs::path& fileName)
 
     for (serialize::LandmarkGroup& landmarks : image.m_landmarkGroups) {
       if (landmarks.m_csvFileName && !landmarks.m_csvFileName->empty()) {
-        landmarks.m_csvFileName = canonicalFromBase(*landmarks.m_csvFileName);
+        const fs::path path = landmarks.m_csvFileName->is_absolute() ? *landmarks.m_csvFileName
+                                                                     : projectBasePath / *landmarks.m_csvFileName;
+        landmarks.m_csvFileName = fs::weakly_canonical(path);
       }
     }
 

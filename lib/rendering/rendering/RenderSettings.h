@@ -156,6 +156,7 @@ struct RenderSettings
   bool m_showCrosshairsIn3D;
   float m_crosshairs3DGlyphDiameterScenePercent;
   float m_crosshairs3DGlyphLengthScenePercent;
+  float m_landmarkSphereRadiusScenePercent;
   bool m_showThreeDCameraFrustumIn2DViews;
   bool m_reverseThreeDRotateAboutEye;
   bool m_synchronizeThreeDCameras = false;

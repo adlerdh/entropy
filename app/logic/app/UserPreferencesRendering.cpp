@@ -186,6 +186,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D;
   preferences.crosshairs3DGlyphDiameterScenePercent = renderSettings.m_crosshairs3DGlyphDiameterScenePercent;
   preferences.crosshairs3DGlyphLengthScenePercent = renderSettings.m_crosshairs3DGlyphLengthScenePercent;
+  preferences.landmarkSphereRadiusScenePercent = renderSettings.m_landmarkSphereRadiusScenePercent;
   preferences.showThreeDCameraFrustumIn2DViews = renderSettings.m_showThreeDCameraFrustumIn2DViews;
   preferences.threeDCameraFrustumColor = renderSettings.m_threeDCameraFrustumColor;
   preferences.smoothSegmentationMeshes = renderSettings.m_smoothSegmentationMeshes;
@@ -354,6 +355,7 @@ void applyRenderPreferences(
   renderSettings.m_showCrosshairsIn3D = preferences.showCrosshairsIn3D;
   renderSettings.m_crosshairs3DGlyphDiameterScenePercent = preferences.crosshairs3DGlyphDiameterScenePercent;
   renderSettings.m_crosshairs3DGlyphLengthScenePercent = preferences.crosshairs3DGlyphLengthScenePercent;
+  renderSettings.m_landmarkSphereRadiusScenePercent = preferences.landmarkSphereRadiusScenePercent;
   renderSettings.m_showThreeDCameraFrustumIn2DViews = preferences.showThreeDCameraFrustumIn2DViews;
   renderSettings.m_threeDCameraFrustumColor = preferences.threeDCameraFrustumColor;
   renderSettings.m_smoothSegmentationMeshes = preferences.smoothSegmentationMeshes;
@@ -446,6 +448,7 @@ void preserveProjectPresentation(RenderPreferences& preferences, const RenderPre
   preferences.limitFrameRate = applicationValues.limitFrameRate;
   preferences.targetFrameTimeSeconds = applicationValues.targetFrameTimeSeconds;
   preferences.synchronizeThreeDCameras = applicationValues.synchronizeThreeDCameras;
+  preferences.landmarkSphereRadiusScenePercent = applicationValues.landmarkSphereRadiusScenePercent;
   preferences.asciiEnabled = applicationValues.asciiEnabled;
   preferences.asciiCellHeightPx = applicationValues.asciiCellHeightPx;
   preferences.asciiCharsetIndex = applicationValues.asciiCharsetIndex;
@@ -561,6 +564,7 @@ void mergeEditedRenderPreferences(
   MERGE_EDITED(showCrosshairsIn3D)
   MERGE_EDITED(crosshairs3DGlyphDiameterScenePercent)
   MERGE_EDITED(crosshairs3DGlyphLengthScenePercent)
+  MERGE_EDITED(landmarkSphereRadiusScenePercent)
   MERGE_EDITED(showThreeDCameraFrustumIn2DViews)
   MERGE_EDITED(threeDCameraFrustumColor)
   MERGE_EDITED(smoothSegmentationMeshes)

@@ -175,6 +175,7 @@ void renderThreeDSceneContentCheckboxes(
   bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
   bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
   bool renderImportedMeshes = contents.contains(ThreeDSceneContent::ImportedMeshes);
+  bool renderLandmarks = contents.contains(ThreeDSceneContent::Landmarks);
 
   if (ImGui::Checkbox("Segmentations", &renderSegmentations) && setContents) {
     if (renderSegmentations) {
@@ -212,6 +213,18 @@ void renderThreeDSceneContentCheckboxes(
   }
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Render visible surface meshes loaded for images in this 3D view");
+  }
+  if (ImGui::Checkbox("Landmarks", &renderLandmarks) && setContents) {
+    if (renderLandmarks) {
+      contents.insert(ThreeDSceneContent::Landmarks);
+    }
+    else {
+      contents.erase(ThreeDSceneContent::Landmarks);
+    }
+    setContents(contents);
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Render visible landmarks as spheres in this 3D view");
   }
   ImGui::Spacing();
 }

@@ -209,7 +209,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   /// @todo Throws are not needed here. Just return flag that colormap could not be loaded.
 
   auto predicate = [](const auto& c) -> bool {
-    static const std::set<char> allowedChars{' ', '-', '_', '(', ')'};
+    static const std::set<char> allowedChars{' ', '-', '_', '(', ')', '.', '/', ':', ','};
     const auto e = std::end(allowedChars);
     return !(std::isalnum(static_cast<unsigned char>(c)) || e != allowedChars.find(c));
   };

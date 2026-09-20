@@ -24,5 +24,6 @@ TEST_CASE("viewer public headers are self-contained")
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Segmentations));
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Isosurfaces));
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::ImportedMeshes));
+  CHECK_FALSE(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Landmarks));
   CHECK(IntensityProjectionMode::None == IntensityProjectionMode::None);
 }

@@ -3,9 +3,12 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 using json = nlohmann::json;
@@ -46,12 +49,20 @@ json boundaryToJson(const std::vector<glm::vec2>& vertices)
 
 std::vector<glm::vec2> boundaryFromJson(const json& boundaryJson)
 {
+  if (!boundaryJson.is_array()) {
+    throwDebug("Annotation boundary must be an array");
+  }
   std::vector<glm::vec2> vertices;
   for (const auto& vertex : boundaryJson) {
     if (!vertex.is_array() || vertex.size() != 2) {
       throwDebug("JSON structure contains invalid vertex");
     }
-    vertices.emplace_back(vertex.at(0).get<float>(), vertex.at(1).get<float>());
+    const float x = vertex.at(0).get<float>();
+    const float y = vertex.at(1).get<float>();
+    if (!std::isfinite(x) || !std::isfinite(y)) {
+      throwDebug("Annotation vertex coordinates must be finite");
+    }
+    vertices.emplace_back(x, y);
   }
   return vertices;
 }
@@ -60,30 +71,35 @@ json boundariesToJson(const Annotation& annot)
 {
   json boundaries = json::array();
 
-  // The annotation model currently edits the first boundary. The array shape is intentional so holes or multiple
-  // contours can be added later without renaming the key again.
-  if (annot.numBoundaries() > 0) {
-    boundaries.emplace_back(boundaryToJson(annot.getBoundaryVertices(OUTER_BOUNDARY)));
+  for (const auto& boundary : annot.getAllVertices()) {
+    boundaries.emplace_back(boundaryToJson(boundary));
   }
 
   return boundaries;
 }
 
-AnnotPolygon<float, 2> polygonFromBoundariesJson(const json& boundariesJson)
+std::vector<std::vector<glm::vec2>> boundariesFromJson(const json& boundariesJson)
 {
-  AnnotPolygon<float, 2> polygon;
-  if (!boundariesJson.is_array() || boundariesJson.empty()) {
-    return polygon;
+  if (!boundariesJson.is_array()) {
+    throwDebug("Annotation boundaries must be an array");
   }
 
-  polygon.setOuterBoundary(boundaryFromJson(boundariesJson.at(OUTER_BOUNDARY)));
-  if (boundariesJson.size() > 1) {
-    spdlog::warn(
-      "Annotation JSON contains {} boundaries; only the outer boundary is currently loaded",
-      boundariesJson.size());
+  std::vector<std::vector<glm::vec2>> boundaries;
+  boundaries.reserve(boundariesJson.size());
+  for (const auto& boundary : boundariesJson) {
+    boundaries.push_back(boundaryFromJson(boundary));
   }
+  if (boundaries.size() > 1 && boundaries.front().empty()) {
+    throwDebug("Annotation holes require a nonempty outer boundary");
+  }
+  return boundaries;
+}
 
-  return polygon;
+void requireFiniteRange(float value, float lower, float upper, const char* field)
+{
+  if (!std::isfinite(value) || value < lower || value > upper) {
+    throwDebug(std::string{"Invalid annotation "} + field);
+  }
 }
 
 void appendAnnotationsFromArray(const json& annotationArrayJson, std::vector<Annotation>& annotations)
@@ -146,6 +162,11 @@ void to_json(json& j, const Annotation& annot)
     annotation_json::colorToJson(defaults.getLineColor()));
   addIfChanged(
     j,
+    "vertexColor",
+    annotation_json::colorToJson(annot.getVertexColor()),
+    annotation_json::colorToJson(annot.getLineColor()));
+  addIfChanged(
+    j,
     "fillColor",
     annotation_json::colorToJson(annot.getFillColor()),
     annotation_json::colorToJson(defaults.getFillColor()));
@@ -159,6 +180,10 @@ void to_json(json& j, const Annotation& annot)
 void from_json(const json& j, Annotation& annot)
 {
   // All of these parameters are optional in the JSON:
+
+  if (!j.is_object()) {
+    throwDebug("Annotation must be an object");
+  }
 
   const std::string annotationType = j.at("type").get<std::string>();
   if (annotationType != POLYGON_ANNOTATION_TYPE) {
@@ -180,15 +205,22 @@ void from_json(const json& j, Annotation& annot)
   if (j.count("opacity")) {
     opacity = j.at("opacity").get<float>();
   }
+  requireFiniteRange(opacity, 0.0f, 1.0f, "opacity");
 
   float lineThickness = defaults.getLineThickness();
   if (j.count("lineThickness")) {
     lineThickness = j.at("lineThickness").get<float>();
   }
+  requireFiniteRange(lineThickness, 0.0f, std::numeric_limits<float>::max(), "line thickness");
 
   glm::vec4 lineColorVec4 = defaults.getLineColor();
   if (j.count("lineColor")) {
     lineColorVec4 = annotation_json::colorFromJson(j.at("lineColor"));
+  }
+
+  glm::vec4 vertexColorVec4 = lineColorVec4;
+  if (j.count("vertexColor")) {
+    vertexColorVec4 = annotation_json::colorFromJson(j.at("vertexColor"));
   }
 
   glm::vec4 fillColorVec4 = defaults.getFillColor();
@@ -220,6 +252,7 @@ void from_json(const json& j, Annotation& annot)
   if (j.count("smoothingFactor")) {
     smoothingFactor = j.at("smoothingFactor").get<float>();
   }
+  requireFiniteRange(smoothingFactor, 0.0f, std::numeric_limits<float>::max(), "smoothing factor");
 
   glm::vec4 subjectPlaneEquation = defaults.getSubjectPlaneEquation();
   if (j.count("subjectPlaneNormal")) {
@@ -234,30 +267,31 @@ void from_json(const json& j, Annotation& annot)
   }
 
   // The polygon vertices are required in the JSON:
-  AnnotPolygon<float, 2> polygon;
-  polygon = polygonFromBoundariesJson(j.at("boundaries"));
+  auto boundaries = boundariesFromJson(j.at("boundaries"));
 
-  if (polygon.getAllVertices().empty()) {
+  if (boundaries.empty() || boundaries.front().empty()) {
     spdlog::warn("Polygon read from JSON has no vertices");
   }
 
-  spdlog::debug("Read polygon JSON with {} vertices", polygon.getBoundaryVertices(OUTER_BOUNDARY).size());
+  spdlog::debug("Read polygon JSON with {} boundaries", boundaries.size());
 
   Annotation newAnnot;
   newAnnot.setDisplayName(displayName);
-  newAnnot.setSubjectPlane(subjectPlaneEquation);
+  if (!newAnnot.setSubjectPlane(subjectPlaneEquation)) {
+    throwDebug("Invalid annotation subject plane");
+  }
   newAnnot.setVisible(visible);
   newAnnot.setOpacity(opacity);
   newAnnot.setLineThickness(lineThickness);
   newAnnot.setLineColor(lineColorVec4);
-  newAnnot.setVertexColor(lineColorVec4); // vertex color same as line color
+  newAnnot.setVertexColor(vertexColorVec4);
   newAnnot.setFillColor(fillColorVec4);
   newAnnot.setVertexVisibility(verticesVisible);
   newAnnot.setClosed(closed);
   newAnnot.setFilled(filled);
   newAnnot.setSmoothed(smoothed);
   newAnnot.setSmoothingFactor(smoothingFactor);
-  newAnnot.polygon().setOuterBoundary(polygon.getBoundaryVertices(OUTER_BOUNDARY));
+  newAnnot.polygon().setAllVertices(std::move(boundaries));
   newAnnot.markClean();
 
   annot = newAnnot;
@@ -287,4 +321,19 @@ std::vector<Annotation> annotationsFromJson(const json& j)
 
   appendAnnotationsFromArray(j.at("annotations"), annotations);
   return annotations;
+}
+
+std::optional<std::filesystem::path> commonAnnotationFileName(const std::vector<Annotation>& annotations)
+{
+  if (annotations.empty() || annotations.front().getFileName().empty()) {
+    return std::nullopt;
+  }
+  const auto& fileName = annotations.front().getFileName();
+  if (std::any_of(annotations.begin(), annotations.end(), [&fileName](const Annotation& annotation) {
+        return annotation.getFileName() != fileName;
+      }))
+  {
+    return std::nullopt;
+  }
+  return fileName;
 }

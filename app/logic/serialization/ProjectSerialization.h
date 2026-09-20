@@ -503,9 +503,12 @@ struct Segmentation
  */
 struct LandmarkPoint
 {
-  std::size_t m_index = 0;    //!< Landmark index within the group
-  glm::vec3 m_position{0.0f}; //!< Landmark position
-  std::string m_name{};       //!< Landmark name
+  std::size_t m_index = 0;            //!< Landmark index within the group
+  glm::vec3 m_position{0.0f};         //!< Landmark position
+  std::string m_name{};               //!< Landmark name
+  std::string m_description{};        //!< Landmark description
+  bool m_visible = true;              //!< Individual landmark visibility
+  std::optional<glm::vec3> m_color{}; //!< Individual color, if saved in the project
 };
 
 /**
@@ -519,6 +522,7 @@ struct LandmarkGroup
   ProjectLandmarkCoordinateSpace m_coordinateSpace =
     ProjectLandmarkCoordinateSpace::Subject; //!< Coordinate space for landmark point positions
   std::vector<LandmarkPoint> m_points{};     //!< Embedded landmark points
+  bool m_pointsEmbedded = false;             //!< Points were saved in the project, including an empty group
   bool m_visible = true;                     //!< Show the landmark group
   float m_opacity = 1.0f;                    //!< Landmark group opacity
   glm::vec3 m_color{1.0f};                   //!< Landmark group color
@@ -526,7 +530,7 @@ struct LandmarkGroup
   std::optional<glm::vec3> m_textColor{};    //!< Landmark label text color
   bool m_renderLandmarkIndices = true;       //!< Render landmark indices
   bool m_renderLandmarkNames = false;        //!< Render landmark names
-  float m_glyphRadiusFactor = 1.0f;          //!< Landmark glyph radius factor
+  float m_glyphRadiusFactor = 0.02f;         //!< 2D landmark glyph radius factor
 };
 
 /**

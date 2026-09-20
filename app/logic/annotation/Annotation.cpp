@@ -6,6 +6,8 @@
 
 #include <glm/glm.hpp>
 
+#include <cmath>
+
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -81,18 +83,24 @@ bool Annotation::isDirty() const
 bool Annotation::setSubjectPlane(const glm::vec4& subjectPlaneEquation)
 {
   static constexpr float k_minLength = 1.0e-4f;
-  static const glm::vec3 k_origin(0.0f, 0.0f, 0.0f);
 
   const glm::vec3 subjectPlaneNormal = glm::vec3{subjectPlaneEquation};
+  const float length = glm::length(subjectPlaneNormal);
 
-  if (glm::length(subjectPlaneNormal) < k_minLength) {
+  if (!std::isfinite(length) || length < k_minLength || !std::isfinite(subjectPlaneEquation.w)) {
     spdlog::error("The annotation plane normal vector {} is invalid", glm::to_string(subjectPlaneNormal));
     return false;
   }
 
-  m_subjectPlaneEquation = glm::vec4{glm::normalize(subjectPlaneNormal), subjectPlaneEquation[3]};
-  m_subjectPlaneOrigin = math::projectPointToPlane(k_origin, subjectPlaneEquation);
-  m_subjectPlaneAxes = math::buildOrthonormalBasis_branchless(subjectPlaneNormal);
+  const glm::vec3 unitNormal = subjectPlaneNormal / length;
+  const float unitOffset = subjectPlaneEquation.w / length;
+  if (!std::isfinite(unitOffset)) {
+    spdlog::error("The annotation plane offset is invalid");
+    return false;
+  }
+  m_subjectPlaneEquation = glm::vec4{unitNormal, unitOffset};
+  m_subjectPlaneOrigin = -unitOffset * unitNormal;
+  m_subjectPlaneAxes = math::buildOrthonormalBasis_branchless(unitNormal);
 
   // Make double sure that the axes are normalized:
   m_subjectPlaneAxes.first = glm::normalize(m_subjectPlaneAxes.first);

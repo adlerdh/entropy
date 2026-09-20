@@ -2443,6 +2443,21 @@ void renderSceneAndCameraTab(AppData& appData, rendering::RenderSettings& render
   }
 
   ImGui::Spacing();
+  ImGui::Text("Landmark spheres:");
+  ImGui::DragFloat(
+    "Sphere radius",
+    &renderData.m_landmarkSphereRadiusScenePercent,
+    0.01f,
+    0.05f,
+    5.0f,
+    "%0.2f%% of scene",
+    ImGuiSliderFlags_AlwaysClamp);
+  ImGui::SameLine();
+  helpMarker(
+    "Radius of landmarks rendered in 3D, as a percentage of the enclosing bounding-box diagonal of images "
+    "visible in the view. Enable landmarks separately in each 3D view's options.");
+
+  ImGui::Spacing();
   ImGui::SeparatorText("Interaction");
 
   ImGui::Checkbox("Point picking", &renderData.m_meshPickingEnabled);

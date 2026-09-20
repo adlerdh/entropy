@@ -191,6 +191,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showCrosshairsIn3D = false;
   preferences.crosshairs3DGlyphDiameterScenePercent = 2.5f;
   preferences.crosshairs3DGlyphLengthScenePercent = 24.0f;
+  preferences.landmarkSphereRadiusScenePercent = 1.25f;
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.smoothSegmentationMeshes = false;
@@ -422,6 +423,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.showCrosshairsIn3D == expected.showCrosshairsIn3D);
   CHECK(actual.crosshairs3DGlyphDiameterScenePercent == Catch::Approx(expected.crosshairs3DGlyphDiameterScenePercent));
   CHECK(actual.crosshairs3DGlyphLengthScenePercent == Catch::Approx(expected.crosshairs3DGlyphLengthScenePercent));
+  CHECK(actual.landmarkSphereRadiusScenePercent == Catch::Approx(expected.landmarkSphereRadiusScenePercent));
   CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
   CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
   CHECK(actual.smoothSegmentationMeshes == expected.smoothSegmentationMeshes);
@@ -549,6 +551,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("format") == "entropy.userSettings");
   CHECK(root.at("version").at("major") == 1);
   CHECK(root.at("version").at("minor") == 0);
+  CHECK(root.at("rendering").at("threeD").at("landmarkSphereRadiusScenePercent") == 1.25f);
   REQUIRE(text.find("\"density\"") != std::string::npos);
   REQUIRE(text.find("\"toolbarScale\"") != std::string::npos);
   REQUIRE(text.find("\"windowBackgroundOpacity\"") != std::string::npos);

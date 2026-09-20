@@ -165,6 +165,7 @@ struct RenderPreferences
   bool showCrosshairsIn3D = true;
   float crosshairs3DGlyphDiameterScenePercent = 0.25f;
   float crosshairs3DGlyphLengthScenePercent = 4.0f;
+  float landmarkSphereRadiusScenePercent = 0.5f;
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
   bool smoothSegmentationMeshes = true;

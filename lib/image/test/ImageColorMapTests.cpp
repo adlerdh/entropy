@@ -199,8 +199,22 @@ TEST_CASE("CSV color maps sanitize metadata and parse quoted numeric fields", "[
 
   CHECK(map->name() == "Brief Name");
   CHECK(map->technicalName() == "Technical Name");
-  CHECK(map->description() == "Description with  punctuation");
+  CHECK(map->description() == "Description: with  punctuation.");
   checkColor(map->color_RGBA_F32(0), {0.1f, 0.2f, 0.3f, 0.4f});
+}
+
+TEST_CASE("CSV color map metadata preserves readable punctuation", "[image][colormap]")
+{
+  std::istringstream csv{
+    "Prot./deut. cyclic 2\n"
+    "cyclic_protanopic_deuteranopic\n"
+    "Cyclic: for protanopic/deuteranopic viewers (four-phase map).\n"
+    "0.1,0.2,0.3\n"};
+
+  auto map = ImageColorMap::loadImageColorMap(csv);
+  REQUIRE(map.has_value());
+  CHECK(map->name() == "Prot./deut. cyclic 2");
+  CHECK(map->description() == "Cyclic: for protanopic/deuteranopic viewers (four-phase map).");
 }
 
 TEST_CASE("CSV color map loading rejects invalid input", "[image][colormap]")

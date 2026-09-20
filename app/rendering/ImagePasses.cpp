@@ -133,7 +133,9 @@ void Rendering::renderAllImagesForView(
     if (!renderedSurface) {
       renderMeshImagePlanesAndCrosshairsForView(view);
     }
-    renderMeshLandmarksForView(view);
+    if (contents.contains(ThreeDSceneContent::Landmarks)) {
+      renderMeshLandmarksForView(view);
+    }
     return;
   }
 

@@ -17,8 +17,8 @@ struct MeshLandmarkGlyphInputs
   bool pointVisible = true;                           //!< Individual landmark visibility
   bool groupColorOverride = true;                     //!< True to use the group color instead of the point color
   float groupOpacity = 1.0f;                          //!< Landmark group opacity
-  float radiusFactor = 0.02f;                         //!< Landmark radius scale factor
-  float voxelDiagonalWorld = 1.0f;                    //!< Voxel diagonal length in world units
+  float radiusScenePercent = 0.5f;                    //!< Sphere radius as a percentage of the scene diagonal
+  float sceneDiagonalWorld = 1.0f;                    //!< Visible-image bounds diagonal in world units
   glm::vec3 groupColor = glm::vec3{1.0f, 0.0f, 0.0f}; //!< Landmark group RGB color
   glm::vec3 pointColor = glm::vec3{0.5f};             //!< Individual landmark RGB color
 };

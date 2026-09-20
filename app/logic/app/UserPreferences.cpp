@@ -125,6 +125,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "showCrosshairs",
       "crosshairsDiameterScenePercent",
       "crosshairsLengthScenePercent",
+      "landmarkSphereRadiusScenePercent",
       "lighting",
       "imagePlanesVisible",
       "imagePlaneSegmentationsVisible",
@@ -617,6 +618,7 @@ json toJson(
         {"showCrosshairs", renderPreferences.showCrosshairsIn3D},
         {"crosshairsDiameterScenePercent", renderPreferences.crosshairs3DGlyphDiameterScenePercent},
         {"crosshairsLengthScenePercent", renderPreferences.crosshairs3DGlyphLengthScenePercent},
+        {"landmarkSphereRadiusScenePercent", renderPreferences.landmarkSphereRadiusScenePercent},
         {"imagePlaneLighting",
          {{"ambient", renderPreferences.imagePlaneLightingAmbient},
           {"diffuse", renderPreferences.imagePlaneLightingDiffuse},
@@ -1008,6 +1010,12 @@ void applyJson(
         "crosshairsLengthScenePercent",
         0.5f,
         50.0f);
+      setFloatFromJson(
+        renderPreferences.landmarkSphereRadiusScenePercent,
+        *threeD,
+        "landmarkSphereRadiusScenePercent",
+        0.05f,
+        5.0f);
       if (const auto lighting = threeD->find("imagePlaneLighting"); lighting != threeD->end() && lighting->is_object())
       {
         setFloatFromJson(renderPreferences.imagePlaneLightingAmbient, *lighting, "ambient", 0.0f, 2.0f);

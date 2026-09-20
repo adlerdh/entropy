@@ -15,6 +15,14 @@ add_executable(TestAppSettings
 )
 
 target_sources(TestAppSettings PRIVATE
+  "${entropy_APP_DIR}/logic/annotation/Annotation.cpp"
+  "${entropy_APP_DIR}/logic/annotation/BezierHelper.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera.cpp"
+  "${entropy_APP_DIR}/logic/camera/CameraHelpers.cpp"
+  "${entropy_APP_DIR}/logic/camera/MathUtility.cpp"
+  "${entropy_APP_DIR}/logic/camera/OrthogonalProjection.cpp"
+  "${entropy_APP_DIR}/logic/camera/PerspectiveProjection.cpp"
+  "${entropy_APP_DIR}/logic/camera/Projection.cpp"
   "${entropy_APP_DIR}/logic/app/ImageScaleInteraction.cpp"
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
   "${entropy_APP_DIR}/logic/app/LargeImagePolicy.cpp"

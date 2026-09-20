@@ -1,6 +1,6 @@
 All color maps in this directory are copyright Peter Kovesi.
 
-Copyright (c) 2014-2018 Peter Kovesi
+Copyright (c) 2014-2020 Peter Kovesi
 Centre for Exploration Targeting
 The University of Western Australia
 peter.kovesi@uwa.edu.au
