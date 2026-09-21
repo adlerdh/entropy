@@ -13,12 +13,13 @@
 #include <imgui/imgui.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
-#include <__float_float.h>
 #include <curl/curlver.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <charconv>
+#include <cfloat>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>

@@ -88,7 +88,7 @@ space, plus any number of additional images.
   - Iso-contouring
 - View and crosshairs synchronization
   - Across linked views and layouts
-  - With other Entropy sessions or [ITK-SNAP](https://www.itksnap.org/)
+  - With other Entropy sessions or [ITK-SNAP](https://github.com/pyushkevich/itksnap)
 - 3D views render
   - Image planes
   - Segmentation labels
