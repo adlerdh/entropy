@@ -22,15 +22,17 @@ add_library(WarpFieldGeneratorCore STATIC
 target_include_directories(WarpFieldGeneratorCore PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-target_include_directories(WarpFieldGeneratorCore SYSTEM PUBLIC
+target_include_directories(WarpFieldGeneratorCore SYSTEM PRIVATE
   ${ITK_INCLUDE_DIRS}
 )
 
-target_link_libraries(WarpFieldGeneratorCore PUBLIC
-  glm::glm
-  nlohmann_json::nlohmann_json
-  ${ITK_LIBRARIES}
-  entropy_warnings
+target_link_libraries(WarpFieldGeneratorCore
+  PUBLIC
+    glm::glm
+  PRIVATE
+    ${ITK_LIBRARIES}
+    entropy_warnings
+    nlohmann_json::nlohmann_json
 )
 
 add_executable(WarpFieldGenerator

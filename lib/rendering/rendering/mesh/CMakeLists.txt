@@ -59,8 +59,16 @@ target_link_libraries(EntropyRenderingMeshProcessing
   PUBLIC
     Entropy::Rendering
     glm::glm
-    ${VTK_LIBRARIES}
+    VTK::CommonCore
+    VTK::CommonDataModel
   PRIVATE
+    VTK::CommonExecutionModel
+    VTK::FiltersCore
+    VTK::FiltersGeneral
+    VTK::FiltersSources
+    VTK::IOGeometry
+    VTK::IOPLY
+    VTK::IOXML
     entropy_warnings
 )
 
