@@ -2,7 +2,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <filesystem>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <stdexcept>

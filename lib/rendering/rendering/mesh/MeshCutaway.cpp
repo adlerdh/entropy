@@ -1,12 +1,14 @@
 #include "rendering/mesh/MeshCutaway.h"
 
+#include "mesh/MeshDrawOptions.h"
 #include "rendering/mesh/MeshClipPlanes.h"
 
 #include <glm/geometric.hpp>
 
 #include <algorithm>
-#include <cstddef>
+#include <array>
 #include <cmath>
+#include <cstddef>
 
 namespace rendering::mesh
 {

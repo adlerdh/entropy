@@ -1,6 +1,5 @@
 #include "logic/app/ImageScaleInteraction.h"
 
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/vec2.hpp>

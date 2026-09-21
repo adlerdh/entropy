@@ -4,6 +4,7 @@
 
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 

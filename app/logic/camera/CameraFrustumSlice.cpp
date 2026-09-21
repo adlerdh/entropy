@@ -1,5 +1,5 @@
 #include "logic/camera/CameraFrustumSlice.h"
-
+#include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
 
 #include <glm/geometric.hpp>
@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 
 namespace
 {

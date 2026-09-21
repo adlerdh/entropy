@@ -1,15 +1,18 @@
 #include "image/ImageSettings.h"
-#include "image/ImageUtility.h"
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
+#include "image/ImageUtility.h"
 
+#include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
-#include <cstdint>
 #include <limits>
+#include <optional>
+#include <tuple>
 
 #undef min
 #undef max

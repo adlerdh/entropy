@@ -1,11 +1,12 @@
 #include "viewer/ImageSelection.h"
 
 #include <catch2/catch_test_macros.hpp>
-
 #include <uuid.h>
 
 #include <cstdint>
 #include <list>
+#include <optional>
+#include <set>
 #include <vector>
 
 namespace

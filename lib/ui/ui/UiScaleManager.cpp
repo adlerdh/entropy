@@ -1,5 +1,7 @@
 #include "ui/UiScaleManager.h"
 
+#include "imgui.h"
+
 #include <spdlog/spdlog.h>
 
 #include <algorithm>

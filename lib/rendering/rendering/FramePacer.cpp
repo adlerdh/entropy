@@ -1,6 +1,7 @@
 #include "rendering/FramePacer.h"
 
 #include <compare>
+#include <ratio>
 #include <thread>
 #include <utility>
 

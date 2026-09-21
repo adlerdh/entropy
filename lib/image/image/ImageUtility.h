@@ -2,12 +2,12 @@
 
 #include "common/HistogramSettings.h"
 #include "common/Types.h"
+#include "image/external/TDigest.h"
 #include "image/ImageHeader.h"
 #include "image/ImageTypes.h"
-#include "image/external/TDigest.h"
 
 #include <glm/vec3.hpp>
-
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>

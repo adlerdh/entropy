@@ -1,6 +1,10 @@
 #include "logic/sync/ItkSnapSyncProtocol.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+
+#include <cstddef>
 
 using namespace app_sync::itk_snap_protocol;
 

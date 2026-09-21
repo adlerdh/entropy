@@ -3,6 +3,7 @@
 #include "common/ClipboardFormats.h"
 
 #include <glm/vec3.hpp>
+#include <string>
 
 namespace rendering::ascii_clipboard
 {

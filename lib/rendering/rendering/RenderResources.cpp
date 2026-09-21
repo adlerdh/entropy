@@ -1,8 +1,16 @@
 #include "rendering/RenderResources.h"
 
+#include "gl/GLBufferObject.h"
+#include "gl/GLBufferTexture.h"
+#include "gl/GLBufferTypes.h"
+#include "gl/GLDrawTypes.h"
+#include "gl/GLTexture.h"
+#include "gl/GLTextureTypes.h"
+#include "gl/GLVertexArrayObject.h"
+#include "glad/glad.h"
+
 #include <spdlog/spdlog.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 

@@ -1,6 +1,24 @@
-#include "logic/serialization/ProjectSerialization.h"
+#include "common/Exception.hpp"
+#include "common/Types.h"
+#include "image/ImageSpatialMetadata.h"
+#include "image/Isosurface.h"
+#include "logic/annotation/Annotation.h"
 #include "logic/annotation/SerializeAnnot.h"
+#include "logic/serialization/ProjectSerialization.h"
 #include "logic/serialization/SerializationHelpers.h"
+
+#include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
+
+#include <algorithm>
+#include <cstddef>
+#include <filesystem>
+#include <iterator>
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace serialize
 {

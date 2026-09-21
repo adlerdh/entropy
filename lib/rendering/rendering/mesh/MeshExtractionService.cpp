@@ -1,5 +1,9 @@
 #include "rendering/mesh/MeshExtractionService.h"
 
+#include "mesh/MeshCache.h"
+#include "mesh/MeshExtractionQueue.h"
+#include "mesh/MeshKeys.h"
+
 #include <algorithm>
 #include <iterator>
 #include <utility>

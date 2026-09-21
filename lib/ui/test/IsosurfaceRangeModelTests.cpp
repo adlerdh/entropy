@@ -6,6 +6,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
 
+#include <cmath>
+#include <string>
+#include <vector>
+
 using Catch::Approx;
 
 TEST_CASE("Isosurface range spacing is implied by inclusive endpoints and count")

@@ -1,11 +1,6 @@
 #include "rendering/mesh/MeshGeneration.h"
-#include "rendering/mesh/PolyDataGenerator.h"
 
-#include <glm/geometric.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/mat3x3.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
+#include "rendering/mesh/PolyDataGenerator.h"
 
 #include <vtkCellArray.h>
 #include <vtkCleanPolyData.h>
@@ -16,7 +11,6 @@
 #include <vtkMatrix4x4.h>
 #include <vtkNew.h>
 #include <vtkPointData.h>
-#include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataNormals.h>
 #include <vtkReverseSense.h>
@@ -27,16 +21,24 @@
 #include <vtkTriangleFilter.h>
 #include <vtkTrivialProducer.h>
 #include <vtkWindowedSincPolyDataFilter.h>
+#include <vtkAlgorithm.h>
+#include <vtkType.h>
+#include <glm/geometric.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <mutex>
 #include <thread>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace rendering::mesh
 {

@@ -1,10 +1,13 @@
 #pragma once
 
 #include "rendering/mesh/MeshCache.h"
+#include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshExtractionQueue.h"
+#include "rendering/mesh/MeshExtractionRunner.h"
 #include "rendering/mesh/MeshKeys.h"
 
 #include <cstddef>
+#include <stdint.h>
 #include <string>
 #include <vector>
 

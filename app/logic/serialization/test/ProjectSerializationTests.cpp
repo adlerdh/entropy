@@ -1,19 +1,36 @@
+#include "common/HistogramSettings.h"
+#include "common/Types.h"
 #include "common/UuidUtility.h"
+#include "image/ImageSpatialMetadata.h"
+#include "image/Isosurface.h"
+#include "layout/LayoutSpec.h"
+#include "logic/annotation/Annotation.h"
+#include "logic/annotation/AnnotPolygon.tpp"
+#include "logic/annotation/PointRecord.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "viewer/ThreeDSceneContents.h"
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <glm/mat4x4.hpp>
-#include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include <nlohmann/json.hpp>
+#include <uuid.h>
 
+#include <array>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
+#include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
+#include <system_error>
+#include <vector>
 
 namespace fs = std::filesystem;
 

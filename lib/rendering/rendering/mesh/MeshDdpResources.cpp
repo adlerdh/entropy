@@ -1,15 +1,17 @@
 #include "rendering/mesh/MeshDdpResources.h"
 
+#include "common/Exception.hpp"
+#include "gl/GLFrameBufferObject.h"
+#include "gl/GLTexture.h"
+#include "gl/GLVertexArrayObject.h"
 #include "rendering/gl/GLFBOAttachmentTypes.h"
 #include "rendering/gl/GLTextureTypes.h"
 #include "rendering/gl/OpenGLStateGuard.h"
 
-#include "common/Exception.hpp"
-
 #include <glm/vec3.hpp>
 
 #include <cstddef>
-#include <memory>
+#include <string>
 
 namespace rendering::mesh
 {

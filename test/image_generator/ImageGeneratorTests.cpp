@@ -1,14 +1,34 @@
 #include "ImageGenerator.h"
 
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+
 #include <itkImageFileReader.h>
 #include <itkMetaDataObject.h>
 #include <itkRGBAPixel.h>
 #include <itkRGBPixel.h>
 #include <itkVectorImage.h>
+#include <itkDefaultConvertPixelTraits.h>
+#include <itkImage.h>
+#include <itkImageIORegion.h>
+#include <itkIndex.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
 
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
+
+#include <algorithm>
+#include <cstddef>
 #include <filesystem>
+#include <map>
+#include <ostream>
+#include <stdint.h>
+#include <string>
+#include <vector>
 
 TEST_CASE("Image generator parses richer time-series patterns", "[image-generator][time]")
 {

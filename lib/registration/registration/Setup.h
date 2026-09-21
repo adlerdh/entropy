@@ -1,6 +1,5 @@
 #pragma once
 
-#include "registration/Capabilities.h"
 #include "registration/Commands.h"
 #include "registration/Types.h"
 #include "registration/Validation.h"

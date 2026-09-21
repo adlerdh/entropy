@@ -1,9 +1,8 @@
 #pragma once
 
-#include <uuid.h>
-
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
+#include <uuid.h>
 
 #include <array>
 #include <cstddef>

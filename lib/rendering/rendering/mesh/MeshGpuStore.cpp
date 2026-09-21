@@ -1,7 +1,12 @@
 #include "rendering/mesh/MeshGpuStore.h"
 
+#include "gl/GLBufferTypes.h"
+#include "mesh/MeshData.h"
+#include "mesh/MeshGpuData.h"
+#include "mesh/MeshHandle.h"
 #include "rendering/mesh/MeshUpload.h"
 
+#include <optional>
 #include <utility>
 
 namespace rendering::mesh

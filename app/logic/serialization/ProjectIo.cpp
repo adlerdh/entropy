@@ -1,23 +1,21 @@
+#include "common/InputParams.h"
 #include "logic/serialization/ProjectSerialization.h"
 
-#include "common/InputParams.h"
-
-#include <safeclib/strerrorlen_s.h>
-
-#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <chrono>
+#include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iterator>
 #include <map>
-#include <memory>
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>

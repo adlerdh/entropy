@@ -1,10 +1,11 @@
-#include "viewer/ViewTypes.h"
-
 #include "common/Types.h"
+#include "viewer/ViewTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
+#include <initializer_list>
+#include <string>
 
 TEST_CASE("all view types are advertised in stable UI order", "[viewer][view]")
 {

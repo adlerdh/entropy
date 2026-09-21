@@ -1,7 +1,12 @@
 #include "rendering/helpers/TextureSetupHelpers.h"
 
+#include "TextureLayout.h"
+
+#include <glm/vec2.hpp>
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 namespace rendering::texture_setup

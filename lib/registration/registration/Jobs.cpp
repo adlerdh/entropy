@@ -1,6 +1,7 @@
 #include "registration/Jobs.h"
 
 #include <algorithm>
+#include <compare>
 #include <filesystem>
 #include <iomanip>
 #include <ranges>

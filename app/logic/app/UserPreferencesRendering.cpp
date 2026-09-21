@@ -1,10 +1,12 @@
-#include "logic/app/UserPreferences.h"
-
 #include "logic/app/Settings.h"
-#include "rendering/RenderSettings.h"
+#include "logic/app/UserPreferences.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
+#include "rendering/mesh/MeshMaterial.h"
+#include "rendering/RenderSettings.h"
 #include "ui/GuiData.h"
+
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <cstdint>

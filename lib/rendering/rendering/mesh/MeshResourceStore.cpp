@@ -1,6 +1,10 @@
 #include "rendering/mesh/MeshResourceStore.h"
 
 #include "common/UuidUtility.h"
+#include "gl/GLBufferTypes.h"
+#include "mesh/MeshGpuStore.h"
+#include "mesh/MeshHandle.h"
+#include "mesh/MeshKeys.h"
 
 #include <utility>
 

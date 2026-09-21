@@ -2,6 +2,7 @@
 
 #include "rendering/mesh/MeshRenderable.h"
 
+#include <cstddef>
 #include <functional>
 #include <span>
 #include <vector>

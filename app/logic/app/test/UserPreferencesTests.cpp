@@ -1,12 +1,22 @@
-#include "logic/app/UserPreferences.h"
-
 #include "common/LoggingSettings.h"
+#include "common/Types.h"
+#include "logic/app/Settings.h"
+#include "logic/app/UserPreferences.h"
+#include "registration/Config.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+#include <spdlog/common.h>
 
 #include <filesystem>
+#include <map>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace
 {

@@ -3,7 +3,6 @@
 #include "viewer/ViewModes.h"
 
 #include <array>
-#include <cstddef>
 #include <string>
 #include <string_view>
 

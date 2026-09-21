@@ -2,12 +2,16 @@
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <compare>
+#include <cstdlib>
 #include <numeric>
 #include <ranges>
+#include <ratio>
 
 namespace interaction
 {

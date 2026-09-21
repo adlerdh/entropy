@@ -2,7 +2,9 @@
 
 #include "common/Exception.hpp"
 #include "logic/annotation/Annotation.h"
+#include "logic/annotation/AnnotPolygon.tpp"
 
+#include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
 
 #include <cmath>

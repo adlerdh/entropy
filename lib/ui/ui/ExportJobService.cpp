@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
+#include <cstddef>
+#include <exception>
 #include <format>
 #include <mutex>
 #include <ranges>

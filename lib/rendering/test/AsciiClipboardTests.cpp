@@ -1,7 +1,12 @@
+#include "common/ClipboardFormats.h"
 #include "rendering/ascii/AsciiClipboard.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+
+#include <string>
 
 namespace ascii_clipboard = rendering::ascii_clipboard;
 

@@ -1,9 +1,18 @@
+#include "layout/LayoutSpec.h"
 #include "layout/LayoutSpecJson.h"
-
+#include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+
+#include <cstddef>
+#include <initializer_list>
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace
 {

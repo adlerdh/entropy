@@ -1,15 +1,19 @@
-#include "common/MathFuncs.h"
 #include "common/Geometry.h"
 #include "common/IntersectionTypes.h"
+#include "common/MathFuncs.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array>
 #include <map>
+#include <optional>
+#include <stddef.h>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 TEST_CASE("subject image dimensions are pixel dimensions scaled by spacing", "[common][math]")

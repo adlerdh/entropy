@@ -1,18 +1,22 @@
-#include "logic/camera/Camera.h"
-#include "logic/camera/CameraHelpers.h"
-
+#include "common/AABB.h"
 #include "common/CoordinateFrame.h"
+#include "common/DirectionMaps.h"
 #include "common/Geometry.h"
 #include "common/Viewport.h"
+#include "logic/camera/Camera.h"
+#include "logic/camera/CameraHelpers.h"
+#include "logic/camera/CameraTypes.h"
+#include "logic/camera/Projection.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <array>
 #include <cmath>
+#include <cstdlib>
+#include <initializer_list>
 #include <limits>
 
 namespace

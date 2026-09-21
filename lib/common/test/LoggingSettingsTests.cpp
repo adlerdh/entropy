@@ -1,11 +1,16 @@
 #include "common/LoggingSettings.h"
 
 #include <catch2/catch_test_macros.hpp>
-
+#include <spdlog/spdlog.h>
+#include <spdlog/common.h>
+#include <spdlog/logger.h>
 #include <spdlog/sinks/null_sink.h>
 
 #include <algorithm>
 #include <memory>
+#include <span>
+#include <string>
+#include <string_view>
 
 TEST_CASE("log level choices are ordered from critical through trace", "[common][logging]")
 {

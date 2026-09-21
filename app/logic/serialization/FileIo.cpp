@@ -1,25 +1,31 @@
-#include "logic/serialization/ProjectSerialization.h"
+#include "logic/annotation/Annotation.h"
+#include "logic/annotation/PointRecord.h"
 #include "logic/annotation/SerializeAnnot.h"
+#include "logic/serialization/ProjectSerialization.h"
 
-#include <safeclib/strerrorlen_s.h>
-
-#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
+#include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
 
-#include <cerrno>
 #include <array>
 #include <atomic>
+#include <cerrno>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <limits>
-#include <cmath>
-#include <memory>
+#include <map>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #if defined(_WIN32)

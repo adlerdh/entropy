@@ -1,5 +1,17 @@
+#include "common/HistogramSettings.h"
+#include "common/Types.h"
 #include "logic/serialization/ProjectSerialization.h"
 #include "logic/serialization/SerializationHelpers.h"
+
+#include <nlohmann/json.hpp>
+
+#include <array>
+#include <cstddef>
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace serialize
 {

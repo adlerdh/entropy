@@ -2,6 +2,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <string>
+
 TEST_CASE("user settings file is stored under the platform user data directory", "[app][settings][paths]")
 {
   const std::filesystem::path userDataDirectory = app_paths::userDataDirectory();

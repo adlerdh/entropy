@@ -1,12 +1,17 @@
 #include "logic/camera/MathUtility.h"
-#include "logic/camera/Camera.h"
-#include "logic/camera/CameraHelpers.h"
 
+#include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
 #include "common/Viewport.h"
+#include "logic/camera/Camera.h"
+#include "logic/camera/CameraHelpers.h"
 
 #include <glm/gtc/matrix_inverse.hpp>
+#include <spdlog/spdlog.h>
+
+#include <algorithm>
+#include <cmath>
 
 #define EPSILON 0.000001
 

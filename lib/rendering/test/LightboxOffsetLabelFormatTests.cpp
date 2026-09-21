@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string>
+
 namespace lightbox = rendering::lightbox;
 
 TEST_CASE("lightbox offset labels use the reference offset unit for every tile", "[rendering][lightbox]")

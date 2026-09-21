@@ -8,8 +8,21 @@
 #include <itkRGBPixel.h>
 #include <itkVectorImage.h>
 #include <nlohmann/json.hpp>
+#include <itkImageAlgorithm.h>
+#include <itkImageBase.h>
+#include <itkImageIORegion.h>
+#include <itkImageRegion.h>
+#include <itkIndex.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <complex>
 #include <cstdint>
@@ -17,6 +30,8 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
+#include <utility>
 
 namespace image_generator
 {

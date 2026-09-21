@@ -1,15 +1,14 @@
 #pragma once
 
+#include "common/Types.h"
 #include "rendering/gl/GLErrorChecker.h"
 #include "rendering/gl/GLTextureTypes.h"
 
-#include "common/Types.h"
-
 #include <glm/fwd.hpp>
+#include <glad/glad.h>
 #include <glm/vec3.hpp>
 
-#include <glad/glad.h>
-
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <unordered_map>

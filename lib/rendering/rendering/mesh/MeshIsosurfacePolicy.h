@@ -1,8 +1,10 @@
 #pragma once
 
+#include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshExtraction.h"
-#include "rendering/mesh/MeshGeneration.h"
-#include "rendering/mesh/MeshRenderableFactory.h"
+#include "rendering/mesh/MeshGenerationOptions.h"
+
+#include <uuid.h>
 
 #include <cstdint>
 

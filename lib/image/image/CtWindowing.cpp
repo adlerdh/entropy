@@ -2,15 +2,20 @@
 
 #include "image/Image.h"
 #include "image/ImageSettings.h"
+#include "ImageHeader.h"
+#include "ImageIoInfo.h"
 
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <cmath>
+#include <compare>
 #include <cstdlib>
+#include <initializer_list>
 #include <limits>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 
 namespace ct_windowing
 {

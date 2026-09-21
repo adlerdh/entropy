@@ -1,12 +1,17 @@
 #include "logic/annotation/SerializeAnnot.h"
+
 #include "common/Exception.hpp"
 
+#include <glm/vec2.hpp>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iterator>
 #include <limits>
+#include <map>
+#include <stddef.h>
 #include <string>
 #include <utility>
 #include <vector>

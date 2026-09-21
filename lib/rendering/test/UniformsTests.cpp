@@ -1,11 +1,13 @@
+#include "glad/glad.h"
+#include "rendering/gl/GLUniformTypes.h"
 #include "rendering/gl/Uniforms.h"
 
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
 #include <stdexcept>
+#include <string>
 
 TEST_CASE("uniform declarations reject mismatched C++ payloads", "[rendering][shaders][uniforms]")
 {

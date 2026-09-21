@@ -7,6 +7,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 class Image;

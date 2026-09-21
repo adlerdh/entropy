@@ -1,8 +1,11 @@
 #include "rendering/mesh/MeshImageAdapter.h"
 
+#include "common/Types.h"
 #include "image/Image.h"
 #include "image/ImageHeader.h"
+#include "image/ImageTimeAxis.h"
 #include "image/ImageTransformations.h"
+#include "image/ImageTypes.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -12,8 +15,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <ranges>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace rendering::mesh

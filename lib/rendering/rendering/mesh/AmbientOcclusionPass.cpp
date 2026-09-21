@@ -1,17 +1,23 @@
 #include "rendering/mesh/AmbientOcclusionPass.h"
 
-#include "rendering/mesh/AmbientOcclusionResources.h"
+#include "gl/GLDrawTypes.h"
+#include "gl/GLFBOAttachmentTypes.h"
+#include "mesh/MeshAdvancedLighting.h"
+#include "mesh/MeshRenderer.h"
 #include "rendering/gl/GLFrameBufferObject.h"
 #include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/GLTexture.h"
 #include "rendering/gl/GLVertexArrayObject.h"
 #include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/mesh/AmbientOcclusionResources.h"
 
 #include <glad/glad.h>
 #include <glm/vec2.hpp>
 
 #include <array>
 #include <cstdint>
+#include <optional>
+#include <string>
 
 namespace rendering::mesh
 {

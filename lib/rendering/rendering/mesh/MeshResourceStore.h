@@ -1,14 +1,17 @@
 #pragma once
 
+#include "rendering/gl/GLBufferTypes.h"
+#include "rendering/mesh/MeshData.h"
+#include "rendering/mesh/MeshGpuData.h"
 #include "rendering/mesh/MeshGpuStore.h"
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshKeys.h"
-#include "rendering/gl/GLBufferTypes.h"
+
+#include <uuid.h>
 
 #include <cstddef>
 #include <functional>
 #include <unordered_map>
-#include <uuid.h>
 
 namespace rendering::mesh
 {

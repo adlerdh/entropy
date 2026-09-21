@@ -1,8 +1,7 @@
 #pragma once
 
-#include "logic/app/Settings.h"
-
 #include "common/Types.h"
+#include "logic/app/Settings.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>

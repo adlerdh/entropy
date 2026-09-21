@@ -1,11 +1,16 @@
 #include "logic/app/LoadingStatusItems.h"
-
 #include "logic/serialization/ProjectSerialization.h"
 #include "registration/ImportPlan.h"
+#include "ui/GuiData.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
+#include <filesystem>
 #include <fstream>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace
 {

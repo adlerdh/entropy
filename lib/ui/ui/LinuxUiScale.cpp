@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>

@@ -1,7 +1,5 @@
 #include "rendering/RenderDerivedData.h"
 
-#include <cstddef>
-
 namespace rendering
 {
 

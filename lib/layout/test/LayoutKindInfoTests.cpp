@@ -1,6 +1,11 @@
 #include "layout/LayoutKindInfo.h"
+#include "viewer/LayoutTypes.h"
+#include "viewer/ViewTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <string>
+#include <string_view>
 
 TEST_CASE("layout kind display names cover built-in layouts", "[layout][layout_kind]")
 {

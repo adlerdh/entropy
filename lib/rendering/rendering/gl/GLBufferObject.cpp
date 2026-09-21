@@ -1,7 +1,9 @@
 #include "rendering/gl/GLBufferObject.h"
-#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
+#include "gl/GLBufferTypes.h"
+#include "gl/GLErrorChecker.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include <glad/glad.h>
 

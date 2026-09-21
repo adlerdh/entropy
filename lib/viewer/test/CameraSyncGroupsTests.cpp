@@ -1,10 +1,11 @@
 #include "viewer/CameraSyncGroups.h"
+#include "viewer/LayoutTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
-
 #include <uuid.h>
 
 #include <cstdint>
+#include <list>
 #include <optional>
 
 namespace

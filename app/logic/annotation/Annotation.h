@@ -2,19 +2,18 @@
 
 #include "logic/annotation/AnnotPolygon.tpp"
 
-#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-#include <uuid.h>
-
 #include <filesystem>
+#include <optional>
 #include <set>
+#include <stddef.h>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
-
-class AppData;
 
 /**
  * @brief An image annotation, which (for now) is a planar polygon with vertices

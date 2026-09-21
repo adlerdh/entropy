@@ -1,10 +1,15 @@
+#include "logic/app/Settings.h"
 #include "ui/Style.h"
 
 #include <catch2/catch_approx.hpp>
+#include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <imgui/imgui.h>
 
+#include <algorithm>
 #include <array>
+#include <iterator>
+#include <string>
 
 namespace
 {

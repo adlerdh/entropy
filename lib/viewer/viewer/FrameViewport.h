@@ -5,7 +5,6 @@
 
 namespace viewer
 {
-
 /**
  * @brief View bounds and clip-space transforms for one frame.
  */

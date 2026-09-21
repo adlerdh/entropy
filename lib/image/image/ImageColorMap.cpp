@@ -3,14 +3,15 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <exception>
+#include <iterator>
 #include <set>
+#include <stdint.h>
 #include <utility>
 
 namespace

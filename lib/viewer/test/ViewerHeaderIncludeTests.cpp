@@ -9,6 +9,11 @@
 #include "viewer/ViewTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
+#include <uuid.h>
+
+#include <list>
 
 TEST_CASE("viewer public headers are self-contained")
 {

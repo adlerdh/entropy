@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/ext/matrix_double4x4.hpp>
+#include <glm/mat4x4.hpp>
 
 #include <filesystem>
 #include <optional>

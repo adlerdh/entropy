@@ -1,14 +1,23 @@
-#include "rendering/ShaderProgramSetup.h"
+#include "rendering/common/ShaderType.h"
+#include "rendering/gl/GLUniformTypes.h"
+#include "rendering/gl/Uniforms.h"
 #include "rendering/ShaderPreprocessor.h"
+#include "rendering/ShaderProgramSetup.h"
 #include "rendering/ShaderSourceSetup.h"
+#include "rendering/ShaderTextureDimension.h"
+#include "rendering/TextureLayout.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_message.hpp>
 
 #include <array>
+#include <cstddef>
+#include <initializer_list>
 #include <regex>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace shader_setup = rendering::shader_setup;

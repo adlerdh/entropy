@@ -1,7 +1,11 @@
 #include "logic/annotation/SerializeAnnot.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+
+#include <map>
 
 namespace
 {

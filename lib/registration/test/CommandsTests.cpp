@@ -1,10 +1,15 @@
 #include "registration/Commands.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <filesystem>
 #include <initializer_list>
 #include <iterator>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace
 {

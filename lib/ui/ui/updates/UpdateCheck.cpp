@@ -6,22 +6,24 @@
 
 #include "ui/updates/UpdateCheck.h"
 
+#include "registration/Commands.h"
 #include "registration/Process.h"
 
 #include <curl/curl.h>
 #include <imgui/imgui.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+#include <__float_float.h>
+#include <curl/curlver.h>
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <charconv>
-#include <cfloat>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
+#include <exception>
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string_view>

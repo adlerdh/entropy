@@ -3,6 +3,8 @@
 #include "common/LoggingDefaults.h"
 
 #include <spdlog/common.h>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/spdlog.h>
 
 #include <filesystem>
 #include <optional>
@@ -43,7 +45,6 @@ struct InputParams
 
 std::ostream& operator<<(std::ostream& os, const InputParams& p);
 
-#include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
 template<>
 struct fmt::formatter<InputParams> : ostream_formatter

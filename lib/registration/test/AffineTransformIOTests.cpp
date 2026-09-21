@@ -2,9 +2,13 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 namespace
 {

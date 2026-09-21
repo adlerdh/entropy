@@ -7,9 +7,13 @@
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 #include <array>
+#include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <ostream>
 #include <string>
 
@@ -226,7 +230,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const ImageHeader& header);
 
-#include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
 template<>
 struct fmt::formatter<ImageHeader> : ostream_formatter

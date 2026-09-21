@@ -5,6 +5,8 @@
 
 #include <cmath>
 #include <limits>
+#include <stddef.h>
+#include <utility>
 
 namespace
 {

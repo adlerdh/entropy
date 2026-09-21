@@ -4,8 +4,11 @@
 #include "logic/serialization/ProjectSerialization.h"
 #include "registration/ImportPlan.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <optional>
+#include <system_error>
 
 namespace fs = std::filesystem;
 

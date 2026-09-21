@@ -1,9 +1,11 @@
 #include "logic/app/LargeImagePolicy.h"
 #include "logic/app/ProjectImageSequence.h"
-
 #include "logic/serialization/ProjectSerialization.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <filesystem>
+#include <vector>
 
 TEST_CASE("large image confirmation begins at the documented memory threshold", "[app][loading]")
 {

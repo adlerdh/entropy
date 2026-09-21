@@ -1,8 +1,22 @@
+#include "common/HistogramSettings.h"
+#include "common/Types.h"
+#include "image/Isosurface.h"
+#include "layout/LayoutSpec.h"
+#include "logic/annotation/Annotation.h"
 #include "logic/app/ProjectSnapshotComparison.h"
+#include "logic/serialization/ProjectSerialization.h"
+
+#include "logic/annotation/AnnotPolygon.tpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
 
+#include <filesystem>
+#include <optional>
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace
 {

@@ -1,9 +1,12 @@
 #include "logic/app/ProjectSnapshotComparison.h"
 
+#include "common/Types.h"
 #include "image/ImageSpatialMetadata.h"
 #include "image/Isosurface.h"
 #include "layout/LayoutSpec.h"
 #include "logic/annotation/Annotation.h"
+
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <filesystem>

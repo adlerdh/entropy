@@ -4,6 +4,8 @@
 
 #include <glm/gtc/type_precision.hpp>
 
+#include <cstddef>
+#include <stdint.h>
 #include <string>
 #include <vector>
 

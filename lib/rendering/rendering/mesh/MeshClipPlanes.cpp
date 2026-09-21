@@ -1,5 +1,8 @@
 #include "rendering/mesh/MeshClipPlanes.h"
 
+#include "mesh/MeshBounds.h"
+#include "mesh/MeshDrawOptions.h"
+
 #include <glm/geometric.hpp>
 
 #include <algorithm>

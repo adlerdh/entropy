@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <array>
 #include <ranges>
+#include <set>
+#include <string>
 #include <vector>
 
 TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")

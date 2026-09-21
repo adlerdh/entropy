@@ -1,6 +1,11 @@
 #include "ui/windows/ViewOverlayModel.h"
+#include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <array>
+#include <string>
+#include <string_view>
 
 namespace view_overlay = ui::view_overlay;
 

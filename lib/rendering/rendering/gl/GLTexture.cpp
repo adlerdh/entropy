@@ -1,7 +1,9 @@
 #include "rendering/gl/GLTexture.h"
-#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
+#include "gl/GLErrorChecker.h"
+#include "gl/GLTextureTypes.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include <glad/glad.h>
 
@@ -14,6 +16,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <optional>
 #include <sstream>

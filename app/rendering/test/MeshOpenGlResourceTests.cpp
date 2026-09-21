@@ -1,51 +1,21 @@
-#include "common/Types.h"
-#include "rendering/TextureLayout.h"
+#include "rendering/gl/GLBufferObject.h"
 #include "rendering/gl/GLBufferTypes.h"
 #include "rendering/gl/GLDrawTypes.h"
-#include "rendering/gl/GLShaderType.h"
-#include "rendering/gl/GLTextureTypes.h"
-#include "rendering/gl/GLUniformTypes.h"
-#include "rendering/gl/Uniforms.h"
-#include "rendering/mesh/AmbientOcclusionResources.h"
-#include "rendering/mesh/MeshDdpResources.h"
-#include "rendering/mesh/MeshGpuData.h"
-#include "rendering/mesh/MeshHandle.h"
-#include "rendering/mesh/MeshRenderable.h"
-#include "rendering/mesh/MeshRenderer.h"
-#include "rendering/mesh/MeshShadowMapResources.h"
-#include "rendering/helpers/TextureSetupHelpers.h"
-#include "rendering/gl/GLBufferObject.h"
-#include "rendering/gl/GLBufferTexture.h"
-#include "rendering/gl/GLFrameBufferObject.h"
-#include "rendering/gl/GLShader.h"
-#include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/GLTexture.h"
-#include "rendering/gl/OpenGLStateGuard.h"
-#include "rendering/gl/OpenGLRenderState.h"
+#include "rendering/gl/GLTextureTypes.h"
 #include "rendering/gl/GLVertexArrayObject.h"
+#include "rendering/mesh/AmbientOcclusionResources.h"
 
+#include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glad/glad.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
-
-#include <algorithm>
-#include <array>
 #include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <initializer_list>
 #include <limits>
-#include <optional>
-#include <set>
-#include <span>
-#include <utility>
-#include <vector>
 
 namespace mesh = rendering::mesh;
 

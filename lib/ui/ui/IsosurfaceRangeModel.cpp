@@ -1,11 +1,10 @@
 #include "ui/IsosurfaceRangeModel.h"
 
-#include <algorithm>
-#include <cmath>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <limits>
 #include <sstream>

@@ -3,16 +3,16 @@
 #include "rendering/common/ShaderType.h"
 #include "rendering/TextureLayout.h"
 
+#include <uuid.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include <uuid.h>
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <list>
 #include <memory>
 #include <optional>
+#include <stddef.h>
 #include <unordered_map>
 #include <vector>
 

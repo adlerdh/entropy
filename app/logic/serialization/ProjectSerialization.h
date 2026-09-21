@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/InputParams.h"
 #include "common/HistogramSettings.h"
+#include "common/InputParams.h"
 #include "common/Types.h"
 #include "image/ImageSpatialMetadata.h"
 #include "image/Isosurface.h"
@@ -9,12 +9,11 @@
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"
 
-#include <nlohmann/json.hpp>
-
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <cstddef>
 #include <cstdint>

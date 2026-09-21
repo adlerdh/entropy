@@ -1,25 +1,6 @@
-#include "rendering/ShaderPreprocessor.h"
 #include "rendering/ShaderProgramSetup.h"
-#include "rendering/ShaderSourceSetup.h"
-#include "rendering/ShaderTextureDimension.h"
-#include "rendering/TextureLayout.h"
-#include "rendering/common/ShaderType.h"
 
-#include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
-
-#include <chrono>
-#include <cstdlib>
-#include <filesystem>
-#include <fstream>
-#include <initializer_list>
-#include <iterator>
-#include <string>
-#include <string_view>
-#include <system_error>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 
 namespace shader_setup = rendering::shader_setup;
 

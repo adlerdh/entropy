@@ -7,6 +7,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>

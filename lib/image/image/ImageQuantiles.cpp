@@ -1,12 +1,19 @@
-#include "image/Image.h"
-
 #include "common/Exception.hpp"
-#include "internal/ImageUtility.tpp"
-#include "image/ImageUtility.h"
+#include "common/Types.h"
+#include "external/TDigest.h"
+#include "image/Image.h"
+#include "ImageHeader.h"
+#include "ImageSettings.h"
+#include "internal/ImageUtilityStatistics.tpp"
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <iterator>
 #include <span>
+#include <stdint.h>
+#include <string>
+#include <vector>
 
 QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t valueArg) const
 {

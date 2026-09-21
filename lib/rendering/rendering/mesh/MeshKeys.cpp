@@ -1,5 +1,11 @@
 #include "rendering/mesh/MeshKeys.h"
 
+#include "mesh/MeshMaterial.h"
+
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
+
 #include <functional>
 
 namespace rendering::mesh

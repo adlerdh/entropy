@@ -2,10 +2,16 @@
 #include "layout/LayoutFileSerialization.h"
 #include "layout/LayoutKindInfo.h"
 #include "layout/LayoutSpec.h"
-#include "layout/LayoutSpecJson.h"
 #include "layout/SyncGroupIndexMap.h"
+#include "viewer/LayoutTypes.h"
+#include "viewer/ViewTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 TEST_CASE("layout public headers are self-contained")
 {

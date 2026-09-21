@@ -1,5 +1,7 @@
 #include "rendering/helpers/SliceIntersector.h"
+
 #include "common/Geometry.h"
+#include "helpers/SliceIntersectorTypes.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>

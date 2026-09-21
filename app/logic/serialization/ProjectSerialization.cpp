@@ -1,24 +1,18 @@
 #include "logic/serialization/ProjectSerialization.h"
-#include "logic/annotation/SerializeAnnot.h"
-#include "logic/serialization/JsonSerializers.h"
-#include "logic/serialization/SerializationHelpers.h"
 
 #include "common/Exception.hpp"
 #include "layout/LayoutSpecJson.h"
+#include "logic/serialization/SerializationHelpers.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
+
 #include <nlohmann/json.hpp>
 
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
-#include <array>
 #include <cstdint>
 #include <optional>
-#include <set>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 

@@ -1,9 +1,8 @@
 #include "rendering/gl/GLErrorChecker.h"
+
 #include "common/Exception.hpp"
 
 #include <glad/glad.h>
-
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <sstream>

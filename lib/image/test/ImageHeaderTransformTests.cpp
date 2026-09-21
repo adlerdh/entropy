@@ -1,17 +1,26 @@
+#include "common/Types.h"
 #include "image/Image.h"
 #include "image/ImageHeader.h"
+#include "image/ImageHeaderOverrides.h"
+#include "image/ImageIoInfo.h"
 #include "image/ImageSpatialMetadata.h"
 #include "image/ImageTransformations.h"
+#include "image/ImageTypes.h"
 #include "image/ImageUtility.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace
 {

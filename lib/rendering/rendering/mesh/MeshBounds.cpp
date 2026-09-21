@@ -1,12 +1,14 @@
 #include "rendering/mesh/MeshBounds.h"
 
+#include "mesh/MeshData.h"
+#include "mesh/MeshRenderable.h"
+#include "mesh/MeshRenderList.h"
+
 #include <glm/common.hpp>
 #include <glm/vec4.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <ranges>
 
 namespace rendering::mesh
 {

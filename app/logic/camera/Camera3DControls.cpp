@@ -5,7 +5,7 @@
 #include "common/MathFuncs.h"
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
-#include "logic/camera/MathUtility.h"
+#include "logic/camera/Projection.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -15,6 +15,9 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <memory>
+#include <tuple>
+#include <utility>
 
 namespace
 {

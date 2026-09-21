@@ -1,5 +1,7 @@
 #include "mesh/MeshFormat.h"
 
+#include "MeshTypes.h"
+
 #include <algorithm>
 #include <array>
 #include <cctype>

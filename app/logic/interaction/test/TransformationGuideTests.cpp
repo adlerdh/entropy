@@ -2,14 +2,19 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <uuid.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
+#include <optional>
+#include <variant>
+#include <vector>
 
 namespace
 {

@@ -1,5 +1,9 @@
 #include "rendering/mesh/MeshLandmarkPolicy.h"
 
+#include "mesh/MeshCompositing.h"
+#include "mesh/MeshGlyphs.h"
+
+#include <glm/vec4.hpp>
 #include <algorithm>
 
 namespace rendering::mesh

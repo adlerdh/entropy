@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 
 TEST_CASE("X-ray attenuation defaults use NIST 80 keV coefficients", "[rendering][xray]")
 {

@@ -1,6 +1,11 @@
+#include "registration/Commands.h"
 #include "registration/Config.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <filesystem>
+#include <string>
 
 TEST_CASE("registration backend config converts to command options", "[registration][config]")
 {

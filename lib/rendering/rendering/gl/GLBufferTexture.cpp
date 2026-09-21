@@ -1,7 +1,9 @@
 #include "rendering/gl/GLBufferTexture.h"
-#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
+#include "gl/GLBufferObject.h"
+#include "gl/GLTexture.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include <glad/glad.h>
 

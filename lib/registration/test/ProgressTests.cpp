@@ -1,6 +1,11 @@
 #include "registration/Progress.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <optional>
+#include <string>
+#include <string_view>
 
 TEST_CASE("registration progress events parse from JSON lines", "[registration][progress]")
 {

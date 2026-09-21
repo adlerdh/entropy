@@ -1,6 +1,11 @@
 #include "ui/dialogs/InputLoadErrorDialog.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <filesystem>
+#include <optional>
+#include <string>
 
 TEST_CASE("input load errors identify the failed file and cause", "[ui][dialogs]")
 {

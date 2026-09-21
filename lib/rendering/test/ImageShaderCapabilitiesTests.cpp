@@ -1,17 +1,19 @@
-#include "rendering/ImageShaderCapabilities.h"
-
-#include "rendering/ShaderProgramSetup.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/gl/GLUniformTypes.h"
 #include "rendering/gl/Uniforms.h"
+#include "rendering/ImageShaderCapabilities.h"
+#include "rendering/ShaderProgramSetup.h"
 
 #include <catch2/catch_test_macros.hpp>
-
+#include <catch2/catch_message.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 #include <array>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace shader_setup = rendering::shader_setup;
 

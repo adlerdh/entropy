@@ -1,23 +1,42 @@
 #include "image/Image.h"
-#include "internal/ImageCastHelper.tpp"
-#include "image/ImageWindowDefaults.h"
+
+#include "common/Exception.hpp"
+#include "external/TDigest.h"
 #include "image/ImageUtility.h"
+#include "image/ImageWindowDefaults.h"
+#include "ImageHeader.h"
+#include "ImageHeaderOverrides.h"
+#include "ImageIoInfo.h"
+#include "ImageSettings.h"
+#include "ImageTimeAxis.h"
+#include "ImageTransformations.h"
+#include "ImageTypes.h"
 #include "internal/ImageUtilityItk.h"
 #include "internal/ImageUtility.tpp"
 
-// clang-format off
+#include <glm/vec3.hpp>
+#include <itkImageIOBase.h>
+#include <itkImageIORegion.h>
+#include <itkIndex.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/std.h>
-#include <spdlog/fmt/ostr.h>
-// clang-format on
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace fs = std::filesystem;

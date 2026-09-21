@@ -1,11 +1,17 @@
 #include "rendering/mesh/MeshValidation.h"
 
+#include "mesh/MeshData.h"
 #include "rendering/mesh/MeshBounds.h"
+
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <cstddef>
 #include <limits>
-#include <ranges>
+#include <optional>
+#include <stdint.h>
 
 namespace rendering::mesh
 {

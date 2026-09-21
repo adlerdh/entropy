@@ -1,4 +1,5 @@
 #include "logic/app/ParcellationLabelTable.h"
+
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
 
@@ -11,6 +12,8 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <iterator>
+#include <optional>
 #include <sstream>
 #include <utility>
 

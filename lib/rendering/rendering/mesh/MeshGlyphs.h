@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshRenderable.h"
 

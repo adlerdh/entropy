@@ -27,12 +27,12 @@
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlane.h"
-#include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
+#include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
-#include "rendering/mesh/MeshLandmarkPolicy.h"
 #include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshLandmarkPolicy.h"
 #include "rendering/mesh/MeshMaterial.h"
 #include "rendering/mesh/MeshPicking.h"
 #include "rendering/mesh/MeshPrimitives.h"
@@ -48,9 +48,8 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/gtc/matrix_transform.hpp>
-
+#include <uuid.h>
 #include <vtkMultiThreader.h>
 
 #include <algorithm>
@@ -67,7 +66,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "rendering/TextureLayout.h"
-
 #include "common/Types.h"
+#include "rendering/TextureLayout.h"
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
@@ -10,6 +9,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace rendering::texture_setup

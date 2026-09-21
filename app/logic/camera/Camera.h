@@ -2,10 +2,10 @@
 
 #include "common/CoordinateFrame.h"
 #include "common/PublicTypes.h"
+#include "logic/camera/CameraTypes.h"
 #include "logic/camera/Projection.h"
 
 #include <glm/fwd.hpp>
-
 #include <memory>
 #include <optional>
 

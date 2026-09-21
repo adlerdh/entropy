@@ -1,7 +1,5 @@
 #include "common/MathFuncs.h"
 
-#include <wrfranklin/pnpoly.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -11,12 +9,12 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
+#include <wrfranklin/pnpoly.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <random>
 #include <string>

@@ -1,13 +1,16 @@
 #pragma once
 
+#include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshExtraction.h"
 #include "rendering/mesh/MeshKeys.h"
 
+#include <uuid.h>
+
 #include <cstddef>
 #include <optional>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
-#include <uuid.h>
 #include <vector>
 
 namespace rendering::mesh

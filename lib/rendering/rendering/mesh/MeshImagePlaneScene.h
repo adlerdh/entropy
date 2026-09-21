@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common/IntersectionTypes.h"
 #include "rendering/mesh/MeshData.h"
 
 #include <glm/mat4x4.hpp>

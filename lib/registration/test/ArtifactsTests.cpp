@@ -1,7 +1,10 @@
 #include "registration/Artifacts.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <initializer_list>
 #include <string>
 #include <utility>
 #include <vector>

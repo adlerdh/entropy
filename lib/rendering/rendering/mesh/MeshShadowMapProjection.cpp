@@ -1,14 +1,15 @@
 #include "rendering/mesh/MeshShadowMapProjection.h"
 
+#include "mesh/MeshBounds.h"
+
 #include <glm/common.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/vec4.hpp>
-
+#include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 
 namespace rendering::mesh
 {

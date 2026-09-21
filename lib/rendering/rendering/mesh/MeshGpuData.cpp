@@ -1,5 +1,11 @@
 #include "rendering/mesh/MeshGpuData.h"
 
+#include "gl/GLBufferObject.h"
+#include "gl/GLVertexArrayObject.h"
+#include "gl/VertexAttributeInfo.h"
+#include "gl/VertexIndicesInfo.h"
+#include "mesh/MeshHandle.h"
+
 #include <utility>
 
 namespace rendering::mesh

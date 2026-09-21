@@ -1,22 +1,26 @@
 #include "logic/app/UserPreferences.h"
 
+#include "common/LoggingDefaults.h"
 #include "common/LoggingSettings.h"
 #include "registration/Config.h"
 #include "registration/Json.h"
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
-#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
+#include <spdlog/common.h>
 
 #include <algorithm>
-#include <atomic>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <span>

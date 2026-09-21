@@ -1,12 +1,14 @@
 #pragma once
 
-#include <filesystem>
 #include "image/ImageHeaderOverrides.h"
 
-#include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
+#include <filesystem>
 #include <optional>
 #include <ostream>
 
@@ -244,7 +246,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const ImageTransformations& tx);
 
-#include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
 template<>
 struct fmt::formatter<ImageTransformations> : ostream_formatter

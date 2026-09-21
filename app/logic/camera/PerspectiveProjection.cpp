@@ -1,4 +1,5 @@
 #include "logic/camera/PerspectiveProjection.h"
+#include "logic/camera/CameraTypes.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>

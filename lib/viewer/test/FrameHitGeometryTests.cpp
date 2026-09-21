@@ -1,12 +1,15 @@
+#include "common/Viewport.h"
 #include "viewer/FrameHitGeometry.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
-#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <uuid.h>
 
 #include <array>
 #include <cstdint>
+#include <optional>
+#include <span>
 
 namespace
 {

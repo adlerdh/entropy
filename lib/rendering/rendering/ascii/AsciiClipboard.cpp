@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdint.h>
 
 namespace rendering::ascii_clipboard
 {

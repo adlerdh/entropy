@@ -5,8 +5,9 @@
 #include "ui/NativeFileDialogs.h"
 #include "ui/Scaling.h"
 
-#include "registration/Config.h"
 #include "registration/Artifacts.h"
+#include "registration/Capabilities.h"
+#include "registration/Config.h"
 #include "registration/Setup.h"
 
 #include <imgui/imgui.h>
@@ -15,12 +16,12 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cctype>
 #include <cfloat>
+#include <chrono>
 #include <cstddef>
-#include <ctime>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <functional>
 #include <iomanip>

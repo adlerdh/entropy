@@ -1,14 +1,14 @@
 #include "rendering/gl/GLShader.h"
-#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
-
-#include <glad/glad.h>
-
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
+#include "gl/GLErrorChecker.h"
+#include "gl/GLShaderType.h"
+#include "gl/Uniforms.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include <glm/glm.hpp>
+#include <glad/glad.h>
+#include <spdlog/spdlog.h>
 
 #include <cstddef>
 #include <iterator>

@@ -1,22 +1,32 @@
 #include "image/ImageIoInfo.h"
 #include "internal/ImageUtilityItk.h"
 
-#include "common/Exception.hpp"
-
-#include <spdlog/spdlog.h>
-
-#include <itkIOCommon.h> // for itk::SpatialOrientation
 #include <itkMetaDataDictionary.h>
 #include <itkMetaDataObject.h>
+#include <itkArray.h>
+#include <itkCommonEnums.h>
+#include <itkImageBase.h>
+#include <itkImageIOBase.h>
+#include <itkIndex.h>
+#include <itkMatrix.h>
+#include <itkMetaDataObjectBase.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+#include <itkSpatialOrientation.h>
+
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <functional>
 #include <initializer_list>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <sstream>
 #include <string_view>
+#include <utility>
 
 namespace
 {

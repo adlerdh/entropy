@@ -1,6 +1,11 @@
 #include "rendering/mesh/MeshSegmentationPolicy.h"
 
+#include "mesh/MeshExtraction.h"
+#include "mesh/MeshRenderableFactory.h"
+
 #include <glm/common.hpp>
+
+#include <string>
 
 namespace rendering::mesh
 {

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "logic/app/ParcellationLabelTable.h"
-#include "common/SegmentationTypes.h"
 #include "common/Types.h"
+#include "logic/app/ParcellationLabelTable.h"
 #include "registration/Config.h"
 
 #include <glm/vec3.hpp>
@@ -11,7 +10,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
-#include <string>
 #include <vector>
 
 struct RecentPathGroup

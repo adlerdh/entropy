@@ -1,14 +1,11 @@
 #pragma once
 
 #include "rendering/mesh/MeshDdpPolicy.h"
-#include "rendering/mesh/MeshRenderList.h"
+#include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderer.h"
 
 #include <functional>
 #include <span>
-
-class GLShaderProgram;
-class GLTexture;
 
 namespace rendering::mesh
 {

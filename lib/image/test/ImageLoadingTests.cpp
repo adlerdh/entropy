@@ -1,25 +1,48 @@
+#include "common/Types.h"
 #include "image/Image.h"
+#include "image/ImageHeader.h"
+#include "image/ImageIoInfo.h"
+#include "image/ImageSettings.h"
+#include "image/ImageTimeAxis.h"
+#include "image/ImageTypes.h"
 #include "image/ImageUtility.h"
-#include "../image/internal/ImageUtilityItk.h"
+#include "image/internal/ImageUtilityItk.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <itkImage.h>
 #include <itkImageFileWriter.h>
 #include <itkMetaDataObject.h>
 #include <itkRGBPixel.h>
 #include <itkVectorImage.h>
+#include <itkImageAlgorithm.h>
+#include <itkImageBase.h>
+#include <itkImageIOBase.h>
+#include <itkImageIORegion.h>
+#include <itkIndex.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <limits>
+#include <optional>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 

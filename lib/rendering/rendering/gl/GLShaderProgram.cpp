@@ -1,13 +1,14 @@
 #include "rendering/gl/GLShaderProgram.h"
 
 #include "common/Exception.hpp"
+#include "gl/GLErrorChecker.h"
+#include "gl/GLShader.h"
+#include "gl/GLUniformTypes.h"
+#include "gl/Uniforms.h"
 
 #include <glad/glad.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>

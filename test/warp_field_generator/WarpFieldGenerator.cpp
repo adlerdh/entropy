@@ -6,15 +6,30 @@
 #include <itkImageFileWriter.h>
 #include <itkImageRegionIterator.h>
 #include <itkVectorImage.h>
+#include <itkImageAlgorithm.h>
+#include <itkImageIORegion.h>
+#include <itkIndex.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+
 #include <nlohmann/json.hpp>
+
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <numbers>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>

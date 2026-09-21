@@ -1,13 +1,22 @@
+#include "common/Viewport.h"
+#include "image/ImageSettings.h"
 #include "rendering/helpers/VectorDrawingHelpers.h"
 #include "rendering/vector/ImageLabelOverlayDrawing.h"
 #include "rendering/ViewOverlayVisibility.h"
-
-#include "common/Viewport.h"
+#include "viewer/ViewModes.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
+#include <array>
 #include <limits>
+#include <optional>
+#include <string>
+#include <string_view>
 
 namespace vector_drawing = rendering::vector_drawing;
 

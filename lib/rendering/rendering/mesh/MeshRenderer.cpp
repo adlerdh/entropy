@@ -1,18 +1,25 @@
 #include "rendering/mesh/MeshRenderer.h"
 
-#include "rendering/mesh/MeshClipPlanes.h"
-#include "rendering/mesh/MeshCutaway.h"
-#include "rendering/mesh/MeshMaterial.h"
+#include "gl/GLVertexArrayObject.h"
+#include "mesh/MeshAdvancedLighting.h"
+#include "mesh/MeshCompositing.h"
+#include "mesh/MeshDrawOptions.h"
+#include "mesh/MeshGpuData.h"
+#include "mesh/MeshRenderList.h"
 #include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/GLTexture.h"
 #include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/mesh/MeshClipPlanes.h"
+#include "rendering/mesh/MeshCutaway.h"
+#include "rendering/mesh/MeshMaterial.h"
 
 #include <glad/glad.h>
-
 #include <glm/gtc/matrix_inverse.hpp>
 
+#include <array>
 #include <cstddef>
 #include <optional>
+#include <stdint.h>
 #include <string>
 #include <vector>
 

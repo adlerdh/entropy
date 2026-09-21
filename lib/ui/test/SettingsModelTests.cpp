@@ -1,7 +1,12 @@
+#include "common/Types.h"
+#include "logic/app/Settings.h"
+#include "ui/GuiData.h"
 #include "ui/settings/SettingsModel.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
+#include <optional>
 #include <string>
 
 namespace settings = ui::settings;

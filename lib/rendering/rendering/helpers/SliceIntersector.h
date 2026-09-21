@@ -1,11 +1,12 @@
 #pragma once
 
+#include "common/IntersectionTypes.h"
 #include "rendering/helpers/SliceIntersectorTypes.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-
+#include <array>
 #include <optional>
 #include <utility>
 

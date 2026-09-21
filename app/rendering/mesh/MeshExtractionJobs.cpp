@@ -1,13 +1,17 @@
 #include "rendering/mesh/MeshExtractionJobs.h"
 
 #include "image/Image.h"
+#include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshGeneration.h"
 #include "rendering/mesh/MeshImageAdapter.h"
+#include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshScalarGrid.h"
 
 #include <algorithm>
-#include <ranges>
+#include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace rendering::mesh
 {

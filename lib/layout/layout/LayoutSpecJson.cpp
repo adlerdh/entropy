@@ -1,12 +1,18 @@
 #include "layout/LayoutSpecJson.h"
 
+#include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
 
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <map>
+#include <optional>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace layout

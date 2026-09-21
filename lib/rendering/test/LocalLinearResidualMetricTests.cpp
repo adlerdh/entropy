@@ -4,6 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
+#include <span>
 
 namespace local_linear_residual = rendering::local_linear_residual;
 

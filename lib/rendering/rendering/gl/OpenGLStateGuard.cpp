@@ -1,6 +1,7 @@
 #include "rendering/gl/OpenGLStateGuard.h"
 
 #include "common/Exception.hpp"
+#include "glad/glad.h"
 
 #include <algorithm>
 

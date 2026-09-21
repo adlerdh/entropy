@@ -1,7 +1,5 @@
 #include "rendering/mesh/PolyDataGenerator.h"
 
-#include <glm/glm.hpp>
-
 #include <vtkAppendPolyData.h>
 #include <vtkCleanPolyData.h>
 #include <vtkConeSource.h>
@@ -13,7 +11,7 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkTriangleFilter.h>
-
+#include <glm/glm.hpp>
 namespace vtkutils
 {
 

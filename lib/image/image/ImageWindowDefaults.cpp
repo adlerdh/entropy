@@ -1,10 +1,11 @@
 #include "image/ImageWindowDefaults.h"
-#include "image/ImageUtility.h"
 
 #include "common/Types.h"
+#include "image/ImageUtility.h"
 
 #include <cmath>
 #include <optional>
+#include <utility>
 
 namespace image_window_defaults
 {

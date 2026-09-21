@@ -1,7 +1,12 @@
+#include "layout/LayoutSpec.h"
 #include "logic/app/ProjectLayoutDelta.h"
+#include "logic/serialization/ProjectSerialization.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
+#include <filesystem>
+#include <optional>
 #include <vector>
 
 namespace

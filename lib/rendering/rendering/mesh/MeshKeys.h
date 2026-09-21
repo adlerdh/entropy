@@ -1,15 +1,14 @@
 #pragma once
 
+#include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshDrawOptions.h"
 #include "rendering/mesh/MeshMaterial.h"
-#include "rendering/mesh/MeshRenderable.h"
 
 #include <glm/vec4.hpp>
 #include <uuid.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_set>

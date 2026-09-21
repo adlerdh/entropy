@@ -1,33 +1,27 @@
 #pragma once
 
-#include "common/AABB.h"
 #include "common/Geometry.h"
-#include "common/MathFuncs.h"
 #include "common/Types.h"
 
 #include <glm/glm.hpp>
 #include <glm/vector_relational.hpp>
-
-#include <glm/gtc/epsilon.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/epsilon.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/component_wise.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
-
-#include <ranges>
-
 #include <array>
-#include <cmath>
+#include <iterator>
 #include <limits>
 #include <numeric>
 #include <optional>
+#include <stddef.h>
+#include <stdint.h>
 #include <tuple>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #undef min

@@ -1,11 +1,15 @@
 #include "layout/LayoutFileSerialization.h"
+#include "layout/LayoutSpec.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <optional>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace
