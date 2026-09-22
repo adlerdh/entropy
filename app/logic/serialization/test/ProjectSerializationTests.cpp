@@ -10,6 +10,7 @@
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
 #include "viewer/ThreeDSceneContents.h"
+#include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <glm/vec3.hpp>
@@ -310,6 +311,24 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
 }
 
+TEST_CASE("Default joint histogram scale does not add a project JSON field", "[project][serialization]")
+{
+  const json defaults = serialize::ProjectJointHistogramSettings{};
+  CHECK(defaults.empty());
+  CHECK_FALSE(defaults.contains("logarithmicScale"));
+  const auto parsedDefaults = defaults.get<serialize::ProjectJointHistogramSettings>();
+  CHECK(parsedDefaults.m_metric.m_colorMapIndex == colormap_defaults::kLinear20GouldianIndex);
+  CHECK(parsedDefaults.m_logarithmicScale);
+  CHECK(parsedDefaults.m_bins == 512);
+}
+
+TEST_CASE("Joint histogram minor ticks are limited to nine", "[project][serialization]")
+{
+  const json settings = {{"minorTicks", 10}};
+  const auto parsed = settings.get<serialize::ProjectJointHistogramSettings>();
+  CHECK(parsed.m_minorTicks == 9);
+}
+
 TEST_CASE("Project serialization preserves comparison settings", "[project][serialization]")
 {
   serialize::EntropyProject project;
@@ -320,8 +339,12 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   project.m_comparison.m_difference.m_metric.m_invertColormap = true;
   project.m_comparison.m_difference.m_metric.m_continuousColormap = false;
   project.m_comparison.m_difference.m_metric.m_colormapLevels = 11;
-  project.m_comparison.m_jointHistogram.m_colorMapIndex = 5;
-  project.m_comparison.m_jointHistogram.m_invertColormap = true;
+  project.m_comparison.m_jointHistogram.m_metric.m_colorMapIndex = 5;
+  project.m_comparison.m_jointHistogram.m_metric.m_invertColormap = true;
+  project.m_comparison.m_jointHistogram.m_logarithmicScale = false;
+  project.m_comparison.m_jointHistogram.m_bins = 768;
+  project.m_comparison.m_jointHistogram.m_majorTicks = 7;
+  project.m_comparison.m_jointHistogram.m_minorTicks = 2;
   project.m_comparison.m_localNcc.m_presentation = serialize::ProjectLocalNccPresentation::Correlation;
   project.m_comparison.m_localNcc.m_negativeCorrelationAsMismatch = false;
   project.m_comparison.m_localNcc.m_patchRadius = 5;
@@ -352,6 +375,10 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(comparison.at("difference").at("metric").at("windowSlopeIntercept").at(0) == 2.0f);
   CHECK(comparison.at("jointHistogram").at("colormapIndex") == 5);
   CHECK(comparison.at("jointHistogram").at("invertColormap") == true);
+  CHECK(comparison.at("jointHistogram").at("logarithmicScale") == false);
+  CHECK(comparison.at("jointHistogram").at("bins") == 768);
+  CHECK(comparison.at("jointHistogram").at("majorTicks") == 7);
+  CHECK(comparison.at("jointHistogram").at("minorTicks") == 2);
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
   CHECK(comparison.at("localLinearResidual").at("patchRadius") == 4);
@@ -365,8 +392,12 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(parsed.m_comparison.m_difference.m_squared == false);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_colorMapIndex == 9);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_slopeIntercept == glm::vec2{2.0f, -1.0f});
-  CHECK(parsed.m_comparison.m_jointHistogram.m_colorMapIndex == 5);
-  CHECK(parsed.m_comparison.m_jointHistogram.m_invertColormap);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_metric.m_colorMapIndex == 5);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_metric.m_invertColormap);
+  CHECK_FALSE(parsed.m_comparison.m_jointHistogram.m_logarithmicScale);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_bins == 768);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_majorTicks == 7);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_minorTicks == 2);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_invertColormap == true);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_continuousColormap == false);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_colormapLevels == 11);
@@ -946,6 +977,9 @@ TEST_CASE(
   layout.m_displayName = "Review";
   layout.m_kind = 3;
   layout.m_threeDSceneContents = {ThreeDSceneContent::Segmentations, ThreeDSceneContent::Landmarks};
+  layout::ViewSpec histogramView;
+  histogramView.m_renderMode = static_cast<int>(ViewRenderMode::JointHistogram);
+  layout.m_views.push_back(histogramView);
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = imageFile;
@@ -960,6 +994,7 @@ TEST_CASE(
   REQUIRE(serialized.at("layouts").at("embedded").is_array());
   REQUIRE(serialized.at("layouts").at("embedded").size() == 1);
   CHECK(serialized.at("layouts").at("embedded").at(0).at("displayName") == "Review");
+  CHECK(serialized.at("layouts").at("embedded").at(0).at("views").at(0).at("renderMode") == "jointHistogram");
   CHECK(
     serialized.at("layouts").at("embedded").at(0).at("threeD").at("sceneContents") ==
     json::array({"segmentations", "landmarks"}));
@@ -971,6 +1006,8 @@ TEST_CASE(
   CHECK_FALSE(loaded.m_layoutsFileName);
   REQUIRE(loaded.m_layouts.size() == 1);
   CHECK(loaded.m_layouts.front().m_displayName == "Review");
+  REQUIRE(loaded.m_layouts.front().m_views.size() == 1);
+  CHECK(loaded.m_layouts.front().m_views.front().m_renderMode == static_cast<int>(ViewRenderMode::JointHistogram));
   CHECK(
     loaded.m_layouts.front().m_threeDSceneContents ==
     ThreeDSceneContents{ThreeDSceneContent::Segmentations, ThreeDSceneContent::Landmarks});

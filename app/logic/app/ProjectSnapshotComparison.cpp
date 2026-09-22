@@ -267,7 +267,11 @@ bool comparisonSettingsEqual(
 {
   return a.m_difference.m_squared == b.m_difference.m_squared &&
          metricSettingsEqual(a.m_difference.m_metric, b.m_difference.m_metric) &&
-         metricSettingsEqual(a.m_jointHistogram, b.m_jointHistogram) &&
+         metricSettingsEqual(a.m_jointHistogram.m_metric, b.m_jointHistogram.m_metric) &&
+         a.m_jointHistogram.m_logarithmicScale == b.m_jointHistogram.m_logarithmicScale &&
+         a.m_jointHistogram.m_bins == b.m_jointHistogram.m_bins &&
+         a.m_jointHistogram.m_majorTicks == b.m_jointHistogram.m_majorTicks &&
+         a.m_jointHistogram.m_minorTicks == b.m_jointHistogram.m_minorTicks &&
          metricSettingsEqual(a.m_localNcc.m_metric, b.m_localNcc.m_metric) &&
          a.m_localNcc.m_presentation == b.m_localNcc.m_presentation &&
          a.m_localNcc.m_negativeCorrelationAsMismatch == b.m_localNcc.m_negativeCorrelationAsMismatch &&

@@ -240,15 +240,22 @@ void from_json(const json& j, ProjectViewSettings& settings)
   }
 }
 
-void to_json(json& j, const ProjectMetricSettings& settings)
+namespace
 {
-  const ProjectMetricSettings defaults;
+void metricSettingsToJson(json& j, const ProjectMetricSettings& settings, const ProjectMetricSettings& defaults)
+{
   j = json::object();
   addIfChanged(j, "colormapIndex", settings.m_colorMapIndex, defaults.m_colorMapIndex);
   addIfChanged(j, "windowSlopeIntercept", vec2ToJson(settings.m_slopeIntercept), vec2ToJson(defaults.m_slopeIntercept));
   addIfChanged(j, "invertColormap", settings.m_invertColormap, defaults.m_invertColormap);
   addIfChanged(j, "continuousColormap", settings.m_continuousColormap, defaults.m_continuousColormap);
   addIfChanged(j, "colormapLevels", settings.m_colormapLevels, defaults.m_colormapLevels);
+}
+} // namespace
+
+void to_json(json& j, const ProjectMetricSettings& settings)
+{
+  metricSettingsToJson(j, settings, ProjectMetricSettings{});
 }
 
 void from_json(const json& j, ProjectMetricSettings& settings)
@@ -392,6 +399,33 @@ void from_json(const json& j, ProjectLocalLinearResidualMetricSettings& settings
   }
   if (const auto value = j.find("varianceEpsilon"); value != j.end() && value->is_number()) {
     settings.m_varianceEpsilon = std::max(value->get<float>(), 0.0f);
+  }
+}
+
+void to_json(json& j, const ProjectJointHistogramSettings& settings)
+{
+  const ProjectJointHistogramSettings defaults;
+  metricSettingsToJson(j, settings.m_metric, defaults.m_metric);
+  addIfChanged(j, "logarithmicScale", settings.m_logarithmicScale, defaults.m_logarithmicScale);
+  addIfChanged(j, "bins", settings.m_bins, defaults.m_bins);
+  addIfChanged(j, "majorTicks", settings.m_majorTicks, defaults.m_majorTicks);
+  addIfChanged(j, "minorTicks", settings.m_minorTicks, defaults.m_minorTicks);
+}
+
+void from_json(const json& j, ProjectJointHistogramSettings& settings)
+{
+  j.get_to(settings.m_metric);
+  if (const auto value = j.find("logarithmicScale"); value != j.end() && value->is_boolean()) {
+    settings.m_logarithmicScale = value->get<bool>();
+  }
+  if (const auto value = j.find("bins"); value != j.end() && value->is_number_integer()) {
+    settings.m_bins = std::clamp(value->get<int>(), 16, 1024);
+  }
+  if (const auto value = j.find("majorTicks"); value != j.end() && value->is_number_integer()) {
+    settings.m_majorTicks = std::clamp(value->get<int>(), 2, 12);
+  }
+  if (const auto value = j.find("minorTicks"); value != j.end() && value->is_number_integer()) {
+    settings.m_minorTicks = std::clamp(value->get<int>(), 0, 9);
   }
 }
 

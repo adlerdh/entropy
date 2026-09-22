@@ -794,10 +794,9 @@ void renderDicomSeriesSelectionPopup(
     setNextWindowSizeConstraintsToMainViewport(760.0f, 420.0f);
     bool dicomMetadataDialogOpen = true;
     if (ImGui::BeginPopupModal("DICOM Metadata", &dicomMetadataDialogOpen, ImGuiWindowFlags_Modal)) {
-      if (!dicomMetadataDialogOpen) {
-        ImGui::CloseCurrentPopup();
-      }
-      else if (!prompt.metadataSeriesIndex || *prompt.metadataSeriesIndex >= prompt.series.size()) {
+      if (
+        !dicomMetadataDialogOpen || !prompt.metadataSeriesIndex || *prompt.metadataSeriesIndex >= prompt.series.size())
+      {
         ImGui::CloseCurrentPopup();
       }
       else {

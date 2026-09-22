@@ -145,6 +145,9 @@ public:
 
   GLuint id() const;
 
+  /// Number of successful base-level uploads or subregion updates since this texture was created.
+  std::uint64_t contentRevision() const;
+
   /// Return the logical texture dimensions last supplied to `setSize()`.
   glm::uvec3 size() const;
 
@@ -325,6 +328,7 @@ private:
   tex::Target m_target;
   GLenum m_targetEnum;
   GLuint m_id;
+  std::uint64_t m_contentRevision = 0;
   glm::uvec3 m_size{0u};
   bool m_hasAllocatedStorage = false;
   std::unordered_set<GLint> m_allocatedLevels;

@@ -25,6 +25,7 @@ target_sources(EntropyCommon
       common/AsyncTasks.h
       common/ClipboardFormats.h
       common/ClipboardPayload.h
+      common/ColorMapDefaults.h
       common/CoordinateFrame.h
       common/DirectionMaps.h
       common/Exception.hpp

@@ -1,10 +1,21 @@
 #include "rendering/gl/GLBufferObject.h"
+#include "rendering/gl/GLBufferTexture.h"
 #include "rendering/gl/GLBufferTypes.h"
 #include "rendering/gl/GLDrawTypes.h"
+#include "rendering/gl/GLFrameBufferObject.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/GLTexture.h"
 #include "rendering/gl/GLTextureTypes.h"
 #include "rendering/gl/GLVertexArrayObject.h"
+#include "rendering/gl/OpenGLRenderState.h"
+#include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/helpers/TextureSetupHelpers.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
+#include "rendering/mesh/MeshDdpResources.h"
+#include "rendering/mesh/MeshRenderer.h"
+#include "rendering/mesh/MeshShadowMapResources.h"
+#include "rendering/TextureLayout.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>

@@ -675,6 +675,7 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
   : m_target(other.m_target)
   , m_targetEnum(other.m_targetEnum)
   , m_id(other.m_id)
+  , m_contentRevision(other.m_contentRevision)
   , m_size(other.m_size)
   , m_hasAllocatedStorage(other.m_hasAllocatedStorage)
   , m_allocatedLevels(std::move(other.m_allocatedLevels))
@@ -690,6 +691,7 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
   , m_pixelUnpackSettings(other.m_pixelUnpackSettings)
 {
   other.m_id = 0;
+  other.m_contentRevision = 0;
   other.m_size = glm::uvec3{1};
   other.m_hasAllocatedStorage = false;
   other.m_allocatedLevels.clear();
@@ -713,6 +715,7 @@ GLTexture& GLTexture::operator=(GLTexture&& other) noexcept
     std::swap(m_target, other.m_target);
     std::swap(m_targetEnum, other.m_targetEnum);
     std::swap(m_id, other.m_id);
+    std::swap(m_contentRevision, other.m_contentRevision);
     std::swap(m_size, other.m_size);
     std::swap(m_hasAllocatedStorage, other.m_hasAllocatedStorage);
     std::swap(m_allocatedLevels, other.m_allocatedLevels);
@@ -762,6 +765,7 @@ void GLTexture::destroy()
     glDeleteTextures(1, &m_id);
   }
   m_id = 0;
+  m_contentRevision = 0;
   m_size = glm::uvec3{1};
   m_hasAllocatedStorage = false;
   m_allocatedLevels.clear();
@@ -887,6 +891,11 @@ Target GLTexture::target() const
 GLuint GLTexture::id() const
 {
   return m_id;
+}
+
+std::uint64_t GLTexture::contentRevision() const
+{
+  return m_contentRevision;
 }
 
 glm::uvec3 GLTexture::size() const
@@ -1056,6 +1065,7 @@ void GLTexture::setData(
     m_autoGenerateMipmaps);
 
   m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
+  ++m_contentRevision;
 }
 
 void GLTexture::setSubData(
@@ -1175,6 +1185,7 @@ void GLTexture::setSubData(
   }
 
   m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
+  ++m_contentRevision;
 }
 
 void GLTexture::setCubeMapFaceData(

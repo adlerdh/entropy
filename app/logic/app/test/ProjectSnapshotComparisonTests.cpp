@@ -280,7 +280,11 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
 
   changedComparison = project;
-  changedComparison.m_comparison.m_jointHistogram.m_colorMapIndex = 3;
+  changedComparison.m_comparison.m_jointHistogram.m_metric.m_colorMapIndex = 3;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
+
+  changedComparison = project;
+  changedComparison.m_comparison.m_jointHistogram.m_logarithmicScale = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
 
   auto changedRaycasting = project;

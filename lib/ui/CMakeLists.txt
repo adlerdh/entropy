@@ -77,6 +77,12 @@ if(APPLE)
     ui/dialogs/NativeMessageDialogsMac.mm
     ui/menus/MacNativeMainMenu.mm
   )
+  set_source_files_properties(
+    ui/ClipboardMac.mm
+    ui/dialogs/NativeMessageDialogsMac.mm
+    ui/menus/MacNativeMainMenu.mm
+    PROPERTIES COMPILE_OPTIONS "-fobjc-arc"
+  )
 elseif(WIN32)
   list(APPEND entropy_UI_SOURCES
     ui/ClipboardWin.cpp

@@ -3,6 +3,7 @@ add_executable(TestRendering
   MeshPlaneIntersectionTests.cpp
   MeshTests.cpp
   MeshOpenGlResourceTests.cpp
+  JointHistogramShaderTests.cpp
   VectorDrawingHelpersTests.cpp
 )
 
@@ -12,6 +13,8 @@ if(Entropy_ENABLE_IWYU)
 endif()
 
 target_sources(TestRendering PRIVATE
+  "${entropy_APP_DIR}/logic/interaction/JointHistogramInteraction.cpp"
+  "${entropy_APP_DIR}/rendering/JointHistogramRenderer.cpp"
   "${entropy_APP_DIR}/rendering/helpers/VectorDrawingHelpers.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshExtractionJobs.cpp"
   "${entropy_APP_DIR}/rendering/mesh/MeshImageAdapter.cpp"
@@ -27,6 +30,7 @@ target_link_libraries(TestRendering PRIVATE
   Entropy::Viewer
   entropy::colormaps
   entropy::fonts
+  entropy::shaders
   glad
   glfw
   entropy_warnings

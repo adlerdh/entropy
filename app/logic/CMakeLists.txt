@@ -40,6 +40,7 @@ target_sources(entropy PRIVATE
   camera/Projection.cpp
   camera/RaycastIsoSurfacePicker.cpp
 
+  interaction/JointHistogramInteraction.cpp
   interaction/ViewHit.cpp
   interaction/TransformationGuide.cpp
   interaction/events/ButtonState.cpp

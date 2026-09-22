@@ -8,9 +8,11 @@
 #include "logic/app/ImageScaleInteraction.h"
 #include "logic/app/Settings.h"
 #include "logic/app/State.h"
+#include "logic/camera/Camera2DControls.h"
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/Camera3DInteraction.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/interaction/JointHistogramInteraction.h"
 #include "logic/interaction/ViewHit.h"
 #include "logic/interaction/events/ButtonState.h"
 #include "logic/states/annotation/AnnotationEvents.h"
@@ -63,6 +65,25 @@ constexpr float kDoubleClickMaxDistanceWindowPixels = 6.0f;
 bool syncZoomsForAllViews(const ModifierState& modState)
 {
   return (modState.shift || ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift));
+}
+
+bool isJointHistogramView(const View* view)
+{
+  return view && ViewRenderMode::JointHistogram == view->renderMode();
+}
+
+std::optional<glm::vec2> jointHistogramCoordinates(const AppData& appData, const ViewHit& hit)
+{
+  if (!isJointHistogramView(hit.view)) {
+    return std::nullopt;
+  }
+  const FrameBounds frameBounds =
+    helper::computeMiewportFrameBounds(hit.view->windowClipViewport(), appData.windowData().viewport().getAsVec4());
+  const float controlBottom = appData.viewOverlayControlExtent(*hit.view).y;
+  return joint_histogram::plotCoordinates(
+    joint_histogram::plotForFrame(frameBounds, controlBottom),
+    frameBounds,
+    hit.viewClipPos);
 }
 
 bool isLeftDoubleClick(int button, int action, const glm::vec2& windowCursorPos)
@@ -289,14 +310,39 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   // hit from being valid if the cursor hits outside of a view.
   const auto currHit_invalidOutsideView = getViewHit(app->appData(), windowCurrentPos);
 
+  CallbackHandler& H = app->callbackHandler();
+  const bool brushUsesBackgroundLabel = s_mouseButtonState.right || shiftDown;
+
+  if (isJointHistogramView(startView)) {
+    H.clearBrushPreview();
+    if (currHit_withOverride) {
+      const auto startPosition = jointHistogramCoordinates(app->appData(), *s_startHit);
+      const auto previousPosition = jointHistogramCoordinates(app->appData(), *s_prevHit);
+      const auto currentPosition = jointHistogramCoordinates(app->appData(), *currHit_withOverride);
+      if (startPosition && previousPosition && currentPosition && joint_histogram::contains(*startPosition)) {
+        const MouseMode mouseMode = app->appData().state().mouseMode();
+        const bool pan =
+          s_mouseButtonState.middle || (MouseMode::CameraTranslate == mouseMode && s_mouseButtonState.left);
+        const bool zoom = s_mouseButtonState.right || (MouseMode::CameraZoom == mouseMode && s_mouseButtonState.left);
+        if (pan) {
+          startView->jointHistogramNavigation().pan(*currentPosition - *previousPosition);
+        }
+        else if (zoom) {
+          startView->jointHistogramNavigation().zoom(
+            camera2d::dragZoomFactor(currHit_withOverride->windowClipPos.y - s_prevHit->windowClipPos.y),
+            *startPosition);
+        }
+      }
+    }
+    s_prevHit = currHit_withOverride;
+    return;
+  }
+
   // Send event to annotation and crosshairs-rotation state machines
   if (currHit_invalidOutsideView) {
     send_event(
       state::annot::MouseMoveEvent(*s_prevHit, *currHit_invalidOutsideView, s_mouseButtonState, s_modifierState));
   }
-
-  CallbackHandler& H = app->callbackHandler();
-  const bool brushUsesBackgroundLabel = s_mouseButtonState.right || shiftDown;
 
   if (MouseMode::Segment == app->appData().state().mouseMode()) {
     const BrushPreviewMode previewMode = app->appData().settings().brushPreviewMode();
@@ -671,6 +717,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   s_mouseButtonState.updateFromGlfwEvent(button, action);
   s_modifierState.updateFromGlfwEvent(mods);
 
+  const bool jointHistogramGesture = s_startHit && isJointHistogramView(s_startHit->view);
+
   // Reset start and previous hits
   s_startHit = std::nullopt;
   s_prevHit = std::nullopt;
@@ -686,6 +734,11 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     static_cast<float>(app->windowData().getWindowSize().y),
     {mindowCursorPosX, mindowCursorPosY});
 
+  if (GLFW_RELEASE == action && jointHistogramGesture) {
+    app->appData().windowData().setActiveViewUid(std::nullopt);
+    return;
+  }
+
   // Get a hit that will be invalid (null) if the cursor is not in any view:
   const auto hit_invalidOutsideView = getViewHit(app->appData(), windowCursorPos);
   if (!hit_invalidOutsideView) {
@@ -694,9 +747,18 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 
   CallbackHandler& H = app->callbackHandler();
 
+  const bool leftDoubleClick = isLeftDoubleClick(button, action, windowCursorPos);
+  if (GLFW_PRESS == action && isJointHistogramView(hit_invalidOutsideView->view)) {
+    app->appData().windowData().setActiveViewUid(hit_invalidOutsideView->viewUid);
+    if (leftDoubleClick) {
+      hit_invalidOutsideView->view->jointHistogramNavigation().reset();
+    }
+    cursorPosCallback(window, mindowCursorPosX, mindowCursorPosY);
+    return;
+  }
+
   if (
-    isLeftDoubleClick(button, action, windowCursorPos) &&
-    camera3d::mouseModeAllowsPointPicking(app->appData().state().mouseMode()) &&
+    leftDoubleClick && camera3d::mouseModeAllowsPointPicking(app->appData().state().mouseMode()) &&
     ViewType::ThreeD == hit_invalidOutsideView->view->viewType())
   {
     H.doThreeDIsosurfacePick(*hit_invalidOutsideView);
@@ -758,6 +820,17 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   }
 
   CallbackHandler& H = app->callbackHandler();
+
+  if (isJointHistogramView(hit_invalidOutsideView->view)) {
+    const auto pointerPosition = jointHistogramCoordinates(app->appData(), *hit_invalidOutsideView);
+    if (pointerPosition && joint_histogram::contains(*pointerPosition)) {
+      app->appData().windowData().setActiveViewUid(hit_invalidOutsideView->viewUid);
+      hit_invalidOutsideView->view->jointHistogramNavigation().zoom(
+        camera2d::scrollZoomFactor(static_cast<float>(scrollOffsetY)),
+        *pointerPosition);
+    }
+    return;
+  }
 
   if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
     H.doThreeDCameraScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY}, shiftDown, altDown);
@@ -825,6 +898,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     {mindowCursorPosX, mindowCursorPosY});
 
   const auto hit_invalidOutsideView = getViewHit(app->appData(), windowCursorPos);
+  const bool jointHistogramHit = hit_invalidOutsideView && isJointHistogramView(hit_invalidOutsideView->view);
 
   CallbackHandler& H = app->callbackHandler();
 
@@ -929,6 +1003,11 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
         break;
       }
 
+      if (jointHistogramHit) {
+        hit_invalidOutsideView->view->jointHistogramNavigation().reset();
+        break;
+      }
+
       // Shift does a "hard" reset of the crosshairs, oblique orientations, and zoom
       const bool hardReset = (s_modifierState.shift);
       const bool recenterCrosshairs = hardReset;
@@ -961,7 +1040,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
         H.cycleImageComponent(-1);
       }
       else {
-        if (!hit_invalidOutsideView) {
+        if (!hit_invalidOutsideView || jointHistogramHit) {
           break;
         }
         H.scrollViewSlice(*hit_invalidOutsideView, -1);
@@ -973,7 +1052,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
         H.cycleImageComponent(1);
       }
       else {
-        if (!hit_invalidOutsideView) {
+        if (!hit_invalidOutsideView || jointHistogramHit) {
           break;
         }
         H.scrollViewSlice(*hit_invalidOutsideView, 1);
@@ -981,7 +1060,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_LEFT: {
-      if (!hit_invalidOutsideView) {
+      if (!hit_invalidOutsideView || jointHistogramHit) {
         break;
       }
       if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
@@ -997,7 +1076,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_RIGHT: {
-      if (!hit_invalidOutsideView) {
+      if (!hit_invalidOutsideView || jointHistogramHit) {
         break;
       }
       if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
@@ -1013,7 +1092,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_UP: {
-      if (!hit_invalidOutsideView) {
+      if (!hit_invalidOutsideView || jointHistogramHit) {
         break;
       }
       if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
@@ -1029,7 +1108,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_DOWN: {
-      if (!hit_invalidOutsideView) {
+      if (!hit_invalidOutsideView || jointHistogramHit) {
         break;
       }
       if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {

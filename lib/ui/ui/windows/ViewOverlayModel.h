@@ -41,6 +41,9 @@ bool usesMetricImageSelection(ViewRenderMode renderMode);
  */
 bool usesDisabledVisibilityIcon(ViewRenderMode renderMode);
 
+/** Return whether an anatomical view-type selector is meaningful for this render mode. */
+bool usesAnatomicalViewTypeSelector(ViewRenderMode renderMode);
+
 /**
  * @brief Build the display label for an image selection menu item.
  * @param choice Image metadata and state.

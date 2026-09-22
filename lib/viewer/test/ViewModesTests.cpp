@@ -21,6 +21,7 @@ TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")
     ViewRenderMode::Difference,
     ViewRenderMode::LocalNcc,
     ViewRenderMode::LocalLinearResidual,
+    ViewRenderMode::JointHistogram,
     ViewRenderMode::Disabled};
 
   CHECK(All2dViewRenderModes == expected);
@@ -48,6 +49,7 @@ TEST_CASE("comparison render modes require at least two images", "[viewer][modes
 
   CHECK(std::ranges::none_of(twoDRenderModesForImageCount(0), isComparisonRenderMode));
   CHECK(std::ranges::none_of(twoDRenderModesForImageCount(1), isComparisonRenderMode));
+  CHECK(All2dViewRenderModes[All2dViewRenderModes.size() - 2] == ViewRenderMode::JointHistogram);
   CHECK(std::ranges::all_of(
     twoDRenderModesForImageCount(2) | std::views::drop(1) | std::views::take(7),
     isComparisonRenderMode));

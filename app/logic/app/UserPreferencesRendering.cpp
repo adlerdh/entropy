@@ -147,6 +147,15 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.localLinearResidualVarianceEpsilon = renderSettings.m_localLinearResidualVarianceEpsilon;
   preferences.localLinearResidualInvalidStyle =
     localNccInvalidStyleFromRenderSettings(renderSettings.m_localLinearResidualInvalidStyle);
+  preferences.jointHistogramMetric.colorMapIndex = renderSettings.m_jointHistogramParams.m_colorMapIndex;
+  preferences.jointHistogramMetric.slopeIntercept = renderSettings.m_jointHistogramParams.m_slopeIntercept;
+  preferences.jointHistogramMetric.invertColormap = renderSettings.m_jointHistogramParams.m_invertCmap;
+  preferences.jointHistogramMetric.continuousColormap = renderSettings.m_jointHistogramParams.m_cmapContinuous;
+  preferences.jointHistogramMetric.colormapLevels = renderSettings.m_jointHistogramParams.m_cmapQuantizationLevels;
+  preferences.jointHistogramLogarithmicScale = renderSettings.m_jointHistogramLogarithmicScale;
+  preferences.jointHistogramBins = renderSettings.m_jointHistogramBins;
+  preferences.jointHistogramMajorTicks = renderSettings.m_jointHistogramMajorTicks;
+  preferences.jointHistogramMinorTicks = renderSettings.m_jointHistogramMinorTicks;
   preferences.overlayMagentaCyan = renderSettings.m_overlayMagentaCyan;
   preferences.quadrants = renderSettings.m_quadrants;
   preferences.checkerboardSquares = renderSettings.m_numCheckerboardSquares;
@@ -309,6 +318,15 @@ void applyRenderPreferences(
   renderSettings.m_localLinearResidualVarianceEpsilon = preferences.localLinearResidualVarianceEpsilon;
   renderSettings.m_localLinearResidualInvalidStyle =
     localNccInvalidStyleToRenderSettings(preferences.localLinearResidualInvalidStyle);
+  renderSettings.m_jointHistogramParams.m_colorMapIndex = preferences.jointHistogramMetric.colorMapIndex;
+  renderSettings.m_jointHistogramParams.m_slopeIntercept = preferences.jointHistogramMetric.slopeIntercept;
+  renderSettings.m_jointHistogramParams.m_invertCmap = preferences.jointHistogramMetric.invertColormap;
+  renderSettings.m_jointHistogramParams.m_cmapContinuous = preferences.jointHistogramMetric.continuousColormap;
+  renderSettings.m_jointHistogramParams.m_cmapQuantizationLevels = preferences.jointHistogramMetric.colormapLevels;
+  renderSettings.m_jointHistogramLogarithmicScale = preferences.jointHistogramLogarithmicScale;
+  renderSettings.m_jointHistogramBins = preferences.jointHistogramBins;
+  renderSettings.m_jointHistogramMajorTicks = preferences.jointHistogramMajorTicks;
+  renderSettings.m_jointHistogramMinorTicks = preferences.jointHistogramMinorTicks;
   renderSettings.m_overlayMagentaCyan = preferences.overlayMagentaCyan;
   renderSettings.m_quadrants = preferences.quadrants;
   renderSettings.m_numCheckerboardSquares = preferences.checkerboardSquares;
@@ -525,6 +543,11 @@ void mergeEditedRenderPreferences(
   MERGE_EDITED(localLinearResidualMinValidFraction)
   MERGE_EDITED(localLinearResidualVarianceEpsilon)
   MERGE_EDITED(localLinearResidualInvalidStyle)
+  MERGE_EDITED(jointHistogramMetric)
+  MERGE_EDITED(jointHistogramLogarithmicScale)
+  MERGE_EDITED(jointHistogramBins)
+  MERGE_EDITED(jointHistogramMajorTicks)
+  MERGE_EDITED(jointHistogramMinorTicks)
   MERGE_EDITED(overlayMagentaCyan)
   MERGE_EDITED(quadrants)
   MERGE_EDITED(checkerboardSquares)

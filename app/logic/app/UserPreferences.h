@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/ColorMapDefaults.h"
 #include "common/Types.h"
 #include "logic/app/Settings.h"
 
@@ -110,6 +111,11 @@ struct RenderPreferences
   MetricParams squaredDifferenceMetric;
   MetricParams localNccMetric;
   MetricParams localLinearResidualMetric;
+  MetricParams jointHistogramMetric{.colorMapIndex = colormap_defaults::kLinear20GouldianIndex};
+  bool jointHistogramLogarithmicScale = true;
+  int jointHistogramBins = 512;
+  int jointHistogramMajorTicks = 5;
+  int jointHistogramMinorTicks = 4;
   int localNccPatchRadius = 3;
   float localNccSampleSpacing = 1.0f;
   float localNccMinValidFraction = 0.75f;

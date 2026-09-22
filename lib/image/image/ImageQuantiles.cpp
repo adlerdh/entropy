@@ -55,8 +55,8 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t valueArg) const
   qov.upperQuantile = q;
   qov.lowerIndex = 0;
   qov.upperIndex = 0;
-  qov.lowerValue = valueArg;
-  qov.upperValue = valueArg;
+  qov.lowerValue = static_cast<double>(valueArg);
+  qov.upperValue = static_cast<double>(valueArg);
   qov.foundValue = true;
   return qov;
 }

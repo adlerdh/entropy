@@ -333,7 +333,13 @@ serialize::ProjectComparisonSettings comparisonSettings(const AppData& appData)
       serialize::ProjectDifferenceMetricSettings{
         .m_squared = renderSettings.m_useSquare,
         .m_metric = metricSettings(renderSettings.m_squaredDifferenceParams)},
-    .m_jointHistogram = metricSettings(renderSettings.m_jointHistogramParams),
+    .m_jointHistogram =
+      serialize::ProjectJointHistogramSettings{
+        .m_metric = metricSettings(renderSettings.m_jointHistogramParams),
+        .m_logarithmicScale = renderSettings.m_jointHistogramLogarithmicScale,
+        .m_bins = renderSettings.m_jointHistogramBins,
+        .m_majorTicks = renderSettings.m_jointHistogramMajorTicks,
+        .m_minorTicks = renderSettings.m_jointHistogramMinorTicks},
     .m_localNcc =
       serialize::ProjectLocalNccMetricSettings{
         .m_metric = metricSettings(renderSettings.m_localNccParams),
@@ -364,7 +370,11 @@ void applyComparisonSettings(AppData& appData, const serialize::ProjectCompariso
   auto& renderSettings = appData.renderSettings();
   renderSettings.m_useSquare = settings.m_difference.m_squared;
   applyMetricSettings(renderSettings.m_squaredDifferenceParams, settings.m_difference.m_metric);
-  applyMetricSettings(renderSettings.m_jointHistogramParams, settings.m_jointHistogram);
+  applyMetricSettings(renderSettings.m_jointHistogramParams, settings.m_jointHistogram.m_metric);
+  renderSettings.m_jointHistogramLogarithmicScale = settings.m_jointHistogram.m_logarithmicScale;
+  renderSettings.m_jointHistogramBins = settings.m_jointHistogram.m_bins;
+  renderSettings.m_jointHistogramMajorTicks = settings.m_jointHistogram.m_majorTicks;
+  renderSettings.m_jointHistogramMinorTicks = settings.m_jointHistogram.m_minorTicks;
 
   applyMetricSettings(renderSettings.m_localNccParams, settings.m_localNcc.m_metric);
   renderSettings.m_localNccPresentation = localNccPresentation(settings.m_localNcc.m_presentation);

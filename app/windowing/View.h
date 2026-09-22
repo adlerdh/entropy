@@ -7,6 +7,7 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraTypes.h"
+#include "logic/interaction/JointHistogramInteraction.h"
 #include "rendering/helpers/SliceIntersectorTypes.h"
 #include "ui/UiControls.h"
 #include "viewer/ViewModes.h"
@@ -126,6 +127,12 @@ public:
    * @return Mutable 3D camera state
    */
   camera3d::State& threeDState();
+
+  /** @brief Get this view's independent joint-histogram navigation state. */
+  const joint_histogram::Navigation& jointHistogramNavigation() const;
+
+  /** @brief Get the mutable joint-histogram navigation state for local pan and zoom. */
+  joint_histogram::Navigation& jointHistogramNavigation();
 
   /// Return whether the dedicated 3D camera has been framed for a scene.
   bool isThreeDCameraInitialized() const;
@@ -267,6 +274,9 @@ private:
 
   /// True after the 3D camera has been initialized for a scene
   bool m_threeDCameraInitialized = false;
+
+  /// Independent intensity-space pan and zoom for joint-histogram rendering
+  joint_histogram::Navigation m_jointHistogramNavigation;
 
   /// True after the dedicated 2D camera has been used as the active view camera
   bool m_sliceCameraActivated = false;

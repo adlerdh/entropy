@@ -4,25 +4,26 @@
 #include "common/UuidRange.h"
 #include "image/ImageDerivedData.h"
 #include "logic/camera/CameraTypes.h"
+#include "rendering/JointHistogramRenderer.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/RenderDerivedData.h"
 #include "rendering/RenderResources.h"
 #include "rendering/ViewOverlayVisibility.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
+#include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/Uniforms.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"
-#include "rendering/mesh/MeshExtractionService.h"
 #include "rendering/mesh/MeshDdpResources.h"
-#include "rendering/mesh/MeshResourceStore.h"
+#include "rendering/mesh/MeshExtractionService.h"
+#include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
-#include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshPlaneIntersection.h"
 #include "rendering/mesh/MeshRenderer.h"
+#include "rendering/mesh/MeshResourceStore.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
-#include "rendering/gl/GLShaderProgram.h"
-#include "rendering/gl/Uniforms.h"
 
 #include <glm/fwd.hpp>
 #include <glm/mat4x4.hpp>
@@ -100,6 +101,12 @@ public:
    * @brief Draw the current application layout.
    */
   void render();
+
+  /** Whether a visible progressive render needs another frame without waiting for user input. */
+  bool needsRefinementFrame() const
+  {
+    return m_needsRefinementFrame;
+  }
 
   /**
    * @brief Update sampler interpolation for all textures that belong to one image.
@@ -385,6 +392,8 @@ private:
   AsciiRenderer m_asciiRenderer;
 
   PixelEdgeRenderer m_pixelEdgeRenderer; //!< Pixel-space image-edge post-processing pipeline
+  std::unordered_map<uuids::uuid, std::unique_ptr<rendering::JointHistogramRenderer>> m_jointHistogramRenderers;
+  bool m_needsRefinementFrame = false;
 
   /// Shader programs for the normal 3D texture rendering path, keyed by render mode and interpolation variant.
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;

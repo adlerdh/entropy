@@ -85,6 +85,9 @@ public:
   const GuiData& guiData() const;
   GuiData& guiData();
 
+  /** Return the measured or conservative top-left control-row extent for a view, or zero when overlays are hidden. */
+  glm::vec2 viewOverlayControlExtent(const View& view) const;
+
   const rendering::RenderSettings& renderSettings() const;
   rendering::RenderSettings& renderSettings();
 

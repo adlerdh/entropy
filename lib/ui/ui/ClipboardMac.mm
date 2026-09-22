@@ -7,7 +7,8 @@
 namespace {
 
 NSString* nsString(const std::string& text) {
-  return [NSString stringWithUTF8String:text.c_str()];
+  NSString* result = [[NSString alloc] initWithBytes:text.data() length:text.size() encoding:NSUTF8StringEncoding];
+  return result ? result : @"";
 }
 
 }  // namespace

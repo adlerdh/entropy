@@ -1,6 +1,17 @@
+#include "rendering/ShaderPreprocessor.h"
 #include "rendering/ShaderProgramSetup.h"
+#include "rendering/ShaderSourceSetup.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <chrono>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace shader_setup = rendering::shader_setup;
 

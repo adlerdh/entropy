@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/ColorMapDefaults.h"
 #include "common/Types.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
@@ -168,7 +169,11 @@ struct RenderSettings
   MetricParams m_squaredDifferenceParams;
   MetricParams m_localNccParams;
   MetricParams m_localLinearResidualParams;
-  MetricParams m_jointHistogramParams;
+  MetricParams m_jointHistogramParams{.m_colorMapIndex = colormap_defaults::kLinear20GouldianIndex};
+  bool m_jointHistogramLogarithmicScale = true;
+  int m_jointHistogramBins = 512;
+  int m_jointHistogramMajorTicks = 5;
+  int m_jointHistogramMinorTicks = 4;
   int m_localNccPatchRadius = 3;
   float m_localNccSampleSpacing = 1.0f;
   float m_localNccMinValidFraction = 0.75f;

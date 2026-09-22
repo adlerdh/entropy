@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/ColorMapDefaults.h"
 #include "common/HistogramSettings.h"
 #include "common/InputParams.h"
 #include "common/Types.h"
@@ -176,13 +177,23 @@ struct ProjectLocalLinearResidualMetricSettings
     ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display
 };
 
+/** @brief Project-wide joint-histogram presentation and axis settings. */
+struct ProjectJointHistogramSettings
+{
+  ProjectMetricSettings m_metric{.m_colorMapIndex = colormap_defaults::kLinear20GouldianIndex};
+  bool m_logarithmicScale = true;
+  int m_bins = 512;
+  int m_majorTicks = 5;
+  int m_minorTicks = 4;
+};
+
 /**
  * @brief Project-wide comparison mode and metric settings.
  */
 struct ProjectComparisonSettings
 {
   ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings
-  ProjectMetricSettings m_jointHistogram;                         //!< Joint-histogram colormap/window settings
+  ProjectJointHistogramSettings m_jointHistogram;                 //!< Joint-histogram presentation and axes
   ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings
   ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings
   bool m_overlayMagentaCyan = false;                              //!< Overlay color convention
@@ -749,6 +760,12 @@ void to_json(nlohmann::json& j, const ProjectViewSettings& settings);
  * @param settings Settings to update.
  */
 void from_json(const nlohmann::json& j, ProjectViewSettings& settings);
+
+/** @brief Serialize only non-default joint-histogram presentation fields. */
+void to_json(nlohmann::json& j, const ProjectJointHistogramSettings& settings);
+
+/** @brief Read joint-histogram presentation fields, preserving defaults for omitted values. */
+void from_json(const nlohmann::json& j, ProjectJointHistogramSettings& settings);
 
 /**
  * @brief Serialize project comparison settings to JSON.

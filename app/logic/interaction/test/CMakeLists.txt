@@ -1,15 +1,18 @@
 add_executable(TestInteraction
   ButtonStateTests.cpp
+  JointHistogramInteractionTests.cpp
   TransformationGuideTests.cpp
 )
 
 target_sources(TestInteraction PRIVATE
+  "${entropy_APP_DIR}/logic/interaction/JointHistogramInteraction.cpp"
   "${entropy_APP_DIR}/logic/interaction/events/ButtonState.cpp"
   "${entropy_APP_DIR}/logic/interaction/TransformationGuide.cpp"
 )
 
 target_link_libraries(TestInteraction PRIVATE
   Catch2::Catch2WithMain
+  Entropy::Common
   glm::glm
   stduuid
   entropy_warnings

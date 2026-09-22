@@ -1,5 +1,4 @@
 #include "rendering/Rendering.h"
-#include "rendering/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
 #include "logic/app/Data.h"
@@ -7,6 +6,7 @@
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
+#include "rendering/gl/OpenGLRenderState.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
@@ -29,6 +29,9 @@ void Rendering::renderAllImageBordersForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
+  if (ViewRenderMode::JointHistogram == view.renderMode()) {
+    return;
+  }
   const rendering::RenderSettings& renderSettings = m_appData.renderSettings();
   const bool renderBordersInCurrentLayout =
     renderSettings.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
@@ -82,6 +85,9 @@ void Rendering::renderAllLandmarksForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
+  if (ViewRenderMode::JointHistogram == view.renderMode()) {
+    return;
+  }
   if (ViewType::ThreeD == view.viewType()) {
     return;
   }
@@ -127,6 +133,9 @@ void Rendering::renderAllAnnotationsForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
+  if (ViewRenderMode::JointHistogram == view.renderMode()) {
+    return;
+  }
   if (ViewType::ThreeD == view.viewType()) {
     return;
   }

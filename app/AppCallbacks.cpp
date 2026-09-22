@@ -20,7 +20,15 @@ void EntropyApp::setCallbacks()
          .targetFrameTime = std::chrono::duration<double>{renderSettings.m_targetFrameTimeSeconds}},
         lastFrameTime);
     },
-    [this]() { m_rendering.render(); },
+    [this]() {
+      m_rendering.render();
+      if (m_rendering.needsRefinementFrame() && !m_data.state().animating()) {
+        // The background callback restores the normal idle/sync policy each frame. Keep rendering
+        // while a visible histogram still needs work; buffer swapping or the optional frame limiter
+        // provides pacing without adding another delay after every refinement frame.
+        m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
+      }
+    },
     [this]() { m_imgui.render(); },
     [this]() {
       showNextInputLoadFailure();

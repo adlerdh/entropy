@@ -306,6 +306,9 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
 
 void Rendering::render()
 {
+  // Only work requested by views actually drawn this frame should keep the event loop awake.
+  m_needsRefinementFrame = false;
+
   // Rebuild ASCII atlas if the charset changed via the UI
   m_asciiRenderer.maybeRebuildAtlas();
 
@@ -379,8 +382,22 @@ void Rendering::renderImageData()
     return scene;
   };
 
+  // Histogram accumulation is per view; discard GPU caches for views no longer showing a histogram.
+  const auto& layoutViews = m_appData.windowData().currentLayout().views();
+  for (auto it = m_jointHistogramRenderers.begin(); it != m_jointHistogramRenderers.end();) {
+    const auto viewIt = layoutViews.find(it->first);
+    if (
+      viewIt == layoutViews.end() || !viewIt->second || viewIt->second->renderMode() != ViewRenderMode::JointHistogram)
+    {
+      it = m_jointHistogramRenderers.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+
   // Render images for each view in the layout
-  for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views()) {
+  for (const auto& [viewUid, view] : layoutViews) {
     if (!view) {
       continue;
     }
