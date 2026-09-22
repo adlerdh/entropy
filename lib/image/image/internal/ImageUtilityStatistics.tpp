@@ -9,9 +9,9 @@
  * @brief Linearly interpolate between two values.
  */
 template<typename T>
-double lerp(T a, T b, T t)
+double lerp(T a, T b, double t)
 {
-  return (1 - t) * a + t * b;
+  return (1.0 - t) * static_cast<double>(a) + t * static_cast<double>(b);
 }
 
 /**
@@ -22,7 +22,7 @@ double lerp(T a, T b, T t)
  * @return Interpolated value at \p quantile.
  */
 template<typename T>
-T convertQuantileToValue(const std::span<const T> dataSorted, double quantile)
+double convertQuantileToValue(const std::span<const T> dataSorted, double quantile)
 {
   const std::size_t N = dataSorted.size();
 
@@ -240,8 +240,7 @@ ComponentStats computeStatsOnSortedBuffers(const std::span<const T> dataSorted)
 
   for (std::size_t i = 0; i <= 100; ++i) {
     const double quantile = static_cast<double>(i) / 100.0;
-    const T value = convertQuantileToValue(dataSorted, quantile);
-    compStats.quantiles[i] = static_cast<double>(value);
+    compStats.quantiles[i] = convertQuantileToValue(dataSorted, quantile);
   }
 
   return compStats;

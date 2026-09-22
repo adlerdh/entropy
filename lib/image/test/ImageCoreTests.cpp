@@ -437,6 +437,7 @@ void checkExactQuantilesForType()
 
   CHECK(image.quantileToValue(0, 0.0) == Catch::Approx(2.0));
   CHECK(image.quantileToValue(0, 0.5) == Catch::Approx(4.0));
+  CHECK(image.quantileToValue(0, 0.6) == Catch::Approx(6.0));
   CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(10.0));
 
   const QuantileOfValue duplicate = image.valueToQuantile(0, int64_t{2});
