@@ -27,6 +27,19 @@ CMRC_DECLARE(shaders);
 
 namespace
 {
+bool environmentVariableExists(const char* name)
+{
+#if defined(_MSC_VER)
+  char* value = nullptr;
+  std::size_t size = 0;
+  const bool exists = _dupenv_s(&value, &size, name) == 0 && value != nullptr;
+  std::free(value);
+  return exists;
+#else
+  return std::getenv(name) != nullptr;
+#endif
+}
+
 std::string shaderSource(const std::string& name)
 {
   const auto file = cmrc::shaders::get_filesystem().open("rendering/shaders/" + name);
@@ -119,7 +132,7 @@ TEST_CASE("histogram scheduling bounds previews and cautiously adapts to GPU cos
 TEST_CASE("joint histogram shaders link and scatter in OpenGL 3.3", "[rendering][histogram][gl]")
 {
 #if defined(__APPLE__)
-  if (std::getenv("ENTROPY_TEST_GL33") == nullptr) {
+  if (!environmentVariableExists("ENTROPY_TEST_GL33")) {
     SKIP("Set ENTROPY_TEST_GL33 to opt in to macOS OpenGL context tests");
   }
 #endif
@@ -239,7 +252,7 @@ TEST_CASE("joint histogram shaders link and scatter in OpenGL 3.3", "[rendering]
         CHECK(histogram[3 * 4 + 2] == 1.0f);
         CHECK(histogram[3] == 1.0f);
 
-        if (std::getenv("ENTROPY_HISTOGRAM_BENCHMARK") != nullptr) {
+        if (environmentVariableExists("ENTROPY_HISTOGRAM_BENCHMARK")) {
           // Prior procedural scatter: no fixed cache, no background spreading, one million voxels per draw.
           // Submit without frame waits to measure a lower bound on its former completion time.
           constexpr std::size_t count = std::size_t{256} * 256u * 256u;
@@ -516,7 +529,7 @@ TEST_CASE("joint histogram shaders link and scatter in OpenGL 3.3", "[rendering]
     CHECK(glGetError() == GL_NO_ERROR);
 
     // Compare complete multi-batch histograms against CPU counts, including many background pairs.
-    const bool benchmark = std::getenv("ENTROPY_HISTOGRAM_BENCHMARK") != nullptr;
+    const bool benchmark = environmentVariableExists("ENTROPY_HISTOGRAM_BENCHMARK");
     inputs.bins = benchmark ? 512 : 4;
     inputs.fixedDimensions = benchmark ? glm::uvec3{256, 256, 256} : glm::uvec3{128, 127, 67};
     const std::size_t total =

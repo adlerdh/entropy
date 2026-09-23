@@ -4,6 +4,8 @@
 #include <array>
 #include <cerrno>
 #include <cwchar>
+#include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>

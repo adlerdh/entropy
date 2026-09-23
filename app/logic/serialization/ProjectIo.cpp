@@ -1,6 +1,8 @@
 #include "common/InputParams.h"
 #include "logic/serialization/ProjectSerialization.h"
 
+#include <safeclib/strerrorlen_s.h>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/std.h>
 #include <nlohmann/json.hpp>
@@ -16,6 +18,7 @@
 #include <functional>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>

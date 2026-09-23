@@ -3,6 +3,8 @@
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
 
+#include <safeclib/strerrorlen_s.h>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/std.h>
 #include <glm/glm.hpp>
@@ -21,6 +23,7 @@
 #include <iomanip>
 #include <limits>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>

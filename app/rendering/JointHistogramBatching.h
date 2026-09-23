@@ -23,7 +23,8 @@ inline double jointHistogramUpdateCost(double previous, double measured)
 
 inline std::uint64_t jointHistogramSubmissionLimit(double nanosecondsPerVoxel, bool newTransform)
 {
-  const double ceiling = newTransform ? kJointHistogramPreviewVoxels : kJointHistogramRefinementVoxels;
+  const double ceiling =
+    static_cast<double>(newTransform ? kJointHistogramPreviewVoxels : kJointHistogramRefinementVoxels);
   return static_cast<std::uint64_t>(
     std::clamp(kJointHistogramTargetGpuNanoseconds / nanosecondsPerVoxel, 1.0, ceiling));
 }
