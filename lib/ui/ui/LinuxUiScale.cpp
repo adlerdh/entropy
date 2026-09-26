@@ -12,6 +12,12 @@
 
 namespace ui::linux_ui_scale
 {
+float liveOrFallbackScale(float liveScale, std::optional<float> savedScale)
+{
+  if (std::isfinite(liveScale) && liveScale > 0) return liveScale;
+  return savedScale && std::isfinite(*savedScale) && *savedScale > 0 ? *savedScale : 1.0f;
+}
+
 namespace
 {
 std::optional<std::string> environmentVariable(const char* name)

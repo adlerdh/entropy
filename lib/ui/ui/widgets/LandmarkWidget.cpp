@@ -43,6 +43,7 @@ float landmarkListChildHeight(std::size_t numRows)
 
 void renderLandmarkChildWindow(
   const AppData& appData,
+  const uuids::uuid& ownerImageUid,
   const ImageTransformations& imageTransformations,
   LandmarkGroup* activeLmGroup,
   const glm::vec3& worldCrosshairsPos,
@@ -63,7 +64,7 @@ void renderLandmarkChildWindow(
   static const auto sk_valMinMax = std::make_pair(0.3f, 1.0f);
 
   const char* coordFormat = appData.guiData().m_coordsPrecisionFormat.c_str();
-  const std::optional<uuids::uuid> activeImageUid = appData.activeImageUid();
+  const std::optional<uuids::uuid> activeImageUid = ownerImageUid;
 
   auto sampleWorldForDisplayedPosition = [&appData, &activeImageUid](const glm::vec3& displayWorldPos) {
     if (!activeImageUid) {

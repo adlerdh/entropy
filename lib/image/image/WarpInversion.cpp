@@ -154,9 +154,9 @@ std::expected<FieldImage::Pointer, std::string> makeFieldFromImage(const Image& 
         (static_cast<uint64_t>(index[1]) +
          static_cast<uint64_t>(image.header().pixelDimensions().y) * static_cast<uint64_t>(index[2]));
 
-    const auto dx = image.value<float>(0, linearIndex);
-    const auto dy = image.value<float>(1, linearIndex);
-    const auto dz = image.value<float>(2, linearIndex);
+    const auto dx = image.value<float>(0, linearIndex, image.settings().activeTimePoint());
+    const auto dy = image.value<float>(1, linearIndex, image.settings().activeTimePoint());
+    const auto dz = image.value<float>(2, linearIndex, image.settings().activeTimePoint());
     if (!dx || !dy || !dz) {
       return std::unexpected(std::format("Unable to read warp value at pixel {}", linearIndex));
     }

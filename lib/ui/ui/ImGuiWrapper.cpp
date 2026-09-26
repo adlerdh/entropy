@@ -30,6 +30,7 @@
 #endif
 
 #include "image/ImageUtility.h"
+#include "image/ImageWriter.h"
 
 #include "logic/app/AppPaths.h"
 #include "logic/app/CallbackHandler.h"
@@ -197,31 +198,18 @@ void removeTemporaryRegistrationInputs(const registration::JobSpec& job, registr
     return;
   }
 
-  for (const registration::InputArtifact& artifact : registration::buildInputArtifactPlan(job)) {
-    if (artifact.path.empty() || !pathIsWithinDirectory(artifact.path, job.outputDirectory)) {
+  for (const auto& path : job.ownedInputFiles) {
+    if (path.empty() || !pathIsWithinDirectory(path, job.outputDirectory)) {
       continue;
     }
 
     error.clear();
-    if (fs::is_regular_file(artifact.path, error) && !error) {
+    if (fs::is_regular_file(path, error) && !error) {
       error.clear();
-      (void)fs::remove(artifact.path, error);
+      (void)fs::remove(path, error);
       if (error) {
         execution.warnings.push_back(
-          "Could not remove temporary registration input " + artifact.path.string() + ": " + error.message());
-      }
-    }
-  }
-
-  if (!job.initialAffineTransform.empty() && pathIsWithinDirectory(job.initialAffineTransform, job.outputDirectory)) {
-    error.clear();
-    if (fs::is_regular_file(job.initialAffineTransform, error) && !error) {
-      error.clear();
-      (void)fs::remove(job.initialAffineTransform, error);
-      if (error) {
-        execution.warnings.push_back(
-          "Could not remove temporary registration input " + job.initialAffineTransform.string() + ": " +
-          error.message());
+          "Could not remove temporary registration input " + path.string() + ": " + error.message());
       }
     }
   }
@@ -1853,6 +1841,15 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
 
 bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
 {
+  std::error_code directoryError;
+  fs::create_directories(job.outputDirectory.parent_path(), directoryError);
+  if (directoryError || !fs::create_directory(job.outputDirectory, directoryError)) {
+    spdlog::error(
+      "Cannot exclusively create registration workspace {}: {}",
+      job.outputDirectory,
+      directoryError.message());
+    return false;
+  }
   auto parseUid = [](const registration::DataRef& ref) -> std::optional<uuids::uuid> {
     if (ref.uid.empty()) {
       return std::nullopt;
@@ -1861,7 +1858,10 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
   };
 
   auto exportRef = [&](registration::DataRef& ref, const std::filesystem::path& path) -> bool {
-    if (!ref.fileName.empty()) {
+    if (
+      ref.source != registration::DataSource::LoadedImage && ref.source != registration::DataSource::Segmentation &&
+      !ref.fileName.empty())
+    {
       return true;
     }
 
@@ -1902,12 +1902,21 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
       return false;
     }
 
-    if (!image->saveComponentToDisk(0, path)) {
+    if (job.dimension != (image->header().pixelDimensions().z == 1u ? 2 : 3)) {
+      spdlog::error("Registration input '{}' has a different spatial dimension than the job", ref.displayName);
+      return false;
+    }
+    const auto result = image_io::writeImage(
+      *image,
+      path,
+      {.component = ref.component, .timePoint = ref.timePoint, .writeTwoDimensional = job.dimension == 2});
+    if (!result) {
       spdlog::error("Cannot export registration input '{}' to {}", ref.displayName, path);
       return false;
     }
 
     ref.fileName = path;
+    job.ownedInputFiles.push_back(path);
     spdlog::info("Exported registration input '{}' to {}", ref.displayName, path);
     return true;
   };
@@ -1920,14 +1929,13 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
         return exportRef(job.movingMask, artifact.path);
       case registration::ArtifactRole::AuxiliaryFixedImage:
       case registration::ArtifactRole::AuxiliaryMovingImage: {
-        for (registration::AuxiliaryImagePair& pair : job.auxiliaryImagePairs) {
-          if (pair.fixed.uid == artifact.source.uid && artifact.role == registration::ArtifactRole::AuxiliaryFixedImage)
-          {
+        for (std::size_t index = 0; index < job.auxiliaryImagePairs.size(); ++index) {
+          auto& pair = job.auxiliaryImagePairs[index];
+          if (artifact.path != registration::artifactPath(job, artifact.role, index)) continue;
+          if (artifact.role == registration::ArtifactRole::AuxiliaryFixedImage) {
             return exportRef(pair.fixed, artifact.path);
           }
-          if (
-            pair.moving.uid == artifact.source.uid && artifact.role == registration::ArtifactRole::AuxiliaryMovingImage)
-          {
+          if (artifact.role == registration::ArtifactRole::AuxiliaryMovingImage) {
             return exportRef(pair.moving, artifact.path);
           }
         }
@@ -1984,9 +1992,26 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
       return false;
     }
     job.useImageCentersForInitialization = false;
+    job.ownedInputFiles.push_back(job.initialAffineTransform);
     spdlog::info("Exported registration initial affine transform to {}", job.initialAffineTransform);
   }
 
+  if (
+    !exportRef(job.fixedImage, job.outputDirectory / "fixed_input.nii.gz") ||
+    !exportRef(job.movingImage, job.outputDirectory / "moving_input.nii.gz"))
+    return false;
+
+  // Loaded objects are snapshots of current pixels/header geometry, never aliases of old disk files.
+  const auto clearLoadedPath = [](registration::DataRef& ref) {
+    if (ref.source == registration::DataSource::LoadedImage || ref.source == registration::DataSource::Segmentation)
+      ref.fileName.clear();
+  };
+  clearLoadedPath(job.fixedMask);
+  clearLoadedPath(job.movingMask);
+  for (auto& pair : job.auxiliaryImagePairs) {
+    clearLoadedPath(pair.fixed);
+    clearLoadedPath(pair.moving);
+  }
   const std::vector<registration::InputArtifact> inputArtifacts = registration::buildInputArtifactPlan(job);
   return std::ranges::all_of(inputArtifacts, [&exportArtifact](const registration::InputArtifact& artifact) {
     return !artifact.exportRequired || exportArtifact(artifact);
@@ -2295,6 +2320,17 @@ void ImGuiWrapper::requestWarpInversion(
   WarpInversionTaskState state{
     .imageUid = imageUid,
     .sourceWarpUid = sourceWarpUid,
+    .domainUid = ComputedWarpDirection::Inverse == direction ? *refImageUid : imageUid,
+    .referenceUid = refImageUid,
+    .targetWarpUid = direction == ComputedWarpDirection::Inverse ? m_appData.imageToActiveInverseWarpUid(imageUid)
+                                                                 : m_appData.imageToActiveForwardWarpUid(imageUid),
+    .sourcePixelRevision = sourceWarp->pixelDataRevision(),
+    .sourceGeometryRevision = sourceWarp->geometryRevision(),
+    .domainGeometryRevision = outputDomain->geometryRevision(),
+    .imageGeometryRevision = image->geometryRevision(),
+    .sourceTimePoint = sourceWarp->settings().activeTimePoint(),
+    .sourceTransform = sourceWarp->transformations().worldDef_T_subject(),
+    .imageTransform = image->transformations().worldDef_T_subject(),
     .direction = direction,
     .description = std::format("Computing {} warp", computedWarpDirectionLabel(direction)),
     .progress = progress,
@@ -2335,6 +2371,7 @@ void ImGuiWrapper::requestWarpInversion(
   {
     std::lock_guard<std::mutex> lock(m_warpInversionFuturesMutex);
     m_warpInversionTaskStates.emplace(taskUid, std::move(state));
+    m_latestWarpInversionTasks[uuids::to_string(imageUid) + ":" + computedWarpDirectionLabel(direction)] = taskUid;
     m_warpInversionFutures.emplace(taskUid, std::move(future));
   }
 
@@ -2365,6 +2402,7 @@ void ImGuiWrapper::processWarpInversionFutures()
 
   for (const auto& taskUid : readyTasks) {
     std::future<WarpInversionTaskResult> future;
+    WarpInversionTaskState state;
     {
       std::lock_guard<std::mutex> lock(m_warpInversionFuturesMutex);
       auto it = m_warpInversionFutures.find(taskUid);
@@ -2372,6 +2410,7 @@ void ImGuiWrapper::processWarpInversionFutures()
         continue;
       }
       future = std::move(it->second);
+      state = m_warpInversionTaskStates.at(taskUid);
       m_warpInversionFutures.erase(it);
     }
 
@@ -2409,8 +2448,27 @@ void ImGuiWrapper::processWarpInversionFutures()
 
     const Image* sourceWarp = m_appData.warpField(taskResult->sourceWarpUid);
     const Image* image = m_appData.image(taskResult->imageUid);
-    if (!sourceWarp || !image) {
-      spdlog::warn("Image or source warp disappeared before computed warp could be assigned");
+    const Image* domain = m_appData.image(state.domainUid);
+    const auto activeSource = taskResult->direction == ComputedWarpDirection::Inverse
+                                ? m_appData.imageToActiveForwardWarpUid(taskResult->imageUid)
+                                : m_appData.imageToActiveInverseWarpUid(taskResult->imageUid);
+    const auto activeTarget = taskResult->direction == ComputedWarpDirection::Inverse
+                                ? m_appData.imageToActiveInverseWarpUid(taskResult->imageUid)
+                                : m_appData.imageToActiveForwardWarpUid(taskResult->imageUid);
+    const std::string latestKey =
+      uuids::to_string(taskResult->imageUid) + ":" + computedWarpDirectionLabel(taskResult->direction);
+    if (
+      !sourceWarp || !image || !domain || activeSource != taskResult->sourceWarpUid ||
+      activeTarget != state.targetWarpUid || state.cancel->load() || m_latestWarpInversionTasks[latestKey] != taskUid ||
+      sourceWarp->pixelDataRevision() != state.sourcePixelRevision ||
+      sourceWarp->geometryRevision() != state.sourceGeometryRevision ||
+      sourceWarp->settings().activeTimePoint() != state.sourceTimePoint ||
+      sourceWarp->transformations().worldDef_T_subject() != state.sourceTransform ||
+      image->transformations().worldDef_T_subject() != state.imageTransform ||
+      image->geometryRevision() != state.imageGeometryRevision ||
+      domain->geometryRevision() != state.domainGeometryRevision || m_appData.refImageUid() != state.referenceUid)
+    {
+      spdlog::warn("Discarding computed warp because its inputs, domain, or requested assignment changed");
       continue;
     }
 
@@ -2424,7 +2482,7 @@ void ImGuiWrapper::processWarpInversionFutures()
     createImageTextures(m_appData, std::vector<uuids::uuid>{*resultUid});
 
     if (ComputedWarpDirection::Inverse == taskResult->direction) {
-      (void)m_appData.assignInverseWarpUidToImage(taskResult->imageUid, *resultUid);
+      (void)m_appData.assignInverseWarpUidToImage(taskResult->imageUid, *resultUid, state.domainUid);
     }
     else {
       (void)m_appData.assignForwardWarpUidToImage(taskResult->imageUid, *resultUid);
@@ -2455,10 +2513,6 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
     runningJobs = m_runningRegistrationJobIds.size();
   }
 
-  if (runningJobs >= static_cast<std::size_t>(maxConcurrentJobs)) {
-    return;
-  }
-
   const registration::BackendConfig config = m_appData.settings().registrationBackendConfig();
   const registration::CommandGenerationOptions commandOptions = registration::commandOptions(config);
   const auto postEmptyEvent = m_postEmptyGlfwEvent;
@@ -2473,6 +2527,10 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
         it->second->store(true);
       }
     }
+  }
+
+  if (runningJobs >= static_cast<std::size_t>(maxConcurrentJobs)) {
+    return;
   }
 
   std::vector<std::pair<std::string, registration::JobSpec>> jobsToLaunch;
@@ -2505,6 +2563,11 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
   }
 
   for (const auto& [jobId, jobSpec] : jobsToLaunch) {
+    if (auto* record = m_appData.registrationJobs().find(jobId)) {
+      // Keep original input paths for project provenance; backend snapshots may be cleaned up.
+      // The generated initial affine affects ANTs artifact numbering during output import.
+      record->spec.initialAffineTransform = jobSpec.initialAffineTransform;
+    }
     m_appData.registrationJobs().setStatus(jobId, registration::JobStatus::Running);
     const uuids::uuid taskUid = generateRandomUuid();
     auto cancelFlag = std::make_shared<std::atomic_bool>(false);
@@ -3318,15 +3381,20 @@ void ImGuiWrapper::render()
     m_appData.assignActiveLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
   };
 
-  auto saveActiveLandmarkGroup = [activeLandmarkGroupUid, this]() {
+  auto saveActiveLandmarkGroup = [activeLandmarkGroupUid, activeImageUid, this]() {
     const auto landmarkGroupUid = activeLandmarkGroupUid();
     LandmarkGroup* landmarkGroup = landmarkGroupUid ? m_appData.landmarkGroup(*landmarkGroupUid) : nullptr;
-    if (!landmarkGroup) {
+    const auto imageUid = activeImageUid();
+    const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+    if (!landmarkGroup || !image) {
       return;
     }
 
     if (const auto selectedFile = native_dialog::saveFile(native_dialog::landmarkFilters())) {
-      if (serialize::saveLandmarkGroupCsvFile(landmarkGroup->getPoints(), *selectedFile)) {
+      if (serialize::saveLandmarkGroupCsvFile(
+            landmarkGroup->pointsInSubjectSpace(image->transformations().subject_T_pixel()),
+            *selectedFile))
+      {
         spdlog::info("Saved landmarks to CSV file {}", *selectedFile);
         landmarkGroup->setFileName(*selectedFile);
       }

@@ -1,6 +1,9 @@
 #include "EntropyApp.h"
 
 #include "image/ImageUtility.h"
+#include "image/ImageWriter.h"
+#include "common/UuidUtility.h"
+#include "ui/ExportJobService.h"
 #include "logic/app/AppPaths.h"
 #include "layout/LayoutFileSerialization.h"
 #include "logic/app/LargeImagePolicy.h"
@@ -228,21 +231,26 @@ serialize::Image EntropyApp::createImageSnapshot(
 
   serializedImage.m_imageFileName = image->header().fileName();
   serializedImage.m_spatialMetadata = image->header().userSpatialMetadata();
+  const auto& overrides = image->header().getHeaderOverrides();
+  serializedImage.m_useIdentityPixelSpacings = overrides.m_useIdentityPixelSpacings;
+  serializedImage.m_useZeroPixelOrigin = overrides.m_useZeroPixelOrigin;
+  serializedImage.m_useIdentityPixelDirections = overrides.m_useIdentityPixelDirections;
+  serializedImage.m_snapToClosestOrthogonalPixelDirections = overrides.m_snapToClosestOrthogonalPixelDirections;
   if (const auto sourceIt = m_dicomSourcesByImageUid.find(imageUid); sourceIt != m_dicomSourcesByImageUid.end()) {
     serializedImage.m_dicomSource = sourceIt->second;
   }
   const auto& transformations = image->transformations();
-  const bool isReferenceImage = m_data.refImageUid() && *m_data.refImageUid() == imageUid;
-  serializedImage.m_initialAffineEnabled = isReferenceImage || transformations.get_enable_affine_T_subject();
-  serializedImage.m_manualAffineEnabled = isReferenceImage || transformations.get_enable_worldDef_T_affine();
+  serializedImage.m_initialAffineEnabled = transformations.get_enable_affine_T_subject();
+  serializedImage.m_manualAffineEnabled = transformations.get_enable_worldDef_T_affine();
   if (
-    transformations.get_affine_T_subject_fileName() || !isApproximatelyIdentity(transformations.get_affine_T_subject()))
+    transformations.get_affine_T_subject_fileName() ||
+    !isApproximatelyIdentity(transformations.stored_affine_T_subject()))
   {
-    serializedImage.m_initialAffineMatrix = transformations.get_affine_T_subject();
+    serializedImage.m_initialAffineMatrix = transformations.stored_affine_T_subject();
   }
 
-  if (!isApproximatelyIdentity(transformations.get_worldDef_T_affine())) {
-    serializedImage.m_manualAffineMatrix = transformations.get_worldDef_T_affine();
+  if (!isApproximatelyIdentity(transformations.stored_worldDef_T_affine())) {
+    serializedImage.m_manualAffineMatrix = transformations.stored_worldDef_T_affine();
   }
   serializedImage.m_settings = project_snapshot::imageSettings(*image, defaultBorderColor);
 
@@ -285,6 +293,7 @@ serialize::Image EntropyApp::createImageSnapshot(
     }
 
     serialize::Segmentation serializedSeg;
+    serializedSeg.m_active = m_data.imageToActiveSegUid(imageUid) == segUid;
     serializedSeg.m_segFileName = *segmentationPath;
     serializedSeg.m_settings = project_snapshot::segmentationSettings(m_data, *seg);
     serializedImage.m_segmentations.emplace_back(std::move(serializedSeg));
@@ -298,6 +307,7 @@ serialize::Image EntropyApp::createImageSnapshot(
     }
 
     serialize::LandmarkGroup serializedLandmarks;
+    serializedLandmarks.m_active = m_data.imageToActiveLandmarkGroupUid(imageUid) == lmUid;
     if (!lmGroup->getFileName().empty()) {
       serializedLandmarks.m_csvFileName = lmGroup->getFileName();
     }
@@ -414,6 +424,12 @@ bool EntropyApp::projectHasUnsavedChanges() const
 
   if (hasUnsavedAnnotations() || hasUnsavedSegmentations()) {
     return true;
+  }
+  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+    for (const auto& warpUid : m_data.imageToDefUids(imageUid)) {
+      const Image* warp = m_data.warpField(warpUid);
+      if (warp && (!warp->header().existsOnDisk() || warp->header().fileName().empty())) return true;
+    }
   }
 
   if (!m_data.projectFileName()) {
@@ -633,6 +649,57 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   }
 
   const fs::path normalizedFileName = projectSavePath(fileName);
+  struct NewWarpAsset
+  {
+    Image* image;
+    fs::path originalPath;
+    bool originallyOnDisk;
+    fs::path path;
+  };
+  struct AssetTransaction
+  {
+    std::vector<NewWarpAsset> assets;
+    bool published = false;
+    ~AssetTransaction()
+    {
+      if (published) return;
+      for (auto& asset : assets) {
+        asset.image->header().setFileName(asset.originalPath);
+        asset.image->header().setExistsOnDisk(asset.originallyOnDisk);
+        std::error_code error;
+        fs::remove(asset.path, error);
+      }
+    }
+  } assets;
+  try {
+    for (const auto& imageUid : m_data.imageUidsOrdered()) {
+      for (const auto& warpUid : m_data.imageToDefUids(imageUid)) {
+        Image* warp = m_data.warpField(warpUid);
+        if (!warp || (warp->header().existsOnDisk() && !warp->header().fileName().empty())) continue;
+        const fs::path directory =
+          normalizedFileName.parent_path() / (normalizedFileName.filename().string() + ".assets");
+        fs::create_directories(directory);
+        const fs::path path = fs::absolute(directory / (uuids::to_string(generateRandomUuid()) + ".nii.gz"));
+        ui::export_jobs::StagedOutput output(path);
+        const auto written = image_io::writeImage(*warp, output.temporaryPath());
+        if (!written) {
+          spdlog::error("Cannot save generated warp: {}", written.message);
+          return false;
+        }
+        if (const auto error = output.commit()) {
+          spdlog::error("Cannot publish generated warp: {}", *error);
+          return false;
+        }
+        assets.assets.push_back({warp, warp->header().fileName(), warp->header().existsOnDisk(), path});
+        warp->header().setFileName(path);
+        warp->header().setExistsOnDisk(true);
+      }
+    }
+  }
+  catch (const std::exception& error) {
+    spdlog::error("Cannot persist generated project assets: {}", error.what());
+    return false;
+  }
   serialize::EntropyProject project = createProjectSnapshot();
 
   if (project.m_referenceImage.m_imageFileName.empty()) {
@@ -644,6 +711,7 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
     spdlog::error("Could not save project file {}", normalizedFileName);
     return false;
   }
+  assets.published = true;
 
   for (const auto& imageUid : m_data.imageUidsOrdered()) {
     for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {

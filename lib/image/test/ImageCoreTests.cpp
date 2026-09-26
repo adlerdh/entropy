@@ -16,6 +16,8 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <functional>
 #include <limits>
 #include <numbers>
@@ -1691,6 +1693,25 @@ TEST_CASE("Image writer reports invalid requests without throwing", "[image][exp
   CHECK(
     image_io::writeImage(irregularTimeImage, testDirectory() / "irregular-time.nrrd").error ==
     image_io::WriteError::IrregularTimeAxis);
+}
+
+TEST_CASE("Registration image export selects a scalar frame and two spatial axes", "[image][export][regression]")
+{
+  Image image = makeTimeSeriesVectorImage();
+  image.setUseIdentityPixelSpacings(true);
+  image.setUseZeroPixelOrigin(true);
+  const auto path = testDirectory() / "registration-selected.nrrd";
+  REQUIRE(image_io::writeImage(image, path, {.component = 1u, .timePoint = 1u, .writeTwoDimensional = true}));
+  Image restored(path, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  CHECK(restored.header().numComponentsPerPixel() == 1);
+  CHECK(restored.timeAxis().numTimePoints() == 1);
+  CHECK(restored.header().spacing() == glm::vec3(1));
+  CHECK(restored.header().origin() == glm::vec3(0));
+  CHECK(restored.value<float>(0u, 0u) == 15.0f);
+  CHECK(restored.value<float>(0u, 3u) == 18.0f);
+  std::ifstream file(path);
+  const std::string header(std::istreambuf_iterator<char>{file}, {});
+  CHECK(header.find("dimension: 2") != std::string::npos);
 }
 
 TEST_CASE("Image writer reports progress and cooperatively cancels before codec output", "[image][export][progress]")

@@ -354,6 +354,7 @@ void renderLandmarkGroupHeader(
 
   renderLandmarkChildWindow(
     appData,
+    imageUid,
     image->transformations(),
     activeLmGroup,
     appData.state().worldCrosshairs().worldOrigin(),
@@ -391,7 +392,10 @@ void renderLandmarkGroupHeader(
   }
 
   if (selectedFile) {
-    if (serialize::saveLandmarkGroupCsvFile(activeLmGroup->getPoints(), *selectedFile)) {
+    if (serialize::saveLandmarkGroupCsvFile(
+          activeLmGroup->pointsInSubjectSpace(image->transformations().subject_T_pixel()),
+          *selectedFile))
+    {
       spdlog::info("Saved landmarks to CSV file {}", *selectedFile);
 
       /// @todo How to handle changing the file name?

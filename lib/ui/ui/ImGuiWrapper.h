@@ -449,6 +449,16 @@ private:
   {
     uuids::uuid imageUid;
     uuids::uuid sourceWarpUid;
+    uuids::uuid domainUid;
+    std::optional<uuids::uuid> referenceUid;
+    std::optional<uuids::uuid> targetWarpUid;
+    uint64_t sourcePixelRevision = 0;
+    uint64_t sourceGeometryRevision = 0;
+    uint64_t domainGeometryRevision = 0;
+    uint64_t imageGeometryRevision = 0;
+    uint32_t sourceTimePoint = 0;
+    glm::mat4 sourceTransform{1.0f};
+    glm::mat4 imageTransform{1.0f};
     ComputedWarpDirection direction{ComputedWarpDirection::Inverse};
     std::string description;
     std::shared_ptr<std::atomic<double>> progress;
@@ -464,6 +474,7 @@ private:
   };
 
   std::unordered_map<uuids::uuid, WarpInversionTaskState> m_warpInversionTaskStates;
+  std::unordered_map<std::string, uuids::uuid> m_latestWarpInversionTasks;
   std::unordered_map<uuids::uuid, std::future<WarpInversionTaskResult>> m_warpInversionFutures;
   std::unordered_set<std::string> m_pendingWarpInversionKeys;
   std::mutex m_warpInversionFuturesMutex;

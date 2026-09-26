@@ -264,6 +264,17 @@ WriteResult writeImage(const Image& image, const std::filesystem::path& destinat
     }
   }
   const bool standardRasterOutput = isStandardRasterImageFile(destination);
+  if (options.writeTwoDimensional) {
+    const auto& directions = image.header().directions();
+    if (
+      image.header().pixelDimensions().z != 1u || std::abs(directions[0][2]) > 1e-6f ||
+      std::abs(directions[1][2]) > 1e-6f)
+    {
+      return failure(
+        WriteError::UnsupportedFormat,
+        "Two-dimensional registration export requires a planar XY grid; oblique planes must use a 3D workflow.");
+    }
+  }
   if (
     standardRasterOutput &&
     (image.header().pixelDimensions().z != 1u || (!options.timePoint && image.timeAxis().isTimeSeries())))
@@ -301,7 +312,7 @@ WriteResult writeImage(const Image& image, const std::filesystem::path& destinat
 
     // Medical formats retain Entropy's complete 3D physical coordinate frame, including a
     // singleton third axis for planar images. Standard raster formats are necessarily 2D.
-    const std::uint32_t spatialDimensions = standardRasterOutput ? 2u : 3u;
+    const std::uint32_t spatialDimensions = standardRasterOutput || options.writeTwoDimensional ? 2u : 3u;
     const bool writeTimeAxis = !options.timePoint && image.timeAxis().isTimeSeries();
     const std::uint32_t outputDimensions = spatialDimensions + (writeTimeAxis ? 1u : 0u);
     const std::uint32_t outputComponents = options.component ? 1u : image.header().numComponentsPerPixel();

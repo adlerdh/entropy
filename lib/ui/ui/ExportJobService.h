@@ -129,7 +129,10 @@ private:
 class StagedOutput
 {
 public:
-  explicit StagedOutput(std::filesystem::path destination);
+  using ReplaceFile =
+    std::function<std::optional<std::string>(const std::filesystem::path&, const std::filesystem::path&)>;
+  /// Optional publication operation permits filesystem failure injection in regression tests.
+  explicit StagedOutput(std::filesystem::path destination, ReplaceFile replaceFile = {});
   ~StagedOutput();
 
   StagedOutput(StagedOutput&& other) noexcept;
@@ -152,6 +155,8 @@ private:
   std::filesystem::path m_destination;
   std::filesystem::path m_temporaryDirectory;
   std::filesystem::path m_temporaryPath;
+  ReplaceFile m_replaceFile;
   bool m_committed = false;
+  bool m_preserveRecoveryFiles = false;
 };
 } // namespace ui::export_jobs

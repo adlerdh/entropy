@@ -3,6 +3,7 @@
 #include "logic/annotation/PointRecord.h"
 
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 
 #include <filesystem>
 #include <map>
@@ -33,9 +34,11 @@ public:
 
   /// Set/get the points in the landmark group.
   /// Each point is keyed by an index that specifies its order.
-  void setPoints(std::map<size_t, PointRecord<PositionType> > pointMap);
-  const std::map<size_t, PointRecord<PositionType> >& getPoints() const;
-  std::map<size_t, PointRecord<PositionType> >& getPoints();
+  void setPoints(std::map<size_t, PointRecord<PositionType>> pointMap);
+  const std::map<size_t, PointRecord<PositionType>>& getPoints() const;
+  std::map<size_t, PointRecord<PositionType>>& getPoints();
+  /// CSV interchange uses physical subject coordinates, regardless of the editor coordinate space.
+  std::map<size_t, PointRecord<PositionType>> pointsInSubjectSpace(const glm::mat4& subject_T_pixel) const;
 
   /// Add a new point to the landmark group.
   /// The new point's index is one greater than the largest existing index in the group.
@@ -104,7 +107,7 @@ private:
 
   /// Map of landmark points. Each landmark point is keyed by an index
   /// that specifies its order
-  std::map<size_t, PointRecord<PositionType> > m_pointMap;
+  std::map<size_t, PointRecord<PositionType>> m_pointMap;
 
   /// Are the landmark points defined in Voxel (true) or Subject space?
   bool m_inVoxelSpace;

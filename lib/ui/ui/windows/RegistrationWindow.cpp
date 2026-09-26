@@ -70,9 +70,10 @@ std::vector<registration::SetupImageChoice> imageChoices(const AppData& appData)
     choice.image.fileName = image->header().fileName();
     choice.image.displayName = image->settings().displayName();
     choice.image.source = registration::DataSource::LoadedImage;
+    choice.image.component = image->settings().activeComponent();
+    choice.image.timePoint = image->settings().activeTimePoint();
     const glm::uvec3 dims = image->header().pixelDimensions();
-    choice.dimension =
-      static_cast<int>(std::max(1u, static_cast<unsigned>((dims.x > 1u) + (dims.y > 1u) + (dims.z > 1u))));
+    choice.dimension = dims.z == 1u ? 2 : 3;
     choice.isReference = refUid && *refUid == imageUid;
     choice.isActive = activeUid && *activeUid == imageUid;
     choices.push_back(std::move(choice));
@@ -101,6 +102,8 @@ std::vector<DataChoice> maskChoices(const AppData& appData)
     imageRef.fileName = image->header().fileName();
     imageRef.displayName = image->settings().displayName();
     imageRef.source = registration::DataSource::LoadedImage;
+    imageRef.component = image->settings().activeComponent();
+    imageRef.timePoint = image->settings().activeTimePoint();
     choices.push_back(DataChoice{imageRef, "Image: " + imageRef.displayName});
 
     for (const uuids::uuid& segUid : appData.imageToSegUids(imageUid)) {
@@ -113,6 +116,8 @@ std::vector<DataChoice> maskChoices(const AppData& appData)
       segRef.fileName = seg->header().fileName();
       segRef.displayName = seg->settings().displayName();
       segRef.source = registration::DataSource::Segmentation;
+      segRef.component = seg->settings().activeComponent();
+      segRef.timePoint = seg->settings().activeTimePoint();
       choices.push_back(
         DataChoice{segRef, "Seg: " + segRef.displayName + " (" + image->settings().displayName() + ")"});
     }
@@ -1862,11 +1867,31 @@ void renderRegistrationSetupWindow(AppData& appData)
     ImGui::BeginDisabled(!state.validation.canLaunch());
     if (ImGui::Button("Start Registration")) {
       state.job.parameterValues = state.parameterValues;
+      const auto captureSelection = [&appData](registration::DataRef& ref) {
+        const auto uid = uuids::uuid::from_string(ref.uid);
+        const Image* image =
+          uid ? (ref.source == registration::DataSource::Segmentation ? appData.seg(*uid) : appData.image(*uid))
+              : nullptr;
+        if (image) {
+          ref.component = image->settings().activeComponent();
+          ref.timePoint = image->settings().activeTimePoint();
+        }
+      };
+      captureSelection(state.job.fixedImage);
+      captureSelection(state.job.movingImage);
+      captureSelection(state.job.fixedMask);
+      captureSelection(state.job.movingMask);
+      for (auto& pair : state.job.auxiliaryImagePairs) {
+        captureSelection(pair.fixed);
+        captureSelection(pair.moving);
+      }
       appData.registrationJobs().add(state.job);
       appData.guiData().m_showRegistrationJobsWindow = true;
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
-      ImGui::SetTooltip("%s", "Create and start a registration job.");
+      ImGui::SetTooltip(
+        "%s",
+        "Use the currently displayed component and frame. Pixels and geometry are copied when the queued job starts.");
     }
     ImGui::EndDisabled();
     ImGui::SameLine();

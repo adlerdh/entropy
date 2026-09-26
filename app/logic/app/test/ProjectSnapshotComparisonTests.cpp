@@ -79,6 +79,39 @@ TEST_CASE("Project snapshots compare equal when all serialized state matches", "
   CHECK(project_snapshot::equivalent(project, project));
 }
 
+TEST_CASE(
+  "Project dirty detection includes header overrides and editing targets",
+  "[ProjectSnapshotComparison][regression]")
+{
+  const auto project = makeProject();
+  auto changed = project;
+  SECTION("spacing")
+  {
+    changed.m_referenceImage.m_useIdentityPixelSpacings = true;
+  }
+  SECTION("origin")
+  {
+    changed.m_referenceImage.m_useZeroPixelOrigin = true;
+  }
+  SECTION("directions")
+  {
+    changed.m_referenceImage.m_useIdentityPixelDirections = true;
+  }
+  SECTION("orthogonal directions")
+  {
+    changed.m_referenceImage.m_snapToClosestOrthogonalPixelDirections = true;
+  }
+  SECTION("segmentation")
+  {
+    changed.m_referenceImage.m_segmentations.front().m_active = true;
+  }
+  SECTION("landmarks")
+  {
+    changed.m_referenceImage.m_landmarkGroups.front().m_active = true;
+  }
+  CHECK_FALSE(project_snapshot::equivalent(project, changed));
+}
+
 TEST_CASE("Project snapshot comparison detects annotation edits and reordering", "[ProjectSnapshotComparison]")
 {
   auto project = makeProject();

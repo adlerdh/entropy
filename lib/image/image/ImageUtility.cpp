@@ -543,7 +543,14 @@ std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const g
     maxDistance = std::max(maxDistance, distance);
   }
 
-  return static_cast<std::size_t>(std::ceil((maxDistance - minDistance) / spacing));
+  float sliceCount = (maxDistance - minDistance) / spacing;
+  // Matrix composition can put an exact integer extent a few ULPs above its value.
+  // Do not manufacture an extra slice for an axis-aligned/quarter-turn image.
+  const float nearest = std::round(sliceCount);
+  if (std::abs(sliceCount - nearest) <= 8.0f * std::numeric_limits<float>::epsilon() * std::max(1.0f, sliceCount)) {
+    sliceCount = nearest;
+  }
+  return static_cast<std::size_t>(std::ceil(sliceCount));
 }
 
 std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& image)

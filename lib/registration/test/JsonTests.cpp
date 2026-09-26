@@ -54,7 +54,10 @@ registration::JobSpec makeJob()
 
 TEST_CASE("registration job specs round-trip through JSON", "[registration][serialization]")
 {
-  const registration::JobSpec original = makeJob();
+  registration::JobSpec original = makeJob();
+  original.fixedImage.component = 3;
+  original.fixedImage.timePoint = 7;
+  original.ownedInputFiles = {"must-not-be-owned-after-reload.nii.gz"};
 
   const nlohmann::json json = original;
   const registration::JobSpec restored = json.get<registration::JobSpec>();
@@ -69,6 +72,9 @@ TEST_CASE("registration job specs round-trip through JSON", "[registration][seri
   CHECK(json.at("outputs").at("loadAffineTransform") == true);
   CHECK(restored.backend == original.backend);
   CHECK(restored.fixedImage.uid == original.fixedImage.uid);
+  CHECK(restored.fixedImage.component == 3);
+  CHECK(restored.fixedImage.timePoint == 7);
+  CHECK(restored.ownedInputFiles.empty());
   CHECK(restored.movingImage.fileName == original.movingImage.fileName);
   CHECK(restored.fixedMask.source == registration::DataSource::Segmentation);
   CHECK(restored.outputs.loadWarpedSegmentation);

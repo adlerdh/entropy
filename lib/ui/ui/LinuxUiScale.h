@@ -6,6 +6,8 @@
 
 namespace ui::linux_ui_scale
 {
+/// Prefer live per-window scale. Saved desktop configurations are only a fallback.
+float liveOrFallbackScale(float liveScale, std::optional<float> savedScale);
 /**
  * @brief Parse GNOME monitors.xml content.
  * @param xml XML text to parse.

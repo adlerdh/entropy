@@ -179,11 +179,8 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   m_numPixels = static_cast<uint64_t>(m_pixelDimensions.x) * static_cast<uint64_t>(m_pixelDimensions.y) *
                 static_cast<uint64_t>(m_pixelDimensions.z);
 
-  m_spacing = m_headerOverrides.m_useIdentityPixelSpacings
-                ? glm::vec3(1.0f)
-                : glm::vec3{spacingLocal[0], spacingLocal[1], spacingLocal[2]};
-
-  m_origin = m_headerOverrides.m_useZeroPixelOrigin ? glm::vec3(0.0f) : glm::vec3{orig[0], orig[1], orig[2]};
+  m_spacing = glm::vec3{spacingLocal[0], spacingLocal[1], spacingLocal[2]};
+  m_origin = glm::vec3{orig[0], orig[1], orig[2]};
 
   // Set matrix of direction vectors in column-major order
   m_directions = glm::mat3{
@@ -198,18 +195,25 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
     dirs[2][2]};
   ;
 
-  if (m_headerOverrides.m_useIdentityPixelDirections) {
-    m_directions = glm::mat3{1.0f};
-  }
-  else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections) {
-    m_directions = m_headerOverrides.m_closestOrthogonalDirs;
-  }
-
   if (m_userSpatialMetadata) {
     m_spacing = m_userSpatialMetadata->spacingMm;
     m_origin = m_userSpatialMetadata->originMm;
     m_directions = m_userSpatialMetadata->directions;
   }
+
+  const ImageHeaderOverrides baseline{m_pixelDimensions, m_spacing, m_origin, m_directions};
+  m_headerOverrides.m_originalDims = baseline.m_originalDims;
+  m_headerOverrides.m_originalSpacing = baseline.m_originalSpacing;
+  m_headerOverrides.m_originalOrigin = baseline.m_originalOrigin;
+  m_headerOverrides.m_originalDirs = baseline.m_originalDirs;
+  m_headerOverrides.m_originalIsOblique = baseline.m_originalIsOblique;
+  m_headerOverrides.m_closestOrthogonalDirs = baseline.m_closestOrthogonalDirs;
+  if (m_headerOverrides.m_useIdentityPixelSpacings) m_spacing = glm::vec3{1.0f};
+  if (m_headerOverrides.m_useZeroPixelOrigin) m_origin = glm::vec3{0.0f};
+  if (m_headerOverrides.m_useIdentityPixelDirections)
+    m_directions = glm::mat3{1.0f};
+  else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections)
+    m_directions = baseline.m_closestOrthogonalDirs;
 
   std::tie(m_spiralCode, m_isOblique) = math::computeSpiralCodeFromDirectionMatrix(m_directions);
 

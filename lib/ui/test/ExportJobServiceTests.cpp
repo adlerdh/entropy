@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <future>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -20,6 +21,77 @@ std::filesystem::path testPath(const std::string& name)
   return std::filesystem::temp_directory_path() / ("entropy-export-job-test-" + name);
 }
 } // namespace
+
+TEST_CASE("Published export success survives late cancellation", "[ui][export][threading]")
+{
+  ui::export_jobs::Service service;
+  std::promise<void> committed;
+  std::promise<void> finish;
+  auto done = finish.get_future();
+  bool saved = false;
+  REQUIRE(service.submit(
+    {.description = "Commit boundary",
+     .destination = "output.vtp",
+     .task =
+       [&](auto&) {
+         committed.set_value();
+         done.wait();
+         return ui::export_jobs::Result::success({"output.vtp"});
+       },
+     .completion =
+       [&](const auto& result) {
+         saved = result.outcome == ui::export_jobs::Outcome::Succeeded && result.outputFileNames.size() == 1;
+       }}));
+  committed.get_future().wait();
+  service.requestCancel();
+  finish.set_value();
+  REQUIRE(service.waitForFinished(2s));
+  service.dispatchCompletion();
+  CHECK(saved);
+}
+
+TEST_CASE("Failed export rollback retains the original recovery file", "[ui][export][filesystem][regression]")
+{
+  const auto destination = testPath("rollback-failure.vtp");
+  {
+    std::ofstream out(destination);
+    out << "original";
+  }
+  std::filesystem::path recovery;
+  {
+    unsigned calls = 0;
+    ui::export_jobs::StagedOutput output(
+      destination,
+      [&](const auto& source, const auto& target) -> std::optional<std::string> {
+        if (++calls > 1) return "injected publication/restore failure";
+        std::error_code error;
+        std::filesystem::rename(source, target, error);
+        return error ? std::optional{error.message()} : std::nullopt;
+      });
+    recovery = output.temporaryPath().parent_path();
+    {
+      std::ofstream out(output.temporaryPath());
+      out << "new";
+    }
+    const auto error = output.commit();
+    REQUIRE(error);
+    CHECK(error->find(recovery.string()) != std::string::npos);
+    CHECK(output.commit().has_value());
+    // Moving an output must not relinquish ownership of its recovery files.
+    auto moved = std::move(output);
+  }
+  REQUIRE(std::filesystem::exists(recovery));
+  bool foundOriginal = false;
+  for (const auto& entry : std::filesystem::directory_iterator(recovery)) {
+    std::ifstream in(entry.path());
+    std::string content;
+    in >> content;
+    foundOriginal |= content == "original";
+  }
+  CHECK(foundOriginal);
+  std::filesystem::remove_all(recovery);
+  std::filesystem::remove(destination);
+}
 
 TEST_CASE("Export jobs publish progress and completion", "[ui][export][threading]")
 {

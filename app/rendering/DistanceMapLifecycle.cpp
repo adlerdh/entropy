@@ -18,7 +18,7 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
   Image* image = m_appData.image(imageUid);
   const auto& renderSettings = m_appData.renderSettings();
 
-  if (!image || !renderSettings.m_useDistanceMapForRaycasting) {
+  if (!image || image->isTimeSeries() || !renderSettings.m_useDistanceMapForRaycasting) {
     return;
   }
 

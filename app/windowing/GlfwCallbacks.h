@@ -17,6 +17,9 @@ void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float c
  */
 void windowCloseCallback(GLFWwindow* window);
 
+/// End application-owned gestures when focus is lost (including native dialogs).
+void windowFocusCallback(GLFWwindow* window, int focused);
+
 /**
  * @note Will never be called on Wayland because there is no way for a client application to know
  * its global position

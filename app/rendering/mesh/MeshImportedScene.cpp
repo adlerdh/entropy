@@ -46,6 +46,7 @@ void hashCombine(uint64_t& seed, const uint64_t value)
 uint64_t warpedGeometryVersion(const AppData& appData, const uuids::uuid& imageUid, const Image& image)
 {
   uint64_t version = 1;
+  hashCombine(version, image.geometryRevision());
   const glm::mat4& transform = image.transformations().worldDef_T_subject();
 
   for (glm::length_t column = 0; column < 4; ++column) {
@@ -57,10 +58,17 @@ uint64_t warpedGeometryVersion(const AppData& appData, const uuids::uuid& imageU
   hashCombine(version, std::bit_cast<uint32_t>(image.settings().warpStrength()));
 
   if (const auto warpUid = appData.imageToActiveForwardWarpUid(imageUid)) {
+    hashCombine(version, std::hash<uuids::uuid>{}(*warpUid));
     if (const Image* warp = appData.warpField(*warpUid)) {
       hashCombine(version, warp->pixelDataRevision());
       hashCombine(version, warp->geometryRevision());
       hashCombine(version, warp->settings().activeTimePoint());
+      const auto& warpTransform = warp->transformations().worldDef_T_subject();
+      for (glm::length_t column = 0; column < 4; ++column) {
+        for (glm::length_t row = 0; row < 4; ++row) {
+          hashCombine(version, std::bit_cast<uint32_t>(warpTransform[column][row]));
+        }
+      }
     }
   }
   return version;

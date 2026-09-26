@@ -722,6 +722,7 @@ void Image::setUseIdentityPixelSpacings(bool identitySpacings)
 
   m_headerOverrides.m_useIdentityPixelSpacings = identitySpacings;
   m_header.setHeaderOverrides(m_headerOverrides);
+  m_headerOverrides = m_header.getHeaderOverrides();
   m_tx.setHeaderOverrides(m_headerOverrides);
   ++m_geometryRevision;
 }
@@ -739,6 +740,7 @@ void Image::setUseZeroPixelOrigin(bool zeroOrigin)
 
   m_headerOverrides.m_useZeroPixelOrigin = zeroOrigin;
   m_header.setHeaderOverrides(m_headerOverrides);
+  m_headerOverrides = m_header.getHeaderOverrides();
   m_tx.setHeaderOverrides(m_headerOverrides);
   ++m_geometryRevision;
 }
@@ -756,6 +758,7 @@ void Image::setUseIdentityPixelDirections(bool useIdentity)
 
   m_headerOverrides.m_useIdentityPixelDirections = useIdentity;
   m_header.setHeaderOverrides(m_headerOverrides);
+  m_headerOverrides = m_header.getHeaderOverrides();
   m_tx.setHeaderOverrides(m_headerOverrides);
   ++m_geometryRevision;
 }
@@ -773,6 +776,7 @@ void Image::setSnapToClosestOrthogonalPixelDirections(bool snap)
 
   m_headerOverrides.m_snapToClosestOrthogonalPixelDirections = snap;
   m_header.setHeaderOverrides(m_headerOverrides);
+  m_headerOverrides = m_header.getHeaderOverrides();
   m_tx.setHeaderOverrides(m_headerOverrides);
   ++m_geometryRevision;
 }
@@ -790,6 +794,7 @@ void Image::setHeaderOverrides(const ImageHeaderOverrides& overrides)
 
   m_headerOverrides = overrides;
   m_header.setHeaderOverrides(m_headerOverrides);
+  m_headerOverrides = m_header.getHeaderOverrides();
   m_tx.setHeaderOverrides(m_headerOverrides);
   ++m_geometryRevision;
 }
@@ -806,7 +811,8 @@ void Image::setUserSpatialMetadata(const ImageSpatialMetadata& metadata)
   }
 
   m_header.setUserSpatialMetadata(metadata);
-  m_tx.setImageGeometry(m_header.pixelDimensions(), m_header.spacing(), m_header.origin(), m_header.directions());
+  m_headerOverrides = m_header.getHeaderOverrides();
+  m_tx.setHeaderOverrides(m_headerOverrides);
   ++m_geometryRevision;
 }
 

@@ -54,6 +54,7 @@ struct WriteOptions
   bool useCompression = true;             //!< Ask the selected writer to use compression
   std::optional<std::uint32_t> component; //!< Optional single component to write
   std::optional<std::uint32_t> timePoint; //!< Optional single time point to write
+  bool writeTwoDimensional = false;       //!< Explicit 2D medical output for planar XY registration inputs
   WriteProgressCallback progressCallback; //!< Optional stage/progress and cancellation callback
 };
 

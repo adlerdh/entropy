@@ -132,6 +132,10 @@ public:
 
   /// @brief Get enabled manual transform, or identity when disabled.
   const glm::mat4& get_worldDef_T_affine() const;
+  const glm::mat4& stored_worldDef_T_affine() const
+  {
+    return m_worldDef_T_affine;
+  }
 
   /// @brief Set the manual transformation matrix directly.
   void set_worldDef_T_affine(glm::mat4 worldDef_T_affine);
@@ -144,6 +148,10 @@ public:
 
   /// @brief Get enabled affine-registration matrix, or identity when disabled.
   const glm::mat4& get_affine_T_subject() const;
+  const glm::mat4& stored_affine_T_subject() const
+  {
+    return m_affine_T_subject;
+  }
 
   /// @brief Set the path of the file that supplied affine_T_subject.
   void set_affine_T_subject_fileName(const std::optional<std::filesystem::path>& fileName);
@@ -225,6 +233,7 @@ private:
   glm::vec3 m_worldDef_T_affine_scale{1.0f}; //!< Scale component of worldDef_T_affine (applied 1st)
 
   glm::mat4 m_worldDef_T_affine{1.0f};    //!< User-applied manual transformation
+  glm::mat4 m_manualAffineResidual{1.0f}; //!< Full affine remainder retained during manual edits
   bool m_enable_worldDef_T_affine = true; //!< Is the worldDef_T_affine transformation used?
 
   glm::mat4 m_affine_T_subject{1.0f};    //!< Affine matrix mapping Subject to AffineA space

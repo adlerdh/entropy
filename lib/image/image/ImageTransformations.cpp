@@ -14,6 +14,8 @@
 #include <glm/gtx/transform.hpp>
 
 #include <filesystem>
+#include <cmath>
+#include <spdlog/spdlog.h>
 
 namespace fs = std::filesystem;
 
@@ -160,22 +162,47 @@ void ImageTransformations::set_worldDef_T_affine(glm::mat4 worldDef_T_affine)
 {
   if (m_is_worldDef_T_affine_locked) return;
 
+  for (int c = 0; c < 4; ++c) {
+    for (int r = 0; r < 4; ++r) {
+      if (!std::isfinite(worldDef_T_affine[c][r])) {
+        spdlog::error("Cannot apply a non-finite manual affine transformation");
+        return;
+      }
+    }
+  }
+  if (
+    std::abs(worldDef_T_affine[0][3]) > 1e-6f || std::abs(worldDef_T_affine[1][3]) > 1e-6f ||
+    std::abs(worldDef_T_affine[2][3]) > 1e-6f || std::abs(worldDef_T_affine[3][3] - 1.0f) > 1e-6f)
+  {
+    spdlog::error("Cannot apply a perspective matrix as a manual affine transformation");
+    return;
+  }
+  worldDef_T_affine[0][3] = worldDef_T_affine[1][3] = worldDef_T_affine[2][3] = 0;
+  worldDef_T_affine[3][3] = 1;
   glm::vec3 skew;
   glm::vec4 perspective;
-  glm::decompose(
-    worldDef_T_affine,
-    m_worldDef_T_affine_scale,
-    m_worldDef_T_affine_rotation,
-    m_worldDef_T_affine_translation,
-    skew,
-    perspective);
+  glm::vec3 scale, translation;
+  glm::quat rotation;
+  if (!glm::decompose(worldDef_T_affine, scale, rotation, translation, skew, perspective)) {
+    spdlog::error("Cannot apply a singular manual affine transformation");
+    return;
+  }
+  m_worldDef_T_affine_scale = scale;
+  m_worldDef_T_affine_rotation = rotation;
+  m_worldDef_T_affine_translation = translation;
 
+  const glm::mat4 editable =
+    glm::translate(m_worldDef_T_affine_translation) * glm::toMat4(m_worldDef_T_affine_rotation) *
+    (m_worldDef_T_affine_TxType == ManualTransformationType::Rigid ? glm::mat4{1}
+                                                                   : glm::scale(m_worldDef_T_affine_scale));
+  m_manualAffineResidual = glm::inverse(editable) * worldDef_T_affine;
   updateTransformations();
 }
 
 void ImageTransformations::reset_worldDef_T_affine()
 {
   if (m_is_worldDef_T_affine_locked) return;
+  m_manualAffineResidual = glm::mat4{1.0f};
   m_worldDef_T_affine_translation = glm::vec3{0.0f};
   m_worldDef_T_affine_rotation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
   m_worldDef_T_affine_scale = glm::vec3{1.0f};
@@ -338,6 +365,7 @@ void ImageTransformations::updateTransformations()
     }
   }
 
+  m_worldDef_T_affine *= m_manualAffineResidual;
   m_worldDef_T_subject = get_worldDef_T_affine() * get_affine_T_subject();
   m_subject_T_worldDef = glm::inverse(m_worldDef_T_subject);
   m_subject_T_worldDef_invTransp = glm::mat3{glm::inverseTranspose(m_subject_T_worldDef)};

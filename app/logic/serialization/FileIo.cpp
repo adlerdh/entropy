@@ -402,11 +402,21 @@ bool saveLandmarkGroupCsvFile(
   const std::map<std::size_t, PointRecord<glm::vec3>>& landmarks,
   const fs::path& csvFileName)
 {
+  const fs::path temporary = temporaryJsonSiblingPath(csvFileName);
+  struct Cleanup
+  {
+    fs::path path;
+    ~Cleanup()
+    {
+      std::error_code error;
+      fs::remove(path, error);
+    }
+  } cleanup{temporary};
   std::ofstream outFile;
   outFile.exceptions(outFile.exceptions() | std::ofstream::badbit | std::ofstream::failbit);
 
   try {
-    outFile.open(csvFileName, std::ofstream::out);
+    outFile.open(temporary, std::ofstream::out);
 
     if (!outFile) {
       throw std::system_error(errno, std::system_category(), "Failed to open output CSV file " + csvFileName.string());
@@ -424,6 +434,9 @@ bool saveLandmarkGroupCsvFile(
       outFile << id << "," << pos.x << "," << pos.y << "," << pos.z << "," << quoteCsvField(name) << "\n";
     }
 
+    outFile.flush();
+    outFile.close();
+    replaceJsonFile(temporary, csvFileName);
     return true;
   }
   catch (const std::ios_base::failure& e) {

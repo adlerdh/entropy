@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <ranges>
+#include <random>
 #include <sstream>
 #include <utility>
 
@@ -73,9 +74,14 @@ std::string JobStore::add(JobSpec spec)
   id << "registration-" << m_nextId++;
   const std::string jobId = id.str();
 
-  if (spec.outputDirectory == std::filesystem::temp_directory_path()) {
-    spec.outputDirectory = std::filesystem::temp_directory_path() / "entropy-registration" / jobId;
+  std::random_device random;
+  std::ostringstream runName;
+  runName << jobId << '-' << std::hex << random() << '-' << random() << '-' << random();
+  if (spec.outputDirectory.empty() || spec.outputDirectory == std::filesystem::temp_directory_path()) {
+    spec.outputDirectory = std::filesystem::temp_directory_path() / "entropy-registration";
   }
+  spec.outputDirectory /= runName.str();
+  spec.ownedInputFiles.clear();
 
   JobRecord record;
   record.id = jobId;

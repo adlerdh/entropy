@@ -176,6 +176,8 @@ struct DataRef
   std::filesystem::path fileName;       //!< File path supplied to the backend
   std::string displayName;              //!< User-facing name
   DataSource source = DataSource::None; //!< Entropy object category
+  std::uint32_t component = 0;          //!< Scalar component captured when the input is selected
+  std::uint32_t timePoint = 0;          //!< Frame captured when the input is selected
 };
 
 /**
@@ -288,6 +290,8 @@ struct JobSpec
   std::string outputPrefix;                                         //!< File prefix for generated artifacts
   std::vector<ParameterValue> parameterValues;                      //!< Backend parameter values selected in setup UI
   std::vector<std::string> extraArguments;                          //!< Expert raw backend arguments
+  // Runtime-only ownership ledger. Never populated from imported JSON.
+  std::vector<std::filesystem::path> ownedInputFiles;
 };
 
 /**

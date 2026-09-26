@@ -1,5 +1,6 @@
 add_executable(TestAppSettings
   AnnotationSerializationTests.cpp
+  AnnotationSegmentationRegressionTests.cpp
   AppLoadingPolicyTests.cpp
   AppPathsTests.cpp
   ImageScaleInteractionTests.cpp
@@ -16,6 +17,8 @@ add_executable(TestAppSettings
 
 target_sources(TestAppSettings PRIVATE
   "${entropy_APP_DIR}/logic/annotation/Annotation.cpp"
+  "${entropy_APP_DIR}/logic/annotation/LandmarkGroup.cpp"
+  "${entropy_APP_DIR}/logic/segmentation/AnnotationSegmentation.cpp"
   "${entropy_APP_DIR}/logic/annotation/BezierHelper.cpp"
   "${entropy_APP_DIR}/logic/camera/Camera.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraHelpers.cpp"

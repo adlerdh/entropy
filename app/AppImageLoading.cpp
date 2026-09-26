@@ -733,6 +733,13 @@ bool EntropyApp::loadSerializedImage(
     project_snapshot::applyImageSettings(*image, *serializedImage.m_settings);
   }
 
+  auto headerOverrides = image->header().getHeaderOverrides();
+  headerOverrides.m_useIdentityPixelSpacings = serializedImage.m_useIdentityPixelSpacings;
+  headerOverrides.m_useZeroPixelOrigin = serializedImage.m_useZeroPixelOrigin;
+  headerOverrides.m_useIdentityPixelDirections = serializedImage.m_useIdentityPixelDirections;
+  headerOverrides.m_snapToClosestOrthogonalPixelDirections = serializedImage.m_snapToClosestOrthogonalPixelDirections;
+  image->setHeaderOverrides(headerOverrides);
+
   // Disable the initial affine and manual transformations for the reference image:
   image->transformations().set_enable_worldDef_T_affine(!isReferenceImage);
   image->transformations().set_enable_affine_T_subject(!isReferenceImage);
@@ -752,10 +759,9 @@ bool EntropyApp::loadSerializedImage(
           "space, which cannot be transformed.",
           *serializedImage.m_initialAffineFileName);
       }
-      else {
-        spdlog::warn(
-          "An embedded initial affine transformation was provided for the reference image. It will be ignored, since "
-          "the reference image defines World space.");
+      else if (serializedImage.m_initialAffineMatrix) {
+        // Retain disabled values so future reference changes do not discard project state.
+        image->transformations().set_affine_T_subject(*serializedImage.m_initialAffineMatrix);
       }
 
       image->transformations().set_affine_T_subject_fileName(std::nullopt);
@@ -797,9 +803,11 @@ bool EntropyApp::loadSerializedImage(
 
   if (serializedImage.m_manualAffineMatrix || serializedImage.m_manualAffineFileName) {
     if (isReferenceImage) {
-      spdlog::warn(
-        "A manual transformation was provided for the reference image. It will be ignored, since the reference "
-        "image defines World space.");
+      if (serializedImage.m_manualAffineMatrix) {
+        image->transformations().set_worldDef_T_affine_locked(false);
+        image->transformations().set_worldDef_T_affine(*serializedImage.m_manualAffineMatrix);
+        image->transformations().set_worldDef_T_affine_locked(true);
+      }
     }
     else {
       glm::dmat4 worldDef_T_affine(1.0);
@@ -1029,6 +1037,7 @@ bool EntropyApp::loadSerializedImage(
 
       const auto lmGroupUid = m_data.addLandmarkGroup(lmGroup);
       const bool linked = m_data.assignLandmarkGroupUidToImage(*imageUid, lmGroupUid);
+      if (linked && lm.m_active) m_data.assignActiveLandmarkGroupUidToImage(*imageUid, lmGroupUid);
 
       if (!linked) {
         spdlog::error(
@@ -1222,7 +1231,7 @@ bool EntropyApp::loadSerializedImage(
       continue;
     }
 
-    if (segInfo.isNewSeg) {
+    {
       const auto serializedSegIt = std::find_if(
         serializedImage.m_segmentations.begin(),
         serializedImage.m_segmentations.end(),
@@ -1230,16 +1239,21 @@ bool EntropyApp::loadSerializedImage(
           return serializedSeg.m_segFileName == seg->header().fileName();
         });
 
-      if (serializedImage.m_segmentations.end() != serializedSegIt && serializedSegIt->m_settings) {
+      if (serializedImage.m_segmentations.end() != serializedSegIt && serializedSegIt->m_active) {
+        m_data.assignActiveSegUidToImage(*imageUid, *segInfo.uid);
+      }
+      if (segInfo.isNewSeg && serializedImage.m_segmentations.end() != serializedSegIt && serializedSegIt->m_settings) {
         project_snapshot::applySegmentationSettings(m_data, *seg, *serializedSegIt->m_settings);
       }
     }
 
     // Assign the image's affine_T_subject transformation to its segmentation:
+    seg->setHeaderOverrides(image->header().getHeaderOverrides());
     seg->transformations().set_affine_T_subject(image->transformations().get_affine_T_subject());
   }
 
   // Checks that the image has at least one segmentation:
+  m_callbackHandler.syncManualImageTransformationOnSegs(*imageUid);
   if (m_data.imageToSegUids(*imageUid).empty()) {
     spdlog::error("Image {} has no segmentation", *imageUid);
     return false;
@@ -2122,9 +2136,9 @@ bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
       auto& segTx = seg->transformations();
       segTx.set_worldDef_T_affine_locked(false);
       segTx.set_enable_affine_T_subject(tx.get_enable_affine_T_subject());
-      segTx.set_affine_T_subject(tx.get_affine_T_subject());
+      segTx.set_affine_T_subject(tx.stored_affine_T_subject());
       segTx.set_enable_worldDef_T_affine(tx.get_enable_worldDef_T_affine());
-      segTx.set_worldDef_T_affine(tx.get_worldDef_T_affine());
+      segTx.set_worldDef_T_affine(tx.stored_worldDef_T_affine());
       segTx.set_worldDef_T_affine_locked(tx.is_worldDef_T_affine_locked());
     }
   }

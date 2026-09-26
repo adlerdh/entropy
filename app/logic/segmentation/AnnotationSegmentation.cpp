@@ -17,6 +17,7 @@
 #include <spdlog/spdlog.h>
 
 #include <limits>
+#include <cmath>
 #include <vector>
 
 namespace
@@ -69,10 +70,10 @@ void fillSegmentationWithPolygon(
   const glm::mat4& subject_T_pixel = seg.transformations().subject_T_pixel();
 
   // Convert from space of the annotation plane to segmentation pixel coordinates
-  auto convertPointFromAnnotPlaneToRoundedSegPixelCoords = [&pixel_T_subject, &annot](const glm::vec2& annotPlanePos) {
+  auto convertPointFromAnnotPlaneToSegPixelCoords = [&pixel_T_subject, &annot](const glm::vec2& annotPlanePos) {
     const glm::vec4 subjectPos{annot->unprojectFromAnnotationPlaneToSubjectPoint(annotPlanePos), 1.0f};
     const glm::vec4 pixelPos = pixel_T_subject * subjectPos;
-    return glm::ivec3{glm::round(glm::vec3{pixelPos / pixelPos.w})};
+    return glm::vec3{pixelPos / pixelPos.w};
   };
 
   // Convert from segmentation pixel coordinates to the space of the annotation plane
@@ -88,12 +89,33 @@ void fillSegmentationWithPolygon(
   const glm::vec2 annotPlaneAabbMinCorner = aabb->first;
   const glm::vec2 annotPlaneAabbMaxCorner = aabb->second;
 
-  const glm::ivec3 pixelAabbMinCorner = convertPointFromAnnotPlaneToRoundedSegPixelCoords(annotPlaneAabbMinCorner);
-  const glm::ivec3 pixelAabbMaxCorner = convertPointFromAnnotPlaneToRoundedSegPixelCoords(annotPlaneAabbMaxCorner);
+  glm::vec3 pixelAabbMinCorner{std::numeric_limits<float>::max()};
+  glm::vec3 pixelAabbMaxCorner{std::numeric_limits<float>::lowest()};
+  for (const float x : {annotPlaneAabbMinCorner.x, annotPlaneAabbMaxCorner.x}) {
+    for (const float y : {annotPlaneAabbMinCorner.y, annotPlaneAabbMaxCorner.y}) {
+      const auto corner = convertPointFromAnnotPlaneToSegPixelCoords({x, y});
+      if (!std::isfinite(corner.x) || !std::isfinite(corner.y) || !std::isfinite(corner.z)) return;
+      pixelAabbMinCorner = glm::min(pixelAabbMinCorner, corner);
+      pixelAabbMaxCorner = glm::max(pixelAabbMaxCorner, corner);
+    }
+  }
+  // Expand for voxel corners, clip in floating point, then convert to indices.
+  // Entirely out-of-grid polygons must not invert the clipped range or overflow an integer.
+  pixelAabbMinCorner = glm::max(glm::floor(pixelAabbMinCorner) - 1.0f, glm::vec3{0});
+  pixelAabbMaxCorner = glm::min(glm::ceil(pixelAabbMaxCorner) + 1.0f, glm::vec3{seg.header().pixelDimensions()} - 1.0f);
+  if (glm::any(glm::greaterThan(pixelAabbMinCorner, pixelAabbMaxCorner))) return;
 
   // Polygon vertices in the space of the annotation plane
   const std::vector<glm::vec2>& annotPlaneVertices = annot->getBoundaryVertices(OUTER_BOUNDARY);
   if (annotPlaneVertices.empty()) return;
+  const auto containsPoint = [&annot, &annotPlaneVertices](const glm::vec2& p) {
+    if (!math::pnpoly(annotPlaneVertices, p)) return false;
+    for (std::size_t boundary = 1; boundary < annot->numBoundaries(); ++boundary) {
+      const auto& hole = annot->getBoundaryVertices(boundary);
+      if (!hole.empty() && math::pnpoly(hole, p)) return false;
+    }
+    return true;
+  };
 
   // Subject plane normal vector transformed into Voxel space:
   const glm::vec3 pixelAnnotPlaneNormal =
@@ -112,14 +134,14 @@ void fillSegmentationWithPolygon(
   // Loop over the AABB in Pixel/Voxel space. Note that this is inefficient and tests
   // too many voxels when the annotation plane is oblique in Voxel space.
 
-  const int minK = std::min(pixelAabbMinCorner.z, pixelAabbMaxCorner.z) - 1;
-  const int maxK = std::max(pixelAabbMinCorner.z, pixelAabbMaxCorner.z) + 1;
+  const int minK = static_cast<int>(pixelAabbMinCorner.z);
+  const int maxK = static_cast<int>(pixelAabbMaxCorner.z);
 
-  const int minJ = std::min(pixelAabbMinCorner.y, pixelAabbMaxCorner.y) - 1;
-  const int maxJ = std::max(pixelAabbMinCorner.y, pixelAabbMaxCorner.y) + 1;
+  const int minJ = static_cast<int>(pixelAabbMinCorner.y);
+  const int maxJ = static_cast<int>(pixelAabbMaxCorner.y);
 
-  const int minI = std::min(pixelAabbMinCorner.x, pixelAabbMaxCorner.x) - 1;
-  const int maxI = std::max(pixelAabbMinCorner.x, pixelAabbMaxCorner.x) + 1;
+  const int minI = static_cast<int>(pixelAabbMinCorner.x);
+  const int maxI = static_cast<int>(pixelAabbMaxCorner.x);
 
   SegmentationVoxelSet voxelsToChange;
 
@@ -140,34 +162,18 @@ void fillSegmentationWithPolygon(
 
         const glm::vec2 annotPlanePos = convertPointFromSegPixelCoordsToAnnotPlane(pixelPos);
 
-        if (
-          math::pnpoly(annotPlaneVertices, annotPlanePos) ||
-          (sk_fillBasedOnCorners &&
-           (math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, 0.5f, 0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, 0.5f, -0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, -0.5f, 0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, -0.5f, -0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, 0.5f, 0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, 0.5f, -0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, -0.5f, 0.5f})) ||
-            math::pnpoly(
-              annotPlaneVertices,
-              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, -0.5f, -0.5f})))))
-        {
+        bool covered = containsPoint(annotPlanePos);
+        if (sk_fillBasedOnCorners && !covered) {
+          for (const float x : {-0.5f, 0.5f}) {
+            for (const float y : {-0.5f, 0.5f}) {
+              for (const float z : {-0.5f, 0.5f}) {
+                covered =
+                  covered || containsPoint(convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{x, y, z}));
+              }
+            }
+          }
+        }
+        if (covered) {
           voxelsToChange.insert(roundedPixelPos);
           continue;
         }

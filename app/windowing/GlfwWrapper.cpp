@@ -169,9 +169,10 @@ glm::vec2 resolvePolledContentScale(
     scale = monitorScale;
   }
 
-  if (desktopScale) {
-    scale = glm::vec2{*desktopScale, *desktopScale};
-  }
+  // Saved desktop configurations need not describe the monitor hosting this window.
+  // Use them only when live window/monitor information is unavailable.
+  scale.x = ui::linux_ui_scale::liveOrFallbackScale(scale.x, desktopScale);
+  scale.y = ui::linux_ui_scale::liveOrFallbackScale(scale.y, desktopScale);
 #else
   (void)desktopScale;
 #endif
@@ -383,6 +384,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   // Set callbacks:
   glfwSetWindowContentScaleCallback(m_window, windowContentScaleCallback);
   glfwSetWindowCloseCallback(m_window, windowCloseCallback);
+  glfwSetWindowFocusCallback(m_window, windowFocusCallback);
   glfwSetWindowPosCallback(m_window, windowPositionCallback); // not called on Wayland
   glfwSetWindowSizeCallback(m_window, windowSizeCallback);
   glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);

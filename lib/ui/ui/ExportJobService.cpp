@@ -182,9 +182,7 @@ bool Service::submit(Request request)
     Result result;
     try {
       result = task(context);
-      if (context.cancellationRequested() && Outcome::Succeeded == result.outcome) {
-        result = Result::cancelled();
-      }
+      // Tasks own their commit boundary. A late cancellation cannot undo published files.
       if (Outcome::Running == result.outcome) {
         result = Result::failure("The export task returned an invalid running result.");
       }
@@ -268,10 +266,11 @@ bool Service::waitForFinished(const std::chrono::milliseconds timeout) const
   return m_state->finished.wait_for(lock, timeout, [this]() { return !running(*m_state); });
 }
 
-StagedOutput::StagedOutput(std::filesystem::path destination)
+StagedOutput::StagedOutput(std::filesystem::path destination, ReplaceFile replaceFile)
   : m_destination{std::move(destination)}
   , m_temporaryDirectory{makeTemporaryDirectory(m_destination)}
   , m_temporaryPath{m_temporaryDirectory / m_destination.filename()}
+  , m_replaceFile{replaceFile ? std::move(replaceFile) : ReplaceFile{replaceDestination}}
 {
 }
 
@@ -284,7 +283,9 @@ StagedOutput::StagedOutput(StagedOutput&& other) noexcept
   : m_destination{std::move(other.m_destination)}
   , m_temporaryDirectory{std::move(other.m_temporaryDirectory)}
   , m_temporaryPath{std::move(other.m_temporaryPath)}
+  , m_replaceFile{std::move(other.m_replaceFile)}
   , m_committed{other.m_committed}
+  , m_preserveRecoveryFiles{other.m_preserveRecoveryFiles}
 {
   other.m_committed = true;
 }
@@ -296,7 +297,9 @@ StagedOutput& StagedOutput::operator=(StagedOutput&& other) noexcept
     m_destination = std::move(other.m_destination);
     m_temporaryDirectory = std::move(other.m_temporaryDirectory);
     m_temporaryPath = std::move(other.m_temporaryPath);
+    m_replaceFile = std::move(other.m_replaceFile);
     m_committed = other.m_committed;
+    m_preserveRecoveryFiles = other.m_preserveRecoveryFiles;
     other.m_committed = true;
   }
   return *this;
@@ -314,6 +317,9 @@ const std::filesystem::path& StagedOutput::destination() const
 
 std::optional<std::string> StagedOutput::commit()
 {
+  if (m_preserveRecoveryFiles) {
+    return "Previous publication failed; recover files from " + m_temporaryDirectory.string() + " before retrying.";
+  }
   if (m_committed) {
     return std::nullopt;
   }
@@ -359,7 +365,7 @@ std::optional<std::string> StagedOutput::commit()
        .backup = m_temporaryDirectory / std::format(".backup-{}-{}", index, stagedFile.filename().string())});
   }
 
-  const auto rollback = [&entries]() {
+  const auto rollback = [&entries, this]() {
     std::string rollbackError;
     for (auto& entry : std::views::reverse(entries)) {
       std::error_code ignored;
@@ -367,10 +373,14 @@ std::optional<std::string> StagedOutput::commit()
         std::filesystem::remove(entry.destination, ignored);
       }
       if (entry.originalBackedUp) {
-        if (const auto error = replaceDestination(entry.backup, entry.destination); error && rollbackError.empty()) {
+        if (const auto error = m_replaceFile(entry.backup, entry.destination); error && rollbackError.empty()) {
           rollbackError = *error;
         }
       }
+    }
+    if (!rollbackError.empty()) {
+      m_preserveRecoveryFiles = true;
+      rollbackError += ". Recovery files retained in " + m_temporaryDirectory.string();
     }
     return rollbackError;
   };
@@ -384,14 +394,14 @@ std::optional<std::string> StagedOutput::commit()
              (rollbackError.empty() ? "" : ". Rollback also failed: " + rollbackError);
     }
     if (entry.hadOriginal) {
-      if (const auto error = replaceDestination(entry.destination, entry.backup)) {
+      if (const auto error = m_replaceFile(entry.destination, entry.backup)) {
         const std::string rollbackError = rollback();
         return "Could not preserve the existing file '" + entry.destination.string() + "': " + *error +
                (rollbackError.empty() ? "" : ". Rollback also failed: " + rollbackError);
       }
       entry.originalBackedUp = true;
     }
-    if (const auto error = replaceDestination(entry.staged, entry.destination)) {
+    if (const auto error = m_replaceFile(entry.staged, entry.destination)) {
       const std::string rollbackError = rollback();
       return "Could not commit '" + entry.destination.string() + "': " + *error +
              (rollbackError.empty() ? "" : ". Rollback also failed: " + rollbackError);
@@ -406,7 +416,7 @@ std::optional<std::string> StagedOutput::commit()
 
 void StagedOutput::discard() noexcept
 {
-  if (m_committed || m_temporaryDirectory.empty()) {
+  if (m_committed || m_preserveRecoveryFiles || m_temporaryDirectory.empty()) {
     return;
   }
   std::error_code ignored;

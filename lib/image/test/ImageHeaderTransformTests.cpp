@@ -104,6 +104,60 @@ TEST_CASE("ImageHeader expands 2D image metadata into Entropy's 3D model", "[ima
   CHECK(header.subjectBBoxSize().y > 0.0f);
 }
 
+TEST_CASE("Manual affine retains shear and disabled stored matrices", "[image][transform][regression]")
+{
+  ImageTransformations tx(glm::uvec3{3}, glm::vec3{1}, glm::vec3{0}, glm::mat3{1});
+  tx.set_worldDef_T_affine_locked(false);
+  glm::mat4 affine{1.0f};
+  affine[1][0] = 0.5f;
+  affine[0][0] = -2.0f;
+  affine[3] = glm::vec4{2, 3, 4, 1};
+  tx.set_worldDef_T_affine(affine);
+  tx.set_affine_T_subject(affine);
+  checkMat4Near(tx.get_worldDef_T_affine(), affine);
+  tx.set_enable_worldDef_T_affine(false);
+  tx.set_enable_affine_T_subject(false);
+  checkMat4Near(tx.get_worldDef_T_affine(), glm::mat4{1});
+  checkMat4Near(tx.stored_worldDef_T_affine(), affine);
+  checkMat4Near(tx.stored_affine_T_subject(), affine);
+  tx.set_enable_worldDef_T_affine(true);
+  checkMat4Near(tx.get_worldDef_T_affine(), affine);
+  tx.reset_worldDef_T_affine();
+  checkMat4Near(tx.get_worldDef_T_affine(), glm::mat4{1});
+}
+
+TEST_CASE("Header overrides retain the receiving image grid and editable metadata", "[image][header][regression]")
+{
+  const auto info = make2dIoInfo();
+  Image image(
+    ImageHeader(info, info, false),
+    "geometry",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages);
+  const auto original = image.transformations().subject_T_pixel();
+  ImageHeaderOverrides parent(glm::uvec3{99}, glm::vec3{9}, glm::vec3{42}, glm::mat3{1});
+  parent.m_useIdentityPixelSpacings = true;
+  parent.m_useZeroPixelOrigin = true;
+  image.setHeaderOverrides(parent);
+  CHECK(image.header().getHeaderOverrides().m_originalDims == glm::uvec3(3, 2, 1));
+  checkVec3(image.header().spacing(), glm::vec3{1});
+  checkVec3(glm::vec3{image.transformations().subject_T_pixel()[3]}, glm::vec3{0});
+  parent.m_useIdentityPixelSpacings = false;
+  parent.m_useZeroPixelOrigin = false;
+  image.setHeaderOverrides(parent);
+  checkMat4Near(image.transformations().subject_T_pixel(), original);
+  ImageSpatialMetadata metadata;
+  metadata.spacingMm = {4, 5, 6};
+  metadata.originMm = {7, 8, 9};
+  image.setUserSpatialMetadata(metadata);
+  image.setUseIdentityPixelSpacings(true);
+  checkVec3(image.header().spacing(), glm::vec3{1});
+  image.setUseIdentityPixelSpacings(false);
+  checkVec3(image.header().spacing(), metadata.spacingMm);
+  checkVec3(glm::vec3{image.transformations().subject_T_pixel()[0]}, glm::vec3{4, 0, 0});
+  checkVec3(glm::vec3{image.transformations().subject_T_pixel()[3]}, metadata.originMm);
+}
+
 TEST_CASE("Standard raster formats are detected and named", "[image][header]")
 {
   CHECK(isStandardRasterImageFile("slice.jpg"));

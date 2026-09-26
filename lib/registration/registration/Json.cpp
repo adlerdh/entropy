@@ -184,7 +184,9 @@ void to_json(nlohmann::json& j, const DataRef& value)
     {"uid", value.uid},
     {"fileName", pathToString(value.fileName)},
     {"displayName", value.displayName},
-    {"source", enumToJson(value.source)}};
+    {"source", enumToJson(value.source)},
+    {"component", value.component},
+    {"timePoint", value.timePoint}};
 }
 
 void from_json(const nlohmann::json& j, DataRef& value)
@@ -194,6 +196,8 @@ void from_json(const nlohmann::json& j, DataRef& value)
     value.fileName = pathFromJson(j.at("fileName"));
   }
   getOptional(j, "displayName", value.displayName);
+  getOptional(j, "component", value.component);
+  getOptional(j, "timePoint", value.timePoint);
   if (j.contains("source")) {
     value.source = enumFromJson<DataSource>(j.at("source"), dataSourceFromString);
   }

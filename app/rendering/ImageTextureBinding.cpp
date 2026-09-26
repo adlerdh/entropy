@@ -100,7 +100,7 @@ Rendering::BoundTextures Rendering::bindScalarImageTextures(const ImgSegPair& p)
     settings.m_distanceMapForegroundUpperPercentile);
   const auto activeIsovalues = std::span{D.isosurfaces.values}.first(
     std::min<std::size_t>(static_cast<std::size_t>(std::max(D.isosurfaces.numIsos, 0)), D.isosurfaces.values.size()));
-  const bool useDistMap = settings.m_useDistanceMapForRaycasting &&
+  const bool useDistMap = settings.m_useDistanceMapForRaycasting && !image->isTimeSeries() &&
                           std::end(R.m_distanceMapTextures) != distTextureIt &&
                           rendering::texture_setup::distanceMapSupportsIsovalues(
                             foregroundThresholds.first,
