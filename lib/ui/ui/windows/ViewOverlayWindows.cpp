@@ -175,6 +175,7 @@ void renderThreeDSceneContentCheckboxes(
   bool renderSegmentations = contents.contains(ThreeDSceneContent::Segmentations);
   bool renderIsosurfaces = contents.contains(ThreeDSceneContent::Isosurfaces);
   bool renderImportedMeshes = contents.contains(ThreeDSceneContent::ImportedMeshes);
+  bool renderLandmarks = contents.contains(ThreeDSceneContent::Landmarks);
 
   if (ImGui::Checkbox("Segmentations", &renderSegmentations) && setContents) {
     if (renderSegmentations) {
@@ -212,6 +213,18 @@ void renderThreeDSceneContentCheckboxes(
   }
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Render visible surface meshes loaded for images in this 3D view");
+  }
+  if (ImGui::Checkbox("Landmarks", &renderLandmarks) && setContents) {
+    if (renderLandmarks) {
+      contents.insert(ThreeDSceneContent::Landmarks);
+    }
+    else {
+      contents.erase(ThreeDSceneContent::Landmarks);
+    }
+    setContents(contents);
+  }
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Render visible landmarks as spheres in this 3D view");
   }
   ImGui::Spacing();
 }
@@ -877,65 +890,76 @@ void renderViewSettingsComboWindow(
       // View type combo box (with preview text):
       if (uiControls.m_hasViewTypeComboBox) {
         ImGui::SameLine();
-        ImGui::PushItemWidth(
-          ImGui::CalcTextSize("Horizontal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
-          ImGui::GetTextLineHeightWithSpacing());
-
-        const bool isOblique = (ViewType::Oblique == viewType);
-
-        if (isOblique) {
-          // Set text marking oblique view type with different color
-          ImGui::PushStyleColor(ImGuiCol_Text, activeColor);
+        if (ViewType::ThreeD != viewType && !view_overlay::usesAnatomicalViewTypeSelector(renderMode)) {
+          ImGui::AlignTextToFramePadding();
+          ImGui::TextUnformatted("Joint Histogram");
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip(
+              "Joint histogram plot. Scroll or right-drag to zoom, middle-drag to pan, and double-click or press C "
+              "to reset.");
+          }
         }
+        else {
+          ImGui::PushItemWidth(
+            ImGui::CalcTextSize("Horizontal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
+            ImGui::GetTextLineHeightWithSpacing());
 
-        // Disable opening the view type combo box if the ASM is in a state where it should not
-        // change.
-        const bool crosshairsRotated = !math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
-        const std::string selectedViewTypeName =
-          viewTypeDisplayName(viewType, modes.anatomicalLabelType, crosshairsRotated);
-        static const ImVec2 sk_viewTypePopupPadding(8.0f, 8.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_viewTypePopupPadding);
-        const bool clickedViewTypeCombo = ImGui::BeginCombo("##viewTypeCombo", selectedViewTypeName.c_str());
-        ImGui::PopStyleVar();
+          const bool isOblique = (ViewType::Oblique == viewType);
 
-        if (isOblique) {
-          ImGui::PopStyleColor(1); // ImGuiCol_Text
-        }
-
-        if (clickedViewTypeCombo) {
-          if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
-            auto renderViewTypeChoice = [&](const ViewType& vt) {
-              const bool isSelected = (vt == viewType);
-              const std::string candidateName = viewTypeDisplayName(vt, modes.anatomicalLabelType, crosshairsRotated);
-              if (ImGui::Selectable(candidateName.c_str(), isSelected)) {
-                setViewType(vt);
-              }
-
-              if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-              }
-            };
-
-            if (modes.selectableViewTypes.empty()) {
-              for (const auto& vt : AllViewTypes) {
-                renderViewTypeChoice(vt);
-              }
-            }
-            else {
-              for (const auto& vt : modes.selectableViewTypes) {
-                renderViewTypeChoice(vt);
-              }
-            }
+          if (isOblique) {
+            // Set text marking oblique view type with different color
+            ImGui::PushStyleColor(ImGuiCol_Text, activeColor);
           }
 
-          ImGui::EndCombo();
-        }
+          // Disable opening the view type combo box if the ASM is in a state where it should not
+          // change.
+          const bool crosshairsRotated = !math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
+          const std::string selectedViewTypeName =
+            viewTypeDisplayName(viewType, modes.anatomicalLabelType, crosshairsRotated);
+          static const ImVec2 sk_viewTypePopupPadding(8.0f, 8.0f);
+          ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_viewTypePopupPadding);
+          const bool clickedViewTypeCombo = ImGui::BeginCombo("##viewTypeCombo", selectedViewTypeName.c_str());
+          ImGui::PopStyleVar();
 
-        ImGui::PopItemWidth();
+          if (isOblique) {
+            ImGui::PopStyleColor(1); // ImGuiCol_Text
+          }
 
-        if (ViewType::ThreeD == viewType) {
-          ImGui::SameLine();
-          renderThreeDViewOptions(modes, popupHeadingFont);
+          if (clickedViewTypeCombo) {
+            if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
+              auto renderViewTypeChoice = [&](const ViewType& vt) {
+                const bool isSelected = (vt == viewType);
+                const std::string candidateName = viewTypeDisplayName(vt, modes.anatomicalLabelType, crosshairsRotated);
+                if (ImGui::Selectable(candidateName.c_str(), isSelected)) {
+                  setViewType(vt);
+                }
+
+                if (isSelected) {
+                  ImGui::SetItemDefaultFocus();
+                }
+              };
+
+              if (modes.selectableViewTypes.empty()) {
+                for (const auto& vt : AllViewTypes) {
+                  renderViewTypeChoice(vt);
+                }
+              }
+              else {
+                for (const auto& vt : modes.selectableViewTypes) {
+                  renderViewTypeChoice(vt);
+                }
+              }
+            }
+
+            ImGui::EndCombo();
+          }
+
+          ImGui::PopItemWidth();
+
+          if (ViewType::ThreeD == viewType) {
+            ImGui::SameLine();
+            renderThreeDViewOptions(modes, popupHeadingFont);
+          }
         }
       }
 

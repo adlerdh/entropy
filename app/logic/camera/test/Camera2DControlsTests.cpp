@@ -1,16 +1,15 @@
-#include "logic/camera/Camera2DControls.h"
-
 #include "logic/camera/Camera.h"
+#include "logic/camera/Camera2DControls.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/camera/CameraTypes.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/gtc/constants.hpp>
 #include <glm/vector_relational.hpp>
 
-#include <cmath>
 #include <limits>
+#include <optional>
 
 namespace
 {

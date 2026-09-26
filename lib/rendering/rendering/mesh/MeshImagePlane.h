@@ -3,10 +3,11 @@
 #include "common/IntersectionTypes.h"
 #include "rendering/mesh/MeshData.h"
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp>
 
+#include <array>
 #include <optional>
 
 namespace rendering::mesh

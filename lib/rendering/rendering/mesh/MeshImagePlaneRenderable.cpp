@@ -1,5 +1,8 @@
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
 
+#include "mesh/MeshHandle.h"
+#include "mesh/MeshImagePlaneScene.h"
+
 namespace rendering::mesh
 {
 

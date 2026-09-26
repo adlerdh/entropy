@@ -1,6 +1,6 @@
 #include "rendering/gl/VertexAttributeInfo.h"
 
-#include <utility>
+#include "gl/GLBufferTypes.h"
 
 VertexAttributeInfo::VertexAttributeInfo(
   BufferComponentType componentType,

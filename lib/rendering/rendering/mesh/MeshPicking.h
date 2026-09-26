@@ -2,10 +2,11 @@
 
 #include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshDrawOptions.h"
+#include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshRenderable.h"
 
-#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 #include <cstdint>

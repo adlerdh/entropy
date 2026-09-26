@@ -1,19 +1,18 @@
 #pragma once
 
 #include "common/Types.h"
-#include "rendering/TextureLayout.h"
-#include "rendering/gl/VertexAttributeInfo.h"
-#include "rendering/gl/VertexIndicesInfo.h"
 #include "rendering/gl/GLBufferObject.h"
 #include "rendering/gl/GLBufferTexture.h"
 #include "rendering/gl/GLTexture.h"
 #include "rendering/gl/GLVertexArrayObject.h"
+#include "rendering/gl/VertexAttributeInfo.h"
+#include "rendering/gl/VertexIndicesInfo.h"
+#include "rendering/TextureLayout.h"
 
-#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 #include <uuid.h>
 
 #include <cstdint>

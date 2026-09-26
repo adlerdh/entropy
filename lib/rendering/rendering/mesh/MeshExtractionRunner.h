@@ -2,6 +2,7 @@
 
 #include "rendering/mesh/MeshCache.h"
 #include "rendering/mesh/MeshExtraction.h"
+#include "rendering/mesh/MeshKeys.h"
 
 #include <string>
 #include <vector>

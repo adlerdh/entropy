@@ -1,5 +1,4 @@
 #include "rendering/Rendering.h"
-#include "rendering/gl/OpenGLRenderState.h"
 
 #include "common/Types.h"
 #include "common/UuidUtility.h"
@@ -11,8 +10,9 @@
 #include "rendering/PrivateMethods.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
-#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/gl/GLShaderProgram.h"
+#include "rendering/gl/OpenGLRenderState.h"
+#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/vector/VectorDrawing.h"
 #include "viewer/ViewModes.h"
 #include "viewer/ViewTypes.h"
@@ -21,8 +21,8 @@
 #include "windowing/WindowData.h"
 
 #include <glm/glm.hpp>
-#include <uuid.h>
 #include <spdlog/spdlog.h>
+#include <uuid.h>
 
 #include <functional>
 #include <list>
@@ -133,7 +133,9 @@ void Rendering::renderAllImagesForView(
     if (!renderedSurface) {
       renderMeshImagePlanesAndCrosshairsForView(view);
     }
-    renderMeshLandmarksForView(view);
+    if (contents.contains(ThreeDSceneContent::Landmarks)) {
+      renderMeshLandmarksForView(view);
+    }
     return;
   }
 
@@ -283,7 +285,24 @@ void Rendering::renderAllImagesForView(
     }
 
     case ShaderGroup::Metric: {
-      renderMetricImagesForView(view, worldOffsetXhairs);
+      renderMetricImagesForView(view, miewportViewBounds, worldOffsetXhairs);
+      if (ViewRenderMode::JointHistogram == view.renderMode()) {
+        const CurrentImages pairs = getImageAndSegUidsForMetricShaders(view.metricImages());
+        const Image* fixed = pairs[0].first ? m_appData.image(*pairs[0].first) : nullptr;
+        const Image* moving = pairs[1].first ? m_appData.image(*pairs[1].first) : nullptr;
+        if (fixed && moving) {
+          rendering::JointHistogramRenderer::drawAxes(
+            m_nvg,
+            joint_histogram::plotForFrame(miewportViewBounds, m_appData.viewOverlayControlExtent(view).y),
+            m_appData.windowData().viewport(),
+            {fixed->settings().displayName(), moving->settings().displayName()},
+            {fixed->settings().minMaxImageRange(), moving->settings().minMaxImageRange()},
+            view.jointHistogramNavigation(),
+            m_appData.renderSettings().m_jointHistogramMajorTicks,
+            m_appData.renderSettings().m_jointHistogramMinorTicks);
+        }
+        break;
+      }
       renderImportedMeshIntersectionsForView(
         view,
         miewportViewBounds,

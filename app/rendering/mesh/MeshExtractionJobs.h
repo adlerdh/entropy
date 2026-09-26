@@ -6,8 +6,6 @@
 
 #include <memory>
 
-class Image;
-
 namespace rendering::mesh
 {
 

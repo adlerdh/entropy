@@ -1,10 +1,10 @@
 #include "rendering/Rendering.h"
 
 #include "logic/app/Data.h"
-#include "rendering/ImageShaderCapabilities.h"
-#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/ImageDrawing.h"
+#include "rendering/ImageShaderCapabilities.h"
 #include "rendering/gl/GLTexture.h"
+#include "rendering/helpers/PipelineHelpers.h"
 #include "windowing/View.h"
 
 #include <glm/glm.hpp>
@@ -12,6 +12,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <array>
 #include <functional>
 #include <list>
@@ -29,11 +30,14 @@ const Uniforms::SamplerIndexVectorType s_metricDefTexSamplers0{{3, 4, 5}};
 const Uniforms::SamplerIndexVectorType s_metricDefTexSamplers1{{6, 7, 8}};
 } // namespace
 
-void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXhairs)
+void Rendering::renderMetricImagesForView(
+  const View& view,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldOffsetXhairs)
 {
   static const rendering::RenderDerivedData::ImageUniforms sk_defaultImageUniforms;
   const auto& settings = m_appData.renderSettings();
-  const auto& resources = m_appData.renderResources();
+  auto& resources = m_appData.renderResources();
   const auto& derived = m_appData.renderDerivedData();
   // This function guarantees that imageSegPairs has size at least 2:
   const CurrentImages imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages());
@@ -64,7 +68,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
     rendering::textureLayoutOrDefault(resources.m_imageTextureLayouts, imageSegPairs[1].first)};
   const bool mixedMetricTextureDimensions = metricTextureLayouts[0].dimension != metricTextureLayouts[1].dimension;
 
-  if (mixedMetricTextureDimensions) {
+  if (mixedMetricTextureDimensions && ViewRenderMode::JointHistogram != view.renderMode()) {
     spdlog::warn(
       "Metric rendering between mixed 2D-fallback and 3D textures is not supported yet; skipping metric view");
     return;
@@ -80,6 +84,83 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
   if (deformationUids[1]) {
     auto boundDefTextures = bindDeformationTextures(*deformationUids[1], s_metricDefTexSamplers1);
     boundMetricDefTextures.splice(boundMetricDefTextures.end(), boundDefTextures);
+  }
+
+  if (ViewRenderMode::JointHistogram == view.renderMode()) {
+    // All six deformation samplers are active in the scatter program, even when a warp is disabled or interleaved.
+    // Keep every sampler complete so drivers do not substitute an incomplete texture before evaluating the branch.
+    for (uint32_t unit = 3u; unit <= 8u; ++unit) {
+      const bool bound =
+        std::any_of(boundMetricDefTextures.begin(), boundMetricDefTextures.end(), [unit](const auto& texture) {
+          return texture.unit == unit;
+        });
+      if (!bound) {
+        GLTexture& blank = resources.m_blankImageBlackTransparentTexture;
+        blank.bind(unit);
+        boundMetricDefTextures.emplace_back(blank, unit);
+      }
+    }
+    if (imgs[0] && imgs[1]) {
+      rendering::JointHistogramRenderer::Inputs input;
+      input.fixedDimensions = imgs[0]->header().pixelDimensions();
+      input.world_T_fixedTexture = U[0].world_T_imgTexture;
+      input.layouts = metricTextureLayouts;
+      input.metric = settings.m_jointHistogramParams;
+      input.logarithmicScale = settings.m_jointHistogramLogarithmicScale;
+      input.bins = settings.m_jointHistogramBins;
+      for (const auto& bound : boundMetricTextures) {
+        if (bound.unit < 2u) {
+          input.sourceTextureIds[bound.unit] = bound.texture.get().id();
+          input.sourceTextureRevisions[bound.unit] = bound.texture.get().contentRevision();
+        }
+      }
+      for (const auto& bound : boundMetricDefTextures) {
+        if (bound.unit >= 3u && bound.unit <= 8u) {
+          input.sourceTextureIds[bound.unit - 1u] = bound.texture.get().id();
+          input.sourceTextureRevisions[bound.unit - 1u] = bound.texture.get().contentRevision();
+        }
+      }
+      for (std::size_t i = 0; i < 2; ++i) {
+        input.texture_T_world[i] = U[i].imgTexture_T_world;
+        input.normalized_T_texture[i] = U[i].largestSlopeIntercept;
+        input.linearInterpolation[i] = imgs[i]->settings().interpolationMode() != InterpolationMode::NearestNeighbor;
+        const auto textureIt = imageSegPairs[i].first ? resources.m_imageTextures.find(*imageSegPairs[i].first)
+                                                      : resources.m_imageTextures.end();
+        const bool interleaved = imgs[i]->bufferType() == Image::MultiComponentBufferType::InterleavedImage &&
+                                 textureIt != resources.m_imageTextures.end() && textureIt->second.size() == 1u;
+        input.textureComponents[i] =
+          interleaved ? static_cast<int>(std::min(imgs[i]->settings().activeComponent(), 3u)) : 0;
+        if (deformationUids[i] && imageSegPairs[i].first) {
+          const Image* deformation = m_appData.warpField(*deformationUids[i]);
+          const uuids::uuid ownerUid =
+            m_appData.componentProjectionSourceImageUid(*imageSegPairs[i].first).value_or(*imageSegPairs[i].first);
+          const Image* owner = m_appData.image(ownerUid);
+          if (deformation && owner) {
+            auto& def = input.deformations[i];
+            def.texture_T_world = deformation->transformations().texture_T_worldDef();
+            def.native_T_texture = deformation->settings().slope_native_T_texture();
+            def.strength = owner->settings().warpStrength();
+            def.enabled = def.strength != 0.0f;
+            const auto deformationTextureIt = resources.m_imageTextures.find(*deformationUids[i]);
+            def.interleaved =
+              deformationTextureIt != resources.m_imageTextures.end() && deformationTextureIt->second.size() == 1u;
+          }
+        }
+      }
+      auto& histogram = m_jointHistogramRenderers[view.uid()];
+      if (!histogram) {
+        histogram = std::make_unique<rendering::JointHistogramRenderer>();
+      }
+      const bool needsRefinement = histogram->render(
+        input,
+        joint_histogram::plotForFrame(miewportViewBounds, m_appData.viewOverlayControlExtent(view).y),
+        view.jointHistogramNavigation(),
+        m_appData.windowData().viewport());
+      m_needsRefinementFrame |= needsRefinement;
+    }
+    unbindTextures(boundMetricDefTextures);
+    unbindTextures(boundMetricTextures);
+    return;
   }
 
   auto setMetricSamplingUniforms = [&](GLShaderProgram& program) {

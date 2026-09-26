@@ -7,7 +7,6 @@
 #include <glm/vec4.hpp>
 #include <uuid.h>
 
-#include <cstdint>
 #include <unordered_map>
 #include <vector>
 

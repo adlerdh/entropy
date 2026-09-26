@@ -1,47 +1,41 @@
+#include "common/HistogramSettings.h"
+#include "common/Types.h"
 #include "common/UuidUtility.h"
+#include "image/ImageSpatialMetadata.h"
+#include "image/Isosurface.h"
+#include "layout/LayoutSpec.h"
+#include "logic/annotation/Annotation.h"
+#include "logic/annotation/AnnotPolygon.tpp"
+#include "logic/annotation/PointRecord.h"
+#include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "viewer/ThreeDSceneContents.h"
+#include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <glm/mat4x4.hpp>
-#include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include <nlohmann/json.hpp>
+#include <uuid.h>
 
+#include <array>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <map>
+#include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
+#include <system_error>
+#include <vector>
 
 namespace fs = std::filesystem;
 
 using json = nlohmann::json;
-
-Annotation::Annotation() = default;
-
-void to_json(json& j, const Annotation&)
-{
-  j = json::object();
-}
-
-void from_json(const json&, std::vector<Annotation>& annotations)
-{
-  annotations.clear();
-}
-
-json annotationsToJson(const std::vector<Annotation>& annotations)
-{
-  json annotationArray = json::array();
-  for (std::size_t i = 0; i < annotations.size(); ++i) {
-    annotationArray.emplace_back(json::object());
-  }
-  return json{{"version", {{"major", 1}, {"minor", 0}}}, {"annotations", std::move(annotationArray)}};
-}
-
-std::vector<Annotation> annotationsFromJson(const json&)
-{
-  return {};
-}
 
 namespace
 {
@@ -317,6 +311,24 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
 }
 
+TEST_CASE("Default joint histogram scale does not add a project JSON field", "[project][serialization]")
+{
+  const json defaults = serialize::ProjectJointHistogramSettings{};
+  CHECK(defaults.empty());
+  CHECK_FALSE(defaults.contains("logarithmicScale"));
+  const auto parsedDefaults = defaults.get<serialize::ProjectJointHistogramSettings>();
+  CHECK(parsedDefaults.m_metric.m_colorMapIndex == colormap_defaults::kLinear20GouldianIndex);
+  CHECK(parsedDefaults.m_logarithmicScale);
+  CHECK(parsedDefaults.m_bins == 512);
+}
+
+TEST_CASE("Joint histogram minor ticks are limited to nine", "[project][serialization]")
+{
+  const json settings = {{"minorTicks", 10}};
+  const auto parsed = settings.get<serialize::ProjectJointHistogramSettings>();
+  CHECK(parsed.m_minorTicks == 9);
+}
+
 TEST_CASE("Project serialization preserves comparison settings", "[project][serialization]")
 {
   serialize::EntropyProject project;
@@ -327,8 +339,12 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   project.m_comparison.m_difference.m_metric.m_invertColormap = true;
   project.m_comparison.m_difference.m_metric.m_continuousColormap = false;
   project.m_comparison.m_difference.m_metric.m_colormapLevels = 11;
-  project.m_comparison.m_jointHistogram.m_colorMapIndex = 5;
-  project.m_comparison.m_jointHistogram.m_invertColormap = true;
+  project.m_comparison.m_jointHistogram.m_metric.m_colorMapIndex = 5;
+  project.m_comparison.m_jointHistogram.m_metric.m_invertColormap = true;
+  project.m_comparison.m_jointHistogram.m_logarithmicScale = false;
+  project.m_comparison.m_jointHistogram.m_bins = 768;
+  project.m_comparison.m_jointHistogram.m_majorTicks = 7;
+  project.m_comparison.m_jointHistogram.m_minorTicks = 2;
   project.m_comparison.m_localNcc.m_presentation = serialize::ProjectLocalNccPresentation::Correlation;
   project.m_comparison.m_localNcc.m_negativeCorrelationAsMismatch = false;
   project.m_comparison.m_localNcc.m_patchRadius = 5;
@@ -359,6 +375,10 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(comparison.at("difference").at("metric").at("windowSlopeIntercept").at(0) == 2.0f);
   CHECK(comparison.at("jointHistogram").at("colormapIndex") == 5);
   CHECK(comparison.at("jointHistogram").at("invertColormap") == true);
+  CHECK(comparison.at("jointHistogram").at("logarithmicScale") == false);
+  CHECK(comparison.at("jointHistogram").at("bins") == 768);
+  CHECK(comparison.at("jointHistogram").at("majorTicks") == 7);
+  CHECK(comparison.at("jointHistogram").at("minorTicks") == 2);
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
   CHECK(comparison.at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
   CHECK(comparison.at("localLinearResidual").at("patchRadius") == 4);
@@ -372,8 +392,12 @@ TEST_CASE("Project serialization preserves comparison settings", "[project][seri
   CHECK(parsed.m_comparison.m_difference.m_squared == false);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_colorMapIndex == 9);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_slopeIntercept == glm::vec2{2.0f, -1.0f});
-  CHECK(parsed.m_comparison.m_jointHistogram.m_colorMapIndex == 5);
-  CHECK(parsed.m_comparison.m_jointHistogram.m_invertColormap);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_metric.m_colorMapIndex == 5);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_metric.m_invertColormap);
+  CHECK_FALSE(parsed.m_comparison.m_jointHistogram.m_logarithmicScale);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_bins == 768);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_majorTicks == 7);
+  CHECK(parsed.m_comparison.m_jointHistogram.m_minorTicks == 2);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_invertColormap == true);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_continuousColormap == false);
   CHECK(parsed.m_comparison.m_difference.m_metric.m_colormapLevels == 11);
@@ -952,7 +976,10 @@ TEST_CASE(
   layout::LayoutSpec layout;
   layout.m_displayName = "Review";
   layout.m_kind = 3;
-  layout.m_threeDSceneContents = {ThreeDSceneContent::Segmentations};
+  layout.m_threeDSceneContents = {ThreeDSceneContent::Segmentations, ThreeDSceneContent::Landmarks};
+  layout::ViewSpec histogramView;
+  histogramView.m_renderMode = static_cast<int>(ViewRenderMode::JointHistogram);
+  layout.m_views.push_back(histogramView);
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = imageFile;
@@ -967,8 +994,10 @@ TEST_CASE(
   REQUIRE(serialized.at("layouts").at("embedded").is_array());
   REQUIRE(serialized.at("layouts").at("embedded").size() == 1);
   CHECK(serialized.at("layouts").at("embedded").at(0).at("displayName") == "Review");
+  CHECK(serialized.at("layouts").at("embedded").at(0).at("views").at(0).at("renderMode") == "jointHistogram");
   CHECK(
-    serialized.at("layouts").at("embedded").at(0).at("threeD").at("sceneContents") == json::array({"segmentations"}));
+    serialized.at("layouts").at("embedded").at(0).at("threeD").at("sceneContents") ==
+    json::array({"segmentations", "landmarks"}));
   CHECK(serialized.at("layouts").at("current") == 1);
   CHECK_FALSE(serialized.contains("currentLayout"));
   CHECK_FALSE(serialized.contains("currentLayoutIndex"));
@@ -977,9 +1006,25 @@ TEST_CASE(
   CHECK_FALSE(loaded.m_layoutsFileName);
   REQUIRE(loaded.m_layouts.size() == 1);
   CHECK(loaded.m_layouts.front().m_displayName == "Review");
-  CHECK(loaded.m_layouts.front().m_threeDSceneContents == ThreeDSceneContents{ThreeDSceneContent::Segmentations});
+  REQUIRE(loaded.m_layouts.front().m_views.size() == 1);
+  CHECK(loaded.m_layouts.front().m_views.front().m_renderMode == static_cast<int>(ViewRenderMode::JointHistogram));
+  CHECK(
+    loaded.m_layouts.front().m_threeDSceneContents ==
+    ThreeDSceneContents{ThreeDSceneContent::Segmentations, ThreeDSceneContent::Landmarks});
   REQUIRE(loaded.m_currentLayoutIndex);
   CHECK(*loaded.m_currentLayoutIndex == 1);
+}
+
+TEST_CASE("Project serialization omits default 3D landmark visibility", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_layouts.emplace_back();
+
+  const json serialized = project;
+  const json& layout = serialized.at("layouts").at("embedded").at(0);
+  CHECK_FALSE(layout.contains("threeD"));
+  CHECK_FALSE(serialized.dump().contains("landmarks"));
 }
 
 TEST_CASE("Project serialization preserves removed default layout indices", "[project][serialization]")
@@ -1237,6 +1282,179 @@ TEST_CASE("Project serialization supports embedded and external annotations", "[
   CHECK(*parsed.m_referenceImage.m_annotationsFileName == fs::path{"reference-annotations.json"});
 }
 
+TEST_CASE("Annotation JSON round-trips every boundary and display property", "[annotation][serialization]")
+{
+  Annotation original;
+  original.setDisplayName("Tissue boundary");
+  REQUIRE(original.setSubjectPlane(glm::vec4{0.0f, 0.0f, 2.0f, -10.0f}));
+  original.polygon().setAllVertices(
+    {{{0.0f, 0.0f}, {10.0f, 0.0f}, {10.0f, 10.0f}, {0.0f, 10.0f}}, {{2.0f, 2.0f}, {3.0f, 2.0f}, {3.0f, 3.0f}}});
+  original.setVisible(false);
+  original.setOpacity(0.6f);
+  original.setLineThickness(3.5f);
+  original.setLineColor(glm::vec4{0.1f, 0.2f, 0.3f, 0.4f});
+  original.setVertexColor(glm::vec4{0.5f, 0.6f, 0.7f, 0.8f});
+  original.setFillColor(glm::vec4{0.9f, 0.8f, 0.7f, 0.6f});
+  original.setVertexVisibility(false);
+  original.setClosed(true);
+  original.setFilled(true);
+  original.setSmoothed(true);
+  original.setSmoothingFactor(0.25f);
+
+  const json encoded = annotationsToJson({original});
+  REQUIRE(encoded.at("annotations").at(0).at("boundaries").size() == 2);
+  REQUIRE(encoded.at("annotations").at(0).contains("vertexColor"));
+  const auto decoded = annotationsFromJson(encoded);
+  REQUIRE(decoded.size() == 1);
+  const Annotation& restored = decoded.front();
+  CHECK(restored.getDisplayName() == original.getDisplayName());
+  CHECK(restored.getAllVertices() == original.getAllVertices());
+  CHECK(restored.getSubjectPlaneEquation() == glm::vec4{0.0f, 0.0f, 1.0f, -5.0f});
+  CHECK(restored.getSubjectPlaneOrigin() == glm::vec3{0.0f, 0.0f, 5.0f});
+  CHECK(restored.isVisible() == original.isVisible());
+  CHECK(restored.getOpacity() == original.getOpacity());
+  CHECK(restored.getLineThickness() == original.getLineThickness());
+  CHECK(restored.getLineColor() == original.getLineColor());
+  CHECK(restored.getVertexColor() == original.getVertexColor());
+  CHECK(restored.getFillColor() == original.getFillColor());
+  CHECK(restored.getVertexVisibility() == original.getVertexVisibility());
+  CHECK(restored.isClosed() == original.isClosed());
+  CHECK(restored.isFilled() == original.isFilled());
+  CHECK(restored.isSmoothed() == original.isSmoothed());
+  CHECK(restored.getSmoothingFactor() == original.getSmoothingFactor());
+  CHECK_FALSE(restored.isDirty());
+}
+
+TEST_CASE("Annotation JSON rejects malformed geometry and display values", "[annotation][serialization]")
+{
+  const json valid = annotationsToJson({Annotation{}});
+  auto invalid = valid;
+  invalid["annotations"][0]["boundaries"] = json::object();
+  CHECK_THROWS(annotationsFromJson(invalid));
+  invalid = valid;
+  invalid["annotations"][0]["boundaries"] = json::array({json::object()});
+  CHECK_THROWS(annotationsFromJson(invalid));
+  invalid = valid;
+  invalid["annotations"][0]["subjectPlaneNormal"] = json::array({0.0f, 0.0f, 0.0f});
+  CHECK_THROWS(annotationsFromJson(invalid));
+  invalid = valid;
+  invalid["annotations"][0]["opacity"] = 2.0f;
+  CHECK_THROWS(annotationsFromJson(invalid));
+  invalid = valid;
+  invalid["annotations"][0]["lineColor"] = json::array({2.0f, 0.0f, 0.0f, 1.0f});
+  CHECK_THROWS(annotationsFromJson(invalid));
+
+  auto emptySmoothed = valid;
+  emptySmoothed["annotations"][0]["smoothed"] = true;
+  REQUIRE_NOTHROW(annotationsFromJson(emptySmoothed));
+}
+
+TEST_CASE("Annotation project paths are retained only for a shared source file", "[annotation][serialization]")
+{
+  Annotation first;
+  Annotation second;
+  first.setFileName("annotations-a.json");
+  second.setFileName("annotations-a.json");
+  REQUIRE(commonAnnotationFileName({first, second}));
+  CHECK(*commonAnnotationFileName({first, second}) == fs::path{"annotations-a.json"});
+
+  second.setFileName("annotations-b.json");
+  CHECK_FALSE(commonAnnotationFileName({first, second}));
+  second.setFileName({});
+  CHECK_FALSE(commonAnnotationFileName({first, second}));
+  CHECK_FALSE(commonAnnotationFileName({}));
+}
+
+TEST_CASE("Annotation export preserves an existing destination on replacement failure", "[annotation][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path destination = root / "annotations.json";
+  fs::create_directory(destination);
+  const fs::path marker = destination / "keep.txt";
+  touchFile(marker);
+
+  CHECK_FALSE(serialize::saveToJsonFile(annotationsToJson({Annotation{}}), destination));
+  CHECK(fs::is_regular_file(marker));
+  for (const auto& entry : fs::directory_iterator(root)) {
+    CHECK(entry.path().filename().string().find(".annotations.json.tmp-") == std::string::npos);
+  }
+}
+
+TEST_CASE("Annotation export leaves an existing file untouched when JSON encoding fails", "[annotation][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path destination = root / "annotations.json";
+  {
+    std::ofstream out(destination);
+    out << "original contents";
+  }
+  const json invalidUtf8 = {{"name", std::string(1, static_cast<char>(0xff))}};
+  CHECK_FALSE(serialize::saveToJsonFile(invalidUtf8, destination));
+  std::ifstream in(destination);
+  CHECK(std::string(std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}) == "original contents");
+}
+
+TEST_CASE(
+  "Annotation file import and export round-trip and reject invalid input without replacing output",
+  "[annotation][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path file = root / "annotations.json";
+  touchFile(file);
+  Annotation annotation;
+  annotation.setDisplayName("First");
+  annotation.addPlanePointToBoundary(0, glm::vec2{2.0f, 3.0f});
+  REQUIRE(serialize::saveToJsonFile(annotationsToJson({annotation}), file));
+  CHECK(json::parse(std::ifstream(file)).at("annotations").at(0).at("name") == "First");
+  std::vector<Annotation> loaded;
+  REQUIRE(serialize::openAnnotationsFromJsonFile(loaded, file));
+  REQUIRE(loaded.size() == 1);
+  CHECK(loaded.front().getDisplayName() == "First");
+
+  {
+    std::ofstream out(file);
+    out << R"({"version":{"major":1,"minor":0},"annotations":[{"type":"polygon","boundaries":{}}]})";
+  }
+  CHECK_FALSE(serialize::openAnnotationsFromJsonFile(loaded, file));
+  REQUIRE(loaded.size() == 1);
+  CHECK(loaded.front().getDisplayName() == "First");
+}
+
+TEST_CASE("Project opens embedded annotations without their original file", "[project][annotation][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path imageFile = root / "reference.nii.gz";
+  const fs::path movingImageFile = root / "moving.nii.gz";
+  const fs::path projectFile = root / "project.json";
+  touchFile(imageFile);
+  touchFile(movingImageFile);
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = imageFile;
+  project.m_referenceImage.m_annotationsFileName = root / "missing-annotations.json";
+  Annotation annotation;
+  annotation.setDisplayName("Embedded");
+  annotation.addPlanePointToBoundary(0, glm::vec2{1.0f, 2.0f});
+  project.m_referenceImage.m_annotations.push_back(annotation);
+  serialize::Image movingImage;
+  movingImage.m_imageFileName = movingImageFile;
+  Annotation movingAnnotation;
+  movingAnnotation.setDisplayName("Moving image annotation");
+  movingImage.m_annotations.push_back(movingAnnotation);
+  project.m_additionalImages.push_back(movingImage);
+  REQUIRE(serialize::save(project, projectFile));
+
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_referenceImage.m_annotations.size() == 1);
+  CHECK(loaded.m_referenceImage.m_annotations.front().getDisplayName() == "Embedded");
+  CHECK(loaded.m_referenceImage.m_annotations.front().getBoundaryVertices(0) == annotation.getBoundaryVertices(0));
+  REQUIRE(loaded.m_referenceImage.m_annotationsFileName);
+  CHECK(*loaded.m_referenceImage.m_annotationsFileName == fs::weakly_canonical(root / "missing-annotations.json"));
+  REQUIRE(loaded.m_additionalImages.size() == 1);
+  REQUIRE(loaded.m_additionalImages.at(0).m_annotations.size() == 1);
+  CHECK(loaded.m_additionalImages.at(0).m_annotations.front().getDisplayName() == "Moving image annotation");
+}
+
 TEST_CASE("Project serialization preserves embedded and path-backed landmark groups", "[project][serialization]")
 {
   serialize::EntropyProject project;
@@ -1307,6 +1525,103 @@ TEST_CASE("Project serialization preserves embedded and path-backed landmark gro
   CHECK(
     parsed.m_referenceImage.m_landmarkGroups.at(1).m_coordinateSpace ==
     serialize::ProjectLandmarkCoordinateSpace::Voxel);
+}
+
+TEST_CASE("Landmark CSV import and export preserve sparse IDs, positions, and names", "[project][landmarks]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path csvFile = root / "landmarks.csv";
+  std::map<std::size_t, PointRecord<glm::vec3>> original;
+  original.try_emplace(2, glm::vec3{1.23456788f, -2.5f, 3.0f}, "");
+  original.try_emplace(42, glm::vec3{4.0f, 5.0f, 6.0f}, "A, \"quoted\" name");
+  original.try_emplace(99, glm::vec3{7.0f, 8.0f, 9.0f}, "a\nmultiline name");
+
+  REQUIRE(serialize::saveLandmarkGroupCsvFile(original, csvFile));
+  std::map<std::size_t, PointRecord<glm::vec3>> loaded;
+  REQUIRE(serialize::openLandmarkGroupCsvFile(loaded, csvFile));
+  REQUIRE(loaded.size() == 3);
+  CHECK(loaded.at(2).getName().empty());
+  CHECK(loaded.at(2).getPosition() == original.at(2).getPosition());
+  CHECK(loaded.at(42).getName() == "A, \"quoted\" name");
+  CHECK(loaded.at(99).getName() == "a\nmultiline name");
+
+  const fs::path noNameFile = root / "four-columns.csv";
+  {
+    std::ofstream out(noNameFile);
+    out << "ID,X,Y,Z\n7,1,2,3\n";
+  }
+  REQUIRE(serialize::openLandmarkGroupCsvFile(loaded, noNameFile));
+  REQUIRE(loaded.size() == 1);
+  CHECK(loaded.at(7).getName().empty());
+}
+
+TEST_CASE("Invalid landmark CSV does not partially replace loaded points", "[project][landmarks]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path csvFile = root / "invalid.csv";
+  {
+    std::ofstream out(csvFile);
+    out << "ID,X,Y,Z,Name\n2,1,2,3,valid\n2,4,5,6,duplicate\n";
+  }
+  std::map<std::size_t, PointRecord<glm::vec3>> loaded;
+  loaded.try_emplace(9, glm::vec3{9.0f}, "existing");
+  CHECK_FALSE(serialize::openLandmarkGroupCsvFile(loaded, csvFile));
+  REQUIRE(loaded.size() == 1);
+  CHECK(loaded.at(9).getName() == "existing");
+}
+
+TEST_CASE("Project landmarks retain per-image groups and point display state", "[project][landmarks]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path referenceFile = root / "reference.nii.gz";
+  const fs::path movingFile = root / "moving.nii.gz";
+  const fs::path projectFile = root / "project.json";
+  touchFile(referenceFile);
+  touchFile(movingFile);
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = referenceFile;
+  serialize::LandmarkGroup referenceGroup;
+  referenceGroup.m_name = "Reference points";
+  referenceGroup.m_pointsEmbedded = true;
+  referenceGroup.m_csvFileName = root / "missing.csv";
+  referenceGroup.m_points.push_back(serialize::LandmarkPoint{
+    .m_index = 17,
+    .m_position = glm::vec3{1.0f, 2.0f, 3.0f},
+    .m_name = "fiducial",
+    .m_description = "A visible feature",
+    .m_visible = false,
+    .m_color = glm::vec3{0.2f, 0.4f, 0.6f}});
+  project.m_referenceImage.m_landmarkGroups.push_back(referenceGroup);
+
+  serialize::Image moving;
+  moving.m_imageFileName = movingFile;
+  serialize::LandmarkGroup emptyGroup;
+  emptyGroup.m_name = "Empty moving group";
+  emptyGroup.m_pointsEmbedded = true;
+  emptyGroup.m_csvFileName = root / "also-missing.csv";
+  moving.m_landmarkGroups.push_back(emptyGroup);
+  project.m_additionalImages.push_back(moving);
+
+  REQUIRE(serialize::save(project, projectFile));
+  const json saved = json::parse(std::ifstream(projectFile));
+  CHECK(saved.at("images").at(0).at("landmarks").at(0).at("points").at(0).at("index") == 17);
+  CHECK(saved.at("images").at(1).at("landmarks").at(0).at("points").empty());
+
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_referenceImage.m_landmarkGroups.size() == 1);
+  const auto& point = loaded.m_referenceImage.m_landmarkGroups.at(0).m_points.at(0);
+  CHECK(point.m_index == 17);
+  CHECK(point.m_name == "fiducial");
+  CHECK(point.m_description == "A visible feature");
+  CHECK_FALSE(point.m_visible);
+  REQUIRE(point.m_color);
+  CHECK(*point.m_color == glm::vec3{0.2f, 0.4f, 0.6f});
+  REQUIRE(loaded.m_additionalImages.size() == 1);
+  REQUIRE(loaded.m_additionalImages.at(0).m_landmarkGroups.size() == 1);
+  CHECK(loaded.m_additionalImages.at(0).m_landmarkGroups.at(0).m_pointsEmbedded);
+  CHECK(loaded.m_additionalImages.at(0).m_landmarkGroups.at(0).m_points.empty());
 }
 
 TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")

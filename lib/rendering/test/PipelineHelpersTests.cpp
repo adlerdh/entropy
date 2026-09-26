@@ -1,11 +1,21 @@
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/ShaderTextureDimension.h"
+#include "rendering/TextureLayout.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+#include <uuid.h>
 
 #include <array>
 #include <limits>
+#include <list>
+#include <optional>
+#include <stdint.h>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 TEST_CASE("rendering helpers preserve 3D shader texture lookup replacements", "[rendering][helpers]")
 {

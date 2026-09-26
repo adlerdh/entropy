@@ -1,9 +1,14 @@
 #include "registration/Capabilities.h"
+#include "registration/Types.h"
 #include "registration/Validation.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <filesystem>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace
 {

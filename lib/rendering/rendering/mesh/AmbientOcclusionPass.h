@@ -1,12 +1,11 @@
 #pragma once
 
 #include "rendering/mesh/MeshAdvancedLighting.h"
+#include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderer.h"
 
 #include <functional>
 #include <span>
-
-class GLShaderProgram;
 
 namespace rendering::mesh
 {

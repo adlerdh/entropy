@@ -1,6 +1,10 @@
+#include "common/Types.h"
 #include "logic/camera/Camera3DInteraction.h"
+#include "logic/interaction/events/ButtonState.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <optional>
 
 namespace
 {

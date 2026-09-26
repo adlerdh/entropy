@@ -1,11 +1,12 @@
 #include "viewer/FrameImageSelection.h"
+#include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
-
 #include <uuid.h>
 
 #include <cstdint>
 #include <list>
+#include <set>
 #include <vector>
 
 namespace

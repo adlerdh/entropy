@@ -1,5 +1,7 @@
 #include "logic/app/ProjectLayoutDelta.h"
 
+#include <filesystem>
+
 namespace project_layout_delta
 {
 namespace

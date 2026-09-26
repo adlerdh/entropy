@@ -1,6 +1,7 @@
 #include "ui/dialogs/InputLoadErrorDialog.h"
 
 #include <cctype>
+#include <cstddef>
 #include <utility>
 
 namespace

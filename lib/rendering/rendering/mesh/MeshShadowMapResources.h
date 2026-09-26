@@ -4,8 +4,8 @@
 #include "rendering/gl/GLTexture.h"
 
 #include <glm/vec2.hpp>
-
 #include <optional>
+#include <stdint.h>
 
 namespace rendering::mesh
 {

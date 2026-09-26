@@ -3,10 +3,11 @@
 #include "common/MathFuncs.h"
 
 #include <glm/glm.hpp>
-
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
+#include <tuple>
 
 namespace
 {

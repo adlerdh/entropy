@@ -1,5 +1,7 @@
 #include "logic/sync/ItkSnapSyncProtocol.h"
 
+#include <glm/glm.hpp>
+
 namespace app_sync::itk_snap_protocol
 {
 

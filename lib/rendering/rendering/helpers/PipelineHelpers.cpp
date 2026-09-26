@@ -1,10 +1,12 @@
 #include "rendering/helpers/PipelineHelpers.h"
 
+#include "common/ShaderType.h"
 #include "rendering/gl/GLShaderProgram.h"
+#include "TextureLayout.h"
 
-#include <cstddef>
+#include <iterator>
 #include <limits>
-#include <utility>
+#include <string>
 
 namespace rendering
 {

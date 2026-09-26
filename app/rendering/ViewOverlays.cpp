@@ -6,18 +6,18 @@
 #include "logic/camera/CameraFrustumSlice.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
-#include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
+#include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/vector/FrustumOverlayDrawing.h"
 #include "rendering/vector/ImageLabelOverlayDrawing.h"
 #include "rendering/vector/LightboxOverlayDrawing.h"
 #include "rendering/vector/ScaleBarDrawing.h"
 #include "rendering/vector/TransformationGuideDrawing.h"
-#include "rendering/vector/ViewOverlayDrawing.h"
 #include "rendering/vector/VectorDrawing.h"
-#include "windowing/View.h"
+#include "rendering/vector/ViewOverlayDrawing.h"
 #include "windowing/ControlFrame.h"
+#include "windowing/View.h"
 
 #include <glm/glm.hpp>
 #include <nanovg.h>
@@ -249,7 +249,8 @@ void Rendering::renderVectorOverlays()
     // Do not render vector overlays when view is disabled
     if (
       VectorOverlayVisibility::Hidden != m_vectorOverlayVisibility &&
-      (ViewType::ThreeD == view->viewType() || ViewRenderMode::Disabled != view->renderMode()))
+      (ViewType::ThreeD == view->viewType() || ViewRenderMode::Disabled != view->renderMode()) &&
+      ViewRenderMode::JointHistogram != view->renderMode())
     {
       // Label positions are based on the reference image transform (world_T_refSubject)
       const auto labelPosInfo_forLabels = math::computeAnatomicalLabelPosInfo(

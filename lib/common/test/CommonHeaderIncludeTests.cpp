@@ -2,7 +2,6 @@
 #include "common/IntersectionTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/vec3.hpp>
 
 #include <array>

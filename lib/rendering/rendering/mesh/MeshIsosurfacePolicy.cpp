@@ -1,5 +1,10 @@
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
 
+#include "mesh/MeshExtraction.h"
+#include "mesh/MeshMaterial.h"
+
+#include <string>
+
 namespace rendering::mesh
 {
 

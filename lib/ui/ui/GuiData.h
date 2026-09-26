@@ -11,6 +11,7 @@
 #include <uuid.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <memory>

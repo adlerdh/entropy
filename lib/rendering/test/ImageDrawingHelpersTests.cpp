@@ -1,8 +1,9 @@
+#include "common/DirectionMaps.h"
+#include "common/Viewport.h"
 #include "rendering/helpers/ImageDrawingHelpers.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 

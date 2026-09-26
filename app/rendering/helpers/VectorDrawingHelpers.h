@@ -1,14 +1,13 @@
 #pragma once
 
+#include "image/ImageSettings.h"
 #include "viewer/ViewModes.h"
 
-#include "image/ImageSettings.h"
-
-#include <array>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp>
 
+#include <array>
 #include <optional>
 
 class Viewport;

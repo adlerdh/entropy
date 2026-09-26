@@ -2,9 +2,14 @@
 
 #include "common/Exception.hpp"
 #include "logic/annotation/Annotation.h"
+#include "logic/annotation/AnnotPolygon.tpp"
 
+#include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
 
+#include <cmath>
+#include <filesystem>
+#include <optional>
 #include <vector>
 
 namespace annotation_json
@@ -29,11 +34,17 @@ inline glm::vec4 colorFromJson(const nlohmann::json& value)
   if (!value.is_array() || value.size() != 4) {
     throwDebug("JSON structure contains invalid color");
   }
-  return glm::vec4{
+  glm::vec4 color{
     value.at(0).get<float>(),
     value.at(1).get<float>(),
     value.at(2).get<float>(),
     value.at(3).get<float>()};
+  for (int component = 0; component < 4; ++component) {
+    if (!std::isfinite(color[component]) || color[component] < 0.0f || color[component] > 1.0f) {
+      throwDebug("Annotation color components must be finite and in [0, 1]");
+    }
+  }
+  return color;
 }
 } // namespace annotation_json
 
@@ -85,3 +96,6 @@ nlohmann::json annotationsToJson(const std::vector<Annotation>& annotations);
  * @return Parsed annotations
  */
 std::vector<Annotation> annotationsFromJson(const nlohmann::json& j);
+
+/// Return a file path only when every annotation came from the same nonempty file.
+std::optional<std::filesystem::path> commonAnnotationFileName(const std::vector<Annotation>& annotations);

@@ -4,6 +4,8 @@
 #include <nlohmann/json.hpp>
 
 #include <limits>
+#include <map>
+#include <math.h>
 
 namespace app_sync::instance_protocol
 {

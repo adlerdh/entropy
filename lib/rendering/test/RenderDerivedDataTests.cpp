@@ -1,6 +1,11 @@
 #include "rendering/RenderDerivedData.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <uuid.h>
+
+#include <optional>
+#include <unordered_map>
+#include <vector>
 
 TEST_CASE("render-derived data has complete fixed raycast payload defaults", "[rendering][derived-data]")
 {

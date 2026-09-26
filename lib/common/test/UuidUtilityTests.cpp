@@ -1,6 +1,7 @@
 #include "common/UuidUtility.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <uuid.h>
 
 TEST_CASE("random UUID generation returns non-nil unique values", "[common][uuid]")
 {

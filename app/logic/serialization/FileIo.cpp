@@ -1,21 +1,42 @@
-#include "logic/serialization/ProjectSerialization.h"
+#include "logic/annotation/Annotation.h"
+#include "logic/annotation/PointRecord.h"
 #include "logic/annotation/SerializeAnnot.h"
+#include "logic/serialization/ProjectSerialization.h"
 
 #include <safeclib/strerrorlen_s.h>
 
-#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
+#include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
 
-#include <cerrno>
 #include <array>
+#include <atomic>
+#include <cerrno>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <limits>
+#include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <system_error>
+#include <utility>
 #include <vector>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
 
 #if !defined(_MSC_VER)
 #define HAS_IOS_BASE_FAILURE_DERIVED_FROM_SYSTEM_ERROR 1
@@ -29,6 +50,129 @@ namespace fs = std::filesystem;
 
 namespace
 {
+fs::path temporaryJsonSiblingPath(const fs::path& destination)
+{
+  // The local atomic is safe and keeps the collision counter private to this operation.
+  // cppcheck-suppress threadsafety-threadsafety
+  static std::atomic_uint64_t sequence{0};
+  const auto timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+  fs::path name{"."};
+  name += destination.filename().native();
+  name += ".tmp-";
+  name += std::to_string(timestamp);
+  name += "-";
+  name += std::to_string(++sequence);
+  return destination.parent_path() / name;
+}
+
+void replaceJsonFile(const fs::path& temporary, const fs::path& destination)
+{
+#if defined(_WIN32)
+  if (!MoveFileExW(temporary.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+    throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "Failed to replace JSON file");
+  }
+#else
+  fs::rename(temporary, destination);
+#endif
+}
+
+bool parseCsvRow(const std::string& line, std::vector<std::string>& fields)
+{
+  fields.clear();
+  std::string field;
+  bool quoted = false;
+  bool closedQuote = false;
+  for (std::size_t i = 0; i < line.size(); ++i) {
+    const char ch = line[i];
+    if (quoted) {
+      if (ch == '"' && i + 1 < line.size() && line[i + 1] == '"') {
+        field += '"';
+        ++i;
+      }
+      else if (ch == '"') {
+        quoted = false;
+        closedQuote = true;
+      }
+      else {
+        field += ch;
+      }
+    }
+    else if (ch == ',') {
+      fields.push_back(std::move(field));
+      field.clear();
+      closedQuote = false;
+    }
+    else if (ch == '"' && field.empty() && !closedQuote) {
+      quoted = true;
+    }
+    else if (closedQuote || ch == '"') {
+      return false;
+    }
+    else {
+      field += ch;
+    }
+  }
+  if (quoted) {
+    return false;
+  }
+  fields.push_back(std::move(field));
+  return true;
+}
+
+bool readCsvRow(std::istream& input, std::vector<std::string>& fields, std::size_t& lineNumber)
+{
+  std::string line;
+  if (!std::getline(input, line)) {
+    return false;
+  }
+  ++lineNumber;
+  if (!line.empty() && line.back() == '\r') {
+    line.pop_back();
+  }
+  while (!parseCsvRow(line, fields)) {
+    std::string continuation;
+    if (!std::getline(input, continuation)) {
+      return false;
+    }
+    ++lineNumber;
+    if (!continuation.empty() && continuation.back() == '\r') {
+      continuation.pop_back();
+    }
+    line += '\n';
+    line += continuation;
+  }
+  return true;
+}
+
+template<typename T, typename Parse>
+bool parseCsvNumber(const std::string& value, T& result, Parse parse)
+{
+  try {
+    std::size_t used = 0;
+    result = parse(value, &used);
+    return used == value.size();
+  }
+  catch (const std::exception&) {
+    return false;
+  }
+}
+
+std::string quoteCsvField(const std::string& value)
+{
+  if (value.find_first_of(",\"\r\n") == std::string::npos) {
+    return value;
+  }
+  std::string quoted = "\"";
+  for (const char ch : value) {
+    if (ch == '"') {
+      quoted += '"';
+    }
+    quoted += ch;
+  }
+  quoted += '"';
+  return quoted;
+}
+
 #if !HAS_IOS_BASE_FAILURE_DERIVED_FROM_SYSTEM_ERROR
 void logStdErrno()
 {
@@ -176,130 +320,57 @@ bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3>>& lan
       throw std::system_error(errno, std::system_category(), "Failed to open CSV file " + csvFileName.string());
     }
 
-    int lineNum = 1;
-
-    std::string line;
-    std::string colName;
-    int numCols = 0;
-
-    // Read the first line
-    std::getline(inFile, line);
-    ++lineNum;
-
-    // SPDLOG_TRACE( "\n\nReading line: {}\n\n\n", line );
-
-    std::istringstream ssHeader(line);
-
-    // Read the column headers into colName (they are not used)
-    while (std::getline(ssHeader, colName, ',')) {
-      spdlog::debug("Read column name {}", colName);
-      ++numCols;
-    }
-
-    // The expected columns are (with the last column optional)
-    // index ,X ,Y ,Z [,name]
-    if (numCols < 4) {
-      spdlog::error(
-        "Expected at least four columns (id, x, y, z) when reading landmarks CSV file {}, "
-        "but only read {} columns",
-        csvFileName,
-        numCols);
+    std::vector<std::string> fields;
+    std::size_t lineNum = 0;
+    if (!readCsvRow(inFile, fields, lineNum) || (fields.size() != 4 && fields.size() != 5)) {
+      spdlog::error("Landmarks CSV file {} must have four or five columns", csvFileName);
       return false;
     }
-
-    // Is the name column provided?
-    const bool nameProvided = (numCols >= 5);
-
-    // Read all lines containing landmark data
-    while (std::getline(inFile, line)) {
-      // SPDLOG_TRACE( "Reading line: {}", line );
-
-      std::stringstream ssLm(line);
-
-      int landmarkIndex = 0;
-      glm::vec3 landmarkPos{0.0f};
-      std::optional<std::string> landmarkName;
-
-      int col = 0;
-      std::string val;
-
-      while (std::getline(ssLm, val, ',')) {
-        // SPDLOG_TRACE( "\tval: {}", val );
-
-        switch (col) {
-          case 0: {
-            landmarkIndex = std::stoi(val);
-            break;
-          }
-          case 1: {
-            landmarkPos.x = std::stof(val);
-            break;
-          }
-          case 2: {
-            landmarkPos.y = std::stof(val);
-            break;
-          }
-          case 3: {
-            landmarkPos.z = std::stof(val);
-            break;
-          }
-          case 4: {
-            if (nameProvided) {
-              landmarkName = val;
-            }
-            break;
-          }
-          default:
-            break; // ignore any more columns
-        }
-
-        // If the next token is a comma, ignore it
-        if (',' == ssLm.peek()) {
-          ssLm.ignore();
-        }
-
-        ++col;
-      }
-
-      if (nameProvided && (col < numCols - 1)) {
-        // The name is optional, so only check col against numCols - 1
-        spdlog::error(
-          "Line {} of landmarks CSV file {} has {} entries, which is less than the expected {} "
-          "entries",
-          lineNum,
-          csvFileName,
-          col,
-          numCols - 1);
+    const bool nameProvided = fields.size() == 5;
+    std::map<std::size_t, PointRecord<glm::vec3>> parsed;
+    while (inFile.peek() != std::char_traits<char>::eof()) {
+      if (!readCsvRow(inFile, fields, lineNum)) {
+        spdlog::error("Invalid CSV record ending on line {} of landmarks file {}", lineNum, csvFileName);
         return false;
       }
-      else if (!nameProvided && (col < numCols)) {
-        spdlog::error(
-          "Line {} of landmarks CSV file {} has {} entries, which is less than the expected {} "
-          "entries",
-          lineNum,
-          csvFileName,
-          col,
-          numCols);
+      if (fields.size() == 1 && fields.front().empty()) {
+        continue;
+      }
+      if (fields.size() != (nameProvided ? 5u : 4u)) {
+        spdlog::error("Invalid columns on line {} of landmarks CSV file {}", lineNum, csvFileName);
         return false;
       }
-
-      if (landmarkIndex < 0) {
-        spdlog::error(
-          "Invalid negative landmark index ({}) on line {} of landmarks CSV file {}",
-          landmarkIndex,
-          lineNum,
-          csvFileName);
+      std::size_t index = 0;
+      glm::vec3 position{0.0f};
+      if (
+        !parseCsvNumber(
+          fields[0],
+          index,
+          [](const std::string& s, std::size_t* used) { return std::stoull(s, used); }) ||
+        fields[0].empty() || fields[0].front() == '-' ||
+        !parseCsvNumber(
+          fields[1],
+          position.x,
+          [](const std::string& s, std::size_t* used) { return std::stof(s, used); }) ||
+        !parseCsvNumber(
+          fields[2],
+          position.y,
+          [](const std::string& s, std::size_t* used) { return std::stof(s, used); }) ||
+        !parseCsvNumber(
+          fields[3],
+          position.z,
+          [](const std::string& s, std::size_t* used) { return std::stof(s, used); }) ||
+        !std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z))
+      {
+        spdlog::error("Invalid landmark ID or position on line {} of CSV file {}", lineNum, csvFileName);
         return false;
       }
-
-      const auto r = landmarks.try_emplace(static_cast<uint32_t>(landmarkIndex), landmarkPos, *landmarkName);
-      if (!r.second) {
-        spdlog::warn("Unable to insert landmark '{}', because index {} is already used", *landmarkName, landmarkIndex);
+      if (!parsed.try_emplace(index, position, nameProvided ? fields[4] : "").second) {
+        spdlog::error("Duplicate landmark ID {} on line {} of CSV file {}", index, lineNum, csvFileName);
+        return false;
       }
-
-      ++lineNum;
     }
-
+    landmarks = std::move(parsed);
     return true;
   }
   catch (const std::ios_base::failure& e) {
@@ -345,11 +416,12 @@ bool saveLandmarkGroupCsvFile(
 
     outFile << sk_header << "\n";
 
+    outFile << std::setprecision(std::numeric_limits<float>::max_digits10);
     for (const auto& lm : landmarks) {
       const auto id = lm.first;
       const auto pos = lm.second.getPosition();
       const auto name = lm.second.getName();
-      outFile << id << "," << pos.x << "," << pos.y << "," << pos.z << "," << name << "\n";
+      outFile << id << "," << pos.x << "," << pos.y << "," << pos.z << "," << quoteCsvField(name) << "\n";
     }
 
     return true;
@@ -431,22 +503,25 @@ bool openAnnotationsFromJsonFile(std::vector<Annotation>& annots, const fs::path
 
 bool saveToJsonFile(const nlohmann::json& j, const fs::path& jsonFileName)
 {
-  std::ofstream outFile;
-  outFile.exceptions(outFile.exceptions() | std::ofstream::badbit | std::ofstream::failbit);
-
   try {
-    outFile.open(jsonFileName, std::ofstream::out);
-
-    if (!outFile) {
-      throw std::system_error(
-        errno,
-        std::system_category(),
-        "Failed to open output JSON file " + jsonFileName.string());
+    const std::string serialized = j.dump(2);
+    const fs::path temporaryFile = temporaryJsonSiblingPath(jsonFileName);
+    try {
+      std::ofstream outFile;
+      outFile.exceptions(std::ofstream::badbit | std::ofstream::failbit);
+      outFile.open(temporaryFile, std::ios::out | std::ios::trunc);
+      outFile << serialized << '\n';
+      outFile.flush();
+      outFile.close();
+      replaceJsonFile(temporaryFile, jsonFileName);
+    }
+    catch (...) {
+      std::error_code ignored;
+      fs::remove(temporaryFile, ignored);
+      throw;
     }
 
-    outFile << j.dump(2);
-
-    spdlog::debug("Saved to JSON file {}:\n{}", jsonFileName, j.dump(2));
+    spdlog::debug("Saved to JSON file {}:\n{}", jsonFileName, serialized);
     spdlog::info("Saved to JSON file {}", jsonFileName);
     return true;
   }

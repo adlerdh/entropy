@@ -3,12 +3,15 @@
 #include "common/CoordinateFrame.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_precision.hpp>
 
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <map>
 #include <optional>
+#include <stdint.h>
 #include <string>
 #include <tuple>
 #include <utility>

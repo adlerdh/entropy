@@ -1,6 +1,11 @@
 #include "logic/sync/EntropyInstanceSyncProtocol.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+
+#include <optional>
+#include <string>
 
 using namespace app_sync::instance_protocol;
 

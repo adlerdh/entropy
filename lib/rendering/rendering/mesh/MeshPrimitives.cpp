@@ -1,11 +1,15 @@
 #include "rendering/mesh/MeshPrimitives.h"
 
+#include "mesh/MeshData.h"
+
 #include <glm/geometric.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <numbers>
+#include <stddef.h>
+#include <vector>
 
 namespace rendering::mesh
 {

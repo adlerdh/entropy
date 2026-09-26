@@ -1,12 +1,18 @@
 #include "registration/AffineTransformIO.h"
 
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <compare>
+#include <cstddef>
 #include <fstream>
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace registration

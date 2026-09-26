@@ -379,6 +379,16 @@ camera3d::State& View::threeDState()
   return m_threeDState;
 }
 
+const joint_histogram::Navigation& View::jointHistogramNavigation() const
+{
+  return m_jointHistogramNavigation;
+}
+
+joint_histogram::Navigation& View::jointHistogramNavigation()
+{
+  return m_jointHistogramNavigation;
+}
+
 bool View::isThreeDCameraInitialized() const
 {
   return m_threeDCameraInitialized;

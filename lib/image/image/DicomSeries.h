@@ -2,10 +2,11 @@
 
 #include "common/Types.h"
 #include "image/Image.h"
+#include "ImageTypes.h"
 
+#include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
-#include <glm/geometric.hpp>
 
 #include <cstddef>
 #include <cstdint>

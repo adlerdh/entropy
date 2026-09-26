@@ -1,8 +1,8 @@
 #pragma once
 
-#include "logic/app/Settings.h"
-
+#include "common/ColorMapDefaults.h"
 #include "common/Types.h"
+#include "logic/app/Settings.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -111,6 +111,11 @@ struct RenderPreferences
   MetricParams squaredDifferenceMetric;
   MetricParams localNccMetric;
   MetricParams localLinearResidualMetric;
+  MetricParams jointHistogramMetric{.colorMapIndex = colormap_defaults::kLinear20GouldianIndex};
+  bool jointHistogramLogarithmicScale = true;
+  int jointHistogramBins = 512;
+  int jointHistogramMajorTicks = 5;
+  int jointHistogramMinorTicks = 4;
   int localNccPatchRadius = 3;
   float localNccSampleSpacing = 1.0f;
   float localNccMinValidFraction = 0.75f;
@@ -165,6 +170,7 @@ struct RenderPreferences
   bool showCrosshairsIn3D = true;
   float crosshairs3DGlyphDiameterScenePercent = 0.25f;
   float crosshairs3DGlyphLengthScenePercent = 4.0f;
+  float landmarkSphereRadiusScenePercent = 0.5f;
   bool showThreeDCameraFrustumIn2DViews = false;
   glm::vec4 threeDCameraFrustumColor{0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f};
   bool smoothSegmentationMeshes = true;

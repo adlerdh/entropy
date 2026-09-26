@@ -1,7 +1,9 @@
 #pragma once
 
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
+#include "rendering/mesh/MeshImagePlaneScene.h"
 
+#include <cstddef>
 #include <functional>
 #include <span>
 #include <vector>

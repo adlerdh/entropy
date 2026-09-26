@@ -1,9 +1,18 @@
+#include "layout/LayoutSpec.h"
 #include "layout/LayoutSpecJson.h"
-
+#include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+
+#include <cstddef>
+#include <initializer_list>
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace
 {
@@ -168,16 +177,25 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
 TEST_CASE("layout spec JSON serializes 3D scene contents as an independent set", "[layout][serialization]")
 {
   layout::ViewSpec view;
-  view.m_threeDSceneContents = {ThreeDSceneContent::Segmentations, ThreeDSceneContent::ImportedMeshes};
+  view.m_threeDSceneContents = {
+    ThreeDSceneContent::Segmentations,
+    ThreeDSceneContent::Isosurfaces,
+    ThreeDSceneContent::ImportedMeshes,
+    ThreeDSceneContent::Landmarks};
 
   const nlohmann::json json = view;
   CHECK_FALSE(json.contains("renderMode"));
-  CHECK(json.at("threeD").at("sceneContents") == nlohmann::json::array({"segmentations", "importedMeshes"}));
+  CHECK(
+    json.at("threeD").at("sceneContents") ==
+    nlohmann::json::array({"segmentations", "isosurfaces", "importedMeshes", "landmarks"}));
 
   const layout::ViewSpec restored = json.get<layout::ViewSpec>();
   CHECK(
-    restored.m_threeDSceneContents ==
-    ThreeDSceneContents{ThreeDSceneContent::Segmentations, ThreeDSceneContent::ImportedMeshes});
+    restored.m_threeDSceneContents == ThreeDSceneContents{
+                                        ThreeDSceneContent::Segmentations,
+                                        ThreeDSceneContent::Isosurfaces,
+                                        ThreeDSceneContent::ImportedMeshes,
+                                        ThreeDSceneContent::Landmarks});
 }
 
 TEST_CASE(
@@ -186,6 +204,7 @@ TEST_CASE(
 {
   const nlohmann::json defaultJson = layout::ViewSpec{};
   CHECK_FALSE(defaultJson.contains("threeD"));
+  CHECK_FALSE(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Landmarks));
 
   layout::ViewSpec empty;
   empty.m_threeDSceneContents.clear();

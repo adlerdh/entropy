@@ -3,7 +3,6 @@
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
 #include "rendering/mesh/MeshRenderable.h"
 
-#include <span>
 #include <vector>
 
 namespace rendering::mesh

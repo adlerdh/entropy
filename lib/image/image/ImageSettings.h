@@ -6,8 +6,12 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
+#include <cstddef>
 #include <ostream>
+#include <stdint.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -909,7 +913,6 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const ImageSettings& settings);
 
-#include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
 template<>
 struct fmt::formatter<ImageSettings> : ostream_formatter

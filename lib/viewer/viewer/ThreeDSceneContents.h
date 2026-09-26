@@ -7,7 +7,8 @@ enum class ThreeDSceneContent
 {
   Segmentations,
   Isosurfaces,
-  ImportedMeshes
+  ImportedMeshes,
+  Landmarks
 };
 
 /** @brief Set of content categories enabled in a 3D view or layout. */

@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <string_view>
 
 namespace linux_ui_scale = ui::linux_ui_scale;

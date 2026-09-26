@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string>
+
 TEST_CASE("Image role suffixes show active state for a single image", "[ui][headers]")
 {
   CHECK(ui::headers::imageRoleSuffix(true, true, 1) == " (reference and active image)");

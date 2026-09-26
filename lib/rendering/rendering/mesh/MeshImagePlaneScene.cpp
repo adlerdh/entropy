@@ -1,10 +1,12 @@
 #include "rendering/mesh/MeshImagePlaneScene.h"
 
-#include "rendering/mesh/MeshImagePlane.h"
+#include "common/IntersectionTypes.h"
+#include "helpers/SliceIntersectorTypes.h"
+#include "mesh/MeshData.h"
 #include "rendering/helpers/SliceIntersector.h"
+#include "rendering/mesh/MeshImagePlane.h"
 
 #include <glm/vec4.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

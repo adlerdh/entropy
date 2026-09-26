@@ -1,6 +1,10 @@
 #include "ui/updates/UpdateCheck.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_message.hpp>
+
+#include <optional>
+#include <string>
 
 TEST_CASE("release versions compare numeric components", "[ui][updates]")
 {

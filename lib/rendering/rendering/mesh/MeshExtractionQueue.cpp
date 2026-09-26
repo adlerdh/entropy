@@ -1,5 +1,8 @@
 #include "rendering/mesh/MeshExtractionQueue.h"
 
+#include "mesh/MeshExtraction.h"
+#include "mesh/MeshExtractionRunner.h"
+
 #include <algorithm>
 #include <exception>
 #include <string>

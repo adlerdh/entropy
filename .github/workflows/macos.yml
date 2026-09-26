@@ -603,7 +603,8 @@ jobs:
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
 
       - name: Build Release Dependencies
-        timeout-minutes: 90
+        # A cold x86 build can spend about an hour in VTK alone before starting Qt
+        timeout-minutes: 180
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app

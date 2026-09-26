@@ -1,9 +1,26 @@
 #include "image/DicomSeries.h"
 
 #include "common/MathFuncs.h"
-
-#include "internal/ImageUtility.tpp"
+#include "Image.h"
+#include "ImageHeader.h"
+#include "ImageIoInfo.h"
+#include "ImageTimeAxis.h"
 #include "internal/ImageUtilityItk.h"
+#include "internal/ImageUtility.tpp"
+
+#include <gdcmByteValue.h>
+#include <gdcmDataSet.h>
+#include <gdcmReader.h>
+#include <gdcmSequenceOfItems.h>
+#include <gdcmTag.h>
+#include <spdlog/spdlog.h>
+#include <gdcmDataElement.h>
+#include <gdcmFile.h>
+#include <gdcmItem.h>
+#include <gdcmSmartPointer.h>
+#include <gdcmVL.h>
+
+#include <glm/mat3x3.hpp>
 
 #include <itkGDCMImageIO.h>
 #include <itkGDCMSeriesFileNames.h>
@@ -11,28 +28,35 @@
 #include <itkImageRegionConstIterator.h>
 #include <itkImageSeriesReader.h>
 #include <itkMetaDataObject.h>
-
-#include <gdcmByteValue.h>
-#include <gdcmDataSet.h>
-#include <gdcmReader.h>
-#include <gdcmSequenceOfItems.h>
-#include <gdcmTag.h>
-
-#include <spdlog/fmt/std.h>
-#include <spdlog/spdlog.h>
+#include <itkImage.h>
+#include <itkImageIORegion.h>
+#include <itkIndex.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkMetaDataDictionary.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cctype>
+#include <cmath>
+#include <compare>
+#include <exception>
 #include <initializer_list>
+#include <iterator>
 #include <limits>
 #include <set>
 #include <sstream>
+#include <system_error>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace fs = std::filesystem;

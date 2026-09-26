@@ -498,6 +498,41 @@ void renderMetricSettingsPanel(
   }
 }
 
+void renderJointHistogramSettings(
+  AppData& appData,
+  rendering::RenderSettings& renderData,
+  const std::function<void(void)>& updateMetricUniforms,
+  const std::function<std::size_t(void)>& getNumImageColorMaps,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  bool compact)
+{
+  ImGui::Checkbox("Logarithmic count scale", &renderData.m_jointHistogramLogarithmicScale);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Use log(1 + count) for the histogram instead of a linear count scale");
+  }
+  ImGui::SliderInt("Bins", &renderData.m_jointHistogramBins, 16, 1024);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Number of intensity bins on each axis");
+  }
+  ImGui::SliderInt("Major ticks", &renderData.m_jointHistogramMajorTicks, 2, 12);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Labeled ticks on each axis, including both endpoints");
+  }
+  ImGui::SliderInt("Minor ticks", &renderData.m_jointHistogramMinorTicks, 0, 9);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Unlabeled ticks between each pair of major ticks");
+  }
+  renderMetricSettingsPanel(
+    renderData.m_jointHistogramParams,
+    appData.guiData().m_showJointHistogramColormapWindow,
+    compact ? "quickJointHistogram" : "jointHistogram",
+    updateMetricUniforms,
+    getNumImageColorMaps,
+    getImageColorMap,
+    false,
+    compact);
+}
+
 bool renderLocalNccSettings(
   AppData& appData,
   rendering::RenderSettings& renderData,
@@ -2222,6 +2257,24 @@ void renderMetricsTab(
 
   finishSettingsSection(localLinearResidualOpen);
 
+  ImGui::PushID("jointHistogram");
+  const bool histogramOpen = ImGui::CollapsingHeader("Joint Histogram", ImGuiTreeNodeFlags_DefaultOpen);
+  if (histogramOpen) {
+    disabledTextWrapped(
+      "Counts valid intensity pairs across the full fixed image. Fixed intensity runs left to right; moving "
+      "intensity runs bottom to top. Colors show bin counts using the selected scale.");
+    ImGui::Spacing();
+    renderJointHistogramSettings(
+      appData,
+      renderData,
+      updateMetricUniforms,
+      getNumImageColorMaps,
+      getImageColorMap,
+      false);
+  }
+  ImGui::PopID();
+  finishSettingsSection(histogramOpen);
+
   ImGui::PopID(); /*** PopID metrics ***/
 }
 
@@ -2463,6 +2516,21 @@ void renderSceneAndCameraTab(AppData& appData, rendering::RenderSettings& render
       "Length of each red, green, and blue axis as a percentage of the enclosing bounding-box diagonal of images "
       "visible in the 3D view");
   }
+
+  ImGui::Spacing();
+  ImGui::Text("Landmark spheres:");
+  ImGui::DragFloat(
+    "Sphere radius",
+    &renderData.m_landmarkSphereRadiusScenePercent,
+    0.01f,
+    0.05f,
+    5.0f,
+    "%0.2f%% of scene",
+    ImGuiSliderFlags_AlwaysClamp);
+  ImGui::SameLine();
+  helpMarker(
+    "Radius of landmarks rendered in 3D, as a percentage of the enclosing bounding-box diagonal of images "
+    "visible in the view. Enable landmarks separately in each 3D view's options.");
 
   ImGui::Spacing();
   ImGui::SeparatorText("Interaction");
@@ -3375,14 +3443,12 @@ void renderComparisonModeQuickSettings(
         true);
       break;
     case ViewRenderMode::JointHistogram:
-      renderMetricSettingsPanel(
-        renderData.m_jointHistogramParams,
-        appData.guiData().m_showJointHistogramColormapWindow,
-        "quickJointHistogram",
+      renderJointHistogramSettings(
+        appData,
+        renderData,
         refreshMetricUniforms,
         getNumImageColorMaps,
         getImageColorMap,
-        false,
         true);
       break;
     case ViewRenderMode::Image:

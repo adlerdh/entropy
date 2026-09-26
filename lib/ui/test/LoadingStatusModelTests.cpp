@@ -1,7 +1,13 @@
+#include "ui/GuiData.h"
 #include "ui/windows/LoadingStatusModel.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace model = ui::loading_status_model;
 

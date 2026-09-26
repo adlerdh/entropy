@@ -1,6 +1,6 @@
 #include "rendering/gl/VertexIndicesInfo.h"
 
-#include <utility>
+#include "gl/GLDrawTypes.h"
 
 VertexIndicesInfo::VertexIndicesInfo(
   IndexType indexType,

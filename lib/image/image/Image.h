@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/Types.h"
-
+#include "image/external/TDigest.h"
 #include "image/ImageHeader.h"
 #include "image/ImageHeaderOverrides.h"
 #include "image/ImageIoInfo.h"
@@ -9,13 +9,16 @@
 #include "image/ImageTimeAxis.h"
 #include "image/ImageTransformations.h"
 #include "image/ImageTypes.h"
-#include "image/external/TDigest.h"
+#include "ImageSpatialMetadata.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_precision.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <optional>
 #include <ostream>
 #include <string>

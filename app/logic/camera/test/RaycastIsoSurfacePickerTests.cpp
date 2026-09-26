@@ -2,11 +2,15 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <limits>
-#include <vector>
+#include <optional>
+#include <span>
 
 namespace
 {

@@ -1,10 +1,12 @@
-#include "logic/app/UserPreferences.h"
-
 #include "logic/app/Settings.h"
-#include "rendering/RenderSettings.h"
+#include "logic/app/UserPreferences.h"
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshDdpPolicy.h"
+#include "rendering/mesh/MeshMaterial.h"
+#include "rendering/RenderSettings.h"
 #include "ui/GuiData.h"
+
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -145,6 +147,15 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.localLinearResidualVarianceEpsilon = renderSettings.m_localLinearResidualVarianceEpsilon;
   preferences.localLinearResidualInvalidStyle =
     localNccInvalidStyleFromRenderSettings(renderSettings.m_localLinearResidualInvalidStyle);
+  preferences.jointHistogramMetric.colorMapIndex = renderSettings.m_jointHistogramParams.m_colorMapIndex;
+  preferences.jointHistogramMetric.slopeIntercept = renderSettings.m_jointHistogramParams.m_slopeIntercept;
+  preferences.jointHistogramMetric.invertColormap = renderSettings.m_jointHistogramParams.m_invertCmap;
+  preferences.jointHistogramMetric.continuousColormap = renderSettings.m_jointHistogramParams.m_cmapContinuous;
+  preferences.jointHistogramMetric.colormapLevels = renderSettings.m_jointHistogramParams.m_cmapQuantizationLevels;
+  preferences.jointHistogramLogarithmicScale = renderSettings.m_jointHistogramLogarithmicScale;
+  preferences.jointHistogramBins = renderSettings.m_jointHistogramBins;
+  preferences.jointHistogramMajorTicks = renderSettings.m_jointHistogramMajorTicks;
+  preferences.jointHistogramMinorTicks = renderSettings.m_jointHistogramMinorTicks;
   preferences.overlayMagentaCyan = renderSettings.m_overlayMagentaCyan;
   preferences.quadrants = renderSettings.m_quadrants;
   preferences.checkerboardSquares = renderSettings.m_numCheckerboardSquares;
@@ -186,6 +197,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderSettings(const re
   preferences.showCrosshairsIn3D = renderSettings.m_showCrosshairsIn3D;
   preferences.crosshairs3DGlyphDiameterScenePercent = renderSettings.m_crosshairs3DGlyphDiameterScenePercent;
   preferences.crosshairs3DGlyphLengthScenePercent = renderSettings.m_crosshairs3DGlyphLengthScenePercent;
+  preferences.landmarkSphereRadiusScenePercent = renderSettings.m_landmarkSphereRadiusScenePercent;
   preferences.showThreeDCameraFrustumIn2DViews = renderSettings.m_showThreeDCameraFrustumIn2DViews;
   preferences.threeDCameraFrustumColor = renderSettings.m_threeDCameraFrustumColor;
   preferences.smoothSegmentationMeshes = renderSettings.m_smoothSegmentationMeshes;
@@ -306,6 +318,15 @@ void applyRenderPreferences(
   renderSettings.m_localLinearResidualVarianceEpsilon = preferences.localLinearResidualVarianceEpsilon;
   renderSettings.m_localLinearResidualInvalidStyle =
     localNccInvalidStyleToRenderSettings(preferences.localLinearResidualInvalidStyle);
+  renderSettings.m_jointHistogramParams.m_colorMapIndex = preferences.jointHistogramMetric.colorMapIndex;
+  renderSettings.m_jointHistogramParams.m_slopeIntercept = preferences.jointHistogramMetric.slopeIntercept;
+  renderSettings.m_jointHistogramParams.m_invertCmap = preferences.jointHistogramMetric.invertColormap;
+  renderSettings.m_jointHistogramParams.m_cmapContinuous = preferences.jointHistogramMetric.continuousColormap;
+  renderSettings.m_jointHistogramParams.m_cmapQuantizationLevels = preferences.jointHistogramMetric.colormapLevels;
+  renderSettings.m_jointHistogramLogarithmicScale = preferences.jointHistogramLogarithmicScale;
+  renderSettings.m_jointHistogramBins = preferences.jointHistogramBins;
+  renderSettings.m_jointHistogramMajorTicks = preferences.jointHistogramMajorTicks;
+  renderSettings.m_jointHistogramMinorTicks = preferences.jointHistogramMinorTicks;
   renderSettings.m_overlayMagentaCyan = preferences.overlayMagentaCyan;
   renderSettings.m_quadrants = preferences.quadrants;
   renderSettings.m_numCheckerboardSquares = preferences.checkerboardSquares;
@@ -354,6 +375,7 @@ void applyRenderPreferences(
   renderSettings.m_showCrosshairsIn3D = preferences.showCrosshairsIn3D;
   renderSettings.m_crosshairs3DGlyphDiameterScenePercent = preferences.crosshairs3DGlyphDiameterScenePercent;
   renderSettings.m_crosshairs3DGlyphLengthScenePercent = preferences.crosshairs3DGlyphLengthScenePercent;
+  renderSettings.m_landmarkSphereRadiusScenePercent = preferences.landmarkSphereRadiusScenePercent;
   renderSettings.m_showThreeDCameraFrustumIn2DViews = preferences.showThreeDCameraFrustumIn2DViews;
   renderSettings.m_threeDCameraFrustumColor = preferences.threeDCameraFrustumColor;
   renderSettings.m_smoothSegmentationMeshes = preferences.smoothSegmentationMeshes;
@@ -446,6 +468,7 @@ void preserveProjectPresentation(RenderPreferences& preferences, const RenderPre
   preferences.limitFrameRate = applicationValues.limitFrameRate;
   preferences.targetFrameTimeSeconds = applicationValues.targetFrameTimeSeconds;
   preferences.synchronizeThreeDCameras = applicationValues.synchronizeThreeDCameras;
+  preferences.landmarkSphereRadiusScenePercent = applicationValues.landmarkSphereRadiusScenePercent;
   preferences.asciiEnabled = applicationValues.asciiEnabled;
   preferences.asciiCellHeightPx = applicationValues.asciiCellHeightPx;
   preferences.asciiCharsetIndex = applicationValues.asciiCharsetIndex;
@@ -520,6 +543,11 @@ void mergeEditedRenderPreferences(
   MERGE_EDITED(localLinearResidualMinValidFraction)
   MERGE_EDITED(localLinearResidualVarianceEpsilon)
   MERGE_EDITED(localLinearResidualInvalidStyle)
+  MERGE_EDITED(jointHistogramMetric)
+  MERGE_EDITED(jointHistogramLogarithmicScale)
+  MERGE_EDITED(jointHistogramBins)
+  MERGE_EDITED(jointHistogramMajorTicks)
+  MERGE_EDITED(jointHistogramMinorTicks)
   MERGE_EDITED(overlayMagentaCyan)
   MERGE_EDITED(quadrants)
   MERGE_EDITED(checkerboardSquares)
@@ -561,6 +589,7 @@ void mergeEditedRenderPreferences(
   MERGE_EDITED(showCrosshairsIn3D)
   MERGE_EDITED(crosshairs3DGlyphDiameterScenePercent)
   MERGE_EDITED(crosshairs3DGlyphLengthScenePercent)
+  MERGE_EDITED(landmarkSphereRadiusScenePercent)
   MERGE_EDITED(showThreeDCameraFrustumIn2DViews)
   MERGE_EDITED(threeDCameraFrustumColor)
   MERGE_EDITED(smoothSegmentationMeshes)

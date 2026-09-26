@@ -1,7 +1,8 @@
 #include "image/SegUtil.h"
-#include "image/Image.h"
 
 #include "common/MathFuncs.h"
+#include "image/Image.h"
+#include "ImageHeader.h"
 
 #include <glm/glm.hpp>
 
@@ -10,9 +11,13 @@
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <limits>
 #include <queue>
 #include <tuple>
 #include <unordered_set>

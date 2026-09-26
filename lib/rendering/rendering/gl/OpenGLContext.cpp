@@ -1,14 +1,14 @@
 #include "rendering/gl/OpenGLContext.h"
 
+#include "common/Exception.hpp"
 #include "rendering/gl/GLErrorChecker.h"
 
-#include "common/Exception.hpp"
-
 #include <glad/glad.h>
-
 #include <spdlog/spdlog.h>
 
+#include <cstddef>
 #include <sstream>
+#include <string>
 #include <string_view>
 
 namespace

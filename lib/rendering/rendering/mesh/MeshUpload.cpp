@@ -1,12 +1,25 @@
 #include "rendering/mesh/MeshUpload.h"
 
+#include "gl/GLBufferObject.h"
+#include "gl/GLBufferTypes.h"
+#include "gl/GLDrawTypes.h"
+#include "gl/GLVertexArrayObject.h"
+#include "gl/VertexAttributeInfo.h"
+#include "gl/VertexIndicesInfo.h"
+#include "mesh/MeshData.h"
+#include "mesh/MeshGpuData.h"
+#include "mesh/MeshHandle.h"
 #include "rendering/mesh/MeshValidation.h"
 
 #include <glad/glad.h>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 namespace rendering::mesh
 {

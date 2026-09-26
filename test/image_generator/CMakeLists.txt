@@ -18,14 +18,14 @@ add_library(ImageGeneratorCore STATIC
 target_include_directories(ImageGeneratorCore PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-target_include_directories(ImageGeneratorCore SYSTEM PUBLIC
+target_include_directories(ImageGeneratorCore SYSTEM PRIVATE
   ${ITK_INCLUDE_DIRS}
 )
 
-target_link_libraries(ImageGeneratorCore PUBLIC
-  nlohmann_json::nlohmann_json
+target_link_libraries(ImageGeneratorCore PRIVATE
   ${ITK_LIBRARIES}
   entropy_warnings
+  nlohmann_json::nlohmann_json
 )
 
 add_executable(ImageGenerator
@@ -48,6 +48,7 @@ target_link_libraries(Large2DImageGenerator PRIVATE
   CLI11::CLI11
   ImageGeneratorCore
   entropy_warnings
+  nlohmann_json::nlohmann_json
 )
 
 entropy_copy_runtime_dlls(Large2DImageGenerator)
@@ -71,8 +72,10 @@ add_executable(TestImageGenerator
 target_link_libraries(TestImageGenerator PRIVATE
   Catch2::Catch2WithMain
   ImageGeneratorCore
+  ${ITK_LIBRARIES}
   entropy_warnings
 )
+target_include_directories(TestImageGenerator SYSTEM PRIVATE ${ITK_INCLUDE_DIRS})
 
 entropy_copy_runtime_dlls(TestImageGenerator)
 

@@ -1,12 +1,13 @@
 #include "rendering/mesh/MeshShadowMapPass.h"
 
-#include "rendering/mesh/MeshShadowMapResources.h"
+#include "gl/GLFBOAttachmentTypes.h"
+#include "mesh/MeshAdvancedLighting.h"
+#include "mesh/MeshRenderer.h"
 #include "rendering/gl/GLFrameBufferObject.h"
 #include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/mesh/MeshShadowMapResources.h"
 
 #include <glad/glad.h>
-
-#include <cstdint>
 
 namespace rendering::mesh
 {

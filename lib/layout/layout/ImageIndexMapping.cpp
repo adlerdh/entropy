@@ -1,6 +1,7 @@
 #include "layout/ImageIndexMapping.h"
 
 #include <algorithm>
+#include <iterator>
 
 namespace layout
 {

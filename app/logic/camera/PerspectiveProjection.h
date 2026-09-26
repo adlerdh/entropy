@@ -2,6 +2,8 @@
 
 #include "logic/camera/Projection.h"
 
+#include <glm/fwd.hpp>
+
 class PerspectiveProjection final : public Projection
 {
 public:

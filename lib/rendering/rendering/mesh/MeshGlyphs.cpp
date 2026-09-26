@@ -1,5 +1,10 @@
 #include "rendering/mesh/MeshGlyphs.h"
 
+#include "mesh/MeshDrawOptions.h"
+#include "mesh/MeshHandle.h"
+#include "mesh/MeshMaterial.h"
+#include "mesh/MeshRenderable.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>

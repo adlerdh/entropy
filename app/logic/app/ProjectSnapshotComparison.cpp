@@ -1,9 +1,12 @@
 #include "logic/app/ProjectSnapshotComparison.h"
 
+#include "common/Types.h"
 #include "image/ImageSpatialMetadata.h"
 #include "image/Isosurface.h"
 #include "layout/LayoutSpec.h"
 #include "logic/annotation/Annotation.h"
+
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <filesystem>
@@ -136,16 +139,18 @@ bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
 
 bool landmarkPointsEqual(const serialize::LandmarkPoint& a, const serialize::LandmarkPoint& b)
 {
-  return a.m_index == b.m_index && a.m_position == b.m_position && a.m_name == b.m_name;
+  return a.m_index == b.m_index && a.m_position == b.m_position && a.m_name == b.m_name &&
+         a.m_description == b.m_description && a.m_visible == b.m_visible && a.m_color == b.m_color;
 }
 
 bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::LandmarkGroup& b)
 {
   return a.m_csvFileName == b.m_csvFileName && a.m_coordinateSpace == b.m_coordinateSpace && a.m_name == b.m_name &&
-         vectorsEqual(a.m_points, b.m_points, landmarkPointsEqual) && a.m_visible == b.m_visible &&
-         a.m_opacity == b.m_opacity && a.m_color == b.m_color && a.m_colorOverride == b.m_colorOverride &&
-         a.m_textColor == b.m_textColor && a.m_renderLandmarkIndices == b.m_renderLandmarkIndices &&
-         a.m_renderLandmarkNames == b.m_renderLandmarkNames && a.m_glyphRadiusFactor == b.m_glyphRadiusFactor;
+         a.m_pointsEmbedded == b.m_pointsEmbedded && vectorsEqual(a.m_points, b.m_points, landmarkPointsEqual) &&
+         a.m_visible == b.m_visible && a.m_opacity == b.m_opacity && a.m_color == b.m_color &&
+         a.m_colorOverride == b.m_colorOverride && a.m_textColor == b.m_textColor &&
+         a.m_renderLandmarkIndices == b.m_renderLandmarkIndices && a.m_renderLandmarkNames == b.m_renderLandmarkNames &&
+         a.m_glyphRadiusFactor == b.m_glyphRadiusFactor;
 }
 
 bool surfaceMaterialsEqual(const SurfaceMaterial& a, const SurfaceMaterial& b)
@@ -196,8 +201,16 @@ bool spatialMetadataEqual(const std::optional<ImageSpatialMetadata>& a, const st
 
 bool annotationsEqual(const std::vector<Annotation>& a, const std::vector<Annotation>& b)
 {
-  // Project dirty tracking observes live Annotation::isDirty(); this catches add/remove changes in snapshots.
-  return a.size() == b.size();
+  return vectorsEqual(a, b, [](const Annotation& left, const Annotation& right) {
+    return left.getDisplayName() == right.getDisplayName() && left.getFileName() == right.getFileName() &&
+           left.getAllVertices() == right.getAllVertices() &&
+           left.getSubjectPlaneEquation() == right.getSubjectPlaneEquation() && left.isVisible() == right.isVisible() &&
+           left.getOpacity() == right.getOpacity() && left.getLineThickness() == right.getLineThickness() &&
+           left.getLineColor() == right.getLineColor() && left.getVertexColor() == right.getVertexColor() &&
+           left.getFillColor() == right.getFillColor() && left.getVertexVisibility() == right.getVertexVisibility() &&
+           left.isClosed() == right.isClosed() && left.isFilled() == right.isFilled() &&
+           left.isSmoothed() == right.isSmoothed() && left.getSmoothingFactor() == right.getSmoothingFactor();
+  });
 }
 
 bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
@@ -254,7 +267,11 @@ bool comparisonSettingsEqual(
 {
   return a.m_difference.m_squared == b.m_difference.m_squared &&
          metricSettingsEqual(a.m_difference.m_metric, b.m_difference.m_metric) &&
-         metricSettingsEqual(a.m_jointHistogram, b.m_jointHistogram) &&
+         metricSettingsEqual(a.m_jointHistogram.m_metric, b.m_jointHistogram.m_metric) &&
+         a.m_jointHistogram.m_logarithmicScale == b.m_jointHistogram.m_logarithmicScale &&
+         a.m_jointHistogram.m_bins == b.m_jointHistogram.m_bins &&
+         a.m_jointHistogram.m_majorTicks == b.m_jointHistogram.m_majorTicks &&
+         a.m_jointHistogram.m_minorTicks == b.m_jointHistogram.m_minorTicks &&
          metricSettingsEqual(a.m_localNcc.m_metric, b.m_localNcc.m_metric) &&
          a.m_localNcc.m_presentation == b.m_localNcc.m_presentation &&
          a.m_localNcc.m_negativeCorrelationAsMismatch == b.m_localNcc.m_negativeCorrelationAsMismatch &&

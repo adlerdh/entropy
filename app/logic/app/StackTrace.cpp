@@ -1,5 +1,7 @@
 #include "logic/app/StackTrace.h"
 
+#include <sys/types.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
@@ -10,11 +12,11 @@
 #define NOMINMAX
 #include <windows.h>
 #else
+#include <execinfo.h>
+#include <unistd.h>
 #include <cerrno>
 #include <csignal>
 #include <cstring>
-#include <execinfo.h>
-#include <unistd.h>
 #endif
 
 namespace

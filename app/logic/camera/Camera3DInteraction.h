@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic/app/State.h"
+#include "common/Types.h"
 #include "logic/interaction/events/ButtonState.h"
 
 #include <optional>

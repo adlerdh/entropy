@@ -2,10 +2,9 @@
 
 #include "rendering/gl/GLUniformTypes.h"
 
+#include <glad/glad.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
-
-#include <glad/glad.h>
 
 #include <array>
 #include <cstdint>
@@ -15,8 +14,6 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
-
-class GLShaderProgram;
 
 /**
  * @brief Registry of expected uniform variables for a GLSL shader program.

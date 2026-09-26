@@ -1,9 +1,12 @@
 #include "common/LoggingSettings.h"
 
-#include <spdlog/sinks/sink.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/logger.h>
+#include <spdlog/sinks/sink.h>
 
 #include <atomic>
+#include <memory>
+#include <vector>
 
 namespace logging
 {

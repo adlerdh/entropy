@@ -1,18 +1,37 @@
+#include "common/Types.h"
 #include "image/DicomSeries.h"
+#include "image/Image.h"
+#include "image/ImageHeader.h"
+#include "image/ImageTypes.h"
+
+#include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
 
 #include <itkGDCMImageIO.h>
 #include <itkImage.h>
 #include <itkImageFileWriter.h>
 #include <itkMetaDataObject.h>
-
-#include <catch2/catch_test_macros.hpp>
+#include <itkImageIORegion.h>
+#include <itkIndex.h>
+#include <itkMacro.h>
+#include <itkMakeFilled.h>
+#include <itkMatrix.h>
+#include <itkSize.h>
+#include <itkSmartPointer.h>
+#include <vnl_determinant.h>
+#include <vnl_matrix_fixed.h>
+#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <random>
 #include <stdexcept>
+#include <string>
+#include <system_error>
+#include <vector>
 
 TEST_CASE("DICOM metadata filtering excludes PHI tags", "[image][dicom]")
 {

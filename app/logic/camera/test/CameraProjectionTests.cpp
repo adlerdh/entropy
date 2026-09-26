@@ -1,15 +1,17 @@
+#include "common/DirectionMaps.h"
 #include "logic/camera/Camera.h"
-
 #include "logic/camera/CameraHelpers.h"
+#include "logic/camera/CameraTypes.h"
+#include "logic/camera/Projection.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
 #include <cmath>
+#include <initializer_list>
 #include <limits>
+#include <utility>
 
 TEST_CASE("perspective and orthographic projections map their clip planes to NDC", "[camera][projection]")
 {

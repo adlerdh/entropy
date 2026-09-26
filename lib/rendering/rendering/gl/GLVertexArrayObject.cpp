@@ -1,7 +1,12 @@
 #include "rendering/gl/GLVertexArrayObject.h"
-#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
+#include "gl/GLBufferTypes.h"
+#include "gl/GLDrawTypes.h"
+#include "gl/GLErrorChecker.h"
+#include "gl/VertexAttributeInfo.h"
+#include "gl/VertexIndicesInfo.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include <glad/glad.h>
 

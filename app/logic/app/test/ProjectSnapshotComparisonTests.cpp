@@ -1,6 +1,22 @@
+#include "common/HistogramSettings.h"
+#include "common/Types.h"
+#include "image/Isosurface.h"
+#include "layout/LayoutSpec.h"
+#include "logic/annotation/Annotation.h"
 #include "logic/app/ProjectSnapshotComparison.h"
+#include "logic/serialization/ProjectSerialization.h"
+
+#include "logic/annotation/AnnotPolygon.tpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
+
+#include <filesystem>
+#include <optional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace
 {
@@ -61,6 +77,31 @@ TEST_CASE("Project snapshots compare equal when all serialized state matches", "
   const serialize::EntropyProject project = makeProject();
 
   CHECK(project_snapshot::equivalent(project, project));
+}
+
+TEST_CASE("Project snapshot comparison detects annotation edits and reordering", "[ProjectSnapshotComparison]")
+{
+  auto project = makeProject();
+  Annotation first;
+  first.setDisplayName("First");
+  first.addPlanePointToBoundary(0, glm::vec2{1.0f, 2.0f});
+  first.markClean();
+  Annotation second;
+  second.setDisplayName("Second");
+  second.markClean();
+  project.m_referenceImage.m_annotations = {first, second};
+
+  auto reordered = project;
+  std::swap(reordered.m_referenceImage.m_annotations[0], reordered.m_referenceImage.m_annotations[1]);
+  CHECK_FALSE(project_snapshot::equivalent(project, reordered));
+
+  auto renamed = project;
+  renamed.m_referenceImage.m_annotations[0].setDisplayName("Renamed");
+  CHECK_FALSE(project_snapshot::equivalent(project, renamed));
+
+  auto geometryChanged = project;
+  geometryChanged.m_referenceImage.m_annotations[0].polygon().setOuterBoundary({glm::vec2{9.0f, 9.0f}});
+  CHECK_FALSE(project_snapshot::equivalent(project, geometryChanged));
 }
 
 TEST_CASE("Project snapshot comparison detects image state changes", "[ProjectSnapshotComparison]")
@@ -125,6 +166,18 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   auto changedLandmarkPoint = project;
   changedLandmarkPoint.m_referenceImage.m_landmarkGroups.front().m_points.front().m_position.x = 9.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarkPoint));
+
+  auto changedLandmarkVisibility = project;
+  changedLandmarkVisibility.m_referenceImage.m_landmarkGroups.front().m_points.front().m_visible = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarkVisibility));
+
+  auto changedLandmarkColor = project;
+  changedLandmarkColor.m_referenceImage.m_landmarkGroups.front().m_points.front().m_color = glm::vec3{0.2f, 0.3f, 0.4f};
+  CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarkColor));
+
+  auto changedLandmarkDescription = project;
+  changedLandmarkDescription.m_referenceImage.m_landmarkGroups.front().m_points.front().m_description = "Edited";
+  CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarkDescription));
 
   auto changedIsosurface = project;
   changedIsosurface.m_referenceImage.m_isosurfaces.front().m_surface.opacity = 0.4f;
@@ -227,7 +280,11 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
 
   changedComparison = project;
-  changedComparison.m_comparison.m_jointHistogram.m_colorMapIndex = 3;
+  changedComparison.m_comparison.m_jointHistogram.m_metric.m_colorMapIndex = 3;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
+
+  changedComparison = project;
+  changedComparison.m_comparison.m_jointHistogram.m_logarithmicScale = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
 
   auto changedRaycasting = project;

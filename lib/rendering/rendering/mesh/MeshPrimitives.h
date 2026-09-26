@@ -2,6 +2,8 @@
 
 #include "rendering/mesh/MeshData.h"
 
+#include <stdint.h>
+
 namespace rendering::mesh
 {
 

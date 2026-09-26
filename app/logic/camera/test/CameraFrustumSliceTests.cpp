@@ -1,15 +1,19 @@
-#include "logic/camera/CameraFrustumSlice.h"
-
+#include "common/DirectionMaps.h"
 #include "logic/camera/Camera.h"
 #include "logic/camera/Camera3DControls.h"
+#include "logic/camera/CameraFrustumSlice.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/camera/CameraTypes.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <optional>
+#include <vector>
 
 namespace
 {

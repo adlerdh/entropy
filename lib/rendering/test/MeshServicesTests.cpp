@@ -7,9 +7,9 @@
 #include "rendering/mesh/MeshKeys.h"
 #include "rendering/mesh/MeshResourceStore.h"
 
-#include <uuid.h>
-
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
+#include <uuid.h>
 
 #include <chrono>
 #include <cstddef>
@@ -17,7 +17,6 @@
 #include <optional>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
 
 namespace

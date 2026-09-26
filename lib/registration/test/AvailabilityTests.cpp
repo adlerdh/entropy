@@ -1,10 +1,14 @@
 #include "registration/Availability.h"
+#include "registration/Config.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
 #include <optional>
 #include <string>
-#include <utility>
+#include <string_view>
+#include <vector>
 
 namespace
 {

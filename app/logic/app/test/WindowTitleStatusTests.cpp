@@ -2,6 +2,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <optional>
+#include <string>
+
 TEST_CASE("Window title uses the complete project filename without its path", "[WindowTitleStatus]")
 {
   CHECK(window_title::projectDisplayName("/tmp/project.json") == "project.json");

@@ -1,10 +1,13 @@
+#include "image/Isosurface.h"
 #include "logic/serialization/ProjectSerialization.h"
 
 #include <nlohmann/json.hpp>
-
 #include <glm/vec3.hpp>
 
+#include <map>
 #include <optional>
+#include <string>
+#include <utility>
 
 using json = nlohmann::json;
 

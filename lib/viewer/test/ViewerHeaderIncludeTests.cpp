@@ -9,6 +9,11 @@
 #include "viewer/ViewTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
+#include <uuid.h>
+
+#include <list>
 
 TEST_CASE("viewer public headers are self-contained")
 {
@@ -24,5 +29,6 @@ TEST_CASE("viewer public headers are self-contained")
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Segmentations));
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Isosurfaces));
   CHECK(DefaultThreeDSceneContents.contains(ThreeDSceneContent::ImportedMeshes));
+  CHECK_FALSE(DefaultThreeDSceneContents.contains(ThreeDSceneContent::Landmarks));
   CHECK(IntensityProjectionMode::None == IntensityProjectionMode::None);
 }

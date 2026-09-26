@@ -1,18 +1,25 @@
 #include "image/ImageHeader.h"
-#include "image/ImageUtility.h"
-
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
+#include "ImageHeaderOverrides.h"
+#include "ImageIoInfo.h"
+#include "ImageSpatialMetadata.h"
 
 #include <glm/glm.hpp>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
-#include <spdlog/fmt/std.h>
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <limits>
+#include <numeric>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 

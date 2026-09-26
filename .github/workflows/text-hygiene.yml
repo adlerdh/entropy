@@ -42,7 +42,10 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
-      - name: Check Markdown links
+      # External sites can disappear or temporarily reject CI traffic. Keep the
+      # report visible without making an otherwise healthy CI run fail.
+      - name: Check Markdown links (advisory)
+        continue-on-error: true
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-

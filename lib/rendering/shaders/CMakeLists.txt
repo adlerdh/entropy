@@ -7,6 +7,12 @@ set(entropy_SHADERS
   Difference.fs
   LocalNcc.fs
   LocalLinearResidual.fs
+  JointHistogramScatter.vs
+  JointHistogramScatter.fs
+  JointHistogramDisplay.fs
+  JointHistogramFixedSamples.vs
+  JointHistogramFastScatter.vs
+  JointHistogramReduce.fs
   Edge.fs
   Image.vs
   ImageWarped.vs

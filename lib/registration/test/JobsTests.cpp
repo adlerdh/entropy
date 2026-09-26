@@ -1,9 +1,17 @@
+#include "registration/Execution.h"
 #include "registration/Jobs.h"
+#include "registration/Process.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
 #include <filesystem>
+#include <optional>
+#include <ratio>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace
 {

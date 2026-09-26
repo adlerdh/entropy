@@ -1,6 +1,8 @@
 #include "rendering/geometry/PixelEdgeGeometry.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 namespace pixel_edge = rendering::pixel_edge;
 

@@ -1,11 +1,16 @@
 #include "rendering/mesh/AmbientOcclusionResources.h"
 
+#include "common/Exception.hpp"
+#include "gl/GLFBOAttachmentTypes.h"
+#include "gl/GLFrameBufferObject.h"
+#include "gl/GLTexture.h"
+#include "gl/GLTextureTypes.h"
+#include "gl/GLVertexArrayObject.h"
 #include "rendering/gl/OpenGLStateGuard.h"
 
-#include "common/Exception.hpp"
-
-#include <glad/glad.h>
 #include <glm/vec3.hpp>
+
+#include <string>
 
 namespace rendering::mesh
 {

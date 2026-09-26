@@ -1,10 +1,21 @@
+#include "common/Types.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
+#include "rendering/TextureLayout.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
+#include <cstddef>
 #include <limits>
+#include <optional>
 #include <span>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace texture_setup = rendering::texture_setup;
 using TextureDimension = rendering::TextureDimension;

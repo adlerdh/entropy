@@ -1,14 +1,10 @@
 #pragma once
 
+#include "image/DicomSeries.h"
 #include "ui/GuiData.h"
 
 #include <filesystem>
 #include <vector>
-
-namespace dicom
-{
-struct SeriesInfo;
-}
 
 namespace serialize
 {

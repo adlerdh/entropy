@@ -3,8 +3,8 @@
 #include <glm/geometric.hpp>
 #include <glm/vec4.hpp>
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace rendering::image_drawing

@@ -1,6 +1,11 @@
 #include "ui/windows/ViewOverlayModel.h"
+#include "viewer/ViewModes.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <array>
+#include <string>
+#include <string_view>
 
 namespace view_overlay = ui::view_overlay;
 
@@ -19,6 +24,10 @@ TEST_CASE("view overlay chooses image or metric selection by render mode", "[ui]
 
   CHECK(view_overlay::usesDisabledVisibilityIcon(ViewRenderMode::Disabled));
   CHECK_FALSE(view_overlay::usesDisabledVisibilityIcon(ViewRenderMode::Image));
+
+  CHECK(view_overlay::usesAnatomicalViewTypeSelector(ViewRenderMode::Image));
+  CHECK(view_overlay::usesAnatomicalViewTypeSelector(ViewRenderMode::Difference));
+  CHECK_FALSE(view_overlay::usesAnatomicalViewTypeSelector(ViewRenderMode::JointHistogram));
 }
 
 TEST_CASE("view overlay labels image choices with visibility and active state", "[ui][view_overlay]")

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "common/InputParams.h"
+#include "common/ColorMapDefaults.h"
 #include "common/HistogramSettings.h"
+#include "common/InputParams.h"
 #include "common/Types.h"
 #include "image/ImageSpatialMetadata.h"
 #include "image/Isosurface.h"
@@ -9,12 +10,11 @@
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"
 
-#include <nlohmann/json.hpp>
-
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -177,13 +177,23 @@ struct ProjectLocalLinearResidualMetricSettings
     ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display
 };
 
+/** @brief Project-wide joint-histogram presentation and axis settings. */
+struct ProjectJointHistogramSettings
+{
+  ProjectMetricSettings m_metric{.m_colorMapIndex = colormap_defaults::kLinear20GouldianIndex};
+  bool m_logarithmicScale = true;
+  int m_bins = 512;
+  int m_majorTicks = 5;
+  int m_minorTicks = 4;
+};
+
 /**
  * @brief Project-wide comparison mode and metric settings.
  */
 struct ProjectComparisonSettings
 {
   ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings
-  ProjectMetricSettings m_jointHistogram;                         //!< Joint-histogram colormap/window settings
+  ProjectJointHistogramSettings m_jointHistogram;                 //!< Joint-histogram presentation and axes
   ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings
   ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings
   bool m_overlayMagentaCyan = false;                              //!< Overlay color convention
@@ -503,9 +513,12 @@ struct Segmentation
  */
 struct LandmarkPoint
 {
-  std::size_t m_index = 0;    //!< Landmark index within the group
-  glm::vec3 m_position{0.0f}; //!< Landmark position
-  std::string m_name{};       //!< Landmark name
+  std::size_t m_index = 0;            //!< Landmark index within the group
+  glm::vec3 m_position{0.0f};         //!< Landmark position
+  std::string m_name{};               //!< Landmark name
+  std::string m_description{};        //!< Landmark description
+  bool m_visible = true;              //!< Individual landmark visibility
+  std::optional<glm::vec3> m_color{}; //!< Individual color, if saved in the project
 };
 
 /**
@@ -519,6 +532,7 @@ struct LandmarkGroup
   ProjectLandmarkCoordinateSpace m_coordinateSpace =
     ProjectLandmarkCoordinateSpace::Subject; //!< Coordinate space for landmark point positions
   std::vector<LandmarkPoint> m_points{};     //!< Embedded landmark points
+  bool m_pointsEmbedded = false;             //!< Points were saved in the project, including an empty group
   bool m_visible = true;                     //!< Show the landmark group
   float m_opacity = 1.0f;                    //!< Landmark group opacity
   glm::vec3 m_color{1.0f};                   //!< Landmark group color
@@ -526,7 +540,7 @@ struct LandmarkGroup
   std::optional<glm::vec3> m_textColor{};    //!< Landmark label text color
   bool m_renderLandmarkIndices = true;       //!< Render landmark indices
   bool m_renderLandmarkNames = false;        //!< Render landmark names
-  float m_glyphRadiusFactor = 1.0f;          //!< Landmark glyph radius factor
+  float m_glyphRadiusFactor = 0.02f;         //!< 2D landmark glyph radius factor
 };
 
 /**
@@ -746,6 +760,12 @@ void to_json(nlohmann::json& j, const ProjectViewSettings& settings);
  * @param settings Settings to update.
  */
 void from_json(const nlohmann::json& j, ProjectViewSettings& settings);
+
+/** @brief Serialize only non-default joint-histogram presentation fields. */
+void to_json(nlohmann::json& j, const ProjectJointHistogramSettings& settings);
+
+/** @brief Read joint-histogram presentation fields, preserving defaults for omitted values. */
+void from_json(const nlohmann::json& j, ProjectJointHistogramSettings& settings);
 
 /**
  * @brief Serialize project comparison settings to JSON.

@@ -286,7 +286,10 @@ void renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, co
 /**
  * @brief Render the active comparison or metric mode for one view.
  */
-void renderMetricImagesForView(const View& view, const glm::vec3& worldOffsetXhairs);
+void renderMetricImagesForView(
+  const View& view,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldOffsetXhairs);
 
 /**
  * @brief Render image isosurfaces for one 3D view, using meshes and a transient raycast when needed.

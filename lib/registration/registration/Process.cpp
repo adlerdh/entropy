@@ -17,12 +17,12 @@
 #endif
 #include <Windows.h>
 #else
-#include <csignal>
 #include <fcntl.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <csignal>
 #endif
 
 namespace registration

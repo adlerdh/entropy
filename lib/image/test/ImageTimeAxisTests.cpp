@@ -3,6 +3,13 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
+#include <optional>
+#include <stdint.h>
+#include <string>
+#include <utility>
+#include <vector>
+
 TEST_CASE("ImageTimeAxis represents single-frame and regular time axes", "[image][time]")
 {
   const ImageTimeAxis single;

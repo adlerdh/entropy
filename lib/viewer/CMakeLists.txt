@@ -35,7 +35,6 @@ target_include_directories(EntropyViewer
 target_link_libraries(EntropyViewer
   PUBLIC
     Entropy::Common
-    entropy_logging_level
   PRIVATE
     entropy_warnings
 )

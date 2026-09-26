@@ -2,6 +2,9 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 TEST_CASE("default viewport is a unit logical viewport", "[common][viewport]")
 {

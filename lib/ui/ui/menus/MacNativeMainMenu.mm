@@ -19,6 +19,11 @@ NSMenu* g_activeImagesMenu = nil;
 NSMenu* g_layoutsMenu = nil;
 bool g_installed = false;
 
+NSString* nsString(const std::string& text) {
+  NSString* result = [[NSString alloc] initWithBytes:text.data() length:text.size() encoding:NSUTF8StringEncoding];
+  return result ? result : @"";
+}
+
 NSString* menuTitleForRecentPaths(const std::vector<std::filesystem::path>& paths) {
   if (paths.empty()) {
     return @"Untitled";
@@ -27,7 +32,7 @@ NSString* menuTitleForRecentPaths(const std::vector<std::filesystem::path>& path
   const std::string firstName =
     paths.front().filename().empty() ? paths.front().string() : paths.front().filename().string();
   if (paths.size() == 1) {
-    return [NSString stringWithUTF8String:firstName.c_str()];
+    return nsString(firstName);
   }
 
   return [NSString stringWithFormat:@"%s (+%zu more)", firstName.c_str(), paths.size() - 1];
@@ -39,7 +44,7 @@ NSString* tooltipForRecentPaths(const std::vector<std::filesystem::path>& paths)
     if ([tooltip length] > 0) {
       [tooltip appendString:@"\n"];
     }
-    [tooltip appendString:[NSString stringWithUTF8String:path.string().c_str()]];
+    [tooltip appendString:nsString(path.string())];
   }
   return tooltip;
 }
@@ -47,7 +52,7 @@ NSString* tooltipForRecentPaths(const std::vector<std::filesystem::path>& paths)
 NSArray* representedObjectForRecentPaths(const std::vector<std::filesystem::path>& paths) {
   NSMutableArray* representedPaths = [NSMutableArray arrayWithCapacity:paths.size()];
   for (const auto& path : paths) {
-    [representedPaths addObject:[NSString stringWithUTF8String:path.string().c_str()]];
+    [representedPaths addObject:nsString(path.string())];
   }
   return representedPaths;
 }
@@ -61,7 +66,7 @@ bool representedRecentPathsExist(id representedObject) {
 
   if ([representedObject isKindOfClass:[NSArray class]]) {
     NSArray* paths = (NSArray*)representedObject;
-    for (NSString* path in paths) {
+    for (NSString* path in paths) {  // NOLINT(cppcoreguidelines-init-variables): Objective-C fast enumeration
       std::error_code error;
       if (!std::filesystem::exists(std::filesystem::path{[path UTF8String]}, error)) {
         return false;
@@ -93,7 +98,7 @@ void updateRepresentedProjectFile() {
   if (error) {
     absolutePath = *projectFileName;
   }
-  NSString* path = [NSString stringWithUTF8String:absolutePath.string().c_str()];
+  NSString* path = nsString(absolutePath.string());
   [window setRepresentedURL:[NSURL fileURLWithPath:path]];
 }
 }  // namespace
@@ -167,7 +172,7 @@ void updateRepresentedProjectFile() {
   NSMenuItem* item = (NSMenuItem*)sender;
   NSArray* paths = (NSArray*)[item representedObject];
   std::vector<std::filesystem::path> fileNames;
-  for (NSString* path in paths) {
+  for (NSString* path in paths) {  // NOLINT(cppcoreguidelines-init-variables): Objective-C fast enumeration
     fileNames.emplace_back([path UTF8String]);
   }
   if (!fileNames.empty() && g_callbacks.openImageFiles) {
@@ -179,7 +184,7 @@ void updateRepresentedProjectFile() {
   NSMenuItem* item = (NSMenuItem*)sender;
   NSArray* paths = (NSArray*)[item representedObject];
   std::vector<std::filesystem::path> folderNames;
-  for (NSString* path in paths) {
+  for (NSString* path in paths) {  // NOLINT(cppcoreguidelines-init-variables): Objective-C fast enumeration
     folderNames.emplace_back([path UTF8String]);
   }
   if (!folderNames.empty() && g_callbacks.openDicomFolders) {
@@ -301,7 +306,7 @@ void updateRepresentedProjectFile() {
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem {
-  const SEL action = [menuItem action];
+  SEL action = [menuItem action];
 
   if (action == @selector(openImage:)) {
     return g_callbacks.canOpenProject && g_callbacks.openImageFiles;
@@ -466,7 +471,7 @@ void addRecentProjectItems(NSMenu* menu, const std::vector<std::filesystem::path
     const std::vector<std::filesystem::path> pathGroup{path};
     NSMenuItem* item =
       addTargetedMenuItem(menu, menuTitleForRecentPaths(pathGroup), @selector(openRecentProject:), @"", 0);
-    [item setRepresentedObject:[NSString stringWithUTF8String:path.string().c_str()]];
+    [item setRepresentedObject:nsString(path.string())];
     [item setToolTip:tooltipForRecentPaths(pathGroup)];
   }
 }
@@ -1058,7 +1063,7 @@ void rebuildLayoutsMenu() {
   const auto names = g_callbacks.layoutNames ? g_callbacks.layoutNames() : std::vector<std::string>{};
   const std::size_t currentIndex = g_callbacks.currentLayoutIndex ? g_callbacks.currentLayoutIndex() : 0;
   for (std::size_t i = 0; i < names.size(); ++i) {
-    NSString* title = [NSString stringWithUTF8String:names.at(i).c_str()];
+    NSString* title = nsString(names.at(i));
     NSMenuItem* item = addTargetedMenuItem(currentLayoutMenu, title, @selector(selectLayout:), @"", 0);
     [item setTag:static_cast<NSInteger>(i)];
     [item setState:(i == currentIndex) ? NSControlStateValueOn : NSControlStateValueOff];
@@ -1076,7 +1081,7 @@ void rebuildActiveImagesMenu() {
   const auto names = g_callbacks.imageNames ? g_callbacks.imageNames() : std::vector<std::string>{};
   const std::size_t activeIndex = g_callbacks.activeImageIndex ? g_callbacks.activeImageIndex() : 0;
   for (std::size_t i = 0; i < names.size(); ++i) {
-    NSString* title = [NSString stringWithUTF8String:names.at(i).c_str()];
+    NSString* title = nsString(names.at(i));
     NSMenuItem* item = addTargetedMenuItem(g_activeImagesMenu, title, @selector(selectActiveImage:), @"", 0);
     [item setTag:static_cast<NSInteger>(i)];
     [item setState:(i == activeIndex) ? NSControlStateValueOn : NSControlStateValueOff];

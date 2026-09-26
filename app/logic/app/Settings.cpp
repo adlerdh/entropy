@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <ranges>
-#include <utility>
 
 namespace
 {

@@ -1,7 +1,9 @@
 #include "layout/SyncGroupIndexMap.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <uuid.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 

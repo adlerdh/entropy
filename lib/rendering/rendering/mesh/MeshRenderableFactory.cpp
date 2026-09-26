@@ -1,5 +1,12 @@
 #include "rendering/mesh/MeshRenderableFactory.h"
 
+#include "mesh/MeshDrawOptions.h"
+#include "mesh/MeshHandle.h"
+#include "mesh/MeshMaterial.h"
+#include "mesh/MeshRenderable.h"
+
+#include <glm/glm.hpp>
+
 namespace rendering::mesh
 {
 

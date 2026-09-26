@@ -43,6 +43,12 @@ target_sources(EntropyRendering PRIVATE
   rendering/physics/XrayAttenuation.cpp
 )
 
+if(APPLE AND Entropy_ENABLE_IWYU)
+  # IWYU 0.26 on macOS stalls while analyzing this translation unit.
+  # Keep compiling it; skip only the local IWYU invocation.
+  set_source_files_properties(rendering/gl/Uniforms.cpp PROPERTIES SKIP_LINTING ON)
+endif()
+
 target_sources(EntropyRendering
   PUBLIC
     FILE_SET public_headers

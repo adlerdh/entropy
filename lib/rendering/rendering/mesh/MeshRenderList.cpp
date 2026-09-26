@@ -1,5 +1,8 @@
 #include "rendering/mesh/MeshRenderList.h"
 
+#include "mesh/MeshCompositing.h"
+#include "mesh/MeshRenderable.h"
+
 #include <algorithm>
 #include <iterator>
 

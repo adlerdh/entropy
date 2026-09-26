@@ -1,6 +1,10 @@
 #include "rendering/ShaderInfoSetup.h"
 
+#include "common/ShaderType.h"
 #include "rendering/gl/Uniforms.h"
+#include "ShaderProgramSetup.h"
+#include "ShaderSourceSetup.h"
+#include "ShaderUniformSetup.h"
 
 #include <string>
 

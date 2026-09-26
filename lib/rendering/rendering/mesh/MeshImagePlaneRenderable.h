@@ -3,13 +3,12 @@
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
 
+#include <uuid.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <uuid.h>
 
 #include <array>
 #include <bit>
-#include <cstddef>
 #include <cstdint>
 #include <optional>
 

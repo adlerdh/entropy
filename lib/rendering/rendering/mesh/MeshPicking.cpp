@@ -1,5 +1,8 @@
 #include "rendering/mesh/MeshPicking.h"
 
+#include "mesh/MeshData.h"
+#include "mesh/MeshDrawOptions.h"
+#include "mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshClipPlanes.h"
 #include "rendering/mesh/MeshCutaway.h"
 
@@ -7,11 +10,12 @@
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <ranges>
+#include <stddef.h>
+#include <utility>
+#include <vector>
 
 namespace rendering::mesh
 {

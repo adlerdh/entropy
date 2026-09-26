@@ -2,6 +2,8 @@
 
 #include "common/UuidRange.h"
 
+#include <uuid.h>
+
 #include <cstddef>
 #include <list>
 #include <optional>

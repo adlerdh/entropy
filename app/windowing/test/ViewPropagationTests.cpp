@@ -1,3 +1,5 @@
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 #include "windowing/ViewPropagation.h"
 
 #include <catch2/catch_test_macros.hpp>

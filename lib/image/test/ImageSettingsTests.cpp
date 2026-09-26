@@ -1,9 +1,18 @@
+#include "common/HistogramSettings.h"
+#include "common/Types.h"
 #include "image/ImageSettings.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
+#include <array>
 #include <limits>
+#include <stdint.h>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace

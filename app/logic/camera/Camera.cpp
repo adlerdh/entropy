@@ -1,21 +1,25 @@
 #include "logic/camera/Camera.h"
-#include "logic/camera/CameraHelpers.h"
 
 #include "common/Exception.hpp"
+#include "logic/camera/CameraHelpers.h"
 
-#include "logic/camera/MathUtility.h"
-
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/epsilon.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_cross_product.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/orthonormalize.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+#include <spdlog/spdlog.h>
+
 #include <cmath>
+#include <cstdlib>
+#include <string>
 #include <utility>
 
 namespace

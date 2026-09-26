@@ -2,12 +2,12 @@
 
 #include "common/HistogramSettings.h"
 #include "common/Types.h"
+#include "image/external/TDigest.h"
 #include "image/ImageHeader.h"
 #include "image/ImageTypes.h"
-#include "image/external/TDigest.h"
 
 #include <glm/vec3.hpp>
-
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -129,4 +129,4 @@ double bumpQuantile(
  * @return Bin count, or std::nullopt when the method cannot be computed for the supplied data.
  */
 std::optional<std::size_t>
-computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats);
+computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, const ComponentStats& stats);

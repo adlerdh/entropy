@@ -1,12 +1,22 @@
-#include "logic/app/UserPreferences.h"
-
 #include "common/LoggingSettings.h"
+#include "common/Types.h"
+#include "logic/app/Settings.h"
+#include "logic/app/UserPreferences.h"
+#include "registration/Config.h"
+#include "registration/Types.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+#include <spdlog/common.h>
 
 #include <filesystem>
+#include <map>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace
 {
@@ -150,6 +160,15 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.localLinearResidualMinValidFraction = 0.5f;
   preferences.localLinearResidualVarianceEpsilon = 0.0035f;
   preferences.localLinearResidualInvalidStyle = user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray;
+  preferences.jointHistogramMetric.colorMapIndex = 6;
+  preferences.jointHistogramMetric.slopeIntercept = {4.0f, -0.75f};
+  preferences.jointHistogramMetric.invertColormap = true;
+  preferences.jointHistogramMetric.continuousColormap = false;
+  preferences.jointHistogramMetric.colormapLevels = 14;
+  preferences.jointHistogramLogarithmicScale = false;
+  preferences.jointHistogramBins = 768;
+  preferences.jointHistogramMajorTicks = 8;
+  preferences.jointHistogramMinorTicks = 3;
   preferences.overlayMagentaCyan = false;
   preferences.quadrants = {false, true};
   preferences.checkerboardSquares = 31;
@@ -191,6 +210,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.showCrosshairsIn3D = false;
   preferences.crosshairs3DGlyphDiameterScenePercent = 2.5f;
   preferences.crosshairs3DGlyphLengthScenePercent = 24.0f;
+  preferences.landmarkSphereRadiusScenePercent = 1.25f;
   preferences.showThreeDCameraFrustumIn2DViews = true;
   preferences.threeDCameraFrustumColor = {0.2f, 0.4f, 0.6f, 0.8f};
   preferences.smoothSegmentationMeshes = false;
@@ -381,6 +401,11 @@ void requireRenderPreferencesEqual(
   CHECK(actual.localLinearResidualMinValidFraction == Catch::Approx(expected.localLinearResidualMinValidFraction));
   CHECK(actual.localLinearResidualVarianceEpsilon == Catch::Approx(expected.localLinearResidualVarianceEpsilon));
   CHECK(actual.localLinearResidualInvalidStyle == expected.localLinearResidualInvalidStyle);
+  CHECK(actual.jointHistogramMetric == expected.jointHistogramMetric);
+  CHECK(actual.jointHistogramLogarithmicScale == expected.jointHistogramLogarithmicScale);
+  CHECK(actual.jointHistogramBins == expected.jointHistogramBins);
+  CHECK(actual.jointHistogramMajorTicks == expected.jointHistogramMajorTicks);
+  CHECK(actual.jointHistogramMinorTicks == expected.jointHistogramMinorTicks);
   CHECK(actual.overlayMagentaCyan == expected.overlayMagentaCyan);
   CHECK(actual.quadrants == expected.quadrants);
   CHECK(actual.checkerboardSquares == expected.checkerboardSquares);
@@ -422,6 +447,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.showCrosshairsIn3D == expected.showCrosshairsIn3D);
   CHECK(actual.crosshairs3DGlyphDiameterScenePercent == Catch::Approx(expected.crosshairs3DGlyphDiameterScenePercent));
   CHECK(actual.crosshairs3DGlyphLengthScenePercent == Catch::Approx(expected.crosshairs3DGlyphLengthScenePercent));
+  CHECK(actual.landmarkSphereRadiusScenePercent == Catch::Approx(expected.landmarkSphereRadiusScenePercent));
   CHECK(actual.showThreeDCameraFrustumIn2DViews == expected.showThreeDCameraFrustumIn2DViews);
   CHECK(actual.threeDCameraFrustumColor == expected.threeDCameraFrustumColor);
   CHECK(actual.smoothSegmentationMeshes == expected.smoothSegmentationMeshes);
@@ -549,6 +575,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("format") == "entropy.userSettings");
   CHECK(root.at("version").at("major") == 1);
   CHECK(root.at("version").at("minor") == 0);
+  CHECK(root.at("rendering").at("threeD").at("landmarkSphereRadiusScenePercent") == 1.25f);
   REQUIRE(text.find("\"density\"") != std::string::npos);
   REQUIRE(text.find("\"toolbarScale\"") != std::string::npos);
   REQUIRE(text.find("\"windowBackgroundOpacity\"") != std::string::npos);
@@ -695,6 +722,47 @@ TEST_CASE("editing live rendering merges only application-owned values into appl
   CHECK(applicationPreferences.raycastSamplingFactor == Catch::Approx(0.45f));
   CHECK(applicationPreferences.transformationGuideColor == (glm::vec4{0.2f, 0.3f, 0.4f, 1.0f}));
   CHECK(applicationPreferences.showCrosshairs == user_preferences::RenderPreferences{}.showCrosshairs);
+}
+
+TEST_CASE("joint histogram application defaults round-trip sparsely", "[app][settings][histogram]")
+{
+  const AppSettings settings;
+  const user_preferences::RenderPreferences defaults;
+  const nlohmann::json defaultJson = nlohmann::json::parse(user_preferences::toJsonString(settings, defaults));
+  CHECK_FALSE(defaultJson.contains("rendering"));
+
+  auto changed = defaults;
+  changed.jointHistogramMetric.colorMapIndex = 6;
+  changed.jointHistogramMetric.slopeIntercept = {2.0f, -0.5f};
+  changed.jointHistogramMetric.invertColormap = true;
+  changed.jointHistogramMetric.continuousColormap = false;
+  changed.jointHistogramMetric.colormapLevels = 12;
+  changed.jointHistogramLogarithmicScale = false;
+  changed.jointHistogramBins = 768;
+  changed.jointHistogramMajorTicks = 8;
+  changed.jointHistogramMinorTicks = 3;
+
+  const std::string text = user_preferences::toJsonString(settings, changed);
+  const nlohmann::json serialized = nlohmann::json::parse(text);
+  const auto& histogram = serialized.at("rendering").at("comparison").at("jointHistogram");
+  CHECK(histogram.at("colormapIndex") == 6);
+  CHECK(histogram.at("windowSlopeIntercept") == nlohmann::json::array({2.0f, -0.5f}));
+  CHECK(histogram.at("invertColormap") == true);
+  CHECK(histogram.at("continuousColormap") == false);
+  CHECK(histogram.at("colormapLevels") == 12);
+  CHECK(histogram.at("logarithmicScale") == false);
+  CHECK(histogram.at("bins") == 768);
+  CHECK(histogram.at("majorTicks") == 8);
+  CHECK(histogram.at("minorTicks") == 3);
+
+  AppSettings loadedSettings;
+  user_preferences::RenderPreferences loaded;
+  REQUIRE(user_preferences::applyJsonString(loadedSettings, loaded, text));
+  CHECK(loaded.jointHistogramMetric == changed.jointHistogramMetric);
+  CHECK(loaded.jointHistogramLogarithmicScale == changed.jointHistogramLogarithmicScale);
+  CHECK(loaded.jointHistogramBins == changed.jointHistogramBins);
+  CHECK(loaded.jointHistogramMajorTicks == changed.jointHistogramMajorTicks);
+  CHECK(loaded.jointHistogramMinorTicks == changed.jointHistogramMinorTicks);
 }
 
 TEST_CASE("DDP changes modify the application settings fingerprint", "[app][settings][ddp]")

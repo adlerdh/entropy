@@ -1,13 +1,12 @@
 #pragma once
 
-#include "rendering/gl/VertexAttributeInfo.h"
-#include "rendering/gl/VertexIndicesInfo.h"
 #include "rendering/gl/GLBufferTypes.h"
 #include "rendering/gl/GLDrawTypes.h"
 #include "rendering/gl/GLErrorChecker.h"
+#include "rendering/gl/VertexAttributeInfo.h"
+#include "rendering/gl/VertexIndicesInfo.h"
 
 #include <glm/vec4.hpp>
-
 #include <glad/glad.h>
 
 #include <cstddef>

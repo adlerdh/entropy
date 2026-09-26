@@ -3,12 +3,16 @@
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
 
+#include <cmath>
+#include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <cmath>
+#include <map>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace fs = std::filesystem;

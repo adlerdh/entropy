@@ -2,6 +2,8 @@
 
 #include "rendering/mesh/MeshAdvancedLighting.h"
 #include "rendering/mesh/MeshGpuData.h"
+#include "rendering/mesh/MeshHandle.h"
+#include "rendering/mesh/MeshRenderable.h"
 #include "rendering/mesh/MeshRenderList.h"
 
 #include <glm/mat3x3.hpp>

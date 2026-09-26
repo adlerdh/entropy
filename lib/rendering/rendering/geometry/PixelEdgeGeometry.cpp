@@ -1,5 +1,7 @@
 #include "rendering/geometry/PixelEdgeGeometry.h"
 
+#include <glm/glm.hpp>
+
 #include <algorithm>
 #include <cmath>
 

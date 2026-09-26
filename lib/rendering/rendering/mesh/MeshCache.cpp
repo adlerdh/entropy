@@ -1,6 +1,8 @@
 #include "rendering/mesh/MeshCache.h"
 
-#include <algorithm>
+#include "mesh/MeshExtraction.h"
+#include "mesh/MeshKeys.h"
+
 #include <utility>
 
 namespace rendering::mesh

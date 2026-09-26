@@ -3,9 +3,10 @@
 #include "mesh/MeshTransform.h"
 #include "mesh/MeshTypes.h"
 
+#include <glm/mat4x4.hpp>
+
 #include <expected>
 #include <filesystem>
-#include <glm/ext/matrix_double4x4.hpp>
 #include <optional>
 #include <string>
 #include <system_error>

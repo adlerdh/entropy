@@ -1,6 +1,7 @@
 #include "logic/app/Data.h"
-#include "logic/camera/CameraHelpers.h"
+#include "common/ColorMapDefaults.h"
 #include "common/UuidUtility.h"
+#include "logic/camera/CameraHelpers.h"
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -409,10 +410,16 @@ void AppData::loadImageColorMapsFromDisk()
       auto filesystem = cmrc::colormaps::get_filesystem();
       auto dirIter = filesystem.iterate_directory(dir);
 
-      for (const auto& i : dirIter) {
-        if (!i.is_file()) continue;
+      std::vector<std::string> fileNames;
+      for (const auto& item : dirIter) {
+        if (item.is_file()) {
+          fileNames.emplace_back(item.filename());
+        }
+      }
+      std::ranges::sort(fileNames);
 
-        cmrc::file f = filesystem.open(dir + i.filename());
+      for (const std::string& fileName : fileNames) {
+        cmrc::file f = filesystem.open(dir + fileName);
         std::istringstream iss(std::string(f.begin(), f.end()));
 
         if (auto cmap = ImageColorMap::loadImageColorMap(iss)) {
@@ -440,6 +447,12 @@ void AppData::loadImageColorMaps()
   loadLinearRampImageColorMaps();
   loadDiscreteImageColorMaps();
   loadImageColorMapsFromDisk();
+
+  const auto gouldianUid = imageColorMapUid(colormap_defaults::kLinear20GouldianIndex);
+  const ImageColorMap* gouldian = gouldianUid ? imageColorMap(*gouldianUid) : nullptr;
+  if (!gouldian || gouldian->technicalName() != colormap_defaults::kLinear20GouldianTechnicalName) {
+    spdlog::error("Linear 20 (Gouldian) is not at its expected color-map index");
+  }
 
   spdlog::debug("Loaded {} image color maps", m_imageColorMaps.size());
 }
@@ -2312,6 +2325,23 @@ const GuiData& AppData::guiData() const
 GuiData& AppData::guiData()
 {
   return m_guiData;
+}
+
+glm::vec2 AppData::viewOverlayControlExtent(const View& view) const
+{
+  if (!m_guiData.m_renderUiOverlays) {
+    return glm::vec2{0.0f};
+  }
+
+  const Layout& layout = m_windowData.currentLayout();
+  const uuid& controlFrameUid = layout.isLightbox() ? layout.uid() : view.uid();
+  const auto extent = m_guiData.m_viewOverlayControlExtents.find(controlFrameUid);
+  if (extent != m_guiData.m_viewOverlayControlExtents.end()) {
+    return extent->second;
+  }
+
+  constexpr glm::vec2 defaultControlExtent{240.0f, 26.0f};
+  return std::max(1.0f, m_guiData.m_effectiveUiScale) * defaultControlExtent;
 }
 
 const rendering::RenderSettings& AppData::renderSettings() const

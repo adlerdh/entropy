@@ -1,8 +1,8 @@
 #include "rendering/gl/Uniforms.h"
 
-#include <glad/glad.h>
+#include "gl/GLUniformTypes.h"
 
-#include <spdlog/fmt/ostr.h>
+#include <glad/glad.h>
 #include <spdlog/spdlog.h>
 
 #include <iterator>

@@ -1,6 +1,10 @@
 #pragma once
 
+#include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshScalarGrid.h"
+
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <cstdint>
 #include <optional>

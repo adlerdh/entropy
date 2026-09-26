@@ -88,7 +88,7 @@ space, plus any number of additional images.
   - Iso-contouring
 - View and crosshairs synchronization
   - Across linked views and layouts
-  - With other Entropy sessions or [ITK-SNAP](https://www.itksnap.org/)
+  - With other Entropy sessions or [ITK-SNAP](https://github.com/pyushkevich/itksnap)
 - 3D views render
   - Image planes
   - Segmentation labels
@@ -164,10 +164,10 @@ Entropy uses [VTK](https://vtk.org/) and [ITK](https://itk.org/) for surface mes
 - [Stereolithography (STL)](https://www.loc.gov/preservation/digital/formats/fdd/fdd000504.shtml) (`.stl`)
 - [Polygon File Format (PLY)](https://paulbourke.net/dataformats/ply/) (`.ply`)
 - [Wavefront Object (OBJ)](https://www.loc.gov/preservation/digital/formats/fdd/fdd000507.shtml) (`.obj`)
-- [Object File Format (OFF)](https://geomview.sourceforge.io/docs/geomview.pdf) (`.off`)
+- [Object File Format (OFF)](https://paulbourke.net/dataformats/off/) (`.off`)
 - [Geometry format under the NIfTI (GIFTI)](https://www.nitrc.org/projects/gifti/) (`.gii`, `.surf.gii`)
-- [FreeSurfer binary surface](https://surfer.nmr.mgh.harvard.edu/fswiki/FileFormats) (`.fsb`, `.fcv`, `.surf`, `.pial`, `.white`, `.inflated`, `.sphere`, `.orig`, `.smoothwm`)
-- [FreeSurfer ASCII surface](https://surfer.nmr.mgh.harvard.edu/fswiki/FileFormats) (`.fsa`, `.asc`)
+- [FreeSurfer binary surface](https://docs.itk.org/projects/doxygen/en/stable/classitk_1_1FreeSurferBinaryMeshIO.html) (`.fsb`, `.fcv`, `.surf`, `.pial`, `.white`, `.inflated`, `.sphere`, `.orig`, `.smoothwm`)
+- [FreeSurfer ASCII surface](https://docs.itk.org/projects/doxygen/en/stable/classitk_1_1FreeSurferAsciiMeshIO.html) (`.fsa`, `.asc`)
 
 Entropy can export image isosurfaces and surfaces of segmentation labels.
 

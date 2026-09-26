@@ -305,6 +305,7 @@ serialize::Image EntropyApp::createImageSnapshot(
                                               ? serialize::ProjectLandmarkCoordinateSpace::Voxel
                                               : serialize::ProjectLandmarkCoordinateSpace::Subject;
     serializedLandmarks.m_name = lmGroup->getName();
+    serializedLandmarks.m_pointsEmbedded = true;
     serializedLandmarks.m_visible = lmGroup->getVisibility();
     serializedLandmarks.m_opacity = lmGroup->getOpacity();
     serializedLandmarks.m_color = lmGroup->getColor();
@@ -314,8 +315,13 @@ serialize::Image EntropyApp::createImageSnapshot(
     serializedLandmarks.m_renderLandmarkNames = lmGroup->getRenderLandmarkNames();
     serializedLandmarks.m_glyphRadiusFactor = lmGroup->getRadiusFactor();
     for (const auto& [index, point] : lmGroup->getPoints()) {
-      serializedLandmarks.m_points.push_back(
-        serialize::LandmarkPoint{.m_index = index, .m_position = point.getPosition(), .m_name = point.getName()});
+      serializedLandmarks.m_points.push_back(serialize::LandmarkPoint{
+        .m_index = index,
+        .m_position = point.getPosition(),
+        .m_name = point.getName(),
+        .m_description = point.getDescription(),
+        .m_visible = point.getVisibility(),
+        .m_color = point.getColor()});
     }
     serializedImage.m_landmarkGroups.emplace_back(std::move(serializedLandmarks));
   }
@@ -327,20 +333,18 @@ serialize::Image EntropyApp::createImageSnapshot(
       continue;
     }
 
-    if (
-      !annotation->getFileName().empty() && serializedImage.m_annotationsFileName &&
-      *serializedImage.m_annotationsFileName != annotation->getFileName())
-    {
-      spdlog::warn(
-        "Image {} has annotations from multiple files; project files currently reference only {}",
-        imageUid,
-        *serializedImage.m_annotationsFileName);
-    }
-
-    if (!annotation->getFileName().empty() && !serializedImage.m_annotationsFileName) {
-      serializedImage.m_annotationsFileName = annotation->getFileName();
-    }
     serializedImage.m_annotations.push_back(*annotation);
+  }
+  serializedImage.m_annotationsFileName = commonAnnotationFileName(serializedImage.m_annotations);
+  if (
+    !serializedImage.m_annotationsFileName &&
+    std::any_of(serializedImage.m_annotations.begin(), serializedImage.m_annotations.end(), [](const Annotation& a) {
+      return !a.getFileName().empty();
+    }))
+  {
+    spdlog::warn(
+      "Image {} has annotations from different files or without files; omitting ambiguous project path",
+      imageUid);
   }
 
   for (uint32_t component = 0; component < image->header().numComponentsPerPixel(); ++component) {
@@ -382,7 +386,7 @@ bool EntropyApp::hasUnsavedAnnotations() const
   for (const auto& imageUid : m_data.imageUidsOrdered()) {
     for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
       const Annotation* annotation = m_data.annotation(annotationUid);
-      if (annotation && (annotation->isDirty() || annotation->getFileName().empty())) {
+      if (annotation && annotation->isDirty()) {
         return true;
       }
     }

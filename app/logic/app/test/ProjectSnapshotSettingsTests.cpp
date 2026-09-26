@@ -1,7 +1,11 @@
-#include "logic/app/ProjectSnapshotSettings.h"
+#include "image/ImageSettings.h"
 #include "logic/app/ParcellationLabelTable.h"
+#include "logic/app/ProjectSnapshotSettings.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <cstddef>
+#include <vector>
 
 TEST_CASE("Project snapshot component render modes round trip through serialization", "[ProjectSnapshotSettings]")
 {

@@ -1,8 +1,8 @@
 #include "logic/app/ProjectImageSequence.h"
-
 #include "logic/serialization/ProjectSerialization.h"
 
 #include <cstddef>
+#include <vector>
 
 namespace project_image_sequence
 {

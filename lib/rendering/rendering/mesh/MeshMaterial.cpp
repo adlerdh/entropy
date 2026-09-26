@@ -3,7 +3,6 @@
 #include "rendering/mesh/MeshBounds.h"
 
 #include <glm/common.hpp>
-
 #include <cmath>
 
 namespace rendering::mesh

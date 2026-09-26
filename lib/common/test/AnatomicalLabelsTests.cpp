@@ -1,6 +1,11 @@
 #include "common/AnatomicalLabels.h"
+#include "common/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <array>
+#include <optional>
+#include <string>
 
 TEST_CASE("Automatic anatomical labels follow DICOM orientation", "[anatomical-labels]")
 {

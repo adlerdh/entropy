@@ -1,8 +1,11 @@
 #include "common/Types.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
+#include <uuid.h>
 
 #include <array>
+#include <optional>
 #include <string>
 
 namespace

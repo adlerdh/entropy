@@ -1,22 +1,26 @@
 #include "logic/app/UserPreferences.h"
 
+#include "common/LoggingDefaults.h"
 #include "common/LoggingSettings.h"
 #include "registration/Config.h"
 #include "registration/Json.h"
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
-#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
+#include <spdlog/common.h>
 
 #include <algorithm>
-#include <atomic>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <span>
@@ -114,7 +118,22 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "asciiShading"};
   }
   else if (path == "rendering") {
-    preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting"};
+    preferredKeys = {"camera", "threeD", "mesh", "dualDepthPeeling", "raycasting", "comparison"};
+  }
+  else if (path == "rendering/comparison") {
+    preferredKeys = {"jointHistogram"};
+  }
+  else if (path == "rendering/comparison/jointHistogram") {
+    preferredKeys = {
+      "colormapIndex",
+      "windowSlopeIntercept",
+      "invertColormap",
+      "continuousColormap",
+      "colormapLevels",
+      "logarithmicScale",
+      "bins",
+      "majorTicks",
+      "minorTicks"};
   }
   else if (path == "rendering/camera") {
     preferredKeys = {"showFrustumIn2DViews", "frustumColor", "reversePovRotation", "synchronizeThreeDCameras"};
@@ -127,6 +146,7 @@ ordered_json orderedUserPreferencesJson(const json& value, const std::string_vie
       "showCrosshairs",
       "crosshairsDiameterScenePercent",
       "crosshairsLengthScenePercent",
+      "landmarkSphereRadiusScenePercent",
       "lighting",
       "imagePlanesVisible",
       "imagePlaneSegmentationsVisible",
@@ -297,6 +317,11 @@ void setDoubleFromJson(double& value, const json& object, const char* key, doubl
   value = std::clamp(it->get<double>(), minValue, maxValue);
 }
 
+json vec2ToJson(const glm::vec2& value)
+{
+  return json::array({value.x, value.y});
+}
+
 json vec3ToJson(const glm::vec3& value)
 {
   return json::array({value.x, value.y, value.z});
@@ -382,6 +407,21 @@ std::vector<std::filesystem::path> pathsFromJson(const json& value)
     }
   }
   return paths;
+}
+
+void setVec2FromJson(glm::vec2& value, const json& object, const char* key)
+{
+  const auto it = object.find(key);
+  if (it == object.end() || !it->is_array() || it->size() != 2) {
+    return;
+  }
+
+  try {
+    value = glm::vec2{it->at(0).get<float>(), it->at(1).get<float>()};
+  }
+  catch (const json::exception& e) {
+    spdlog::debug("Ignoring invalid vec2 user preference '{}': {}", key, e.what());
+  }
 }
 
 void setVec3FromJson(glm::vec3& value, const json& object, const char* key)
@@ -619,6 +659,7 @@ json toJson(
         {"showCrosshairs", renderPreferences.showCrosshairsIn3D},
         {"crosshairsDiameterScenePercent", renderPreferences.crosshairs3DGlyphDiameterScenePercent},
         {"crosshairsLengthScenePercent", renderPreferences.crosshairs3DGlyphLengthScenePercent},
+        {"landmarkSphereRadiusScenePercent", renderPreferences.landmarkSphereRadiusScenePercent},
         {"imagePlaneLighting",
          {{"ambient", renderPreferences.imagePlaneLightingAmbient},
           {"diffuse", renderPreferences.imagePlaneLightingDiffuse},
@@ -663,6 +704,17 @@ json toJson(
          {{"enabled", renderPreferences.useDistanceMapForRaycasting},
           {"lowerPercentile", renderPreferences.distanceMapForegroundLowerPercentile},
           {"upperPercentile", renderPreferences.distanceMapForegroundUpperPercentile}}}}},
+      {"comparison",
+       {{"jointHistogram",
+         {{"colormapIndex", renderPreferences.jointHistogramMetric.colorMapIndex},
+          {"windowSlopeIntercept", vec2ToJson(renderPreferences.jointHistogramMetric.slopeIntercept)},
+          {"invertColormap", renderPreferences.jointHistogramMetric.invertColormap},
+          {"continuousColormap", renderPreferences.jointHistogramMetric.continuousColormap},
+          {"colormapLevels", renderPreferences.jointHistogramMetric.colormapLevels},
+          {"logarithmicScale", renderPreferences.jointHistogramLogarithmicScale},
+          {"bins", renderPreferences.jointHistogramBins},
+          {"majorTicks", renderPreferences.jointHistogramMajorTicks},
+          {"minorTicks", renderPreferences.jointHistogramMinorTicks}}}}},
       {"dualDepthPeeling", {{"maxPeelPasses", renderPreferences.ddpMaxPeelPasses}}}}},
     {"registration", settings.registrationBackendConfig()},
     {"recent",
@@ -1010,6 +1062,12 @@ void applyJson(
         "crosshairsLengthScenePercent",
         0.5f,
         50.0f);
+      setFloatFromJson(
+        renderPreferences.landmarkSphereRadiusScenePercent,
+        *threeD,
+        "landmarkSphereRadiusScenePercent",
+        0.05f,
+        5.0f);
       if (const auto lighting = threeD->find("imagePlaneLighting"); lighting != threeD->end() && lighting->is_object())
       {
         setFloatFromJson(renderPreferences.imagePlaneLightingAmbient, *lighting, "ambient", 0.0f, 2.0f);
@@ -1071,6 +1129,28 @@ void applyJson(
     if (const auto ddp = rendering->find("dualDepthPeeling"); ddp != rendering->end() && ddp->is_object()) {
       if (const auto passes = ddp->find("maxPeelPasses"); passes != ddp->end() && passes->is_number_unsigned()) {
         renderPreferences.ddpMaxPeelPasses = std::clamp<uint32_t>(passes->get<uint32_t>(), 1u, 32u);
+      }
+    }
+    if (const auto comparison = rendering->find("comparison");
+        comparison != rendering->end() && comparison->is_object())
+    {
+      if (const auto histogram = comparison->find("jointHistogram");
+          histogram != comparison->end() && histogram->is_object())
+      {
+        setFromJson(renderPreferences.jointHistogramMetric.colorMapIndex, *histogram, "colormapIndex");
+        setVec2FromJson(renderPreferences.jointHistogramMetric.slopeIntercept, *histogram, "windowSlopeIntercept");
+        setFromJson(renderPreferences.jointHistogramMetric.invertColormap, *histogram, "invertColormap");
+        setFromJson(renderPreferences.jointHistogramMetric.continuousColormap, *histogram, "continuousColormap");
+        setFromJson(renderPreferences.jointHistogramMetric.colormapLevels, *histogram, "colormapLevels");
+        renderPreferences.jointHistogramMetric.colormapLevels =
+          std::max(renderPreferences.jointHistogramMetric.colormapLevels, 2);
+        setFromJson(renderPreferences.jointHistogramLogarithmicScale, *histogram, "logarithmicScale");
+        setFromJson(renderPreferences.jointHistogramBins, *histogram, "bins");
+        renderPreferences.jointHistogramBins = std::clamp(renderPreferences.jointHistogramBins, 16, 1024);
+        setFromJson(renderPreferences.jointHistogramMajorTicks, *histogram, "majorTicks");
+        renderPreferences.jointHistogramMajorTicks = std::clamp(renderPreferences.jointHistogramMajorTicks, 2, 12);
+        setFromJson(renderPreferences.jointHistogramMinorTicks, *histogram, "minorTicks");
+        renderPreferences.jointHistogramMinorTicks = std::clamp(renderPreferences.jointHistogramMinorTicks, 0, 9);
       }
     }
   }

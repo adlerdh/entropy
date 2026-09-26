@@ -1,7 +1,7 @@
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
 option(Entropy_ENABLE_IWYU "Run Include What You Use during C++ compilation" OFF)
 set(Entropy_IWYU_OPTIONS
-  "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--max_line_length=120;-Xiwyu;--mapping_file=${CMAKE_SOURCE_DIR}/cmake/EntropyIwyu.imp;-Xiwyu;--error=0"
+  "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--no_comments;-Xiwyu;--mapping_file=${CMAKE_SOURCE_DIR}/cmake/EntropyIwyu.imp;-Xiwyu;--error=0"
   CACHE STRING "Additional options passed to Include What You Use")
 set(Entropy_IWYU_COMPILER_OPTIONS "" CACHE STRING "Compiler compatibility options passed only to Include What You Use")
 option(Entropy_ENABLE_CLANG_TIDY "Run clang-tidy during C++ compilation" OFF)

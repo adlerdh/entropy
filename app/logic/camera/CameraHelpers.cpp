@@ -1,24 +1,25 @@
 #include "logic/camera/CameraHelpers.h"
-#include "logic/camera/Camera.h"
-#include "logic/camera/MathUtility.h"
-#include "logic/camera/OrthogonalProjection.h"
-#include "logic/camera/PerspectiveProjection.h"
 
 #include "common/CoordinateFrame.h"
 #include "common/Exception.hpp"
 #include "common/Geometry.h"
 #include "common/Viewport.h"
+#include "logic/camera/Camera.h"
+#include "logic/camera/MathUtility.h"
+#include "logic/camera/OrthogonalProjection.h"
+#include "logic/camera/PerspectiveProjection.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/matrix_cross_product.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/orthonormalize.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_normalized_axis.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
@@ -26,8 +27,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <functional>
+#include <iterator>
 #include <limits>
+#include <stdint.h>
 
 namespace
 {

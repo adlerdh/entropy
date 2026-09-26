@@ -1,10 +1,12 @@
+#include "registration/Commands.h"
 #include "registration/Process.h"
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <chrono>
 #include <filesystem>
+#include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace

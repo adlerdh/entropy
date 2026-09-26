@@ -1,20 +1,28 @@
 #include "image/ImageWriter.h"
 
+#include "common/Types.h"
 #include "image/Image.h"
 #include "image/ImageHeader.h"
 #include "image/ImageTimeAxis.h"
 #include "image/ImageUtility.h"
+#include "ImageTypes.h"
 #include "internal/ImageUtilityItk.h"
+#include "itkMacro.h"
 
+#include <glm/mat3x3.hpp>
+#include <glm/vec3.hpp>
+
+#include <itkCommonEnums.h>
 #include <itkImageIOBase.h>
 #include <itkImageIOFactory.h>
 #include <itkImageIORegion.h>
 #include <itkMetaDataObject.h>
 
 #include <algorithm>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
 #include <cstring>
+#include <exception>
 #include <limits>
 #include <string>
 #include <utility>

@@ -6,8 +6,10 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace
 {

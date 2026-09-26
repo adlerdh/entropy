@@ -1,10 +1,12 @@
 #pragma once
 
+#include "rendering/mesh/MeshCache.h"
 #include "rendering/mesh/MeshExtraction.h"
 #include "rendering/mesh/MeshExtractionRunner.h"
+#include "rendering/mesh/MeshKeys.h"
 
-#include <cstddef>
 #include <condition_variable>
+#include <cstddef>
 #include <deque>
 #include <functional>
 #include <mutex>

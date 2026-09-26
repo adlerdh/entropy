@@ -1,4 +1,5 @@
 #include "ui/dialogs/NativeMessageDialogModel.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <catch2/catch_test_macros.hpp>
 

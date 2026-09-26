@@ -56,8 +56,10 @@
 
 #define DEBUG_IMAGE_OUTPUT 0
 
+// IWYU pragma: begin_exports
 #include "ImageUtilityItkImageConstruction.tpp"
 #include "ImageUtilityStatistics.tpp"
 #include "ImageUtilityItkIo.tpp"
 #include "ImageUtilityDerivedImages.tpp"
 #include "ImageUtilityLoad.tpp"
+// IWYU pragma: end_exports

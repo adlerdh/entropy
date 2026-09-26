@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string>
+
 TEST_CASE("layout tabs reserve a fixed viewport edge", "[ui][gui]")
 {
   GuiData guiData;

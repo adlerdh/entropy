@@ -1,4 +1,6 @@
 target_sources(entropy PRIVATE
+  JointHistogramAxes.cpp
+  JointHistogramRenderer.cpp
   ascii/AsciiAtlas.cpp
   ascii/AsciiAtlasBaker.cpp
   ascii/AsciiRenderer.cpp

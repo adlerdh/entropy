@@ -1,6 +1,9 @@
 #include "rendering/mesh/MeshDdpPolicy.h"
 
+#include "mesh/MeshRenderList.h"
+
 #include <algorithm>
+#include <functional>
 #include <string>
 #include <vector>
 

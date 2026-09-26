@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshExtraction.h"
 
+#include "mesh/MeshKeys.h"
+
 namespace rendering::mesh
 {
 

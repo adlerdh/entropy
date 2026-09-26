@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string>
+
 TEST_CASE("Current stack trace returns diagnostic text", "[StackTrace]")
 {
   const std::string trace = stack_trace::current();

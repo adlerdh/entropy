@@ -1,4 +1,5 @@
 #include "rendering/ShaderTextureDimension.h"
+#include "TextureLayout.h"
 
 #include <iterator>
 

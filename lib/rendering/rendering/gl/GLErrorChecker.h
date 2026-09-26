@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glad/glad.h>
-
 #define CHECK_GL_ERROR(checker) (checker)(__FILE__, __func__, __LINE__)
 
 /**

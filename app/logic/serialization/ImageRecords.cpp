@@ -1,6 +1,24 @@
-#include "logic/serialization/ProjectSerialization.h"
+#include "common/Exception.hpp"
+#include "common/Types.h"
+#include "image/ImageSpatialMetadata.h"
+#include "image/Isosurface.h"
+#include "logic/annotation/Annotation.h"
 #include "logic/annotation/SerializeAnnot.h"
+#include "logic/serialization/ProjectSerialization.h"
 #include "logic/serialization/SerializationHelpers.h"
+
+#include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
+
+#include <algorithm>
+#include <cstddef>
+#include <filesystem>
+#include <iterator>
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace serialize
 {
@@ -147,9 +165,17 @@ void to_json(json& j, const serialize::LandmarkPoint& point)
 {
   const serialize::LandmarkPoint defaults;
   j = json::object();
+  addIfChanged(j, "index", point.m_index, defaults.m_index);
   addIfChanged(j, "position", vec3ToJson(point.m_position), vec3ToJson(defaults.m_position));
   if (!point.m_name.empty()) {
     j["name"] = point.m_name;
+  }
+  if (!point.m_description.empty()) {
+    j["description"] = point.m_description;
+  }
+  addIfChanged(j, "visible", point.m_visible, defaults.m_visible);
+  if (point.m_color) {
+    j["color"] = vec3ToJson(*point.m_color);
   }
 }
 
@@ -163,6 +189,15 @@ void from_json(const json& j, serialize::LandmarkPoint& point)
   }
   if (const auto name = j.find("name"); name != j.end() && name->is_string()) {
     point.m_name = name->get<std::string>();
+  }
+  if (const auto description = j.find("description"); description != j.end() && description->is_string()) {
+    point.m_description = description->get<std::string>();
+  }
+  if (const auto visible = j.find("visible"); visible != j.end() && visible->is_boolean()) {
+    point.m_visible = visible->get<bool>();
+  }
+  if (const auto color = j.find("color"); color != j.end()) {
+    point.m_color = vec3FromJson(*color);
   }
 }
 
@@ -181,7 +216,7 @@ void to_json(json& j, const serialize::LandmarkGroup& landmarks)
     enumToName(landmarks.m_coordinateSpace, k_landmarkCoordinateSpaceNames),
     enumToName(defaults.m_coordinateSpace, k_landmarkCoordinateSpaceNames));
 
-  if (!landmarks.m_points.empty()) {
+  if (!landmarks.m_points.empty() || landmarks.m_pointsEmbedded) {
     j["points"] = landmarks.m_points;
   }
 
@@ -218,9 +253,12 @@ void from_json(const json& j, serialize::LandmarkGroup& landmarks)
   }
 
   if (const auto points = j.find("points"); points != j.end()) {
+    landmarks.m_pointsEmbedded = true;
     points->get_to(landmarks.m_points);
     for (std::size_t i = 0; i < landmarks.m_points.size(); ++i) {
-      landmarks.m_points.at(i).m_index = i;
+      if (!points->at(i).contains("index")) {
+        landmarks.m_points.at(i).m_index = i;
+      }
     }
   }
 

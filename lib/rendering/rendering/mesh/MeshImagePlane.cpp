@@ -1,13 +1,15 @@
 #include "rendering/mesh/MeshImagePlane.h"
 
+#include "mesh/MeshData.h"
+
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>

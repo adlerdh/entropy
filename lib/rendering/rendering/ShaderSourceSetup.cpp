@@ -1,5 +1,7 @@
 #include "rendering/ShaderSourceSetup.h"
 
+#include "ShaderTextureDimension.h"
+
 #include <cmrc/cmrc.hpp>
 
 CMRC_DECLARE(shaders);

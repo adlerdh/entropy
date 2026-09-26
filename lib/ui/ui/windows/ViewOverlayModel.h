@@ -3,7 +3,6 @@
 #include "viewer/ViewModes.h"
 
 #include <array>
-#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -41,6 +40,9 @@ bool usesMetricImageSelection(ViewRenderMode renderMode);
  * @return True when the render mode is disabled.
  */
 bool usesDisabledVisibilityIcon(ViewRenderMode renderMode);
+
+/** Return whether an anatomical view-type selector is meaningful for this render mode. */
+bool usesAnatomicalViewTypeSelector(ViewRenderMode renderMode);
 
 /**
  * @brief Build the display label for an image selection menu item.

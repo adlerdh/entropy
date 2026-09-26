@@ -1,11 +1,13 @@
 #pragma once
 
+#include "rendering/mesh/MeshCompositing.h"
 #include "rendering/mesh/MeshExtraction.h"
-#include "rendering/mesh/MeshGeneration.h"
+#include "rendering/mesh/MeshGenerationOptions.h"
+#include "rendering/mesh/MeshMaterial.h"
 #include "rendering/mesh/MeshRenderableFactory.h"
 
+#include <uuid.h>
 #include <glm/vec4.hpp>
-
 #include <cstdint>
 
 namespace rendering::mesh

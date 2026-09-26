@@ -1,5 +1,7 @@
 #include "rendering/mesh/MeshImagePlaneRenderList.h"
 
+#include "mesh/MeshImagePlaneRenderable.h"
+
 namespace rendering::mesh
 {
 

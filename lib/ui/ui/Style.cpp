@@ -1,7 +1,8 @@
 #include "ui/Style.h"
 
+#include "imgui.h"
+
 #include <algorithm>
-#include <cmath>
 #include <limits>
 
 void applyCustomLightStyle(bool bStyleDark_, float alpha_)

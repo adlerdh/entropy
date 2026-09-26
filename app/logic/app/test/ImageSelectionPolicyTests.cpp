@@ -1,6 +1,8 @@
+#include "common/UuidRange.h"
 #include "logic/app/ImageSelectionPolicy.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <uuid.h>
 
 #include <cstdint>
 #include <list>

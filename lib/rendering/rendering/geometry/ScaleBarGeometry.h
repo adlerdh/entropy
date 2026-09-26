@@ -3,7 +3,6 @@
 #include "common/Types.h"
 
 #include <glm/vec2.hpp>
-
 #include <optional>
 #include <string>
 

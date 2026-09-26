@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glm/vec3.hpp>
-
 #include <cstdint>
 
 namespace app_sync::itk_snap_protocol

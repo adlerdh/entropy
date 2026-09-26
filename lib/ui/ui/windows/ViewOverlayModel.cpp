@@ -18,6 +18,11 @@ bool usesDisabledVisibilityIcon(const ViewRenderMode renderMode)
   return ViewRenderMode::Disabled == renderMode;
 }
 
+bool usesAnatomicalViewTypeSelector(const ViewRenderMode renderMode)
+{
+  return ViewRenderMode::JointHistogram != renderMode;
+}
+
 std::string imageChoiceLabel(const ImageChoice& choice)
 {
   std::string label = choice.displayName;

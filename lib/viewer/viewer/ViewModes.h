@@ -51,6 +51,7 @@ inline std::vector<ViewRenderMode> const All2dViewRenderModes = {
   ViewRenderMode::Difference,
   ViewRenderMode::LocalNcc,
   ViewRenderMode::LocalLinearResidual,
+  ViewRenderMode::JointHistogram,
   ViewRenderMode::Disabled};
 
 /** @brief Render modes for 2D views with fewer than two images, in UI order. */

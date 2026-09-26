@@ -1,4 +1,17 @@
-All color maps in this directory are copied from the Library of Perceptually Uniform Colour Maps.
+All color maps in this directory are derived from the Library of Perceptually Uniform Colour Maps.
+
+The newer CSVs (C03, C06-C11, C01s-C04s, C06s-C07s, D05, L13-L15,
+L20, R04, CBL03-CBL04, CBD02, and CBTL03-CBTL04) were generated from
+Peter Kovesi's six-decimal colorcet.m arrays dated 19-Dec-2020:
+https://www.peterkovesi.com/matlabfns/Colourmaps/colorcet.m
+The new maps use short category-first display names and descriptive
+tooltips, following the style of the older maps. The names and tooltips
+of the older maps are unchanged.
+The shifted cyclic maps are rotations by one quarter of a cycle, matching
+the downloadable C1s-C7s CSVs where available. C05s was omitted because
+it is grayscale, as were the L01 and L02 grayscale maps. The older C05
+cyclic grayscale map was already bundled and has not been changed.
+Existing maps, including the older L16 design, have not been replaced.
 
 For more information about the design of these colour maps see:
 Peter Kovesi. Good Colour Maps: How to Design Them.

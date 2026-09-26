@@ -27,12 +27,12 @@
 #include "rendering/mesh/MeshHandle.h"
 #include "rendering/mesh/MeshImageAdapter.h"
 #include "rendering/mesh/MeshImagePlane.h"
-#include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneRenderable.h"
+#include "rendering/mesh/MeshImagePlaneRenderList.h"
 #include "rendering/mesh/MeshImagePlaneScene.h"
 #include "rendering/mesh/MeshIsosurfacePolicy.h"
-#include "rendering/mesh/MeshLandmarkPolicy.h"
 #include "rendering/mesh/MeshKeys.h"
+#include "rendering/mesh/MeshLandmarkPolicy.h"
 #include "rendering/mesh/MeshMaterial.h"
 #include "rendering/mesh/MeshPicking.h"
 #include "rendering/mesh/MeshPrimitives.h"
@@ -48,9 +48,8 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #include <glm/gtc/matrix_transform.hpp>
-
+#include <uuid.h>
 #include <vtkMultiThreader.h>
 
 #include <algorithm>
@@ -67,7 +66,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -1119,39 +1117,39 @@ TEST_CASE("mesh landmark glyph policy disables hidden or degenerate glyphs", "[r
     {.groupVisible = true,
      .pointVisible = true,
      .groupOpacity = 0.5f,
-     .radiusFactor = 0.02f,
-     .voxelDiagonalWorld = 3.0f}));
+     .radiusScenePercent = 0.5f,
+     .sceneDiagonalWorld = 300.0f}));
 
   CHECK_FALSE(mesh::shouldRenderMeshLandmarkGlyph(
     {.groupVisible = false,
      .pointVisible = true,
      .groupOpacity = 0.5f,
-     .radiusFactor = 0.02f,
-     .voxelDiagonalWorld = 3.0f}));
+     .radiusScenePercent = 0.5f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshLandmarkGlyph(
     {.groupVisible = true,
      .pointVisible = false,
      .groupOpacity = 0.5f,
-     .radiusFactor = 0.02f,
-     .voxelDiagonalWorld = 3.0f}));
+     .radiusScenePercent = 0.5f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshLandmarkGlyph(
     {.groupVisible = true,
      .pointVisible = true,
      .groupOpacity = 0.0f,
-     .radiusFactor = 0.02f,
-     .voxelDiagonalWorld = 3.0f}));
+     .radiusScenePercent = 0.5f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshLandmarkGlyph(
     {.groupVisible = true,
      .pointVisible = true,
      .groupOpacity = 0.5f,
-     .radiusFactor = 0.0f,
-     .voxelDiagonalWorld = 3.0f}));
+     .radiusScenePercent = 0.0f,
+     .sceneDiagonalWorld = 300.0f}));
   CHECK_FALSE(mesh::shouldRenderMeshLandmarkGlyph(
     {.groupVisible = true,
      .pointVisible = true,
      .groupOpacity = 0.5f,
-     .radiusFactor = 0.02f,
-     .voxelDiagonalWorld = 0.0f}));
+     .radiusScenePercent = 0.5f,
+     .sceneDiagonalWorld = 0.0f}));
 }
 
 TEST_CASE("mesh landmark glyph style uses selected color source and alpha-over compositing", "[rendering][mesh]")
@@ -1161,8 +1159,8 @@ TEST_CASE("mesh landmark glyph style uses selected color source and alpha-over c
     .pointVisible = true,
     .groupColorOverride = true,
     .groupOpacity = 1.5f,
-    .radiusFactor = 0.25f,
-    .voxelDiagonalWorld = 4.0f,
+    .radiusScenePercent = 0.5f,
+    .sceneDiagonalWorld = 200.0f,
     .groupColor = glm::vec3{1.0f, 0.25f, 0.0f},
     .pointColor = glm::vec3{0.0f, 0.0f, 1.0f}};
 
@@ -1178,6 +1176,10 @@ TEST_CASE("mesh landmark glyph style uses selected color source and alpha-over c
 
   const mesh::MeshSphereGlyphStyle pointStyle = mesh::meshLandmarkSphereGlyphStyle(pointColorInputs);
   CHECK(pointStyle.color == glm::vec4{0.0f, 0.0f, 1.0f, 0.5f});
+
+  mesh::MeshLandmarkGlyphInputs largerScene = groupColorInputs;
+  largerScene.sceneDiagonalWorld = 400.0f;
+  CHECK(mesh::meshLandmarkSphereGlyphStyle(largerScene).radiusWorld == Catch::Approx(2.0f));
 }
 
 TEST_CASE("cylinder glyph renderable uses world-space radius and length", "[rendering][mesh]")

@@ -1,17 +1,25 @@
-#include "ImageGenerator.h"
+#include "common/Types.h"
 #include "image/Image.h"
+#include "image/ImageHeader.h"
+#include "image/ImageTimeAxis.h"
+#include "image/ImageTypes.h"
 #include "image/ImageUtility.h"
+#include "ImageGenerator.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
+#include <catch2/catch_message.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/vec3.hpp>
 
 #include <chrono>
 #include <cmath>
+#include <complex>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 

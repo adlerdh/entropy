@@ -858,6 +858,8 @@ void renderLayoutTabs(AppData& appData)
         if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
           requestedLayoutIndex = index;
         }
+        // ImGui::BeginTabItem can set tabOpen to false when its close button is clicked.
+        // cppcheck-suppress knownConditionTrueFalse
         if (!tabOpen) {
           pendingRemoveLayoutIndex = index;
         }
@@ -5104,20 +5106,22 @@ void ImGuiWrapper::render()
 
     renderViewSettingsComboWindow(overlayContext, imageCallbacks, modeCallbacks, projectionCallbacks);
 
-    renderViewOrientationToolWindow(
-      overlayContext,
-      {currentLayout.viewType(),
-       anatomicalLabels.type,
-       anatomicalLabels.quadrupedBodyRegion,
-       [&getViewCameraRotation, &currentLayout]() { return getViewCameraRotation(currentLayout.uid()); },
-       [&setViewCameraRotation, &currentLayout](const glm::quat& q) {
-         return setViewCameraRotation(currentLayout.uid(), q);
-       },
-       [&setViewCameraDirection, &currentLayout](const glm::vec3& dir) {
-         return setViewCameraDirection(currentLayout.uid(), dir);
-       },
-       [&getViewNormal, &currentLayout]() { return getViewNormal(currentLayout.uid()); },
-       getObliqueViewDirections});
+    if (ViewRenderMode::JointHistogram != currentLayout.renderMode()) {
+      renderViewOrientationToolWindow(
+        overlayContext,
+        {currentLayout.viewType(),
+         anatomicalLabels.type,
+         anatomicalLabels.quadrupedBodyRegion,
+         [&getViewCameraRotation, &currentLayout]() { return getViewCameraRotation(currentLayout.uid()); },
+         [&setViewCameraRotation, &currentLayout](const glm::quat& q) {
+           return setViewCameraRotation(currentLayout.uid(), q);
+         },
+         [&setViewCameraDirection, &currentLayout](const glm::vec3& dir) {
+           return setViewCameraDirection(currentLayout.uid(), dir);
+         },
+         [&getViewNormal, &currentLayout]() { return getViewNormal(currentLayout.uid()); },
+         getObliqueViewDirections});
+    }
   }
   else if (m_appData.guiData().m_renderUiOverlays && !currentLayout.isLightbox()) {
     // Per-view UI controls:
@@ -5377,16 +5381,18 @@ void ImGuiWrapper::render()
 
       renderViewSettingsComboWindow(overlayContext, imageCallbacks, modeCallbacks, projectionCallbacks);
 
-      renderViewOrientationToolWindow(
-        overlayContext,
-        {view->viewType(),
-         anatomicalLabels.type,
-         anatomicalLabels.quadrupedBodyRegion,
-         [&getViewCameraRotation, &viewUid]() { return getViewCameraRotation(viewUid); },
-         [&setViewCameraRotation, &viewUid](const glm::quat& q) { return setViewCameraRotation(viewUid, q); },
-         [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },
-         [&getViewNormal, &viewUid]() { return getViewNormal(viewUid); },
-         getObliqueViewDirections});
+      if (ViewRenderMode::JointHistogram != view->renderMode()) {
+        renderViewOrientationToolWindow(
+          overlayContext,
+          {view->viewType(),
+           anatomicalLabels.type,
+           anatomicalLabels.quadrupedBodyRegion,
+           [&getViewCameraRotation, &viewUid]() { return getViewCameraRotation(viewUid); },
+           [&setViewCameraRotation, &viewUid](const glm::quat& q) { return setViewCameraRotation(viewUid, q); },
+           [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },
+           [&getViewNormal, &viewUid]() { return getViewNormal(viewUid); },
+           getObliqueViewDirections});
+      }
     }
   }
 

@@ -1,12 +1,16 @@
+#include "common/InputParams.h"
 #include "common/InputParser.h"
 #include "common/LoggingDefaults.h"
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <spdlog/spdlog.h>
+#include <spdlog/common.h>
 
 #include <array>
+#include <filesystem>
+#include <initializer_list>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 TEST_CASE("help and version request a successful early exit", "[common][input]")

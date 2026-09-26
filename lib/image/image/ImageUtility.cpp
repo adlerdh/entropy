@@ -1,20 +1,38 @@
 #include "image/ImageUtility.h"
-#include "internal/ImageUtilityItk.h"
-#include "internal/ImageUtility.tpp"
 
+#include "common/Exception.hpp"
 #include "common/MathFuncs.h"
-#include <spdlog/fmt/std.h>
+#include "external/TDigest.h"
+#include "Image.h"
+#include "ImageHeader.h"
+#include "ImageIoInfo.h"
+#include "ImageTimeAxis.h"
+#include "ImageTransformations.h"
+#include "ImageTypes.h"
+#include "internal/ImageUtilityItk.h"
+#include "itkMacro.h"
+#include "internal/ImageUtility.tpp"
+#include "internal/ImageUtilityStatistics.tpp"
 
 #include <glm/gtc/epsilon.hpp>
+
 #include <itkImageIOFactory.h>
+#include <itkCommonEnums.h>
+#include <itkImageIOBase.h>
+
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
 
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <cmath>
+#include <iterator>
 #include <limits>
+#include <numeric>
+#include <span>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -773,6 +791,7 @@ double bumpQuantile(
   }
 
   const std::size_t N = image.header().numPixels();
+  const double numPixels = static_cast<double>(N);
 
   double newQuant = attemptedQuantile;
   double oldValue = currentValue;
@@ -784,18 +803,18 @@ double bumpQuantile(
 
     if (dir < 0) {
       if (usingExactQuantiles) {
-        newQuant = (0 == Q.lowerIndex) ? 0.0 : static_cast<double>(Q.lowerIndex - 1) / N;
+        newQuant = (0 == Q.lowerIndex) ? 0.0 : static_cast<double>(Q.lowerIndex - 1) / numPixels;
       }
       else {
-        newQuant = (0 == Q.lowerIndex) ? 0.0 : newQuant - 1.0 / N;
+        newQuant = (0 == Q.lowerIndex) ? 0.0 : newQuant - 1.0 / numPixels;
       }
     }
     else {
       if (usingExactQuantiles) {
-        newQuant = (N == Q.upperIndex) ? 1.0 : static_cast<double>(Q.upperIndex + 1) / N;
+        newQuant = (N == Q.upperIndex) ? 1.0 : static_cast<double>(Q.upperIndex + 1) / numPixels;
       }
       else {
-        newQuant = (N == Q.upperIndex) ? 1.0 : newQuant + 1.0 / N;
+        newQuant = (N == Q.upperIndex) ? 1.0 : newQuant + 1.0 / numPixels;
       }
     }
 
@@ -813,40 +832,42 @@ double bumpQuantile(
 }
 
 std::optional<std::size_t>
-computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats)
+computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, const ComponentStats& stats)
 {
   if (0 == numPixels) {
     spdlog::warn("Cannot compute number of histogram bins for image component with zero pixels");
     return std::nullopt;
   }
 
+  const long double numPixelsAsLongDouble = static_cast<long double>(numPixels);
+
   switch (method) {
     case NumBinsComputationMethod::SquareRoot: {
-      return static_cast<std::size_t>(std::ceil(std::sqrt(numPixels)));
+      return static_cast<std::size_t>(std::ceil(std::sqrt(numPixelsAsLongDouble)));
     }
     case NumBinsComputationMethod::Sturges: {
-      return static_cast<std::size_t>(std::ceil(std::log2(numPixels)) + 1);
+      return static_cast<std::size_t>(std::ceil(std::log2(numPixelsAsLongDouble)) + 1.0L);
     }
     case NumBinsComputationMethod::Rice: {
-      return static_cast<std::size_t>(std::ceil(2.0 * std::pow(numPixels, 1.0 / 3.0)));
+      return static_cast<std::size_t>(std::ceil(2.0L * std::cbrt(numPixelsAsLongDouble)));
     }
     case NumBinsComputationMethod::Scott: {
-      if (glm::epsilonEqual(static_cast<double>(stats.onlineStats.stdev), 0.0, glm::epsilon<double>())) {
+      if (std::abs(stats.onlineStats.stdev) <= std::numeric_limits<long double>::epsilon()) {
         spdlog::debug("Image component has zero standard deviation");
         return std::nullopt;
       }
 
-      const double binWidth = 3.49 * stats.onlineStats.stdev / std::pow(numPixels, 1.0 / 3.0);
+      const long double binWidth = 3.49L * stats.onlineStats.stdev / std::cbrt(numPixelsAsLongDouble);
       return static_cast<std::size_t>(std::ceil((stats.onlineStats.max - stats.onlineStats.min) / binWidth));
     }
     case NumBinsComputationMethod::FreedmanDiaconis: {
-      const double IQR = (stats.quantiles[75] - stats.quantiles[25]);
-      if (glm::epsilonEqual(IQR, 0.0, glm::epsilon<double>())) {
+      const long double IQR = stats.quantiles[75] - stats.quantiles[25];
+      if (std::abs(IQR) <= std::numeric_limits<long double>::epsilon()) {
         spdlog::debug("Image component has zero interquartile range");
         return std::nullopt;
       }
 
-      const double binWidth = 2.0 * IQR / std::pow(numPixels, 1.0 / 3.0);
+      const long double binWidth = 2.0L * IQR / std::cbrt(numPixelsAsLongDouble);
       return static_cast<std::size_t>(std::ceil((stats.onlineStats.max - stats.onlineStats.min) / binWidth));
     }
   }

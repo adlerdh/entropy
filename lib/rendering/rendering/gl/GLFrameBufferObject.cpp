@@ -1,14 +1,15 @@
 #include "rendering/gl/GLFrameBufferObject.h"
-#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include "common/Exception.hpp"
+#include "gl/GLErrorChecker.h"
+#include "gl/GLFBOAttachmentTypes.h"
+#include "gl/GLTexture.h"
+#include "gl/GLTextureTypes.h"
+#include "rendering/helpers/UnderlyingEnumType.h"
 
 #include <glad/glad.h>
-
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include <sstream>
 #include <utility>
 
 namespace
