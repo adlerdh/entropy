@@ -129,4 +129,4 @@ double bumpQuantile(
  * @return Bin count, or std::nullopt when the method cannot be computed for the supplied data.
  */
 std::optional<std::size_t>
-computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats);
+computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, const ComponentStats& stats);

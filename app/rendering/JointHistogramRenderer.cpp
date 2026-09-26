@@ -507,7 +507,7 @@ bool JointHistogramRenderer::render(
 
   const bool inputsChanged = !m_cachedInputs || !sameScatterInputs(*m_cachedInputs, inputs);
   m_inputsPending = inputsChanged;
-  auto timing = std::find_if(m_timings.begin(), m_timings.end(), [](const Timing& t) { return !t.pending; });
+  auto* timing = std::find_if(m_timings.begin(), m_timings.end(), [](const Timing& t) { return !t.pending; });
   if ((inputsChanged || m_processedVoxels < voxelCount) && timing != m_timings.end()) {
     // Accept only the latest requested transform, and keep the previous preview while the GPU is busy.
     ensureTexture(inputs.bins);

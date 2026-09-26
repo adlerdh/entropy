@@ -832,7 +832,7 @@ double bumpQuantile(
 }
 
 std::optional<std::size_t>
-computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats)
+computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, const ComponentStats& stats)
 {
   if (0 == numPixels) {
     spdlog::warn("Cannot compute number of histogram bins for image component with zero pixels");
