@@ -1,3 +1,5 @@
+# Do not enable readability-qualified-auto: standard-library iterators may be pointers on libstdc++/libc++
+# and class types on MSVC, so its suggested auto* changes can break otherwise portable code.
 Checks: >
   -*,
   bugprone-*,
@@ -65,7 +67,6 @@ Checks: >
   readability-make-member-function-const,
   readability-misleading-indentation,
   readability-non-const-parameter,
-  readability-qualified-auto,
   readability-redundant-control-flow,
   readability-redundant-declaration,
   readability-redundant-function-ptr-dereference,
