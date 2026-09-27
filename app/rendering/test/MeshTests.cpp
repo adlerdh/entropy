@@ -51,6 +51,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <uuid.h>
 #include <vtkMultiThreader.h>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <array>
@@ -66,6 +67,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>

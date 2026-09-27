@@ -1,9 +1,18 @@
 #include "ui/ExportJobService.h"
 #include "../../../test/support/TempDirectory.h"
 #include "../../../test/support/CompletionGate.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+
 #include <chrono>
+#include <filesystem>
+#include <functional>
+#include <ios>
+#include <optional>
+#include <string>
+#include <system_error>
+#include <vector>
 
 using entropy::test::readBytes;
 using entropy::test::writeBytes;

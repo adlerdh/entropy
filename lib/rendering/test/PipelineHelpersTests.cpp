@@ -3,11 +3,10 @@
 #include "rendering/TextureLayout.h"
 
 #include <catch2/catch_test_macros.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <uuid.h>
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <list>

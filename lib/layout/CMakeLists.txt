@@ -3,27 +3,27 @@ add_library(Entropy::Layout ALIAS EntropyLayout)
 
 target_sources(EntropyLayout
   PRIVATE
-    layout/ImageIndexMapping.cpp
-    layout/LayoutFileSerialization.cpp
-    layout/LayoutKindInfo.cpp
-    layout/LayoutSpecJson.cpp
-    layout/SyncGroupIndexMap.cpp
+    ImageIndexMapping.cpp
+    LayoutFileSerialization.cpp
+    LayoutKindInfo.cpp
+    LayoutSpecJson.cpp
+    SyncGroupIndexMap.cpp
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
-      layout/ImageIndexMapping.h
-      layout/LayoutFileSerialization.h
-      layout/LayoutKindInfo.h
-      layout/LayoutSpec.h
-      layout/LayoutSpecJson.h
-      layout/SyncGroupIndexMap.h
+      ImageIndexMapping.h
+      LayoutFileSerialization.h
+      LayoutKindInfo.h
+      LayoutSpec.h
+      LayoutSpecJson.h
+      SyncGroupIndexMap.h
 )
 
 target_include_directories(EntropyLayout
   PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 

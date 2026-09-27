@@ -1,7 +1,13 @@
 #include "logic/serialization/LandmarkCsv.h"
+#include "logic/annotation/PointRecord.h"
+
 #include <catch2/catch_test_macros.hpp>
-#include <sstream>
+#include <glm/glm.hpp>
+
 #include <algorithm>
+#include <cstddef>
+#include <map>
+#include <sstream>
 
 namespace
 {

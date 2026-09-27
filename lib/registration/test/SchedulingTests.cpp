@@ -1,7 +1,12 @@
 #include "registration/Scheduling.h"
+#include "registration/Jobs.h"
+#include "registration/Types.h"
+
 #include <catch2/catch_test_macros.hpp>
-#include <vector>
+
+#include <functional>
 #include <string>
+#include <vector>
 
 TEST_CASE("Saturated registration scheduling still propagates cancellation", "[workflow][registration][threading]")
 {

@@ -3,14 +3,19 @@
 #include "image/ImageWriter.h"
 #include "registration/AffineTransformIO.h"
 #include "registration/Artifacts.h"
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/std.h>
+
 #include <algorithm>
+
 namespace fs = std::filesystem;
+
 bool registration_inputs::materialize(AppData& data, registration::JobSpec& job)
 {
   std::error_code directoryError;
   fs::create_directories(job.outputDirectory.parent_path(), directoryError);
+
   if (directoryError || !fs::create_directory(job.outputDirectory, directoryError)) {
     spdlog::error(
       "Cannot exclusively create registration workspace {}: {}",
@@ -18,6 +23,7 @@ bool registration_inputs::materialize(AppData& data, registration::JobSpec& job)
       directoryError.message());
     return false;
   }
+
   auto parseUid = [](const registration::DataRef& ref) -> std::optional<uuids::uuid> {
     if (ref.uid.empty()) {
       return std::nullopt;
@@ -74,10 +80,12 @@ bool registration_inputs::materialize(AppData& data, registration::JobSpec& job)
       spdlog::error("Registration input '{}' has a different spatial dimension than the job", ref.displayName);
       return false;
     }
+
     const auto result = image_io::writeImage(
       *image,
       path,
       {.component = ref.component, .timePoint = ref.timePoint, .writeTwoDimensional = job.dimension == 2});
+
     if (!result) {
       spdlog::error("Cannot export registration input '{}' to {}", ref.displayName, path);
       return false;
@@ -174,12 +182,14 @@ bool registration_inputs::materialize(AppData& data, registration::JobSpec& job)
     if (ref.source == registration::DataSource::LoadedImage || ref.source == registration::DataSource::Segmentation)
       ref.fileName.clear();
   };
+
   clearLoadedPath(job.fixedMask);
   clearLoadedPath(job.movingMask);
   for (auto& pair : job.auxiliaryImagePairs) {
     clearLoadedPath(pair.fixed);
     clearLoadedPath(pair.moving);
   }
+
   const std::vector<registration::InputArtifact> inputArtifacts = registration::buildInputArtifactPlan(job);
   return std::ranges::all_of(inputArtifacts, [&exportArtifact](const registration::InputArtifact& artifact) {
     return !artifact.exportRequired || exportArtifact(artifact);

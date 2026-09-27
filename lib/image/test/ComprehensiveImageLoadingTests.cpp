@@ -10,17 +10,19 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_message.hpp>
 #include <glm/gtc/epsilon.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <chrono>
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace

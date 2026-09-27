@@ -11,14 +11,18 @@ class Image;
 
 namespace project_snapshot
 {
+/// Restore a segmentation's active assignment and optionally its display settings from a matching saved path.
 void restoreSegmentationState(
   AppData& data,
   const uuids::uuid& imageUid,
   const uuids::uuid& segUid,
   const serialize::Image& record,
   bool applySettings);
+
+/// Report a load failure using a description, optional source path, and diagnostic message.
 using ImageLoadFailure =
   std::function<void(const std::string&, const std::optional<std::filesystem::path>&, const std::string&)>;
+
 /// Apply persisted display, geometry overrides, and enabled/disabled affine state.
 /// Shared by the interactive loader and headless project workflow tests.
 void restoreImageState(
@@ -26,6 +30,7 @@ void restoreImageState(
   const serialize::Image& serializedImage,
   bool isReferenceImage,
   const ImageLoadFailure& reportFailure);
+
 /**
  * @name Per-asset settings
  *
@@ -226,198 +231,42 @@ void syncLayoutTabGuiData(AppData& appData);
  * @param mode Runtime component render mode.
  * @return Serialized component render mode.
  */
-inline serialize::ProjectComponentRenderMode toSerializedComponentRenderMode(ComponentRenderMode mode)
-{
-  switch (mode) {
-    case ComponentRenderMode::SingleComponent:
-      return serialize::ProjectComponentRenderMode::SingleComponent;
-    case ComponentRenderMode::Color:
-      return serialize::ProjectComponentRenderMode::Color;
-    case ComponentRenderMode::Minimum:
-      return serialize::ProjectComponentRenderMode::Minimum;
-    case ComponentRenderMode::Mean:
-      return serialize::ProjectComponentRenderMode::Mean;
-    case ComponentRenderMode::Maximum:
-      return serialize::ProjectComponentRenderMode::Maximum;
-    case ComponentRenderMode::Magnitude:
-      return serialize::ProjectComponentRenderMode::Magnitude;
-    case ComponentRenderMode::ComplexPhase:
-      return serialize::ProjectComponentRenderMode::ComplexPhase;
-    case ComponentRenderMode::ComplexReal:
-      return serialize::ProjectComponentRenderMode::ComplexReal;
-    case ComponentRenderMode::ComplexImaginary:
-      return serialize::ProjectComponentRenderMode::ComplexImaginary;
-    case ComponentRenderMode::VectorDirectionColor:
-      return serialize::ProjectComponentRenderMode::VectorDirectionColor;
-    case ComponentRenderMode::VectorSignedNormalProjection:
-      return serialize::ProjectComponentRenderMode::VectorSignedNormalProjection;
-    case ComponentRenderMode::VectorPlanarProjectionColor:
-      return serialize::ProjectComponentRenderMode::VectorPlanarProjectionColor;
-    case ComponentRenderMode::VectorJacobianDeterminant:
-      return serialize::ProjectComponentRenderMode::VectorJacobianDeterminant;
-    case ComponentRenderMode::VectorGradientMagnitude:
-      return serialize::ProjectComponentRenderMode::VectorGradientMagnitude;
-    case ComponentRenderMode::VectorDivergence:
-      return serialize::ProjectComponentRenderMode::VectorDivergence;
-    case ComponentRenderMode::VectorCurlMagnitude:
-      return serialize::ProjectComponentRenderMode::VectorCurlMagnitude;
-    case ComponentRenderMode::VectorLaplacianMagnitude:
-      return serialize::ProjectComponentRenderMode::VectorLaplacianMagnitude;
-  }
-
-  return serialize::ProjectComponentRenderMode::SingleComponent;
-}
+serialize::ProjectComponentRenderMode toSerializedComponentRenderMode(ComponentRenderMode mode);
 
 /**
  * @brief Convert a serialized component render mode to its runtime value.
  * @param mode Serialized component render mode.
  * @return Runtime component render mode.
  */
-inline ComponentRenderMode fromSerializedComponentRenderMode(serialize::ProjectComponentRenderMode mode)
-{
-  switch (mode) {
-    case serialize::ProjectComponentRenderMode::SingleComponent:
-      return ComponentRenderMode::SingleComponent;
-    case serialize::ProjectComponentRenderMode::Color:
-      return ComponentRenderMode::Color;
-    case serialize::ProjectComponentRenderMode::Minimum:
-      return ComponentRenderMode::Minimum;
-    case serialize::ProjectComponentRenderMode::Mean:
-      return ComponentRenderMode::Mean;
-    case serialize::ProjectComponentRenderMode::Maximum:
-      return ComponentRenderMode::Maximum;
-    case serialize::ProjectComponentRenderMode::Magnitude:
-      return ComponentRenderMode::Magnitude;
-    case serialize::ProjectComponentRenderMode::ComplexPhase:
-      return ComponentRenderMode::ComplexPhase;
-    case serialize::ProjectComponentRenderMode::ComplexReal:
-      return ComponentRenderMode::ComplexReal;
-    case serialize::ProjectComponentRenderMode::ComplexImaginary:
-      return ComponentRenderMode::ComplexImaginary;
-    case serialize::ProjectComponentRenderMode::VectorDirectionColor:
-      return ComponentRenderMode::VectorDirectionColor;
-    case serialize::ProjectComponentRenderMode::VectorSignedNormalProjection:
-      return ComponentRenderMode::VectorSignedNormalProjection;
-    case serialize::ProjectComponentRenderMode::VectorPlanarProjectionColor:
-      return ComponentRenderMode::VectorPlanarProjectionColor;
-    case serialize::ProjectComponentRenderMode::VectorJacobianDeterminant:
-      return ComponentRenderMode::VectorJacobianDeterminant;
-    case serialize::ProjectComponentRenderMode::VectorGradientMagnitude:
-      return ComponentRenderMode::VectorGradientMagnitude;
-    case serialize::ProjectComponentRenderMode::VectorDivergence:
-      return ComponentRenderMode::VectorDivergence;
-    case serialize::ProjectComponentRenderMode::VectorCurlMagnitude:
-      return ComponentRenderMode::VectorCurlMagnitude;
-    case serialize::ProjectComponentRenderMode::VectorLaplacianMagnitude:
-      return ComponentRenderMode::VectorLaplacianMagnitude;
-  }
+ComponentRenderMode fromSerializedComponentRenderMode(serialize::ProjectComponentRenderMode mode);
 
-  return ComponentRenderMode::SingleComponent;
-}
+/// Convert runtime phase units to their project representation; unknown values fall back to radians.
+serialize::ProjectComplexPhaseUnit toSerializedComplexPhaseUnit(ComplexPhaseUnit unit);
 
-inline serialize::ProjectComplexPhaseUnit toSerializedComplexPhaseUnit(ComplexPhaseUnit unit)
-{
-  switch (unit) {
-    case ComplexPhaseUnit::Radians:
-      return serialize::ProjectComplexPhaseUnit::Radians;
-    case ComplexPhaseUnit::Degrees:
-      return serialize::ProjectComplexPhaseUnit::Degrees;
-  }
+/// Convert project phase units to runtime units; unknown values fall back to radians.
+ComplexPhaseUnit fromSerializedComplexPhaseUnit(serialize::ProjectComplexPhaseUnit unit);
 
-  return serialize::ProjectComplexPhaseUnit::Radians;
-}
+/// Convert a runtime phase range to its project representation; unknown values fall back to signed.
+serialize::ProjectComplexPhaseRange toSerializedComplexPhaseRange(ComplexPhaseRange range);
 
-inline ComplexPhaseUnit fromSerializedComplexPhaseUnit(serialize::ProjectComplexPhaseUnit unit)
-{
-  switch (unit) {
-    case serialize::ProjectComplexPhaseUnit::Radians:
-      return ComplexPhaseUnit::Radians;
-    case serialize::ProjectComplexPhaseUnit::Degrees:
-      return ComplexPhaseUnit::Degrees;
-  }
+/// Convert a project phase range to its runtime representation; unknown values fall back to signed.
+ComplexPhaseRange fromSerializedComplexPhaseRange(serialize::ProjectComplexPhaseRange range);
 
-  return ComplexPhaseUnit::Radians;
-}
+/// Convert runtime arrow-spacing units to their project representation; unknown values fall back to voxels.
+serialize::ProjectVectorArrowOverlaySpacingMode toSerializedVectorArrowOverlaySpacingMode(
+  VectorArrowOverlaySpacingMode mode);
 
-inline serialize::ProjectComplexPhaseRange toSerializedComplexPhaseRange(ComplexPhaseRange range)
-{
-  switch (range) {
-    case ComplexPhaseRange::Signed:
-      return serialize::ProjectComplexPhaseRange::Signed;
-    case ComplexPhaseRange::Unsigned:
-      return serialize::ProjectComplexPhaseRange::Unsigned;
-  }
+/// Convert project arrow-spacing units to runtime units; unknown values fall back to voxels.
+VectorArrowOverlaySpacingMode fromSerializedVectorArrowOverlaySpacingMode(
+  serialize::ProjectVectorArrowOverlaySpacingMode mode);
 
-  return serialize::ProjectComplexPhaseRange::Signed;
-}
+/// Convert the runtime grid convention to its project representation; unknown values fall back to SamplingField.
+serialize::ProjectVectorWarpedGridConvention toSerializedVectorWarpedGridConvention(
+  VectorWarpedGridConvention convention);
 
-inline ComplexPhaseRange fromSerializedComplexPhaseRange(serialize::ProjectComplexPhaseRange range)
-{
-  switch (range) {
-    case serialize::ProjectComplexPhaseRange::Signed:
-      return ComplexPhaseRange::Signed;
-    case serialize::ProjectComplexPhaseRange::Unsigned:
-      return ComplexPhaseRange::Unsigned;
-  }
-
-  return ComplexPhaseRange::Signed;
-}
-
-inline serialize::ProjectVectorArrowOverlaySpacingMode toSerializedVectorArrowOverlaySpacingMode(
-  VectorArrowOverlaySpacingMode mode)
-{
-  switch (mode) {
-    case VectorArrowOverlaySpacingMode::Pixels:
-      return serialize::ProjectVectorArrowOverlaySpacingMode::Pixels;
-    case VectorArrowOverlaySpacingMode::Voxels:
-      return serialize::ProjectVectorArrowOverlaySpacingMode::Voxels;
-    case VectorArrowOverlaySpacingMode::Millimeters:
-      return serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters;
-  }
-
-  return serialize::ProjectVectorArrowOverlaySpacingMode::Voxels;
-}
-
-inline VectorArrowOverlaySpacingMode fromSerializedVectorArrowOverlaySpacingMode(
-  serialize::ProjectVectorArrowOverlaySpacingMode mode)
-{
-  switch (mode) {
-    case serialize::ProjectVectorArrowOverlaySpacingMode::Pixels:
-      return VectorArrowOverlaySpacingMode::Pixels;
-    case serialize::ProjectVectorArrowOverlaySpacingMode::Voxels:
-      return VectorArrowOverlaySpacingMode::Voxels;
-    case serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters:
-      return VectorArrowOverlaySpacingMode::Millimeters;
-  }
-
-  return VectorArrowOverlaySpacingMode::Voxels;
-}
-
-inline serialize::ProjectVectorWarpedGridConvention toSerializedVectorWarpedGridConvention(
-  VectorWarpedGridConvention convention)
-{
-  switch (convention) {
-    case VectorWarpedGridConvention::SamplingField:
-      return serialize::ProjectVectorWarpedGridConvention::SamplingField;
-    case VectorWarpedGridConvention::ApparentDeformation:
-      return serialize::ProjectVectorWarpedGridConvention::ApparentDeformation;
-  }
-
-  return serialize::ProjectVectorWarpedGridConvention::SamplingField;
-}
-
-inline VectorWarpedGridConvention fromSerializedVectorWarpedGridConvention(
-  serialize::ProjectVectorWarpedGridConvention convention)
-{
-  switch (convention) {
-    case serialize::ProjectVectorWarpedGridConvention::SamplingField:
-      return VectorWarpedGridConvention::SamplingField;
-    case serialize::ProjectVectorWarpedGridConvention::ApparentDeformation:
-      return VectorWarpedGridConvention::ApparentDeformation;
-  }
-
-  return VectorWarpedGridConvention::SamplingField;
-}
+/// Convert the project grid convention to its runtime representation; unknown values fall back to SamplingField.
+VectorWarpedGridConvention fromSerializedVectorWarpedGridConvention(
+  serialize::ProjectVectorWarpedGridConvention convention);
 
 /**
  * @brief Check whether a component rendering mode is valid for an image.

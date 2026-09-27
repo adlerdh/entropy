@@ -10,79 +10,79 @@ add_library(EntropyImage STATIC)
 add_library(Entropy::Image ALIAS EntropyImage)
 
 target_sources(EntropyImage PRIVATE
-  image/CtWindowing.cpp
-  image/DicomSeries.cpp
-  image/ImageComponentBuffers.cpp
-  image/Image.cpp
-  image/ImageColorMap.cpp
-  image/ImageDerivedData.cpp
-  image/ImageHeader.cpp
-  image/ImageQuantiles.cpp
-  image/ImageIoInfo.cpp
-  image/ImageSettings.cpp
-  image/ImageSpatialMetadata.cpp
-  image/ImageTimeAxis.cpp
-  image/ImageTransformations.cpp
-  image/ImageUtility.cpp
-  image/ImageWindowDefaults.cpp
-  image/ImageWriter.cpp
-  image/RegionStatistics.cpp
-  image/SegUtil.cpp
-  image/TimePlaybackController.cpp
-  image/WarpInversion.cpp
+    CtWindowing.cpp
+    DicomSeries.cpp
+    ImageComponentBuffers.cpp
+    Image.cpp
+    ImageColorMap.cpp
+    ImageDerivedData.cpp
+    ImageHeader.cpp
+    ImageQuantiles.cpp
+    ImageIoInfo.cpp
+    ImageSettings.cpp
+    ImageSpatialMetadata.cpp
+    ImageTimeAxis.cpp
+    ImageTransformations.cpp
+    ImageUtility.cpp
+    ImageWindowDefaults.cpp
+    ImageWriter.cpp
+    RegionStatistics.cpp
+    SegUtil.cpp
+    TimePlaybackController.cpp
+    WarpInversion.cpp
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
-      image/CtWindowing.h
-      image/DicomSeries.h
-      image/Image.h
-      image/ImageColorMap.h
-      image/ImageDerivedData.h
-      image/ImageHeader.h
-      image/ImageHeaderOverrides.h
-      image/ImageIoInfo.h
-      image/ImageSettings.h
-      image/ImageSpatialMetadata.h
-      image/ImageTimeAxis.h
-      image/ImageTransformations.h
-      image/ImageTypes.h
-      image/ImageUtility.h
-      image/ImageWindowDefaults.h
-      image/ImageWriter.h
-      image/Isosurface.h
-      image/RegionStatistics.h
-      image/SegUtil.h
-      image/TimePlaybackController.h
-      image/WarpInversion.h
-      image/external/TDigest.h
+      CtWindowing.h
+      DicomSeries.h
+      Image.h
+      ImageColorMap.h
+      ImageDerivedData.h
+      ImageHeader.h
+      ImageHeaderOverrides.h
+      ImageIoInfo.h
+      ImageSettings.h
+      ImageSpatialMetadata.h
+      ImageTimeAxis.h
+      ImageTransformations.h
+      ImageTypes.h
+      ImageUtility.h
+      ImageWindowDefaults.h
+      ImageWriter.h
+      Isosurface.h
+      RegionStatistics.h
+      SegUtil.h
+      TimePlaybackController.h
+      WarpInversion.h
+      external/TDigest.h
 )
 
 if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   # Analyzer Clang frontends do not understand GCC 13's std::expected setup here
   set_source_files_properties(
-    image/ImageDerivedData.cpp
-    image/WarpInversion.cpp
+    ImageDerivedData.cpp
+    WarpInversion.cpp
     PROPERTIES SKIP_LINTING ON
   )
 endif()
 
 if(Entropy_ENABLE_IWYU)
   # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that cannot parse GCC 13 std::expected
-  set_source_files_properties(image/RegionStatistics.cpp PROPERTIES SKIP_LINTING ON)
+  set_source_files_properties(RegionStatistics.cpp PROPERTIES SKIP_LINTING ON)
 endif()
 
-set_source_files_properties(image/WarpInversion.cpp PROPERTIES
+set_source_files_properties(WarpInversion.cpp PROPERTIES
   COMPILE_OPTIONS "$<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wno-extra-semi>"
 )
 
 target_include_directories(EntropyImage
   PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/image"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_include_directories(EntropyImage SYSTEM PRIVATE ${ITK_INCLUDE_DIRS})
 target_include_directories(EntropyImage SYSTEM PRIVATE

@@ -74,10 +74,6 @@ endif()
 
 if(WIN32)
   set_target_properties(entropy PROPERTIES WIN32_EXECUTABLE "$<$<NOT:$<CONFIG:Debug>>:TRUE>")
-  if(MSVC)
-    target_link_options(entropy PRIVATE
-      "/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'")
-  endif()
   target_link_libraries(entropy PRIVATE comctl32 shell32 user32 ws2_32)
 endif()
 

@@ -4,6 +4,7 @@
 #include "logic/serialization/SerializationHelpers.h"
 
 #include <nlohmann/json.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cstddef>

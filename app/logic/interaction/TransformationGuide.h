@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/gtc/quaternion.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 #include <uuid.h>
 
 #include <array>

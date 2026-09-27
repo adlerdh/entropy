@@ -4,7 +4,11 @@
 #include <cmrc/cmrc.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <ranges>
 #include <string>
+#include <utility>
 #include <vector>
 
 CMRC_DECLARE(colormaps);

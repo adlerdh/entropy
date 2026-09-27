@@ -1,7 +1,11 @@
 #include "logic/interaction/JointHistogramInteraction.h"
+#include "common/Types.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
+
+#include <optional>
 
 TEST_CASE("joint histogram plot coordinates preserve the square plot geometry", "[interaction][joint_histogram]")
 {

@@ -11,19 +11,19 @@
 #include "logic/serialization/ProjectSerialization.h"
 #include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
+#include "common/ColorMapDefaults.h"
 
 #include <catch2/catch_test_macros.hpp>
-#include <glm/vec3.hpp>
-#include <glm/mat3x3.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
 #include <uuid.h>
+#include <glm/glm.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <map>
 #include <optional>

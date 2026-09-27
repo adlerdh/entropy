@@ -2,12 +2,13 @@
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
 
-#include <glm/geometric.hpp>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 
 namespace
 {

@@ -34,13 +34,14 @@ target_sources(TestAppSettings PRIVATE
   "${entropy_APP_DIR}/logic/app/ProjectLayoutDelta.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectImageSequence.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
+  "${entropy_APP_DIR}/logic/app/ProjectSnapshotSettingsConversions.cpp"
   "${entropy_APP_DIR}/logic/app/RecentDataLoad.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/StackTrace.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferencesRendering.cpp"
   "${entropy_APP_DIR}/logic/app/WindowTitleStatus.cpp"
-  "${entropy_UI_DIR}/ui/GuiData.cpp"
+  "${entropy_UI_DIR}/GuiData.cpp"
 )
 
 if(APPLE)
@@ -76,7 +77,7 @@ entropy_register_coverage_test_target(TestAppSettings)
 
 target_include_directories(TestAppSettings PRIVATE
   "${entropy_APP_DIR}"
-  "${entropy_UI_DIR}"
+  "${entropy_UI_DIR}/.."
   "${entropy_EXT_DIR}"
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
   "${imgui_SRC_DIR}"

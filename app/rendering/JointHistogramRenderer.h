@@ -8,10 +8,9 @@
 #include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/GLTexture.h"
 #include "rendering/gl/GLVertexArrayObject.h"
+#include "glad/glad.h"
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cstdint>

@@ -19,23 +19,37 @@
 #include "rendering/ShaderPreprocessor.h"
 #include "rendering/ShaderSourceSetup.h"
 #include "rendering/RaycastShaderUniforms.h"
+#include "common/Types.h"
+#include "rendering/gl/GLShaderType.h"
+#include "rendering/gl/GLUniformTypes.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/mesh/MeshGpuData.h"
+#include "rendering/mesh/MeshHandle.h"
+#include "rendering/mesh/MeshRenderable.h"
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
-#include <cstddef>
-#include <cstdlib>
-#include <limits>
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <functional>
+#include <initializer_list>
+#include <limits>
+#include <optional>
+#include <set>
+#include <span>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace mesh = rendering::mesh;

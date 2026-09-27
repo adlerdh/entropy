@@ -17,9 +17,9 @@
 #include <itkMatrix.h>
 #include <itkSize.h>
 #include <itkSmartPointer.h>
+#include <vnl_matrix_fixed.hxx>
 #include <vnl_determinant.h>
 #include <vnl_matrix_fixed.h>
-#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
 #include <cctype>
@@ -27,6 +27,7 @@
 #include <complex>
 #include <cstdint>
 #include <fstream>
+#include <functional>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>

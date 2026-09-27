@@ -1,11 +1,15 @@
 #include "ui/UiScaleManager.h"
 #include "ui/LinuxUiScale.h"
 #include "ui/windows/InspectionWindowSizing.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <imgui.h>
+
 #include <cmath>
+#include <initializer_list>
+#include <optional>
 #include <string>
 
 namespace

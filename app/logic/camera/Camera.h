@@ -5,7 +5,8 @@
 #include "logic/camera/CameraTypes.h"
 #include "logic/camera/Projection.h"
 
-#include <glm/fwd.hpp>
+#include <glm/glm.hpp>
+
 #include <memory>
 #include <optional>
 

@@ -6,8 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_message.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <stdexcept>

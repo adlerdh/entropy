@@ -20,6 +20,7 @@ target_sources(entropy PRIVATE
   app/RegistrationInputs.cpp
   app/WarpInversionRequest.cpp
   app/ProjectSnapshotSettings.cpp
+  app/ProjectSnapshotSettingsConversions.cpp
   app/RecentDataLoad.cpp
   app/Settings.cpp
   app/StackTrace.cpp

@@ -3,9 +3,24 @@
 #include "logic/annotation/AnnotPolygon.tpp"
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/segmentation/AnnotationSegmentation.h"
+#include "common/Types.h"
+#include "image/ImageHeader.h"
+#include "image/ImageIoInfo.h"
+#include "image/ImageTransformations.h"
+#include "image/ImageTypes.h"
+#include "logic/annotation/PointRecord.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <functional>
+#include <map>
+#include <optional>
 #include <vector>
 
 namespace

@@ -4,9 +4,7 @@
 #include "common/Types.h"
 #include "logic/app/Settings.h"
 
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 #include <cstddef>
 #include <cstdint>

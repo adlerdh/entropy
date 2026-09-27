@@ -1,5 +1,4 @@
 #include "logic/camera/CameraHelpers.h"
-
 #include "common/CoordinateFrame.h"
 #include "common/Exception.hpp"
 #include "common/Geometry.h"
@@ -8,12 +7,12 @@
 #include "logic/camera/MathUtility.h"
 #include "logic/camera/OrthogonalProjection.h"
 #include "logic/camera/PerspectiveProjection.h"
+#include "common/PublicTypes.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/matrix_cross_product.hpp>

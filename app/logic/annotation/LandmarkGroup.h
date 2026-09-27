@@ -5,6 +5,8 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <optional>

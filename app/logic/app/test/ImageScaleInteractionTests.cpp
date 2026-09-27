@@ -2,9 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
-#include <glm/trigonometric.hpp>
-#include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
 
 #include <cmath>
 #include <optional>

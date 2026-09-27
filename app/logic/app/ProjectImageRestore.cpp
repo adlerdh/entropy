@@ -1,8 +1,10 @@
 #include "logic/app/ProjectSnapshotSettings.h"
 #include "image/Image.h"
 #include "logic/app/Data.h"
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/std.h>
+
 #include <algorithm>
 
 void project_snapshot::restoreSegmentationState(
@@ -17,6 +19,7 @@ void project_snapshot::restoreSegmentationState(
   const auto saved = std::ranges::find_if(record.m_segmentations, [seg](const auto& candidate) {
     return candidate.m_segFileName == seg->header().fileName();
   });
+
   if (saved == record.m_segmentations.end()) return;
   if (saved->m_active) data.assignActiveSegUidToImage(imageUid, segUid);
   if (applySettings && saved->m_settings) applySegmentationSettings(data, *seg, *saved->m_settings);

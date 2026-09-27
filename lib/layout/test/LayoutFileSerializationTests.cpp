@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <optional>
 #include <set>

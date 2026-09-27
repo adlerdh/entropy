@@ -3,46 +3,46 @@ add_library(Entropy::Registration ALIAS EntropyRegistration)
 
 target_sources(EntropyRegistration
   PRIVATE
-    registration/AffineTransformIO.cpp
-    registration/Artifacts.cpp
-    registration/Availability.cpp
-    registration/Capabilities.cpp
-    registration/Commands.cpp
-    registration/Config.cpp
-    registration/Execution.cpp
-    registration/ImportPlan.cpp
-    registration/Json.cpp
-    registration/Jobs.cpp
-    registration/Process.cpp
-    registration/Progress.cpp
-    registration/Setup.cpp
-    registration/Types.cpp
-    registration/Validation.cpp
+    AffineTransformIO.cpp
+    Artifacts.cpp
+    Availability.cpp
+    Capabilities.cpp
+    Commands.cpp
+    Config.cpp
+    Execution.cpp
+    ImportPlan.cpp
+    Json.cpp
+    Jobs.cpp
+    Process.cpp
+    Progress.cpp
+    Setup.cpp
+    Types.cpp
+    Validation.cpp
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
-      registration/AffineTransformIO.h
-      registration/Artifacts.h
-      registration/Availability.h
-      registration/Capabilities.h
-      registration/Commands.h
-      registration/Config.h
-      registration/Execution.h
-      registration/ImportPlan.h
-      registration/Jobs.h
-      registration/Json.h
-      registration/Process.h
-      registration/Progress.h
-      registration/Setup.h
-      registration/Types.h
-      registration/Validation.h
+      AffineTransformIO.h
+      Artifacts.h
+      Availability.h
+      Capabilities.h
+      Commands.h
+      Config.h
+      Execution.h
+      ImportPlan.h
+      Jobs.h
+      Json.h
+      Process.h
+      Progress.h
+      Setup.h
+      Types.h
+      Validation.h
 )
 
 target_include_directories(EntropyRegistration
   PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 

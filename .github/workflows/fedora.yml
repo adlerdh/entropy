@@ -149,12 +149,16 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: fedora43-gcc-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            fedora43-gcc-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             fedora43-gcc-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Debug Dependencies
-        run: cmake --preset deps-debug -DEntropy_USE_CCACHE=ON -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL"
+        run: >-
+          cmake --preset deps-debug -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL"
 
       - name: Build Debug Dependencies
         run: cmake --build --preset deps-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -260,18 +264,25 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Release Dependencies
-        run: cmake --preset deps-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+        run: >-
+          cmake --preset deps-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL"
+          -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}"
+          "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
       - name: Build Release Dependencies
         run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
-        run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+        run: >-
+          cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}"
+          "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"

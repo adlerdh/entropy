@@ -1,7 +1,7 @@
 #include "logic/sync/EntropyInstanceSyncProtocol.h"
 
-#include <glm/geometric.hpp>
 #include <nlohmann/json.hpp>
+#include <glm/glm.hpp>
 
 #include <limits>
 #include <map>

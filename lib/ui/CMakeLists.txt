@@ -1,92 +1,92 @@
 set(entropy_IMGUI_WRAPPER_SOURCES
-  ui/imgui/Lifecycle.cpp
-  ui/imgui/Layout.cpp
-  ui/imgui/TimePlayback.cpp
-  ui/imgui/Workspace.cpp
-  ui/imgui/Fonts.cpp
-  ui/imgui/ProjectionJobs.cpp
-  ui/imgui/WarpJobs.cpp
-  ui/imgui/RegistrationJobs.cpp
-  ui/imgui/UpdateChecks.cpp
-  ui/imgui/MeshJobs.cpp
-  ui/imgui/ImageSelection.cpp
-  ui/imgui/Frame.cpp
-  ui/imgui/Panels.cpp
-  ui/imgui/ViewOverlays.cpp
-  ui/imgui/Settings.cpp
-  ui/imgui/EditingActions.cpp
-  ui/imgui/MenuActions.cpp
-  ui/imgui/MenuState.cpp
-  ui/imgui/Menus.cpp
+  imgui/Lifecycle.cpp
+  imgui/Layout.cpp
+  imgui/TimePlayback.cpp
+  imgui/Workspace.cpp
+  imgui/Fonts.cpp
+  imgui/ProjectionJobs.cpp
+  imgui/WarpJobs.cpp
+  imgui/RegistrationJobs.cpp
+  imgui/UpdateChecks.cpp
+  imgui/MeshJobs.cpp
+  imgui/ImageSelection.cpp
+  imgui/Frame.cpp
+  imgui/Panels.cpp
+  imgui/ViewOverlays.cpp
+  imgui/Settings.cpp
+  imgui/EditingActions.cpp
+  imgui/MenuActions.cpp
+  imgui/MenuState.cpp
+  imgui/Menus.cpp
 )
 
 set(entropy_UI_SOURCES
-  ui/AboutIcon.cpp
-  ui/DicomMetadataTable.cpp
-  ui/ExportJobService.cpp
-  ui/dialogs/InputLoadErrorDialog.cpp
-  ui/dialogs/InputLoadErrorDialogNative.cpp
-  ui/dialogs/NativeMessageDialogModel.cpp
-  ui/dialogs/WarpFieldAssignment.cpp
-  ui/GradientBackgroundRenderer.cpp
-  ui/GuiData.cpp
-  ui/headers/AnnotationHeader.cpp
-  ui/headers/ImageHeader.cpp
-  ui/headers/ImageHeaderInformation.cpp
-  ui/headers/LandmarkHeader.cpp
-  ui/headers/SegmentationHeader.cpp
-  ui/Helpers.cpp
-  ui/ImageExport.cpp
-  ui/IsosurfaceRangeModel.cpp
-  ui/headers/IsosurfaceHeader.cpp
-  ui/ImGuiCustomControls.cpp
+  AboutIcon.cpp
+  DicomMetadataTable.cpp
+  ExportJobService.cpp
+  dialogs/InputLoadErrorDialog.cpp
+  dialogs/InputLoadErrorDialogNative.cpp
+  dialogs/NativeMessageDialogModel.cpp
+  dialogs/WarpFieldAssignment.cpp
+  GradientBackgroundRenderer.cpp
+  GuiData.cpp
+  headers/AnnotationHeader.cpp
+  headers/ImageHeader.cpp
+  headers/ImageHeaderInformation.cpp
+  headers/LandmarkHeader.cpp
+  headers/SegmentationHeader.cpp
+  Helpers.cpp
+  ImageExport.cpp
+  IsosurfaceRangeModel.cpp
+  headers/IsosurfaceHeader.cpp
+  ImGuiCustomControls.cpp
   ${entropy_IMGUI_WRAPPER_SOURCES}
-  ui/LinuxUiScale.cpp
-  ui/menus/MainMenuBar.cpp
-  ui/NativeFileDialogs.cpp
-  ui/RegionStatisticsExport.cpp
-  ui/popups/AboutPopup.cpp
-  ui/popups/AddLayoutPopup.cpp
-  ui/popups/ConfirmClosePopup.cpp
-  ui/popups/ConfirmRemoveImagePopup.cpp
-  ui/popups/ConfirmSetReferenceImagePopup.cpp
-  ui/popups/DicomFolderPathPopup.cpp
-  ui/popups/DicomSeriesSelectionPopup.cpp
-  ui/popups/LargeImageLoadPromptPopup.cpp
-  ui/popups/RasterImageHeaderPromptPopup.cpp
-  ui/popups/UnsavedProjectPopup.cpp
-  ui/Style.cpp
-  ui/settings/SettingsModel.cpp
-  ui/ThirdPartyLicenses.cpp
-  ui/toolbars/AnnotationToolbar.cpp
-  ui/toolbars/ModeToolbar.cpp
-  ui/toolbars/SegmentationToolbar.cpp
-  ui/UiScaleManager.cpp
-  ui/updates/UpdateCheck.cpp
-  ui/widgets/ActiveImageSelection.cpp
-  ui/widgets/ActiveImageSelectionModel.cpp
-  ui/widgets/LandmarkWidget.cpp
-  ui/widgets/PaletteWidget.cpp
-  ui/widgets/SegmentationLabelsWidget.cpp
-  ui/windows/AnnotationWindow.cpp
-  ui/windows/ExportStatusWindow.cpp
-  ui/windows/ImagePropertiesWindow.cpp
-  ui/windows/InspectionTableWindow.cpp
-  ui/windows/InspectionWindow.cpp
-  ui/windows/InspectionWindowSizing.cpp
-  ui/windows/IsosurfacesWindow.cpp
-  ui/windows/KeyboardShortcuts.cpp
-  ui/windows/LandmarkPropertiesWindow.cpp
-  ui/windows/LoadingStatusModel.cpp
-  ui/windows/OpacityMixerModel.cpp
-  ui/windows/OpacityMixerWindow.cpp
-  ui/windows/RegistrationWindow.cpp
-  ui/windows/RegionStatisticsWindow.cpp
-  ui/windows/RegionStatisticsController.cpp
-  ui/windows/SegmentationPropertiesWindow.cpp
-  ui/windows/SettingsWindow.cpp
-  ui/windows/ViewOverlayModel.cpp
-  ui/windows/ViewOverlayWindows.cpp
+  LinuxUiScale.cpp
+  menus/MainMenuBar.cpp
+  NativeFileDialogs.cpp
+  RegionStatisticsExport.cpp
+  popups/AboutPopup.cpp
+  popups/AddLayoutPopup.cpp
+  popups/ConfirmClosePopup.cpp
+  popups/ConfirmRemoveImagePopup.cpp
+  popups/ConfirmSetReferenceImagePopup.cpp
+  popups/DicomFolderPathPopup.cpp
+  popups/DicomSeriesSelectionPopup.cpp
+  popups/LargeImageLoadPromptPopup.cpp
+  popups/RasterImageHeaderPromptPopup.cpp
+  popups/UnsavedProjectPopup.cpp
+  Style.cpp
+  settings/SettingsModel.cpp
+  ThirdPartyLicenses.cpp
+  toolbars/AnnotationToolbar.cpp
+  toolbars/ModeToolbar.cpp
+  toolbars/SegmentationToolbar.cpp
+  UiScaleManager.cpp
+  updates/UpdateCheck.cpp
+  widgets/ActiveImageSelection.cpp
+  widgets/ActiveImageSelectionModel.cpp
+  widgets/LandmarkWidget.cpp
+  widgets/PaletteWidget.cpp
+  widgets/SegmentationLabelsWidget.cpp
+  windows/AnnotationWindow.cpp
+  windows/ExportStatusWindow.cpp
+  windows/ImagePropertiesWindow.cpp
+  windows/InspectionTableWindow.cpp
+  windows/InspectionWindow.cpp
+  windows/InspectionWindowSizing.cpp
+  windows/IsosurfacesWindow.cpp
+  windows/KeyboardShortcuts.cpp
+  windows/LandmarkPropertiesWindow.cpp
+  windows/LoadingStatusModel.cpp
+  windows/OpacityMixerModel.cpp
+  windows/OpacityMixerWindow.cpp
+  windows/RegistrationWindow.cpp
+  windows/RegionStatisticsWindow.cpp
+  windows/RegionStatisticsController.cpp
+  windows/SegmentationPropertiesWindow.cpp
+  windows/SettingsWindow.cpp
+  windows/ViewOverlayModel.cpp
+  windows/ViewOverlayWindows.cpp
 
   "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
   "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
@@ -95,26 +95,26 @@ set(entropy_UI_SOURCES
 
 if(APPLE)
   list(APPEND entropy_UI_SOURCES
-    ui/ClipboardMac.mm
-    ui/dialogs/NativeMessageDialogsMac.mm
-    ui/menus/MacNativeMainMenu.mm
+    ClipboardMac.mm
+    dialogs/NativeMessageDialogsMac.mm
+    menus/MacNativeMainMenu.mm
   )
   set_source_files_properties(
-    ui/ClipboardMac.mm
-    ui/dialogs/NativeMessageDialogsMac.mm
-    ui/menus/MacNativeMainMenu.mm
+    ClipboardMac.mm
+    dialogs/NativeMessageDialogsMac.mm
+    menus/MacNativeMainMenu.mm
     PROPERTIES COMPILE_OPTIONS "-fobjc-arc"
   )
 elseif(WIN32)
   list(APPEND entropy_UI_SOURCES
-    ui/ClipboardWin.cpp
-    ui/dialogs/NativeMessageDialogsWin.cpp
-    ui/menus/WinNativeMainMenu.cpp
+    ClipboardWin.cpp
+    dialogs/NativeMessageDialogsWin.cpp
+    menus/WinNativeMainMenu.cpp
   )
 else()
   list(APPEND entropy_UI_SOURCES
-    ui/Clipboard.cpp
-    ui/dialogs/NativeMessageDialogs.cpp
+    Clipboard.cpp
+    dialogs/NativeMessageDialogs.cpp
   )
 endif()
 
@@ -125,83 +125,83 @@ target_sources(EntropyUI
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
-      ui/AboutIcon.h
-      ui/Clipboard.h
-      ui/DicomMetadataTable.h
-      ui/ExportJobService.h
-      ui/GradientBackgroundRenderer.h
-      ui/GuiData.h
-      ui/Helpers.h
-      ui/ImGuiCustomControls.h
-      ui/ImGuiWrapper.h
-      ui/ImageExport.h
-      ui/IsosurfaceRangeModel.h
-      ui/LinuxUiScale.h
-      ui/NativeFileDialogs.h
-      ui/RegionStatisticsExport.h
-      ui/Scaling.h
-      ui/Style.h
-      ui/ThirdPartyLicenses.h
-      ui/UiControls.h
-      ui/UiScaleManager.h
-      ui/dialogs/InputLoadErrorDialog.h
-      ui/dialogs/NativeMessageDialogModel.h
-      ui/dialogs/NativeMessageDialogs.h
-      ui/dialogs/WarpFieldAssignment.h
-      ui/entropy_imgui_config.h
-      ui/headers/AnnotationHeader.h
-      ui/headers/HeaderCommon.h
-      ui/headers/Headers.h
-      ui/headers/ImageHeader.h
-      ui/headers/IsosurfaceHeader.h
-      ui/headers/LandmarkHeader.h
-      ui/headers/SegmentationHeader.h
-      ui/menus/MacNativeMainMenu.h
-      ui/menus/MainMenuBar.h
-      ui/menus/WinNativeMainMenu.h
-      ui/popups/AboutPopup.h
-      ui/popups/AddLayoutPopup.h
-      ui/popups/ConfirmationPopups.h
-      ui/popups/DicomPopups.h
-      ui/popups/LargeImageLoadPromptPopup.h
-      ui/popups/PopupCommon.h
-      ui/popups/Popups.h
-      ui/popups/RasterImageHeaderPromptPopup.h
-      ui/settings/SettingsModel.h
-      ui/toolbars/AnnotationToolbar.h
-      ui/toolbars/ModeToolbar.h
-      ui/toolbars/SegmentationToolbar.h
-      ui/toolbars/ToolbarCommon.h
-      ui/toolbars/Toolbars.h
-      ui/updates/UpdateCheck.h
-      ui/widgets/ActiveImageSelection.h
-      ui/widgets/ActiveImageSelectionModel.h
-      ui/widgets/ImageHistogram.h
-      ui/widgets/LandmarkWidget.h
-      ui/widgets/PaletteWidget.h
-      ui/widgets/SegmentationLabelsWidget.h
-      ui/widgets/Widgets.h
-      ui/windows/AnnotationWindow.h
-      ui/windows/ExportStatusWindow.h
-      ui/windows/ImagePropertiesWindow.h
-      ui/windows/InspectionWindow.h
-      ui/windows/InspectionWindowSizing.h
-      ui/windows/IsosurfacesWindow.h
-      ui/windows/KeyboardShortcuts.h
-      ui/windows/LandmarkPropertiesWindow.h
-      ui/windows/LoadingStatusModel.h
-      ui/windows/OpacityMixerModel.h
-      ui/windows/OpacityMixerWindow.h
-      ui/windows/RegionStatisticsController.h
-      ui/windows/RegionStatisticsWindow.h
-      ui/windows/RegistrationWindow.h
-      ui/windows/SegmentationPropertiesWindow.h
-      ui/windows/SettingsWindow.h
-      ui/windows/ViewOverlayModel.h
-      ui/windows/ViewOverlayWindows.h
-      ui/windows/Windows.h
+      AboutIcon.h
+      Clipboard.h
+      DicomMetadataTable.h
+      ExportJobService.h
+      GradientBackgroundRenderer.h
+      GuiData.h
+      Helpers.h
+      ImGuiCustomControls.h
+      ImGuiWrapper.h
+      ImageExport.h
+      IsosurfaceRangeModel.h
+      LinuxUiScale.h
+      NativeFileDialogs.h
+      RegionStatisticsExport.h
+      Scaling.h
+      Style.h
+      ThirdPartyLicenses.h
+      UiControls.h
+      UiScaleManager.h
+      dialogs/InputLoadErrorDialog.h
+      dialogs/NativeMessageDialogModel.h
+      dialogs/NativeMessageDialogs.h
+      dialogs/WarpFieldAssignment.h
+      entropy_imgui_config.h
+      headers/AnnotationHeader.h
+      headers/HeaderCommon.h
+      headers/Headers.h
+      headers/ImageHeader.h
+      headers/IsosurfaceHeader.h
+      headers/LandmarkHeader.h
+      headers/SegmentationHeader.h
+      menus/MacNativeMainMenu.h
+      menus/MainMenuBar.h
+      menus/WinNativeMainMenu.h
+      popups/AboutPopup.h
+      popups/AddLayoutPopup.h
+      popups/ConfirmationPopups.h
+      popups/DicomPopups.h
+      popups/LargeImageLoadPromptPopup.h
+      popups/PopupCommon.h
+      popups/Popups.h
+      popups/RasterImageHeaderPromptPopup.h
+      settings/SettingsModel.h
+      toolbars/AnnotationToolbar.h
+      toolbars/ModeToolbar.h
+      toolbars/SegmentationToolbar.h
+      toolbars/ToolbarCommon.h
+      toolbars/Toolbars.h
+      updates/UpdateCheck.h
+      widgets/ActiveImageSelection.h
+      widgets/ActiveImageSelectionModel.h
+      widgets/ImageHistogram.h
+      widgets/LandmarkWidget.h
+      widgets/PaletteWidget.h
+      widgets/SegmentationLabelsWidget.h
+      widgets/Widgets.h
+      windows/AnnotationWindow.h
+      windows/ExportStatusWindow.h
+      windows/ImagePropertiesWindow.h
+      windows/InspectionWindow.h
+      windows/InspectionWindowSizing.h
+      windows/IsosurfacesWindow.h
+      windows/KeyboardShortcuts.h
+      windows/LandmarkPropertiesWindow.h
+      windows/LoadingStatusModel.h
+      windows/OpacityMixerModel.h
+      windows/OpacityMixerWindow.h
+      windows/RegionStatisticsController.h
+      windows/RegionStatisticsWindow.h
+      windows/RegistrationWindow.h
+      windows/SegmentationPropertiesWindow.h
+      windows/SettingsWindow.h
+      windows/ViewOverlayModel.h
+      windows/ViewOverlayWindows.h
+      windows/Windows.h
 )
 
 set(entropy_UI_VENDOR_SOURCES
@@ -281,14 +281,20 @@ if(WIN32)
     shell32
     user32
   )
+  if(MSVC)
+    # TaskDialogIndirect needs Common Controls v6. Every executable using this
+    # library needs the manifest entry, including tests that never open a dialog.
+    target_link_options(EntropyUI INTERFACE
+      "/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'")
+  endif()
 endif()
 
 target_include_directories(EntropyUI
   PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/ui"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
     "${entropy_APP_DIR}"
 )
 

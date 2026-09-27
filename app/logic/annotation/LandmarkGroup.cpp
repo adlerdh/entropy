@@ -1,6 +1,10 @@
 #include "logic/annotation/LandmarkGroup.h"
 
+#include <glm/glm.hpp>
+
 #include <filesystem>
+#include <iterator>
+#include <utility>
 
 namespace fs = std::filesystem;
 

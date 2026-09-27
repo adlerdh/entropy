@@ -1,23 +1,27 @@
 #include "logic/segmentation/AnnotationSegmentation.h"
-
 #include "image/Image.h"
 #include "image/SegUtil.h"
-
 #include "common/MathFuncs.h"
-
 #include "logic/annotation/Annotation.h"
 #include "logic/camera/MathUtility.h"
+#include "common/Geometry.h"
+#include "image/ImageHeader.h"
+#include "image/ImageTransformations.h"
+#include "logic/annotation/AnnotPolygon.tpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/component_wise.hpp>
-
 #include <spdlog/spdlog.h>
 
-#include <limits>
 #include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <limits>
+#include <optional>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace

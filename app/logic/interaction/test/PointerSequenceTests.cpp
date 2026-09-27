@@ -1,6 +1,10 @@
 #include "logic/interaction/PointerGesture.h"
+#include "logic/interaction/events/ButtonState.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+
+#include <initializer_list>
 
 TEST_CASE("Pointer press drag capture release resume never leaves an owned button", "[workflow][interaction]")
 {

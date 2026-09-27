@@ -10,18 +10,26 @@
 
 namespace entropy::test
 {
+/// Oblique, anisotropic voxel grid for tests that distinguish voxel and physical coordinates.
 struct Grid
 {
-  glm::uvec3 size{9, 11, 7};
-  glm::dvec3 spacing{0.7, 1.3, 2.1};
-  glm::dvec3 origin{13, -9, 4};
-  glm::dmat3 direction{glm::rotate(glm::dmat4{1}, 0.37, glm::normalize(glm::dvec3{1, 2, 3}))};
+  glm::uvec3 size{9, 11, 7};         ///< Voxel counts along each axis.
+  glm::dvec3 spacing{0.7, 1.3, 2.1}; ///< Physical spacing along each voxel axis.
+  glm::dvec3 origin{13, -9, 4};      ///< Subject-space position of voxel (0, 0, 0).
+  glm::dmat3 direction{
+    glm::rotate(glm::dmat4{1}, 0.37, glm::normalize(glm::dvec3{1, 2, 3}))}; ///< Voxel-axis directions.
+  /// Convert a voxel index to subject-space physical coordinates.
   glm::dvec3 subject(glm::uvec3 voxel) const
   {
     return origin + direction * (spacing * glm::dvec3{voxel});
   }
 };
 
+/// Generate an in-memory Float32 image by sampling each voxel of the supplied grid.
+/// @param grid Output dimensions and physical geometry.
+/// @param sample Callback receiving subject-space position and voxel index and returning up to three components.
+/// @param vector Create a three-component vector image; otherwise use only the callback's first component.
+/// @return Image owning the samples, marked as not existing on disk.
 inline Image
 analyticImage(const Grid& grid, const std::function<glm::vec3(glm::dvec3, glm::uvec3)>& sample, bool vector = false)
 {
@@ -72,21 +80,25 @@ analyticImage(const Grid& grid, const std::function<glm::vec3(glm::dvec3, glm::u
   return image;
 }
 
+/// Generate the scalar field 2*x - 3*y + z in subject-space coordinates.
 inline Image scalarRamp(const Grid& grid = {})
 {
   return analyticImage(grid, [](auto p, auto) { return glm::vec3{static_cast<float>(2 * p.x - 3 * p.y + p.z)}; });
 }
 
+/// Generate a vector field with the same subject-space displacement at every voxel.
 inline Image translationField(const Grid& grid, glm::vec3 translation)
 {
   return analyticImage(grid, [translation](auto, auto) { return translation; }, true);
 }
 
+/// Generate the nonlinear subject-space displacement field (0.001*y*y, 0, 0).
 inline Image bendingField(const Grid& grid)
 {
   return analyticImage(grid, [](auto p, auto) { return glm::vec3{static_cast<float>(0.001 * p.y * p.y), 0, 0}; }, true);
 }
 
+/// Return an affine with x-by-y and y-by-z shears and translation (3, -2, 1).
 inline glm::mat4 shear()
 {
   glm::mat4 result{1};
@@ -96,6 +108,7 @@ inline glm::mat4 shear()
   return result;
 }
 
+/// Create an in-memory UInt16 segmentation initialized to background label zero on the supplied grid.
 inline Image labels(const Grid& grid = {})
 {
   ImageIoInfo info;
@@ -124,6 +137,7 @@ inline Image labels(const Grid& grid = {})
     Image::ImageRepresentation::Segmentation,
     Image::MultiComponentBufferType::SeparateImages,
     {pixels.data()});
+
   image.header().setExistsOnDisk(false);
   return image;
 }

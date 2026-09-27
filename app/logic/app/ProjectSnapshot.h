@@ -2,27 +2,61 @@
 
 #include "logic/serialization/ProjectSerialization.h"
 #include "viewer/ViewTypes.h"
-#include <unordered_map>
-#include <functional>
+
 #include <uuid.h>
 
+#include <functional>
+#include <unordered_map>
+
 class AppData;
+
+/// Capture application state for project saving and dirty checks without a window or OpenGL context.
+/// Integration tests use these adapters to exercise the same snapshots as the application.
 namespace project_snapshot
 {
+/// Original DICOM source descriptions indexed by image UUID.
 using DicomSources = std::unordered_map<uuids::uuid, serialize::DicomSource>;
+/// Native view orientations indexed by image UUID, used to reconstruct default layouts.
 using NativeViews = std::unordered_map<uuids::uuid, ViewType>;
 
-// These are the application's save/dirty-check adapters, independent of a window
-// or GL context. Integration tests must call these instead of constructing JSON.
+/**
+ * @brief Capture images, layouts, presentation settings, and registration results without writing files.
+ * @param data Application state to snapshot.
+ * @param dicomSources Optional DICOM provenance indexed by image UUID.
+ * @param nativeViews Optional native orientations used when comparing layouts with their defaults.
+ * @return Serializable project, or a default-constructed project when no images are loaded.
+ */
 serialize::EntropyProject
 captureProject(const AppData& data, const DicomSources& dicomSources = {}, const NativeViews& nativeViews = {});
+
+/**
+ * @brief Capture an image's settings and associated segmentations, landmarks, annotations, surfaces, and warps.
+ * @param data Application state owning the image and its associated assets.
+ * @param dicomSources DICOM provenance indexed by image UUID.
+ * @param imageUid Image to snapshot.
+ * @param defaultBorderColor Optional generated default color used to omit an unchanged border color.
+ * @return Serializable image; a missing image is logged and returns a default-constructed record.
+ */
 serialize::Image captureImage(
   const AppData& data,
   const DicomSources& dicomSources,
   const uuids::uuid& imageUid,
   const std::optional<glm::vec3>& defaultBorderColor = std::nullopt);
+
+/// Callback that writes a snapshot to the supplied path and returns true on success.
 using ProjectWriter = std::function<bool(const serialize::EntropyProject&, const std::filesystem::path&)>;
-/// Publish generated warp assets and project atomically with metadata rollback on failure.
+
+/**
+ * @brief Persist generated warp assets, capture the project, and invoke its writer.
+ * @param data Application state; generated warp paths and on-disk flags are updated on success.
+ * @param normalizedFileName Normalized project destination; generated warps use an adjacent .assets directory.
+ * @param dicomSources Optional DICOM provenance indexed by image UUID.
+ * @param nativeViews Optional native orientations used to reconstruct default layouts.
+ * @param writeProject Project writer, injectable for persistence tests.
+ * @return Saved snapshot, or std::nullopt on asset-save failure, a missing reference image, or writer failure.
+ * @details On failure, restores generated warp metadata and removes newly published warp assets.
+ * The supplied writer is responsible for publishing the project file safely.
+ */
 std::optional<serialize::EntropyProject> persistProject(
   AppData& data,
   const std::filesystem::path& normalizedFileName,

@@ -3,12 +3,14 @@
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/vec3.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <compare>
 #include <cstdlib>
+#include <functional>
 #include <numeric>
 #include <ranges>
 #include <ratio>

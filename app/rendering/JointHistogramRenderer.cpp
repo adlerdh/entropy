@@ -1,18 +1,23 @@
 #include "rendering/JointHistogramRenderer.h"
-
 #include "common/Exception.hpp"
 #include "common/Viewport.h"
 #include "rendering/JointHistogramBatching.h"
 #include "rendering/JointHistogramShaderUniforms.h"
 #include "rendering/gl/OpenGLStateGuard.h"
+#include "rendering/gl/GLFBOAttachmentTypes.h"
+#include "rendering/gl/GLShader.h"
+#include "rendering/gl/GLShaderType.h"
+#include "rendering/gl/GLTextureTypes.h"
+#include "rendering/gl/Uniforms.h"
 
 #include <cmrc/cmrc.hpp>
-
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <compare>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <limits>

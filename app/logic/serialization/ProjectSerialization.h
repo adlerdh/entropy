@@ -10,11 +10,8 @@
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <glm/glm.hpp>
 
 #include <cstddef>
 #include <cstdint>

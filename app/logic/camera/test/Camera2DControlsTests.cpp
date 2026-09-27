@@ -6,7 +6,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <glm/gtc/constants.hpp>
-#include <glm/vector_relational.hpp>
+#include <glm/glm.hpp>
 
 #include <limits>
 #include <optional>

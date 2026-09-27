@@ -99,7 +99,9 @@ jobs:
             build-clang-tidy/external/spdlog-*
             build-clang-tidy/external/stduuid-*
             build-clang-tidy/external/tinyfsm-*
-          key: ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-
 
@@ -216,7 +218,9 @@ jobs:
             build-cppcheck/external/spdlog-*
             build-cppcheck/external/stduuid-*
             build-cppcheck/external/tinyfsm-*
-          key: ubuntu2404-gcc13-cppcheck-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            ubuntu2404-gcc13-cppcheck-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             ubuntu2404-gcc13-cppcheck-deps-${{ env.DEPS_CACHE_VERSION }}-
 

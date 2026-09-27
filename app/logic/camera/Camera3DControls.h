@@ -3,8 +3,7 @@
 #include "common/AABB.h"
 #include "logic/camera/CameraTypes.h"
 
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <optional>
 
