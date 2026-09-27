@@ -85,17 +85,12 @@ void setWindowIcon(GLFWwindow* window)
 }
 #endif
 
-/**
- * @brief Compare scale values while ignoring tiny backend reporting noise.
- */
+// Ignore small differences in reported display scales.
 bool nearlyEqual(float a, float b)
 {
   return std::abs(a - b) < kScaleEpsilon;
 }
 
-/**
- * @brief Return GLFW content scale for the window.
- */
 glm::vec2 glfwWindowContentScale(GLFWwindow* window)
 {
   float xscale = 1.0f;
@@ -104,9 +99,6 @@ glm::vec2 glfwWindowContentScale(GLFWwindow* window)
   return {xscale, yscale};
 }
 
-/**
- * @brief Return GLFW content scale for a monitor, or 1x if there is no monitor.
- */
 glm::vec2 monitorContentScale(GLFWmonitor* monitor)
 {
   if (!monitor) {
@@ -119,9 +111,7 @@ glm::vec2 monitorContentScale(GLFWmonitor* monitor)
   return {xscale, yscale};
 }
 
-/**
- * @brief Return framebuffer-to-window scale when both GLFW sizes are valid.
- */
+// Derive the scale from pixel and window sizes when both are valid.
 std::optional<glm::vec2> framebufferContentScale(GLFWwindow* window)
 {
   int windowWidth = 0;
@@ -140,9 +130,7 @@ std::optional<glm::vec2> framebufferContentScale(GLFWwindow* window)
     static_cast<float>(fbHeight) / static_cast<float>(windowHeight)};
 }
 
-/**
- * @brief Resolve all polled platform scale sources into one Auto UI scale.
- */
+// Combine platform scale reports for the Auto UI scale setting.
 glm::vec2 resolvePolledContentScale(
   const glm::vec2& windowScale,
   const glm::vec2& monitorScale,
@@ -205,12 +193,11 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
     throwDebug("GLFW was not initialized");
   }
 
-  // Set OpenGL version
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glMajorVersion);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glMinorVersion);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  // Desired bit depths of the components of the window's default framebuffer
+  // Request an RGBA framebuffer with depth and stencil buffers.
   glfwWindowHint(GLFW_RED_BITS, 8);
   glfwWindowHint(GLFW_GREEN_BITS, 8);
   glfwWindowHint(GLFW_BLUE_BITS, 8);
@@ -218,25 +205,15 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
-  /// @note GLFW_SRGB_CAPABLE specifies whether the framebuffer should be sRGB capable.
-  /// If enabled and supported by the system, the GL_FRAMEBUFFER_SRGB enable will control sRGB
-  /// rendering. By default, sRGB rendering will be disabled.
-
-  // GLFW_SRGB_CAPABLE might do nothing on macOS as all framebuffers on macOS are sRGB capable.
-  // glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
-
-  // Desired number of samples to use for multisampling
   glfwWindowHint(GLFW_SAMPLES, 4);
 
   glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
   glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 
-  // Window will be given input focus when glfwShowWindow is called
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
-  // Window content area should be resized based on the monitor content scale of any
-  // monitor it is placed on. This includes the initial placement when the window is created
+  // Request window resizing to follow monitor scaling where supported.
   glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
 #if defined(__linux__)
@@ -246,36 +223,24 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 #endif
 
 #ifdef __APPLE__
-  // Window's context is an OpenGL forward-compatible, i.e. one where all functionality deprecated
-  // in the requested version of OpenGL is removed (required on macOS)
+  // macOS requires a forward-compatible context for modern OpenGL.
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-  // GLFW_COCOA_RETINA_FRAMEBUFFER: Use full resolution framebuffers on Retina displays.
-  // When enabled (GLFW_TRUE), creates a framebuffer whose size is in pixels, matching the
-  // actual Retina display resolution (which is often 2x the logical window size in points).
-  // It ensures that rendering looks crisp on Retina displays.
-  //
-  // When disabled (GLFW_FALSE), the framebuffer size matches the logical window size,
-  // ignoring Retina scaling, so the rendering resolution is lower (no HiDPI).
-  //
-  // Keep it enabled (GLFW_TRUE) unless we have a very specific reason not to, such as
-  // lower resolution rendering to save performance.
+  // Render at full pixel resolution on Retina displays.
   glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_TRUE);
 
-  // Disable Automatic Graphics Switching, i.e. do not allow the system to choose the integrated GPU
-  // for the OpenGL context and move it between GPUs if necessary. Forces it to always run on the
-  // discrete GPU.
+  // Disable automatic GPU switching on Macs that support it.
   glfwWindowHint(GLFW_COCOA_GRAPHICS_SWITCHING, GLFW_FALSE);
 
   glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
 
-  // Encoded name to use for autosaving the window frame
+  // Use a stable name for macOS window-frame autosaving.
   glfwWindowHintString(GLFW_COCOA_FRAME_NAME, "EntropyViewer");
 
   spdlog::debug("Initialized GLFW window and context for Apple macOS platform");
 #endif
 
-  // Get window dimensions, using monitor work area if available
+  // Prefer the primary monitor's work area for the initial window size.
   int width = static_cast<int>(app->windowData().viewport().width());
   int height = static_cast<int>(app->windowData().viewport().height());
 
@@ -322,66 +287,15 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   setWindowIcon(m_window);
 #endif
 
-  // Embed pointer to application data in GLFW window
+  // Let GLFW callbacks access the application through the window.
   glfwSetWindowUserPointer(m_window, reinterpret_cast<void*>(app));
 
-  // Make window's context current on this thread
   glfwMakeContextCurrent(m_window);
 
-  // Enable VSync (sync to monitor refresh rate).
-  // Vsync synchronizes the application's frame swaps (glfwSwapBuffers) with the display's
-  // refresh rate (usually 60Hz or 120Hz on your MacBook Pro)/
-  // 1. Prevents screen tearing by waiting until the display is ready before swapping buffers.
-  // 2. Caps FPS to the display refresh rate (e.g., 60 or 120 FPS).
-  // 3. Can reduce GPU power usage if app doesn't render faster than the screen refresh.
-
-  // Setting 0: disables VSync (uncapped FPS).
-  // Setting 1 (default): swap buffers synchronized to vertical refresh (usually 60 or 120 FPS).
-  // On Apple High Refresh Displays (ProMotion), the screen refresh rate is adaptive, up to 120Hz.
-  // Setting 2: Wait for every 2nd refresh (e.g., ~30 FPS).
-
+  // Request VSync to reduce tearing; actual swap timing depends on the platform.
   glfwSwapInterval(1);
 
-  /**
-   * @note How it works with ImGui: ImGui’s rendering is typically done every frame we call
-   * ImGui::Render(). By enabling VSync via glfwSwapInterval(1), the glfwSwapBuffers() call will
-   * block until the next vertical blank, effectively limiting FPS. This reduces GPU load and power
-   * consumption automatically.
-   */
-
-  /**
-   * @note macOS (especially with Apple Silicon and ProMotion displays), glfwSwapInterval()
-   * often does not behave as expected.
-   *
-   * On macOS (especially with ProMotion and Apple Silicon), the actual behavior of
-   glfwSwapInterval()
-   * may be ignored or limited, especially when trying to disable vsync (0) or use custom intervals
-   (2).
-   * We may not see any visible change in FPS when calling it—even mid-frame—due to system-level
-   vsync enforcement.
-   *
-   * 1. macOS enforces vsync at the system level
-   * Even if we call glfwSwapInterval(0) (i.e. "disable vsync"), macOS may still throttle buffer
-   swaps
-   * to the display refresh rate—especially when using OpenGL.
-   * This is intentional for power savings and thermal control, and macOS provides no API to truly
-   * disable vsync in OpenGL.
-   *
-   * 2. ProMotion's 120Hz adaptive refresh
-   * MacBook Pro Max has a 120Hz ProMotion display, and macOS will adaptively ramp up to 120Hz if
-   the app
-   * is producing frames fast enough.
-   * If we consistently see 120 FPS regardless of glfwSwapInterval, it means macOS is locking to
-   120Hz vsync,
-   * and ignoring our request for 0 or 2.
-
-   * 3. OpenGL on macOS is deprecated
-   * On modern macOS versions, OpenGL is no longer actively maintained, and low-level control (like
-   swap interval)
-   * may not be fully honored, especially on high refresh displays.
-   */
-
-  // Set callbacks:
+  // Register window and input callbacks.
   glfwSetWindowContentScaleCallback(m_window, windowContentScaleCallback);
   glfwSetWindowCloseCallback(m_window, windowCloseCallback);
   glfwSetWindowFocusCallback(m_window, windowFocusCallback);
@@ -588,13 +502,7 @@ void GlfwWrapper::postEmptyEvent()
 
 void GlfwWrapper::processInput()
 {
-  // No inputs are currently being processed here.
-
-  // Could check inputs and react as shown below:
-  //    if ( GLFW_PRESS == glfwGetKey( m_window, GLFW_KEY_ESCAPE ) )
-  //    {
-  //        glfwSetWindowShouldClose( m_window, true );
-  //    }
+  // No inputs are currently being processed here
 }
 
 void GlfwWrapper::syncWindowAndFramebufferSizes()
@@ -620,8 +528,7 @@ void GlfwWrapper::syncContentScale()
     return;
   }
 
-  // Native GLFW scale callbacks still apply immediately. This low-frequency fallback
-  // catches Linux desktop scale changes that do not refresh GLFW window metadata.
+  // Apply callbacks immediately, and poll as a fallback for missed scale changes.
   const double now = glfwGetTime();
   if (m_lastContentScalePollSeconds >= 0.0 && now - m_lastContentScalePollSeconds < kContentScalePollIntervalSeconds) {
     return;
@@ -630,7 +537,7 @@ void GlfwWrapper::syncContentScale()
 
   std::optional<float> desktopScale;
 #if defined(__linux__)
-  // GNOME Display Settings can update monitors.xml even when GLFW scale values stay stale.
+  // Use GNOME's saved scale only if the live scale reports are invalid.
   desktopScale = ui::linux_ui_scale::primaryMonitorScale();
 #endif
 

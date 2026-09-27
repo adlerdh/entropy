@@ -2,7 +2,6 @@
 
 #include <glad/glad.h>
 #include <imgui/imgui.h>
-
 #include <spdlog/spdlog.h>
 
 #include <array>
@@ -72,10 +71,12 @@ void main()
 GLuint compileShader(GLenum type, const char* source)
 {
   const GLuint shader = glCreateShader(type);
+
   if (shader == 0u) {
     spdlog::error("Unable to create gradient background shader");
     return 0u;
   }
+
   glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
 
@@ -89,6 +90,7 @@ GLuint compileShader(GLenum type, const char* source)
   glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data());
   spdlog::error("Failed to compile gradient background shader: {}", log.data());
   glDeleteShader(shader);
+
   return 0;
 }
 
@@ -101,6 +103,7 @@ GLuint shaderProgram()
 
   const GLuint vertexShader = compileShader(GL_VERTEX_SHADER, k_vertexSource);
   const GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, k_fragmentSource);
+
   if (vertexShader == 0 || fragmentShader == 0) {
     if (vertexShader != 0) {
       glDeleteShader(vertexShader);
@@ -112,12 +115,14 @@ GLuint shaderProgram()
   }
 
   g_resources.program = glCreateProgram();
+
   if (g_resources.program == 0u) {
     spdlog::error("Unable to create gradient background shader program");
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     return 0u;
   }
+
   glAttachShader(g_resources.program, vertexShader);
   glAttachShader(g_resources.program, fragmentShader);
   glLinkProgram(g_resources.program);
@@ -126,11 +131,13 @@ GLuint shaderProgram()
 
   GLint linked = GL_FALSE;
   glGetProgramiv(g_resources.program, GL_LINK_STATUS, &linked);
+
   if (linked == GL_TRUE) {
     g_resources.edgeColorLocation = glGetUniformLocation(g_resources.program, "u_edgeColor");
     g_resources.centerColorLocation = glGetUniformLocation(g_resources.program, "u_centerColor");
     g_resources.rectangularExponentLocation = glGetUniformLocation(g_resources.program, "u_rectangularExponent");
     g_resources.ditherLocation = glGetUniformLocation(g_resources.program, "u_dither");
+
     if (
       g_resources.edgeColorLocation < 0 || g_resources.centerColorLocation < 0 ||
       g_resources.rectangularExponentLocation < 0 || g_resources.ditherLocation < 0)
@@ -140,6 +147,7 @@ GLuint shaderProgram()
       g_resources.program = 0u;
       return 0u;
     }
+
     return g_resources.program;
   }
 
@@ -148,6 +156,7 @@ GLuint shaderProgram()
   spdlog::error("Failed to link gradient background shader program: {}", log.data());
   glDeleteProgram(g_resources.program);
   g_resources.program = 0;
+
   return 0;
 }
 
@@ -155,6 +164,7 @@ GLuint vertexArrayObject()
 {
   if (g_resources.vertexArray == 0) {
     glGenVertexArrays(1, &g_resources.vertexArray);
+
     if (g_resources.vertexArray == 0u) {
       spdlog::error("Unable to create gradient background vertex array");
     }
@@ -170,6 +180,7 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   if (program == 0) {
     return;
   }
+
   const GLuint vertexArray = vertexArrayObject();
   if (vertexArray == 0u) {
     return;
@@ -179,11 +190,13 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   GLint previousVertexArray = 0;
   GLint previousDrawFramebuffer = 0;
   GLint previousViewport[4] = {0, 0, 0, 0};
+
   const GLboolean previousScissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
   const GLboolean previousDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
   const GLboolean previousStencilEnabled = glIsEnabled(GL_STENCIL_TEST);
   const GLboolean previousBlendEnabled = glIsEnabled(GL_BLEND);
   const GLboolean previousCullEnabled = glIsEnabled(GL_CULL_FACE);
+
   glGetIntegerv(GL_CURRENT_PROGRAM, &previousProgram);
   glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &previousVertexArray);
   glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previousDrawFramebuffer);
@@ -195,6 +208,7 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
     0,
     static_cast<int>(std::round(io.DisplaySize.x * io.DisplayFramebufferScale.x)),
     static_cast<int>(std::round(io.DisplaySize.y * io.DisplayFramebufferScale.y))});
+
   if (viewportPx.z <= 0 || viewportPx.w <= 0) {
     return;
   }
@@ -207,6 +221,7 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   glDisable(GL_BLEND);
   glDisable(GL_CULL_FACE);
   glUseProgram(program);
+
   glUniform3f(g_resources.edgeColorLocation, options.edgeColor.r, options.edgeColor.g, options.edgeColor.b);
   glUniform3f(g_resources.centerColorLocation, options.centerColor.r, options.centerColor.g, options.centerColor.b);
   glUniform1f(g_resources.rectangularExponentLocation, options.rectangularExponent);
@@ -218,6 +233,7 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   glUseProgram(static_cast<GLuint>(previousProgram));
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(previousDrawFramebuffer));
   glViewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3]);
+
   previousScissorEnabled ? glEnable(GL_SCISSOR_TEST) : glDisable(GL_SCISSOR_TEST);
   previousDepthEnabled ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
   previousStencilEnabled ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);

@@ -1,0 +1,46 @@
+name: Interactive platform validation
+
+# Deliberately opt-in: a hosted headless worker is not a substitute for physical
+# mixed-DPI displays or an authenticated desktop session. Never run PR code on
+# these privileged self-hosted desktops automatically.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  display:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macOS, Windows, Linux]
+    runs-on: [self-hosted, entropy-display, "${{ matrix.platform }}"]
+    timeout-minutes: 90
+    env:
+      ENTROPY_TEST_GL33: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - name: Initialize Windows compiler environment
+        if: matrix.platform == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure dependencies
+        run: cmake --preset deps-release
+      - name: Build dependencies
+        run: cmake --build --preset deps-release --parallel 4
+      - name: Configure desktop tests
+        run: cmake --preset app-release -DBUILD_TESTING=ON -DEntropy_BUILD_DISPLAY_TESTS=ON
+      - name: Build desktop tests
+        run: cmake --build build-release --config Release --parallel 4 --target TestDisplayTransitions TestRendering TestRenderingLibrary TestUi TestInteraction TestWorkflows
+      - name: Required graphics and physical monitor transitions
+        run: python test/run_required_graphics.py build-release --configuration Release --display-transitions
+      - name: UI and cross-feature workflows
+        run: ctest --test-dir build-release -C Release --output-on-failure --timeout 120 -R "Monitor moves|Small inspector|Pointer press|Focus loss|Disabled stored|Oblique holed|Swapping equal|Registration freezes|pending warp|Generated warp|second segmentation"
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: platform-validation-${{ matrix.platform }}
+          path: |
+            build-release/required-graphics.xml
+            build-release/Testing/Temporary/LastTest.log

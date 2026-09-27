@@ -3,6 +3,7 @@
 #include "image/Image.h"
 #include "logic/app/Data.h"
 #include "logic/app/DeformationWarp.h"
+#include "logic/app/ImportedMeshWarp.h"
 #include "mesh/MeshTransform.h"
 #include "mesh/MeshTypes.h"
 #include "rendering/PrivateMethods.h"
@@ -17,64 +18,6 @@
 #include <bit>
 #include <expected>
 
-namespace
-{
-class ForwardWarpTransform final : public mesh::IPointTransform
-{
-public:
-  ForwardWarpTransform(const AppData& appData, const uuids::uuid& imageUid) : m_appData{appData}, m_imageUid{imageUid}
-  {
-  }
-
-  [[nodiscard]] std::expected<glm::dvec3, std::string> transformPoint(const glm::dvec3& point) const override
-  {
-    const glm::vec4 result =
-      deformation_warp::forwardWarpDisplayWorldPosition(m_appData, m_imageUid, glm::vec4{glm::vec3{point}, 1.0f});
-    return glm::dvec3{result} / static_cast<double>(result.w);
-  }
-
-private:
-  const AppData& m_appData;
-  uuids::uuid m_imageUid;
-};
-
-void hashCombine(uint64_t& seed, const uint64_t value)
-{
-  seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6u) + (seed >> 2u);
-}
-
-uint64_t warpedGeometryVersion(const AppData& appData, const uuids::uuid& imageUid, const Image& image)
-{
-  uint64_t version = 1;
-  hashCombine(version, image.geometryRevision());
-  const glm::mat4& transform = image.transformations().worldDef_T_subject();
-
-  for (glm::length_t column = 0; column < 4; ++column) {
-    for (glm::length_t row = 0; row < 4; ++row) {
-      hashCombine(version, std::bit_cast<uint32_t>(transform[column][row]));
-    }
-  }
-
-  hashCombine(version, std::bit_cast<uint32_t>(image.settings().warpStrength()));
-
-  if (const auto warpUid = appData.imageToActiveForwardWarpUid(imageUid)) {
-    hashCombine(version, std::hash<uuids::uuid>{}(*warpUid));
-    if (const Image* warp = appData.warpField(*warpUid)) {
-      hashCombine(version, warp->pixelDataRevision());
-      hashCombine(version, warp->geometryRevision());
-      hashCombine(version, warp->settings().activeTimePoint());
-      const auto& warpTransform = warp->transformations().worldDef_T_subject();
-      for (glm::length_t column = 0; column < 4; ++column) {
-        for (glm::length_t row = 0; row < 4; ++row) {
-          hashCombine(version, std::bit_cast<uint32_t>(warpTransform[column][row]));
-        }
-      }
-    }
-  }
-  return version;
-}
-} // namespace
-
 std::optional<Rendering::PreparedImportedMeshGeometry> Rendering::prepareImportedMeshGeometry(
   const uuids::uuid& imageUid,
   const uuids::uuid& meshUid)
@@ -87,16 +30,13 @@ std::optional<Rendering::PreparedImportedMeshGeometry> Rendering::prepareImporte
 
   const bool applyForwardWarp = image->settings().warpEnabled() && image->settings().warpStrength() > 0.0f &&
                                 m_appData.imageToActiveForwardWarpUid(imageUid).has_value();
-  const uint64_t geometryVersion = applyForwardWarp ? warpedGeometryVersion(m_appData, imageUid, *image) : 1;
+  const uint64_t geometryVersion =
+    applyForwardWarp ? deformation_warp::warpedGeometryVersion(m_appData, imageUid, *image) : 1;
   auto [cpuIt, inserted] = m_importedMeshData.try_emplace(meshUid);
 
   if (inserted || m_importedMeshVersions[meshUid] != geometryVersion) {
     if (applyForwardWarp) {
-      const ForwardWarpTransform deformation{m_appData, imageUid};
-      const auto transformed = mesh::transformGeometry(
-        imported->geometry,
-        glm::dmat4{image->transformations().worldDef_T_subject()},
-        &deformation);
+      const auto transformed = deformation_warp::prepareImportedGeometry(m_appData, imageUid, imported->geometry);
 
       if (!transformed) {
         spdlog::error(

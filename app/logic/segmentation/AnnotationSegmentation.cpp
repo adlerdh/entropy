@@ -91,6 +91,7 @@ void fillSegmentationWithPolygon(
 
   glm::vec3 pixelAabbMinCorner{std::numeric_limits<float>::max()};
   glm::vec3 pixelAabbMaxCorner{std::numeric_limits<float>::lowest()};
+
   for (const float x : {annotPlaneAabbMinCorner.x, annotPlaneAabbMaxCorner.x}) {
     for (const float y : {annotPlaneAabbMinCorner.y, annotPlaneAabbMaxCorner.y}) {
       const auto corner = convertPointFromAnnotPlaneToSegPixelCoords({x, y});
@@ -99,6 +100,7 @@ void fillSegmentationWithPolygon(
       pixelAabbMaxCorner = glm::max(pixelAabbMaxCorner, corner);
     }
   }
+
   // Expand for voxel corners, clip in floating point, then convert to indices.
   // Entirely out-of-grid polygons must not invert the clipped range or overflow an integer.
   pixelAabbMinCorner = glm::max(glm::floor(pixelAabbMinCorner) - 1.0f, glm::vec3{0});
@@ -108,6 +110,7 @@ void fillSegmentationWithPolygon(
   // Polygon vertices in the space of the annotation plane
   const std::vector<glm::vec2>& annotPlaneVertices = annot->getBoundaryVertices(OUTER_BOUNDARY);
   if (annotPlaneVertices.empty()) return;
+
   const auto containsPoint = [&annot, &annotPlaneVertices](const glm::vec2& p) {
     if (!math::pnpoly(annotPlaneVertices, p)) return false;
     for (std::size_t boundary = 1; boundary < annot->numBoundaries(); ++boundary) {

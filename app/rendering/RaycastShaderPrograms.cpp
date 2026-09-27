@@ -1,4 +1,5 @@
 #include "rendering/Rendering.h"
+#include "rendering/RaycastShaderUniforms.h"
 
 #include "common/Exception.hpp"
 #include "rendering/ShaderPreprocessor.h"
@@ -19,18 +20,6 @@ CMRC_DECLARE(shaders);
 
 namespace
 {
-
-using FloatVector = std::vector<float>;
-using Vec3Vector = std::vector<glm::vec3>;
-
-const glm::mat3 sk_identMat3{1.0f};
-const glm::mat4 sk_identMat4{1.0f};
-const glm::vec3 sk_zeroVec3{0.0f, 0.0f, 0.0f};
-const glm::vec4 sk_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
-
-const Uniforms::SamplerIndexType msk_imgTexSampler{0};
-const Uniforms::SamplerIndexType msk_jumpTexSampler{1};
-const Uniforms::SamplerIndexVectorType msk_defTexSamplers{{4, 5, 6}};
 
 std::string loadFile(const std::string& path)
 {
@@ -76,10 +65,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
      {"RAYCAST_JUMP_DISTANCE_FUNCTION", warped ? jumpDisabledRep : jumpTextureRep}});
 
   {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+    Uniforms vsUniforms = rendering::shader_setup::raycastVertexUniforms();
 
     GLShader vs("vsRaycast", ShaderType::Vertex, vsSource.c_str());
     vs.setRegisteredUniforms(std::move(vsUniforms));
@@ -91,48 +77,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
   }
 
   {
-    Uniforms fsUniforms;
-
-    fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-    fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler, !warped);
-
-    fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-    fsUniforms.insertUniform("u_world_T_tex", UniformType::Mat4, sk_identMat4);
-    fsUniforms.insertUniform("u_clip_T_imgTex", UniformType::Mat4, sk_identMat4);
-
-    fsUniforms.insertUniform("u_texGrads", UniformType::Mat3, sk_identMat3);
-
-    fsUniforms.insertUniform("u_numIsos", UniformType::Int, 0);
-    fsUniforms.insertUniform("u_isoValues", UniformType::FloatVector, FloatVector{0.0f});
-    fsUniforms.insertUniform("u_isoOpacities", UniformType::FloatVector, FloatVector{1.0f});
-    fsUniforms.insertUniform("u_isoRimOpacityStrengths", UniformType::FloatVector, FloatVector{0.0f});
-    fsUniforms.insertUniform("u_isoRimEmissionStrengths", UniformType::FloatVector, FloatVector{0.0f});
-    fsUniforms.insertUniform("u_isoRimPowers", UniformType::FloatVector, FloatVector{2.0f});
-
-    fsUniforms.insertUniform("u_isoColors", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("u_lightingAmbient", UniformType::Float, 0.30f);
-    fsUniforms.insertUniform("u_lightingDiffuse", UniformType::Float, 0.50f);
-    fsUniforms.insertUniform("u_lightingSpecular", UniformType::Float, 0.20f);
-    fsUniforms.insertUniform("u_lightingSpecularPower", UniformType::Float, 16.0f);
-
-    fsUniforms.insertUniform("u_bgColor", UniformType::Vec4, sk_zeroVec4);
-    fsUniforms.insertUniform("u_bgEdgeBrighteningEnabled", UniformType::Bool, true);
-
-    fsUniforms.insertUniform("u_samplingFactor", UniformType::Float, 1.0f);
-    fsUniforms.insertUniform("u_imgInvDims", UniformType::Vec3, glm::vec3{1.0f});
-
-    fsUniforms.insertUniform("u_renderFrontFaces", UniformType::Bool, true);
-    fsUniforms.insertUniform("u_renderBackFaces", UniformType::Bool, true);
-    fsUniforms.insertUniform("u_noHitTransparent", UniformType::Bool, true);
-
-    if (warped) {
-      fsUniforms.insertUniform("u_defTex", UniformType::SamplerVector, msk_defTexSamplers);
-      fsUniforms.insertUniform("u_defTex_T_world", UniformType::Mat4, sk_identMat4);
-      fsUniforms.insertUniform("u_sampleTex_T_world", UniformType::Mat4, sk_identMat4);
-      fsUniforms.insertUniform("u_defSlope_native_T_texture", UniformType::Float, 1.0f);
-      fsUniforms.insertUniform("u_deformationStrength", UniformType::Float, 1.0f);
-      fsUniforms.insertUniform("u_defInterleaved", UniformType::Bool, false);
-    }
+    Uniforms fsUniforms = rendering::shader_setup::raycastFragmentUniforms(warped);
 
     GLShader fs("fsRaycast", ShaderType::Fragment, fsSource.c_str());
     fs.setRegisteredUniforms(std::move(fsUniforms));

@@ -32,45 +32,25 @@ ImageTransformations::ImageTransformations(
   const glm::vec3& pixelOrigin,
   const glm::mat3& pixelDirections)
   : m_headerOverrides(pixelDimensions, pixelSpacing, pixelOrigin, pixelDirections)
-  ,
-
-  m_invPixelDimensions(math::computeInvPixelDimensions(pixelDimensions))
-  ,
-
-  m_subject_T_pixel(math::computeImagePixelToSubjectTransformation(pixelDirections, pixelSpacing, pixelOrigin))
+  , m_invPixelDimensions(math::computeInvPixelDimensions(pixelDimensions))
+  , m_subject_T_pixel(math::computeImagePixelToSubjectTransformation(pixelDirections, pixelSpacing, pixelOrigin))
   , m_pixel_T_subject(glm::inverse(m_subject_T_pixel))
-  ,
-
-  m_texture_T_pixel(math::computeImagePixelToTextureTransformation(pixelDimensions))
+  , m_texture_T_pixel(math::computeImagePixelToTextureTransformation(pixelDimensions))
   , m_pixel_T_texture(glm::inverse(m_texture_T_pixel))
-  ,
-
-  m_texture_T_subject(m_texture_T_pixel * m_pixel_T_subject)
+  , m_texture_T_subject(m_texture_T_pixel * m_pixel_T_subject)
   , m_subject_T_texture(glm::inverse(m_texture_T_subject))
-  ,
-
-  m_worldDef_T_affine_translation(0.0f)
+  , m_worldDef_T_affine_translation(0.0f)
   , m_worldDef_T_affine_rotation{1.0f, 0.0f, 0.0f, 0.0f}
   , m_worldDef_T_affine_scale(1.0f)
-  ,
-
-  m_worldDef_T_affine(1.0f)
-  ,
-
-  m_affine_T_subject(1.0f)
+  , m_worldDef_T_affine(1.0f)
+  , m_affine_T_subject(1.0f)
   , m_affine_T_subject_fileName(std::nullopt)
-  ,
-
-  m_worldDef_T_subject(1.0f)
+  , m_worldDef_T_subject(1.0f)
   , m_subject_T_worldDef(1.0f)
   , m_subject_T_worldDef_invTransp(1.0f)
-  ,
-
-  m_worldDef_T_texture(1.0f)
+  , m_worldDef_T_texture(1.0f)
   , m_texture_T_worldDef(1.0f)
-  ,
-
-  m_worldDef_T_pixel(1.0f)
+  , m_worldDef_T_pixel(1.0f)
   , m_pixel_T_worldDef(1.0f)
   , m_pixel_T_worldDef_invTransp(1.0f)
 {
@@ -170,6 +150,7 @@ void ImageTransformations::set_worldDef_T_affine(glm::mat4 worldDef_T_affine)
       }
     }
   }
+
   if (
     std::abs(worldDef_T_affine[0][3]) > 1e-6f || std::abs(worldDef_T_affine[1][3]) > 1e-6f ||
     std::abs(worldDef_T_affine[2][3]) > 1e-6f || std::abs(worldDef_T_affine[3][3] - 1.0f) > 1e-6f)
@@ -177,16 +158,20 @@ void ImageTransformations::set_worldDef_T_affine(glm::mat4 worldDef_T_affine)
     spdlog::error("Cannot apply a perspective matrix as a manual affine transformation");
     return;
   }
+
   worldDef_T_affine[0][3] = worldDef_T_affine[1][3] = worldDef_T_affine[2][3] = 0;
   worldDef_T_affine[3][3] = 1;
+
   glm::vec3 skew;
   glm::vec4 perspective;
   glm::vec3 scale, translation;
   glm::quat rotation;
+
   if (!glm::decompose(worldDef_T_affine, scale, rotation, translation, skew, perspective)) {
     spdlog::error("Cannot apply a singular manual affine transformation");
     return;
   }
+
   m_worldDef_T_affine_scale = scale;
   m_worldDef_T_affine_rotation = rotation;
   m_worldDef_T_affine_translation = translation;

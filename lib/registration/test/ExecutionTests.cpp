@@ -5,6 +5,7 @@
 #include "registration/Process.h"
 #include "registration/Progress.h"
 #include "registration/Types.h"
+#include "../../../test/support/TempDirectory.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
@@ -25,6 +26,25 @@
 namespace
 {
 std::atomic_uint64_t g_jobCounter{0};
+
+void writeExpectedOutputs(const registration::JobSpec& job)
+{
+  const auto manifest = registration::buildExpectedResultManifest(job);
+  std::vector<std::filesystem::path> paths{
+    manifest.warpedImage,
+    manifest.inverseWarp,
+    manifest.forwardWarp,
+    manifest.affineTransform};
+  for (const auto* extra :
+       {&manifest.warpedSegmentations, &manifest.transformedSurfaces, &manifest.transformedLandmarks})
+    paths.insert(paths.end(), extra->begin(), extra->end());
+  for (const auto& path : paths) {
+    if (path.empty()) continue;
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream stream(path);
+    stream << "fake backend output";
+  }
+}
 
 class ScriptedRunner final : public registration::IProcessRunner
 {
@@ -78,6 +98,7 @@ registration::JobSpec jobForOneCommand(const std::string& suffix = "case")
   std::error_code error;
   std::filesystem::remove_all(job.outputDirectory, error);
   REQUIRE_FALSE(error);
+  writeExpectedOutputs(job);
   return job;
 }
 
@@ -92,6 +113,52 @@ registration::ProcessOutputLine stderrLine(const std::string& text)
 }
 
 } // namespace
+
+TEST_CASE(
+  "Zero exit without output files is a failed registration, not a successful manifest",
+  "[workflow][registration][filesystem]")
+{
+  entropy::test::TempDirectory directory;
+  registration::JobSpec job;
+  job.backend = registration::Backend::FireANTs;
+  job.outputDirectory = directory.path();
+  job.fixedImage = imageRef("fixed", "fixed.nii.gz");
+  job.movingImage = imageRef("moving", "moving.nii.gz");
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+  const auto result = registration::executeJob(job, runner);
+  CHECK(result.status == registration::JobStatus::Failed);
+  REQUIRE(result.manifest);
+  CHECK_FALSE(result.manifest->success);
+  CHECK(result.errorMessage.find("missing or empty") != std::string::npos);
+}
+
+TEST_CASE("Registration rejects a stale manifest for another input identity", "[workflow][registration][filesystem]")
+{
+  entropy::test::TempDirectory directory;
+  registration::JobSpec job;
+  job.backend = registration::Backend::FireANTs;
+  job.outputDirectory = directory.path();
+  job.fixedImage = imageRef("fixed", "fixed.nii.gz");
+  job.movingImage = imageRef("moving", "moving.nii.gz");
+  auto manifest = registration::buildExpectedResultManifest(job);
+  manifest.success = true;
+  manifest.movingImageUid = "stale-source";
+  entropy::test::writeBytes(
+    registration::artifactPath(job, registration::ArtifactRole::ResultManifest),
+    nlohmann::json(manifest).dump());
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+  const auto result = registration::executeJob(job, runner);
+  CHECK(result.status == registration::JobStatus::Failed);
+  REQUIRE(result.manifest);
+  CHECK_FALSE(result.manifest->success);
+  CHECK(result.errorMessage.find("does not belong") != std::string::npos);
+}
 
 TEST_CASE("registration job execution reports progress and completion", "[registration][execution]")
 {
@@ -186,6 +253,10 @@ TEST_CASE("registration job execution reads backend result manifest when present
   backendManifest.fixedImageUid = "fixed";
   backendManifest.movingImageUid = "moving";
   backendManifest.warpedImage = "backend-warped.nii.gz";
+  {
+    std::ofstream stream(job.outputDirectory / backendManifest.warpedImage);
+    stream << "fake backend output";
+  }
 
   {
     std::ofstream stream(registration::artifactPath(job, registration::ArtifactRole::ResultManifest));
@@ -202,7 +273,7 @@ TEST_CASE("registration job execution reads backend result manifest when present
 
   REQUIRE(execution.manifest);
   CHECK(execution.manifest->success);
-  CHECK(execution.manifest->warpedImage == "backend-warped.nii.gz");
+  CHECK(execution.manifest->warpedImage == job.outputDirectory / "backend-warped.nii.gz");
 }
 
 TEST_CASE("registration job execution fills missing expected ANTs warp paths", "[registration][execution]")
@@ -212,6 +283,7 @@ TEST_CASE("registration job execution fills missing expected ANTs warp paths", "
   job.transformModel = registration::TransformModel::AffineDeformable;
   job.outputs.loadAffineTransform = false;
   job.outputPrefix = "moving_to_fixed";
+  writeExpectedOutputs(job);
   std::filesystem::create_directories(job.outputDirectory);
 
   registration::ResultManifest backendManifest;

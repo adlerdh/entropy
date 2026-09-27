@@ -34,7 +34,9 @@ bool exportCanStart(AppData& appData)
     native_dialog::showErrorMessageDialog("Export Failed", "The background export service is unavailable.");
     return false;
   }
+
   const auto status = service->snapshot();
+
   if (status.hasJob && ui::export_jobs::Outcome::Running == status.outcome) {
     native_dialog::showErrorMessageDialog(
       "Export Already in Progress",

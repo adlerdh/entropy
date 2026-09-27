@@ -1,3 +1,25 @@
+set(entropy_IMGUI_WRAPPER_SOURCES
+  ui/imgui/Lifecycle.cpp
+  ui/imgui/Layout.cpp
+  ui/imgui/TimePlayback.cpp
+  ui/imgui/Workspace.cpp
+  ui/imgui/Fonts.cpp
+  ui/imgui/ProjectionJobs.cpp
+  ui/imgui/WarpJobs.cpp
+  ui/imgui/RegistrationJobs.cpp
+  ui/imgui/UpdateChecks.cpp
+  ui/imgui/MeshJobs.cpp
+  ui/imgui/ImageSelection.cpp
+  ui/imgui/Frame.cpp
+  ui/imgui/Panels.cpp
+  ui/imgui/ViewOverlays.cpp
+  ui/imgui/Settings.cpp
+  ui/imgui/EditingActions.cpp
+  ui/imgui/MenuActions.cpp
+  ui/imgui/MenuState.cpp
+  ui/imgui/Menus.cpp
+)
+
 set(entropy_UI_SOURCES
   ui/AboutIcon.cpp
   ui/DicomMetadataTable.cpp
@@ -18,7 +40,7 @@ set(entropy_UI_SOURCES
   ui/IsosurfaceRangeModel.cpp
   ui/headers/IsosurfaceHeader.cpp
   ui/ImGuiCustomControls.cpp
-  ui/ImGuiWrapper.cpp
+  ${entropy_IMGUI_WRAPPER_SOURCES}
   ui/LinuxUiScale.cpp
   ui/menus/MainMenuBar.cpp
   ui/NativeFileDialogs.cpp
@@ -208,7 +230,7 @@ endif()
 
 if(APPLE AND (Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY))
   set_source_files_properties(
-    ui/ImGuiWrapper.cpp
+    ${entropy_IMGUI_WRAPPER_SOURCES}
     PROPERTIES SKIP_LINTING ON
   )
 endif()

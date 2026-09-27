@@ -1,4 +1,5 @@
 #include "EntropyApp.h"
+#include "logic/app/ProjectSnapshot.h"
 
 #include "image/ImageUtility.h"
 #include "image/ImageWriter.h"
@@ -55,340 +56,18 @@ bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileN
   return layout::save(layoutFile, layoutsFileName);
 }
 
-bool isApproximatelyIdentity(const glm::mat4& matrix)
-{
-  constexpr float epsilon = 1.0e-5f;
-  const glm::mat4 identity{1.0f};
-
-  for (int c = 0; c < 4; ++c) {
-    for (int r = 0; r < 4; ++r) {
-      if (std::abs(matrix[c][r] - identity[c][r]) > epsilon) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-glm::vec3 defaultImageBorderColor(const std::size_t imageIndex, const std::size_t numImages)
-{
-  if (0u == numImages) {
-    return glm::vec3{1.0f, 0.0f, 1.0f};
-  }
-
-  static constexpr float k_colorSat = 0.65f;
-  static constexpr float k_colorVal = 0.90f;
-  static constexpr float k_startHue = -1.0f / 48.0f;
-
-  const float normalizedHue =
-    std::fmod(1.0f + k_startHue + static_cast<float>(imageIndex) / static_cast<float>(numImages), 1.0f);
-  return glm::rgbColor(glm::vec3{360.0f * normalizedHue, k_colorSat, k_colorVal});
-}
-
-serialize::RegistrationResult registrationResultSnapshot(const registration::JobRecord& job)
-{
-  serialize::RegistrationResult result;
-  result.m_backend = std::string{registration::label(job.spec.backend)};
-  if (!job.spec.fixedImage.fileName.empty()) {
-    result.m_fixedImage = job.spec.fixedImage.fileName;
-  }
-  if (!job.spec.movingImage.fileName.empty()) {
-    result.m_movingImage = job.spec.movingImage.fileName;
-  }
-
-  if (!job.manifest) {
-    return result;
-  }
-
-  const registration::ResultManifest& manifest = *job.manifest;
-  result.m_manifestFileName = registration::artifactPath(job.spec, registration::ArtifactRole::ResultManifest);
-  if (!manifest.warpedImage.empty()) {
-    result.m_warpedImage = manifest.warpedImage;
-  }
-  if (!manifest.inverseWarp.empty()) {
-    result.m_inverseWarpField = manifest.inverseWarp;
-  }
-  if (!manifest.forwardWarp.empty()) {
-    result.m_forwardWarpField = manifest.forwardWarp;
-  }
-  if (!manifest.affineTransform.empty()) {
-    result.m_affineTransform = manifest.affineTransform;
-  }
-  result.m_warpedSegmentations = manifest.warpedSegmentations;
-  result.m_transformedSurfaces = manifest.transformedSurfaces;
-  result.m_transformedLandmarks = manifest.transformedLandmarks;
-  result.m_warnings = manifest.warnings;
-
-  return result;
-}
-
-std::string registrationResultKey(const serialize::RegistrationResult& result)
-{
-  const std::string manifest = result.m_manifestFileName ? result.m_manifestFileName->string() : std::string{};
-  const std::string fixedImage = result.m_fixedImage ? result.m_fixedImage->string() : std::string{};
-  const std::string movingImage = result.m_movingImage ? result.m_movingImage->string() : std::string{};
-  return result.m_backend + '\n' + fixedImage + '\n' + movingImage + '\n' + manifest;
-}
-
-std::vector<serialize::RegistrationResult> registrationResultSnapshots(const AppData& data)
-{
-  std::vector<serialize::RegistrationResult> results = data.project().m_registrationResults;
-  std::set<std::string> keys;
-  for (const serialize::RegistrationResult& result : results) {
-    keys.insert(registrationResultKey(result));
-  }
-
-  for (const registration::JobRecord& job : data.registrationJobs().jobs()) {
-    if (job.status != registration::JobStatus::Completed || !job.manifest) {
-      continue;
-    }
-
-    serialize::RegistrationResult result = registrationResultSnapshot(job);
-    if (keys.insert(registrationResultKey(result)).second) {
-      results.push_back(std::move(result));
-    }
-  }
-
-  return results;
-}
 } // namespace
 
 serialize::EntropyProject EntropyApp::createProjectSnapshot() const
 {
-  serialize::EntropyProject project;
-  const auto imageUids = m_data.imageUidsOrdered();
-
-  if (imageUids.empty()) {
-    return project;
-  }
-
-  const uuids::uuid referenceImageUid = m_data.refImageUid().value_or(imageUids.front());
-  const auto defaultColorForImage = [&imageUids](const uuids::uuid& imageUid) {
-    const auto imageIt = std::find(imageUids.begin(), imageUids.end(), imageUid);
-    const std::size_t imageIndex =
-      imageIt == imageUids.end() ? 0u : static_cast<std::size_t>(std::distance(imageUids.begin(), imageIt));
-    return defaultImageBorderColor(imageIndex, imageUids.size());
-  };
-
-  project.m_referenceImage = createImageSnapshot(referenceImageUid, defaultColorForImage(referenceImageUid));
-
-  for (const auto& imageUid : imageUids) {
-    if (imageUid == referenceImageUid) {
-      continue;
-    }
-
-    project.m_additionalImages.emplace_back(createImageSnapshot(imageUid, defaultColorForImage(imageUid)));
-  }
-
-  const auto defaultProjectLayouts =
-    m_data.windowData().createDefaultProjectLayoutSnapshots(m_data, dicomNativeViewTypesByImage());
-  const std::size_t defaultProjectLayoutIndex =
-    m_data.windowData().defaultProjectLayoutIndex(m_data, dicomNativeViewTypesByImage());
-  const auto currentProjectLayouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
-
-  if (const auto layoutDelta = project_layout_delta::compactLayoutDelta(currentProjectLayouts, defaultProjectLayouts)) {
-    project.m_layouts = layoutDelta->m_addedLayouts;
-    project.m_removedDefaultLayoutIndices = layoutDelta->m_removedDefaultLayoutIndices;
-    project.m_modifiedDefaultLayouts = layoutDelta->m_modifiedDefaultLayouts;
-    if (
-      !project.m_layouts.empty() || !project.m_removedDefaultLayoutIndices.empty() ||
-      !project.m_modifiedDefaultLayouts.empty() ||
-      m_data.windowData().currentLayoutIndex() != defaultProjectLayoutIndex)
-    {
-      project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
-    }
-  }
-  else if (currentProjectLayouts != defaultProjectLayouts) {
-    project.m_layouts = currentProjectLayouts;
-    project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
-  }
-  project.m_synchronization = project_snapshot::synchronizationSettings(m_data);
-  project.m_view = project_snapshot::viewSettings(m_data);
-  project.m_comparison = project_snapshot::comparisonSettings(m_data);
-  project.m_threeDRendering = project_snapshot::threeDRenderingSettings(m_data);
-  project.m_raycasting = project_snapshot::raycastingSettings(m_data);
-  project.m_meshRendering = project_snapshot::meshRenderingSettings(m_data);
-  project.m_intensityProjection = project_snapshot::intensityProjectionSettings(m_data);
-  project.m_segmentationDisplay = project_snapshot::segmentationDisplaySettings(m_data);
-  project.m_isocontours = project_snapshot::isocontourDisplaySettings(m_data);
-  project.m_registrationResults = registrationResultSnapshots(m_data);
-
-  return project;
+  return project_snapshot::captureProject(m_data, m_dicomSourcesByImageUid, dicomNativeViewTypesByImage());
 }
 
 serialize::Image EntropyApp::createImageSnapshot(
   const uuids::uuid& imageUid,
   const std::optional<glm::vec3>& defaultBorderColor) const
 {
-  serialize::Image serializedImage;
-  const Image* image = m_data.image(imageUid);
-
-  if (!image) {
-    spdlog::warn("Cannot serialize missing image {}", imageUid);
-    return serializedImage;
-  }
-
-  serializedImage.m_imageFileName = image->header().fileName();
-  serializedImage.m_spatialMetadata = image->header().userSpatialMetadata();
-  const auto& overrides = image->header().getHeaderOverrides();
-  serializedImage.m_useIdentityPixelSpacings = overrides.m_useIdentityPixelSpacings;
-  serializedImage.m_useZeroPixelOrigin = overrides.m_useZeroPixelOrigin;
-  serializedImage.m_useIdentityPixelDirections = overrides.m_useIdentityPixelDirections;
-  serializedImage.m_snapToClosestOrthogonalPixelDirections = overrides.m_snapToClosestOrthogonalPixelDirections;
-  if (const auto sourceIt = m_dicomSourcesByImageUid.find(imageUid); sourceIt != m_dicomSourcesByImageUid.end()) {
-    serializedImage.m_dicomSource = sourceIt->second;
-  }
-  const auto& transformations = image->transformations();
-  serializedImage.m_initialAffineEnabled = transformations.get_enable_affine_T_subject();
-  serializedImage.m_manualAffineEnabled = transformations.get_enable_worldDef_T_affine();
-  if (
-    transformations.get_affine_T_subject_fileName() ||
-    !isApproximatelyIdentity(transformations.stored_affine_T_subject()))
-  {
-    serializedImage.m_initialAffineMatrix = transformations.stored_affine_T_subject();
-  }
-
-  if (!isApproximatelyIdentity(transformations.stored_worldDef_T_affine())) {
-    serializedImage.m_manualAffineMatrix = transformations.stored_worldDef_T_affine();
-  }
-  serializedImage.m_settings = project_snapshot::imageSettings(*image, defaultBorderColor);
-
-  const auto defUids = m_data.imageToDefUids(imageUid);
-  const auto activeInverseWarpUid = m_data.imageToActiveInverseWarpUid(imageUid);
-  const auto activeForwardWarpUid = m_data.imageToActiveForwardWarpUid(imageUid);
-  for (const auto& defUid : defUids) {
-    const Image* warp = m_data.warpField(defUid);
-    if (!warp || !warp->header().existsOnDisk() || warp->header().fileName().empty()) {
-      spdlog::warn("Cannot serialize missing or pathless warp field {} for image {}", defUid, imageUid);
-      continue;
-    }
-
-    serialize::ImageWarpField serializedWarp{
-      .m_path = warp->header().fileName(),
-      .m_activeInverse = activeInverseWarpUid && *activeInverseWarpUid == defUid,
-      .m_activeForward = activeForwardWarpUid && *activeForwardWarpUid == defUid};
-    if (serializedWarp.m_activeInverse) {
-      if (const auto referenceUid = m_data.imageToActiveInverseWarpReferenceImageUid(imageUid)) {
-        const Image* referenceImage = m_data.image(*referenceUid);
-        if (referenceImage && referenceImage->header().existsOnDisk() && !referenceImage->header().fileName().empty()) {
-          serializedWarp.m_inverseReferenceImagePath = referenceImage->header().fileName();
-        }
-      }
-    }
-    serializedImage.m_warpFields.push_back(std::move(serializedWarp));
-  }
-
-  for (const auto& segUid : m_data.imageToSegUids(imageUid)) {
-    const Image* seg = m_data.seg(segUid);
-    if (!seg) {
-      spdlog::warn("Cannot serialize missing segmentation {} for image {}", segUid, imageUid);
-      continue;
-    }
-
-    const auto segmentationPath = m_data.segmentationPersistencePath(segUid);
-    if (!segmentationPath) {
-      spdlog::debug("Skipping untouched in-memory segmentation {} for image {}", segUid, imageUid);
-      continue;
-    }
-
-    serialize::Segmentation serializedSeg;
-    serializedSeg.m_active = m_data.imageToActiveSegUid(imageUid) == segUid;
-    serializedSeg.m_segFileName = *segmentationPath;
-    serializedSeg.m_settings = project_snapshot::segmentationSettings(m_data, *seg);
-    serializedImage.m_segmentations.emplace_back(std::move(serializedSeg));
-  }
-
-  for (const auto& lmUid : m_data.imageToLandmarkGroupUids(imageUid)) {
-    const LandmarkGroup* lmGroup = m_data.landmarkGroup(lmUid);
-    if (!lmGroup) {
-      spdlog::warn("Cannot serialize missing landmark group {} for image {}", lmUid, imageUid);
-      continue;
-    }
-
-    serialize::LandmarkGroup serializedLandmarks;
-    serializedLandmarks.m_active = m_data.imageToActiveLandmarkGroupUid(imageUid) == lmUid;
-    if (!lmGroup->getFileName().empty()) {
-      serializedLandmarks.m_csvFileName = lmGroup->getFileName();
-    }
-    serializedLandmarks.m_coordinateSpace = lmGroup->getInVoxelSpace()
-                                              ? serialize::ProjectLandmarkCoordinateSpace::Voxel
-                                              : serialize::ProjectLandmarkCoordinateSpace::Subject;
-    serializedLandmarks.m_name = lmGroup->getName();
-    serializedLandmarks.m_pointsEmbedded = true;
-    serializedLandmarks.m_visible = lmGroup->getVisibility();
-    serializedLandmarks.m_opacity = lmGroup->getOpacity();
-    serializedLandmarks.m_color = lmGroup->getColor();
-    serializedLandmarks.m_colorOverride = lmGroup->getColorOverride();
-    serializedLandmarks.m_textColor = lmGroup->getTextColor();
-    serializedLandmarks.m_renderLandmarkIndices = lmGroup->getRenderLandmarkIndices();
-    serializedLandmarks.m_renderLandmarkNames = lmGroup->getRenderLandmarkNames();
-    serializedLandmarks.m_glyphRadiusFactor = lmGroup->getRadiusFactor();
-    for (const auto& [index, point] : lmGroup->getPoints()) {
-      serializedLandmarks.m_points.push_back(serialize::LandmarkPoint{
-        .m_index = index,
-        .m_position = point.getPosition(),
-        .m_name = point.getName(),
-        .m_description = point.getDescription(),
-        .m_visible = point.getVisibility(),
-        .m_color = point.getColor()});
-    }
-    serializedImage.m_landmarkGroups.emplace_back(std::move(serializedLandmarks));
-  }
-
-  for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
-    const Annotation* annotation = m_data.annotation(annotationUid);
-    if (!annotation) {
-      spdlog::warn("Cannot serialize missing annotation {} for image {}", annotationUid, imageUid);
-      continue;
-    }
-
-    serializedImage.m_annotations.push_back(*annotation);
-  }
-  serializedImage.m_annotationsFileName = commonAnnotationFileName(serializedImage.m_annotations);
-  if (
-    !serializedImage.m_annotationsFileName &&
-    std::any_of(serializedImage.m_annotations.begin(), serializedImage.m_annotations.end(), [](const Annotation& a) {
-      return !a.getFileName().empty();
-    }))
-  {
-    spdlog::warn(
-      "Image {} has annotations from different files or without files; omitting ambiguous project path",
-      imageUid);
-  }
-
-  for (uint32_t component = 0; component < image->header().numComponentsPerPixel(); ++component) {
-    for (const auto& isosurfaceUid : m_data.isosurfaceUids(imageUid, component)) {
-      const Isosurface* surface = m_data.isosurface(imageUid, component, isosurfaceUid);
-      if (!surface) {
-        spdlog::warn("Cannot serialize missing isosurface {} for image {}", isosurfaceUid, imageUid);
-        continue;
-      }
-
-      serialize::ImageIsosurface serializedSurface;
-      serializedSurface.m_component = component;
-      serializedSurface.m_surface = *surface;
-      serializedImage.m_isosurfaces.emplace_back(std::move(serializedSurface));
-    }
-  }
-
-  for (const auto& meshUid : m_data.imageToImportedMeshUids(imageUid)) {
-    const mesh::MeshRecord* imported = m_data.importedMesh(meshUid);
-    if (!imported || imported->sourcePath.empty()) {
-      spdlog::warn("Cannot serialize missing or pathless imported mesh {} for image {}", meshUid, imageUid);
-      continue;
-    }
-    serializedImage.m_importedMeshes.push_back(serialize::ImportedMesh{
-      .m_uid = uuids::to_string(meshUid),
-      .m_path = imported->sourcePath,
-      .m_name = imported->name,
-      .m_color = imported->display.baseColor,
-      .m_opacity = imported->display.opacity,
-      .m_visibleIn2d = imported->display.visibleIn2d,
-      .m_visibleIn3d = imported->display.visibleIn3d});
-  }
-
-  return serializedImage;
+  return project_snapshot::captureImage(m_data, m_dicomSourcesByImageUid, imageUid, defaultBorderColor);
 }
 
 bool EntropyApp::hasUnsavedAnnotations() const
@@ -649,69 +328,14 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   }
 
   const fs::path normalizedFileName = projectSavePath(fileName);
-  struct NewWarpAsset
-  {
-    Image* image;
-    fs::path originalPath;
-    bool originallyOnDisk;
-    fs::path path;
-  };
-  struct AssetTransaction
-  {
-    std::vector<NewWarpAsset> assets;
-    bool published = false;
-    ~AssetTransaction()
-    {
-      if (published) return;
-      for (auto& asset : assets) {
-        asset.image->header().setFileName(asset.originalPath);
-        asset.image->header().setExistsOnDisk(asset.originallyOnDisk);
-        std::error_code error;
-        fs::remove(asset.path, error);
-      }
-    }
-  } assets;
-  try {
-    for (const auto& imageUid : m_data.imageUidsOrdered()) {
-      for (const auto& warpUid : m_data.imageToDefUids(imageUid)) {
-        Image* warp = m_data.warpField(warpUid);
-        if (!warp || (warp->header().existsOnDisk() && !warp->header().fileName().empty())) continue;
-        const fs::path directory =
-          normalizedFileName.parent_path() / (normalizedFileName.filename().string() + ".assets");
-        fs::create_directories(directory);
-        const fs::path path = fs::absolute(directory / (uuids::to_string(generateRandomUuid()) + ".nii.gz"));
-        ui::export_jobs::StagedOutput output(path);
-        const auto written = image_io::writeImage(*warp, output.temporaryPath());
-        if (!written) {
-          spdlog::error("Cannot save generated warp: {}", written.message);
-          return false;
-        }
-        if (const auto error = output.commit()) {
-          spdlog::error("Cannot publish generated warp: {}", *error);
-          return false;
-        }
-        assets.assets.push_back({warp, warp->header().fileName(), warp->header().existsOnDisk(), path});
-        warp->header().setFileName(path);
-        warp->header().setExistsOnDisk(true);
-      }
-    }
-  }
-  catch (const std::exception& error) {
-    spdlog::error("Cannot persist generated project assets: {}", error.what());
-    return false;
-  }
-  serialize::EntropyProject project = createProjectSnapshot();
+  const auto saved = project_snapshot::persistProject(
+    m_data,
+    normalizedFileName,
+    m_dicomSourcesByImageUid,
+    dicomNativeViewTypesByImage());
 
-  if (project.m_referenceImage.m_imageFileName.empty()) {
-    spdlog::error("Cannot save project without a reference image");
-    return false;
-  }
-
-  if (!serialize::save(project, normalizedFileName)) {
-    spdlog::error("Could not save project file {}", normalizedFileName);
-    return false;
-  }
-  assets.published = true;
+  if (!saved) return false;
+  const auto& project = *saved;
 
   for (const auto& imageUid : m_data.imageUidsOrdered()) {
     for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
@@ -778,8 +402,10 @@ bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
   if (saved) {
     spdlog::info("Exported layouts to {}", fileName);
   }
+
   return saved;
 }
+
 void EntropyApp::loadProjectFile(const fs::path& fileName)
 {
   if (fileName.empty()) {
@@ -789,9 +415,11 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
   spdlog::info("Requested project file {}", fileName);
 
   m_pendingProjectReplacementPaths = {fileName};
+
   if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenProject)) {
     return;
   }
+
   clearPendingProjectReplacement();
   performLoadProjectFile(fileName);
 }
@@ -805,9 +433,11 @@ void EntropyApp::performLoadProjectFile(const fs::path& fileName)
   if (!serialize::open(project, fileName)) {
     spdlog::error("Could not open project file {}", fileName);
     reportInputLoadFailure("project", fileName, "The project file could not be read or parsed.");
+
     if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
     }
+
     GlfwWrapper::postEmptyEvent();
     return;
   }
@@ -852,8 +482,10 @@ void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::option
   else {
     spdlog::info("Beginning project load from image inputs");
   }
+
   m_data.setProject(std::move(project));
   m_data.setProjectFileName(std::move(projectFileName));
+
   project_snapshot::applySynchronizationSettings(m_data, m_data.project().m_synchronization);
   project_snapshot::applyViewSettings(m_data, m_data.project().m_view);
   project_snapshot::applyComparisonSettings(m_data, m_data.project().m_comparison);

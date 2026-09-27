@@ -1,4 +1,5 @@
 #pragma once
+#include "logic/app/WarpInversionRequest.h"
 
 #include "common/AsyncTasks.h"
 #include "common/ClipboardPayload.h"
@@ -33,6 +34,10 @@
 
 class AppData;
 class CallbackHandler;
+class ImageColorMap;
+class ParcellationLabelTable;
+enum class MainMenuAction;
+enum class ProjectLoadState : std::uint8_t;
 struct GLFWwindow;
 
 /**
@@ -319,6 +324,77 @@ public:
   void render();
 
 private:
+  // Image selection and shared control callbacks (imgui/ImageSelection.cpp).
+  std::size_t getActiveImageIndex();
+  void setActiveImageIndex(std::size_t index);
+  bool getImageHasActiveSeg(std::size_t index);
+  void setImageHasActiveSeg(std::size_t index, bool set);
+  MouseMode getMouseMode();
+  void setMouseMode(MouseMode mouseMode);
+  void cycleViewLayout(int step);
+  std::size_t getNumImageColorMaps();
+  ImageColorMap* getImageColorMap(std::size_t cmapIndex);
+  ParcellationLabelTable* getLabelTable(std::size_t tableIndex);
+  bool getImageIsVisibleSetting(std::size_t imageIndex);
+  bool getImageIsActive(std::size_t imageIndex);
+  bool getImageIsReference(std::size_t imageIndex);
+  glm::vec3 getImageIdentificationColor(std::size_t imageIndex);
+  bool moveImageBackward(const uuids::uuid& imageUid);
+  bool moveImageForward(const uuids::uuid& imageUid);
+  bool moveImageToBack(const uuids::uuid& imageUid);
+  bool moveImageToFront(const uuids::uuid& imageUid);
+  std::optional<uuids::uuid> activeImageUid();
+  std::optional<uuids::uuid> activeSegUid();
+  std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>> activeAnnotation();
+  std::optional<uuids::uuid> activeLandmarkGroupUid();
+
+  // Editing commands used by menus (imgui/EditingActions.cpp).
+  void createActiveSegmentation();
+  void exportActiveSegmentation();
+  void importAnnotationsToActiveImage();
+  bool activeImageHasAnnotations();
+  void exportAnnotationsForActiveImage();
+  void createActiveLandmarkGroup();
+  void saveActiveLandmarkGroup();
+  void importLandmarkGroupForActiveImage();
+  void removeActiveLandmarkGroup();
+  void addLandmarkAtCrosshairs();
+  void requestResetProjectSettings();
+
+  // Menu commands and availability (imgui/MenuActions.cpp and MenuState.cpp).
+  void performMenuAction(MainMenuAction action);
+  bool isMenuActionEnabled(MainMenuAction action);
+  bool isMenuActionChecked(MainMenuAction action);
+
+  // Per-view controls (imgui/ViewOverlays.cpp).
+  void applyPresentationToMatchingViews(const uuids::uuid& viewUid);
+  void applyVisibleImageSelectionToMatchingViews(const uuids::uuid& viewUid);
+  glm::quat getViewCameraRotation(const uuids::uuid& viewUid);
+  void setViewCameraRotation(const uuids::uuid& viewUid, const glm::quat& camera_T_world_rotationDelta);
+  void setViewCameraDirection(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection);
+  glm::vec3 getViewNormal(const uuids::uuid& viewUid);
+  std::vector<glm::vec3> getObliqueViewDirections(const uuids::uuid& viewUidToExclude);
+
+  // Menu construction and save defaults (imgui/Menus.cpp).
+  std::filesystem::path defaultProjectSaveDirectory();
+  std::string defaultProjectSaveName();
+  std::string defaultLayoutsSaveName();
+  std::vector<std::string> layoutNames();
+  std::filesystem::path defaultLayoutsSaveDirectory();
+  void renderMenus(ProjectLoadState projectLoadState, bool backgroundTaskRunning);
+
+  // Preferences (imgui/Settings.cpp).
+  bool saveUserSettingsToDefault();
+  void renderSettingsPanel();
+
+  // Return false when the caller should stop processing the current frame.
+  bool renderApplicationWindows(
+    bool loadingOrImporting,
+    bool hasLoadedProject,
+    ProjectLoadState projectLoadState,
+    bool backgroundTaskRunning);
+  bool renderViewOverlays();
+
   bool materializeRegistrationInputs(registration::JobSpec& job);
 
   /**
@@ -445,25 +521,7 @@ private:
   void requestMissingComponentProjectionImages();
   void processComponentProjectionFutures();
 
-  struct WarpInversionTaskState
-  {
-    uuids::uuid imageUid;
-    uuids::uuid sourceWarpUid;
-    uuids::uuid domainUid;
-    std::optional<uuids::uuid> referenceUid;
-    std::optional<uuids::uuid> targetWarpUid;
-    uint64_t sourcePixelRevision = 0;
-    uint64_t sourceGeometryRevision = 0;
-    uint64_t domainGeometryRevision = 0;
-    uint64_t imageGeometryRevision = 0;
-    uint32_t sourceTimePoint = 0;
-    glm::mat4 sourceTransform{1.0f};
-    glm::mat4 imageTransform{1.0f};
-    ComputedWarpDirection direction{ComputedWarpDirection::Inverse};
-    std::string description;
-    std::shared_ptr<std::atomic<double>> progress;
-    std::shared_ptr<std::atomic_bool> cancel;
-  };
+  using WarpInversionTaskState = warp_inversion::RequestState;
 
   struct WarpInversionTaskResult
   {

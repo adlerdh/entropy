@@ -111,6 +111,7 @@ std::vector<DataChoice> maskChoices(const AppData& appData)
       if (!seg) {
         continue;
       }
+
       registration::DataRef segRef;
       segRef.uid = uuids::to_string(segUid);
       segRef.fileName = seg->header().fileName();
@@ -167,6 +168,7 @@ ImVec2 halfMainViewportSize()
 
   const ImVec2 minSize = ui::scaledSize(360.0f, 320.0f);
   const ImVec2 maxSize{0.9f * viewport->WorkSize.x, 0.9f * viewport->WorkSize.y};
+
   return ImVec2{
     std::min(std::max(minSize.x, 0.4f * viewport->WorkSize.x), maxSize.x),
     std::min(std::max(minSize.y, 0.5f * viewport->WorkSize.y), maxSize.y)};
@@ -205,10 +207,12 @@ void renderImageChoiceCombo(
 {
   const registration::SetupImageChoice* currentChoice = findImageChoice(choices, current.uid);
   const std::string preview = currentChoice ? imageChoiceLabel(*currentChoice) : std::string{"None"};
+
   if (ImGui::BeginCombo(label, preview.c_str())) {
     for (const registration::SetupImageChoice& choice : choices) {
       const bool selected = choice.image.uid == current.uid;
       const std::string choiceLabel = imageChoiceLabel(choice);
+
       if (ImGui::Selectable(choiceLabel.c_str(), selected)) {
         onSelected(choice);
       }
@@ -225,6 +229,7 @@ const DataChoice* findDataChoice(const std::vector<DataChoice>& choices, const r
   if (current.uid.empty()) {
     return nullptr;
   }
+
   const auto it = std::find_if(choices.begin(), choices.end(), [&](const DataChoice& choice) {
     return choice.ref.uid == current.uid && choice.ref.source == current.source;
   });
@@ -246,6 +251,7 @@ bool renderDataChoiceCombo(
       current = registration::DataRef{};
       changed = true;
     }
+
     for (const DataChoice& choice : choices) {
       const bool selected = currentChoice && choice.ref.uid == current.uid && choice.ref.source == current.source;
       if (ImGui::Selectable(choice.label.c_str(), selected)) {
@@ -309,6 +315,7 @@ std::vector<int> parseIntegerSchedule(std::string_view value, std::string_view f
       }
       token.push_back(ch);
     }
+
     if (!token.empty()) {
       values.push_back(std::max(k_minIterationsPerLevel, parseInteger(token, 0)));
     }
@@ -355,6 +362,7 @@ std::vector<double> parseDoubleSchedule(std::string_view value, std::string_view
       }
       token.push_back(ch);
     }
+
     if (!token.empty()) {
       values.push_back(parseDouble(token, 0.0));
     }
@@ -395,6 +403,7 @@ std::vector<int> integerDefaultsForSchedule(std::string_view key, int levelCount
       k_defaultShrinkFactorsByLevel.end() - levelCount;
     return {begin, k_defaultShrinkFactorsByLevel.end()};
   }
+
   return {
     k_defaultIterationsByLevel.begin(),
     k_defaultIterationsByLevel.begin() + static_cast<std::ptrdiff_t>(levelCount)};
@@ -423,6 +432,7 @@ void resizeIntegerSchedule(std::vector<int>& values, int levelCount, std::string
     }
     return;
   }
+
   if (key == "shrinkFactors" || key == "scales") {
     values.insert(
       values.begin(),
@@ -446,6 +456,7 @@ void resizeDoubleSchedule(std::vector<double>& values, int levelCount, std::stri
     }
     return;
   }
+
   if (key == "smoothingSigmas") {
     values.insert(
       values.begin(),
@@ -490,6 +501,7 @@ std::array<float, 2> parseFloatPair(std::string_view value, std::string_view fal
       }
       token.push_back(ch);
     }
+
     if (!token.empty() && count < values.size()) {
       values.at(count++) = static_cast<float>(parseDouble(token, 0.0));
     }

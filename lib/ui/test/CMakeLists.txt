@@ -16,9 +16,11 @@ add_executable(TestUi
   UpdateCheckTests.cpp
   ActiveImageSelectionModelTests.cpp
   ExportJobServiceTests.cpp
+  ExportTransactionMatrixTests.cpp
   UiControlsTests.cpp
   UiHeaderIncludeTests.cpp
   UiScaleManagerTests.cpp
+  PlatformLayoutSequenceTests.cpp
   ViewOverlayModelTests.cpp
 )
 

@@ -100,6 +100,9 @@ jobs:
             gcc-13 \
             g++-13 \
             glslang-tools \
+            xvfb \
+            xauth \
+            libgl1-mesa-dri \
             libdbus-1-dev \
             libssl-dev \
             libgl1-mesa-dev \
@@ -181,7 +184,19 @@ jobs:
         run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Debug tests
-        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
+        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --timeout 120 --output-on-failure
+
+      - name: Required graphics correctness (Mesa software OpenGL)
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a python3 test/run_required_graphics.py build-debug
+
+      - name: Preserve graphics coverage report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: required-graphics-report
+          path: build-debug/required-graphics.xml
 
       - name: Show Debug ccache stats
         if: always()

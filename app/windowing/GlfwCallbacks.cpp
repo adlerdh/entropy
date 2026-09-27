@@ -1,4 +1,5 @@
 #include "windowing/GlfwCallbacks.h"
+#include "logic/interaction/PointerGesture.h"
 
 #include "EntropyApp.h"
 #include "common/Types.h"
@@ -43,8 +44,9 @@
 
 namespace
 {
-static ButtonState s_mouseButtonState;
-static ModifierState s_modifierState;
+static PointerGesture s_pointerGesture;
+static ButtonState& s_mouseButtonState = s_pointerGesture.buttons;
+static ModifierState& s_modifierState = s_pointerGesture.modifiers;
 
 // The last cursor position in Window space
 static std::optional<ViewHit> s_prevHit;
@@ -293,7 +295,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   if (!startView) {
     s_startHit.reset();
     s_prevHit.reset();
-    s_mouseButtonState = ButtonState{};
+    s_pointerGesture.cancel();
     app->callbackHandler().endCrosshairsRotate2D();
     app->appData().state().transformationGuide().finish();
     return;
@@ -707,8 +709,7 @@ void windowFocusCallback(GLFWwindow* window, int focused)
 {
   if (focused) return;
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  s_mouseButtonState = ButtonState{};
-  s_modifierState = ModifierState{};
+  s_pointerGesture.cancel();
   if (app) {
     if (s_prevHit) {
       auto hit = *s_prevHit;
@@ -743,10 +744,9 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   }
 
   // Releases belong to the gesture that received the press, even over a UI panel.
+  const bool routeToApplication = s_pointerGesture.buttonEvent(button, action, mods, ImGui::GetIO().WantCaptureMouse);
   bool deliveredRelease = false;
   if (GLFW_RELEASE == action) {
-    s_mouseButtonState.updateFromGlfwEvent(button, action);
-    s_modifierState.updateFromGlfwEvent(mods);
     if (s_prevHit) {
       auto hit = *s_prevHit;
       hit.view = app->windowData().getView(hit.viewUid);
@@ -759,8 +759,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     app->appData().windowData().setActiveViewUid(std::nullopt);
   }
 
-  const ImGuiIO& io = ImGui::GetIO();
-  if (io.WantCaptureMouse) {
+  if (!routeToApplication) {
     if (GLFW_RELEASE == action) {
       s_startHit.reset();
       s_prevHit.reset();
@@ -770,10 +769,6 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     }
     return; // ImGui has captured event
   }
-
-  // Update button state
-  s_mouseButtonState.updateFromGlfwEvent(button, action);
-  s_modifierState.updateFromGlfwEvent(mods);
 
   const bool jointHistogramGesture = s_startHit && isJointHistogramView(app->windowData().getView(s_startHit->viewUid));
 

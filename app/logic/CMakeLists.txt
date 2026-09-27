@@ -2,6 +2,7 @@ target_sources(entropy PRIVATE
   app/CallbackHandler.cpp
   app/Data.cpp
   app/DeformationWarp.cpp
+  app/ImportedMeshWarp.cpp
   app/DataHelper.cpp
   app/ImageScaleInteraction.cpp
   app/ImageSelectionPolicy.cpp
@@ -13,6 +14,11 @@ target_sources(entropy PRIVATE
   app/ProjectLayoutDelta.cpp
   app/ProjectImageSequence.cpp
   app/ProjectSnapshotComparison.cpp
+  app/ProjectSnapshot.cpp
+  app/ProjectImageRestore.cpp
+  app/ProjectPersistence.cpp
+  app/RegistrationInputs.cpp
+  app/WarpInversionRequest.cpp
   app/ProjectSnapshotSettings.cpp
   app/RecentDataLoad.cpp
   app/Settings.cpp

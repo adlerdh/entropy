@@ -25,12 +25,15 @@ Image makeSegmentation(bool rotated)
   info.m_spaceInfo.m_dimensions = {64, 64, 1};
   info.m_spaceInfo.m_spacing = {1, 1, 1};
   info.m_spaceInfo.m_origin = {-32, -32, 0};
+
   const double c = std::sqrt(0.5);
   info.m_spaceInfo.m_directions = rotated ? std::vector<std::vector<double>>{{c, c, 0}, {-c, c, 0}, {0, 0, 1}}
                                           : std::vector<std::vector<double>>{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+
   if (rotated) info.m_spaceInfo.m_origin = {0, -32 * std::sqrt(2.0), 0};
   ImageHeader header(info, info, false);
   std::vector<uint16_t> labels(64 * 64, 0);
+
   return Image::fromCopiedData(
     header,
     "seg",
@@ -50,18 +53,21 @@ TEST_CASE(
   {
     rotated = true;
   }
+
   auto seg = makeSegmentation(rotated);
   Annotation annotation("square with hole", glm::vec4{1}, {0, 0, 1, 0});
   annotation.polygon().setAllVertices(
     {{{-10, -10}, {10, -10}, {10, 10}, {-10, 10}}, {{-3, -3}, {-3, 3}, {3, 3}, {3, -3}}});
   annotation.setClosed(true);
   fillSegmentationWithPolygon(seg, &annotation, 1, 0, true, [](const auto&, const auto&, const auto&, const auto*) {});
+
   for (int j = 0; j < 64; ++j) {
     for (int i = 0; i < 64; ++i) {
       const glm::vec3 subject = seg.transformations().subject_T_pixel() * glm::vec4{i, j, 0, 1};
       const auto p = annotation.projectSubjectPointToAnnotationPlane(subject);
       const auto value = seg.value<int>(0, i, j, 0);
       REQUIRE(value);
+
       if (std::abs(p.x) < 2 && std::abs(p.y) < 2) CHECK(*value == 0);
       if (std::abs(p.x) < 9 && std::abs(p.y) < 9 && (std::abs(p.x) > 4 || std::abs(p.y) > 4)) CHECK(*value == 1);
     }

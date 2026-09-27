@@ -1,4 +1,5 @@
 #include "rendering/Rendering.h"
+#include "rendering/DistanceMapPolicy.h"
 #include "rendering/gl/OpenGLRenderState.h"
 
 #include "logic/app/Data.h"
@@ -95,7 +96,7 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
   const auto activeIsovalues = std::span{isosurfaceData.values}.first(
     std::min<std::size_t>(static_cast<std::size_t>(std::max(isosurfaceData.numIsos, 0)), isosurfaceData.values.size()));
   if (
-    renderSettings.m_useDistanceMapForRaycasting && !image->isTimeSeries() && !renderWarped &&
+    rendering::distanceMapEligible(*image, renderSettings.m_useDistanceMapForRaycasting) && !renderWarped &&
     rendering::texture_setup::distanceMapSupportsIsovalues(
       foregroundThresholds.first,
       foregroundThresholds.second,

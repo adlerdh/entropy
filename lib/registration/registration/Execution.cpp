@@ -295,11 +295,13 @@ std::optional<ResultManifest> readBackendResultManifest(const JobSpec& job, std:
 } // namespace
 
 JobExecution executeJob(
-  const JobSpec& job,
+  const JobSpec& jobArg,
   const CommandGenerationOptions& commandOptionsArg,
   IProcessRunner& processRunner,
   const JobExecutionCallbacks& callbacks)
 {
+  JobSpec job = jobArg;
+  job.outputDirectory = std::filesystem::absolute(job.outputDirectory);
   JobExecution execution;
   std::vector<CommandSpec> commands = generateCommands(job, commandOptionsArg);
 
@@ -366,14 +368,58 @@ JobExecution executeJob(
   setStatus(execution, JobStatus::WritingOutputs, callbacks);
   std::string manifestWarning;
   execution.manifest = readBackendResultManifest(job, manifestWarning);
+  const bool backendManifestProvided = execution.manifest.has_value();
   if (!manifestWarning.empty()) {
     execution.warnings.push_back(manifestWarning);
+    execution.errorMessage = manifestWarning;
+    setStatus(execution, JobStatus::Failed, callbacks);
+    return execution;
   }
   if (!execution.manifest) {
     execution.manifest = buildExpectedResultManifest(job);
   }
   else {
     fillMissingExpectedArtifacts(job, *execution.manifest);
+  }
+  auto& manifest = *execution.manifest;
+  const auto failOutputs = [&](std::string message) {
+    manifest.success = false;
+    manifest.errorMessage = message;
+    execution.errorMessage = std::move(message);
+    setStatus(execution, JobStatus::Failed, callbacks);
+  };
+  if (backendManifestProvided && !manifest.success) {
+    failOutputs(
+      manifest.errorMessage.empty() ? "The backend reported an unsuccessful result manifest." : manifest.errorMessage);
+    return execution;
+  }
+  if (
+    (!manifest.fixedImageUid.empty() && manifest.fixedImageUid != job.fixedImage.uid) ||
+    (!manifest.movingImageUid.empty() && manifest.movingImageUid != job.movingImage.uid) ||
+    manifest.backend != job.backend)
+  {
+    failOutputs("Registration result manifest does not belong to the requested backend and inputs.");
+    return execution;
+  }
+  std::vector<std::filesystem::path*> outputs{
+    &manifest.warpedImage,
+    &manifest.inverseWarp,
+    &manifest.forwardWarp,
+    &manifest.affineTransform};
+  for (auto* paths : {&manifest.warpedSegmentations, &manifest.transformedSurfaces, &manifest.transformedLandmarks})
+    for (auto& path : *paths)
+      outputs.push_back(&path);
+  for (auto* path : outputs) {
+    if (path->empty()) continue;
+    if (path->is_relative()) *path = job.outputDirectory / *path;
+    std::error_code error;
+    if (
+      !std::filesystem::is_regular_file(*path, error) || error || std::filesystem::file_size(*path, error) == 0 ||
+      error)
+    {
+      failOutputs("Registration exited successfully but its output is missing or empty: " + path->string());
+      return execution;
+    }
   }
   execution.manifest->success = true;
   setStatus(execution, JobStatus::Completed, callbacks);

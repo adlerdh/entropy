@@ -35,8 +35,10 @@ public:
   /// Set/get the points in the landmark group.
   /// Each point is keyed by an index that specifies its order.
   void setPoints(std::map<size_t, PointRecord<PositionType>> pointMap);
+
   const std::map<size_t, PointRecord<PositionType>>& getPoints() const;
   std::map<size_t, PointRecord<PositionType>>& getPoints();
+
   /// CSV interchange uses physical subject coordinates, regardless of the editor coordinate space.
   std::map<size_t, PointRecord<PositionType>> pointsInSubjectSpace(const glm::mat4& subject_T_pixel) const;
 

@@ -4,12 +4,28 @@
 #include "logic/serialization/ProjectSerialization.h"
 
 #include <optional>
+#include <functional>
 
 class AppData;
 class Image;
 
 namespace project_snapshot
 {
+void restoreSegmentationState(
+  AppData& data,
+  const uuids::uuid& imageUid,
+  const uuids::uuid& segUid,
+  const serialize::Image& record,
+  bool applySettings);
+using ImageLoadFailure =
+  std::function<void(const std::string&, const std::optional<std::filesystem::path>&, const std::string&)>;
+/// Apply persisted display, geometry overrides, and enabled/disabled affine state.
+/// Shared by the interactive loader and headless project workflow tests.
+void restoreImageState(
+  Image& image,
+  const serialize::Image& record,
+  bool isReferenceImage,
+  const ImageLoadFailure& reportFailure);
 /**
  * @name Per-asset settings
  *

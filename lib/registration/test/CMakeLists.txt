@@ -9,6 +9,7 @@ add_executable(TestRegistration
   ImportPlanTests.cpp
   JsonTests.cpp
   JobsTests.cpp
+  SchedulingTests.cpp
   ProcessTests.cpp
   ProgressTests.cpp
   SetupTests.cpp
@@ -18,6 +19,7 @@ add_executable(TestRegistration
 target_link_libraries(TestRegistration PRIVATE
   Catch2::Catch2WithMain
   Entropy::Registration
+  Entropy::Common
   entropy_warnings
 )
 

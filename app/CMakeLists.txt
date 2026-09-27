@@ -107,3 +107,37 @@ if(APPLE)
   set(entropy_MACOS_APP_ICON_NAME "Entropy")
   entropy_configure_macos_runtime(entropy)
 endif()
+
+# Compile application services once and share the exact production objects with
+# cross-feature tests. Tests instantiate AppData, not the GLFW-owning EntropyApp.
+get_target_property(entropy_runtime_sources entropy SOURCES)
+list(REMOVE_ITEM entropy_runtime_sources main.cpp)
+if(WIN32)
+  list(REMOVE_ITEM entropy_runtime_sources "${entropy_WINDOWS_VERSION_RC}")
+endif()
+add_library(EntropyAppRuntime OBJECT ${entropy_runtime_sources})
+foreach(property INCLUDE_DIRECTORIES SYSTEM_INCLUDE_DIRECTORIES COMPILE_DEFINITIONS COMPILE_OPTIONS)
+  get_target_property(value entropy ${property})
+  if(value)
+    set_property(TARGET EntropyAppRuntime PROPERTY ${property} "${value}")
+  endif()
+endforeach()
+get_target_property(entropy_runtime_libraries entropy LINK_LIBRARIES)
+target_link_libraries(EntropyAppRuntime PUBLIC ${entropy_runtime_libraries})
+target_include_directories(EntropyAppRuntime PUBLIC "${entropy_APP_DIR}")
+target_include_directories(EntropyAppRuntime SYSTEM PUBLIC
+  "${imgui_SRC_DIR}" "${imgui_SRC_DIR}/imgui" "${entropy_EXT_DIR}"
+  "${entropy_EXT_DIR}/imGuIZMO.quat" "${entropy_EXT_DIR}/imgui-knobs"
+  "${implot_SRC_DIR}" "${nanovg_SRC_DIR}")
+set_target_properties(EntropyAppRuntime PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+entropy_enable_coverage_for_target(EntropyAppRuntime)
+entropy_disable_linting_for_targets(EntropyAppRuntime)
+set_property(TARGET entropy PROPERTY SOURCES main.cpp)
+if(WIN32)
+  target_sources(entropy PRIVATE "${entropy_WINDOWS_VERSION_RC}")
+endif()
+target_link_libraries(entropy PRIVATE EntropyAppRuntime)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
