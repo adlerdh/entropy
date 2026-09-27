@@ -1,9 +1,7 @@
 #include "rendering/helpers/VectorDrawingHelpers.h"
-
 #include "common/Viewport.h"
 
-#include <glm/common.hpp>
-#include <glm/geometric.hpp>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <cmath>

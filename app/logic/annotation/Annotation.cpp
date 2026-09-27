@@ -1,5 +1,4 @@
 #include "logic/annotation/Annotation.h"
-
 #include "common/Exception.hpp"
 #include "logic/camera/MathUtility.h"
 
@@ -7,6 +6,7 @@
 #include <spdlog/spdlog.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <iterator>
 #include <stdlib.h>
 

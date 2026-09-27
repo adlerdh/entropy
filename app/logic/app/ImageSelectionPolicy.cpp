@@ -1,6 +1,7 @@
 #include "logic/app/ImageSelectionPolicy.h"
 
 #include <algorithm>
+#include <vector>
 
 namespace app::image_selection_policy
 {

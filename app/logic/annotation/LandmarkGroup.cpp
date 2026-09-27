@@ -1,8 +1,25 @@
 #include "logic/annotation/LandmarkGroup.h"
 
+#include <glm/glm.hpp>
+
 #include <filesystem>
+#include <iterator>
+#include <utility>
 
 namespace fs = std::filesystem;
+
+std::map<size_t, PointRecord<LandmarkGroup::PositionType>> LandmarkGroup::pointsInSubjectSpace(
+  const glm::mat4& subject_T_pixel) const
+{
+  auto points = getPoints();
+  if (m_inVoxelSpace) {
+    for (auto& [index, point] : points) {
+      const glm::vec4 p = subject_T_pixel * glm::vec4{point.getPosition(), 1.0f};
+      point.setPosition(glm::vec3{p} / p.w);
+    }
+  }
+  return points;
+}
 
 namespace
 {
@@ -46,12 +63,12 @@ const std::string& LandmarkGroup::getName() const
   return m_name;
 }
 
-void LandmarkGroup::setPoints(std::map<size_t, PointRecord<LandmarkGroup::PositionType> > pointMap)
+void LandmarkGroup::setPoints(std::map<size_t, PointRecord<LandmarkGroup::PositionType>> pointMap)
 {
   m_pointMap = std::move(pointMap);
 }
 
-const std::map<size_t, PointRecord<LandmarkGroup::PositionType> >& LandmarkGroup::getPoints() const
+const std::map<size_t, PointRecord<LandmarkGroup::PositionType>>& LandmarkGroup::getPoints() const
 {
   return m_pointMap;
 }
@@ -66,7 +83,7 @@ bool LandmarkGroup::getInVoxelSpace() const
   return m_inVoxelSpace;
 }
 
-std::map<size_t, PointRecord<LandmarkGroup::PositionType> >& LandmarkGroup::getPoints()
+std::map<size_t, PointRecord<LandmarkGroup::PositionType>>& LandmarkGroup::getPoints()
 {
   return m_pointMap;
 }

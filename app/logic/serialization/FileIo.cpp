@@ -2,6 +2,7 @@
 #include "logic/annotation/PointRecord.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "logic/serialization/LandmarkCsv.h"
 
 #include <safeclib/strerrorlen_s.h>
 
@@ -398,32 +399,44 @@ bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3>>& lan
   }
 }
 
+bool writeLandmarkCsv(std::ostream& out, const std::map<std::size_t, PointRecord<glm::vec3>>& landmarks)
+{
+  out << "ID,X,Y,Z,Name\n" << std::setprecision(std::numeric_limits<float>::max_digits10);
+  for (const auto& [id, landmark] : landmarks) {
+    const auto pos = landmark.getPosition();
+    out << id << "," << pos.x << "," << pos.y << "," << pos.z << "," << quoteCsvField(landmark.getName()) << "\n";
+  }
+  out.flush();
+  return static_cast<bool>(out);
+}
+
 bool saveLandmarkGroupCsvFile(
   const std::map<std::size_t, PointRecord<glm::vec3>>& landmarks,
   const fs::path& csvFileName)
 {
+  const fs::path temporary = temporaryJsonSiblingPath(csvFileName);
+  struct Cleanup
+  {
+    fs::path path;
+    ~Cleanup()
+    {
+      std::error_code error;
+      fs::remove(path, error);
+    }
+  } cleanup{temporary};
   std::ofstream outFile;
   outFile.exceptions(outFile.exceptions() | std::ofstream::badbit | std::ofstream::failbit);
 
   try {
-    outFile.open(csvFileName, std::ofstream::out);
+    outFile.open(temporary, std::ofstream::out);
 
     if (!outFile) {
       throw std::system_error(errno, std::system_category(), "Failed to open output CSV file " + csvFileName.string());
     }
 
-    static const std::string sk_header("ID,X,Y,Z,Name");
-
-    outFile << sk_header << "\n";
-
-    outFile << std::setprecision(std::numeric_limits<float>::max_digits10);
-    for (const auto& lm : landmarks) {
-      const auto id = lm.first;
-      const auto pos = lm.second.getPosition();
-      const auto name = lm.second.getName();
-      outFile << id << "," << pos.x << "," << pos.y << "," << pos.z << "," << quoteCsvField(name) << "\n";
-    }
-
+    if (!writeLandmarkCsv(outFile, landmarks)) return false;
+    outFile.close();
+    replaceJsonFile(temporary, csvFileName);
     return true;
   }
   catch (const std::ios_base::failure& e) {

@@ -30,9 +30,11 @@ jobs:
 
       - name: Run codespell
         run: |
+          skip_paths='./.git,./build-*,./cmake-build-*,./external'
+          skip_paths+=',./app/logic_old,./app/rendering_old,./res/fonts/ForkAwesome,./*.log'
           "${HOME}/.local/bin/codespell" \
             --ignore-words .codespellignore \
-            --skip './.git,./build-*,./cmake-build-*,./external,./app/logic_old,./app/rendering_old,./res/fonts/ForkAwesome,./*.log'
+            --skip "$skip_paths"
 
   markdown-links:
     name: Markdown Links
@@ -42,8 +44,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
-      # External sites can disappear or temporarily reject CI traffic. Keep the
-      # report visible without making an otherwise healthy CI run fail.
+      # External sites can disappear or temporarily reject CI traffic
       - name: Check Markdown links (advisory)
         continue-on-error: true
         uses: lycheeverse/lychee-action@v2

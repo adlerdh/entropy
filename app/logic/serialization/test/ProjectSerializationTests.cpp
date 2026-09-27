@@ -11,19 +11,19 @@
 #include "logic/serialization/ProjectSerialization.h"
 #include "viewer/ThreeDSceneContents.h"
 #include "viewer/ViewModes.h"
+#include "common/ColorMapDefaults.h"
 
 #include <catch2/catch_test_macros.hpp>
-#include <glm/vec3.hpp>
-#include <glm/mat3x3.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
 #include <uuid.h>
+#include <glm/glm.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <map>
 #include <optional>
@@ -36,6 +36,36 @@
 namespace fs = std::filesystem;
 
 using json = nlohmann::json;
+
+TEST_CASE("Project geometry overrides and active editing targets round trip", "[serialization][regression]")
+{
+  serialize::EntropyProject project;
+  auto& image = project.m_referenceImage;
+  image.m_imageFileName = "image.nii.gz";
+  image.m_useIdentityPixelSpacings = true;
+  image.m_useZeroPixelOrigin = true;
+  image.m_useIdentityPixelDirections = true;
+  image.m_snapToClosestOrthogonalPixelDirections = true;
+  image.m_segmentations.resize(2);
+  image.m_segmentations[0].m_segFileName = "first.nii.gz";
+  image.m_segmentations[1].m_segFileName = "second.nii.gz";
+  image.m_segmentations[1].m_active = true;
+  image.m_landmarkGroups.resize(2);
+  image.m_landmarkGroups[1].m_active = true;
+  image.m_landmarkGroups[1].m_pointsEmbedded = true;
+  const auto restored = json(project).get<serialize::EntropyProject>();
+  const auto& actual = restored.m_referenceImage;
+  CHECK(actual.m_useIdentityPixelSpacings);
+  CHECK(actual.m_useZeroPixelOrigin);
+  CHECK(actual.m_useIdentityPixelDirections);
+  CHECK(actual.m_snapToClosestOrthogonalPixelDirections);
+  REQUIRE(actual.m_segmentations.size() == 2);
+  CHECK_FALSE(actual.m_segmentations[0].m_active);
+  CHECK(actual.m_segmentations[1].m_active);
+  REQUIRE(actual.m_landmarkGroups.size() == 2);
+  CHECK_FALSE(actual.m_landmarkGroups[0].m_active);
+  CHECK(actual.m_landmarkGroups[1].m_active);
+}
 
 namespace
 {
@@ -1568,6 +1598,21 @@ TEST_CASE("Invalid landmark CSV does not partially replace loaded points", "[pro
   CHECK_FALSE(serialize::openLandmarkGroupCsvFile(loaded, csvFile));
   REQUIRE(loaded.size() == 1);
   CHECK(loaded.at(9).getName() == "existing");
+}
+
+TEST_CASE(
+  "Failed landmark CSV publication preserves the destination and cleans staging",
+  "[project][landmarks][regression]")
+{
+  const auto root = uniqueTempProjectDirectory();
+  const auto destination = root / "protected.csv";
+  fs::create_directory(destination);
+  touchFile(destination / "original");
+  std::map<std::size_t, PointRecord<glm::vec3>> points;
+  points.try_emplace(1, glm::vec3{1}, "point");
+  CHECK_FALSE(serialize::saveLandmarkGroupCsvFile(points, destination));
+  CHECK(fs::is_regular_file(destination / "original"));
+  CHECK(std::distance(fs::directory_iterator(root), fs::directory_iterator{}) == 1);
 }
 
 TEST_CASE("Project landmarks retain per-image groups and point display state", "[project][landmarks]")

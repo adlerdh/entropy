@@ -4,21 +4,32 @@
 #include "rendering/JointHistogramShaderUniforms.h"
 #include "rendering/gl/GLShader.h"
 #include "rendering/gl/GLShaderProgram.h"
+#include "common/Types.h"
+#include "logic/interaction/JointHistogramInteraction.h"
+#include "rendering/RenderSettings.h"
+#include "rendering/TextureLayout.h"
+#include "rendering/gl/GLShaderType.h"
+#include "rendering/gl/GLTexture.h"
+#include "rendering/gl/GLTextureTypes.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <cmrc/cmrc.hpp>
 #include <glad/glad.h>
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <compare>
+#include <cstdint>
 #include <cstdlib>
+#include <initializer_list>
 #include <iostream>
 #include <limits>
 #include <numeric>
+#include <ratio>
 #include <string>
 #include <thread>
 #include <vector>

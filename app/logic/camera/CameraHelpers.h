@@ -8,9 +8,8 @@
 #include "logic/camera/CameraTypes.h"
 #include "logic/camera/Projection.h"
 
-#include <glm/fwd.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/vec4.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <memory>

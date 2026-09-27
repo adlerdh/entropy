@@ -1,4 +1,5 @@
 #include "rendering/Rendering.h"
+#include "rendering/DistanceMapPolicy.h"
 
 #include "logic/app/Data.h"
 #include "rendering/TextureSetup.h"
@@ -18,7 +19,7 @@ void Rendering::updateDistanceMapForRaycasting(const uuids::uuid& imageUid, uint
   Image* image = m_appData.image(imageUid);
   const auto& renderSettings = m_appData.renderSettings();
 
-  if (!image || !renderSettings.m_useDistanceMapForRaycasting) {
+  if (!image || !rendering::distanceMapEligible(*image, renderSettings.m_useDistanceMapForRaycasting)) {
     return;
   }
 

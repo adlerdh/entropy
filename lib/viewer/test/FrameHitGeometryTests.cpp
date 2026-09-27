@@ -5,6 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <uuid.h>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cstdint>

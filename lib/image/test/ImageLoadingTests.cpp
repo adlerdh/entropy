@@ -10,9 +10,7 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <glm/vec3.hpp>
 #include <glm/glm.hpp>
-
 #include <itkImage.h>
 #include <itkImageFileWriter.h>
 #include <itkMetaDataObject.h>
@@ -30,6 +28,7 @@
 #include <vnl_determinant.h>
 #include <vnl_matrix_fixed.h>
 #include <vnl_matrix_fixed.hxx>
+#include <itkFixedArray.h>
 
 #include <algorithm>
 #include <array>

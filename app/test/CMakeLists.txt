@@ -1,0 +1,29 @@
+add_executable(TestWorkflows CrossFeatureTests.cpp)
+target_link_libraries(TestWorkflows PRIVATE EntropyAppRuntime Catch2::Catch2WithMain)
+target_include_directories(TestWorkflows PRIVATE "${entropy_EXT_DIR}" "${imgui_SRC_DIR}" "${imgui_SRC_DIR}/imgui")
+set_target_properties(TestWorkflows PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+entropy_enable_coverage_for_target(TestWorkflows)
+entropy_register_coverage_test_target(TestWorkflows)
+entropy_copy_runtime_dlls(TestWorkflows)
+catch_discover_tests(TestWorkflows PROPERTIES LABELS "workflow" TIMEOUT 60)
+
+find_package(Python3 QUIET COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME required-graphics-gate-contract
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_required_graphics.py")
+endif()
+
+option(Entropy_BUILD_DISPLAY_TESTS "Build interactive tests requiring physical mixed-DPI monitors" OFF)
+
+if(Entropy_BUILD_DISPLAY_TESTS)
+  add_executable(TestDisplayTransitions
+    "${CMAKE_SOURCE_DIR}/test/platform/DisplayTransitions.cpp"
+    "${entropy_UI_DIR}/UiScaleManager.cpp")
+  
+  target_link_libraries(TestDisplayTransitions PRIVATE Catch2::Catch2WithMain glfw imgui Entropy::Common)
+  target_include_directories(TestDisplayTransitions PRIVATE "${entropy_UI_DIR}/.." "${imgui_SRC_DIR}" "${imgui_SRC_DIR}/imgui")
+  set_target_properties(TestDisplayTransitions PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+
+  entropy_copy_runtime_dlls(TestDisplayTransitions)
+  catch_discover_tests(TestDisplayTransitions PROPERTIES LABELS "platform;hardware" TIMEOUT 120)
+endif()

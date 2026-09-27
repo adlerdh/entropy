@@ -499,7 +499,7 @@ bool AppData::replaceImage(const uuid& imageUidArg, Image imageArg)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_componentProjectionToSourceImage.erase(projectionUid);
-      m_renderResources.removeImage(projectionUid);
+      if (m_renderResources) m_renderResources->removeImage(projectionUid);
       m_renderDerivedData.removeImage(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
@@ -866,7 +866,7 @@ bool AppData::removeImage(const uuid& imageUidArg)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_componentProjectionToSourceImage.erase(projectionUid);
-      m_renderResources.removeImage(projectionUid);
+      if (m_renderResources) m_renderResources->removeImage(projectionUid);
       m_renderDerivedData.removeImage(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
@@ -1037,7 +1037,7 @@ bool AppData::removeDef(const uuid& defUidArg)
     m_images.erase(defUidArg);
     m_imageUidsOrdered.erase(imageIt);
     m_imageToComponentData.erase(defUidArg);
-    m_renderResources.removeImage(defUidArg);
+    if (m_renderResources) m_renderResources->removeImage(defUidArg);
     m_renderDerivedData.removeImage(defUidArg);
   }
 
@@ -2365,12 +2365,14 @@ user_preferences::RenderPreferences& AppData::applicationRenderPreferences()
 
 const rendering::RenderResources& AppData::renderResources() const
 {
-  return m_renderResources;
+  if (!m_renderResources) m_renderResources.emplace();
+  return *m_renderResources;
 }
 
 rendering::RenderResources& AppData::renderResources()
 {
-  return m_renderResources;
+  if (!m_renderResources) m_renderResources.emplace();
+  return *m_renderResources;
 }
 
 const rendering::RenderDerivedData& AppData::renderDerivedData() const

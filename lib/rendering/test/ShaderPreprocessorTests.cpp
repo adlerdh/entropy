@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 TEST_CASE("shader preprocessor expands explicit includes and inline substitutions", "[rendering][shaders]")
 {

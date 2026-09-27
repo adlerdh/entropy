@@ -605,9 +605,11 @@ private:
   rendering::RenderSettings m_renderSettings;                         //!< Persistent rendering presentation settings
   user_preferences::RenderPreferences m_applicationRenderPreferences; //!< Reusable application rendering defaults
   rendering::RenderDerivedData m_renderDerivedData; //!< Context-free transient inputs derived for rendering
-  rendering::RenderResources m_renderResources;     //!< Context-bound rendering resources and transient shader data
-  WindowData m_windowData;                          //!< Data for windowing
-  registration::JobStore m_registrationJobs;        //!< In-memory registration job records
+  // Allocate only when the renderer requests GPU resources. Application state,
+  // serialization, registration and editing remain usable without a GL context.
+  mutable std::optional<rendering::RenderResources> m_renderResources;
+  WindowData m_windowData;                   //!< Data for windowing
+  registration::JobStore m_registrationJobs; //!< In-memory registration job records
 
   serialize::EntropyProject m_project;                    //!< Project that is used for serialization
   std::optional<std::filesystem::path> m_projectFileName; //!< File name of the currently loaded/saved project

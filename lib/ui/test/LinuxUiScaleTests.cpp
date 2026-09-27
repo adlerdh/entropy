@@ -10,6 +10,14 @@
 
 namespace linux_ui_scale = ui::linux_ui_scale;
 
+TEST_CASE("Live window scale wins over saved desktop configurations", "[ui][scale][regression]")
+{
+  CHECK(linux_ui_scale::liveOrFallbackScale(1.0f, 2.0f) == 1.0f);
+  CHECK(linux_ui_scale::liveOrFallbackScale(1.5f, 2.0f) == 1.5f);
+  CHECK(linux_ui_scale::liveOrFallbackScale(0.0f, 2.0f) == 2.0f);
+  CHECK(linux_ui_scale::liveOrFallbackScale(0.0f, std::nullopt) == 1.0f);
+}
+
 TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[ui][scale]")
 {
   const std::string_view xml = R"(<monitors version="2">

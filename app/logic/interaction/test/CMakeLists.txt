@@ -1,5 +1,6 @@
 add_executable(TestInteraction
   ButtonStateTests.cpp
+  PointerSequenceTests.cpp
   JointHistogramInteractionTests.cpp
   TransformationGuideTests.cpp
 )

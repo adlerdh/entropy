@@ -1,9 +1,8 @@
 #include "logic/camera/Camera2DControls.h"
-
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
 
-#include <glm/geometric.hpp>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <cmath>

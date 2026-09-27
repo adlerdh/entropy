@@ -10,12 +10,12 @@ find_package(ITK ${itk_VERSION} REQUIRED
 entropy_configure_itk_directory()
 
 add_library(EntropyMesh STATIC
-  mesh/MeshFormat.cpp
-  mesh/MeshIO.cpp
-  mesh/MeshTransform.cpp
-  mesh/private/FreeSurferCoordinates.cpp
-  mesh/private/ItkMeshCodec.cpp
-  mesh/private/VtkMeshCodec.cpp
+  MeshFormat.cpp
+  MeshIO.cpp
+  MeshTransform.cpp
+  private/FreeSurferCoordinates.cpp
+  private/ItkMeshCodec.cpp
+  private/VtkMeshCodec.cpp
 )
 add_library(Entropy::Mesh ALIAS EntropyMesh)
 
@@ -23,20 +23,20 @@ target_sources(EntropyMesh
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
-      mesh/MeshFormat.h
-      mesh/MeshIO.h
-      mesh/MeshTransform.h
-      mesh/MeshTypes.h
+      MeshFormat.h
+      MeshIO.h
+      MeshTransform.h
+      MeshTypes.h
 )
 
 target_include_directories(EntropyMesh
   PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/mesh"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
   SYSTEM PRIVATE ${ITK_INCLUDE_DIRS}
 )
 
@@ -62,11 +62,11 @@ set_target_properties(EntropyMesh PROPERTIES
 if(Entropy_ENABLE_IWYU)
   # IWYU 0.21 on Ubuntu 24 uses a Clang 17 frontend that crashes while parsing GCC 13 std::expected:
   set_source_files_properties(
-    mesh/MeshIO.cpp
-    mesh/MeshTransform.cpp
-    mesh/private/FreeSurferCoordinates.cpp
-    mesh/private/ItkMeshCodec.cpp
-    mesh/private/VtkMeshCodec.cpp
+    MeshIO.cpp
+    MeshTransform.cpp
+    private/FreeSurferCoordinates.cpp
+    private/ItkMeshCodec.cpp
+    private/VtkMeshCodec.cpp
     PROPERTIES SKIP_LINTING ON
   )
 endif()

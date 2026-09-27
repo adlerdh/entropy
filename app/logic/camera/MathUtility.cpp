@@ -1,5 +1,4 @@
 #include "logic/camera/MathUtility.h"
-
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
@@ -12,6 +11,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 
 #define EPSILON 0.000001
 

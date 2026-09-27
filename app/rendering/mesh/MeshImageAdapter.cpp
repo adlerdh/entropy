@@ -1,5 +1,4 @@
 #include "rendering/mesh/MeshImageAdapter.h"
-
 #include "common/Types.h"
 #include "image/Image.h"
 #include "image/ImageHeader.h"
@@ -14,6 +13,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <type_traits>
 #include <utility>

@@ -1,8 +1,9 @@
 #include "common/Geometry.h"
 #include "common/IntersectionTypes.h"
+#include "common/AABB.h"
 
 #include <catch2/catch_test_macros.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 

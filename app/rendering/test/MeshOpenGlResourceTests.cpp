@@ -16,24 +16,47 @@
 #include "rendering/mesh/MeshRenderer.h"
 #include "rendering/mesh/MeshShadowMapResources.h"
 #include "rendering/TextureLayout.h"
+#include "rendering/ShaderPreprocessor.h"
+#include "rendering/ShaderSourceSetup.h"
+#include "rendering/RaycastShaderUniforms.h"
+#include "common/Types.h"
+#include "rendering/gl/GLShaderType.h"
+#include "rendering/gl/GLUniformTypes.h"
+#include "rendering/gl/Uniforms.h"
+#include "rendering/mesh/MeshGpuData.h"
+#include "rendering/mesh/MeshHandle.h"
+#include "rendering/mesh/MeshRenderable.h"
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <functional>
+#include <initializer_list>
 #include <limits>
+#include <optional>
+#include <set>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace mesh = rendering::mesh;
 
 namespace
 {
 
-#if !defined(__APPLE__)
 class HiddenOpenGlContext
 {
 public:
@@ -84,9 +107,182 @@ public:
 private:
   GLFWwindow* m_window = nullptr;
 };
-#endif
 
 } // namespace
+
+TEST_CASE(
+  "Raycast acceleration matches analytic depth and preserves mesh depth handoff",
+  "[rendering][gl][raycast][workflow]")
+{
+#if defined(__APPLE__)
+  if (std::getenv("ENTROPY_TEST_GL33") == nullptr) SKIP("Interactive macOS GL worker required");
+#endif
+  HiddenOpenGlContext context;
+  if (!context.ready()) SKIP("No OpenGL context is available on this test worker");
+  const auto source = [](const std::string& name) {
+    return rendering::shader_setup::loadEmbeddedShaderSource("rendering/shaders/" + name);
+  };
+  constexpr int n = 32;
+  constexpr int extent = 16;
+  constexpr std::size_t planePixels = static_cast<std::size_t>(n) * n;
+  constexpr std::size_t pixels = static_cast<std::size_t>(extent) * extent;
+  std::vector<float> ramp(planePixels * n);
+  std::vector<uint8_t> distances(ramp.size());
+  for (std::size_t i = 0; i < ramp.size(); ++i) {
+    const std::size_t zIndex = i / planePixels;
+    const float z = (static_cast<float>(zIndex) + 0.5f) / static_cast<float>(n);
+    ramp[i] = z;
+    // Conservative physical distance to the z=21mm plane, including the
+    // voxel footprint. Nonzero skips exercise the accelerated path.
+    distances[i] = static_cast<uint8_t>(std::max(0.0f, std::floor(std::abs(42.0f * z - 21.0f) - 2.0f)));
+  }
+  GLuint textures[4]{};
+  glGenTextures(4, textures);
+  for (int unit = 0; unit < 2; ++unit) {
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_3D, textures[unit]);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, unit == 0 ? GL_LINEAR : GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, unit == 0 ? GL_LINEAR : GL_NEAREST);
+    for (auto axis : {GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_TEXTURE_WRAP_R})
+      glTexParameteri(GL_TEXTURE_3D, axis, GL_CLAMP_TO_EDGE);
+    if (unit == 0)
+      glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, n, n, n, 0, GL_RED, GL_FLOAT, ramp.data());
+    else
+      glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, n, n, n, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, distances.data());
+  }
+  glBindTexture(GL_TEXTURE_2D, textures[2]);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, extent, extent, 0, GL_RGBA, GL_FLOAT, nullptr);
+  glBindTexture(GL_TEXTURE_2D, textures[3]);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, extent, extent, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+  GLuint framebuffer = 0;
+  glGenFramebuffers(1, &framebuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textures[2], 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textures[3], 0);
+  REQUIRE(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+  const std::array<float, 8> corners{-1, -1, 1, -1, -1, 1, 1, 1};
+  GLuint vao = 0, buffer = 0;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  glGenBuffers(1, &buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(corners), corners.data(), GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(0);
+  glViewport(0, 0, extent, extent);
+  glDisable(GL_BLEND);
+  glDisable(GL_CULL_FACE);
+  glDisable(GL_SCISSOR_TEST);
+  glEnable(GL_DEPTH_TEST);
+  glDepthMask(GL_TRUE);
+  glClearDepth(1);
+  const glm::mat4 identity{1};
+  const auto worldFromTexture = glm::scale(identity, glm::vec3{14, 26, 42});
+  const auto textureFromClip = glm::translate(identity, glm::vec3{0.5f}) * glm::scale(identity, glm::vec3{0.5f});
+  const auto worldFromClip = worldFromTexture * textureFromClip;
+  std::array<std::vector<float>, 2> colors, depths;
+  for (int accelerated = 0; accelerated < 2; ++accelerated) {
+    const auto vertexSource = source("RaycastIso.vs");
+    const auto fragmentSource = rendering::preprocessShaderSource(
+      source("RaycastIso.fs"),
+      {{"SAMPLE_TEX_COORD_FUNCTION", source("functions/SampleTexCoord_Identity.glsl")},
+       {"SAMPLE_IMAGE_VALUE_FUNCTION", source("functions/SampleImageValue_Identity.glsl")},
+       {"RAYCAST_JUMP_DISTANCE_FUNCTION",
+        source(
+          accelerated ? "functions/RaycastJumpDistance_Texture.glsl"
+                      : "functions/RaycastJumpDistance_Disabled.glsl")}});
+    GLShader vertex("raycast reference vertex", ShaderType::Vertex, vertexSource.c_str());
+    GLShader fragment("raycast reference fragment", ShaderType::Fragment, fragmentSource.c_str());
+    vertex.setRegisteredUniforms(rendering::shader_setup::raycastVertexUniforms());
+    fragment.setRegisteredUniforms(rendering::shader_setup::raycastFragmentUniforms(false, accelerated != 0));
+    REQUIRE(vertex.isCompiled());
+    REQUIRE(fragment.isCompiled());
+    GLShaderProgram program("analytic raycast");
+    REQUIRE(program.attachShader(vertex));
+    REQUIRE(program.attachShader(fragment));
+    REQUIRE(program.link());
+    program.use();
+    const auto loc = [&](const char* name) {
+      return glGetUniformLocation(program.handle(), name);
+    };
+    const auto matrix = [&](const char* name, const glm::mat4& value) {
+      glUniformMatrix4fv(loc(name), 1, GL_FALSE, glm::value_ptr(value));
+    };
+    matrix("u_view_T_clip", identity);
+    matrix("u_world_T_clip", worldFromClip);
+    matrix("u_tex_T_world", glm::inverse(worldFromTexture));
+    matrix("u_world_T_tex", worldFromTexture);
+    matrix("u_clip_T_imgTex", glm::inverse(textureFromClip));
+    const glm::mat3 gradients{1.0f / n};
+    glUniformMatrix3fv(loc("u_texGrads"), 1, GL_FALSE, glm::value_ptr(gradients));
+    glUniform1f(loc("u_clipDepth"), -1);
+    glUniform1i(loc("u_imgTex"), 0);
+    glUniform1i(loc("u_jumpTex"), 1);
+    glUniform3f(loc("u_imgInvDims"), 1.0f / n, 1.0f / n, 1.0f / n);
+    glUniform1f(loc("u_samplingFactor"), 0.25f);
+    glUniform1i(loc("u_numIsos"), 1);
+    glUniform1f(loc("u_isoValues[0]"), 0.5f);
+    glUniform1f(loc("u_isoOpacities[0]"), 1);
+    glUniform3f(loc("u_isoColors[0]"), 0.2f, 0.4f, 0.7f);
+    glUniform1f(loc("u_lightingAmbient"), 1);
+    glUniform1i(loc("u_renderFrontFaces"), 1);
+    glUniform1i(loc("u_renderBackFaces"), 1);
+    glUniform1i(loc("u_noHitTransparent"), 1);
+    glDepthFunc(GL_ALWAYS);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    colors[accelerated].resize(4 * pixels);
+    depths[accelerated].resize(pixels);
+    glReadPixels(0, 0, extent, extent, GL_RGBA, GL_FLOAT, colors[accelerated].data());
+    glReadPixels(0, 0, extent, extent, GL_DEPTH_COMPONENT, GL_FLOAT, depths[accelerated].data());
+    CHECK(glGetError() == GL_NO_ERROR);
+    for (std::size_t p = 0; p < pixels; ++p) {
+      CHECK(depths[accelerated][p] == Catch::Approx(0.5f).margin(0.001f));
+      CHECK(colors[accelerated][4 * p] == Catch::Approx(0.2f).margin(1e-5));
+      CHECK(colors[accelerated][4 * p + 3] == Catch::Approx(1.0f).margin(1e-5));
+    }
+  }
+  for (std::size_t p = 0; p < pixels; ++p)
+    CHECK(depths[0][p] == Catch::Approx(depths[1][p]).margin(0.001f));
+  for (std::size_t p = 0; p < 4 * pixels; ++p)
+    CHECK(colors[0][p] == Catch::Approx(colors[1][p]).margin(1e-5));
+
+  // A mesh behind the raycast hit must fail the depth test; a nearer mesh must
+  // win. This tests the shared depth-buffer contract, not a color-only image.
+  GLShader meshVertex(
+    "depth handoff vertex",
+    ShaderType::Vertex,
+    "#version 330 core\nlayout(location=0) in vec2 p; uniform float depth; void main(){gl_Position=vec4(p,depth,1);}");
+  GLShader meshFragment(
+    "depth handoff fragment",
+    ShaderType::Fragment,
+    "#version 330 core\nout vec4 color; void main(){color=vec4(1,0,0,1);}");
+  Uniforms meshUniforms;
+  meshUniforms.insertUniform("depth", UniformType::Float, 0.0f);
+  meshVertex.setRegisteredUniforms(std::move(meshUniforms));
+  GLShaderProgram meshProgram("depth handoff");
+  REQUIRE(meshProgram.attachShader(meshVertex));
+  REQUIRE(meshProgram.attachShader(meshFragment));
+  REQUIRE(meshProgram.link());
+  meshProgram.use();
+  glDepthFunc(GL_LESS);
+  glUniform1f(glGetUniformLocation(meshProgram.handle(), "depth"), 0.5f);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  std::array<float, 4> center{};
+  glReadPixels(extent / 2, extent / 2, 1, 1, GL_RGBA, GL_FLOAT, center.data());
+  CHECK(center[0] == Catch::Approx(0.2f).margin(1e-5));
+  glUniform1f(glGetUniformLocation(meshProgram.handle(), "depth"), -0.5f);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glReadPixels(extent / 2, extent / 2, 1, 1, GL_RGBA, GL_FLOAT, center.data());
+  CHECK(center[0] == Catch::Approx(1.0f));
+  CHECK(center[1] == Catch::Approx(0.0f));
+  CHECK(glGetError() == GL_NO_ERROR);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glDeleteFramebuffers(1, &framebuffer);
+  glDeleteBuffers(1, &buffer);
+  glDeleteVertexArrays(1, &vao);
+  glDeleteTextures(4, textures);
+}
 
 TEST_CASE("OpenGL wrappers reject invalid CPU-side configuration", "[rendering][gl]")
 {
@@ -116,8 +312,10 @@ TEST_CASE("OpenGL wrappers reject invalid CPU-side configuration", "[rendering][
 TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL context", "[rendering][mesh][gl]")
 {
 #if defined(__APPLE__)
-  SKIP("Headless GLFW initialization can deadlock in non-interactive macOS test workers");
-#else
+  if (std::getenv("ENTROPY_TEST_GL33") == nullptr) {
+    SKIP("Set ENTROPY_TEST_GL33 on an interactive graphics worker to enable macOS context tests");
+  }
+#endif
   HiddenOpenGlContext context;
   if (!context.ready()) {
     SKIP("No OpenGL context is available on this test worker");
@@ -497,14 +695,15 @@ TEST_CASE("mesh framebuffer and planar texture resources work in an OpenGL conte
   }
 
   CHECK(glGetError() == GL_NO_ERROR);
-#endif
 }
 
 TEST_CASE("render pass baseline restores mutable OpenGL state", "[rendering][gl][state]")
 {
 #if defined(__APPLE__)
-  SKIP("Headless GLFW initialization can deadlock in non-interactive macOS test workers");
-#else
+  if (std::getenv("ENTROPY_TEST_GL33") == nullptr) {
+    SKIP("Set ENTROPY_TEST_GL33 on an interactive graphics worker to enable macOS context tests");
+  }
+#endif
   HiddenOpenGlContext context;
   if (!context.ready()) {
     SKIP("No OpenGL context is available on this test worker");
@@ -534,14 +733,15 @@ TEST_CASE("render pass baseline restores mutable OpenGL state", "[rendering][gl]
   CHECK(activeTexture == GL_TEXTURE0);
   CHECK(depthFunction == GL_LESS);
   CHECK(depthWrite == GL_TRUE);
-#endif
 }
 
 TEST_CASE("mesh depth-only passes do not upload surface-shading uniforms", "[rendering][mesh][gl]")
 {
 #if defined(__APPLE__)
-  SKIP("Headless GLFW initialization can deadlock in non-interactive macOS test workers");
-#else
+  if (std::getenv("ENTROPY_TEST_GL33") == nullptr) {
+    SKIP("Set ENTROPY_TEST_GL33 on an interactive graphics worker to enable macOS context tests");
+  }
+#endif
   HiddenOpenGlContext context;
   if (!context.ready()) {
     SKIP("No OpenGL context is available on this test worker");
@@ -588,5 +788,4 @@ void main()
     CHECK_NOTHROW(mesh::MeshRenderer::drawBucket(noRenderables, drawContext, program, pass));
   }
   CHECK(glGetError() == GL_NO_ERROR);
-#endif
 }

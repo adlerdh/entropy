@@ -25,7 +25,7 @@ entropy_register_coverage_test_target(TestWindowing)
 
 target_include_directories(TestWindowing PRIVATE
   "${entropy_APP_DIR}"
-  "${entropy_UI_DIR}"
+  "${entropy_UI_DIR}/.."
 )
 
 set_target_properties(TestWindowing PROPERTIES

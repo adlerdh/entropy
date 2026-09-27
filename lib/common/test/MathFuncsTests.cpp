@@ -1,6 +1,7 @@
 #include "common/Geometry.h"
 #include "common/IntersectionTypes.h"
 #include "common/MathFuncs.h"
+#include "common/AABB.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>

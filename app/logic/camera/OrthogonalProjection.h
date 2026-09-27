@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logic/camera/Projection.h"
+#include "logic/camera/CameraTypes.h"
 
 #include <glm/fwd.hpp>
 

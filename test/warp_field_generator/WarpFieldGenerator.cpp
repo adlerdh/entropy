@@ -1,8 +1,5 @@
 #include "WarpFieldGenerator.h"
 
-#include <glm/geometric.hpp>
-#include <glm/matrix.hpp>
-
 #include <itkImageFileWriter.h>
 #include <itkImageRegionIterator.h>
 #include <itkVectorImage.h>
@@ -13,12 +10,11 @@
 #include <itkMatrix.h>
 #include <itkSize.h>
 #include <itkSmartPointer.h>
-
 #include <nlohmann/json.hpp>
-
+#include <vnl_matrix_fixed.hxx>
+#include <glm/glm.hpp>
 #include <vnl_determinant.h>
 #include <vnl_matrix_fixed.h>
-#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
 #include <cctype>
@@ -26,6 +22,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <map>
 #include <numbers>

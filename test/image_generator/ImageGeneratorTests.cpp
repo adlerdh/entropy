@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
-
 #include <itkImageFileReader.h>
 #include <itkMetaDataObject.h>
 #include <itkRGBAPixel.h>
@@ -16,10 +15,10 @@
 #include <itkMatrix.h>
 #include <itkSize.h>
 #include <itkSmartPointer.h>
-
+#include <vnl_matrix_fixed.hxx>
+#include <itkFixedArray.h>
 #include <vnl_determinant.h>
 #include <vnl_matrix_fixed.h>
-#include <vnl_matrix_fixed.hxx>
 
 #include <algorithm>
 #include <cstddef>
@@ -91,9 +90,15 @@ TEST_CASE("Time-varying warp field changes vector values over time", "[image-gen
 
   const std::vector<std::size_t> frame0{4, 3, 2, 0};
   const std::vector<std::size_t> frame1{4, 3, 2, 1};
-  CHECK(image_generator::expectedComponentValue(spec, frame0, 0) != image_generator::expectedComponentValue(spec, frame1, 0));
-  CHECK(image_generator::expectedComponentValue(spec, frame0, 1) != image_generator::expectedComponentValue(spec, frame1, 1));
-  CHECK(image_generator::expectedComponentValue(spec, frame0, 2) != image_generator::expectedComponentValue(spec, frame1, 2));
+  CHECK(
+    image_generator::expectedComponentValue(spec, frame0, 0) !=
+    image_generator::expectedComponentValue(spec, frame1, 0));
+  CHECK(
+    image_generator::expectedComponentValue(spec, frame0, 1) !=
+    image_generator::expectedComponentValue(spec, frame1, 1));
+  CHECK(
+    image_generator::expectedComponentValue(spec, frame0, 2) !=
+    image_generator::expectedComponentValue(spec, frame1, 2));
 }
 
 TEST_CASE("Image generator parses vector image specifications", "[image-generator]")
@@ -312,7 +317,8 @@ TEST_CASE("Image generator writes a small 4D vector time series", "[image-genera
 
 TEST_CASE("Image generator writes canonical 1D time series as 4D NIfTI", "[image-generator][itk][time][nifti]")
 {
-  const std::filesystem::path output = std::filesystem::temp_directory_path() / "entropy-image-generator-1d-time.nii.gz";
+  const std::filesystem::path output =
+    std::filesystem::temp_directory_path() / "entropy-image-generator-1d-time.nii.gz";
 
   auto spec = image_generator::parseSpecJson(R"json({
     "pixel_kind": "scalar",
@@ -342,7 +348,8 @@ TEST_CASE("Image generator writes canonical 1D time series as 4D NIfTI", "[image
 
 TEST_CASE("Image generator writes canonical 2D time series as 4D NIfTI", "[image-generator][itk][time][nifti]")
 {
-  const std::filesystem::path output = std::filesystem::temp_directory_path() / "entropy-image-generator-2d-time.nii.gz";
+  const std::filesystem::path output =
+    std::filesystem::temp_directory_path() / "entropy-image-generator-2d-time.nii.gz";
 
   auto spec = image_generator::parseSpecJson(R"json({
     "pixel_kind": "scalar",

@@ -1,5 +1,6 @@
 add_executable(TestSerialization
   ProjectSerializationTests.cpp
+  LandmarkStreamTests.cpp
 )
 
 target_sources(TestSerialization PRIVATE

@@ -11,8 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Use one supported compiler and standard-library pairing for dependencies and
-  # first-party code. Ubuntu's IWYU package performs its analysis independently.
   CC: gcc-13
   CXX: g++-13
   CMAKE_BUILD_PARALLEL_LEVEL: 4
@@ -94,7 +92,9 @@ jobs:
             build-iwyu/external/spdlog-*
             build-iwyu/external/stduuid-*
             build-iwyu/external/tinyfsm-*
-          key: ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             ubuntu2404-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-
 
@@ -109,11 +109,7 @@ jobs:
         run: cmake --build build-iwyu --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app with IWYU
-        # Do not put a compiler launcher between CMake's IWYU invocation and GCC.
-        # IWYU performs the expensive parse regardless, so ccache provides little
-        # value for this second, analyzer-instrumented build. Pin IWYU's embedded
-        # Clang to GCC 13's compatible standard-library installation instead of
-        # allowing it to auto-select the runner's newer GCC 14 headers.
+        # Do not put a compiler launcher between CMake's IWYU invocation and GCC
         run: >-
           cmake --preset app-debug -B build-iwyu
           -D Entropy_USE_CCACHE=OFF

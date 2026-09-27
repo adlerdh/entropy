@@ -1,4 +1,5 @@
 #include "windowing/GlfwCallbacks.h"
+#include "logic/interaction/PointerGesture.h"
 
 #include "EntropyApp.h"
 #include "common/Types.h"
@@ -43,8 +44,9 @@
 
 namespace
 {
-static ButtonState s_mouseButtonState;
-static ModifierState s_modifierState;
+static PointerGesture s_pointerGesture;
+static ButtonState& s_mouseButtonState = s_pointerGesture.buttons;
+static ModifierState& s_modifierState = s_pointerGesture.modifiers;
 
 // The last cursor position in Window space
 static std::optional<ViewHit> s_prevHit;
@@ -289,9 +291,19 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
     }
   }
 
-  View* startView = s_startHit->view;
+  View* startView = app->windowData().getCurrentView(s_startHit->viewUid);
   if (!startView) {
+    s_startHit.reset();
+    s_prevHit.reset();
+    s_pointerGesture.cancel();
+    app->callbackHandler().endCrosshairsRotate2D();
+    app->appData().state().transformationGuide().finish();
     return;
+  }
+  s_startHit->view = startView;
+  if (s_prevHit) {
+    s_prevHit->view = app->windowData().getView(s_prevHit->viewUid);
+    if (!s_prevHit->view) s_prevHit.reset();
   }
 
   if (!s_prevHit) {
@@ -693,6 +705,29 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   s_prevHit = currHit_withOverride;
 }
 
+void windowFocusCallback(GLFWwindow* window, int focused)
+{
+  if (focused) return;
+  auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
+  s_pointerGesture.cancel();
+  if (app) {
+    if (s_prevHit) {
+      auto hit = *s_prevHit;
+      hit.view = app->windowData().getCurrentView(hit.viewUid);
+      if (hit.view) send_event(state::annot::MouseReleaseEvent(hit, s_mouseButtonState, s_modifierState));
+    }
+    app->callbackHandler().endCrosshairsRotate2D();
+    app->callbackHandler().clearBrushPreview();
+    app->appData().state().transformationGuide().finish();
+    app->windowData().setActiveViewUid(std::nullopt);
+  }
+  s_startHit.reset();
+  s_prevHit.reset();
+  s_imageScaleEffectivePrevHit.reset();
+  s_imageScaleViewAxisConstraint.reset();
+  s_manualImageTransformGestureAllowed.reset();
+}
+
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
   auto* app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
@@ -708,16 +743,34 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     app->appData().state().transformationGuide().finish();
   }
 
-  const ImGuiIO& io = ImGui::GetIO();
-  if (io.WantCaptureMouse) {
+  // Releases belong to the gesture that received the press, even over a UI panel.
+  const bool routeToApplication = s_pointerGesture.buttonEvent(button, action, mods, ImGui::GetIO().WantCaptureMouse);
+  bool deliveredRelease = false;
+  if (GLFW_RELEASE == action) {
+    if (s_prevHit) {
+      auto hit = *s_prevHit;
+      hit.view = app->windowData().getView(hit.viewUid);
+      if (hit.view) {
+        send_event(state::annot::MouseReleaseEvent(hit, s_mouseButtonState, s_modifierState));
+        deliveredRelease = true;
+      }
+    }
+    if (GLFW_MOUSE_BUTTON_LEFT == button) app->callbackHandler().endCrosshairsRotate2D();
+    app->appData().windowData().setActiveViewUid(std::nullopt);
+  }
+
+  if (!routeToApplication) {
+    if (GLFW_RELEASE == action) {
+      s_startHit.reset();
+      s_prevHit.reset();
+      s_imageScaleEffectivePrevHit.reset();
+      s_imageScaleViewAxisConstraint.reset();
+      s_manualImageTransformGestureAllowed.reset();
+    }
     return; // ImGui has captured event
   }
 
-  // Update button state
-  s_mouseButtonState.updateFromGlfwEvent(button, action);
-  s_modifierState.updateFromGlfwEvent(mods);
-
-  const bool jointHistogramGesture = s_startHit && isJointHistogramView(s_startHit->view);
+  const bool jointHistogramGesture = s_startHit && isJointHistogramView(app->windowData().getView(s_startHit->viewUid));
 
   // Reset start and previous hits
   s_startHit = std::nullopt;
@@ -773,7 +826,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     }
     case GLFW_RELEASE: {
       app->appData().windowData().setActiveViewUid(std::nullopt);
-      send_event(state::annot::MouseReleaseEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
+      if (!deliveredRelease)
+        send_event(state::annot::MouseReleaseEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
 
       // Releasing the left button will end crosshairs rotation:
       if (GLFW_MOUSE_BUTTON_LEFT == button) {

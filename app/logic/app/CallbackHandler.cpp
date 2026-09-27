@@ -2679,11 +2679,14 @@ bool CallbackHandler::syncManualImageTransformationOnSegs(const uuid& imageUid)
 
   for (const auto segUid : m_appData.imageToSegUids(imageUid)) {
     if (auto* seg = m_appData.seg(segUid)) {
-      seg->transformations().set_worldDef_T_affine_locked(image->transformations().is_worldDef_T_affine_locked());
-      seg->transformations().set_worldDef_T_affine_scale(image->transformations().get_worldDef_T_affine_scale());
-      seg->transformations().set_worldDef_T_affine_rotation(image->transformations().get_worldDef_T_affine_rotation());
-      seg->transformations().set_worldDef_T_affine_translation(
-        image->transformations().get_worldDef_T_affine_translation());
+      auto& tx = seg->transformations();
+      const auto& source = image->transformations();
+      tx.set_worldDef_T_affine_locked(false);
+      tx.set_worldDef_T_affine(source.stored_worldDef_T_affine());
+      tx.set_enable_worldDef_T_affine(source.get_enable_worldDef_T_affine());
+      tx.set_affine_T_subject(source.stored_affine_T_subject());
+      tx.set_enable_affine_T_subject(source.get_enable_affine_T_subject());
+      tx.set_worldDef_T_affine_locked(source.is_worldDef_T_affine_locked());
     }
   }
 

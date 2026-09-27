@@ -1,4 +1,6 @@
 [
+  { "include": ["<bits/chrono.h>", "private", "<chrono>", "public"] },
+  { "include": ["<bits/std_abs.h>", "private", "<cstdlib>", "public"] },
   { "include": ["@<glm/detail/.*>", "private", "<glm/glm.hpp>", "public"] },
   { "include": ["<glm/fwd.hpp>", "public", "<glm/glm.hpp>", "public"] },
   { "include": ["@<glm/vec[234]\\.hpp>", "public", "<glm/glm.hpp>", "public"] },

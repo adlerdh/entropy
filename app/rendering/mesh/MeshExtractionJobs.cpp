@@ -1,5 +1,4 @@
 #include "rendering/mesh/MeshExtractionJobs.h"
-
 #include "image/Image.h"
 #include "rendering/mesh/MeshData.h"
 #include "rendering/mesh/MeshGeneration.h"
@@ -8,8 +7,10 @@
 #include "rendering/mesh/MeshScalarGrid.h"
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 

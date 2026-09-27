@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <ranges>
 #include <set>
 #include <string>

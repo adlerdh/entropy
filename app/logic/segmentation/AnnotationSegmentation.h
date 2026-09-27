@@ -4,6 +4,7 @@
 
 #include <glm/fwd.hpp>
 
+#include <cstdint>
 #include <functional>
 
 class Annotation;

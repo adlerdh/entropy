@@ -128,6 +128,7 @@ bool matricesEqual(const std::optional<glm::mat4>& a, const std::optional<glm::m
 
 bool segmentationsEqual(const serialize::Segmentation& a, const serialize::Segmentation& b)
 {
+  if (a.m_active != b.m_active) return false;
   return a.m_segFileName == b.m_segFileName && segSettingsEqual(a.m_settings, b.m_settings);
 }
 
@@ -145,6 +146,7 @@ bool landmarkPointsEqual(const serialize::LandmarkPoint& a, const serialize::Lan
 
 bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::LandmarkGroup& b)
 {
+  if (a.m_active != b.m_active) return false;
   return a.m_csvFileName == b.m_csvFileName && a.m_coordinateSpace == b.m_coordinateSpace && a.m_name == b.m_name &&
          a.m_pointsEmbedded == b.m_pointsEmbedded && vectorsEqual(a.m_points, b.m_points, landmarkPointsEqual) &&
          a.m_visible == b.m_visible && a.m_opacity == b.m_opacity && a.m_color == b.m_color &&
@@ -217,6 +219,10 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 {
   return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
          spatialMetadataEqual(a.m_spatialMetadata, b.m_spatialMetadata) &&
+         a.m_useIdentityPixelSpacings == b.m_useIdentityPixelSpacings &&
+         a.m_useZeroPixelOrigin == b.m_useZeroPixelOrigin &&
+         a.m_useIdentityPixelDirections == b.m_useIdentityPixelDirections &&
+         a.m_snapToClosestOrthogonalPixelDirections == b.m_snapToClosestOrthogonalPixelDirections &&
          a.m_initialAffineFileName == b.m_initialAffineFileName &&
          a.m_initialAffineEnabled == b.m_initialAffineEnabled &&
          matricesEqual(a.m_initialAffineMatrix, b.m_initialAffineMatrix) && a.m_warpFields == b.m_warpFields &&

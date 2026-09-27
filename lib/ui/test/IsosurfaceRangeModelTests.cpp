@@ -2,9 +2,9 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
+#include <glm/glm.hpp>
 
 #include <cmath>
 #include <string>

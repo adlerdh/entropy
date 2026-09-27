@@ -2,7 +2,7 @@
 #include "logic/serialization/ProjectSerialization.h"
 
 #include <nlohmann/json.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 #include <map>
 #include <optional>

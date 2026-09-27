@@ -1,0 +1,75 @@
+name: Interactive platform validation
+
+# Checks rendering and UI scaling on real desktops. In particular, moving a
+# window between monitors at different scales should leave the UI sized correctly.
+# GitHub's hosted runners can't test this, so the workflow runs manually on our
+# own macOS, Windows, and Linux machines with two monitors and a logged-in desktop.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  display:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macOS, Windows, Linux]
+
+    # Only machines with the two-monitor setup have the entropy-display label.
+    runs-on: [self-hosted, entropy-display, "${{ matrix.platform }}"]
+    timeout-minutes: 90
+
+    env:
+      # macOS skips the OpenGL tests unless this flag is set.
+      ENTROPY_TEST_GL33: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Initialize Windows compiler environment
+        if: matrix.platform == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # The app uses the dependencies built by these first two steps.
+      - name: Configure dependencies
+        run: cmake --preset deps-release
+      - name: Build dependencies
+        run: cmake --build --preset deps-release --parallel 4
+
+      # Monitor tests are normally off because most builds don't have a desktop.
+      - name: Configure desktop tests
+        run: >-
+          cmake --preset app-release
+          -DBUILD_TESTING=ON -DEntropy_BUILD_DISPLAY_TESTS=ON
+      - name: Build desktop tests
+        run: >-
+          cmake --build build-release --config Release --parallel 4
+          --target TestDisplayTransitions TestRendering TestRenderingLibrary
+          TestUi TestInteraction TestWorkflows
+
+      # These tests run one at a time because they use the same desktop.
+      # A skipped graphics test counts as a failure here, not a successful run.
+      - name: Required graphics and physical monitor transitions
+        run: >-
+          python test/run_required_graphics.py build-release
+          --configuration Release --display-transitions
+
+      # Also check mouse input, UI sizing, saved settings, segmentation,
+      # registration, and background warp calculations.
+      - name: UI and cross-feature workflows
+        run: "ctest --test-dir build-release -C Release --output-on-failure \
+          --timeout 120 -R \"Monitor moves|Small inspector|Pointer press|Focus loss|\
+          Disabled stored|Oblique holed|Swapping equal|Registration freezes|\
+          pending warp|Generated warp|second segmentation\""
+
+      # The reports help diagnose failures, so save them even when a test fails.
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: platform-validation-${{ matrix.platform }}
+          path: |
+            build-release/required-graphics.xml
+            build-release/Testing/Temporary/LastTest.log

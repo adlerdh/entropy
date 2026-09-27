@@ -84,7 +84,8 @@ jobs:
         run: |
           cmake --version
           git --version
-          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           Get-Command candle.exe -ErrorAction Stop
           Get-Command light.exe -ErrorAction Stop
 
@@ -110,7 +111,9 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
@@ -148,8 +151,10 @@ jobs:
         working-directory: 'S:\'
         run: |
           $packageDir = "build-release\packages"
-          $msi = Get-ChildItem $packageDir -Filter "Entropy-$env:ENTROPY_VERSION-Windows-*.msi" -File | Select-Object -First 1
-          $zip = Get-ChildItem $packageDir -Filter "Entropy-$env:ENTROPY_VERSION-Windows-*-portable.zip" -File | Select-Object -First 1
+          $msi = Get-ChildItem $packageDir -Filter "Entropy-$env:ENTROPY_VERSION-Windows-*.msi" -File |
+            Select-Object -First 1
+          $zip = Get-ChildItem $packageDir -Filter "Entropy-$env:ENTROPY_VERSION-Windows-*-portable.zip" -File |
+            Select-Object -First 1
 
           if (-not $msi) {
             throw "MSI package was not found in $packageDir"
@@ -260,7 +265,9 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
@@ -298,8 +305,10 @@ jobs:
       - name: Locate release assets
         run: |
           package_dir="build-release/packages"
-          deb=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*.deb" | head -n 1)
-          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*-portable.tar.gz" | head -n 1)
+          deb=$(find "$package_dir" -maxdepth 1 -type f \
+            -name "Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*.deb" | head -n 1)
+          tarball=$(find "$package_dir" -maxdepth 1 -type f \
+            -name "Entropy-${ENTROPY_VERSION}-${LINUX_PACKAGE_LABEL}-*-portable.tar.gz" | head -n 1)
 
           if [[ -z "$deb" ]]; then
             echo "DEB package was not found in $package_dir" >&2
@@ -397,7 +406,9 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
@@ -536,7 +547,9 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
@@ -706,18 +719,25 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: >-
+            linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
+            'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Release Dependencies
-        run: cmake --preset deps-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+        run: >-
+          cmake --preset deps-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL"
+          -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}"
+          "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
       - name: Build Release Dependencies
         run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
-        run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+        run: >-
+          cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}"
+          "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -732,7 +752,8 @@ jobs:
         run: |
           rpm -qpi build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm
           rpm -qpl build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm
-          rpm -qp --requires build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm > rpm-requires.txt
+          rpm -qp --requires build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm \
+            > rpm-requires.txt
           cat rpm-requires.txt
           if grep -E '^libQt6Core[.]so[.]6' rpm-requires.txt; then
             echo "RPM requires bundled Qt Core instead of using the packaged private library" >&2
@@ -747,8 +768,10 @@ jobs:
       - name: Locate release assets
         run: |
           package_dir="build-release/packages"
-          rpm=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm" | head -n 1)
-          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*-portable.tar.gz" | head -n 1)
+          rpm=$(find "$package_dir" -maxdepth 1 -type f \
+            -name "Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm" | head -n 1)
+          tarball=$(find "$package_dir" -maxdepth 1 -type f \
+            -name "Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*-portable.tar.gz" | head -n 1)
 
           if [[ -z "$rpm" ]]; then
             echo "RPM package was not found in $package_dir" >&2
@@ -807,7 +830,8 @@ jobs:
         run: |
           prefix="Entropy-${ENTROPY_VERSION}/"
           git archive --format=zip --prefix="$prefix" -o "release-assets/Entropy-${ENTROPY_VERSION}-source.zip" HEAD
-          git archive --format=tar.gz --prefix="$prefix" -o "release-assets/Entropy-${ENTROPY_VERSION}-source.tar.gz" HEAD
+          git archive --format=tar.gz --prefix="$prefix" \
+            -o "release-assets/Entropy-${ENTROPY_VERSION}-source.tar.gz" HEAD
 
       - name: List release assets
         run: |
@@ -848,8 +872,11 @@ jobs:
 
           ## Notes
 
-          - On Ubuntu, install the \`.deb\` with \`sudo apt install ./Entropy-${ENTROPY_VERSION}-Ubuntu-x86_64.deb\`, so that package dependencies get resolved automatically. Do not use \`dpkg -i\`.
-          - The platform installer/package is intended for normal use, whereas the portable archives are for manual installs and testing.
+          - On Ubuntu, install the \`.deb\` with
+            \`sudo apt install ./Entropy-${ENTROPY_VERSION}-Ubuntu-x86_64.deb\`,
+            so that package dependencies get resolved automatically. Do not use \`dpkg -i\`.
+          - The platform installer/package is intended for normal use, whereas the
+            portable archives are for manual installs and testing.
           - The registration backends (ANTs, FireANTs, and Greedy) must be installed separately.
 
           EOF

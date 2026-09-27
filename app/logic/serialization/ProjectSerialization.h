@@ -10,11 +10,8 @@
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <glm/glm.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -500,6 +497,7 @@ struct SegSettings
  */
 struct Segmentation
 {
+  bool m_active = false;
   std::filesystem::path m_segFileName; //!< Segmentation image file
 
   /**
@@ -526,6 +524,7 @@ struct LandmarkPoint
  */
 struct LandmarkGroup
 {
+  bool m_active = false;
   std::optional<std::filesystem::path> m_csvFileName = std::nullopt; //!< External CSV file holding landmarks
 
   std::string m_name{}; //!< Landmark group display name
@@ -603,6 +602,10 @@ struct Image
 
   /// User-provided geometry for standard 2D raster images without medical spatial metadata.
   std::optional<ImageSpatialMetadata> m_spatialMetadata = std::nullopt;
+  bool m_useIdentityPixelSpacings = false;
+  bool m_useZeroPixelOrigin = false;
+  bool m_useIdentityPixelDirections = false;
+  bool m_snapToClosestOrthogonalPixelDirections = false;
 
   /**
    * Optional DICOM source. When present, this describes a full series instead of a single image file.

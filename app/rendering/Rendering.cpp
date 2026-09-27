@@ -171,6 +171,10 @@ Rendering::Rendering(AppData& appData)
 {
   static const std::string ROBOTO_LIGHT("robotoLight");
 
+  // Application state is context-free; initialize its GPU allocation explicitly
+  // on the render/context thread before any asynchronous image loading starts.
+  (void)m_appData.renderResources();
+
   if (!m_nvg) {
     spdlog::error(
       "Could not initialize 'nanovg' vector graphics library. "

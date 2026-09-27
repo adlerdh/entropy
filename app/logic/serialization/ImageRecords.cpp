@@ -143,6 +143,7 @@ serialize::SegmentationLabels segmentationLabelsFromJson(const json& j)
 void to_json(json& j, const serialize::Segmentation& seg)
 {
   j = json{{"path", pathToString(seg.m_segFileName)}};
+  addIfChanged(j, "active", seg.m_active, false);
 
   if (seg.m_settings) {
     json settings = *seg.m_settings;
@@ -155,6 +156,7 @@ void from_json(const json& j, serialize::Segmentation& seg)
   std::string p;
   j.at("path").get_to(p);
   seg.m_segFileName = p;
+  seg.m_active = j.value("active", false);
 
   if (j.count("settings")) {
     seg.m_settings = j.at("settings").get<serialize::SegSettings>();
@@ -205,6 +207,7 @@ void to_json(json& j, const serialize::LandmarkGroup& landmarks)
 {
   const serialize::LandmarkGroup defaults;
   j = json::object();
+  addIfChanged(j, "active", landmarks.m_active, false);
 
   if (landmarks.m_csvFileName) {
     j["path"] = pathToString(*landmarks.m_csvFileName);
@@ -240,6 +243,7 @@ void to_json(json& j, const serialize::LandmarkGroup& landmarks)
 
 void from_json(const json& j, serialize::LandmarkGroup& landmarks)
 {
+  landmarks.m_active = j.value("active", false);
   if (const auto path = j.find("path"); path != j.end() && path->is_string()) {
     landmarks.m_csvFileName = path->get<std::string>();
   }
@@ -433,6 +437,10 @@ void from_json(const json& j, serialize::DicomSource& source)
 void to_json(json& j, const serialize::Image& image)
 {
   j = json{{"path", pathToString(image.m_imageFileName)}};
+  addIfChanged(j, "useIdentityPixelSpacings", image.m_useIdentityPixelSpacings, false);
+  addIfChanged(j, "useZeroPixelOrigin", image.m_useZeroPixelOrigin, false);
+  addIfChanged(j, "useIdentityPixelDirections", image.m_useIdentityPixelDirections, false);
+  addIfChanged(j, "snapToClosestOrthogonalPixelDirections", image.m_snapToClosestOrthogonalPixelDirections, false);
 
   if (image.m_spatialMetadata) {
     j["spatialMetadata"] = {
@@ -509,6 +517,10 @@ void from_json(const json& j, serialize::Image& image)
   std::string p;
   j.at("path").get_to(p);
   image.m_imageFileName = p;
+  image.m_useIdentityPixelSpacings = j.value("useIdentityPixelSpacings", false);
+  image.m_useZeroPixelOrigin = j.value("useZeroPixelOrigin", false);
+  image.m_useIdentityPixelDirections = j.value("useIdentityPixelDirections", false);
+  image.m_snapToClosestOrthogonalPixelDirections = j.value("snapToClosestOrthogonalPixelDirections", false);
 
   if (const auto metadata = j.find("spatialMetadata"); metadata != j.end() && metadata->is_object()) {
     ImageSpatialMetadata spatialMetadata;

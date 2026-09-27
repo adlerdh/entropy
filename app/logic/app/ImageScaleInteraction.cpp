@@ -1,11 +1,11 @@
 #include "logic/app/ImageScaleInteraction.h"
 
-#include <glm/geometric.hpp>
 #include <glm/gtc/epsilon.hpp>
-#include <glm/vec2.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <span>
 
 namespace app

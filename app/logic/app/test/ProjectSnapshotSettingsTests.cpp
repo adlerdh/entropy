@@ -3,6 +3,7 @@
 #include "logic/app/ProjectSnapshotSettings.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
 
 #include <cstddef>
 #include <vector>

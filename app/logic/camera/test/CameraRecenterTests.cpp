@@ -7,11 +7,13 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraTypes.h"
 #include "logic/camera/Projection.h"
+#include "common/PublicTypes.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cmath>

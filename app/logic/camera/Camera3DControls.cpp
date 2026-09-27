@@ -1,5 +1,4 @@
 #include "logic/camera/Camera3DControls.h"
-
 #include "common/DirectionMaps.h"
 #include "common/Geometry.h"
 #include "common/MathFuncs.h"
@@ -14,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <tuple>

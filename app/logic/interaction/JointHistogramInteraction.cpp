@@ -1,6 +1,6 @@
 #include "logic/interaction/JointHistogramInteraction.h"
 
-#include <glm/common.hpp>
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <cmath>

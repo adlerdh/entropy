@@ -334,7 +334,10 @@ void main()
         if (candidateT < hitT) {
           hitIso = i;
           hitT = candidateT;
-          hitSign = value - u_isoValues[i];
+          // Preserve a nonzero bracket orientation even when the sampled value
+          // equals the isovalue exactly. A zero multiplier collapses bisection
+          // toward the previous sample and makes depth depend on acceleration.
+          hitSign = frontHit ? 1.0 : -1.0;
         }
       }
     }

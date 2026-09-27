@@ -1,4 +1,5 @@
 #include "rendering/Rendering.h"
+#include "rendering/DistanceMapPolicy.h"
 
 #include "logic/app/Data.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
@@ -100,7 +101,7 @@ Rendering::BoundTextures Rendering::bindScalarImageTextures(const ImgSegPair& p)
     settings.m_distanceMapForegroundUpperPercentile);
   const auto activeIsovalues = std::span{D.isosurfaces.values}.first(
     std::min<std::size_t>(static_cast<std::size_t>(std::max(D.isosurfaces.numIsos, 0)), D.isosurfaces.values.size()));
-  const bool useDistMap = settings.m_useDistanceMapForRaycasting &&
+  const bool useDistMap = rendering::distanceMapEligible(*image, settings.m_useDistanceMapForRaycasting) &&
                           std::end(R.m_distanceMapTextures) != distTextureIt &&
                           rendering::texture_setup::distanceMapSupportsIsovalues(
                             foregroundThresholds.first,

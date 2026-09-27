@@ -67,14 +67,19 @@ TEST_CASE("registration job store expands system temp output into per-job folder
   const std::string id = store.add(tempJob);
 
   REQUIRE(store.find(id));
-  CHECK(store.find(id)->spec.outputDirectory == std::filesystem::temp_directory_path() / "entropy-registration" / id);
+  CHECK(
+    store.find(id)->spec.outputDirectory.parent_path() ==
+    std::filesystem::temp_directory_path() / "entropy-registration");
 
   registration::JobSpec explicitJob = makeJob();
   explicitJob.outputDirectory = "/tmp/user-selected-registration-output";
   const std::string explicitId = store.add(explicitJob);
 
   REQUIRE(store.find(explicitId));
-  CHECK(store.find(explicitId)->spec.outputDirectory == explicitJob.outputDirectory);
+  CHECK(store.find(explicitId)->spec.outputDirectory.parent_path() == explicitJob.outputDirectory);
+  registration::JobStore anotherSession;
+  const auto otherId = anotherSession.add(tempJob);
+  CHECK(anotherSession.find(otherId)->spec.outputDirectory != store.find(id)->spec.outputDirectory);
 }
 
 TEST_CASE("registration job store tracks status and active jobs", "[registration][jobs]")
