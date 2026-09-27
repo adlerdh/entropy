@@ -24,16 +24,19 @@ std::optional<serialize::EntropyProject> project_snapshot::persistProject(
   struct AssetTransaction
   {
     std::vector<NewWarpAsset> assets;
-    bool published = false;
     ~AssetTransaction()
     {
-      if (published) return;
       for (auto& asset : assets) {
         asset.image->header().setFileName(asset.originalPath);
         asset.image->header().setExistsOnDisk(asset.originallyOnDisk);
         std::error_code error;
         fs::remove(asset.path, error);
       }
+    }
+
+    void commit() noexcept
+    {
+      assets.clear();
     }
   } assets;
   try {
@@ -76,6 +79,6 @@ std::optional<serialize::EntropyProject> project_snapshot::persistProject(
     spdlog::error("Could not save project file {}", normalizedFileName);
     return std::nullopt;
   }
-  assets.published = true;
+  assets.commit();
   return project;
 }

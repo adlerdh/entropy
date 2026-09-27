@@ -266,11 +266,11 @@ bool Service::waitForFinished(const std::chrono::milliseconds timeout) const
   return m_state->finished.wait_for(lock, timeout, [this]() { return !running(*m_state); });
 }
 
-StagedOutput::StagedOutput(std::filesystem::path destination, ReplaceFile replaceFile)
+StagedOutput::StagedOutput(std::filesystem::path destination, ReplaceOperation replaceOperation)
   : m_destination{std::move(destination)}
   , m_temporaryDirectory{makeTemporaryDirectory(m_destination)}
   , m_temporaryPath{m_temporaryDirectory / m_destination.filename()}
-  , m_replaceFile{replaceFile ? std::move(replaceFile) : ReplaceFile{replaceDestination}}
+  , m_replaceFile{replaceOperation ? std::move(replaceOperation) : ReplaceOperation{replaceDestination}}
 {
 }
 

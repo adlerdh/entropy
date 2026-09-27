@@ -46,8 +46,11 @@ bool canRenderIsosurfaceWithMesh(const IsosurfaceMeshEligibility& eligibility) n
  */
 bool isosurfaceMeshReadyForHandoff(const IsosurfaceMeshEligibility& eligibility, bool gpuMeshReady) noexcept;
 
-/** Return whether a render mode must use the live raycast preview for an actively edited isosurface. */
-bool useRaycastPreviewDuringIsosurfaceEdit(bool renderModeIncludesIsosurfaces, bool activeEdit) noexcept;
+/** Return whether a view must use the live raycast preview for an actively edited isosurface. */
+bool useRaycastPreviewDuringIsosurfaceEdit(
+  bool renderModeIncludesIsosurfaces,
+  bool imageSelectedForView,
+  bool activeEdit) noexcept;
 
 /**
  * @brief Select the mesh compositing path for an isosurface appearance

@@ -80,7 +80,7 @@ struct MeshLoadRequest
 
   /// Entropy/ITK image physical coordinates are LPS. Other clients may explicitly select RAS.
   AnatomicalCoordinateSystem imagePhysicalSystem = AnatomicalCoordinateSystem::LPS;
-  std::optional<glm::dmat4> sourceToImagePhysical;
+  std::optional<glm::dmat4> sourceToImagePhysical{};
   FreeSurferCoordinatePolicy freeSurferCoordinates = FreeSurferCoordinatePolicy::UseEmbeddedVolumeGeometry;
 };
 
@@ -107,7 +107,7 @@ struct MeshWriteRequest
 {
   std::filesystem::path path;
   const MeshRecord* mesh = nullptr;
-  std::optional<MeshFormat> format;
+  std::optional<MeshFormat> format{};
   MeshExportSpace coordinateSpace = MeshExportSpace::ImagePhysical;
   glm::dmat4 imagePhysicalToWorld{1.0};
   const IPointTransform* deformation = nullptr;

@@ -110,11 +110,13 @@ TEST_CASE(
   };
   constexpr int n = 32;
   constexpr int extent = 16;
-  constexpr std::size_t pixels = extent * extent;
-  std::vector<float> ramp(n * n * n);
+  constexpr std::size_t planePixels = static_cast<std::size_t>(n) * n;
+  constexpr std::size_t pixels = static_cast<std::size_t>(extent) * extent;
+  std::vector<float> ramp(planePixels * n);
   std::vector<uint8_t> distances(ramp.size());
   for (std::size_t i = 0; i < ramp.size(); ++i) {
-    const float z = (static_cast<float>(i / (n * n)) + 0.5f) / n;
+    const std::size_t zIndex = i / planePixels;
+    const float z = (static_cast<float>(zIndex) + 0.5f) / static_cast<float>(n);
     ramp[i] = z;
     // Conservative physical distance to the z=21mm plane, including the
     // voxel footprint. Nonzero skips exercise the accelerated path.

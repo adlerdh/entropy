@@ -18,7 +18,8 @@ TEST_CASE("Pointer press drag capture release resume never leaves an owned butto
   move();
   CHECK(modelChanges == 1);
   CHECK_FALSE(gesture.modifiers.shift);
-  CHECK_FALSE(gesture.buttonEvent(button, 1, 0, true));
+  gesture.buttonEvent(button, 1, 0, true);
+  CHECK_FALSE(gesture.dragging());
   move();
   CHECK(modelChanges == 1);
   REQUIRE(gesture.buttonEvent(button, 1, 0, false));

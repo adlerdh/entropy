@@ -56,7 +56,7 @@ struct JobExecutionCallbacks
  * @return Final job execution summary.
  */
 JobExecution executeJob(
-  const JobSpec& job,
+  const JobSpec& jobArg,
   const CommandGenerationOptions& commandOptionsArg,
   IProcessRunner& processRunner,
   const JobExecutionCallbacks& callbacks = {});

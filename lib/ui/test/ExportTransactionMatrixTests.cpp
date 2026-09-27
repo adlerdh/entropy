@@ -78,6 +78,7 @@ TEST_CASE("Aborted writers cannot publish partial bytes or destroy existing side
   writeBytes(destination, "original header");
   writeBytes(directory.path() / "labels.raw", "original pixels");
   std::filesystem::path staging;
+  bool writeFailed = false;
   try {
     ui::export_jobs::StagedOutput output(destination);
     staging = output.temporaryPath().parent_path();
@@ -86,7 +87,9 @@ TEST_CASE("Aborted writers cannot publish partial bytes or destroy existing side
     throw std::ios_base::failure("injected write/flush failure");
   }
   catch (const std::ios_base::failure&) {
+    writeFailed = true;
   }
+  CHECK(writeFailed);
   CHECK(readBytes(destination) == "original header");
   CHECK(readBytes(directory.path() / "labels.raw") == "original pixels");
   CHECK_FALSE(std::filesystem::exists(staging));

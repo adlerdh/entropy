@@ -6,6 +6,7 @@
 #include "rendering/ImageDrawing.h"
 #include "rendering/helpers/TextureSetupHelpers.h"
 #include "rendering/gl/GLTexture.h"
+#include "rendering/mesh/MeshIsosurfacePolicy.h"
 #include "windowing/View.h"
 
 #include <spdlog/spdlog.h>
@@ -13,6 +14,7 @@
 #include <functional>
 #include <list>
 #include <optional>
+#include <ranges>
 #include <span>
 
 namespace
@@ -59,7 +61,22 @@ bool Rendering::renderVolumeImagesForView(const View& view, const bool interacti
 
   // The raycast shader remains a single-volume fallback. During isovalue edits, render only the edited surface through
   // this live path so all committed meshes are hidden until the edit finishes.
-  const std::optional<ActiveIsosurfaceEdit> handoffSurface = activeEdit ? activeEdit : m_isosurfaceRaycastHandoff;
+  // The handoff is shared across views, but image selection is view-local; never carry the preview into a view that
+  // does not select its source image.
+  const bool handoffImageSelectedForView = m_isosurfaceRaycastHandoff &&
+                                           m_isosurfaceRaycastHandoff->imageSegPair.first &&
+                                           std::ranges::any_of(imageSegPairs, [this](const ImgSegPair& pair) {
+                                             return pair.first == m_isosurfaceRaycastHandoff->imageSegPair.first;
+                                           });
+  std::optional<ActiveIsosurfaceEdit> handoffSurface = activeEdit;
+  if (
+    !handoffSurface && rendering::mesh::useRaycastPreviewDuringIsosurfaceEdit(
+                         view.threeDSceneContents().contains(ThreeDSceneContent::Isosurfaces),
+                         handoffImageSelectedForView,
+                         m_isosurfaceRaycastHandoff.has_value()))
+  {
+    handoffSurface = m_isosurfaceRaycastHandoff;
+  }
   const ImgSegPair imgSegPair = handoffSurface ? handoffSurface->imageSegPair : imageSegPairs.front();
   const std::optional<uuid> onlyIsosurfaceUid =
     handoffSurface ? std::optional<uuid>{handoffSurface->isosurfaceUid} : std::nullopt;

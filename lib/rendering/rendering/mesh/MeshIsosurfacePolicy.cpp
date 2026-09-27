@@ -24,9 +24,12 @@ bool isosurfaceMeshReadyForHandoff(const IsosurfaceMeshEligibility& eligibility,
   return canRenderIsosurfaceWithMesh(eligibility) && gpuMeshReady;
 }
 
-bool useRaycastPreviewDuringIsosurfaceEdit(const bool renderModeIncludesIsosurfaces, const bool activeEdit) noexcept
+bool useRaycastPreviewDuringIsosurfaceEdit(
+  const bool renderModeIncludesIsosurfaces,
+  const bool imageSelectedForView,
+  const bool activeEdit) noexcept
 {
-  return renderModeIncludesIsosurfaces && activeEdit;
+  return renderModeIncludesIsosurfaces && imageSelectedForView && activeEdit;
 }
 
 MeshCompositingMode compositingModeForIsosurfaceAlpha(

@@ -25,7 +25,7 @@ using ProjectWriter = std::function<bool(const serialize::EntropyProject&, const
 /// Publish generated warp assets and project atomically with metadata rollback on failure.
 std::optional<serialize::EntropyProject> persistProject(
   AppData& data,
-  const std::filesystem::path& path,
+  const std::filesystem::path& normalizedFileName,
   const DicomSources& dicomSources = {},
   const NativeViews& nativeViews = {},
   const ProjectWriter& writeProject = serialize::save);

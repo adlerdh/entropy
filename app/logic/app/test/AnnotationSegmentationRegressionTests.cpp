@@ -12,15 +12,16 @@ namespace
 {
 Image makeSegmentation(bool rotated)
 {
+  constexpr std::size_t side = 64;
   ImageIoInfo info;
   info.m_componentInfo.m_componentType = ComponentType::UInt16;
   info.m_componentInfo.m_componentSizeInBytes = 2;
   info.m_pixelInfo.m_pixelType = PixelType::Scalar;
   info.m_pixelInfo.m_numComponents = 1;
   info.m_pixelInfo.m_pixelStrideInBytes = 2;
-  info.m_sizeInfo.m_imageSizeInPixels = 64 * 64;
-  info.m_sizeInfo.m_imageSizeInComponents = 64 * 64;
-  info.m_sizeInfo.m_imageSizeInBytes = 64 * 64 * 2;
+  info.m_sizeInfo.m_imageSizeInPixels = side * side;
+  info.m_sizeInfo.m_imageSizeInComponents = side * side;
+  info.m_sizeInfo.m_imageSizeInBytes = side * side * sizeof(uint16_t);
   info.m_spaceInfo.m_numDimensions = 3;
   info.m_spaceInfo.m_dimensions = {64, 64, 1};
   info.m_spaceInfo.m_spacing = {1, 1, 1};
@@ -32,7 +33,7 @@ Image makeSegmentation(bool rotated)
 
   if (rotated) info.m_spaceInfo.m_origin = {0, -32 * std::sqrt(2.0), 0};
   ImageHeader header(info, info, false);
-  std::vector<uint16_t> labels(64 * 64, 0);
+  std::vector<uint16_t> labels(side * side, 0);
 
   return Image::fromCopiedData(
     header,

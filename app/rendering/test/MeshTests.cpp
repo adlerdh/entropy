@@ -1421,9 +1421,10 @@ TEST_CASE("isosurface mesh policy keeps raycast-only states on the raycast path"
 
 TEST_CASE("active isosurface edits retain a raycast preview in combined surface mode", "[rendering][mesh]")
 {
-  CHECK(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, true));
-  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, false));
-  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(false, true));
+  CHECK(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, true, true));
+  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, true, false));
+  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(false, true, true));
+  CHECK_FALSE(mesh::useRaycastPreviewDuringIsosurfaceEdit(true, false, true));
 }
 
 TEST_CASE("isosurface raycasting hands off only after the exact mesh is GPU-ready", "[rendering][mesh]")

@@ -22,8 +22,8 @@ using ImageLoadFailure =
 /// Apply persisted display, geometry overrides, and enabled/disabled affine state.
 /// Shared by the interactive loader and headless project workflow tests.
 void restoreImageState(
-  Image& image,
-  const serialize::Image& record,
+  Image& target,
+  const serialize::Image& serializedImage,
   bool isReferenceImage,
   const ImageLoadFailure& reportFailure);
 /**

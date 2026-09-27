@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
@@ -406,9 +407,9 @@ JobExecution executeJob(
     &manifest.inverseWarp,
     &manifest.forwardWarp,
     &manifest.affineTransform};
-  for (auto* paths : {&manifest.warpedSegmentations, &manifest.transformedSurfaces, &manifest.transformedLandmarks})
-    for (auto& path : *paths)
-      outputs.push_back(&path);
+  for (auto* paths : {&manifest.warpedSegmentations, &manifest.transformedSurfaces, &manifest.transformedLandmarks}) {
+    std::ranges::transform(*paths, std::back_inserter(outputs), [](auto& path) { return &path; });
+  }
   for (auto* path : outputs) {
     if (path->empty()) continue;
     if (path->is_relative()) *path = job.outputDirectory / *path;

@@ -34,7 +34,7 @@ TEST_CASE(
 {
   TempDirectory directory;
   const auto base = translationField(Grid{}, {0, 0, 0});
-  constexpr std::size_t count = 9 * 11 * 7;
+  constexpr std::size_t count = std::size_t{9} * 11 * 7;
   std::array<std::vector<float>, 3> components;
   for (unsigned c = 0; c < 3; ++c) {
     components[c].resize(count * 2);
@@ -410,6 +410,8 @@ TEST_CASE(
       REQUIRE(data.assignInverseWarpUidToImage(moving, *selected, reference));
       break;
     }
+    default:
+      FAIL("Unexpected mutation");
   }
   const auto selectedTarget = data.imageToActiveInverseWarpUid(moving);
   gate.release();
