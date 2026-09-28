@@ -77,7 +77,7 @@ void drawImageQuad(
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage,
-  bool showEdges,
+  image_drawing::ImagePassMode imagePassMode,
   const bool metricUsesWorldSampling)
 {
   if (imagePairs.empty()) {
@@ -118,7 +118,10 @@ void drawImageQuad(
   float mipSamplingDistance_cm = 0.0f;
 
   // Only compute these if doing a MIP:
-  if (intensityProjectionSupported && IntensityProjectionMode::None != view.intensityProjectionMode()) {
+  if (
+    intensityProjectionSupported && image_drawing::ImagePassMode::Image == imagePassMode &&
+    IntensityProjectionMode::None != view.intensityProjectionMode())
+  {
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     texSamplingDirZ = image_drawing::computeTextureSamplingDirectionForViewAxis(
@@ -166,7 +169,7 @@ void drawImageQuad(
 
     program.setUniform("u_clipCrosshairs", glm::vec2{clipXhairs / clipXhairs.w});
 
-    if (showEdges) {
+    if (image_drawing::ImagePassMode::VoxelEdges == imagePassMode) {
       program.setUniform("u_texelDirs", texSamplingDirsForEdges);
     }
     else if (intensityProjectionSupported) {
@@ -174,9 +177,12 @@ void drawImageQuad(
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
       program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
-      program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
+      const auto mipMode = image_drawing::ImagePassMode::ImageWithoutIntensityProjection == imagePassMode
+                             ? IntensityProjectionMode::None
+                             : view.intensityProjectionMode();
+      program.setUniform("u_mipMode", underlyingType_asInt32(mipMode));
 
-      if (IntensityProjectionMode::Xray == view.intensityProjectionMode()) {
+      if (IntensityProjectionMode::Xray == mipMode) {
         // Convert window/level to slope/intercept:
         const float window = std::max(xrayIntensityWindow, 1.0e-3f);
 

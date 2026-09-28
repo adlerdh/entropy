@@ -4,6 +4,7 @@
 #include "logic/camera/CameraTypes.h"
 #include "rendering/RenderResources.h"
 #include "rendering/RenderSettings.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
 
 #include <glm/fwd.hpp>
 
@@ -40,7 +41,7 @@ class View;
  * @param xrayIntensityLevel Window level used by the X-ray projection shader.
  * @param imagePairs Fixed/moving image UID pairs used by the selected render mode.
  * @param getImage Lookup callback that resolves an optional image UID to an image pointer.
- * @param showEdges When true, render pixel edge overlays instead of intensity projection sampling.
+ * @param imagePassMode Select ordinary image sampling, image sampling without intensity projection, or voxel edges.
  * @param metricUsesWorldSampling Whether a warped metric shader samples patch offsets in world rather than texture
  * space.
  */
@@ -59,7 +60,7 @@ void drawImageQuad(
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage,
-  bool showEdges,
+  rendering::image_drawing::ImagePassMode imagePassMode,
   bool metricUsesWorldSampling = false);
 
 /**

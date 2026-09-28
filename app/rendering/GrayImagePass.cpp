@@ -99,7 +99,8 @@ void Rendering::renderGrayImageForImage(
   const CurrentImages renderGeometryImages{
     referenceImageUid ? ImgSegPair{*referenceImageUid, std::nullopt} : imgSegPair};
 
-  auto drawGrayImage = [&](const bool disableIntensityProjectionForEdges) {
+  auto drawGrayImage = [&](const rendering::image_drawing::ImagePassMode imagePassMode) {
+    const bool useXray = doXray && rendering::image_drawing::ImagePassMode::Image == imagePassMode;
     GLShaderProgram* program = nullptr;
 
     switch (image.settings().interpolationMode()) {
@@ -107,13 +108,13 @@ void Rendering::renderGrayImageForImage(
         program = &shaderProgramForTextureDimension(
           m_shaderPrograms,
           m_shaderPrograms2D,
-          doXray ? (renderWarped ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear)
-                 : (renderWarped ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear),
+          useXray ? (renderWarped ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear)
+                  : (renderWarped ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear),
           imageTextureLayout.dimension);
         break;
       }
       case InterpolationMode::Linear: {
-        if (doXray) {
+        if (useXray) {
           program = &shaderProgramForTextureDimension(
             m_shaderPrograms,
             m_shaderPrograms2D,
@@ -144,8 +145,8 @@ void Rendering::renderGrayImageForImage(
         program = &shaderProgramForTextureDimension(
           m_shaderPrograms,
           m_shaderPrograms2D,
-          doXray ? (renderWarped ? ShaderProgramType::XrayCubicWarped : ShaderProgramType::XrayCubic)
-                 : (renderWarped ? ShaderProgramType::ImageGrayCubicWarped : ShaderProgramType::ImageGrayCubic),
+          useXray ? (renderWarped ? ShaderProgramType::XrayCubicWarped : ShaderProgramType::XrayCubic)
+                  : (renderWarped ? ShaderProgramType::ImageGrayCubicWarped : ShaderProgramType::ImageGrayCubic),
           imageTextureLayout.dimension);
         break;
       }
@@ -167,7 +168,7 @@ void Rendering::renderGrayImageForImage(
         renderWarped ? deformationUid : std::nullopt,
         uniforms.imgTexture_T_world);
 
-      if (doXray) {
+      if (useXray) {
         program->setUniform("u_imgSlope_native_T_texture", uniforms.slope_native_T_texture);
         program->setUniform("u_waterAttenCoeff", renderSettings.m_waterMassAttenCoeff);
         program->setUniform("u_airAttenCoeff", renderSettings.m_airMassAttenCoeff);
@@ -188,7 +189,7 @@ void Rendering::renderGrayImageForImage(
       program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage);
       program->setUniform("u_renderMode", displayModeUniform);
-      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, disableIntensityProjectionForEdges);
+      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, imagePassMode);
     }
     GLShaderProgram::stopUse();
 
@@ -222,11 +223,11 @@ void Rendering::renderGrayImageForImage(
       renderTargetViewport,
       viewRect,
       uniforms,
-      [&]() { drawGrayImage(false); },
+      [&]() { drawGrayImage(rendering::image_drawing::ImagePassMode::Image); },
       bindPixelEdgeColormap);
   }
   else if (edgePassPlan.drawImageDirectly) {
-    drawGrayImage(edgePassPlan.disableIntensityProjectionForDirectImage);
+    drawGrayImage(edgePassPlan.directImageMode);
   }
 
   if (edgePassPlan.drawVoxelEdges) {
@@ -279,7 +280,12 @@ void Rendering::renderGrayImageForImage(
       program->setUniform("u_edgeThreshold", uniforms.voxelEdgeThreshold);
       program->setUniform("u_colormapEdges", uniforms.colormapEdges);
       program->setUniform("u_edgeColor", uniforms.edgeColor);
-      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, true);
+      renderOneImage(
+        view,
+        worldOffsetXhairs,
+        *program,
+        renderGeometryImages,
+        rendering::image_drawing::ImagePassMode::VoxelEdges);
     }
     GLShaderProgram::stopUse();
 

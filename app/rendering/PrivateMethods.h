@@ -256,7 +256,7 @@ void renderVectorWarpedGridOverlaysForView(
  * @param worldOffsetXhairs Crosshairs position including the view slice offset.
  * @param program Linked shader program for the selected image render mode.
  * @param imageSegPairs Image/segmentation ids to render.
- * @param showEdges True when edge overlays should be included in this image pass.
+ * @param imagePassMode Select ordinary image sampling, image sampling without intensity projection, or voxel edges.
  * @param metricUsesWorldSampling Whether a warped metric program samples offsets in world space.
  */
 void renderOneImage(
@@ -264,7 +264,7 @@ void renderOneImage(
   const glm::vec3& worldOffsetXhairs,
   GLShaderProgram& program,
   const CurrentImages& imageSegPairs,
-  bool showEdges,
+  rendering::image_drawing::ImagePassMode imagePassMode,
   bool metricUsesWorldSampling = false);
 
 /**

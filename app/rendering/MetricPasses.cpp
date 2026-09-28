@@ -214,7 +214,13 @@ void Rendering::renderMetricImagesForView(
       program.setUniform("u_useSquare", settings.m_useSquare);
       setMetricSamplingUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
+      renderOneImage(
+        view,
+        worldOffsetXhairs,
+        program,
+        imageSegPairs,
+        rendering::image_drawing::ImagePassMode::Image,
+        renderWarpedMetric);
     }
     GLShaderProgram::stopUse();
   }
@@ -249,7 +255,13 @@ void Rendering::renderMetricImagesForView(
       program.setUniform("u_invalidStyle", static_cast<int>(settings.m_localNccInvalidStyle));
       setMetricSamplingUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
+      renderOneImage(
+        view,
+        worldOffsetXhairs,
+        program,
+        imageSegPairs,
+        rendering::image_drawing::ImagePassMode::Image,
+        renderWarpedMetric);
     }
     GLShaderProgram::stopUse();
   }
@@ -284,7 +296,13 @@ void Rendering::renderMetricImagesForView(
       program.setUniform("u_invalidStyle", static_cast<int>(settings.m_localLinearResidualInvalidStyle));
       setMetricSamplingUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
+      renderOneImage(
+        view,
+        worldOffsetXhairs,
+        program,
+        imageSegPairs,
+        rendering::image_drawing::ImagePassMode::Image,
+        renderWarpedMetric);
     }
     GLShaderProgram::stopUse();
   }
@@ -311,7 +329,13 @@ void Rendering::renderMetricImagesForView(
       program.setUniform("u_magentaCyan", settings.m_overlayMagentaCyan);
       setMetricSamplingUniforms(program);
 
-      renderOneImage(view, worldOffsetXhairs, program, imageSegPairs, false, renderWarpedMetric);
+      renderOneImage(
+        view,
+        worldOffsetXhairs,
+        program,
+        imageSegPairs,
+        rendering::image_drawing::ImagePassMode::Image,
+        renderWarpedMetric);
     }
     GLShaderProgram::stopUse();
   }

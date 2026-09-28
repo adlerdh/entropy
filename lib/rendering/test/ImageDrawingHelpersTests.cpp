@@ -127,6 +127,7 @@ TEST_CASE("image edge pass planning handles supported and offscreen targets", "[
   CHECK(plan.drawImageDirectly);
   CHECK_FALSE(plan.drawScreenPixelEdges);
   CHECK_FALSE(plan.drawVoxelEdges);
+  CHECK(plan.directImageMode == image_drawing::ImagePassMode::Image);
 
   plan = image_drawing::computeEdgePassPlan(false, true, false, true);
   CHECK_FALSE(plan.drawImageDirectly);
@@ -136,7 +137,7 @@ TEST_CASE("image edge pass planning handles supported and offscreen targets", "[
   plan = image_drawing::computeEdgePassPlan(false, true, false, false);
   CHECK(plan.drawImageDirectly);
   CHECK_FALSE(plan.drawScreenPixelEdges);
-  CHECK_FALSE(plan.disableIntensityProjectionForDirectImage);
+  CHECK(plan.directImageMode == image_drawing::ImagePassMode::Image);
 
   plan = image_drawing::computeEdgePassPlan(true, false, false, true);
   CHECK_FALSE(plan.drawImageDirectly);
@@ -145,7 +146,7 @@ TEST_CASE("image edge pass planning handles supported and offscreen targets", "[
   plan = image_drawing::computeEdgePassPlan(true, false, true, true);
   CHECK(plan.drawImageDirectly);
   CHECK(plan.drawVoxelEdges);
-  CHECK(plan.disableIntensityProjectionForDirectImage);
+  CHECK(plan.directImageMode == image_drawing::ImagePassMode::ImageWithoutIntensityProjection);
 }
 
 TEST_CASE("image drawing estimates screen pixels per voxel axis", "[rendering][image-drawing]")

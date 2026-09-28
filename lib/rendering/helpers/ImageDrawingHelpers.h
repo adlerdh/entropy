@@ -9,6 +9,13 @@
 namespace rendering::image_drawing
 {
 
+enum class ImagePassMode
+{
+  Image,
+  ImageWithoutIntensityProjection,
+  VoxelEdges
+};
+
 struct MipSamplingParams
 {
   int halfNumSamples = 0;
@@ -20,7 +27,7 @@ struct EdgePassPlan
   bool drawImageDirectly = true;
   bool drawScreenPixelEdges = false;
   bool drawVoxelEdges = false;
-  bool disableIntensityProjectionForDirectImage = false;
+  ImagePassMode directImageMode = ImagePassMode::Image;
 };
 
 /** @brief Select image and edge passes without invoking screen-space post-processing in unsupported render targets. */

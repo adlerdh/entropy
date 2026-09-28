@@ -39,7 +39,7 @@ EdgePassPlan computeEdgePassPlan(
   plan.drawScreenPixelEdges = showScreenPixelEdges && allowScreenPixelEdgePostProcessing;
   plan.drawVoxelEdges = showVoxelEdges;
   plan.drawImageDirectly = !plan.drawScreenPixelEdges && (!showVoxelEdges || overlayEdges);
-  plan.disableIntensityProjectionForDirectImage = showVoxelEdges;
+  plan.directImageMode = showVoxelEdges ? ImagePassMode::ImageWithoutIntensityProjection : ImagePassMode::Image;
   return plan;
 }
 

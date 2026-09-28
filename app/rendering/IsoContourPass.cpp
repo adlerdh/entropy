@@ -158,7 +158,12 @@ void Rendering::renderIsoContoursForImage(
     program->setUniform("u_quadrants", renderSettings.m_quadrants);
     program->setUniform("u_showFix", isFixedImage);
     program->setUniform("u_renderMode", displayModeUniform);
-    renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, false);
+    renderOneImage(
+      view,
+      worldOffsetXhairs,
+      *program,
+      renderGeometryImages,
+      rendering::image_drawing::ImagePassMode::Image);
   }
   GLShaderProgram::stopUse();
 

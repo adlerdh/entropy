@@ -41,7 +41,7 @@ void Rendering::renderOneImage(
   const glm::vec3& worldOffsetXhairs,
   GLShaderProgram& program,
   const CurrentImages& imageSegPairs,
-  bool showEdges,
+  rendering::image_drawing::ImagePassMode imagePassMode,
   const bool metricUsesWorldSampling)
 {
   auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image* {
@@ -66,7 +66,7 @@ void Rendering::renderOneImage(
     settings.m_xrayIntensityLevel,
     imageSegPairs,
     getImage,
-    showEdges,
+    imagePassMode,
     metricUsesWorldSampling);
 }
 

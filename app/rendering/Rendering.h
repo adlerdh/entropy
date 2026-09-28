@@ -11,6 +11,7 @@
 #include "rendering/ViewOverlayVisibility.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderType.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/gl/GLShaderProgram.h"
 #include "rendering/gl/Uniforms.h"
 #include "rendering/mesh/AmbientOcclusionResources.h"

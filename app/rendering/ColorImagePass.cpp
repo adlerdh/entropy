@@ -67,7 +67,7 @@ void Rendering::renderColorImageForImage(
     static_cast<int>(deviceViewport.z),
     static_cast<int>(deviceViewport.w)};
 
-  auto drawColorImage = [&](const bool disableIntensityProjectionForEdges) {
+  auto drawColorImage = [&](const image_drawing::ImagePassMode imagePassMode) {
     GLShaderProgram* program = nullptr;
 
     switch (image.settings().colorInterpolationMode()) {
@@ -116,7 +116,7 @@ void Rendering::renderColorImageForImage(
       program->setUniform("u_quadrants", renderSettings.m_quadrants);
       program->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
       program->setUniform("u_renderMode", displayModeUniform);
-      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, disableIntensityProjectionForEdges);
+      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, imagePassMode);
     }
     GLShaderProgram::stopUse();
 
@@ -150,11 +150,11 @@ void Rendering::renderColorImageForImage(
       renderTargetViewport,
       viewRect,
       uniforms,
-      [&]() { drawColorImage(false); },
+      [&]() { drawColorImage(image_drawing::ImagePassMode::Image); },
       bindPixelEdgeColormap);
   }
   else if (edgePassPlan.drawImageDirectly) {
-    drawColorImage(edgePassPlan.disableIntensityProjectionForDirectImage);
+    drawColorImage(edgePassPlan.directImageMode);
   }
 
   if (edgePassPlan.drawVoxelEdges) {
@@ -207,7 +207,7 @@ void Rendering::renderColorImageForImage(
       program->setUniform("u_edgeThreshold", uniforms.voxelEdgeThreshold);
       program->setUniform("u_colormapEdges", uniforms.colormapEdges);
       program->setUniform("u_edgeColor", uniforms.edgeColor);
-      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, true);
+      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, image_drawing::ImagePassMode::VoxelEdges);
     }
     GLShaderProgram::stopUse();
 
