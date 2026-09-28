@@ -70,6 +70,7 @@ add_subdirectory(external)
 include(BuildStamp)
 BuildStamp()
 
+add_subdirectory(lib/deformation)
 add_subdirectory(lib/common)
 add_subdirectory(lib/mesh)
 add_subdirectory(lib/rendering)

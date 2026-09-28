@@ -10,7 +10,8 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  # A moved tag supersedes the previous run and its artifacts.
+  cancel-in-progress: true
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 2
