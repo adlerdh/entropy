@@ -21,7 +21,12 @@ enum class ContractFailure
   IncompatibleDomains,   //!< Paired maps must have the same spatial dimensionality.
   InvalidRevision,       //!< Revision zero is reserved and cannot identify a map pair.
   InvalidPolicyVersion,  //!< Numerical policy version zero is reserved.
-  InvalidMapDirection    //!< A map direction is not one of the supported enum values.
+  InvalidMapDirection,   //!< A map direction is not one of the supported enum values.
+  InvalidBrush,          //!< Brush support, motion, strength, or protection is invalid.
+  InvalidLattice,        //!< A lattice cannot cover the requested brush within its allocation budget.
+  InvalidStroke,         //!< Stroke samples or resampling limits violate their contract.
+  InvalidQualityPolicy,  //!< Numerical acceptance thresholds are inconsistent or non-finite.
+  InvalidIntegration     //!< Reference integration parameters are invalid.
 };
 
 /**

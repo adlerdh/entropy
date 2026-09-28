@@ -15,18 +15,26 @@ add_library(Entropy::Deformation ALIAS EntropyDeformation)
 
 target_sources(EntropyDeformation
   PRIVATE
+    BrushStep.cpp
     ContractError.cpp
     FieldDomain.cpp
     MapPairDescriptor.cpp
+    QualityPolicy.cpp
+    StrokeSampling.cpp
+    VelocityLattice.cpp
   PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
+      BrushStep.h
       ContractError.h
       FieldDomain.h
       MapPairDescriptor.h
+      QualityPolicy.h
+      StrokeSampling.h
       Types.h
+      VelocityLattice.h
 )
 
 target_include_directories(EntropyDeformation PUBLIC
