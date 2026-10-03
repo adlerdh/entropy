@@ -361,7 +361,7 @@ The tag-driven release workflow uses this matrix:
 | --- | --- | --- | --- |
 | Windows x86_64 | `windows-2022` | MSI and portable ZIP | Release tests and staged-install smoke test |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | DEB and portable TAR.GZ | Release tests, DEB inspection, and staged-install smoke test |
-| macOS arm64 | `macos-14` | DMG and ZIP | Release tests and staged-install smoke test |
+| macOS arm64 | `macos-15` | DMG and ZIP | Release tests and staged-install smoke test |
 | macOS x86_64 | `macos-15-intel` | DMG and ZIP | Release tests and staged-install smoke test |
 | Fedora 43 x86_64 | Fedora container on `ubuntu-24.04` | RPM and portable TAR.GZ | Release tests, RPM dependency checks, and staged-install smoke test |
 

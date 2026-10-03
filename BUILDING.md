@@ -490,7 +490,7 @@ The main CI build matrix is:
 
 | Platform | Runner | Toolchain | Scope |
 | --- | --- | --- | --- |
-| macOS arm64 | `macos-14` | Apple Clang through Xcode | Debug build and tests, release packages, optional coverage |
+| macOS arm64 | `macos-15` | Apple Clang through Xcode | Debug build and tests, release packages, optional coverage |
 | macOS x86_64 | `macos-15-intel` | Apple Clang through Xcode | Debug build and tests, release packages |
 | macOS arm64 compatibility | `macos-26` | Apple Clang through Xcode | Scheduled/manual Debug build and tests on a newer macOS runner |
 | Windows x86_64 | `windows-2022` | Visual Studio 2022 / MSVC v143 | Debug build and tests, release packages, optional coverage |

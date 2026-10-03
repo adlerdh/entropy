@@ -51,7 +51,7 @@ env:
 jobs:
   format:
     name: Format Check
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
       - name: Check out source
@@ -80,7 +80,7 @@ jobs:
 
   debug-arm64:
     name: Debug Build And Tests (arm64)
-    runs-on: macos-14
+    runs-on: macos-15
     needs: format
     if: >
       github.event_name == 'pull_request' ||
@@ -109,9 +109,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .ccache
-          key: macos14-arm64-appleclang-debug-ccache-v1-${{ github.run_id }}
+          key: macos15-arm64-appleclang-debug-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            macos14-arm64-appleclang-debug-ccache-v1-
+            macos15-arm64-appleclang-debug-ccache-v1-
 
       - name: Reset Debug ccache stats
         run: |
@@ -144,10 +144,10 @@ jobs:
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
           key: >-
-            macos14-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            macos15-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{
             hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
+            macos15-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Debug Dependencies
         run: >
@@ -290,7 +290,7 @@ jobs:
 
   coverage-arm64:
     name: macOS Coverage Report (arm64)
-    runs-on: macos-14
+    runs-on: macos-15
     needs: format
     if: github.event_name == 'workflow_dispatch' && inputs.run_coverage
 
@@ -316,9 +316,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .ccache
-          key: macos14-arm64-appleclang-coverage-ccache-v1-${{ github.run_id }}
+          key: macos15-arm64-appleclang-coverage-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            macos14-arm64-appleclang-coverage-ccache-v1-
+            macos15-arm64-appleclang-coverage-ccache-v1-
 
       - name: Reset Coverage ccache stats
         run: |
@@ -351,10 +351,10 @@ jobs:
             build-coverage/external/stduuid-*
             build-coverage/external/tinyfsm-*
           key: >-
-            macos14-arm64-appleclang-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            macos15-arm64-appleclang-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-${{
             hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-
+            macos15-arm64-appleclang-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Coverage Dependencies
         run: >
@@ -415,7 +415,7 @@ jobs:
 
   package-arm64:
     name: macOS Release Packages (arm64)
-    runs-on: macos-14
+    runs-on: macos-15
     needs: format
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
 
@@ -441,9 +441,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .ccache
-          key: macos14-arm64-appleclang-release-ccache-v1-${{ github.run_id }}
+          key: macos15-arm64-appleclang-release-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            macos14-arm64-appleclang-release-ccache-v1-
+            macos15-arm64-appleclang-release-ccache-v1-
 
       - name: Reset Release ccache stats
         run: |
@@ -476,10 +476,10 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            macos15-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
             hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            macos15-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Release Dependencies
         run: >
