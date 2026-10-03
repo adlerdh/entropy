@@ -339,7 +339,7 @@ jobs:
 
   macos-arm64:
     name: macOS Release (arm64)
-    runs-on: macos-14
+    runs-on: macos-15
     needs: metadata
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
@@ -376,9 +376,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .ccache
-          key: macos14-arm64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
+          key: macos15-arm64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            macos14-arm64-appleclang-release-publish-ccache-v1-
+            macos15-arm64-appleclang-release-publish-ccache-v1-
 
       - name: Reset Release ccache stats
         run: |
@@ -407,10 +407,10 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            macos15-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
             hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            macos15-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
       - name: Configure Release Dependencies
         run: >
