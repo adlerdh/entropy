@@ -67,7 +67,7 @@ jobs:
       # The reports help diagnose failures, so save them even when a test fails.
       - name: Preserve validation evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: platform-validation-${{ matrix.platform }}
           path: |
