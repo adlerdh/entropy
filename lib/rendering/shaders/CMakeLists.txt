@@ -1,4 +1,9 @@
 set(entropy_SHADERS
+  deformation/FieldSampling.glsl
+  deformation/VelocityEvaluate.fs
+  deformation/FlowSeed.fs
+  deformation/ComposeDisplacement.fs
+  deformation/Quality.fs
   AsciiPost.vs
   AsciiPost.fs
   AsciiCellMean.fs

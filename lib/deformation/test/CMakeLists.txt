@@ -3,6 +3,20 @@ if(NOT TARGET Catch2::Catch2WithMain)
 endif()
 include(Catch)
 
+# The double-precision oracle is shared by CPU and GPU tests, never production code.
+add_library(EntropyDeformationReference STATIC reference/ReferenceFlow.cpp)
+target_link_libraries(EntropyDeformationReference PUBLIC Entropy::Deformation)
+target_include_directories(EntropyDeformationReference PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+set_target_properties(EntropyDeformationReference PROPERTIES CXX_EXTENSIONS OFF)
+if(TARGET entropy_warnings)
+  target_link_libraries(EntropyDeformationReference PRIVATE entropy_warnings)
+else()
+  target_compile_options(EntropyDeformationReference PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /permissive->
+  )
+endif()
+
 add_executable(TestDeformation
   BrushStepTests.cpp
   FieldDomainTests.cpp
@@ -10,9 +24,8 @@ add_executable(TestDeformation
   QualityPolicyTests.cpp
   ReferenceFlowTests.cpp
   StrokeSamplingTests.cpp
-  reference/ReferenceFlow.cpp
 )
-target_link_libraries(TestDeformation PRIVATE Catch2::Catch2WithMain Entropy::Deformation)
+target_link_libraries(TestDeformation PRIVATE Catch2::Catch2WithMain EntropyDeformationReference)
 set_target_properties(TestDeformation PROPERTIES CXX_EXTENSIONS OFF)
 
 # Compile every public header in isolation, without a precompiled or umbrella header.
@@ -32,6 +45,7 @@ else()
 endif()
 
 if(COMMAND entropy_enable_coverage_for_target)
+  entropy_enable_coverage_for_target(EntropyDeformationReference)
   entropy_enable_coverage_for_target(TestDeformation)
   entropy_register_coverage_test_target(TestDeformation)
 endif()

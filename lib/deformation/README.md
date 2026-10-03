@@ -68,9 +68,10 @@ and numerical-policy version. The forward domain samples `F(x) = x + u(x)`;
 the inverse domain samples `G(y) = y + v(y)`. They may use different grids.
 Neither direction can be revised independently through the descriptor.
 
-This is metadata, not a sampled field or a claim of inverse consistency. Dense
-field views, arbitrary image masks, displacement interpolation, and the GPU
-integration backend are later stages. Policy versions are identities, not acceptance certificates.
+This is metadata, not a sampled field or a claim of inverse consistency.
+The [Stage 2 GPU backend](../rendering/deformation/README.md) supplies native-2D
+field storage, interpolation, and integration separately. Arbitrary image masks
+remain future work. Policy versions are identities, not acceptance certificates.
 Revision tokens are scoped to an owning history, not globally unique IDs.
 
 Tests provide small scalar and analytic field fixtures without an image-library
@@ -145,6 +146,7 @@ evidence; setting report flags does not perform the corresponding checks.
 Stage 1 tests compare analytic and lattice motion, exact protected cores,
 affine spline reproduction, event-rate consistency, stroke-refinement behavior,
 analytic flow convergence, paired-map residuals, intrinsic 2D area ratios, 3D
-volume ratios, directional distortion, and rejection/retry policy. The next
-stage implements the GL 3.3 numerical backend; no UI or image resampling is
-provided by this library yet.
+volume ratios, directional distortion, and rejection/retry policy. Stage 2 adds
+the native-2D GL 3.3 backend in `Entropy::Rendering`, keeping this library free
+of graphics dependencies. Stage 3 adds volumetric integration and candidate
+acceptance. No editing UI or image resampling is provided by this library yet.

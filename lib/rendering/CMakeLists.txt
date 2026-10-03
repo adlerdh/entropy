@@ -4,6 +4,9 @@ add_library(EntropyRendering STATIC)
 add_library(Entropy::Rendering ALIAS EntropyRendering)
 
 target_sources(EntropyRendering PRIVATE
+  deformation/FieldTextures.cpp
+  deformation/FieldPassRunner.cpp
+  deformation/NumericalState.cpp
   ascii/AsciiClipboard.cpp
   FramePacer.cpp
   geometry/PixelEdgeGeometry.cpp
@@ -55,6 +58,8 @@ target_sources(EntropyRendering
     TYPE HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
+      deformation/FieldTextures.h
+      deformation/FieldPassRunner.h
       FramePacer.h
       ImageShaderCapabilities.h
       RenderDerivedData.h
@@ -166,6 +171,7 @@ target_include_directories(EntropyRendering
 target_link_libraries(EntropyRendering
   PUBLIC
     Entropy::Common
+    Entropy::Deformation
     glad
     glm::glm
     stduuid

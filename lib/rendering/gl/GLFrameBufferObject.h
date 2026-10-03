@@ -50,6 +50,20 @@ public:
     const GLTexture& texture,
     std::optional<int> colorAttachmentIndex = std::nullopt);
 
+  /**
+   * @brief Attach one allocated base-level slice of a 3D texture.
+   * @details This framebuffer must already be bound to target. Checks the actual
+   * storage depth, attachment index, and framebuffer completeness. Other slices
+   * are untouched. Sampling any slice of this texture while drawing is forbidden.
+   * @throws std::runtime_error For an invalid target, layer, binding, or incomplete framebuffer.
+   */
+  void attachTextureLayer(
+    const fbo::TargetType& target,
+    const fbo::AttachmentType& attachment,
+    const GLTexture& texture,
+    GLint layer,
+    std::optional<int> colorAttachmentIndex = std::nullopt);
+
   /// Detach a 2D texture image from an attachment point.
   void detach2DTexture(
     const fbo::TargetType& target,

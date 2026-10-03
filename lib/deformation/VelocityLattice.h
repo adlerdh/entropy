@@ -32,6 +32,11 @@ public:
   VelocityLattice(BrushStep brush, double spacingMm, std::size_t maxCoefficients = 1'000'000);
   /** @brief Return coefficient geometry, with a singleton inactive axis for native 2D. */
   [[nodiscard]] const FieldDomain& domain() const noexcept;
+  /** @brief Return the recipe whose continuous envelope must follow coefficient interpolation. */
+  [[nodiscard]] const BrushStep& brush() const noexcept
+  {
+    return m_brush;
+  }
   /** @brief Return immutable x-fastest LPS velocity coefficients; lifetime follows this object. */
   [[nodiscard]] std::span<const glm::dvec3> coefficients() const noexcept;
   /** @brief Evaluate the spline generator times the continuous envelope at a physical point. */

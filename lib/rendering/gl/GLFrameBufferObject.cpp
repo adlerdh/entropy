@@ -157,6 +157,48 @@ void GLFrameBufferObject::attach2DTexture(
   checkStatus(target);
 }
 
+void GLFrameBufferObject::attachTextureLayer(
+  const fbo::TargetType& target,
+  const fbo::AttachmentType& attachment,
+  const GLTexture& texture,
+  GLint layer,
+  std::optional<int> colorAttachmentIndex)
+{
+  if (m_id == 0u || texture.id() == 0u || texture.target() != tex::Target::Texture3D) {
+    throwDebug("Layer attachments require a generated framebuffer and 3D texture");
+  }
+  requireBound(target);
+  GLint previous = 0;
+  GLint depth = 0;
+  glGetIntegerv(GL_TEXTURE_BINDING_3D, &previous);
+  glBindTexture(GL_TEXTURE_3D, texture.id());
+  glGetTexLevelParameteriv(GL_TEXTURE_3D, 0, GL_TEXTURE_DEPTH, &depth);
+  glBindTexture(GL_TEXTURE_3D, static_cast<GLuint>(previous));
+  if (layer < 0 || layer >= depth) {
+    throwDebug("Layer is outside the allocated texture storage");
+  }
+  int index = 0;
+  if (attachment == fbo::AttachmentType::Color) {
+    GLint limit = 0;
+    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &limit);
+    if (!colorAttachmentIndex || *colorAttachmentIndex < 0 || *colorAttachmentIndex >= limit) {
+      throwDebug("A valid color attachment index is required");
+    }
+    index = *colorAttachmentIndex;
+  }
+  else if (colorAttachmentIndex) {
+    throwDebug("Color attachment indices are only valid for color attachments");
+  }
+  glFramebufferTextureLayer(
+    underlyingType(target),
+    underlyingType(attachment) + static_cast<GLenum>(index),
+    texture.id(),
+    0,
+    layer);
+  CHECK_GL_ERROR(m_errorChecker);
+  checkStatus(target);
+}
+
 void GLFrameBufferObject::detach2DTexture(
   const fbo::TargetType& target,
   const fbo::AttachmentType& attachment,
