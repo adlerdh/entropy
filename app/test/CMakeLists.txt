@@ -7,6 +7,35 @@ entropy_register_coverage_test_target(TestWorkflows)
 entropy_copy_runtime_dlls(TestWorkflows)
 catch_discover_tests(TestWorkflows PROPERTIES LABELS "workflow" TIMEOUT 60)
 
+# The Stage 4 transaction tests run without a display or AppData instance.
+add_executable(TestDeformationSession
+  DeformationEditSessionTests.cpp
+  "${CMAKE_SOURCE_DIR}/app/logic/app/DeformationEditController.cpp"
+  "${CMAKE_SOURCE_DIR}/app/logic/app/DeformationEditSession.cpp")
+target_link_libraries(TestDeformationSession PRIVATE Catch2::Catch2WithMain Entropy::Deformation entropy_warnings)
+target_include_directories(TestDeformationSession PRIVATE "${CMAKE_SOURCE_DIR}/app")
+set_target_properties(TestDeformationSession PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+entropy_enable_coverage_for_target(TestDeformationSession)
+entropy_register_coverage_test_target(TestDeformationSession)
+entropy_copy_runtime_dlls(TestDeformationSession)
+catch_discover_tests(TestDeformationSession PROPERTIES LABELS "deformation-session")
+
+if(Entropy_ENABLE_DEFORMATION_GPU_TESTS)
+  add_executable(TestDeformationEditGpu
+    DeformationEditGpuTests.cpp
+    "${CMAKE_SOURCE_DIR}/app/logic/app/DeformationEditBackend.cpp"
+    "${CMAKE_SOURCE_DIR}/app/logic/app/DeformationEditController.cpp"
+    "${CMAKE_SOURCE_DIR}/app/logic/app/DeformationEditSession.cpp")
+  target_link_libraries(TestDeformationEditGpu PRIVATE
+    Catch2::Catch2WithMain Entropy::Rendering Entropy::Deformation glfw entropy_warnings)
+  target_include_directories(TestDeformationEditGpu PRIVATE "${CMAKE_SOURCE_DIR}/app")
+  set_target_properties(TestDeformationEditGpu PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+  entropy_enable_coverage_for_target(TestDeformationEditGpu)
+  entropy_register_coverage_test_target(TestDeformationEditGpu)
+  entropy_copy_runtime_dlls(TestDeformationEditGpu)
+  catch_discover_tests(TestDeformationEditGpu PROPERTIES LABELS "deformation-edit-gpu")
+endif()
+
 find_package(Python3 QUIET COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
   add_test(NAME required-graphics-gate-contract

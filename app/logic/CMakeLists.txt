@@ -2,6 +2,9 @@ target_sources(entropy PRIVATE
   app/CallbackHandler.cpp
   app/Data.cpp
   app/DeformationWarp.cpp
+  app/DeformationEditController.cpp
+  app/DeformationEditBackend.cpp
+  app/DeformationEditSession.cpp
   app/ImportedMeshWarp.cpp
   app/DataHelper.cpp
   app/ImageScaleInteraction.cpp
