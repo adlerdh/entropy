@@ -83,9 +83,24 @@ df::DomainGeometry geometry(std::uint32_t n = 65, double spacing = 0.25)
   return result;
 }
 
+df::DomainGeometry volumeGeometry(std::uint32_t n = 33, double spacing = 0.25)
+{
+  auto result = geometry(n, spacing);
+  result.dimension = df::SpatialDimension::Volume;
+  result.size[2] = n;
+  result.spacing.z = spacing;
+  result.origin.z = result.origin.x;
+  return result;
+}
+
 std::size_t offset(const df::FieldDomain& domain, std::uint32_t x, std::uint32_t y)
 {
   return static_cast<std::size_t>(y) * domain.size()[0] + x;
+}
+
+std::size_t offset3(const df::FieldDomain& domain, std::uint32_t x, std::uint32_t y, std::uint32_t z)
+{
+  return (static_cast<std::size_t>(z) * domain.size()[1] + y) * domain.size()[0] + x;
 }
 
 df::BrushStep brush(df::BrushMotion motion = df::PushMotion{{1, 0.3, 0}})
@@ -142,7 +157,8 @@ TEST_CASE("GPU field storage and native dimension contracts", "[deformation-gpu]
   auto volumeGeometry = geometry(9);
   volumeGeometry.dimension = df::SpatialDimension::Volume;
   gpu::FieldTexture volume(df::FieldDomain(volumeGeometry), budget);
-  REQUIRE_THROWS_AS(passes.identity(volume), std::invalid_argument);
+  passes.identity(volume);
+  REQUIRE(std::ranges::all_of(volume.readback(), [](auto v) { return v == glm::vec4(0, 0, 0, 1); }));
   gpu::FieldTexture other(df::FieldDomain(geometry(7)), budget);
   REQUIRE_THROWS_AS(passes.copy(other, copy), std::invalid_argument);
   REQUIRE_THROWS_AS(passes.exponential(field, 21), std::invalid_argument);
@@ -181,6 +197,504 @@ TEST_CASE("GPU framebuffer attaches exactly one allocated volume layer", "[defor
   for (std::size_t i = 0; i < data.size(); ++i) {
     REQUIRE(data[i] == (i >= 25 && i < 50 ? glm::vec4(1, 2, 3, 4) : glm::vec4(0)));
   }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU volume passes write every layer and reject invalid trilinear contributors", "[deformation-gpu]")
+{
+  const Context context;
+  auto spec = geometry(6, 0.7);
+  spec.dimension = df::SpatialDimension::Volume;
+  spec.size = {6, 5, 4};
+  spec.spacing = {0.7, 1.3, 2.1};
+  spec.validExtent = df::IndexExtent{{1, 1, 0}, {5, 4, 4}};
+  spec.directions = glm::dmat3(glm::rotate(glm::dmat4(1), 0.53, glm::normalize(glm::dvec3(1, 2, 3))));
+  spec.directions[0] *= -1;
+  spec.origin = {1e6, -2e6, 3e6};
+  const df::FieldDomain domain(spec);
+  gpu::FieldPassRunner passes(budget);
+  gpu::FieldTexture outer(domain, budget), inner(domain, budget), output(domain, budget);
+  std::vector<glm::vec4> outerData(domain.sampleCount());
+  std::vector<glm::vec4> innerData(domain.sampleCount());
+  const glm::vec3 halfLayer = glm::vec3(domain.indexVectorToPhysical({0, 0, 0.5}));
+  for (std::uint32_t z = 0; z < spec.size[2]; ++z) {
+    for (std::uint32_t y = 0; y < spec.size[1]; ++y) {
+      for (std::uint32_t x = 0; x < spec.size[0]; ++x) {
+        const auto i = offset3(domain, x, y, z);
+        outerData[i] = {0.1f * x, 0.2f * y, 0.3f * z, 1};
+        innerData[i] = glm::vec4(halfLayer, 1);
+      }
+    }
+  }
+  outerData[offset3(domain, 2, 2, 2)].w = 0;
+  outerData[offset3(domain, 4, 2, 2)].x = std::numeric_limits<float>::quiet_NaN();
+  outer.upload(outerData);
+  inner.upload(innerData);
+  output.upload(std::vector<glm::vec4>(domain.sampleCount(), {99, 99, 99, 1}));
+  passes.identity(output);
+  const auto identity = output.readback();
+  for (std::uint32_t z = 0; z < spec.size[2]; ++z) {
+    REQUIRE(identity[offset3(domain, 3, 2, z)] == glm::vec4(0, 0, 0, 1));
+    REQUIRE(identity[offset3(domain, 0, 2, z)] == glm::vec4(0));
+  }
+  passes.copy(outer, output);
+  const auto copied = output.readback();
+  REQUIRE(copied[offset3(domain, 3, 2, 3)] == outerData[offset3(domain, 3, 2, 3)]);
+  REQUIRE(copied[offset3(domain, 2, 2, 1)] == outerData[offset3(domain, 2, 2, 1)]);
+  REQUIRE(copied[offset3(domain, 2, 2, 2)].w == 0);
+  REQUIRE(copied[offset3(domain, 4, 2, 2)].w == 0);
+  REQUIRE(copied[offset3(domain, 0, 2, 1)].w == 0);
+  passes.compose(outer, inner, output);
+  const auto composed = output.readback();
+  for (std::uint32_t z = 0; z < 3; ++z) {
+    const auto value = composed[offset3(domain, 3, 2, z)];
+    REQUIRE(value.w == 1);
+    const glm::vec3 expected = halfLayer + glm::vec3(0.3f, 0.4f, 0.3f * (static_cast<float>(z) + 0.5f));
+    REQUIRE(glm::length(glm::vec3(value) - expected) < 2e-6f);
+  }
+  REQUIRE(composed[offset3(domain, 2, 2, 1)].w == 0);
+  REQUIRE(composed[offset3(domain, 4, 2, 1)].w == 0);
+  REQUIRE(composed[offset3(domain, 3, 2, 3)].w == 0);
+  REQUIRE(composed[offset3(domain, 0, 2, 1)].w == 0);
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU singleton-axis volumes preserve paired cancellation and complete sweeps", "[deformation-gpu]")
+{
+  const Context context;
+  auto spec = geometry(17, 0.8);
+  spec.dimension = df::SpatialDimension::Volume;
+  spec.size = {17, 17, 1};
+  spec.spacing = {0.8, 1.4, 2.2};
+  const df::FieldDomain domain(spec);
+  gpu::FieldPassRunner passes(budget);
+  gpu::FieldTexture velocity(domain, budget);
+  const glm::vec4 shift{0.2f, 0.0f, 0.0f, 1.0f};
+  velocity.upload(std::vector<glm::vec4>(domain.sampleCount(), shift));
+  gpu::FieldTexture seeded(domain, budget);
+  passes.seed(velocity, 1.0f, seeded);
+  REQUIRE(seeded.readback()[offset3(domain, 8, 8, 0)] == shift);
+  auto pair = passes.exponential(velocity, 4);
+  REQUIRE(pair.forward);
+  REQUIRE(pair.inverse);
+  REQUIRE(pair.forward->readback()[offset3(domain, 8, 8, 0)].w == 1);
+  REQUIRE(glm::length(glm::vec3(pair.forward->readback()[offset3(domain, 8, 8, 0)]) - glm::vec3(shift)) < 2e-6f);
+  REQUIRE(glm::length(glm::vec3(pair.inverse->readback()[offset3(domain, 8, 8, 0)]) + glm::vec3(shift)) < 2e-6f);
+  gpu::FieldTexture quality(domain, budget);
+  passes.quality(*pair.forward, *pair.inverse, quality);
+  REQUIRE(std::ranges::all_of(quality.readback(), [](auto value) { return value.w == 0; }));
+  REQUIRE(passes.reduceQuality(quality).requested == 0);
+  const auto original = pair.forward->readback();
+  int polls = 0;
+  const auto cancelled = passes.exponential(velocity, 4, [&polls] { return ++polls == 4; });
+  REQUIRE_FALSE(cancelled.forward);
+  REQUIRE_FALSE(cancelled.inverse);
+  polls = 0;
+  const auto cancelledAccumulation = passes.accumulate(pair, pair, [&polls] { return ++polls == 2; });
+  REQUIRE_FALSE(cancelledAccumulation.forward);
+  REQUIRE_FALSE(cancelledAccumulation.inverse);
+  REQUIRE(pair.forward->readback() == original);
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU cubic volume velocity reproduces oblique physical brush flows", "[deformation-gpu]")
+{
+  const Context context;
+  auto spec = volumeGeometry(21, 0.4);
+  spec.directions = glm::dmat3(glm::rotate(glm::dmat4(1), 0.57, glm::normalize(glm::dvec3(1, 2, 3))));
+  spec.directions[0] *= -1;
+  spec.origin = glm::dvec3(1e6, -2e6, 3e6) - spec.directions * glm::dvec3(4);
+  const df::FieldDomain domain(spec);
+  df::BrushDefinition recipe;
+  recipe.dimension = df::SpatialDimension::Volume;
+  recipe.directions = spec.directions;
+  recipe.centerMm = domain.indexToPhysical({10, 10, 10});
+  recipe.radiusMm = 3.5;
+  recipe.strength = 0.8;
+  recipe.protection.push_back({domain.indexToPhysical({12, 10, 10}), 0.5, 0.7});
+  gpu::FieldPassRunner passes(budget);
+  gpu::FieldTexture output(domain, budget);
+  for (const df::BrushMotion& motion : std::vector<df::BrushMotion>{
+         df::PushMotion{spec.directions * glm::dvec3(0.7, -0.2, 0.3)},
+         df::RadialMotion{0.4},
+         df::TwirlMotion{spec.directions[2], 0.6}})
+  {
+    recipe.motion = motion;
+    const df::BrushStep step(recipe);
+    const df::VelocityLattice lattice(step, 0.8);
+    passes.velocity(lattice, output);
+    const auto data = output.readback();
+    for (std::uint32_t z = 3; z < 19; z += 5) {
+      for (std::uint32_t y = 3; y < 19; y += 5) {
+        for (std::uint32_t x = 3; x < 19; x += 5) {
+          const auto p = domain.indexToPhysical({x, y, z});
+          const auto value = data[offset3(domain, x, y, z)];
+          REQUIRE(value.w == 1);
+          REQUIRE(glm::length(glm::dvec3(value) - lattice.velocity(p)) < 2e-5);
+          REQUIRE(glm::length(lattice.velocity(p) - step.velocity(p)) < 1e-8);
+        }
+      }
+    }
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU volume exponentials track forward and inverse double precision flows", "[deformation-gpu]")
+{
+  const Context context;
+  const df::FieldDomain domain(volumeGeometry());
+  gpu::FieldPassRunner passes(budget);
+  gpu::FieldTexture velocity(domain, budget);
+  df::BrushDefinition recipe;
+  recipe.dimension = df::SpatialDimension::Volume;
+  recipe.radiusMm = 3.5;
+  for (const df::BrushMotion& motion : std::vector<df::BrushMotion>{
+         df::PushMotion{{0.7, -0.2, 0.3}},
+         df::RadialMotion{0.4},
+         df::TwirlMotion{{0, 0, 1}, 0.6}})
+  {
+    recipe.motion = motion;
+    const df::BrushStep step(recipe);
+    passes.velocity(df::VelocityLattice(step, 0.8), velocity);
+    auto pair = passes.exponential(velocity, 8);
+    for (const auto direction : {df::MapDirection::Forward, df::MapDirection::Inverse}) {
+      const auto values = (direction == df::MapDirection::Forward ? pair.forward : pair.inverse)->readback();
+      for (std::uint32_t z = 12; z <= 20; z += 4) {
+        for (std::uint32_t y = 12; y <= 20; y += 4) {
+          for (std::uint32_t x = 12; x <= 20; x += 4) {
+            const auto p = domain.indexToPhysical({x, y, z});
+            const auto reference =
+              df::reference::integrateConverged([&step](const auto& q) { return step.velocity(q); }, p, {}, direction);
+            REQUIRE(reference.converged);
+            const auto value = values[offset3(domain, x, y, z)];
+            REQUIRE(value.w == 1);
+            REQUIRE(glm::length(glm::dvec3(value) - (reference.pointMm - p)) < 0.025);
+          }
+        }
+      }
+    }
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU volume Jacobians and inverse residuals use the intrinsic physical frame", "[deformation-gpu]")
+{
+  const Context context;
+  auto spec = volumeGeometry(11, 0.6);
+  spec.spacing = {0.6, 1.1, 1.7};
+  spec.directions = glm::dmat3(glm::rotate(glm::dmat4(1), 0.45, glm::normalize(glm::dvec3(2, 1, 3))));
+  spec.directions[1] *= -1;
+  spec.origin = glm::dvec3(1e6, -2e6, 3e6) - spec.directions * (spec.spacing * glm::dvec3(5));
+  const df::FieldDomain domain(spec);
+  const glm::dmat3 linear({1.1, 0.08, 0.02}, {-0.12, 0.93, 0.04}, {0.01, 0.03, 1.05});
+  const glm::dmat3 inverseLinear = glm::inverse(linear);
+  const glm::dvec3 translation(0.1, -0.2, 0.15);
+  std::vector<glm::vec4> forwardData(domain.sampleCount());
+  std::vector<glm::vec4> inverseData(domain.sampleCount());
+  for (std::uint32_t z = 0; z < spec.size[2]; ++z) {
+    for (std::uint32_t y = 0; y < spec.size[1]; ++y) {
+      for (std::uint32_t x = 0; x < spec.size[0]; ++x) {
+        const glm::dvec3 local = (glm::dvec3(x, y, z) - glm::dvec3(5)) * spec.spacing;
+        const auto i = offset3(domain, x, y, z);
+        forwardData[i] = glm::vec4(spec.directions * (linear * local + translation - local), 1);
+        inverseData[i] = glm::vec4(spec.directions * (inverseLinear * (local - translation) - local), 1);
+      }
+    }
+  }
+  gpu::FieldTexture forward(domain, budget), inverse(domain, budget), output(domain, budget);
+  forward.upload(forwardData);
+  inverse.upload(inverseData);
+  gpu::FieldPassRunner passes(budget);
+  const auto intrinsic = df::analyzeJacobian(linear, df::SpatialDimension::Volume);
+  const auto sampled = passes.analyzeDirection(forward, inverse);
+  REQUIRE(sampled.requested == 9 * 9 * 9);
+  REQUIRE(sampled.evaluated > 0);
+  REQUIRE(sampled.minSingularValue <= intrinsic.minSingularValue + 1e-4);
+  REQUIRE(sampled.maxSingularValue >= intrinsic.maxSingularValue - 1e-4);
+  for (const bool reverse : {false, true}) {
+    passes.quality(reverse ? inverse : forward, reverse ? forward : inverse, output);
+    const auto reduced = passes.reduceQuality(output);
+    REQUIRE(reduced.requested == 9 * 9 * 9);
+    REQUIRE(reduced.evaluated > 0);
+    REQUIRE(reduced.outside == reduced.requested - reduced.evaluated);
+    REQUIRE(reduced.nonFinite == 0);
+    REQUIRE(
+      reduced.minDeterminant ==
+      Catch::Approx(reverse ? 1.0 / glm::determinant(linear) : glm::determinant(linear)).margin(1e-5));
+    const auto values = output.readback();
+    REQUIRE(values[offset3(domain, 0, 5, 5)].w == 0);
+    REQUIRE(values[offset3(domain, 5, 5, 0)].w == 0);
+    for (std::uint32_t z = 3; z <= 7; z += 2) {
+      for (std::uint32_t y = 3; y <= 7; y += 2) {
+        for (std::uint32_t x = 3; x <= 7; x += 2) {
+          const auto value = values[offset3(domain, x, y, z)];
+          REQUIRE(value.w == 1);
+          REQUIRE(
+            value.x == Catch::Approx(reverse ? 1.0 / glm::determinant(linear) : glm::determinant(linear)).margin(1e-5));
+          REQUIRE(value.y < 1e-5f);
+          REQUIRE(value.z < 1e-5f);
+        }
+      }
+    }
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU quality reduction preserves counts and extrema across 2D and 3D pyramids", "[deformation-gpu]")
+{
+  const Context context;
+  gpu::FieldPassRunner passes(budget);
+  for (const bool volume : {false, true}) {
+    auto spec = volume ? volumeGeometry(11, 0.5) : geometry(19, 0.5);
+    if (volume) {
+      spec.size = {11, 9, 7};
+    }
+    else {
+      spec.size = {19, 13, 1};
+      spec.validExtent = df::IndexExtent{{1, 1, 0}, {18, 12, 1}};
+    }
+    const df::FieldDomain domain(spec);
+    gpu::FieldTexture qualityMap(domain, budget);
+    std::vector<glm::vec4> data(domain.sampleCount(), {1.25f, 0.2f, 0.4f, 1});
+    const auto at = [&](std::uint32_t x, std::uint32_t y, std::uint32_t z = 0) {
+      return offset3(domain, x, y, z);
+    };
+    const std::uint32_t z = volume ? 3 : 0;
+    data[at(3, 3, z)] = {-0.2f, 0.1f, 0.3f, 1};
+    data[at(4, 3, z)] = {3.5f, 2.0f, 4.0f, 1};
+    data[at(5, 3, z)].w = 0;
+    data[at(6, 3, z)].x = std::numeric_limits<float>::quiet_NaN();
+    data[at(0, 0, 0)] = {-100.0f, 100.0f, 100.0f, 1}; // Outside the requested stencil interior.
+    qualityMap.upload(data);
+    const auto reduced = passes.reduceQuality(qualityMap);
+    const std::size_t requested = volume ? 9 * 7 * 5 : 15 * 9;
+    REQUIRE(reduced.requested == requested);
+    REQUIRE(reduced.evaluated == requested - 2);
+    REQUIRE(reduced.outside == 2);
+    REQUIRE(reduced.nonFinite == 1);
+    REQUIRE(reduced.minDeterminant == Catch::Approx(-0.2).margin(1e-7));
+    REQUIRE(reduced.maxDeterminant == Catch::Approx(3.5));
+    REQUIRE(reduced.maxResidualMm == Catch::Approx(2.0));
+    REQUIRE(reduced.maxResidualVoxels == Catch::Approx(4.0));
+    REQUIRE_THROWS_AS(gpu::FieldPassRunner(1).reduceQuality(qualityMap), std::invalid_argument);
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU sampled directional evidence supplies conservative stretch bounds", "[deformation-gpu]")
+{
+  const Context context;
+  gpu::FieldPassRunner passes(budget);
+  for (const bool volume : {false, true}) {
+    const df::FieldDomain domain(volume ? volumeGeometry(9, 0.5) : geometry(9, 0.5));
+    gpu::FieldPair pair{
+      std::make_unique<gpu::FieldTexture>(domain, budget),
+      std::make_unique<gpu::FieldTexture>(domain, budget)};
+    passes.identity(*pair.forward);
+    passes.identity(*pair.inverse);
+    const auto direction = passes.analyzeDirection(*pair.forward, *pair.inverse);
+    const std::size_t expected = volume ? 7 * 7 * 7 : 7 * 7;
+    REQUIRE(direction.requested == expected);
+    REQUIRE(direction.evaluated == expected);
+    REQUIRE(direction.outside == 0);
+    REQUIRE(direction.finite);
+    REQUIRE(direction.minDeterminant == Catch::Approx(1.0));
+    REQUIRE(direction.maxDeterminant == Catch::Approx(1.0));
+    REQUIRE(direction.minSingularValue > 0.6);
+    REQUIRE(direction.minSingularValue < 1.0);
+    REQUIRE(direction.maxSingularValue > 1.0);
+    REQUIRE(direction.maxSingularValue < 2.0);
+    REQUIRE(direction.maxResidualMm == 0);
+    REQUIRE(direction.maxResidualVoxels == 0);
+    const auto report = passes.sampledReport(pair);
+    REQUIRE(report.forward.requested == expected);
+    REQUIRE(report.inverse.requested == expected);
+    REQUIRE_FALSE(report.protectionChecked);
+    REQUIRE_FALSE(report.convergenceChecked);
+    REQUIRE_FALSE(report.cellsVerified);
+    const auto cells = passes.verifyCells(pair, {});
+    REQUIRE(cells.complete());
+    REQUIRE(cells.forward.requested == (volume ? 8 * 8 * 8 : 8 * 8));
+    REQUIRE(df::assessCandidate(report).decision == df::CandidateDecision::Refine);
+    REQUIRE(df::assessCandidate(report).reason == df::QualityReason::MissingEvidence);
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU candidate acceptance publishes only complete verified pairs", "[deformation-gpu]")
+{
+  const Context context;
+  gpu::FieldPassRunner passes(budget);
+  for (const bool volume : {false, true}) {
+    auto spec = volume ? volumeGeometry(9, 0.5) : geometry(9, 0.5);
+    spec.spacing = {0.5, 0.75, volume ? 1.25 : 1.0};
+    spec.directions = glm::dmat3(glm::rotate(glm::dmat4(1), 0.37, glm::normalize(glm::dvec3(1, 2, 3))));
+    spec.directions[0] *= -1;
+    spec.origin = {1e6, -2e6, 3e6};
+    const df::FieldDomain domain(spec);
+    gpu::FieldTexture velocity(domain, budget);
+    passes.identity(velocity);
+    gpu::FieldPair previous{
+      std::make_unique<gpu::FieldTexture>(domain, budget),
+      std::make_unique<gpu::FieldTexture>(domain, budget)};
+    passes.identity(*previous.forward);
+    passes.identity(*previous.inverse);
+    const auto originalForward = previous.forward->readback();
+    const auto originalInverse = previous.inverse->readback();
+    const df::ProtectedRegion core{domain.indexToPhysical({4, 4, volume ? 4.0 : 0.0}), 0.2, 1.0};
+    const auto zeroCore = passes.precheckProtectedCores(previous, std::span(&core, 1));
+    REQUIRE(zeroCore.checked);
+    REQUIRE(zeroCore.exactlyZero);
+    const auto accepted = passes.acceptVelocity(velocity, &previous, std::span(&core, 1), {}, 2, 2);
+    REQUIRE(accepted.assessment.decision == df::CandidateDecision::Accept);
+    REQUIRE(accepted.attempts == 1);
+    REQUIRE(accepted.pair.forward);
+    REQUIRE(accepted.pair.inverse);
+    REQUIRE(accepted.cells.complete());
+    REQUIRE(accepted.protection.checked);
+    REQUIRE(accepted.refinement.checked());
+    REQUIRE(accepted.report.cellsVerified);
+    REQUIRE(accepted.report.protectionChecked);
+    REQUIRE(accepted.report.convergenceChecked);
+    REQUIRE(previous.forward->readback() == originalForward);
+    REQUIRE(previous.inverse->readback() == originalInverse);
+
+    const auto canceled = passes.acceptVelocity(velocity, &previous, {}, {}, 2, 2, [] { return true; });
+    REQUIRE(canceled.canceled);
+    REQUIRE_FALSE(canceled.pair.forward);
+    REQUIRE_FALSE(canceled.pair.inverse);
+    REQUIRE(previous.forward->readback() == originalForward);
+
+    auto invalid = velocity.readback();
+    invalid[offset3(domain, 4, 4, volume ? 4 : 0)].w = 0;
+    velocity.upload(invalid);
+    const auto rejected = passes.acceptVelocity(velocity, &previous, {}, {}, 2, 2);
+    REQUIRE(rejected.assessment.decision != df::CandidateDecision::Accept);
+    REQUIRE_FALSE(rejected.pair.forward);
+    REQUIRE(previous.forward->readback() == originalForward);
+    REQUIRE(previous.inverse->readback() == originalInverse);
+
+    df::BrushDefinition moving;
+    moving.dimension = volume ? df::SpatialDimension::Volume : df::SpatialDimension::Plane;
+    moving.centerMm = core.centerMm;
+    moving.directions = spec.directions;
+    moving.radiusMm = 1.0;
+    moving.motion = df::PushMotion{0.04 * spec.directions[0]};
+    passes.velocity(df::VelocityLattice(df::BrushStep(moving), 0.5), velocity);
+    const auto movingPair = passes.exponential(velocity, 2);
+    const auto movingCore = passes.precheckProtectedCores(movingPair, std::span(&core, 1));
+    REQUIRE(movingCore.checked);
+    REQUIRE_FALSE(movingCore.exactlyZero);
+    const auto unprotected = passes.acceptVelocity(velocity, &previous, std::span(&core, 1), {}, 2, 2);
+    REQUIRE(unprotected.assessment.decision != df::CandidateDecision::Accept);
+    REQUIRE(unprotected.assessment.reason == df::QualityReason::Protection);
+    REQUIRE_FALSE(unprotected.pair.forward);
+    REQUIRE(previous.forward->readback() == originalForward);
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU compact refinement matches physical CPU center and cell comparisons", "[deformation-gpu]")
+{
+  const Context context;
+  gpu::FieldPassRunner passes(budget);
+  for (bool volume : {false, true}) {
+    auto spec = volume ? volumeGeometry(9, 0.5) : geometry(9, 0.5);
+    spec.spacing = {0.5, 0.75, volume ? 1.25 : 1.0};
+    spec.directions = glm::dmat3(glm::rotate(glm::dmat4(1), 0.37, glm::normalize(glm::dvec3(1, 2, 3))));
+    spec.directions[0] *= -1;
+    spec.origin = {1e6, -2e6, 3e6};
+    const df::FieldDomain domain(spec);
+    gpu::FieldPair first{
+      std::make_unique<gpu::FieldTexture>(domain, budget),
+      std::make_unique<gpu::FieldTexture>(domain, budget)};
+    gpu::FieldPair second{
+      std::make_unique<gpu::FieldTexture>(domain, budget),
+      std::make_unique<gpu::FieldTexture>(domain, budget)};
+    for (auto* field : {first.forward.get(), first.inverse.get(), second.forward.get(), second.inverse.get()}) {
+      passes.identity(*field);
+    }
+    auto values = second.inverse->readback();
+    values[offset3(domain, 4, 4, volume ? 4 : 0)] = glm::vec4(0.1 * domain.directions()[0], 1.0);
+    second.inverse->upload(values);
+    const auto cpu = passes.compareRefinement(first, second);
+    const auto compact = passes.reduceRefinement(first, second);
+    REQUIRE(cpu.checked());
+    REQUIRE(compact.checked());
+    REQUIRE(compact.requested == cpu.requested);
+    REQUIRE(compact.maxErrorMm >= cpu.maxErrorMm - 1e-7);
+    REQUIRE(compact.maxErrorMm < cpu.maxErrorMm + 1e-4);
+    values[offset3(domain, 4, 4, volume ? 4 : 0)].w = 0;
+    second.inverse->upload(values);
+    const auto missing = passes.reduceRefinement(first, second);
+    REQUIRE_FALSE(missing.checked());
+    REQUIRE(missing.unavailable > 0);
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU accepted overlapping motion keeps the prior pair intact on failure", "[deformation-gpu]")
+{
+  const Context context;
+  gpu::FieldPassRunner passes(budget);
+  for (bool volume : {false, true}) {
+    const df::FieldDomain domain(volume ? volumeGeometry(17, 0.5) : geometry(17, 0.5));
+    df::BrushDefinition recipe;
+    recipe.dimension = volume ? df::SpatialDimension::Volume : df::SpatialDimension::Plane;
+    recipe.radiusMm = 2.5;
+    recipe.motion = df::PushMotion{{0.02, 0.008, volume ? 0.004 : 0.0}};
+    const df::VelocityLattice lattice(df::BrushStep(recipe), 0.5);
+    gpu::FieldTexture velocity(domain, budget);
+    passes.velocity(lattice, velocity);
+    gpu::FieldPair accepted;
+    for (int step = 0; step < 20; ++step) {
+      const auto before = accepted.forward ? accepted.forward->readback() : std::vector<glm::vec4>{};
+      auto next = passes.acceptVelocity(velocity, accepted.forward ? &accepted : nullptr, {}, {}, 3, 3);
+      INFO(
+        "dimension=" << (volume ? 3 : 2) << " step=" << step << " reason=" << static_cast<int>(next.assessment.reason));
+      if (step < 5) REQUIRE(next.assessment.decision == df::CandidateDecision::Accept);
+      if (next.assessment.decision == df::CandidateDecision::Accept) {
+        REQUIRE(next.pair.forward);
+        accepted = std::move(next.pair);
+      }
+      else {
+        REQUIRE_FALSE(next.pair.forward);
+        REQUIRE(accepted.forward->readback() == before);
+      }
+    }
+    const auto beforeForward = accepted.forward->readback();
+    const auto beforeInverse = accepted.inverse->readback();
+    df::QualityPolicy strict;
+    strict.maxResidualMm = 0.0;
+    strict.maxResidualVoxels = 0.0;
+    const auto exhausted = passes.acceptVelocity(velocity, &accepted, {}, strict, 3, 1);
+    REQUIRE(exhausted.assessment.decision != df::CandidateDecision::Accept);
+    REQUIRE_FALSE(exhausted.pair.forward);
+    REQUIRE(accepted.forward->readback() == beforeForward);
+    REQUIRE(accepted.inverse->readback() == beforeInverse);
+    const auto canceled = passes.acceptVelocity(velocity, &accepted, {}, {}, 3, 3, [] { return true; });
+    REQUIRE(canceled.canceled);
+    REQUIRE_FALSE(canceled.pair.forward);
+    REQUIRE(accepted.forward->readback() == beforeForward);
+    REQUIRE(accepted.inverse->readback() == beforeInverse);
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
+TEST_CASE("GPU reduction sums more than one million samples from exact compact tiles", "[deformation-gpu]")
+{
+  const Context context;
+  const df::FieldDomain domain(volumeGeometry(129, 0.25));
+  gpu::FieldTexture qualityMap(domain, budget);
+  qualityMap.upload(std::vector<glm::vec4>(domain.sampleCount(), {1.0f, 0.0f, 0.0f, 1.0f}));
+  gpu::FieldPassRunner passes(budget);
+  const auto reduced = passes.reduceQuality(qualityMap);
+  REQUIRE(reduced.requested == std::size_t{127} * 127 * 127);
+  REQUIRE(reduced.evaluated == reduced.requested);
+  REQUIRE(reduced.outside == 0);
+  REQUIRE(reduced.nonFinite == 0);
+  REQUIRE(reduced.minDeterminant == 1.0);
+  REQUIRE(reduced.maxDeterminant == 1.0);
   REQUIRE(glGetError() == GL_NO_ERROR);
 }
 
@@ -388,6 +902,11 @@ TEST_CASE("GPU diagnostics expose folds nonfinite vectors and incomplete stencil
   passes.quality(forward, inverse, output);
   REQUIRE(output.readback()[offset(domain, 8, 8)] == glm::vec4(-1, 0, 0, 1));
   REQUIRE(output.readback()[0].w == 0);
+  const auto folded = passes.analyzeDirection(forward, inverse);
+  df::QualityReport foldedReport;
+  foldedReport.forward = folded;
+  foldedReport.inverse = folded;
+  REQUIRE(df::assessCandidate(foldedReport).reason == df::QualityReason::Folding);
   data[offset(domain, 8, 8)].x = std::numeric_limits<float>::quiet_NaN();
   data[offset(domain, 7, 8)].z = 0.1f;
   forward.upload(data);
@@ -435,6 +954,7 @@ TEST_CASE("GPU numerical passes isolate hostile renderer and transfer state", "[
   input.upload(data);
   passes.copy(input, output);
   REQUIRE(output.readback() == data);
+  REQUIRE(passes.reduceQuality(output).evaluated == 7 * 7);
   gpu::FieldTexture constructed(domain, budget);
   passes.identity(constructed);
   REQUIRE(std::ranges::all_of(constructed.readback(), [](auto v) { return v == glm::vec4(0, 0, 0, 1); }));

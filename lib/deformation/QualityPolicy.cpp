@@ -148,7 +148,10 @@ CandidateAssessment assessCandidate(const QualityReport& report, const QualityPo
     return {CandidateDecision::Reject, QualityReason::Protection};
   // A soft retry in one direction must not hide a fold or other hard failure in the other.
   if (inverseInconsistent) return {CandidateDecision::Refine, QualityReason::InverseConsistency};
-  if (missingEvidence || !report.convergenceChecked || (policy.requireVerifiedCells && !report.cellsVerified)) {
+  if (
+    missingEvidence || !report.protectionChecked || !report.convergenceChecked ||
+    (policy.requireVerifiedCells && !report.cellsVerified))
+  {
     return {CandidateDecision::Refine, QualityReason::MissingEvidence};
   }
   if (report.maxConvergenceErrorMm > policy.maxConvergenceErrorMm)

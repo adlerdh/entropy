@@ -20,6 +20,7 @@ QualityReport sampledIdentity()
   const auto jacobian = analyzeJacobian(glm::dmat3{1.0}, SpatialDimension::Volume);
   observeQuality(report.forward, jacobian, {});
   observeQuality(report.inverse, jacobian, {});
+  report.protectionChecked = true;
   report.convergenceChecked = true;
   return report;
 }
@@ -54,6 +55,9 @@ TEST_CASE("Sampled evidence cannot masquerade as verified cells", "[deformation]
   QualityPolicy sampledPolicy;
   sampledPolicy.requireVerifiedCells = false;
   CHECK(assessCandidate(report, sampledPolicy).decision == CandidateDecision::Accept);
+  auto unmeasuredProtection = report;
+  unmeasuredProtection.protectionChecked = false;
+  CHECK(assessCandidate(unmeasuredProtection, sampledPolicy).reason == QualityReason::MissingEvidence);
   CHECK(assessCandidate({}, sampledPolicy).decision == CandidateDecision::Refine);
 }
 

@@ -43,11 +43,12 @@ jobs:
         run: >-
           cmake --preset app-release
           -DBUILD_TESTING=ON -DEntropy_BUILD_DISPLAY_TESTS=ON
+          -DEntropy_ENABLE_DEFORMATION_GPU_TESTS=ON
       - name: Build desktop tests
         run: >-
           cmake --build build-release --config Release --parallel 4
           --target TestDisplayTransitions TestRendering TestRenderingLibrary
-          TestUi TestInteraction TestWorkflows
+          TestUi TestInteraction TestWorkflows TestDeformationGpu
 
       # These tests run one at a time because they use the same desktop.
       # A skipped graphics test counts as a failure here, not a successful run.
@@ -55,6 +56,11 @@ jobs:
         run: >-
           python test/run_required_graphics.py build-release
           --configuration Release --display-transitions
+
+      - name: Deformation GPU numerical tests
+        run: >-
+          ctest --test-dir build-release -C Release --output-on-failure
+          --timeout 120 -L '^deformation-gpu$'
 
       # Also check mouse input, UI sizing, saved settings, segmentation,
       # registration, and background warp calculations.

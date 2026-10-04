@@ -56,7 +56,8 @@ NumericalState::NumericalState()
   m_common.emplace(std::initializer_list<OpenGLStateGuard::TextureBinding>{
     {0, GL_TEXTURE_2D},
     {0, GL_TEXTURE_3D},
-    {1, GL_TEXTURE_2D}});
+    {1, GL_TEXTURE_2D},
+    {1, GL_TEXTURE_3D}});
   for (std::size_t i = 0; i < m_clipDistances.size(); ++i) {
     const auto cap = GL_CLIP_DISTANCE0 + static_cast<GLenum>(i);
     m_clipDistances[i] = glIsEnabled(cap);

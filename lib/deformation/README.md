@@ -69,7 +69,7 @@ the inverse domain samples `G(y) = y + v(y)`. They may use different grids.
 Neither direction can be revised independently through the descriptor.
 
 This is metadata, not a sampled field or a claim of inverse consistency.
-The [Stage 2 GPU backend](../rendering/deformation/README.md) supplies native-2D
+The [GPU backend](../rendering/deformation/README.md) supplies native-2D and 3D
 field storage, interpolation, and integration separately. Arbitrary image masks
 remain future work. Policy versions are identities, not acceptance certificates.
 Revision tokens are scoped to an owning history, not globally unique IDs.
@@ -136,8 +136,14 @@ into a report. `assessCandidate` checks both directions, coverage, protected
 motion, and convergence. Hard failures take precedence over requests for more
 numerical evidence. A fold cannot be enabled by relaxing a tolerance.
 
-Default policy requires cell verification. Stage 1 does **not** implement that
-verification: a report from the sampled CPU reference cannot pass this default.
+Default policy requires cell verification, and every report must explicitly
+record whether protected cores were checked or no protection was requested.
+`CellVerification` adaptively bounds the Jacobian throughout represented
+bilinear/trilinear cells; unresolved cells cannot satisfy the default policy.
+`FieldEvidence` samples both directions in physical space, compares fields at
+grid and cell centers across different spacings, and conservatively bounds
+displacement inside protected cores. A report from the sampled CPU reference
+alone cannot pass the default policy.
 Tests may explicitly request a sampled-only profile, whose acceptance means
 only that those sampled checks passed. Thresholds are provisional engineering
 values, not medical safety limits. A numerical backend must supply genuine
@@ -146,7 +152,8 @@ evidence; setting report flags does not perform the corresponding checks.
 Stage 1 tests compare analytic and lattice motion, exact protected cores,
 affine spline reproduction, event-rate consistency, stroke-refinement behavior,
 analytic flow convergence, paired-map residuals, intrinsic 2D area ratios, 3D
-volume ratios, directional distortion, and rejection/retry policy. Stage 2 adds
-the native-2D GL 3.3 backend in `Entropy::Rendering`, keeping this library free
-of graphics dependencies. Stage 3 adds volumetric integration and candidate
-acceptance. No editing UI or image resampling is provided by this library yet.
+volume ratios, directional distortion, and rejection/retry policy. The GL 3.3
+backend in `Entropy::Rendering` now computes native-2D and 3D sampled evidence
+and runs bounded candidate acceptance with these portable verification tools. This
+library remains free of graphics dependencies. No editing UI or image
+resampling is provided by this library yet.

@@ -195,6 +195,11 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: "1"
         run: xvfb-run -a python3 test/run_required_graphics.py build-debug
 
+      - name: Required deformation GPU correctness (Mesa software OpenGL)
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a build-debug/bin/TestDeformationGpu --reporter compact
+
       - name: Preserve graphics coverage report
         if: always()
         uses: actions/upload-artifact@v6

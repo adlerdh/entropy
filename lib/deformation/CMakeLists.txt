@@ -16,8 +16,10 @@ add_library(Entropy::Deformation ALIAS EntropyDeformation)
 target_sources(EntropyDeformation
   PRIVATE
     BrushStep.cpp
+    CellVerification.cpp
     ContractError.cpp
     FieldDomain.cpp
+    FieldEvidence.cpp
     MapPairDescriptor.cpp
     QualityPolicy.cpp
     StrokeSampling.cpp
@@ -28,8 +30,10 @@ target_sources(EntropyDeformation
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES
       BrushStep.h
+      CellVerification.h
       ContractError.h
       FieldDomain.h
+      FieldEvidence.h
       MapPairDescriptor.h
       QualityPolicy.h
       StrokeSampling.h

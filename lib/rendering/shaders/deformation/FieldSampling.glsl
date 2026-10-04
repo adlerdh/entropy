@@ -2,6 +2,8 @@
 // coordinates are converted to voxel units. Unknown coverage stays unknown.
 uniform ivec2 u_begin;
 uniform ivec2 u_end;
+uniform vec3 u_begin3;
+uniform vec3 u_end3;
 uniform mat3 u_worldToIndex;
 uniform mat3 u_directions;
 uniform vec3 u_spacing;
@@ -15,9 +17,18 @@ bool covered(vec2 p)
   return !any(isnan(p)) && !any(isinf(p)) && all(greaterThanEqual(p, vec2(u_begin))) &&
          all(lessThanEqual(p, vec2(u_end - 1)));
 }
+bool covered(vec3 p)
+{
+  return !any(isnan(p)) && !any(isinf(p)) && all(greaterThanEqual(p, vec3(u_begin3))) &&
+         all(lessThanEqual(p, vec3(u_end3 - 1)));
+}
 bool validVector(vec4 v)
 {
   return finite4(v) && v.w == 1.0 && abs(dot(u_directions[2], v.xyz)) <= 1e-6;
+}
+bool validVolumeVector(vec4 v)
+{
+  return finite4(v) && v.w == 1.0;
 }
 vec4 sampleField(sampler2D field, vec2 p)
 {
@@ -38,4 +49,26 @@ vec4 sampleField(sampler2D field, vec2 p)
   }
   vec4 value = vec4(result, 1.0);
   return validVector(value) ? value : vec4(0.0);
+}
+vec4 sampleField(sampler3D field, vec3 p)
+{
+  if (!covered(p)) return vec4(0.0);
+  ivec3 lo = ivec3(floor(p));
+  ivec3 hi = min(lo + 1, ivec3(u_end3) - 1);
+  vec3 f = fract(p);
+  vec3 result = vec3(0.0);
+  for (int z = 0; z < 2; ++z) {
+    for (int y = 0; y < 2; ++y) {
+      for (int x = 0; x < 2; ++x) {
+        float weight = (x == 0 ? 1.0 - f.x : f.x) * (y == 0 ? 1.0 - f.y : f.y) * (z == 0 ? 1.0 - f.z : f.z);
+        if (weight == 0.0) continue;
+        ivec3 at = ivec3(x == 0 ? lo.x : hi.x, y == 0 ? lo.y : hi.y, z == 0 ? lo.z : hi.z);
+        vec4 value = texelFetch(field, at, 0);
+        if (!validVolumeVector(value)) return vec4(0.0);
+        result += weight * value.xyz;
+      }
+    }
+  }
+  vec4 value = vec4(result, 1.0);
+  return validVolumeVector(value) ? value : vec4(0.0);
 }

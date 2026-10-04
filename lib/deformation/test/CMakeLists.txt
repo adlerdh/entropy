@@ -18,7 +18,9 @@ else()
 endif()
 
 add_executable(TestDeformation
-  BrushStepTests.cpp
+    BrushStepTests.cpp
+    CellVerificationTests.cpp
+    FieldEvidenceTests.cpp
   FieldDomainTests.cpp
   MapContractTests.cpp
   QualityPolicyTests.cpp
@@ -29,7 +31,7 @@ target_link_libraries(TestDeformation PRIVATE Catch2::Catch2WithMain EntropyDefo
 set_target_properties(TestDeformation PROPERTIES CXX_EXTENSIONS OFF)
 
 # Compile every public header in isolation, without a precompiled or umbrella header.
-foreach(header BrushStep ContractError FieldDomain MapPairDescriptor QualityPolicy StrokeSampling Types VelocityLattice)
+foreach(header BrushStep CellVerification ContractError FieldDomain FieldEvidence MapPairDescriptor QualityPolicy StrokeSampling Types VelocityLattice)
   set(source "${CMAKE_CURRENT_BINARY_DIR}/include_${header}.cpp")
   file(GENERATE OUTPUT "${source}" CONTENT "#include \"deformation/${header}.h\"\n")
   target_sources(TestDeformation PRIVATE "${source}")

@@ -185,6 +185,7 @@ TEST_CASE("Composed brush pairs pass sampled physical quality checks in both dim
         report.maxConvergenceErrorMm,
         glm::length(inverse(p) - reference::composeFlows(steps, p, 64, MapDirection::Inverse)));
     }
+    report.protectionChecked = true; // Both brush recipes have no protected regions.
     report.convergenceChecked = true;
     QualityPolicy policy;
     policy.requireVerifiedCells = false;

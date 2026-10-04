@@ -67,6 +67,7 @@ struct QualityReport
   DirectionQuality forward;           //!< Source-domain round trips and forward Jacobians.
   DirectionQuality inverse;           //!< Output-domain round trips and inverse Jacobians.
   double maxProtectionErrorMm = 0.0;  //!< Maximum departure from stationary protected cores.
+  bool protectionChecked = false;     //!< Protected cores were measured, or the request explicitly had none.
   double maxConvergenceErrorMm = 0.0; //!< Difference from the requested finer calculation.
   bool convergenceChecked = false;    //!< An actual refinement comparison was performed.
   bool cellsVerified = false; //!< Producer completed the chosen cell-verification procedure, not just center sampling.
