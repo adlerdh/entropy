@@ -2429,3 +2429,44 @@ TEST_CASE("Project save reports replacement failures and cleans temporary files"
     CHECK(entry.path().filename().string().find(".project.json.tmp-") == std::string::npos);
   }
 }
+
+TEST_CASE("Optional deformation references use relocatable paths and reject missing assets", "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path image = root / "image.nii.gz";
+  const fs::path manifest = root / "project.json.assets" / "deformations" / "edit-1" / "manifest.json";
+  const fs::path projectFile = root / "project.json";
+  touchFile(image);
+  touchFile(manifest);
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = image;
+  project.m_deformationEdits.push_back({1, "edit-1", manifest, 7});
+  REQUIRE(serialize::save(project, projectFile));
+  const json saved = json::parse(std::ifstream(projectFile));
+  REQUIRE(saved.at("deformationEdits").size() == 1);
+  CHECK(saved.at("deformationEdits").at(0).at("manifest") == "project.json.assets/deformations/edit-1/manifest.json");
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_deformationEdits.size() == 1);
+  CHECK(loaded.m_deformationEdits.front().m_manifestPath == fs::canonical(manifest));
+  CHECK(loaded.m_deformationEdits.front().m_acceptedRevision == 7);
+
+  const fs::path relocated = root.string() + "-relocated";
+  fs::rename(root, relocated);
+  const fs::path relocatedProject = relocated / "project.json";
+  serialize::EntropyProject moved;
+  REQUIRE(serialize::open(moved, relocatedProject));
+  CHECK(
+    moved.m_deformationEdits.front().m_manifestPath == fs::canonical(relocated / manifest.lexically_relative(root)));
+  fs::remove(relocated / manifest.lexically_relative(root));
+  serialize::EntropyProject unchanged = moved;
+  REQUIRE_FALSE(serialize::open(moved, relocatedProject));
+  CHECK(moved.m_deformationEdits.front().m_manifestPath == unchanged.m_deformationEdits.front().m_manifestPath);
+
+  auto old = saved;
+  old.erase("deformationEdits");
+  CHECK(old.get<serialize::EntropyProject>().m_deformationEdits.empty());
+  auto bad = saved;
+  bad["deformationEdits"][0]["schemaVersion"] = 99;
+  REQUIRE_THROWS(bad.get<serialize::EntropyProject>());
+}

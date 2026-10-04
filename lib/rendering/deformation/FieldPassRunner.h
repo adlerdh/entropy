@@ -112,6 +112,15 @@ public:
   void seed(const FieldTexture& velocity, float scale, FieldTexture& output);
   /** @brief Write outer(inner(x)) - x, with validity propagated through both samples. */
   void compose(const FieldTexture& outer, const FieldTexture& inner, FieldTexture& output);
+  /** @brief Compose only the requested stored sample box; samples outside it keep their previous values.
+   * @details Inputs remain complete resident textures. The caller must initialize output outside
+   * the tile and include any displaced input dependencies in those textures.
+   */
+  void composeTile(
+    const FieldTexture& outer,
+    const FieldTexture& inner,
+    FieldTexture& output,
+    const ::deformation::IndexExtent& tile);
   /**
    * @brief Integrate +/- velocity with scaling and squaring; returns nullopt-equivalent empty members on cancellation.
    * @details Uses +/-v/2^s then s self-compositions, with s in [0, 20]. Larger s

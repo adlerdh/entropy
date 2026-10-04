@@ -89,7 +89,7 @@ ordered_json orderedProjectJson(const json& value, const std::string_view path =
   ordered_json result = ordered_json::object();
   std::vector<std::string_view> preferredKeys;
   if (path.empty()) {
-    preferredKeys = {"version", "images", "layouts", "settings", "registrationResults"};
+    preferredKeys = {"version", "images", "layouts", "settings", "registrationResults", "deformationEdits"};
   }
   else if (path == "settings") {
     preferredKeys = {"view", "rendering", "synchronization"};
@@ -507,6 +507,12 @@ bool open(EntropyProject& project, const fs::path& fileName)
     for (serialize::RegistrationResult& result : loadedProject.m_registrationResults) {
       makeRegistrationResultPathsCanonicalAbsolute(result, projectBasePath);
     }
+    for (auto& edit : loadedProject.m_deformationEdits) {
+      const fs::path path = edit.m_manifestPath.is_absolute()
+                              ? edit.m_manifestPath
+                              : (projectBasePath / edit.m_manifestPath).lexically_normal();
+      edit.m_manifestPath = fs::canonical(path);
+    }
 
     const json jAbs = loadedProject;
     spdlog::debug("Parsed project JSON (with absolute paths):\n{}", jAbs.dump(2));
@@ -637,6 +643,9 @@ bool save(const EntropyProject& project, const fs::path& fileName)
     applyToImagePaths(projectRelative, projectBasePath, makeRelative);
     for (serialize::RegistrationResult& result : projectRelative.m_registrationResults) {
       makeRegistrationResultPathsRelative(result, projectBasePath);
+    }
+    for (auto& edit : projectRelative.m_deformationEdits) {
+      edit.m_manifestPath = fs::relative(edit.m_manifestPath, projectBasePath);
     }
     const json j = projectRelative;
     const ordered_json ordered = orderedProjectJson(j);

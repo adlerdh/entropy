@@ -13,6 +13,23 @@ refinement and exact-zero protected-core checks use compact GPU reductions;
 ambiguous protected cores and all final cell checks use bounded CPU readback.
 A singleton-axis volume is still 3D.
 
+Stage 5 adds `composeTile()` for exact local output updates. It writes only the
+requested x/y rectangle and z layer range; input textures still contain the
+complete field. `deformation::compositionDependencies()` computes a conservative
+outer-input box from the inner displacement, including interpolation neighbors
+and a one-sample rounding margin. Its caller-supplied sample cap rejects an
+oversized dependency. `FieldReadback::checkpoint()` transfers one layer at a
+time into a bounded full-resolution host pair. These APIs do not make the
+numerical pipeline out of core.
+
+The tested edit envelope is 17³ samples per direction: one RGBA32F field is
+78,608 bytes, and the shared workspace reserves 64 MiB for numerical scratch
+plus five field equivalents (393,040 bytes) for accepted maps, candidate,
+and checkpoint transfer. The 3D edit and budget-exhaustion tests pass without
+resolution reduction. GL driver overhead and caller-owned image or metric
+reservations are outside this measurement. Larger domains require their own
+measured budget and remain unsupported by this stage's gate.
+
 ## API and contracts
 
 Use a current GL 3.3 core context with loaded entry points, on one thread.

@@ -229,10 +229,20 @@ public:
     uniform(p, "u_worldToIndex", indexMatrix);
   }
 
-  void draw(FieldTexture& output, GLuint programHandle)
+  void draw(FieldTexture& output, GLuint programHandle, const ::deformation::IndexExtent* tile = nullptr)
   {
+    if (tile) {
+      glEnable(GL_SCISSOR_TEST);
+      glScissor(
+        static_cast<GLint>(tile->begin[0]),
+        static_cast<GLint>(tile->begin[1]),
+        static_cast<GLsizei>(tile->end[0] - tile->begin[0]),
+        static_cast<GLsizei>(tile->end[1] - tile->begin[1]));
+    }
     if (output.domain().dimension() == SpatialDimension::Volume) {
-      for (std::uint32_t layer = 0; layer < output.domain().size()[2]; ++layer) {
+      const auto first = tile ? tile->begin[2] : 0;
+      const auto last = tile ? tile->end[2] : output.domain().size()[2];
+      for (std::uint32_t layer = first; layer < last; ++layer) {
         framebuffer.attachTextureLayer(
           fbo::TargetType::DrawAndRead,
           fbo::AttachmentType::Color,
@@ -316,6 +326,26 @@ void FieldPassRunner::compose(const FieldTexture& outer, const FieldTexture& inn
   outer.texture().bind(0);
   inner.texture().bind(1);
   m_impl->draw(output, shader.handle());
+}
+
+void FieldPassRunner::composeTile(
+  const FieldTexture& outer,
+  const FieldTexture& inner,
+  FieldTexture& output,
+  const ::deformation::IndexExtent& tile)
+{
+  compatible(outer, output);
+  compatible(inner, output);
+  for (int axis = 0; axis < 3; ++axis) {
+    if (tile.begin[axis] >= tile.end[axis] || tile.end[axis] > output.domain().size()[axis])
+      throw std::invalid_argument("Composition tile is outside the field domain");
+  }
+  detail::NumericalState state;
+  auto& shader = output.domain().dimension() == SpatialDimension::Plane ? *m_impl->compose : *m_impl->compose3D;
+  m_impl->prepare(shader, output);
+  outer.texture().bind(0);
+  inner.texture().bind(1);
+  m_impl->draw(output, shader.handle(), &tile);
 }
 
 void FieldPassRunner::velocity(const ::deformation::VelocityLattice& lattice, FieldTexture& output)

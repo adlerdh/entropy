@@ -62,6 +62,48 @@ EditHistory::EditHistory(
   m_nodes.emplace(1, Node{std::move(root), {}});
 }
 
+EditHistory EditHistory::restore(
+  FieldDomain sourceDomain,
+  FieldDomain outputDomain,
+  EditProvenance provenance,
+  NumericalPolicyVersion rootPolicyVersion,
+  std::shared_ptr<const FieldCheckpoint> initial,
+  const std::vector<ArchivedRevision>& revisions,
+  RevisionId cursor)
+{
+  EditHistory history(
+    std::move(sourceDomain),
+    std::move(outputDomain),
+    std::move(provenance),
+    rootPolicyVersion,
+    std::move(initial));
+  for (const auto& record : revisions) {
+    if (
+      record.id.value != history.m_nextId || record.parent.value == 0 ||
+      !history.m_nodes.contains(record.parent.value) || record.stroke.empty())
+    {
+      throw std::invalid_argument("Invalid archived edit revision graph");
+    }
+    const auto parent = history.m_nodes.at(record.parent.value).revision;
+    auto revision = std::make_shared<const EditRevision>(
+      record.id,
+      record.parent,
+      parent->maps().sourceDomain(),
+      parent->maps().outputDomain(),
+      parent->provenance(),
+      record.quality,
+      record.policyVersion,
+      record.stroke,
+      record.checkpoint);
+    history.m_nodes.at(record.parent.value).children.push_back(record.id);
+    history.m_nodes.emplace(record.id.value, Node{std::move(revision), {}});
+    ++history.m_nextId;
+  }
+  if (!history.m_nodes.contains(cursor.value)) throw std::invalid_argument("Archived edit cursor is missing");
+  history.m_cursor = cursor;
+  return history;
+}
+
 const EditRevision& EditHistory::current() const noexcept
 {
   return *m_nodes.find(m_cursor.value)->second.revision;

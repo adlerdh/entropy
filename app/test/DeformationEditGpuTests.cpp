@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <new>
 #include <stdexcept>
 
 namespace df = deformation;
@@ -60,6 +61,16 @@ df::FieldDomain domain()
   return df::FieldDomain(geometry);
 }
 
+df::FieldDomain volumeDomain()
+{
+  df::DomainGeometry geometry;
+  geometry.dimension = df::SpatialDimension::Volume;
+  geometry.size = {17, 17, 17};
+  geometry.spacing = {0.5, 0.5, 0.5};
+  geometry.origin = {-4, -4, -4};
+  return df::FieldDomain(geometry);
+}
+
 std::shared_ptr<const df::FieldCheckpoint> identity(const df::FieldDomain& field)
 {
   auto checkpoint = std::make_shared<df::FieldCheckpoint>();
@@ -102,7 +113,8 @@ TEST_CASE("GL edit completion publishes a complete pair only at stroke end", "[d
   const Context context;
   auto live = dependencies();
   auto state = session();
-  edit::DeformationEditBackend backend(budget, 0.5, 3, 3);
+  rendering::deformation::FieldWorkspace workspace(budget + 100'000);
+  edit::DeformationEditBackend backend(workspace, budget, 0.5, 3, 3);
   edit::DeformationEditController controller(state, backend, [&] { return live; });
   const auto root = state.active();
   REQUIRE(controller.beginStroke());
@@ -119,6 +131,7 @@ TEST_CASE("GL edit completion publishes a complete pair only at stroke end", "[d
   REQUIRE(state.active() == root);
   REQUIRE(controller.redo(accepted->id()));
   REQUIRE(state.active() == accepted);
+  REQUIRE(workspace.usedBytes() == 0);
 
   REQUIRE(state.beginStroke(live));
   const auto pending = state.prepareStep(brush(), live);
@@ -127,4 +140,41 @@ TEST_CASE("GL edit completion publishes a complete pair only at stroke end", "[d
   ++live.sourcePixelRevision;
   REQUIRE(state.complete(pending, std::move(result), live) == edit::Completion::Stale);
   REQUIRE(state.active() == accepted);
+}
+
+TEST_CASE("GL edit workspace exhaustion preserves the accepted revision", "[deformation-edit-gpu]")
+{
+  const Context context;
+  auto live = dependencies();
+  auto state = session();
+  const auto root = state.active();
+  rendering::deformation::FieldWorkspace workspace(budget);
+  edit::DeformationEditBackend backend(workspace, budget, 0.5, 3, 3);
+  edit::DeformationEditController controller(state, backend, [&] { return live; });
+  REQUIRE(controller.beginStroke());
+  REQUIRE_THROWS_AS(controller.appendStep(brush()), std::bad_alloc);
+  REQUIRE_FALSE(state.strokeActive());
+  REQUIRE(state.active() == root);
+  REQUIRE(workspace.usedBytes() == 0);
+}
+
+TEST_CASE("A 3D edit fits its declared full-domain workspace without resolution reduction", "[deformation-edit-gpu]")
+{
+  const Context context;
+  auto live = dependencies();
+  const auto field = volumeDomain();
+  edit::DeformationEditSession state(df::EditHistory(field, field, live.provenance, {1}, identity(field)), {});
+  const std::size_t fieldBytes = field.sampleCount() * sizeof(glm::vec4);
+  rendering::deformation::FieldWorkspace workspace(budget + 5 * fieldBytes);
+  edit::DeformationEditBackend backend(workspace, budget, 0.5, 3, 3);
+  edit::DeformationEditController controller(state, backend, [&] { return live; });
+  auto recipe = brush();
+  recipe.dimension = df::SpatialDimension::Volume;
+  recipe.motion = df::PushMotion{{0.02, 0.008, 0.004}};
+  REQUIRE(controller.beginStroke());
+  REQUIRE(controller.appendStep(recipe) == edit::Completion::Provisional);
+  REQUIRE(controller.endStroke());
+  REQUIRE(state.active()->checkpoint().forward.size() == field.sampleCount());
+  REQUIRE(state.active()->checkpoint().inverse.size() == field.sampleCount());
+  REQUIRE(workspace.usedBytes() == 0);
 }

@@ -21,6 +21,17 @@ struct FieldCheckpoint
   std::vector<glm::vec4> inverse; //!< Samples on the output domain; XYZ LPS mm, W validity.
 };
 
+/** @brief One previously accepted child revision for lossless archive restoration. */
+struct ArchivedRevision
+{
+  RevisionId id;
+  RevisionId parent;
+  NumericalPolicyVersion policyVersion;
+  QualityReport quality;
+  std::vector<BrushDefinition> stroke;
+  std::shared_ptr<const FieldCheckpoint> checkpoint;
+};
+
 /** @brief Opaque application identities captured with every accepted revision. */
 struct EditProvenance
 {
@@ -108,6 +119,16 @@ public:
     EditProvenance provenance,
     NumericalPolicyVersion policyVersion,
     std::shared_ptr<const FieldCheckpoint> initial);
+
+  /** @brief Restore a checked immutable archive without replaying old numerical recipes. */
+  [[nodiscard]] static EditHistory restore(
+    FieldDomain sourceDomain,
+    FieldDomain outputDomain,
+    EditProvenance provenance,
+    NumericalPolicyVersion rootPolicyVersion,
+    std::shared_ptr<const FieldCheckpoint> initial,
+    const std::vector<ArchivedRevision>& revisions,
+    RevisionId cursor);
 
   [[nodiscard]] const EditRevision& current() const noexcept;
   [[nodiscard]] std::shared_ptr<const EditRevision> currentPtr() const noexcept;

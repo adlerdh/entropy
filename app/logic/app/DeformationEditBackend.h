@@ -2,6 +2,7 @@
 
 #include "logic/app/DeformationEditController.h"
 #include "rendering/deformation/FieldPassRunner.h"
+#include "rendering/deformation/FieldWorkspace.h"
 
 #include <cstddef>
 
@@ -22,6 +23,12 @@ public:
     double controlSpacingMm,
     unsigned firstSquarings = 5,
     unsigned maxAttempts = 3);
+  DeformationEditBackend(
+    rendering::deformation::FieldWorkspace& workspace,
+    std::size_t runnerWorkspaceBytes,
+    double controlSpacingMm,
+    unsigned firstSquarings = 5,
+    unsigned maxAttempts = 3);
 
   [[nodiscard]] Result evaluate(const Request& request) override;
 
@@ -31,5 +38,6 @@ private:
   double m_controlSpacingMm;
   unsigned m_firstSquarings;
   unsigned m_maxAttempts;
+  rendering::deformation::FieldWorkspace* m_workspace = nullptr;
 };
 } // namespace deformation_edit

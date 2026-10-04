@@ -6,7 +6,9 @@ add_library(Entropy::Rendering ALIAS EntropyRendering)
 target_sources(EntropyRendering PRIVATE
   deformation/FieldTextures.cpp
   deformation/FieldPassRunner.cpp
+  deformation/FieldReadback.cpp
   deformation/NumericalState.cpp
+  deformation/FieldWorkspace.cpp
   ascii/AsciiClipboard.cpp
   FramePacer.cpp
   geometry/PixelEdgeGeometry.cpp
@@ -60,6 +62,8 @@ target_sources(EntropyRendering
     FILES
       deformation/FieldTextures.h
       deformation/FieldPassRunner.h
+      deformation/FieldReadback.h
+      deformation/FieldWorkspace.h
       FramePacer.h
       ImageShaderCapabilities.h
       RenderDerivedData.h

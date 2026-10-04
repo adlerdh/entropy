@@ -46,6 +46,8 @@ public:
   void upload(std::span<const glm::vec4> samples);
   /** @brief Synchronize and return all samples, including invalid entries; intended for tests and diagnostics. */
   [[nodiscard]] std::vector<glm::vec4> readback() const;
+  /** @brief Read one 2D slice at a time through a framebuffer, avoiding a whole-volume driver transfer. */
+  [[nodiscard]] std::vector<glm::vec4> readbackLayers() const;
 
 private:
   ::deformation::FieldDomain m_domain;

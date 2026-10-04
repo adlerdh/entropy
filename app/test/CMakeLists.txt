@@ -20,6 +20,18 @@ entropy_register_coverage_test_target(TestDeformationSession)
 entropy_copy_runtime_dlls(TestDeformationSession)
 catch_discover_tests(TestDeformationSession PROPERTIES LABELS "deformation-session")
 
+add_executable(TestDeformationArchive
+  DeformationArchiveTests.cpp
+  "${CMAKE_SOURCE_DIR}/app/logic/app/DeformationArchive.cpp")
+target_link_libraries(TestDeformationArchive PRIVATE
+  Catch2::Catch2WithMain Entropy::Common Entropy::Deformation nlohmann_json::nlohmann_json entropy_warnings)
+target_include_directories(TestDeformationArchive PRIVATE "${CMAKE_SOURCE_DIR}/app")
+set_target_properties(TestDeformationArchive PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+entropy_enable_coverage_for_target(TestDeformationArchive)
+entropy_register_coverage_test_target(TestDeformationArchive)
+entropy_copy_runtime_dlls(TestDeformationArchive)
+catch_discover_tests(TestDeformationArchive PROPERTIES LABELS "deformation-archive")
+
 if(Entropy_ENABLE_DEFORMATION_GPU_TESTS)
   add_executable(TestDeformationEditGpu
     DeformationEditGpuTests.cpp

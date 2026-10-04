@@ -1,12 +1,16 @@
 #pragma once
 
 #include "logic/serialization/ProjectSerialization.h"
+#include "deformation/EditHistory.h"
 #include "viewer/ViewTypes.h"
 
 #include <uuid.h>
 
 #include <functional>
+#include <map>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 class AppData;
 
@@ -18,6 +22,18 @@ namespace project_snapshot
 using DicomSources = std::unordered_map<uuids::uuid, serialize::DicomSource>;
 /// Native view orientations indexed by image UUID, used to reconstruct default layouts.
 using NativeViews = std::unordered_map<uuids::uuid, ViewType>;
+
+/** @brief An accepted editor history to publish with the next project snapshot. */
+struct DeformationArchiveSource
+{
+  std::string editId;
+  const deformation::EditHistory* history = nullptr;
+};
+
+/** @brief Verify and restore every referenced edit history without partial publication. */
+[[nodiscard]] std::map<std::string, deformation::EditHistory> restoreDeformationHistories(
+  const serialize::EntropyProject& project,
+  std::size_t maxTotalFieldBytes);
 
 /**
  * @brief Capture images, layouts, presentation settings, and registration results without writing files.
@@ -53,8 +69,9 @@ using ProjectWriter = std::function<bool(const serialize::EntropyProject&, const
  * @param dicomSources Optional DICOM provenance indexed by image UUID.
  * @param nativeViews Optional native orientations used to reconstruct default layouts.
  * @param writeProject Project writer, injectable for persistence tests.
+ * @param deformationArchives Accepted edit histories to publish as immutable bundles before the project file.
  * @return Saved snapshot, or std::nullopt on asset-save failure, a missing reference image, or writer failure.
- * @details On failure, restores generated warp metadata and removes newly published warp assets.
+ * @details On failure, restores generated warp metadata and removes newly published warp and edit assets.
  * The supplied writer is responsible for publishing the project file safely.
  */
 std::optional<serialize::EntropyProject> persistProject(
@@ -62,5 +79,6 @@ std::optional<serialize::EntropyProject> persistProject(
   const std::filesystem::path& normalizedFileName,
   const DicomSources& dicomSources = {},
   const NativeViews& nativeViews = {},
-  const ProjectWriter& writeProject = serialize::save);
+  const ProjectWriter& writeProject = serialize::save,
+  const std::vector<DeformationArchiveSource>& deformationArchives = {});
 } // namespace project_snapshot

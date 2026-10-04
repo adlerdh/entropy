@@ -4,6 +4,7 @@ target_sources(entropy PRIVATE
   app/DeformationWarp.cpp
   app/DeformationEditController.cpp
   app/DeformationEditBackend.cpp
+  app/DeformationArchive.cpp
   app/DeformationEditSession.cpp
   app/ImportedMeshWarp.cpp
   app/DataHelper.cpp

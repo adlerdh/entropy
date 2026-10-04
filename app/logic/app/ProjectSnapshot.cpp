@@ -4,6 +4,7 @@
 #include "common/UuidUtility.h"
 #include "logic/app/ProjectLayoutDelta.h"
 #include "logic/app/ProjectSnapshotSettings.h"
+#include "logic/app/DeformationArchive.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/annotation/SerializeAnnot.h"
@@ -20,6 +21,9 @@
 #include <algorithm>
 #include <cmath>
 #include <set>
+#include <limits>
+#include <new>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -124,6 +128,26 @@ std::vector<serialize::RegistrationResult> registrationResultSnapshots(const App
 }
 } // namespace
 
+std::map<std::string, deformation::EditHistory> project_snapshot::restoreDeformationHistories(
+  const serialize::EntropyProject& project,
+  std::size_t maxTotalFieldBytes)
+{
+  std::map<std::string, deformation::EditHistory> restored;
+  for (const auto& reference : project.m_deformationEdits) {
+    if (restored.contains(reference.m_editId)) throw std::invalid_argument("Duplicate deformation edit ID");
+    auto history = deformation_archive::loadBundle(reference, maxTotalFieldBytes);
+    const auto& maps = history.current().maps();
+    const auto forwardSamples = maps.sourceDomain().sampleCount();
+    const auto inverseSamples = maps.outputDomain().sampleCount();
+    if (forwardSamples > std::numeric_limits<std::size_t>::max() - inverseSamples) throw std::bad_alloc();
+    const auto pairSamples = forwardSamples + inverseSamples;
+    if (pairSamples > maxTotalFieldBytes / sizeof(glm::vec4) / history.size()) throw std::bad_alloc();
+    maxTotalFieldBytes -= pairSamples * sizeof(glm::vec4) * history.size();
+    restored.emplace(reference.m_editId, std::move(history));
+  }
+  return restored;
+}
+
 serialize::EntropyProject
 project_snapshot::captureProject(const AppData& data, const DicomSources& dicomSources, const NativeViews& nativeViews)
 {
@@ -181,6 +205,7 @@ project_snapshot::captureProject(const AppData& data, const DicomSources& dicomS
   project.m_intensityProjection = project_snapshot::intensityProjectionSettings(data);
   project.m_segmentationDisplay = project_snapshot::segmentationDisplaySettings(data);
   project.m_isocontours = project_snapshot::isocontourDisplaySettings(data);
+  project.m_deformationEdits = data.project().m_deformationEdits;
   project.m_registrationResults = registrationResultSnapshots(data);
 
   return project;

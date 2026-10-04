@@ -18,9 +18,11 @@ target_sources(EntropyDeformation
     BrushStep.cpp
     CellVerification.cpp
     ContractError.cpp
+    DeformationFieldIO.cpp
     EditHistory.cpp
     FieldDomain.cpp
     FieldEvidence.cpp
+    FieldTiles.cpp
     MapPairDescriptor.cpp
     QualityPolicy.cpp
     StrokeSampling.cpp
@@ -33,6 +35,7 @@ target_sources(EntropyDeformation
       BrushStep.h
       CellVerification.h
       ContractError.h
+      DeformationFieldIO.h
       EditHistory.h
       FieldDomain.h
       FieldEvidence.h

@@ -1,6 +1,7 @@
 add_executable(TestRenderingLibrary
   AsciiClipboardTests.cpp
   FramePacerTests.cpp
+  FieldWorkspaceTests.cpp
   ImageDrawingHelpersTests.cpp
   ImageShaderCapabilitiesTests.cpp
   LightboxOffsetLabelFormatTests.cpp

@@ -52,6 +52,36 @@ namespace serialize
 void to_json(json& j, const Image& image);
 void from_json(const json& j, Image& image);
 
+void to_json(json& j, const ProjectDeformationReference& reference)
+{
+  if (
+    reference.m_schemaVersion != 1 || reference.m_editId.empty() || reference.m_manifestPath.empty() ||
+    reference.m_acceptedRevision == 0)
+  {
+    throwDebug("Invalid deformation edit reference");
+  }
+  j = json{
+    {"schemaVersion", reference.m_schemaVersion},
+    {"editId", reference.m_editId},
+    {"manifest", pathToString(reference.m_manifestPath)},
+    {"acceptedRevision", reference.m_acceptedRevision}};
+}
+
+void from_json(const json& j, ProjectDeformationReference& reference)
+{
+  if (!j.is_object()) throwDebug("Deformation edit reference must be an object");
+  reference.m_schemaVersion = j.at("schemaVersion").get<std::uint32_t>();
+  reference.m_editId = j.at("editId").get<std::string>();
+  reference.m_manifestPath = j.at("manifest").get<std::string>();
+  reference.m_acceptedRevision = j.at("acceptedRevision").get<std::uint64_t>();
+  if (
+    reference.m_schemaVersion != 1 || reference.m_editId.empty() || reference.m_manifestPath.empty() ||
+    reference.m_acceptedRevision == 0)
+  {
+    throwDebug("Invalid deformation edit reference");
+  }
+}
+
 void to_json(json& j, const ProjectSynchronizationSettings& settings)
 {
   const ProjectSynchronizationSettings defaults;
@@ -1136,6 +1166,9 @@ void to_json(json& j, const EntropyProject& project)
   if (!project.m_registrationResults.empty()) {
     j["registrationResults"] = project.m_registrationResults;
   }
+  if (!project.m_deformationEdits.empty()) {
+    j["deformationEdits"] = project.m_deformationEdits;
+  }
 }
 
 void from_json(const json& j, EntropyProject& project)
@@ -1234,6 +1267,11 @@ void from_json(const json& j, EntropyProject& project)
       registrationResults != j.end() && registrationResults->is_array())
   {
     registrationResults->get_to(project.m_registrationResults);
+  }
+  project.m_deformationEdits.clear();
+  if (const auto edits = j.find("deformationEdits"); edits != j.end()) {
+    if (!edits->is_array()) throwDebug("Project deformation edits must be an array");
+    edits->get_to(project.m_deformationEdits);
   }
 }
 

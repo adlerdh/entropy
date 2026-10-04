@@ -259,6 +259,52 @@ TEST_CASE("GPU volume passes write every layer and reject invalid trilinear cont
   REQUIRE(glGetError() == GL_NO_ERROR);
 }
 
+TEST_CASE("GPU tile composition matches a full pass and leaves other samples untouched", "[deformation-gpu]")
+{
+  const Context context;
+  gpu::FieldPassRunner passes(budget);
+  for (const bool volume : {false, true}) {
+    auto spec = volume ? volumeGeometry(8, 0.75) : geometry(8, 0.75);
+    spec.size = {8, 7, volume ? 5u : 1u};
+    const df::FieldDomain domain(spec);
+    gpu::FieldTexture outer(domain, budget), inner(domain, budget), full(domain, budget), tiled(domain, budget);
+    std::vector<glm::vec4> outerData(domain.sampleCount());
+    std::vector<glm::vec4> innerData(domain.sampleCount());
+    for (std::uint32_t z = 0; z < spec.size[2]; ++z) {
+      for (std::uint32_t y = 0; y < spec.size[1]; ++y) {
+        for (std::uint32_t x = 0; x < spec.size[0]; ++x) {
+          const auto index = offset3(domain, x, y, z);
+          outerData[index] = {0.1f * x, -0.2f * y, volume ? 0.05f * z : 0.0f, 1};
+          innerData[index] = {0.5625f, -0.1875f, volume ? 0.375f : 0.0f, 1};
+        }
+      }
+    }
+    outerData[offset3(domain, 5, 3, volume ? 2u : 0u)].w = 0;
+    outer.upload(outerData);
+    inner.upload(innerData);
+    const glm::vec4 marker{17, 18, 19, 0};
+    tiled.upload(std::vector<glm::vec4>(domain.sampleCount(), marker));
+    passes.compose(outer, inner, full);
+    const df::IndexExtent tile{{2, 1, volume ? 1u : 0u}, {7, 6, volume ? 4u : 1u}};
+    passes.composeTile(outer, inner, tiled, tile);
+    const auto expected = full.readback();
+    const auto actual = tiled.readbackLayers();
+    REQUIRE(actual.size() == expected.size());
+    for (std::uint32_t z = 0; z < spec.size[2]; ++z) {
+      for (std::uint32_t y = 0; y < spec.size[1]; ++y) {
+        for (std::uint32_t x = 0; x < spec.size[0]; ++x) {
+          const auto index = offset3(domain, x, y, z);
+          const bool inside = x >= tile.begin[0] && x < tile.end[0] && y >= tile.begin[1] && y < tile.end[1] &&
+                              z >= tile.begin[2] && z < tile.end[2];
+          REQUIRE(actual[index] == (inside ? expected[index] : marker));
+        }
+      }
+    }
+    REQUIRE_THROWS(passes.composeTile(outer, inner, tiled, {{0, 0, 0}, {9, 7, 1}}));
+  }
+  REQUIRE(glGetError() == GL_NO_ERROR);
+}
+
 TEST_CASE("GPU singleton-axis volumes preserve paired cancellation and complete sweeps", "[deformation-gpu]")
 {
   const Context context;

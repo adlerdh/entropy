@@ -1,10 +1,14 @@
 #include "logic/app/DeformationEditBackend.h"
 
 #include "deformation/VelocityLattice.h"
+#include "rendering/deformation/FieldReadback.h"
 #include "rendering/deformation/FieldTextures.h"
 
 #include <cmath>
 #include <memory>
+#include <limits>
+#include <new>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
@@ -46,6 +50,17 @@ DeformationEditBackend::DeformationEditBackend(
   }
 }
 
+DeformationEditBackend::DeformationEditBackend(
+  rendering::deformation::FieldWorkspace& workspace,
+  std::size_t runnerWorkspaceBytes,
+  double controlSpacingMm,
+  unsigned firstSquarings,
+  unsigned maxAttempts)
+  : DeformationEditBackend(runnerWorkspaceBytes, controlSpacingMm, firstSquarings, maxAttempts)
+{
+  m_workspace = &workspace;
+}
+
 Result DeformationEditBackend::evaluate(const Request& request)
 {
   Result result;
@@ -60,6 +75,19 @@ Result DeformationEditBackend::evaluate(const Request& request)
   }
   if (request.base->forward.size() != source.sampleCount() || request.base->inverse.size() != output.sampleCount()) {
     throw std::invalid_argument("Edit request has an incomplete base checkpoint");
+  }
+
+  using Use = rendering::deformation::FieldBudgetUse;
+  using Reservation = rendering::deformation::FieldWorkspace::Reservation;
+  std::optional<Reservation> acceptedBudget, candidateBudget, scratchBudget, readbackBudget;
+  if (m_workspace) {
+    if (source.sampleCount() > std::numeric_limits<std::size_t>::max() / (2 * sizeof(glm::vec4)))
+      throw std::bad_alloc();
+    const std::size_t pairBytes = source.sampleCount() * 2 * sizeof(glm::vec4);
+    acceptedBudget.emplace(m_workspace->reserve(Use::AcceptedMaps, pairBytes));
+    candidateBudget.emplace(m_workspace->reserve(Use::Candidate, pairBytes / 2));
+    scratchBudget.emplace(m_workspace->reserve(Use::Scratch, m_workspaceBytes));
+    readbackBudget.emplace(m_workspace->reserve(Use::Readback, pairBytes));
   }
 
   rendering::deformation::FieldPair previous;
@@ -84,9 +112,7 @@ Result DeformationEditBackend::evaluate(const Request& request)
   result.report = std::move(candidate.report);
   result.assessment = candidate.assessment;
   if (candidate.canceled || stopped() || !candidate.pair.forward || !candidate.pair.inverse) return result;
-  auto checkpoint = std::make_shared<deformation::FieldCheckpoint>();
-  checkpoint->forward = candidate.pair.forward->readback();
-  checkpoint->inverse = candidate.pair.inverse->readback();
+  auto checkpoint = rendering::deformation::FieldReadback::checkpoint(candidate.pair, m_workspaceBytes);
   if (!stopped()) result.checkpoint = std::move(checkpoint);
   return result;
 }

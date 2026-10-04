@@ -1,6 +1,7 @@
 #include "rendering/deformation/FieldTextures.h"
 
 #include "rendering/deformation/NumericalState.h"
+#include "rendering/gl/GLFrameBufferObject.h"
 
 #include <glad/glad.h>
 #include <glm/vec3.hpp>
@@ -120,6 +121,40 @@ std::vector<glm::vec4> FieldTexture::readback() const
   if (glGetError() != GL_NO_ERROR) {
     throw std::runtime_error("Field readback failed");
   }
+  return samples;
+}
+
+std::vector<glm::vec4> FieldTexture::readbackLayers() const
+{
+  std::vector<glm::vec4> samples(m_domain.sampleCount());
+  detail::NumericalState state;
+  GLFrameBufferObject framebuffer{"Deformation layer readback"};
+  framebuffer.generate();
+  framebuffer.bind(fbo::TargetType::DrawAndRead);
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  const auto& size = m_domain.size();
+  const std::size_t layerSamples = static_cast<std::size_t>(size[0]) * size[1];
+  for (std::uint32_t layer = 0; layer < size[2]; ++layer) {
+    if (m_domain.dimension() == ::deformation::SpatialDimension::Plane)
+      framebuffer.attach2DTexture(fbo::TargetType::DrawAndRead, fbo::AttachmentType::Color, m_texture, 0);
+    else
+      framebuffer.attachTextureLayer(
+        fbo::TargetType::DrawAndRead,
+        fbo::AttachmentType::Color,
+        m_texture,
+        static_cast<GLint>(layer),
+        0);
+    glReadPixels(
+      0,
+      0,
+      static_cast<GLsizei>(size[0]),
+      static_cast<GLsizei>(size[1]),
+      GL_RGBA,
+      GL_FLOAT,
+      samples.data() + layerSamples * layer);
+    if (glGetError() != GL_NO_ERROR) throw std::runtime_error("Field layer readback failed");
+  }
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
   return samples;
 }
 } // namespace rendering::deformation

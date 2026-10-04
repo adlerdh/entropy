@@ -1,5 +1,6 @@
 #include "logic/app/Data.h"
 #include "logic/app/ProjectSnapshot.h"
+#include "logic/app/DeformationArchive.h"
 #include "logic/app/ProjectSnapshotSettings.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "image/ImageWriter.h"
@@ -24,6 +25,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <future>
+#include <memory>
 #include <nlohmann/json.hpp>
 
 using namespace entropy::test;
@@ -277,6 +279,60 @@ TEST_CASE(
   const auto bytes = readBytes(asset.m_path);
   CHECK(project_snapshot::persistProject(data, projectPath).has_value());
   CHECK(readBytes(asset.m_path) == bytes);
+}
+
+TEST_CASE("Deformation bundle publication follows the project transaction", "[workflow][project][deformation]")
+{
+  TempDirectory directory;
+  AppData data;
+  auto referenceImage = scalarRamp();
+  referenceImage.header().setFileName(directory.path() / "reference.nrrd");
+  REQUIRE(static_cast<bool>(image_io::writeImage(referenceImage, referenceImage.header().fileName())));
+  const auto reference = data.addImage(std::move(referenceImage));
+  REQUIRE(data.setRefImageUid(reference));
+
+  deformation::DomainGeometry geometry;
+  geometry.dimension = deformation::SpatialDimension::Plane;
+  geometry.size = {3, 3, 1};
+  const deformation::FieldDomain domain(geometry);
+  auto initial = std::make_shared<deformation::FieldCheckpoint>();
+  initial->forward.assign(domain.sampleCount(), {0, 0, 0, 1});
+  initial->inverse.assign(domain.sampleCount(), {0, 0, 0, 1});
+  const deformation::EditHistory history(
+    domain,
+    domain,
+    {uuids::to_string(reference), uuids::to_string(reference), "identity", 0},
+    {1},
+    initial);
+  const std::vector<project_snapshot::DeformationArchiveSource> sources{{"edit_1", &history}};
+  const auto projectFile = directory.path() / "project.json";
+  std::filesystem::path abandoned;
+  const auto failed = project_snapshot::persistProject(
+    data,
+    projectFile,
+    {},
+    {},
+    [&](const auto& snapshot, const auto&) {
+      REQUIRE(snapshot.m_deformationEdits.size() == 1);
+      abandoned = snapshot.m_deformationEdits.front().m_manifestPath;
+      REQUIRE(std::filesystem::exists(abandoned));
+      return false;
+    },
+    sources);
+  CHECK_FALSE(failed);
+  CHECK_FALSE(std::filesystem::exists(abandoned));
+  CHECK_FALSE(std::filesystem::exists(projectFile));
+
+  const auto saved = project_snapshot::persistProject(data, projectFile, {}, {}, serialize::save, sources);
+  REQUIRE(saved);
+  REQUIRE(saved->m_deformationEdits.size() == 1);
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_deformationEdits.size() == 1);
+  const auto restored = project_snapshot::restoreDeformationHistories(loaded, 1024);
+  REQUIRE(restored.size() == 1);
+  CHECK(restored.at("edit_1").current().id() == history.current().id());
+  CHECK(restored.at("edit_1").current().checkpoint().forward == history.current().checkpoint().forward);
 }
 
 TEST_CASE(

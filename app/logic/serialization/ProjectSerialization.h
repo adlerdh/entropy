@@ -712,6 +712,18 @@ struct DefaultLayoutOverride
   bool operator==(const DefaultLayoutOverride&) const = default;
 };
 
+/** @brief Optional reference to a versioned, immutable deformation edit bundle. */
+struct ProjectDeformationReference
+{
+  std::uint32_t m_schemaVersion = 1;
+  std::string m_editId;
+  std::filesystem::path m_manifestPath;
+  std::uint64_t m_acceptedRevision = 0;
+};
+
+void to_json(nlohmann::json& j, const ProjectDeformationReference& reference);
+void from_json(const nlohmann::json& j, ProjectDeformationReference& reference);
+
 /**
  * @brief Serialized data for an Entropy project
  */
@@ -734,6 +746,7 @@ struct EntropyProject
   ProjectSegmentationDisplaySettings m_segmentationDisplay;
   ProjectIsocontourDisplaySettings m_isocontours;
   std::vector<RegistrationResult> m_registrationResults;
+  std::vector<ProjectDeformationReference> m_deformationEdits;
 };
 
 /**
