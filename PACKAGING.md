@@ -356,6 +356,12 @@ macOS settings:
 | `Entropy_MACOSX_BUNDLE_VERSION` | `major.minor.feature` | Sets `CFBundleVersion` |
 | `Entropy_STRIP_PACKAGED_APP` | `ON` | Removes local symbols before signing the packaged application |
 
+The macOS app's visible version (`CFBundleShortVersionString`) uses the full
+four-part `VERSION_FULL` value, matching the package names and the version
+reported by the executable. Apple documents a three-part format for this field;
+the four-part value is used for direct Developer ID distribution and should be
+revisited before any Mac App Store submission.
+
 Windows setting:
 
 | Option | Default | Purpose |
