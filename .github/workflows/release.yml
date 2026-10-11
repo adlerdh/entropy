@@ -7,7 +7,7 @@ on:
       - "v*.*.*.*"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -16,7 +16,7 @@ concurrency:
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
-  DEPS_CACHE_VERSION: v1
+  DEPS_CACHE_VERSION: v3
 
 jobs:
   metadata:
@@ -27,7 +27,13 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Test release security helpers
+        run: python3 -m unittest discover -s .github/scripts/tests -p 'test_release*.py' -v
 
       - name: Verify release tag matches project version
         id: version
@@ -56,6 +62,9 @@ jobs:
             exit 1
           fi
 
+          # Only reviewed main-branch history may be signed or released.
+          git merge-base --is-ancestor HEAD refs/remotes/origin/main
+
           echo "entropy_version=$version" >> "$GITHUB_OUTPUT"
           {
             echo "### Entropy release"
@@ -76,9 +85,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -94,7 +104,7 @@ jobs:
           Get-Command light.exe -ErrorAction Stop
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             build-release/external/catch2-*
@@ -116,10 +126,8 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
-            'CMakeLists.txt', 'cmake/*.cmake') }}
-          restore-keys: |
-            windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-windows-msvc2022-deps-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Configure Release Dependencies
         working-directory: 'S:\'
@@ -171,7 +179,7 @@ jobs:
           "Portable ZIP: $($zip.Name)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: Upload Windows packages as workflow artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: entropy-${{ env.ENTROPY_VERSION }}-windows-x86_64
           path: |
@@ -196,9 +204,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install build and packaging dependencies
         run: |
@@ -236,12 +245,12 @@ jobs:
           dpkg-deb --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .ccache
-          key: linux-ubuntu2204-gcc13-release-publish-ccache-v1-${{ github.run_id }}
-          restore-keys: |
-            linux-ubuntu2204-gcc13-release-publish-ccache-v1-
+          key: >-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-linux-ubuntu2204-gcc13-ccache-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Reset Release ccache stats
         run: |
@@ -249,7 +258,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             build-release/external/catch2-*
@@ -271,10 +280,8 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
-            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
-          restore-keys: |
-            linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-linux-ubuntu2204-gcc13-deps-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Configure Release Dependencies
         run: >
@@ -330,7 +337,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Linux packages as workflow artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: entropy-${{ env.ENTROPY_VERSION }}-ubuntu-x86_64
           path: |
@@ -346,9 +353,9 @@ jobs:
     name: macOS Release (arm64)
     runs-on: macos-15
     needs: metadata
+    environment: release-signing
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
-      DEPS_CACHE_VERSION: v2
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_COMPILERCHECK: content
@@ -359,9 +366,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install build dependencies
         run: brew install ccache
@@ -377,23 +385,13 @@ jobs:
           xcodebuild -version
           xcrun --show-sdk-version
 
-      - name: Install Developer ID certificate and notarization key
-        env:
-          ENTROPY_MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_P12_BASE64 }}
-          ENTROPY_MACOS_CERTIFICATE_PASSWORD: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_PASSWORD }}
-          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
-          ENTROPY_NOTARY_API_KEY_BASE64: ${{ secrets.ENTROPY_NOTARY_API_KEY_BASE64 }}
-          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
-          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
-        run: bash .github/scripts/setup_macos_release_credentials.sh
-
       - name: Restore Release ccache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .ccache
-          key: macos15-arm64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
-          restore-keys: |
-            macos15-arm64-appleclang-release-publish-ccache-v1-
+          key: >-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-macos15-arm64-appleclang-ccache-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Reset Release ccache stats
         run: |
@@ -401,7 +399,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             build-release/external/catch2-*
@@ -422,10 +420,8 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            macos15-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
-            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
-          restore-keys: |
-            macos15-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-macos15-arm64-appleclang-deps-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Configure Release Dependencies
         run: >
@@ -438,13 +434,11 @@ jobs:
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
-        env:
-          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
         run: >
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
-          "-DEntropy_MACOS_CODESIGN_IDENTITY=${ENTROPY_MACOS_CODESIGN_IDENTITY}"
+          -DEntropy_MACOS_CODESIGN_IDENTITY=-
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -454,6 +448,26 @@ jobs:
 
       - name: Validate deployment target
         run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
+
+      - name: Install Developer ID certificate and notarization key
+        env:
+          ENTROPY_MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_P12_BASE64 }}
+          ENTROPY_MACOS_CERTIFICATE_PASSWORD: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_PASSWORD }}
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
+          ENTROPY_NOTARY_API_KEY_BASE64: ${{ secrets.ENTROPY_NOTARY_API_KEY_BASE64 }}
+          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
+          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
+        run: bash .github/scripts/setup_macos_release_credentials.sh
+
+      - name: Configure Developer ID packaging
+        env:
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
+        run: >
+          cmake --preset app-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          "-DEntropy_MACOS_CODESIGN_IDENTITY=${ENTROPY_MACOS_CODESIGN_IDENTITY}"
+
 
       - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -471,6 +485,10 @@ jobs:
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
+
+      - name: Remove signing credentials
+        if: always()
+        run: bash .github/scripts/cleanup_macos_release_credentials.sh
 
       - name: Locate release assets
         run: |
@@ -493,7 +511,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload macOS packages as workflow artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: entropy-${{ env.ENTROPY_VERSION }}-macos-arm64
           path: |
@@ -509,9 +527,9 @@ jobs:
     name: macOS Release (x86_64)
     runs-on: macos-15-intel
     needs: metadata
+    environment: release-signing
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
-      DEPS_CACHE_VERSION: v2
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_COMPILERCHECK: content
@@ -522,9 +540,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install build dependencies
         run: brew install ccache
@@ -540,23 +559,13 @@ jobs:
           xcodebuild -version
           xcrun --show-sdk-version
 
-      - name: Install Developer ID certificate and notarization key
-        env:
-          ENTROPY_MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_P12_BASE64 }}
-          ENTROPY_MACOS_CERTIFICATE_PASSWORD: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_PASSWORD }}
-          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
-          ENTROPY_NOTARY_API_KEY_BASE64: ${{ secrets.ENTROPY_NOTARY_API_KEY_BASE64 }}
-          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
-          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
-        run: bash .github/scripts/setup_macos_release_credentials.sh
-
       - name: Restore Release ccache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .ccache
-          key: macos15-intel-x86_64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
-          restore-keys: |
-            macos15-intel-x86_64-appleclang-release-publish-ccache-v1-
+          key: >-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-macos15-intel-x86_64-appleclang-ccache-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Reset Release ccache stats
         run: |
@@ -564,7 +573,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             build-release/external/catch2-*
@@ -585,10 +594,8 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{
-            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
-          restore-keys: |
-            macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-macos15-intel-x86_64-appleclang-deps-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Configure Release Dependencies
         run: >
@@ -602,14 +609,12 @@ jobs:
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
-        env:
-          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
         run: >
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
-          "-DEntropy_MACOS_CODESIGN_IDENTITY=${ENTROPY_MACOS_CODESIGN_IDENTITY}"
+          -DEntropy_MACOS_CODESIGN_IDENTITY=-
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -619,6 +624,27 @@ jobs:
 
       - name: Validate deployment target
         run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
+
+      - name: Install Developer ID certificate and notarization key
+        env:
+          ENTROPY_MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_P12_BASE64 }}
+          ENTROPY_MACOS_CERTIFICATE_PASSWORD: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_PASSWORD }}
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
+          ENTROPY_NOTARY_API_KEY_BASE64: ${{ secrets.ENTROPY_NOTARY_API_KEY_BASE64 }}
+          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
+          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
+        run: bash .github/scripts/setup_macos_release_credentials.sh
+
+      - name: Configure Developer ID packaging
+        env:
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
+        run: >
+          cmake --preset app-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+          "-DEntropy_MACOS_CODESIGN_IDENTITY=${ENTROPY_MACOS_CODESIGN_IDENTITY}"
+
 
       - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -636,6 +662,10 @@ jobs:
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
+
+      - name: Remove signing credentials
+        if: always()
+        run: bash .github/scripts/cleanup_macos_release_credentials.sh
 
       - name: Locate release assets
         run: |
@@ -658,7 +688,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload macOS x86_64 packages as workflow artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: entropy-${{ env.ENTROPY_VERSION }}-macos-x86_64
           path: |
@@ -675,7 +705,8 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     container:
-      image: fedora:43
+      # Fedora 43 linux/amd64 image index, verified against Docker Hub.
+      image: fedora:43@sha256:a651ddf48ea28a06ed4e1e6519f51c9f47e7a5a138722ade87369b8fbb7e5b42
     needs: metadata
     env:
       CC: gcc
@@ -715,9 +746,10 @@ jobs:
             wayland-devel
 
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Trust checkout directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -735,12 +767,12 @@ jobs:
           rpmbuild --version
 
       - name: Restore Release ccache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .ccache
-          key: linux-fedora43-gcc-release-publish-ccache-v1-${{ github.run_id }}
-          restore-keys: |
-            linux-fedora43-gcc-release-publish-ccache-v1-
+          key: >-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-linux-fedora43-gcc-ccache-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Reset Release ccache stats
         run: |
@@ -748,7 +780,7 @@ jobs:
           ccache --zero-stats
 
       - name: Restore Release Dependencies cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             build-release/external/catch2-*
@@ -770,10 +802,8 @@ jobs:
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
           key: >-
-            linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json',
-            'CMakeLists.txt', 'cmake/*.cmake') }}
-          restore-keys: |
-            linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-
+            entropy-release-${{ env.DEPS_CACHE_VERSION }}-linux-fedora43-gcc-deps-${{ github.sha }}-${{
+            hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake', '.github/workflows/release.yml') }}
 
       - name: Configure Release Dependencies
         run: >-
@@ -838,7 +868,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Fedora packages as workflow artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: entropy-${{ env.ENTROPY_VERSION }}-fedora-x86_64
           path: |
@@ -852,6 +882,9 @@ jobs:
 
   publish:
     name: Publish GitHub Release
+    environment: release-publish
+    permissions:
+      contents: write
     if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     needs:
@@ -863,17 +896,18 @@ jobs:
       - macos-x86_64
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
-      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
+          pattern: entropy-${{ env.ENTROPY_VERSION }}-*
           path: release-assets
           merge-multiple: true
 
@@ -884,16 +918,15 @@ jobs:
           git archive --format=tar.gz --prefix="$prefix" \
             -o "release-assets/Entropy-${ENTROPY_VERSION}-source.tar.gz" HEAD
 
-      - name: List release assets
+      - name: Validate assets and generate SHA-256 checksums
         run: |
-          find release-assets -maxdepth 1 -type f -print | sort
-          asset_count=$(find release-assets -maxdepth 1 -type f | wc -l)
-          if [[ "$asset_count" -ne 12 ]]; then
-            echo "Expected 12 release assets, found $asset_count" >&2
-            exit 1
-          fi
+          python3 .github/scripts/prepare_release_assets.py generate \
+            --version "$ENTROPY_VERSION" --asset-dir release-assets
+          cat release-assets/SHA256SUMS.txt
 
       - name: Create release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           tag="$GITHUB_REF_NAME"
           generated_notes="$(mktemp)"
@@ -914,6 +947,21 @@ jobs:
           - Portable archives are also attached for macOS, Windows, Ubuntu, and Fedora.
           - Source archives are attached as \`zip\` and \`tar.gz\`.
 
+          ## Verify downloads
+
+          Download \`SHA256SUMS.txt\` from this official release along with the files you need.
+          It covers all attached installers, portable archives, and named source archives.
+          From the download directory, check files with:
+
+          - Linux: \`sha256sum --check --ignore-missing SHA256SUMS.txt\`
+          - macOS: \`shasum -a 256 <downloaded-file>\`, then compare with its manifest entry.
+          - Windows PowerShell: \`Get-FileHash .\\<downloaded-file> -Algorithm SHA256\`,
+            then compare with its manifest entry (letter case does not matter).
+
+          Use the named \`Entropy-${ENTROPY_VERSION}-source.*\` archives for checksum-verified source;
+          GitHub's automatic "Source code" links are separate, generated downloads.
+          A matching checksum confirms file integrity, not that a third-party download site is trustworthy.
+
           ## System requirements
 
           - Windows 10 version 1809 or later (x86_64)
@@ -933,16 +981,40 @@ jobs:
           EOF
           cat "$generated_notes" >> release-notes.md
 
-      - name: Create GitHub Release
+      - name: Upload and verify draft, then publish immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           tag="$GITHUB_REF_NAME"
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "GitHub Release '$tag' already exists. Delete it or create a new tag before rerunning." >&2
+            echo "Release '$tag' already exists. Use a new version/tag, or remove an unpublished draft before retrying." >&2
             exit 1
           fi
 
+          remote_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/$tag" --jq .sha)"
+          test "$remote_commit" = "$GITHUB_SHA"
+          python3 .github/scripts/prepare_release_assets.py verify \
+            --version "$ENTROPY_VERSION" --asset-dir release-assets
+
           gh release create "$tag" \
             release-assets/* \
+            --draft \
             --verify-tag \
             --notes-file release-notes.md \
             --title "Entropy $ENTROPY_VERSION"
+
+          release_id="$(gh release view "$tag" --json databaseId --jq .databaseId)"
+          uploaded_assets="$RUNNER_TEMP/entropy-uploaded-assets.json"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/$release_id/assets?per_page=100" > "$uploaded_assets"
+          python3 .github/scripts/prepare_release_assets.py verify-upload \
+            --version "$ENTROPY_VERSION" --asset-dir release-assets \
+            --uploaded-assets-json "$uploaded_assets"
+
+          remote_commit="$(gh api "repos/${GITHUB_REPOSITORY}/commits/$tag" --jq .sha)"
+          test "$remote_commit" = "$GITHUB_SHA"
+          gh release edit "$tag" --draft=false --latest
+          immutable="$(gh api "repos/${GITHUB_REPOSITORY}/releases/$release_id" --jq .immutable)"
+          if [[ "$immutable" != "true" ]]; then
+            echo "Release was not locked. Enable repository release immutability before publishing." >&2
+            exit 1
+          fi

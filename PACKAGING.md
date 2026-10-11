@@ -1,6 +1,6 @@
 # Packaging Entropy
 
-This explains how to build release packages locally and how Entropy publishes GitHub Releases.
+This guide covers building and testing packages, the official release formats, and verifying downloaded packages.
 See [BUILDING.md](BUILDING.md) for compiler requirements, dependency builds, tests, and ordinary build instructions.
 
 Entropy packages are created with CPack from the Release application build. With the default build directory, CPack
@@ -27,9 +27,6 @@ Published packages support these minimum OS versions:
 | macOS arm64 or x86_64 | macOS 13.3 |
 | Ubuntu x86_64 | Ubuntu 22.04 |
 | Fedora x86_64 | Fedora 43 |
-
-Keep this table and the generated release notes in sync whenever a deployment target or Linux build baseline changes.
-
 
 ## Build Packages Locally
 
@@ -242,11 +239,6 @@ the Developer ID signature, hardened runtime, stapled tickets, Gatekeeper assess
 cannot itself be stapled; the app inside the published ZIP is stapled instead. Test downloaded assets on a clean Mac
 before announcing a release.
 
-Before tagging a release, run the `Release` workflow manually from GitHub Actions. A manual run builds, signs,
-notarizes, and uploads both macOS architectures as workflow artifacts without publishing a GitHub Release. Tag pushes
-build every platform and publish only after all release jobs pass. The workflow expects its signing and notarization
-credentials in GitHub Actions secrets; no credentials belong in this repository.
-
 Test a macOS package:
 
 ```sh
@@ -377,8 +369,7 @@ a different value.
 Public GitHub Releases are created by [.github/workflows/release.yml](.github/workflows/release.yml) when a tag matching
 `v*.*.*.*` is pushed. A manual run builds the macOS packages for validation without publishing a release.
 
-The platform CI workflows can also build packages on a schedule or by manual dispatch. Run those package jobs before a
-release when packaging, dependencies, icons, launch behavior, or runtime resources have changed.
+The platform CI workflows can also build packages on a schedule or by manual dispatch.
 
 The tag-driven release workflow uses this matrix:
 
@@ -390,31 +381,53 @@ The tag-driven release workflow uses this matrix:
 | macOS x86_64 | `macos-15-intel` | DMG and ZIP | Release tests, Developer ID signing, notarization, and staged-install smoke test |
 | Fedora 43 x86_64 | Fedora container on `ubuntu-24.04` | RPM and portable TAR.GZ | Release tests, RPM dependency checks, and staged-install smoke test |
 
-Before tagging, make sure `main` is clean and current, all required CI checks pass, and the version in
-`cmake/ProjectMetadata.cmake` is up to date:
+Each platform job builds the Release configuration, runs tests, creates packages, and smoke-tests a staged install.
+The workflow requires the tag to match the project version in `cmake/ProjectMetadata.cmake`. Publication occurs only
+after every platform job succeeds and the uploaded filenames, sizes, and SHA-256 digests have been verified.
 
-```cmake
-set(VERSION_MAJOR x)
-set(VERSION_MINOR y)
-set(VERSION_FEATURE z)
-set(VERSION_PATCH w)
-```
-
-Create an annotated or signed tag that exactly matches `VERSION_FULL`:
-
-```sh
-git switch main
-git pull --ff-only
-git tag -a vx.y.z.w -m "Entropy x.y.z.w"
-git push origin vx.y.z.w
-```
-
-If the tag and project version disagree, the release workflow stops before building packages.
-
-Each platform job builds the Release configuration, runs tests, creates packages, and smoke-tests a staged install. The
-publish job then gathers the packages, creates source archives from Git-tracked files, checks for all 12 files, and
-creates the GitHub Release. It stops if that tag already has a release.
+Releases produced by this workflow include `SHA256SUMS.txt` for all uploaded packages and named source archives.
+Checksums are generated from the final files, after any signing and notarization.
 
 The release also includes source archives in ZIP and TAR.GZ formats. They contain the tagged files tracked by Git and
 do not include downloaded dependencies or build products. Release notes contain a short download guide followed by
 GitHub-generated notes.
+
+Future published releases are immutable: their tags and uploaded assets cannot be changed after publication.
+Package corrections are distributed as a new version. This policy does not retroactively lock older releases.
+
+### Verify downloaded packages
+
+Download `SHA256SUMS.txt` and your chosen packages from the same official GitHub Release. The manifest covers all 12
+uploaded installers, portable archives, and named source archives for Windows, macOS, Ubuntu, and Fedora. The manifest
+does not hash itself.
+
+Linux, from the directory containing the downloads:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS.txt
+```
+
+macOS:
+
+```sh
+shasum -a 256 Entropy-x.y.z.w-macOS-arm64.dmg
+```
+
+Windows PowerShell:
+
+```powershell
+Get-FileHash .\Entropy-x.y.z.w-Windows-x86_64.msi -Algorithm SHA256
+```
+
+For macOS or Windows, compare the result with that filename's line in the manifest. Hexadecimal letter case does not
+matter. Use the named `Entropy-x.y.z.w-source.zip` or `Entropy-x.y.z.w-source.tar.gz` assets for checksum-verified source;
+GitHub's automatic "Source code" links are separate, generated downloads. Checksums establish integrity relative to the
+official manifest, not publisher identity or protection against a compromised official account.
+
+### Testing release tooling
+
+Developers changing the release scripts can run the offline asset validation and mocked credential cleanup tests with:
+
+```sh
+python -m unittest discover -s .github/scripts/tests -p 'test_release*.py' -v
+```
