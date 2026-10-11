@@ -72,10 +72,8 @@ static const LicenseDocument sk_ibmPlexSansDocs[] = {{"License text:", "licenses
 static const LicenseDocument sk_interDocs[] = {{"License text:", "licenses/Inter.txt"}};
 static const LicenseDocument sk_notoSansDocs[] = {{"License text:", "licenses/NotoSans.txt"}};
 static const LicenseDocument sk_robotoDocs[] = {{"License text:", "licenses/Roboto.txt"}};
-static const LicenseDocument sk_satoshiDocs[] = {{"License text:", "licenses/Satoshi.txt"}};
 static const LicenseDocument sk_sourceSans3Docs[] = {{"License text:", "licenses/SourceSans3.txt"}};
 static const LicenseDocument sk_spaceGroteskDocs[] = {{"License text:", "licenses/SpaceGrotesk.txt"}};
-static const LicenseDocument sk_supremeDocs[] = {{"License text:", "licenses/Supreme.txt"}};
 static const LicenseDocument sk_peterKovesiDocs[] = {{"License text:", "licenses/PeterKovesiColourMaps.txt"}};
 static const LicenseDocument sk_matplotlibDocs[] = {
   {"Attribution", "licenses/MatplotlibColourMaps.txt"},
@@ -248,13 +246,6 @@ static const LicenseEntry sk_entries[] = {
    "",
    sk_safeclibDocs,
    count(sk_safeclibDocs)},
-  {"Satoshi font",
-   "None",
-   "https://www.fontshare.com/fonts/satoshi",
-   "Fontshare Free Font License",
-   "",
-   sk_satoshiDocs,
-   count(sk_satoshiDocs)},
   {"Source Sans 3 font",
    "None",
    "https://github.com/adobe-fonts/source-sans",
@@ -271,13 +262,6 @@ static const LicenseEntry sk_entries[] = {
    count(sk_spaceGroteskDocs)},
   {"spdlog", "v1.17.0", "https://github.com/gabime/spdlog", "MIT", "", sk_spdlogDocs, count(sk_spdlogDocs)},
   {"stduuid", "v1.2.3", "https://github.com/mariusbancila/stduuid", "MIT", "", sk_stduuidDocs, count(sk_stduuidDocs)},
-  {"Supreme font",
-   "None",
-   "https://www.fontshare.com/fonts/supreme",
-   "Fontshare Free Font License",
-   "",
-   sk_supremeDocs,
-   count(sk_supremeDocs)},
   {"T-Digest for C++",
    "None",
    "https://github.com/derrickburns/tdigest",

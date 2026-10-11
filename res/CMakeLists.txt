@@ -13,10 +13,8 @@ set(entropy_FONTS
   "${CMAKE_CURRENT_SOURCE_DIR}/fonts/NotoSans/NotoSans-Regular.ttf"
   "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Roboto/Roboto-Light.ttf"
   "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Roboto/Roboto-Regular.ttf"
-  "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Satoshi/Satoshi-Light.ttf"
   "${CMAKE_CURRENT_SOURCE_DIR}/fonts/SourceSans3/SourceSans3-Regular.ttf"
   "${CMAKE_CURRENT_SOURCE_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf"
-  "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Supreme/Supreme-Light.ttf"
 )
 
 set(entropy_LICENSE_RESOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_licenses")
@@ -66,10 +64,8 @@ entropy_add_license_resource(entropy_LICENSES "IBMPlexSans.txt" "${CMAKE_CURRENT
 entropy_add_license_resource(entropy_LICENSES "Inter.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Inter/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "NotoSans.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/NotoSans/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "Roboto.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Roboto/LICENSE.txt")
-entropy_add_license_resource(entropy_LICENSES "Satoshi.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Satoshi/FFL.txt")
 entropy_add_license_resource(entropy_LICENSES "SourceSans3.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/SourceSans3/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "SpaceGrotesk.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/SpaceGrotesk/OFL.txt")
-entropy_add_license_resource(entropy_LICENSES "Supreme.txt" "${CMAKE_CURRENT_SOURCE_DIR}/fonts/Supreme/FFL.txt")
 entropy_add_license_resource(entropy_LICENSES "PeterKovesiColourMaps.txt"
   "${CMAKE_CURRENT_SOURCE_DIR}/colormaps/peter_kovesi/LICENSE.txt")
 entropy_add_license_resource(entropy_LICENSES "MatplotlibColourMaps.txt"

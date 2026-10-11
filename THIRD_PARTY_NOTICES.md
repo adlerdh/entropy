@@ -61,10 +61,8 @@ The following external resources have been committed directly to the Entropy rep
 | [Inter font](https://github.com/rsms/inter) | None | https://github.com/rsms/inter | SIL Open Font License 1.1 |
 | [Noto Sans font](https://github.com/notofonts/noto-fonts) | None | https://github.com/notofonts/noto-fonts | SIL Open Font License 1.1 |
 | Roboto fonts | None | https://fonts.google.com/specimen/Roboto | Apache License 2.0 |
-| Satoshi font | None | https://www.fontshare.com/fonts/satoshi | Fontshare Free Font License |
 | [Source Sans 3 font](https://github.com/adobe-fonts/source-sans) | None | https://github.com/adobe-fonts/source-sans | SIL Open Font License 1.1 |
 | [Space Grotesk font](https://github.com/floriankarsten/space-grotesk) | None | https://github.com/floriankarsten/space-grotesk | SIL Open Font License 1.1 |
-| Supreme font | None | https://www.fontshare.com/fonts/supreme | Fontshare Free Font License |
 | Peter Kovesi Library of Perceptually Uniform Color Maps | 2014-2018 copy | https://colorcet.holoviz.org/ | Creative Commons Attribution 4.0 |
 | Matplotlib viridis, plasma, inferno, and magma color maps | None | https://bids.github.io/colormap/ | CC0-1.0 |
 | Cividis color map | None | https://cmap-docs.readthedocs.io/en/latest/catalog/sequential/cividis:cividis/ | BSD-3-Clause |

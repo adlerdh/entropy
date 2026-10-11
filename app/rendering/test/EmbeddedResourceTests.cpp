@@ -14,6 +14,34 @@
 CMRC_DECLARE(colormaps);
 CMRC_DECLARE(fonts);
 
+TEST_CASE("embedded fonts match the supported runtime resources")
+{
+  const auto fonts = cmrc::fonts::get_filesystem();
+  std::vector<std::string> bundledFontPaths;
+  for (const auto& family : fonts.iterate_directory("res/fonts")) {
+    REQUIRE(family.is_directory());
+    const std::string directory = std::string{"res/fonts/"} + family.filename();
+    for (const auto& font : fonts.iterate_directory(directory)) {
+      REQUIRE(font.is_file());
+      bundledFontPaths.push_back(directory + "/" + font.filename());
+    }
+  }
+  std::sort(bundledFontPaths.begin(), bundledFontPaths.end());
+
+  const std::vector<std::string> expectedFontPaths{
+    "res/fonts/Cousine/Cousine-Regular.ttf",
+    "res/fonts/ForkAwesome/forkawesome-webfont.ttf",
+    "res/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
+    "res/fonts/Inter/Inter-Bold.ttf",
+    "res/fonts/Inter/Inter-Regular.ttf",
+    "res/fonts/NotoSans/NotoSans-Regular.ttf",
+    "res/fonts/Roboto/Roboto-Light.ttf",
+    "res/fonts/Roboto/Roboto-Regular.ttf",
+    "res/fonts/SourceSans3/SourceSans3-Regular.ttf",
+    "res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf"};
+  CHECK(bundledFontPaths == expectedFontPaths);
+}
+
 TEST_CASE("embedded startup resources retain their application paths")
 {
   const auto fonts = cmrc::fonts::get_filesystem();
