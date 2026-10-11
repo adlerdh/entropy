@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*.*.*.*"
@@ -31,12 +32,6 @@ jobs:
       - name: Verify release tag matches project version
         id: version
         run: |
-          tag="$GITHUB_REF_NAME"
-          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tags must be named like v0.9.5.0, got '$tag'" >&2
-            exit 1
-          fi
-
           metadata_file=cmake/ProjectMetadata.cmake
           major=$(sed -nE 's/.*set\(VERSION_MAJOR[[:space:]]+([0-9]+)\).*/\1/p' "$metadata_file" | head -n 1)
           minor=$(sed -nE 's/.*set\(VERSION_MINOR[[:space:]]+([0-9]+)\).*/\1/p' "$metadata_file" | head -n 1)
@@ -48,6 +43,14 @@ jobs:
           fi
 
           version="$major.$minor.$feature.$patch"
+          tag="$GITHUB_REF_NAME"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="v$version"
+          fi
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tags must be named like v0.9.5.0, got '$tag'" >&2
+            exit 1
+          fi
           if [[ "$tag" != "v$version" ]]; then
             echo "Release tag '$tag' does not match cmake/ProjectMetadata.cmake VERSION_FULL '$version'" >&2
             exit 1
@@ -63,6 +66,7 @@ jobs:
 
   windows-x86_64:
     name: Windows Release (x86_64)
+    if: github.event_name == 'push'
     runs-on: windows-2022
     needs: metadata
     env:
@@ -177,6 +181,7 @@ jobs:
 
   linux-x86_64:
     name: Ubuntu 22.04 Release (x86_64)
+    if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     needs: metadata
     env:
@@ -372,6 +377,16 @@ jobs:
           xcodebuild -version
           xcrun --show-sdk-version
 
+      - name: Install Developer ID certificate and notarization key
+        env:
+          ENTROPY_MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_P12_BASE64 }}
+          ENTROPY_MACOS_CERTIFICATE_PASSWORD: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_PASSWORD }}
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
+          ENTROPY_NOTARY_API_KEY_BASE64: ${{ secrets.ENTROPY_NOTARY_API_KEY_BASE64 }}
+          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
+          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
+        run: bash .github/scripts/setup_macos_release_credentials.sh
+
       - name: Restore Release ccache
         uses: actions/cache@v6
         with:
@@ -423,10 +438,13 @@ jobs:
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
+        env:
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
         run: >
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          "-DEntropy_MACOS_CODESIGN_IDENTITY=${ENTROPY_MACOS_CODESIGN_IDENTITY}"
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -439,6 +457,15 @@ jobs:
 
       - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Notarize and staple macOS packages
+        env:
+          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
+          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
+        run: |
+          bash .github/scripts/notarize_macos_packages.sh \
+            "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-arm64.zip" \
+            "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-arm64.dmg"
 
       - name: Smoke-test staged install
         run: |
@@ -513,6 +540,16 @@ jobs:
           xcodebuild -version
           xcrun --show-sdk-version
 
+      - name: Install Developer ID certificate and notarization key
+        env:
+          ENTROPY_MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_P12_BASE64 }}
+          ENTROPY_MACOS_CERTIFICATE_PASSWORD: ${{ secrets.ENTROPY_MACOS_CERTIFICATE_PASSWORD }}
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
+          ENTROPY_NOTARY_API_KEY_BASE64: ${{ secrets.ENTROPY_NOTARY_API_KEY_BASE64 }}
+          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
+          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
+        run: bash .github/scripts/setup_macos_release_credentials.sh
+
       - name: Restore Release ccache
         uses: actions/cache@v6
         with:
@@ -565,11 +602,14 @@ jobs:
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
+        env:
+          ENTROPY_MACOS_CODESIGN_IDENTITY: ${{ secrets.ENTROPY_MACOS_CODESIGN_IDENTITY }}
         run: >
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+          "-DEntropy_MACOS_CODESIGN_IDENTITY=${ENTROPY_MACOS_CODESIGN_IDENTITY}"
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
@@ -582,6 +622,15 @@ jobs:
 
       - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Notarize and staple macOS packages
+        env:
+          ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
+          ENTROPY_NOTARY_API_ISSUER_ID: ${{ secrets.ENTROPY_NOTARY_API_ISSUER_ID }}
+        run: |
+          bash .github/scripts/notarize_macos_packages.sh \
+            "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-x86_64.zip" \
+            "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg"
 
       - name: Smoke-test staged install
         run: |
@@ -623,6 +672,7 @@ jobs:
 
   fedora-x86_64:
     name: Fedora 43 Release (x86_64)
+    if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     container:
       image: fedora:43
@@ -802,6 +852,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
+    if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     needs:
       - metadata

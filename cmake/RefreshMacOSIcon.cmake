@@ -73,13 +73,13 @@ if(entropy_CODESIGN_IDENTITY)
     message(FATAL_ERROR "codesign was not found; set Entropy_MACOS_CODESIGN_IDENTITY to an empty value to skip signing")
   endif()
 
+  set(entropy_CODESIGN_OPTIONS --force --sign "${entropy_CODESIGN_IDENTITY}")
+  if(NOT entropy_CODESIGN_IDENTITY STREQUAL "-")
+    list(APPEND entropy_CODESIGN_OPTIONS --options runtime --timestamp)
+  endif()
+
   execute_process(
-    COMMAND
-      "${entropy_CODESIGN_EXECUTABLE}"
-      --force
-      --deep
-      --sign "${entropy_CODESIGN_IDENTITY}"
-      "${entropy_BUNDLE_DIR}"
+    COMMAND "${entropy_CODESIGN_EXECUTABLE}" ${entropy_CODESIGN_OPTIONS} "${entropy_BUNDLE_DIR}"
     RESULT_VARIABLE entropy_CODESIGN_RESULT
     ERROR_VARIABLE entropy_CODESIGN_ERROR
   )

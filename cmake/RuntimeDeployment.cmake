@@ -23,6 +23,11 @@ function(entropy_configure_macos_runtime target)
       -D "entropy_BUNDLE_EXECUTABLE_NAME=${APP_NAME}"
       -D "entropy_CLI_EXECUTABLE_NAME=entropy"
       -P "${CMAKE_SOURCE_DIR}/cmake/NormalizeMacOSBundleExecutable.cmake"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory
+      "$<TARGET_BUNDLE_DIR:${target}>/Contents/Resources/python"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory
+      "${entropy_FIREANTS_BRIDGE_DIR}"
+      "$<TARGET_BUNDLE_DIR:${target}>/Contents/Resources/python/fireants_bridge"
     COMMAND
       "${CMAKE_COMMAND}"
       -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:${target}>"
@@ -35,11 +40,6 @@ function(entropy_configure_macos_runtime target)
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
       "$<TARGET_BUNDLE_DIR:${target}>/Contents/MacOS/entropy"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/entropy"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory
-      "$<TARGET_BUNDLE_DIR:${target}>/Contents/Resources/python"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-      "${entropy_FIREANTS_BRIDGE_DIR}"
-      "$<TARGET_BUNDLE_DIR:${target}>/Contents/Resources/python/fireants_bridge"
     VERBATIM
   )
 endfunction()

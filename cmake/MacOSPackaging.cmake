@@ -82,6 +82,13 @@ install(CODE "
       message(FATAL_ERROR \"codesign was not found; set Entropy_MACOS_CODESIGN_IDENTITY to an empty value to skip signing\")
     endif()
 
+    set(entropy_CODESIGN_OPTIONS --force --sign \"\${entropy_CODESIGN_IDENTITY}\")
+    set(entropy_APP_CODESIGN_OPTIONS \${entropy_CODESIGN_OPTIONS})
+    if(NOT entropy_CODESIGN_IDENTITY STREQUAL \"-\")
+      list(APPEND entropy_CODESIGN_OPTIONS --timestamp)
+      list(APPEND entropy_APP_CODESIGN_OPTIONS --options runtime --timestamp)
+    endif()
+
     file(GLOB_RECURSE entropy_BUNDLE_DYLIBS
       \"\${entropy_INSTALLED_BUNDLE}/Contents/Frameworks/*.dylib\")
     file(GLOB entropy_BUNDLE_FRAMEWORKS
@@ -89,7 +96,7 @@ install(CODE "
 
     foreach(entropy_BUNDLE_DYLIB IN LISTS entropy_BUNDLE_DYLIBS)
       execute_process(
-        COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" --force --sign \"\${entropy_CODESIGN_IDENTITY}\" \"\${entropy_BUNDLE_DYLIB}\"
+        COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" \${entropy_CODESIGN_OPTIONS} \"\${entropy_BUNDLE_DYLIB}\"
         RESULT_VARIABLE entropy_CODESIGN_RESULT
       )
       if(NOT entropy_CODESIGN_RESULT EQUAL 0)
@@ -99,7 +106,7 @@ install(CODE "
 
     foreach(entropy_BUNDLE_FRAMEWORK IN LISTS entropy_BUNDLE_FRAMEWORKS)
       execute_process(
-        COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" --force --sign \"\${entropy_CODESIGN_IDENTITY}\" \"\${entropy_BUNDLE_FRAMEWORK}\"
+        COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" \${entropy_CODESIGN_OPTIONS} \"\${entropy_BUNDLE_FRAMEWORK}\"
         RESULT_VARIABLE entropy_CODESIGN_RESULT
       )
       if(NOT entropy_CODESIGN_RESULT EQUAL 0)
@@ -108,7 +115,7 @@ install(CODE "
     endforeach()
 
     execute_process(
-      COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" --force --sign \"\${entropy_CODESIGN_IDENTITY}\" \"\${entropy_INSTALLED_BUNDLE}\"
+      COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" \${entropy_APP_CODESIGN_OPTIONS} \"\${entropy_INSTALLED_BUNDLE}\"
       RESULT_VARIABLE entropy_CODESIGN_RESULT
     )
     if(NOT entropy_CODESIGN_RESULT EQUAL 0)

@@ -210,23 +210,42 @@ To force the DMG generator:
 cpack -G DragNDrop -C Release --config build-release/CPackConfig.cmake
 ```
 
-By default, local and CI macOS packages use ad-hoc signing. This validates bundle integrity but does not establish a
-trusted developer identity:
+By default, local macOS packages use ad-hoc signing. This validates bundle integrity but does not establish a trusted
+developer identity. The GitHub release workflow uses Developer ID signing and notarization:
 
 ```text
 Entropy_MACOS_CODESIGN_IDENTITY=-
 ```
 
-Current macOS releases are not Developer ID signed or notarized. The package step can use a Developer ID Application
-identity, but it does not enable the hardened runtime or perform notarization:
+For direct distribution, set `Entropy_MACOS_CODESIGN_IDENTITY` to a Developer ID Application identity when configuring
+the app. This enables hardened runtime and a secure timestamp. A Developer ID Installer certificate is only needed for
+a PKG, which Entropy does not produce. Build each architecture separately as described above:
 
 ```sh
 cmake --preset app-release -DEntropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: <developer-name> (<team-id>)"
 cmake --build --preset package-release --parallel
 ```
 
-For a trusted macOS release, enable the hardened runtime and any required entitlements, submit the finished package to
-Apple, and staple the notarization ticket.
+The CPack outputs still need notarization. The release script takes the ZIP and DMG in that order, submits them to
+Apple, staples the app and DMG, and replaces the outputs only after both submissions are accepted:
+
+```sh
+ENTROPY_NOTARY_KEYCHAIN_PROFILE=your-notary-profile \
+  bash .github/scripts/notarize_macos_packages.sh \
+  build-release/packages/Entropy-x.y.z.w-macOS-arm64.zip \
+  build-release/packages/Entropy-x.y.z.w-macOS-arm64.dmg
+```
+
+Use the corresponding x86_64 paths for the Intel build. The script requires either
+`ENTROPY_NOTARY_KEYCHAIN_PROFILE` or the three `ENTROPY_NOTARY_API_*` variables documented in its header. It verifies
+the Developer ID signature, hardened runtime, stapled tickets, Gatekeeper assessment, and disk image integrity. A ZIP
+cannot itself be stapled; the app inside the published ZIP is stapled instead. Test downloaded assets on a clean Mac
+before announcing a release.
+
+Before tagging a release, run the `Release` workflow manually from GitHub Actions. A manual run builds, signs,
+notarizes, and uploads both macOS architectures as workflow artifacts without publishing a GitHub Release. Tag pushes
+build every platform and publish only after all release jobs pass. The workflow expects its signing and notarization
+credentials in GitHub Actions secrets; no credentials belong in this repository.
 
 Test a macOS package:
 
@@ -349,8 +368,8 @@ a different value.
 
 ## GitHub Releases
 
-Public GitHub Releases are created by [.github/workflows/release.yml](.github/workflows/release.yml). The workflow runs
-when a tag matching `v*.*.*.*` is pushed.
+Public GitHub Releases are created by [.github/workflows/release.yml](.github/workflows/release.yml) when a tag matching
+`v*.*.*.*` is pushed. A manual run builds the macOS packages for validation without publishing a release.
 
 The platform CI workflows can also build packages on a schedule or by manual dispatch. Run those package jobs before a
 release when packaging, dependencies, icons, launch behavior, or runtime resources have changed.
@@ -361,8 +380,8 @@ The tag-driven release workflow uses this matrix:
 | --- | --- | --- | --- |
 | Windows x86_64 | `windows-2022` | MSI and portable ZIP | Release tests and staged-install smoke test |
 | Ubuntu 22.04 x86_64 | `ubuntu-22.04` | DEB and portable TAR.GZ | Release tests, DEB inspection, and staged-install smoke test |
-| macOS arm64 | `macos-15` | DMG and ZIP | Release tests and staged-install smoke test |
-| macOS x86_64 | `macos-15-intel` | DMG and ZIP | Release tests and staged-install smoke test |
+| macOS arm64 | `macos-15` | DMG and ZIP | Release tests, Developer ID signing, notarization, and staged-install smoke test |
+| macOS x86_64 | `macos-15-intel` | DMG and ZIP | Release tests, Developer ID signing, notarization, and staged-install smoke test |
 | Fedora 43 x86_64 | Fedora container on `ubuntu-24.04` | RPM and portable TAR.GZ | Release tests, RPM dependency checks, and staged-install smoke test |
 
 Before tagging, make sure `main` is clean and current, all required CI checks pass, and the version in
