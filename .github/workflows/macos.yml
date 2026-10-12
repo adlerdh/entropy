@@ -497,10 +497,16 @@ jobs:
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_MACOS_ICON_DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
 
       - name: Build Release app
         timeout-minutes: 45
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Verify macOS dark icon
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+        run: python3 .github/scripts/verify_macos_icon_assets.py build-release/bin/Entropy.app/Contents/Resources/Assets.car
 
       - name: Run Release tests
         timeout-minutes: 30
@@ -514,8 +520,11 @@ jobs:
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
+          python3 .github/scripts/verify_macos_icon_assets.py build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Upload macOS arm64 packages
@@ -625,10 +634,16 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+          -DEntropy_MACOS_ICON_DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
 
       - name: Build Release app
         timeout-minutes: 45
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Verify macOS dark icon
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+        run: python3 .github/scripts/verify_macos_icon_assets.py build-release/bin/Entropy.app/Contents/Resources/Assets.car
 
       - name: Run Release tests
         timeout-minutes: 30
@@ -642,8 +657,11 @@ jobs:
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
+          python3 .github/scripts/verify_macos_icon_assets.py build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Upload macOS x86_64 packages

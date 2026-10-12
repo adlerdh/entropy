@@ -19,6 +19,16 @@ if(NOT entropy_XCRUN_EXECUTABLE)
   message(FATAL_ERROR "xcrun was not found; Xcode actool is required to compile ${entropy_SOURCE_ICON}")
 endif()
 
+set(entropy_ACTOOL_COMMAND "${entropy_XCRUN_EXECUTABLE}" actool)
+if(entropy_ICON_DEVELOPER_DIR)
+  if(NOT EXISTS "${entropy_ICON_DEVELOPER_DIR}/usr/bin/actool")
+    message(FATAL_ERROR "Xcode actool was not found in ${entropy_ICON_DEVELOPER_DIR}")
+  endif()
+  set(entropy_ACTOOL_COMMAND
+    "${CMAKE_COMMAND}" -E env "DEVELOPER_DIR=${entropy_ICON_DEVELOPER_DIR}"
+    "${entropy_XCRUN_EXECUTABLE}" actool)
+endif()
+
 set(entropy_RESOURCE_DIR "${entropy_BUNDLE_DIR}/Contents/Resources")
 set(entropy_PARTIAL_INFO_PLIST "${entropy_RESOURCE_DIR}/assetcatalog_generated_info.plist")
 
@@ -33,7 +43,7 @@ file(REMOVE_RECURSE
 
 execute_process(
   COMMAND
-    "${entropy_XCRUN_EXECUTABLE}" actool
+    ${entropy_ACTOOL_COMMAND}
     "${entropy_SOURCE_ICON}"
     --app-icon "${entropy_ICON_NAME}"
     --compile "${entropy_RESOURCE_DIR}"
@@ -62,6 +72,9 @@ if(NOT EXISTS "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns")
 endif()
 
 if(NOT EXISTS "${entropy_RESOURCE_DIR}/Assets.car")
+  if(entropy_ICON_DEVELOPER_DIR)
+    message(FATAL_ERROR "actool from ${entropy_ICON_DEVELOPER_DIR} did not generate ${entropy_RESOURCE_DIR}/Assets.car")
+  endif()
   message(STATUS "actool did not generate ${entropy_RESOURCE_DIR}/Assets.car; using ${entropy_ICON_NAME}.icns only")
 endif()
 
