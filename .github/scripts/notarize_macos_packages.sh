@@ -48,9 +48,24 @@ submit_and_check() {
   fi
 }
 
+staple_with_retry() {
+  local item="$1" attempt
+  for attempt in 1 2 3 4 5; do
+    if xcrun stapler staple "$item"; then
+      return 0
+    fi
+    if (( attempt == 5 )); then
+      echo "Failed to staple $(basename "$item") after $attempt attempts" >&2
+      return 1
+    fi
+    echo "Stapling $(basename "$item") failed; retrying in $(( attempt * 10 )) seconds" >&2
+    sleep "$(( attempt * 10 ))"
+  done
+}
+
 # The ZIP is a transport for notarizing the app. ZIP files cannot be stapled.
 submit_and_check "$zip_path"
-xcrun stapler staple "$app_path"
+staple_with_retry "$app_path"
 xcrun stapler validate "$app_path"
 codesign --verify --deep --strict --verbose=2 "$app_path"
 spctl --assess --type execute --verbose=4 "$app_path"
@@ -72,7 +87,7 @@ short_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' 
 stapled_dmg="$work_dir/$archive_name.dmg"
 hdiutil create -volname "Entropy $short_version" -srcfolder "$volume_root" -format UDZO "$stapled_dmg"
 submit_and_check "$stapled_dmg"
-xcrun stapler staple "$stapled_dmg"
+staple_with_retry "$stapled_dmg"
 xcrun stapler validate "$stapled_dmg"
 hdiutil verify "$stapled_dmg"
 
