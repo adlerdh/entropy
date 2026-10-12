@@ -269,11 +269,12 @@ TEST_CASE("DICOM discovery reads a generated series", "[image][dicom][discovery]
 
 TEST_CASE("DICOM discovery reports missing and non-DICOM inputs without throwing", "[image][dicom][discovery]")
 {
-  const auto missing = dicom::discoverSeries({std::filesystem::temp_directory_path() / "entropy-missing-dicom-folder"});
+  const ScopedTestDirectory fixture;
+  const auto missing = dicom::discoverSeries({fixture.path() / "missing"});
   CHECK(missing.series.empty());
   REQUIRE_FALSE(missing.warnings.empty());
 
-  const auto textFile = std::filesystem::temp_directory_path() / "entropy-not-dicom.txt";
+  const auto textFile = fixture.path() / "not-dicom.txt";
   {
     std::ofstream out(textFile);
     out << "not a dicom file\n";
