@@ -39,7 +39,7 @@ function(entropy_configure_macos_runtime target)
       -D "entropy_SOURCE_ICON=${entropy_MACOS_APP_ICON}"
       -D "entropy_ICON_NAME=${entropy_MACOS_APP_ICON_NAME}"
       -D "entropy_MINIMUM_SYSTEM_VERSION=${Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
-      -D "entropy_ICON_DEVELOPER_DIR=${Entropy_MACOS_ICON_DEVELOPER_DIR}"
+      -D "entropy_PRECOMPILED_ICON_DIR=${Entropy_MACOS_PRECOMPILED_ICON_DIR}"
       -D "entropy_CODESIGN_IDENTITY=-"
       -P "${CMAKE_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
     COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${APP_NAME}"

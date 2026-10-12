@@ -14,19 +14,17 @@ if(NOT entropy_MINIMUM_SYSTEM_VERSION)
   set(entropy_MINIMUM_SYSTEM_VERSION "13.0")
 endif()
 
-find_program(entropy_XCRUN_EXECUTABLE xcrun)
-if(NOT entropy_XCRUN_EXECUTABLE)
-  message(FATAL_ERROR "xcrun was not found; Xcode actool is required to compile ${entropy_SOURCE_ICON}")
-endif()
-
-set(entropy_ACTOOL_COMMAND "${entropy_XCRUN_EXECUTABLE}" actool)
-if(entropy_ICON_DEVELOPER_DIR)
-  if(NOT EXISTS "${entropy_ICON_DEVELOPER_DIR}/usr/bin/actool")
-    message(FATAL_ERROR "Xcode actool was not found in ${entropy_ICON_DEVELOPER_DIR}")
-  endif()
-  set(entropy_ACTOOL_COMMAND
-    "${CMAKE_COMMAND}" -E env "DEVELOPER_DIR=${entropy_ICON_DEVELOPER_DIR}"
-    "${entropy_XCRUN_EXECUTABLE}" actool)
+if(entropy_PRECOMPILED_ICON_DIR)
+  foreach(entropy_PRECOMPILED_ICON_FILE IN ITEMS "Assets.car" "${entropy_ICON_NAME}.icns")
+    set(entropy_PRECOMPILED_ICON_PATH "${entropy_PRECOMPILED_ICON_DIR}/${entropy_PRECOMPILED_ICON_FILE}")
+    if(NOT EXISTS "${entropy_PRECOMPILED_ICON_PATH}")
+      message(FATAL_ERROR "Precompiled macOS icon file was not found: ${entropy_PRECOMPILED_ICON_PATH}")
+    endif()
+    file(SIZE "${entropy_PRECOMPILED_ICON_PATH}" entropy_PRECOMPILED_ICON_SIZE)
+    if(entropy_PRECOMPILED_ICON_SIZE EQUAL 0)
+      message(FATAL_ERROR "Precompiled macOS icon file is empty: ${entropy_PRECOMPILED_ICON_PATH}")
+    endif()
+  endforeach()
 endif()
 
 set(entropy_RESOURCE_DIR "${entropy_BUNDLE_DIR}/Contents/Resources")
@@ -41,40 +39,47 @@ file(REMOVE_RECURSE
   "${entropy_PARTIAL_INFO_PLIST}"
 )
 
-execute_process(
-  COMMAND
-    ${entropy_ACTOOL_COMMAND}
-    "${entropy_SOURCE_ICON}"
-    --app-icon "${entropy_ICON_NAME}"
-    --compile "${entropy_RESOURCE_DIR}"
-    --output-partial-info-plist "${entropy_PARTIAL_INFO_PLIST}"
-    --minimum-deployment-target "${entropy_MINIMUM_SYSTEM_VERSION}"
-    --platform macosx
-    --target-device mac
-  RESULT_VARIABLE entropy_ACTOOL_RESULT
-  OUTPUT_VARIABLE entropy_ACTOOL_OUTPUT
-  ERROR_VARIABLE entropy_ACTOOL_ERROR
-)
-
-if(NOT entropy_ACTOOL_RESULT EQUAL 0)
-  message(FATAL_ERROR "actool failed for ${entropy_SOURCE_ICON}: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
-endif()
-
-if(NOT EXISTS "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns")
-  get_filename_component(entropy_SOURCE_ICON_DIR "${entropy_SOURCE_ICON}" DIRECTORY)
-  set(entropy_FALLBACK_ICNS "${entropy_SOURCE_ICON_DIR}/${entropy_ICON_NAME}.icns")
-
-  if(NOT EXISTS "${entropy_FALLBACK_ICNS}")
-    message(FATAL_ERROR "actool did not generate ${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns and fallback icon ${entropy_FALLBACK_ICNS} is unavailable: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
+if(entropy_PRECOMPILED_ICON_DIR)
+  file(COPY_FILE "${entropy_PRECOMPILED_ICON_DIR}/Assets.car" "${entropy_RESOURCE_DIR}/Assets.car")
+  file(COPY_FILE "${entropy_PRECOMPILED_ICON_DIR}/${entropy_ICON_NAME}.icns" "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns")
+else()
+  find_program(entropy_XCRUN_EXECUTABLE xcrun)
+  if(NOT entropy_XCRUN_EXECUTABLE)
+    message(FATAL_ERROR "xcrun was not found; Xcode actool is required to compile ${entropy_SOURCE_ICON}")
   endif()
 
-  file(COPY_FILE "${entropy_FALLBACK_ICNS}" "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns" ONLY_IF_DIFFERENT)
+  execute_process(
+    COMMAND
+      "${entropy_XCRUN_EXECUTABLE}" actool
+      "${entropy_SOURCE_ICON}"
+      --app-icon "${entropy_ICON_NAME}"
+      --compile "${entropy_RESOURCE_DIR}"
+      --output-partial-info-plist "${entropy_PARTIAL_INFO_PLIST}"
+      --minimum-deployment-target "${entropy_MINIMUM_SYSTEM_VERSION}"
+      --platform macosx
+      --target-device mac
+    RESULT_VARIABLE entropy_ACTOOL_RESULT
+    OUTPUT_VARIABLE entropy_ACTOOL_OUTPUT
+    ERROR_VARIABLE entropy_ACTOOL_ERROR
+  )
+
+  if(NOT entropy_ACTOOL_RESULT EQUAL 0)
+    message(FATAL_ERROR "actool failed for ${entropy_SOURCE_ICON}: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
+  endif()
+
+  if(NOT EXISTS "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns")
+    get_filename_component(entropy_SOURCE_ICON_DIR "${entropy_SOURCE_ICON}" DIRECTORY)
+    set(entropy_FALLBACK_ICNS "${entropy_SOURCE_ICON_DIR}/${entropy_ICON_NAME}.icns")
+
+    if(NOT EXISTS "${entropy_FALLBACK_ICNS}")
+      message(FATAL_ERROR "actool did not generate ${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns and fallback icon ${entropy_FALLBACK_ICNS} is unavailable: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
+    endif()
+
+    file(COPY_FILE "${entropy_FALLBACK_ICNS}" "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns" ONLY_IF_DIFFERENT)
+  endif()
 endif()
 
 if(NOT EXISTS "${entropy_RESOURCE_DIR}/Assets.car")
-  if(entropy_ICON_DEVELOPER_DIR)
-    message(FATAL_ERROR "actool from ${entropy_ICON_DEVELOPER_DIR} did not generate ${entropy_RESOURCE_DIR}/Assets.car")
-  endif()
   message(STATUS "actool did not generate ${entropy_RESOURCE_DIR}/Assets.car; using ${entropy_ICON_NAME}.icns only")
 endif()
 

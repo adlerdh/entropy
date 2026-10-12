@@ -413,15 +413,51 @@ jobs:
             echo "ccache not found; skipping ccache stats"
           fi
 
-  package-arm64:
-    name: macOS Release Packages (arm64)
-    runs-on: macos-15
+  macos-icon:
+    name: macOS Appearance Icon
+    runs-on: macos-26
     needs: format
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
 
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+
+      - name: Compile and verify appearance icon
+        run: |
+          xcodebuild -version
+          cmake \
+            -D "entropy_BUNDLE_DIR=${GITHUB_WORKSPACE}/icon-output/Entropy.app" \
+            -D "entropy_SOURCE_ICON=${GITHUB_WORKSPACE}/res/icons/macOS/Entropy.icon" \
+            -D entropy_ICON_NAME=Entropy \
+            -D entropy_MINIMUM_SYSTEM_VERSION=13.0 \
+            -P cmake/RefreshMacOSIcon.cmake
+          python3 .github/scripts/verify_macos_icon_assets.py icon-output/Entropy.app/Contents/Resources/Assets.car
+
+      - name: Upload compiled icon catalog
+        uses: actions/upload-artifact@v7
+        with:
+          name: entropy-macos-icon-catalog
+          path: |
+            icon-output/Entropy.app/Contents/Resources/Assets.car
+            icon-output/Entropy.app/Contents/Resources/Entropy.icns
+          if-no-files-found: error
+
+  package-arm64:
+    name: macOS Release Packages (arm64)
+    runs-on: macos-15
+    needs: [format, macos-icon]
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Download compiled icon catalog
+        uses: actions/download-artifact@v8
+        with:
+          name: entropy-macos-icon-catalog
+          path: build-release/icon-assets
 
       - name: Install build dependencies
         run: brew install ccache
@@ -497,16 +533,16 @@ jobs:
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
-          -DEntropy_MACOS_ICON_DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
+          "-DEntropy_MACOS_PRECOMPILED_ICON_DIR=${GITHUB_WORKSPACE}/build-release/icon-assets"
 
       - name: Build Release app
         timeout-minutes: 45
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Verify macOS dark icon
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-        run: python3 .github/scripts/verify_macos_icon_assets.py build-release/bin/Entropy.app/Contents/Resources/Assets.car
+        run: |
+          cmp build-release/icon-assets/Assets.car build-release/bin/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/bin/Entropy.app/Contents/Resources/Entropy.icns
 
       - name: Run Release tests
         timeout-minutes: 30
@@ -520,11 +556,10 @@ jobs:
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
-          python3 .github/scripts/verify_macos_icon_assets.py build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Assets.car build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/macos-package-install/Entropy.app/Contents/Resources/Entropy.icns
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Upload macOS arm64 packages
@@ -548,7 +583,7 @@ jobs:
   package-x86_64:
     name: macOS Release Packages (x86_64)
     runs-on: macos-15-intel
-    needs: format
+    needs: [format, macos-icon]
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
     env:
       ENTROPY_MACOS_ARCHITECTURES: x86_64
@@ -556,6 +591,12 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+
+      - name: Download compiled icon catalog
+        uses: actions/download-artifact@v8
+        with:
+          name: entropy-macos-icon-catalog
+          path: build-release/icon-assets
 
       - name: Install build dependencies
         run: brew install ccache
@@ -634,16 +675,16 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
-          -DEntropy_MACOS_ICON_DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
+          "-DEntropy_MACOS_PRECOMPILED_ICON_DIR=${GITHUB_WORKSPACE}/build-release/icon-assets"
 
       - name: Build Release app
         timeout-minutes: 45
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Verify macOS dark icon
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-        run: python3 .github/scripts/verify_macos_icon_assets.py build-release/bin/Entropy.app/Contents/Resources/Assets.car
+        run: |
+          cmp build-release/icon-assets/Assets.car build-release/bin/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/bin/Entropy.app/Contents/Resources/Entropy.icns
 
       - name: Run Release tests
         timeout-minutes: 30
@@ -657,11 +698,10 @@ jobs:
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
-          python3 .github/scripts/verify_macos_icon_assets.py build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Assets.car build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/macos-package-install/Entropy.app/Contents/Resources/Entropy.icns
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Upload macOS x86_64 packages

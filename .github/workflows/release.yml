@@ -349,10 +349,41 @@ jobs:
         if: always()
         run: ccache --show-stats
 
+  macos-icon:
+    name: macOS Appearance Icon
+    runs-on: macos-26
+    needs: metadata
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Compile and verify appearance icon
+        run: |
+          xcodebuild -version
+          cmake \
+            -D "entropy_BUNDLE_DIR=${GITHUB_WORKSPACE}/icon-output/Entropy.app" \
+            -D "entropy_SOURCE_ICON=${GITHUB_WORKSPACE}/res/icons/macOS/Entropy.icon" \
+            -D entropy_ICON_NAME=Entropy \
+            -D entropy_MINIMUM_SYSTEM_VERSION=13.0 \
+            -P cmake/RefreshMacOSIcon.cmake
+          python3 .github/scripts/verify_macos_icon_assets.py icon-output/Entropy.app/Contents/Resources/Assets.car
+
+      - name: Upload compiled icon catalog
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: entropy-macos-icon-catalog
+          path: |
+            icon-output/Entropy.app/Contents/Resources/Assets.car
+            icon-output/Entropy.app/Contents/Resources/Entropy.icns
+          if-no-files-found: error
+
   macos-arm64:
     name: macOS Release (arm64)
     runs-on: macos-15
-    needs: metadata
+    needs: [metadata, macos-icon]
     environment: release-signing
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
@@ -370,6 +401,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Download compiled icon catalog
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: entropy-macos-icon-catalog
+          path: build-release/icon-assets
 
       - name: Install build dependencies
         run: brew install ccache
@@ -438,16 +475,16 @@ jobs:
           cmake --preset app-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
-          -DEntropy_MACOS_ICON_DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
+          "-DEntropy_MACOS_PRECOMPILED_ICON_DIR=${GITHUB_WORKSPACE}/build-release/icon-assets"
           -DEntropy_MACOS_CODESIGN_IDENTITY=-
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Verify macOS dark icon
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-        run: python3 .github/scripts/verify_macos_icon_assets.py build-release/bin/Entropy.app/Contents/Resources/Assets.car
+        run: |
+          cmp build-release/icon-assets/Assets.car build-release/bin/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/bin/Entropy.app/Contents/Resources/Entropy.icns
 
       - name: Run Release tests
         run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
@@ -479,11 +516,10 @@ jobs:
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
-          python3 .github/scripts/verify_macos_icon_assets.py build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Assets.car build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/macos-package-install/Entropy.app/Contents/Resources/Entropy.icns
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Reclaim space for notarization
@@ -542,7 +578,7 @@ jobs:
   macos-x86_64:
     name: macOS Release (x86_64)
     runs-on: macos-15-intel
-    needs: metadata
+    needs: [metadata, macos-icon]
     environment: release-signing
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
@@ -560,6 +596,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Download compiled icon catalog
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: entropy-macos-icon-catalog
+          path: build-release/icon-assets
 
       - name: Install build dependencies
         run: brew install ccache
@@ -630,16 +672,16 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
-          -DEntropy_MACOS_ICON_DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
+          "-DEntropy_MACOS_PRECOMPILED_ICON_DIR=${GITHUB_WORKSPACE}/build-release/icon-assets"
           -DEntropy_MACOS_CODESIGN_IDENTITY=-
 
       - name: Build Release app
         run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Verify macOS dark icon
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
-        run: python3 .github/scripts/verify_macos_icon_assets.py build-release/bin/Entropy.app/Contents/Resources/Assets.car
+        run: |
+          cmp build-release/icon-assets/Assets.car build-release/bin/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/bin/Entropy.app/Contents/Resources/Entropy.icns
 
       - name: Run Release tests
         run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
@@ -672,11 +714,10 @@ jobs:
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
         run: |
           cmake --install build-release --prefix build-release/macos-package-install
-          python3 .github/scripts/verify_macos_icon_assets.py build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Assets.car build-release/macos-package-install/Entropy.app/Contents/Resources/Assets.car
+          cmp build-release/icon-assets/Entropy.icns build-release/macos-package-install/Entropy.app/Contents/Resources/Entropy.icns
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Reclaim space for notarization

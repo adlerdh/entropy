@@ -40,7 +40,15 @@ def main() -> None:
         and item.get("Name") == "Entropy"
     ]
     if len(dark_stacks) != 1:
-        raise SystemExit(f"Expected one Entropy dark icon stack, found {len(dark_stacks)}")
+        variants = [
+            (item.get("AssetType"), item.get("Appearance"), item.get("Name"))
+            for item in assets
+            if item.get("AssetType") in {"IconImageStack", "IconGroup"}
+        ]
+        raise SystemExit(
+            f"Expected one Entropy dark icon stack, found {len(dark_stacks)}; "
+            f"available icon variants: {variants}"
+        )
 
     background = dark_stacks[0]["Layers"][0].get("Name")
     if background != "Entropy_Assets/system-dark":
