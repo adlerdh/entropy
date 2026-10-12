@@ -32,29 +32,43 @@ def main() -> None:
         text=True,
     )
     assets = json.loads(result.stdout)
-    dark_stacks = [
-        item
-        for item in assets
-        if item.get("AssetType") == "IconImageStack"
-        and item.get("Appearance") == "NSAppearanceNameDarkAqua"
-        and item.get("Name") == "Entropy"
-    ]
-    if len(dark_stacks) != 1:
+    def icon_stacks(appearance: str) -> list[dict]:
+        return [
+            item
+            for item in assets
+            if item.get("AssetType") == "IconImageStack"
+            and item.get("Appearance") == appearance
+            and item.get("Name") == "Entropy"
+        ]
+
+    dark_stacks = icon_stacks("NSAppearanceNameDarkAqua")
+    light_stacks = icon_stacks("NSAppearanceNameAqua")
+    if len(dark_stacks) != 1 or len(light_stacks) != 1:
         variants = [
             (item.get("AssetType"), item.get("Appearance"), item.get("Name"))
             for item in assets
             if item.get("AssetType") in {"IconImageStack", "IconGroup"}
         ]
         raise SystemExit(
-            f"Expected one Entropy dark icon stack, found {len(dark_stacks)}; "
+            f"Expected one Entropy light and dark icon stack, found "
+            f"{len(light_stacks)} light and {len(dark_stacks)} dark; "
             f"available icon variants: {variants}"
         )
 
-    background = dark_stacks[0]["Layers"][0].get("Name")
-    if background != "Entropy_Assets/system-dark":
-        raise SystemExit(f"Dark icon background {background} is not system-dark")
+    dark_background = dark_stacks[0]["Layers"][0].get("Name")
+    light_background = light_stacks[0]["Layers"][0].get("Name")
+    if not dark_background or not light_background:
+        raise SystemExit("A compiled icon stack is missing its background")
 
-    print(f"Verified dark icon background in {catalog}")
+    # actool changes the system-dark gradient's asset name between Xcode versions.
+    # The source above specifies the preset; the catalog must contain its dark variant.
+    if dark_background == light_background:
+        raise SystemExit("Light and dark icon stacks use the same background")
+
+    print(
+        f"Verified distinct light and dark icon backgrounds in {catalog}: "
+        f"{light_background}, {dark_background}"
+    )
 
 
 if __name__ == "__main__":
