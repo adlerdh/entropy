@@ -308,6 +308,16 @@ void AppSettings::setAutomaticUpdateChecksEnabled(bool enabled)
   m_automaticUpdateChecksEnabled = enabled;
 }
 
+bool AppSettings::automaticUpdateCheckChoiceMade() const
+{
+  return m_automaticUpdateCheckChoiceMade;
+}
+
+void AppSettings::setAutomaticUpdateCheckChoiceMade(bool made)
+{
+  m_automaticUpdateCheckChoiceMade = made;
+}
+
 bool AppSettings::showImageExportFormatGuide() const
 {
   return m_showImageExportFormatGuide;

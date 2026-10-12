@@ -321,6 +321,9 @@ public:
    */
   void setCallbacks(ImGuiWrapperCallbacks callbacks);
 
+  /// @brief Allow the first-launch prompt after the main window has presented a frame.
+  void onFirstFramePresented();
+
   void render();
 
 private:
@@ -572,8 +575,11 @@ private:
   std::optional<ui::updates::CheckResult> m_cachedUpdateCheckResult;
   std::string m_updateCheckEtag;
   bool m_automaticUpdateCheckRequested = false;
+  bool m_automaticUpdateCheckPromptAttempted = false;
+  bool m_firstFramePresented = false;
 
   void requestUpdateCheck(bool manualCheck);
+  void promptForAutomaticUpdateChecksIfNeeded();
   void requestAutomaticUpdateCheckIfNeeded();
   void processUpdateCheckFuture();
 

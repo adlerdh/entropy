@@ -411,7 +411,8 @@ void GlfwWrapper::renderLoop(
   std::atomic<bool>& imagesReady,
   const std::atomic<bool>& imageLoadFailed,
   const std::function<bool(void)>& checkAppQuit,
-  const std::function<void(void)>& onImagesReady)
+  const std::function<void(void)>& onImagesReady,
+  const std::function<void(void)>& onFirstFramePresented)
 {
   using Clock = std::chrono::steady_clock;
   constexpr bool logFramerate = false;
@@ -424,6 +425,7 @@ void GlfwWrapper::renderLoop(
   spdlog::debug("Starting GLFW rendering loop");
 
   auto lastFrameTime = Clock::now();
+  bool firstFramePresented = false;
 
   while (!glfwWindowShouldClose(m_window)) {
     if (checkAppQuit()) {
@@ -466,6 +468,13 @@ void GlfwWrapper::renderLoop(
       case EventProcessingMode::WaitTimeout: {
         glfwWaitEventsTimeout(m_waitTimoutSeconds);
         break;
+      }
+    }
+
+    if (!firstFramePresented) {
+      firstFramePresented = true;
+      if (onFirstFramePresented) {
+        onFirstFramePresented();
       }
     }
 

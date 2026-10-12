@@ -1,6 +1,7 @@
 #include "ui/ImGuiWrapper.h"
 
 #include "logic/app/Data.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
@@ -8,6 +9,11 @@
 #include <chrono>
 #include <functional>
 #include <utility>
+
+void ImGuiWrapper::onFirstFramePresented()
+{
+  m_firstFramePresented = true;
+}
 
 void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
 {
@@ -45,9 +51,42 @@ void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
   }
 }
 
+void ImGuiWrapper::promptForAutomaticUpdateChecksIfNeeded()
+{
+  AppSettings& settings = m_appData.settings();
+  if (m_automaticUpdateCheckPromptAttempted || settings.automaticUpdateCheckChoiceMade()) {
+    return;
+  }
+
+  m_automaticUpdateCheckPromptAttempted = true;
+  const auto answer = native_dialog::showMessageDialog(
+    {.title = "Check for Entropy Updates?",
+     .message = "Would you like Entropy to check for updates automatically once each time you open the app?",
+     .informativeText = "You can change this later in App Settings.",
+     .firstButton = "Yes",
+     .secondButton = "No",
+     .thirdButton = "",
+     .severity = native_dialog::MessageDialogSeverity::Information});
+  if (!answer) {
+    spdlog::warn("Could not show the native automatic update-check prompt; automatic checks remain disabled");
+    return;
+  }
+
+  settings.setAutomaticUpdateChecksEnabled(native_dialog::MessageDialogResult::FirstButton == *answer);
+  settings.setAutomaticUpdateCheckChoiceMade(true);
+  if (!saveUserSettingsToDefault()) {
+    native_dialog::showErrorMessageDialog(
+      "Could Not Save Update Preference",
+      "Entropy could not save your update-check choice. You may be asked again next time you open the app.");
+  }
+}
+
 void ImGuiWrapper::requestAutomaticUpdateCheckIfNeeded()
 {
-  if (m_automaticUpdateCheckRequested || !m_appData.settings().automaticUpdateChecksEnabled()) {
+  if (
+    m_automaticUpdateCheckRequested || !m_appData.settings().automaticUpdateCheckChoiceMade() ||
+    !m_appData.settings().automaticUpdateChecksEnabled())
+  {
     return;
   }
 

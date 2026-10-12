@@ -52,7 +52,8 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
   settings.setShowGlobalTimeControls(false);
   settings.setSynchronizeTimeSeries(false);
-  settings.setAutomaticUpdateChecksEnabled(false);
+  settings.setAutomaticUpdateChecksEnabled(true);
+  settings.setAutomaticUpdateCheckChoiceMade(true);
   settings.setShowImageExportFormatGuide(false);
   settings.setShowSegmentationExportFormatGuide(false);
   settings.setShowMeshExportFormatGuide(false);
@@ -283,6 +284,7 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.showGlobalTimeControls() == expected.showGlobalTimeControls());
   CHECK(actual.synchronizeTimeSeries() == expected.synchronizeTimeSeries());
   CHECK(actual.automaticUpdateChecksEnabled() == expected.automaticUpdateChecksEnabled());
+  CHECK(actual.automaticUpdateCheckChoiceMade() == expected.automaticUpdateCheckChoiceMade());
   CHECK(actual.showImageExportFormatGuide() == expected.showImageExportFormatGuide());
   CHECK(actual.showSegmentationExportFormatGuide() == expected.showSegmentationExportFormatGuide());
   CHECK(actual.showMeshExportFormatGuide() == expected.showMeshExportFormatGuide());
@@ -613,7 +615,43 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("recent").at("projects").at(0) == "/data/project.entropy.json");
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
-  CHECK(root.at("system").at("updates").at("automaticChecks") == false);
+  CHECK(root.at("system").at("updates").at("automaticChecks") == true);
+  CHECK(root.at("system").at("updates").at("choiceMade") == true);
+}
+
+TEST_CASE("first-run update-check answers survive saving and loading", "[app][settings][updates]")
+{
+  for (const bool enabled : {false, true}) {
+    AppSettings saved;
+    CHECK_FALSE(saved.automaticUpdateChecksEnabled());
+    CHECK_FALSE(saved.automaticUpdateCheckChoiceMade());
+
+    saved.setAutomaticUpdateChecksEnabled(enabled);
+    saved.setAutomaticUpdateCheckChoiceMade(true);
+    const std::filesystem::path fileName = tempSettingsFile(enabled ? "updates-yes.json" : "updates-no.json");
+    REQUIRE(user_preferences::save(saved, user_preferences::RenderPreferences{}, fileName));
+
+    AppSettings loaded;
+    user_preferences::RenderPreferences renderPreferences;
+    REQUIRE(user_preferences::load(loaded, renderPreferences, fileName));
+    CHECK(loaded.automaticUpdateChecksEnabled() == enabled);
+    CHECK(loaded.automaticUpdateCheckChoiceMade());
+  }
+}
+
+TEST_CASE("older update-check values do not count as consent", "[app][settings][updates]")
+{
+  for (const bool enabled : {false, true}) {
+    AppSettings settings;
+    user_preferences::RenderPreferences renderPreferences;
+    const std::string text =
+      std::string{
+        R"({"format":"entropy.userSettings","version":{"major":1,"minor":0},"system":{"updates":{"automaticChecks":)"} +
+      (enabled ? "true" : "false") + "}}}";
+    REQUIRE(user_preferences::applyJsonString(settings, renderPreferences, text));
+    CHECK_FALSE(settings.automaticUpdateChecksEnabled());
+    CHECK_FALSE(settings.automaticUpdateCheckChoiceMade());
+  }
 }
 
 TEST_CASE("user preferences file load treats a missing file as defaults-preserving success", "[app][settings]")
@@ -868,6 +906,7 @@ TEST_CASE("minimal user preferences restore current defaults", "[app][settings]"
   CHECK(settings.uiFontFamily() == AppSettings{}.uiFontFamily());
   CHECK(settings.recenteringMode() == AppSettings{}.recenteringMode());
   CHECK(settings.automaticUpdateChecksEnabled() == AppSettings{}.automaticUpdateChecksEnabled());
+  CHECK_FALSE(settings.automaticUpdateCheckChoiceMade());
   CHECK(renderPreferences.raycastSamplingFactor == user_preferences::RenderPreferences{}.raycastSamplingFactor);
   CHECK(renderPreferences.asciiCellHeightPx == user_preferences::RenderPreferences{}.asciiCellHeightPx);
   CHECK(precisionPreferences.imageValuePrecision == user_preferences::PrecisionPreferences{}.imageValuePrecision);

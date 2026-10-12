@@ -61,6 +61,7 @@ ditto -x -k "$stapled_zip" "$work_dir/final-zip-check"
 zip_app="$work_dir/final-zip-check/$archive_name/Entropy.app"
 codesign --verify --deep --strict --verbose=2 "$zip_app"
 xcrun stapler validate "$zip_app"
+rm -rf -- "$work_dir/final-zip-check"
 
 # Build the DMG from that same stapled app, preserving CPack's drag-to-Applications layout.
 volume_root="$work_dir/extracted/$archive_name"

@@ -472,6 +472,18 @@ jobs:
       - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/macos-package-install
+          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
+
+      - name: Reclaim space for notarization
+        run: |
+          df -h .
+          du -sh build-release/bin build-release/app build-release/lib build-release/test build-release/macos-package-install
+          rm -rf -- build-release/bin build-release/app build-release/lib build-release/test build-release/macos-package-install
+          df -h .
+
       - name: Notarize and staple macOS packages
         env:
           ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
@@ -480,11 +492,6 @@ jobs:
           bash .github/scripts/notarize_macos_packages.sh \
             "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-arm64.zip" \
             "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-arm64.dmg"
-
-      - name: Smoke-test staged install
-        run: |
-          cmake --install build-release --prefix build-release/macos-package-install
-          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Remove signing credentials
         if: always()
@@ -649,6 +656,18 @@ jobs:
       - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/macos-package-install
+          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
+
+      - name: Reclaim space for notarization
+        run: |
+          df -h .
+          du -sh build-release/bin build-release/app build-release/lib build-release/test build-release/macos-package-install
+          rm -rf -- build-release/bin build-release/app build-release/lib build-release/test build-release/macos-package-install
+          df -h .
+
       - name: Notarize and staple macOS packages
         env:
           ENTROPY_NOTARY_API_KEY_ID: ${{ secrets.ENTROPY_NOTARY_API_KEY_ID }}
@@ -657,11 +676,6 @@ jobs:
           bash .github/scripts/notarize_macos_packages.sh \
             "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-x86_64.zip" \
             "build-release/packages/Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg"
-
-      - name: Smoke-test staged install
-        run: |
-          cmake --install build-release --prefix build-release/macos-package-install
-          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
       - name: Remove signing credentials
         if: always()

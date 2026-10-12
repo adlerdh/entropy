@@ -45,7 +45,7 @@ if(APPLE)
   set(Entropy_MACOSX_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}"
     CACHE STRING "macOS build version recorded in CFBundleVersion")
   set(Entropy_MACOS_CODESIGN_IDENTITY "-" CACHE STRING
-    "macOS code signing identity used by build/install/CPack; '-' creates an ad-hoc signature, and an empty value skips signing")
+    "macOS code signing identity used by install/CPack; the build-tree app is ad-hoc signed")
 
   include_directories(/System/Library/Frameworks)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)

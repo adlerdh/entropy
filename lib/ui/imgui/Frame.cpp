@@ -55,6 +55,9 @@ void ImGuiWrapper::render()
 
   ImGui::NewFrame();
 
+  if (m_firstFramePresented) {
+    promptForAutomaticUpdateChecksIfNeeded();
+  }
   requestAutomaticUpdateCheckIfNeeded();
   processUpdateCheckFuture();
 

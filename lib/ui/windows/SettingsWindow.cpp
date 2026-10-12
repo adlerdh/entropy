@@ -1527,6 +1527,7 @@ void renderSystemTab(AppData& appData)
     bool automaticChecks = appData.settings().automaticUpdateChecksEnabled();
     if (ImGui::Checkbox("Automatically check for updates", &automaticChecks)) {
       appData.settings().setAutomaticUpdateChecksEnabled(automaticChecks);
+      appData.settings().setAutomaticUpdateCheckChoiceMade(true);
     }
     ImGui::SameLine();
     helpMarker(

@@ -61,12 +61,14 @@ public:
    * @param imageLoadFailed Set when background image loading failed.
    * @param checkAppQuit Returns true when the application should quit.
    * @param onImagesReady Called once when `imagesReady` is set.
+   * @param onFirstFramePresented Called after the first window frame has been swapped and events processed.
    */
   void renderLoop(
     std::atomic<bool>& imagesReady,
     const std::atomic<bool>& imageLoadFailed,
     const std::function<bool(void)>& checkAppQuit,
-    const std::function<void(void)>& onImagesReady);
+    const std::function<void(void)>& onImagesReady,
+    const std::function<void(void)>& onFirstFramePresented);
 
   /** @brief Render one frame without forcing a buffer swap. */
   void renderOnce();

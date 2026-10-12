@@ -105,7 +105,10 @@ bool ImGuiWrapper::renderApplicationWindows(
     ui::updates::renderUpdateCheckWindow(
       m_updateCheckWindowState,
       m_appData.settings().automaticUpdateChecksEnabled(),
-      [this](bool enabled) { m_appData.settings().setAutomaticUpdateChecksEnabled(enabled); });
+      [this](bool enabled) {
+        m_appData.settings().setAutomaticUpdateChecksEnabled(enabled);
+        m_appData.settings().setAutomaticUpdateCheckChoiceMade(true);
+      });
 
     if (hasLoadedProject) {
       renderGlobalTimeControl(m_appData);

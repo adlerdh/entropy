@@ -207,6 +207,12 @@ public:
   /// @brief Set whether Entropy should check GitHub for updates automatically.
   void setAutomaticUpdateChecksEnabled(bool enabled);
 
+  /// @brief Return whether the user has answered the first-run update-check prompt.
+  bool automaticUpdateCheckChoiceMade() const;
+
+  /// @brief Record that the user has answered the first-run update-check prompt.
+  void setAutomaticUpdateCheckChoiceMade(bool made);
+
   /// @brief Return whether the image-export format guide should be shown before exporting.
   bool showImageExportFormatGuide() const;
 
@@ -321,7 +327,8 @@ private:
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
   bool m_showGlobalTimeControls = true;
   bool m_synchronizeTimeSeries = true;
-  bool m_automaticUpdateChecksEnabled = true;
+  bool m_automaticUpdateChecksEnabled = false;
+  bool m_automaticUpdateCheckChoiceMade = false;
   bool m_showImageExportFormatGuide = true;
   bool m_showSegmentationExportFormatGuide = true;
   bool m_showMeshExportFormatGuide = true;

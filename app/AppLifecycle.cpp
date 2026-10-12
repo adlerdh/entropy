@@ -111,7 +111,12 @@ void EntropyApp::run()
     return m_data.state().quitApp();
   };
 
-  m_glfw.renderLoop(m_imagesReady, m_imageLoadFailed, checkIfAppShouldQuit, [this]() { onImagesReady(); });
+  m_glfw.renderLoop(
+    m_imagesReady,
+    m_imageLoadFailed,
+    checkIfAppShouldQuit,
+    [this]() { onImagesReady(); },
+    [this]() { m_imgui.onFirstFramePresented(); });
 
   // Cancel image loading, in case it's still going on
   m_imageLoadCancelled = true;

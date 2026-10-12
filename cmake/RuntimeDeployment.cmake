@@ -14,6 +14,8 @@ function(entropy_configure_macos_runtime target)
     return()
   endif()
 
+  # The build-tree app loads ad-hoc signed dependencies from the build directory.
+  # Developer ID signing is applied to the self-contained installed/packaged app.
   add_custom_command(
     TARGET ${target}
     POST_BUILD
@@ -34,7 +36,7 @@ function(entropy_configure_macos_runtime target)
       -D "entropy_SOURCE_ICON=${entropy_MACOS_APP_ICON}"
       -D "entropy_ICON_NAME=${entropy_MACOS_APP_ICON_NAME}"
       -D "entropy_MINIMUM_SYSTEM_VERSION=${Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
-      -D "entropy_CODESIGN_IDENTITY=${Entropy_MACOS_CODESIGN_IDENTITY}"
+      -D "entropy_CODESIGN_IDENTITY=-"
       -P "${CMAKE_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
     COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${APP_NAME}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different

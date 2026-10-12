@@ -739,7 +739,9 @@ json toJson(
       {"diagnostics",
        {{"enabled", logging::loggingEnabled()},
         {"logVerbosity", std::string{logging::logLevelLabel(logging::applicationLogLevel())}}}},
-      {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
+      {"updates",
+       {{"automaticChecks", settings.automaticUpdateChecksEnabled()},
+        {"choiceMade", settings.automaticUpdateCheckChoiceMade()}}}}}};
 }
 
 json defaultUserPreferencesJson()
@@ -1252,6 +1254,13 @@ void applyJson(
     if (const auto updates = system->find("updates"); updates != system->end() && updates->is_object()) {
       if (const auto value = updates->find("automaticChecks"); value != updates->end() && value->is_boolean()) {
         settings.setAutomaticUpdateChecksEnabled(value->get<bool>());
+      }
+      if (const auto value = updates->find("choiceMade"); value != updates->end() && value->is_boolean()) {
+        settings.setAutomaticUpdateCheckChoiceMade(value->get<bool>());
+      }
+      else {
+        settings.setAutomaticUpdateChecksEnabled(false);
+        settings.setAutomaticUpdateCheckChoiceMade(false);
       }
     }
   }
