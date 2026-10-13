@@ -48,25 +48,25 @@ submit_and_check() {
   fi
 }
 
-staple_with_retry() {
-  local item="$1" attempt
+stapler_with_retry() {
+  local action="$1" item="$2" attempt
   for attempt in 1 2 3 4 5; do
-    if xcrun stapler staple "$item"; then
+    if xcrun stapler "$action" "$item"; then
       return 0
     fi
     if (( attempt == 5 )); then
-      echo "Failed to staple $(basename "$item") after $attempt attempts" >&2
+      echo "Failed to $action $(basename "$item") after $attempt attempts" >&2
       return 1
     fi
-    echo "Stapling $(basename "$item") failed; retrying in $(( attempt * 10 )) seconds" >&2
+    echo "Stapler $action failed for $(basename "$item"); retrying in $(( attempt * 10 )) seconds" >&2
     sleep "$(( attempt * 10 ))"
   done
 }
 
 # The ZIP is a transport for notarizing the app. ZIP files cannot be stapled.
 submit_and_check "$zip_path"
-staple_with_retry "$app_path"
-xcrun stapler validate "$app_path"
+stapler_with_retry staple "$app_path"
+stapler_with_retry validate "$app_path"
 codesign --verify --deep --strict --verbose=2 "$app_path"
 spctl --assess --type execute --verbose=4 "$app_path"
 
@@ -75,7 +75,7 @@ ditto -c -k --keepParent "$work_dir/extracted/$archive_name" "$stapled_zip"
 ditto -x -k "$stapled_zip" "$work_dir/final-zip-check"
 zip_app="$work_dir/final-zip-check/$archive_name/Entropy.app"
 codesign --verify --deep --strict --verbose=2 "$zip_app"
-xcrun stapler validate "$zip_app"
+stapler_with_retry validate "$zip_app"
 rm -rf -- "$work_dir/final-zip-check"
 
 # Build the DMG from that same stapled app, preserving CPack's drag-to-Applications layout.
@@ -87,8 +87,9 @@ short_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' 
 stapled_dmg="$work_dir/$archive_name.dmg"
 hdiutil create -volname "Entropy $short_version" -srcfolder "$volume_root" -format UDZO "$stapled_dmg"
 submit_and_check "$stapled_dmg"
-staple_with_retry "$stapled_dmg"
-xcrun stapler validate "$stapled_dmg"
+stapler_with_retry staple "$stapled_dmg"
+# A successful staple already checks the ticket. A second lookup can fail
+# independently when Apple's ticket service drops the connection.
 hdiutil verify "$stapled_dmg"
 
 mv -f "$stapled_zip" "$zip_path"
