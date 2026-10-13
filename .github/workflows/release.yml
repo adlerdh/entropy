@@ -1017,39 +1017,36 @@ jobs:
           - Windows x86_64: \`Entropy-${ENTROPY_VERSION}-Windows-x86_64.msi\`
           - Ubuntu x86_64: \`Entropy-${ENTROPY_VERSION}-Ubuntu-x86_64.deb\`
           - Fedora x86_64: \`Entropy-${ENTROPY_VERSION}-Fedora-x86_64.rpm\`
-          - Portable archives are also attached for macOS, Windows, Ubuntu, and Fedora.
-          - Source archives are attached as \`zip\` and \`tar.gz\`.
+          - Portable archives are attached for macOS, Windows, Ubuntu, and Fedora
+          - Source \`zip\` and \`tar.gz\` archives are also attached
 
           ## Verify downloads
 
-          Download \`SHA256SUMS.txt\` from this official release along with the files you need.
-          It covers all attached installers, portable archives, and named source archives.
-          From the download directory, check files with:
+          You can use SHA-256 checksums to confirm that downloads match the files published
+          with this release. Save \`SHA256SUMS.txt\` from this release page and compare its
+          checksums with the computed values for the downloaded files:
 
-          - Linux: \`sha256sum --check --ignore-missing SHA256SUMS.txt\`
-          - macOS: \`shasum -a 256 <downloaded-file>\`, then compare with its manifest entry.
-          - Windows PowerShell: \`Get-FileHash .\\<downloaded-file> -Algorithm SHA256\`,
-            then compare with its manifest entry (letter case does not matter).
+          - macOS: \`shasum -a 256 <downloaded-file>\`
+          - Windows PowerShell: \`Get-FileHash .\\<downloaded-file> -Algorithm SHA256\`
+          - Linux: \`sha256sum <downloaded-file>\`
 
-          Use the named \`Entropy-${ENTROPY_VERSION}-source.*\` archives for checksum-verified source;
-          GitHub's automatic "Source code" links are separate, generated downloads.
-          A matching checksum confirms file integrity, not that a third-party download site is trustworthy.
+          ## Minimum system requirements
 
-          ## System requirements
-
+          - macOS 13.3 or later (Apple Silicon arm64 or Intel x86_64)
           - Windows 10 version 1809 or later (x86_64)
-          - macOS 13.3 or later (Apple Silicon or Intel)
           - Ubuntu 22.04 or later (x86_64)
           - Fedora 43 or later (x86_64)
 
-          ## Notes
+          ## Installation notes
 
           - On Ubuntu, install the \`.deb\` with
             \`sudo apt install ./Entropy-${ENTROPY_VERSION}-Ubuntu-x86_64.deb\`,
-            so that package dependencies get resolved automatically. Do not use \`dpkg -i\`.
+            so that package dependencies get resolved automatically. *Do not use \`dpkg -i\`.*
           - The platform installer/package is intended for normal use, whereas the
             portable archives are for manual installs and testing.
-          - The registration backends (ANTs, FireANTs, and Greedy) must be installed separately.
+          - Entropy can use ANTs, FireANTs, or Greedy to align images. To use image
+            registration, install one of these tools separately and configure its
+            executable path in Application Settings.
 
           EOF
           cat "$generated_notes" >> release-notes.md
