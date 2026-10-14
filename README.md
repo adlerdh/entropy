@@ -28,10 +28,10 @@ Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Trustees of The University of
 Download the latest packages for macOS, Windows, Ubuntu, and Fedora from
 [GitHub Releases](https://github.com/adlerdh/entropy/releases).
 
-| Package | Minimum system |
+| Package | Minimum system requirements |
 | --- | --- |
-| Windows x86_64 | Windows 10 version 1809 |
 | macOS arm64 or x86_64 | macOS 13.3 |
+| Windows x86_64 | Windows 10 version 1809 |
 | Ubuntu x86_64 | Ubuntu 22.04 |
 | Fedora x86_64 | Fedora 43 |
 
@@ -75,7 +75,7 @@ space, plus any number of additional images.
   - Layered images with opacity blending
   - Horizontal and vertical swiping comparison
   - Flashlight and checkerboard comparison
-  - Visual metrics: difference, overlap, local normalized cross-correlation (NCC), and local linear residual
+  - Visual metrics: difference, overlap, local normalized cross-correlation, local linear residual, and mutual information
 - Image adjustments
   - Window width and level
   - Layer opacity
@@ -150,9 +150,8 @@ Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image
 - [DICOM](https://www.dicomstandard.org/current/) via [GDCM](https://gdcm.sourceforge.net/) (`.dcm` and DICOM series)
 - Standard 2D image formats: JPEG (`.jpg`, `.jpeg`), PNG (`.png`), TIFF (`.tif`, `.tiff`), and BMP (`.bmp`, `.dib`)
 
-Entropy also displays complete image header information, DICOM metadata, and editable spatial geometry for standard 2D
-raster images that do not carry medical image headers. It loads the supporting files needed to make a review complete:
-segmentations, surface meshes, landmarks, annotations, affine transforms, deformation warp fields, layouts, and
+Entropy displays complete image header information, DICOM metadata, and editable spatial geometry for standard 2D raster images.
+It also loads segmentations, surface meshes, landmarks, annotations, affine transforms, deformation warp fields, layouts, and
 project files.
 
 ### Mesh Formats
